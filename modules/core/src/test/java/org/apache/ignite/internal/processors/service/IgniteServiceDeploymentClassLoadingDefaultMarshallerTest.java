@@ -26,7 +26,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
@@ -72,8 +71,6 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        cfg.setMarshaller(marshaller());
-
         cfg.setUserAttributes(Collections.singletonMap(NODE_NAME_ATTR, igniteInstanceName));
 
         if (extClsLdrGrids.contains(igniteInstanceName))
@@ -82,13 +79,6 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
         cfg.setFailureHandler(new StopNodeFailureHandler());
 
         return cfg;
-    }
-
-    /**
-     * @return Marshaller.
-     */
-    protected Marshaller marshaller() {
-        return null;
     }
 
     /** {@inheritDoc} */

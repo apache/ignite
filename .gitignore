@@ -1,6 +1,8 @@
 *.log
 /out/
 /work/
+/work-*/
+/tpch-dataset-*/
 */build/
 xcuserdata/
 *.iws

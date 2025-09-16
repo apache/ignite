@@ -68,7 +68,7 @@ jobs:
 
       - name: Check javadocs.
         run : |
-          ./mvnw -DskipTests install -pl modules/tools -B -V && ./mvnw initialize -Pjavadoc -B -V
+          ./mvnw -DskipTests install -pl modules/tools,modules/codegen2 -B -V && ./mvnw initialize -Pjavadoc -B -V
 
   check-dotnet:
     name: Сheck .NET code

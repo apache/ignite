@@ -170,8 +170,8 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
                     spi1.sendMessage(node0, new GridTestMessage(node1.id(), ++msgId, 0), ackC);
 
                     if (j == 0) {
-                        final TestListener lsnr0 = (TestListener)spi0.getListener();
-                        final TestListener lsnr1 = (TestListener)spi1.getListener();
+                        final TestListener lsnr0 = U.field(spi0, "lsnr");
+                        final TestListener lsnr1 = U.field(spi1, "lsnr");
 
                         GridTestUtils.waitForCondition(new GridAbsPredicate() {
                             @Override public boolean apply() {
@@ -227,7 +227,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
                 final int expMsgs0 = expMsgs;
 
                 for (TcpCommunicationSpi spi : spis) {
-                    final TestListener lsnr = (TestListener)spi.getListener();
+                    final TestListener lsnr = U.field(spi, "lsnr");
 
                     GridTestUtils.waitForCondition(new GridAbsPredicate() {
                         @Override public boolean apply() {
@@ -359,7 +359,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
         final int expMsgs = sentMsgs + cnt;
 
-        final TestListener lsnr = (TestListener)spi1.getListener();
+        final TestListener lsnr = U.field(spi1, "lsnr");
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {

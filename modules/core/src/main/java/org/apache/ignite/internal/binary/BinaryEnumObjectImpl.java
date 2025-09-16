@@ -27,17 +27,15 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -46,12 +44,11 @@ import static org.apache.ignite.internal.processors.cache.CacheObjectAdapter.obj
 /**
  * Binary enum object.
  */
-public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObject {
+class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Context. */
-    @GridDirectTransient
     private BinaryContext ctx;
 
     /** Type ID. */
@@ -64,7 +61,6 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     private int ord;
 
     /** Value bytes. */
-    @GridDirectTransient
     private byte[] valBytes;
 
     /**
@@ -108,7 +104,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
             valBytes[0] = GridBinaryMarshaller.ENUM;
 
-            U.arrayCopy(arr, 1, valBytes, 1, arr.length - 1);
+            GridUnsafe.arrayCopy(arr, 1, valBytes, 1, arr.length - 1);
         }
 
         this.ctx = ctx;
@@ -136,10 +132,8 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         this.ord = BinaryPrimitives.readInt(arr, off);
     }
 
-    /**
-     * @return Class name.
-     */
-    @Nullable public String className() {
+    /** {@inheritDoc} */
+    @Nullable @Override public String enumClassName() {
         return clsName;
     }
 
@@ -175,10 +169,10 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public <T> T deserialize(@Nullable ClassLoader ldr) throws BinaryObjectException {
-        ClassLoader resolveLdr = ldr == null ? ctx.configuration().getClassLoader() : ldr;
+        ClassLoader resolveLdr = ldr == null ? ctx.classLoader() : ldr;
 
         if (ldr != null)
-            GridBinaryMarshaller.USE_CACHE.set(Boolean.FALSE);
+            Marshallers.USE_CACHE.set(Boolean.FALSE);
 
         try {
             Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, resolveLdr, false);
@@ -186,7 +180,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
             return (T)(ldr == null ? BinaryEnumCache.get(cls, ord) : uncachedValue(cls));
         }
         finally {
-            GridBinaryMarshaller.USE_CACHE.set(Boolean.TRUE);
+            Marshallers.USE_CACHE.set(Boolean.TRUE);
         }
 
     }
@@ -199,7 +193,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     private <T> T uncachedValue(Class<?> cls) throws BinaryObjectException {
         assert cls != null;
 
-        assert !GridBinaryMarshaller.USE_CACHE.get();
+        assert !Marshallers.USE_CACHE.get();
 
         if (ord >= 0) {
             Object[] vals = cls.getEnumConstants();
@@ -333,7 +327,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         if (valBytes != null)
             return valBytes;
 
-        valBytes = U.marshal(ctx.marshaller(), this);
+        valBytes = Marshallers.marshal(ctx.marshaller(), this);
 
         return valBytes;
     }
@@ -358,7 +352,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+    @Override public int valueBytesLength(CacheObjectValueContext ctx) throws IgniteCheckedException {
         return objectPutSize(valueBytes(ctx).length);
     }
 
@@ -373,7 +367,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+    @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
         return this;
     }
 
@@ -388,100 +382,13 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 119;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeString("clsName", clsName))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeInt("ord", ord))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeInt("typeId", typeId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                clsName = reader.readString("clsName");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                ord = reader.readInt("ord");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                typeId = reader.readInt("typeId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(BinaryEnumObjectImpl.class);
-    }
-
-    /** {@inheritDoc} */
     @Override public int size() {
         if (valBytes == null) {
             try {
-                valBytes = U.marshal(ctx.marshaller(), this);
+                valBytes = Marshallers.marshal(ctx.marshaller(), this);
             }
             catch (IgniteCheckedException e) {
-                throw U.convertException(e);
+                throw CommonUtils.convertException(e);
             }
         }
 

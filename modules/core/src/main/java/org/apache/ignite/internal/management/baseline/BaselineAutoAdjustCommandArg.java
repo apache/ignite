@@ -72,8 +72,8 @@ public class BaselineAutoAdjustCommandArg extends BaselineTaskArg {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(protoVer, in);
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(in);
 
         enabled = U.readEnum(in, Enabled.class);
         timeout = (Long)in.readObject();

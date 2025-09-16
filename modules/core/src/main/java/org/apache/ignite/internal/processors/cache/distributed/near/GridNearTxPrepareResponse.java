@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
@@ -49,9 +48,6 @@ import org.jetbrains.annotations.Nullable;
  * Near cache prepare response.
  */
 public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Tx onePhaseCommit flag on primary node. */
     private static final int NEAR_PREPARE_ONE_PHASE_COMMIT_FLAG_MASK = 0x01;
 
@@ -98,7 +94,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     private AffinityTopologyVersion clientRemapVer;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearTxPrepareResponse() {
         // No-op.
@@ -349,69 +345,69 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
+            case 10:
+                if (!writer.writeAffinityTopologyVersion(clientRemapVer))
+                    return false;
+
+                writer.incrementState();
+
             case 11:
-                if (!writer.writeAffinityTopologyVersion("clientRemapVer", clientRemapVer))
+                if (!writer.writeMessage(dhtVer))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeMessage("dhtVer", dhtVer))
+                if (!writer.writeCollection(filterFailedKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeCollection("filterFailedKeys", filterFailedKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeIgniteUuid(futId))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeInt(miniId))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeInt("miniId", miniId))
+                if (!writer.writeCollection(ownedValKeys, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeCollection("ownedValKeys", ownedValKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(ownedValVals, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeCollection("ownedValVals", ownedValVals, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(pending, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeCollection("pending", pending, MessageCollectionItemType.MSG))
+                if (!writer.writeMessage(retVal))
                     return false;
 
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeMessage("retVal", retVal))
-                    return false;
-
-                writer.incrementState();
-
-            case 20:
-                if (!writer.writeMessage("writeVer", writeVer))
+                if (!writer.writeMessage(writeVer))
                     return false;
 
                 writer.incrementState();
@@ -424,15 +420,20 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
+            case 10:
+                clientRemapVer = reader.readAffinityTopologyVersion();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
             case 11:
-                clientRemapVer = reader.readAffinityTopologyVersion("clientRemapVer");
+                dhtVer = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -440,7 +441,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 12:
-                dhtVer = reader.readMessage("dhtVer");
+                filterFailedKeys = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -448,7 +449,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 13:
-                filterFailedKeys = reader.readCollection("filterFailedKeys", MessageCollectionItemType.MSG);
+                futId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -456,7 +457,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 14:
-                futId = reader.readIgniteUuid("futId");
+                miniId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -464,7 +465,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 15:
-                miniId = reader.readInt("miniId");
+                ownedValKeys = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -472,7 +473,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 16:
-                ownedValKeys = reader.readCollection("ownedValKeys", MessageCollectionItemType.MSG);
+                ownedValVals = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -480,7 +481,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 17:
-                ownedValVals = reader.readCollection("ownedValVals", MessageCollectionItemType.MSG);
+                pending = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -488,7 +489,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 18:
-                pending = reader.readCollection("pending", MessageCollectionItemType.MSG);
+                retVal = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -496,15 +497,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 19:
-                retVal = reader.readMessage("retVal");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 20:
-                writeVer = reader.readMessage("writeVer");
+                writeVer = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -512,17 +505,12 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(GridNearTxPrepareResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 56;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 21;
     }
 
     /** {@inheritDoc} */

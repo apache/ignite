@@ -24,12 +24,13 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.messaging.MessagingListenActor;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Test for {@link org.apache.ignite.IgniteCluster}.
@@ -61,7 +62,7 @@ public class GridSelfTest extends ClusterGroupAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected Collection<UUID> remoteNodeIds() {
-        return F.nodeIds(grid(0).cluster().forRemotes().nodes());
+        return nodeIds(grid(0).cluster().forRemotes().nodes());
     }
 
     /** {@inheritDoc} */
@@ -78,7 +79,7 @@ public class GridSelfTest extends ClusterGroupAbstractTest {
 
             assert projection().forRemotes().nodes().size() == size + 1;
 
-            assert F.nodeIds(projection().forRemotes().nodes()).contains(joinedId);
+            assert nodeIds(projection().forRemotes().nodes()).contains(joinedId);
         }
         finally {
             stopGrid(name);
@@ -101,7 +102,7 @@ public class GridSelfTest extends ClusterGroupAbstractTest {
 
             assert remotePrj.nodes().size() == size + 1;
 
-            assert F.nodeIds(remotePrj.nodes()).contains(joinedId);
+            assert nodeIds(remotePrj.nodes()).contains(joinedId);
         }
         finally {
             stopGrid(name);

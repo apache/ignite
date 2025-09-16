@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cache.QueryEntity;
@@ -39,7 +40,6 @@ import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterT
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableDropColumnOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexDropOperation;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -206,11 +206,11 @@ public class QuerySchema implements Serializable {
                 for (QueryEntity entity : entities) {
                     String tblName = entity.getTableName();
 
-                    if (F.eq(tblName, op0.tableName())) {
+                    if (Objects.equals(tblName, op0.tableName())) {
                         boolean exists = false;
 
                         for (QueryIndex idx : entity.getIndexes()) {
-                            if (F.eq(idx.getName(), op0.indexName())) {
+                            if (Objects.equals(idx.getName(), op0.indexName())) {
                                 exists = true;
 
                                 break;
@@ -238,7 +238,7 @@ public class QuerySchema implements Serializable {
                     QueryIndex victim = null;
 
                     for (QueryIndex idx : idxs) {
-                        if (F.eq(idx.getName(), op0.indexName())) {
+                        if (Objects.equals(idx.getName(), op0.indexName())) {
                             victim = idx;
 
                             break;
@@ -264,7 +264,7 @@ public class QuerySchema implements Serializable {
                 for (int i = 0; i < entities.size(); i++) {
                     QueryEntity entity = ((List<QueryEntity>)entities).get(i);
 
-                    if (F.eq(entity.getTableName(), op0.tableName())) {
+                    if (Objects.equals(entity.getTableName(), op0.tableName())) {
                         targetIdx = i;
 
                         break;
@@ -313,7 +313,7 @@ public class QuerySchema implements Serializable {
                 for (int i = 0; i < entities.size(); i++) {
                     QueryEntity entity = ((List<QueryEntity>)entities).get(i);
 
-                    if (F.eq(entity.getTableName(), op0.tableName())) {
+                    if (Objects.equals(entity.getTableName(), op0.tableName())) {
                         targetIdx = i;
 
                         break;

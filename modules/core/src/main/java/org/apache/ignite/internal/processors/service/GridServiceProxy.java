@@ -44,8 +44,8 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryArray;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
@@ -56,7 +56,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.platform.PlatformServiceMethod;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
@@ -343,11 +342,11 @@ public class GridServiceProxy<T> implements Serializable {
 
     /** */
     private Object unmarshalResult(byte[] res) throws IgniteCheckedException {
-        Marshaller marsh = ctx.config().getMarshaller();
+        BinaryMarshaller marsh = ctx.marshaller();
 
-        if (keepBinary && BinaryArray.useBinaryArrays() && marsh instanceof BinaryMarshaller) {
+        if (keepBinary && BinaryUtils.useBinaryArrays()) {
             // To avoid deserializing of enum types and BinaryArrays.
-            return ((BinaryMarshaller)marsh).binaryMarshaller().unmarshal(res, null);
+            return marsh.binaryMarshaller().unmarshal(res, null);
         }
         else
             return U.unmarshal(marsh, res, null);
@@ -581,7 +580,7 @@ public class GridServiceProxy<T> implements Serializable {
 
             Object res = hist == null ? callService(ctx, mtd) : measureCall(hist, () -> callService(ctx, mtd));
 
-            return U.marshal(ignite.configuration().getMarshaller(), res);
+            return U.marshal(ignite.context().marshaller(), res);
         }
 
         /** */

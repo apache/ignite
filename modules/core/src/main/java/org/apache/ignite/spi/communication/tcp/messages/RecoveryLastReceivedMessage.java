@@ -31,9 +31,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 @IgniteCodeGeneratingFail
 public class RecoveryLastReceivedMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     public static final long ALREADY_CONNECTED = -1;
 
     /** */
@@ -55,7 +52,7 @@ public class RecoveryLastReceivedMessage implements Message {
     private long rcvCnt;
 
     /**
-     * Default constructor required by {@link Message}.
+     * Default constructor.
      */
     public RecoveryLastReceivedMessage() {
         // No-op.
@@ -73,11 +70,6 @@ public class RecoveryLastReceivedMessage implements Message {
      */
     public long received() {
         return rcvCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -105,11 +97,6 @@ public class RecoveryLastReceivedMessage implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return TcpCommunicationSpi.RECOVERY_LAST_ID_MSG_TYPE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 0;
     }
 
     /** {@inheritDoc} */

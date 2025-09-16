@@ -31,25 +31,18 @@ public class CleanCacheStoresMaintenanceAction implements MaintenanceAction<Void
     public static final String ACTION_NAME = "clean_data_files";
 
     /** */
-    private final File rootStoreDir;
-
-    /** */
-    private final String[] cacheStoreDirs;
+    private final File[] cacheStoreDirs;
 
     /**
-     * @param rootStoreDir
      * @param cacheStoreDirs
      */
-    public CleanCacheStoresMaintenanceAction(File rootStoreDir, String[] cacheStoreDirs) {
-        this.rootStoreDir = rootStoreDir;
+    public CleanCacheStoresMaintenanceAction(File[] cacheStoreDirs) {
         this.cacheStoreDirs = cacheStoreDirs;
     }
 
     /** {@inheritDoc} */
     @Override public Void execute() {
-        for (String cacheStoreDirName : cacheStoreDirs) {
-            File cacheStoreDir = new File(rootStoreDir, cacheStoreDirName);
-
+        for (File cacheStoreDir : cacheStoreDirs) {
             if (cacheStoreDir.exists() && cacheStoreDir.isDirectory()) {
                 for (File file : cacheStoreDir.listFiles()) {
                     if (!NodeFileTree.cacheConfigFile(file))

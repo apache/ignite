@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Binary type proxy. Is used to delay or completely avoid metadata lookup.
  */
-public class BinaryTypeProxy implements BinaryType {
+class BinaryTypeProxy implements BinaryType {
     /** Binary context. */
     @GridToStringExclude
     private final BinaryContext ctx;

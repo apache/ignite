@@ -52,7 +52,7 @@ public class MetadataRegistrationTest extends AbstractThinClientTest {
         IgniteBinary srvBinary = srv.binary();
 
         try (IgniteClient client = startClient(srv)) {
-            BinaryMetadata meta = new BinaryMetadata(123, "newType", null, null, null, false, null);
+            BinaryMetadata meta = new BinaryMetadata(123, "newType", null, null, false, null);
 
             assertNull(srvBinary.type(meta.typeId()));
 

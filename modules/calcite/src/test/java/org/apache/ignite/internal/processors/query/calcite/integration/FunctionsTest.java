@@ -103,7 +103,7 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
 
     /** */
     private void doTestBitwiseOperations(boolean dynamic) {
-        for (List<Object> paramSet : bitwiseParams(dynamic)) {
+        for (List<Object> paramSet : bitwiseParams()) {
             assert paramSet.size() == 6;
 
             int idx = 0;
@@ -118,7 +118,8 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
             cast1 = cast1 == null ? "" : "::" + cast1;
             cast2 = cast2 == null ? "" : "::" + cast2;
 
-            log.info("Op: " + op + ", dynamic=" + dynamic + ", p1=" + p1 + ", p2=" + p2 + ", expected=" + res);
+            if (log.isInfoEnabled())
+                log.info("Op: " + op + ", dynamic=" + dynamic + ", p1=" + p1 + ", p2=" + p2 + ", expected=" + res);
 
             if (dynamic) {
                 String sql = "SELECT BIT" + op + "(?" + cast1 + ", ?" + cast2 + ')';
@@ -140,7 +141,7 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
     }
 
     /** Bitwise operation params: operation, param1, cast1, param2, cast2, result. */
-    private Iterable<List<Object>> bitwiseParams(boolean dynamic) {
+    private Iterable<List<Object>> bitwiseParams() {
         List<List<Object>> res = new ArrayList<>(100);
 
         SqlValidatorException andErr = new SqlValidatorException("Cannot apply 'BITAND' to arguments of type", null);
@@ -257,6 +258,8 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         assertQuery("SELECT REPLACE('1', NULL, '5')").returns(NULL_RESULT).check();
         assertQuery("SELECT REPLACE('11', '1', NULL)").returns(NULL_RESULT).check();
         assertQuery("SELECT REPLACE('11', '1', '')").returns("").check();
+        assertQuery("SELECT REPLACE('aA', 'a', 'b')").returns("bA").check();
+        assertQuery("SELECT REPLACE('aA', 'A', 'b')").returns("ab").check();
     }
 
     /** */
@@ -495,5 +498,27 @@ public class FunctionsTest extends AbstractBasicIntegrationTest {
         assertQuery("select decode(null, null, 1, 2)").returns(1).check();
         assertQuery("select decode(null, 1, 1, 2)").returns(2).check();
         assertQuery("select decode(1, null, 1, 2)").returns(2).check();
+    }
+
+    /** Tests rewrittable functions with subquery as parameter. */
+    @Test
+    public void testRewrittenFunctionWithSubquery() {
+        sql("CREATE TABLE TBL(i INT PRIMARY KEY, t TIMESTAMP)");
+        sql("INSERT INTO TBL(i, t) values (1, timestamp '2025-05-22 13:40:15')");
+
+        assertQuery("select decode((select max(i) from tbl), 1, '1', '2')").returns("1").check();
+        assertQuery("select nvl((select max(i) from tbl), 0)").returns(1).check();
+        assertQuery("select coalesce((select max(i) from tbl), 0)").returns(1).check();
+        assertQuery("select nullif((select max(i) from tbl), 0)").returns(1).check();
+        assertQuery("select year((select max(t) from tbl))").returns(2025L).check();
+        assertQuery("select quarter((select max(t) from tbl))").returns(2L).check();
+        assertQuery("select month((select max(t) from tbl))").returns(5L).check();
+        assertQuery("select week((select max(t) from tbl))").returns(21L).check();
+        assertQuery("select dayofyear((select max(t) from tbl))").returns(142L).check();
+        assertQuery("select dayofmonth((select max(t) from tbl))").returns(22L).check();
+        assertQuery("select dayofweek((select max(t) from tbl))").returns(5L).check();
+        assertQuery("select hour((select max(t) from tbl))").returns(13L).check();
+        assertQuery("select minute((select max(t) from tbl))").returns(40L).check();
+        assertQuery("select second((select max(t) from tbl))").returns(15L).check();
     }
 }

@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.SortedMap;
@@ -182,6 +183,7 @@ import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.C
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.newConnectionEnabledProperty;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_NODE_IDS_HISTORY_SIZE;
@@ -875,7 +877,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         openedSock = true;
 
-                        spi.writeToSocket(sock, new TcpDiscoveryPingRequest(locNodeId, clientNodeId),
+                        spi.writeToSocket(sock, spi.socketStream(sock), new TcpDiscoveryPingRequest(locNodeId, clientNodeId),
                             timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                         TcpDiscoveryPingResponse res = spi.readMessage(sock, null, timeoutHelper.nextTimeoutChunk(
@@ -1066,8 +1068,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         if (nodeAlive) {
             synchronized (mux) {
-                nodeAlive = !F.transform(failedNodes.keySet(), F.node2id()).contains(nodeId) &&
-                    !F.transform(leavingNodes, F.node2id()).contains(nodeId);
+                nodeAlive = !F.transform(failedNodes.keySet(), node2id()).contains(nodeId) &&
+                    !F.transform(leavingNodes, node2id()).contains(nodeId);
             }
         }
 
@@ -1473,7 +1475,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId);
 
                 // Handshake.
-                spi.writeToSocket(sock, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                spi.writeToSocket(sock, spi.socketStream(sock), req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, timeoutHelper.nextTimeoutChunk(
                     ackTimeout0));
@@ -1508,7 +1510,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // Send message.
                 tsNanos = System.nanoTime();
 
-                spi.writeToSocket(sock, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                spi.writeToSocket(sock, spi.socketStream(sock), msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 long tsNanos0 = System.nanoTime();
 
@@ -2815,7 +2817,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (skipCustomMsg) {
                         assert customDiscardId != null;
 
-                        if (F.eq(customDiscardId, msg.id)) {
+                        if (Objects.equals(customDiscardId, msg.id)) {
                             msg.msg = null;
 
                             if (msg.verified)
@@ -2827,7 +2829,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (skipMsg) {
                         assert discardId != null;
 
-                        if (F.eq(discardId, msg.id)) {
+                        if (Objects.equals(discardId, msg.id)) {
                             msg.msg = null;
 
                             if (msg.verified)
@@ -2902,7 +2904,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (skipCustomMsg) {
                             assert customDiscardId != null;
 
-                            if (F.eq(customDiscardId, msg0.id) && msg0.verified)
+                            if (Objects.equals(customDiscardId, msg0.id) && msg0.verified)
                                 skipCustomMsg = false;
 
                             continue;
@@ -2912,7 +2914,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (skipMsg) {
                             assert discardId != null;
 
-                            if (F.eq(discardId, msg0.id) && msg0.verified)
+                            if (Objects.equals(discardId, msg0.id) && msg0.verified)
                                 skipMsg = false;
 
                             continue;
@@ -3798,7 +3800,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (latencyCheck && log.isInfoEnabled())
                                     log.info("Latency check message has been written to socket: " + msg.id());
 
-                                spi.writeToSocket(newNextNode ? newNext : next,
+                                spi.writeToSocket(
                                     sock,
                                     out,
                                     msg,
@@ -4504,7 +4506,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 final String locMarsh = locNode.attribute(ATTR_MARSHALLER);
                 final String rmtMarsh = node.attribute(ATTR_MARSHALLER);
 
-                if (!F.eq(locMarsh, rmtMarsh)) {
+                if (!Objects.equals(locMarsh, rmtMarsh)) {
                     utilityPool.execute(
                         new Runnable() {
                             @Override public void run() {
@@ -6767,7 +6769,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     res.clientExists(clientWorker.ping(timeoutHelper));
                             }
 
-                            spi.writeToSocket(sock, res, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                            spi.writeToSocket(sock, spi.socketStream(sock), res, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                             if (!(sock instanceof SSLSocket))
                                 sock.shutdownOutput();
@@ -6860,7 +6862,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             spi.getEffectiveSocketTimeout(srvSock) + " to " + rmtAddr + ":" + sock.getPort());
                     }
 
-                    spi.writeToSocket(sock, res, spi.getEffectiveSocketTimeout(srvSock));
+                    spi.writeToSocket(sock, spi.socketStream(sock), res, spi.getEffectiveSocketTimeout(srvSock));
 
                     // It can happen if a remote node is stopped and it has a loopback address in the list of addresses,
                     // the local node sends a handshake request message on the loopback address, so we get here.

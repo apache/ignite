@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
@@ -34,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Ignore;
@@ -75,15 +75,6 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
     /** 2KB value size in bytes. */
     private static int TWO_KB_VAL_SIZE;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setMarshaller(createMarshaller());
-
-        return cfg;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -170,7 +161,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
             }
 
             @Override public JdkMarshaller jdkMarshaller() {
-                return new JdkMarshaller();
+                return Marshallers.jdk();
             }
         });
 

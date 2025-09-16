@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.UUID;
@@ -39,14 +38,11 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingleUpdateRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Filter. */
     private CacheEntryPredicate[] filter;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearAtomicSingleUpdateFilterRequest() {
         // No-op.
@@ -144,7 +140,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -152,7 +148,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
 
         switch (writer.state()) {
             case 12:
-                if (!writer.writeObjectArray("filter", filter, MessageCollectionItemType.MSG))
+                if (!writer.writeObjectArray(filter, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -166,15 +162,12 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 12:
-                filter = reader.readObjectArray("filter", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
+                filter = reader.readObjectArray(MessageCollectionItemType.MSG, CacheEntryPredicate.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -183,17 +176,12 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
 
         }
 
-        return reader.afterMessageRead(GridNearAtomicSingleUpdateFilterRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 127;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 13;
     }
 
     /** {@inheritDoc} */

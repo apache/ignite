@@ -125,4 +125,11 @@ public interface PageSupport {
      * @return {@code True} if the page is dirty.
      */
     public boolean isDirty(int grpId, long pageId, long page);
+
+    /**
+     * Gets information about page lock state.
+     *
+     * @param page Page pointer.
+     */
+    public String pageLockStateInfo(long page);
 }

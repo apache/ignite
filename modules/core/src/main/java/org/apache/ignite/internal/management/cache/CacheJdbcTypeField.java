@@ -21,14 +21,14 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.cache.store.jdbc.JdbcTypeField;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Data transfer object for {@link JdbcTypeField}.
  */
-public class CacheJdbcTypeField extends VisorDataTransferObject {
+public class CacheJdbcTypeField extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -103,7 +103,7 @@ public class CacheJdbcTypeField extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         dbName = U.readString(in);
         dbType = in.readInt();
         javaName = U.readString(in);

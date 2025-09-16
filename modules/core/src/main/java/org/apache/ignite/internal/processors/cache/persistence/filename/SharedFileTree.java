@@ -27,7 +27,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.DB_DEFAULT_FOLDER;
 
 /**
  * Provides access to directories shared between all local nodes.
@@ -37,17 +36,20 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.P
  * ├── db                                                                       ← db (shared between all local nodes).
  * │  ├── binary_meta                                                           ← binaryMetaRoot (shared between all local nodes).
  * │  ├── marshaller                                                            ← marshaller (shared between all local nodes).
- * └── snapshots                                                                ← snapshotRoot (shared between all local nodes).
+ * └── snapshots                                                                ← snpsRoot (shared between all local nodes).
  * </pre>
  *
  * @see NodeFileTree
  */
 public class SharedFileTree {
     /** Name of binary metadata folder. */
-    public static final String BINARY_METADATA_DIR = "binary_meta";
+    protected static final String BINARY_METADATA_DIR = "binary_meta";
 
     /** Name of marshaller mappings folder. */
     public static final String MARSHALLER_DIR = "marshaller";
+
+    /** Database default folder. */
+    protected static final String DB_DIR = "db";
 
     /** Root(work) directory. */
     protected final File root;
@@ -65,7 +67,7 @@ public class SharedFileTree {
      * @param root Root directory.
      * @param snpsRoot Snapshot path.
      */
-    private SharedFileTree(File root, String snpsRoot) {
+    protected SharedFileTree(File root, String snpsRoot) {
         A.notNull(root, "Root directory");
 
         this.root = root;
@@ -73,8 +75,8 @@ public class SharedFileTree {
 
         String rootStr = root.getAbsolutePath();
 
-        marshaller = Paths.get(rootStr, DB_DEFAULT_FOLDER, MARSHALLER_DIR).toFile();
-        binaryMetaRoot = Paths.get(rootStr, DB_DEFAULT_FOLDER, BINARY_METADATA_DIR).toFile();
+        marshaller = Paths.get(rootStr, DB_DIR, MARSHALLER_DIR).toFile();
+        binaryMetaRoot = Paths.get(rootStr, DB_DIR, BINARY_METADATA_DIR).toFile();
     }
 
     /**
@@ -95,7 +97,7 @@ public class SharedFileTree {
      * @param cfg Config to get {@code root} directory from.
      */
     public SharedFileTree(IgniteConfiguration cfg) {
-        this(root(cfg), cfg.getSnapshotPath());
+        this(resolveRoot(cfg), cfg.getSnapshotPath());
     }
 
     /**
@@ -103,6 +105,13 @@ public class SharedFileTree {
      */
     public File root() {
         return root;
+    }
+
+    /**
+     * @return Path to the {@code db} directory inside {@link #root()}.
+     */
+    public File db() {
+        return new File(root, DB_DIR);
     }
 
     /**
@@ -202,7 +211,7 @@ public class SharedFileTree {
      * @param cfg Ignite config.
      * @return Root directory.
      */
-    private static File root(IgniteConfiguration cfg) {
+    protected static File resolveRoot(IgniteConfiguration cfg) {
         try {
             return new File(U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome()));
         }

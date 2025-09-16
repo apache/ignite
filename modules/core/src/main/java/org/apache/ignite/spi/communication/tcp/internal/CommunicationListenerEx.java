@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.communication.tcp.internal;
 
-import java.io.Serializable;
 import java.nio.channels.Channel;
 import java.util.UUID;
 import org.apache.ignite.spi.communication.CommunicationListener;
@@ -25,7 +24,7 @@ import org.apache.ignite.spi.communication.CommunicationListener;
 /**
  * Extended communication SPI listener to provide {@link Channel} opened events.
  */
-public interface CommunicationListenerEx<T extends Serializable> extends CommunicationListener<T> {
+public interface CommunicationListenerEx<T> extends CommunicationListener<T> {
     /**
      * @param rmtNodeId Remote node id.
      * @param initMsg Init channel message.

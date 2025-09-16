@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.nio.ByteBuffer;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_TRANSFORMED;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
@@ -102,7 +102,7 @@ public class CacheObjectTransformerUtils {
 
         byte[] res = new byte[length];
 
-        U.arrayCopy(bytes, offset, res, 0, length);
+        GridUnsafe.arrayCopy(bytes, offset, res, 0, length);
 
         return res;
     }

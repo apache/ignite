@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * of them with optional fallback to normal hash map lookup.
  *
  */
-public class BinarySchemaRegistry {
+class BinarySchemaRegistry {
     /** Empty schema ID. */
     private static final int EMPTY = 0;
 
@@ -70,7 +70,7 @@ public class BinarySchemaRegistry {
      * @param schemaId Schema ID.
      * @return Schema or {@code null}.
      */
-    @Nullable public BinarySchema schema(int schemaId) {
+    @Nullable BinarySchema schema(int schemaId) {
         if (inline) {
             if (schemaId == schemaId1)
                 return schema1;

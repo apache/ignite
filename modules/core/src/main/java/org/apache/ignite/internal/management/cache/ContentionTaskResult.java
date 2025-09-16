@@ -25,14 +25,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  *
  */
-public class ContentionTaskResult extends VisorDataTransferObject {
+public class ContentionTaskResult extends IgniteDataTransferObject {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -86,8 +86,7 @@ public class ContentionTaskResult extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in
-    ) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         clusterInfos = U.readList(in);
         exceptions = U.readMap(in);
     }

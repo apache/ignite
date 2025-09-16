@@ -27,7 +27,6 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.util.Pair;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
-import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
@@ -94,7 +93,7 @@ public interface IgniteMapSetOp extends IgniteSetOp {
 
         RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(typeFactory);
 
-        builder.add("GROUP_KEY", typeFactory.createJavaType(GroupKey.class));
+        builder.add("ROW", getInput(0).getRowType());
         builder.add("COUNTERS", typeFactory.createJavaType(int[].class));
 
         return builder.build();

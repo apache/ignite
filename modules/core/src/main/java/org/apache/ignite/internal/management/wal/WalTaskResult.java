@@ -22,15 +22,15 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  *  Result of {@link WalTask}.
  */
-public class WalTaskResult extends VisorDataTransferObject {
+public class WalTaskResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -100,7 +100,7 @@ public class WalTaskResult extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         exceptions = U.readMap(in);
         results = U.readMap(in);
         nodesInfo = U.readMap(in);

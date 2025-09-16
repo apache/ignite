@@ -41,7 +41,7 @@ public abstract class AbstractBinaryArraysTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useBinaryArrays));
-        BinaryArray.initUseBinaryArrays();
+        BinaryUtils.initUseBinaryArrays();
 
         super.beforeTest();
     }
@@ -51,6 +51,6 @@ public abstract class AbstractBinaryArraysTest extends GridCommonAbstractTest {
         super.afterTest();
 
         System.clearProperty(IGNITE_USE_BINARY_ARRAYS);
-        BinaryArray.initUseBinaryArrays();
+        BinaryUtils.initUseBinaryArrays();
     }
 }

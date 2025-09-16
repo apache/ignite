@@ -682,4 +682,18 @@ public class OffheapReadWriteLock {
                 return;
         }
     }
+
+    /**
+     * Information about lock state.
+     *
+     * @param lock Lock address.
+     */
+    public String stateInfo(long lock) {
+        long state = GridUnsafe.getLongVolatile(null, lock);
+
+        return "tag=" + tag(state) +
+            ", lockCount=" + lockCount(state) +
+            ", writersWaitCount=" + writersWaitCount(state) +
+            ", readersWaitCount=" + readersWaitCount(state);
+    }
 }

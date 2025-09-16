@@ -722,7 +722,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         tx.applicationAttributes(appAttrs);
 
-        return onCreated(sysCacheCtx, tx);
+        onCreated(sysCacheCtx, tx);
+
+        tx.initTimeoutHandler();
+
+        return tx;
     }
 
     /**

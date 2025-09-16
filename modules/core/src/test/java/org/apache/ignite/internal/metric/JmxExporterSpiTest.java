@@ -1127,7 +1127,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
         for (int i = 0; i < 10; i++)
             cache.put(i, i);
 
-        TabularDataSupport view = filteredSystemView(ignite, CACHE_GRP_PAGE_LIST_VIEW, U.map(
+        TabularDataSupport view = filteredSystemView(ignite, CACHE_GRP_PAGE_LIST_VIEW, Map.of(
             CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId(cacheName),
             CachePagesListViewWalker.PARTITION_ID_FILTER, 0,
             CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
@@ -1135,7 +1135,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
 
         assertEquals(1, view.size());
 
-        view = filteredSystemView(ignite, CACHE_GRP_PAGE_LIST_VIEW, U.map(
+        view = filteredSystemView(ignite, CACHE_GRP_PAGE_LIST_VIEW, Map.of(
             CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId(cacheName),
             CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
         ));

@@ -63,7 +63,7 @@ public class PerformanceStatisticsCommand extends CommandRegistryImpl {
         }
 
         /** {@inheritDoc} */
-        @Override protected void readExternalData(byte protoVer, ObjectInput in) {
+        @Override protected void readExternalData(ObjectInput in) {
             // No-op.
         }
     }

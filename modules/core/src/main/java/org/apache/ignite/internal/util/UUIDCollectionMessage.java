@@ -35,9 +35,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class UUIDCollectionMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @GridDirectCollection(UUID.class)
     private Collection<UUID> uuids;
 
@@ -76,16 +73,11 @@ public class UUIDCollectionMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -93,7 +85,7 @@ public class UUIDCollectionMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection("uuids", uuids, MessageCollectionItemType.UUID))
+                if (!writer.writeCollection(uuids, MessageCollectionItemType.UUID))
                     return false;
 
                 writer.incrementState();
@@ -107,12 +99,9 @@ public class UUIDCollectionMessage implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                uuids = reader.readCollection("uuids", MessageCollectionItemType.UUID);
+                uuids = reader.readCollection(MessageCollectionItemType.UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -121,17 +110,12 @@ public class UUIDCollectionMessage implements Message {
 
         }
 
-        return reader.afterMessageRead(UUIDCollectionMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 115;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

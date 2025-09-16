@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.messaging;
 
 import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
@@ -57,7 +57,7 @@ public class PlatformMessageLocalFilter implements PlatformMessageFilter {
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = platformCtx.writer(out);
+            BinaryWriterEx writer = platformCtx.writer(out);
 
             writer.writeObject(uuid);
             writer.writeObject(m);

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,7 +34,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Query.
  */
-public class GridCacheSqlQuery implements Message {
+public class GridCacheSqlQuery implements Message, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -85,7 +86,7 @@ public class GridCacheSqlQuery implements Message {
     private transient boolean treatPartitionedAsReplicated;
 
     /**
-     * For {@link Message}.
+     * Empty constructor.
      */
     public GridCacheSqlQuery() {
         // No-op.
@@ -152,11 +153,6 @@ public class GridCacheSqlQuery implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheSqlQuery.class, this);
     }
@@ -166,7 +162,7 @@ public class GridCacheSqlQuery implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -174,25 +170,25 @@ public class GridCacheSqlQuery implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("alias", alias))
+                if (!writer.writeString(alias))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeUuid("node", node))
+                if (!writer.writeUuid(node))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeIntArray("paramIdxs", paramIdxs))
+                if (!writer.writeIntArray(paramIdxs))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeString("qry", qry))
+                if (!writer.writeString(qry))
                     return false;
 
                 writer.incrementState();
@@ -206,12 +202,9 @@ public class GridCacheSqlQuery implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                alias = reader.readString("alias");
+                alias = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -219,7 +212,7 @@ public class GridCacheSqlQuery implements Message {
                 reader.incrementState();
 
             case 1:
-                node = reader.readUuid("node");
+                node = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -227,7 +220,7 @@ public class GridCacheSqlQuery implements Message {
                 reader.incrementState();
 
             case 2:
-                paramIdxs = reader.readIntArray("paramIdxs");
+                paramIdxs = reader.readIntArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -235,7 +228,7 @@ public class GridCacheSqlQuery implements Message {
                 reader.incrementState();
 
             case 3:
-                qry = reader.readString("qry");
+                qry = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -244,17 +237,12 @@ public class GridCacheSqlQuery implements Message {
 
         }
 
-        return reader.afterMessageRead(GridCacheSqlQuery.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 112;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
     }
 
     /**

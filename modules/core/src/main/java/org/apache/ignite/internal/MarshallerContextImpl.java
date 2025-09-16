@@ -32,11 +32,18 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
+import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.compute.ComputeJobContext;
+import org.apache.ignite.compute.ComputeLoadBalancer;
+import org.apache.ignite.compute.ComputeTaskContinuousMapper;
+import org.apache.ignite.compute.ComputeTaskSession;
+import org.apache.ignite.internal.executor.GridExecutorService;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
@@ -51,8 +58,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.NotNull;
@@ -108,9 +118,10 @@ public class MarshallerContextImpl implements MarshallerContext {
      */
     public MarshallerContextImpl(@Nullable Collection<PluginProvider> plugins, IgnitePredicate<String> clsFilter) {
         this.clsFilter = clsFilter;
-        this.jdkMarsh = new JdkMarshaller(clsFilter);
+        this.jdkMarsh = Marshallers.jdk(clsFilter);
 
         initializeCaches();
+        initializeMarshallerExclusions();
 
         try {
             ClassLoader ldr = U.gridClassLoader();
@@ -141,6 +152,35 @@ public class MarshallerContextImpl implements MarshallerContext {
         catch (IOException e) {
             throw new IllegalStateException("Failed to initialize marshaller context.", e);
         }
+    }
+
+    /** */
+    private void initializeMarshallerExclusions() {
+        try {
+            MarshallerExclusions.exclude(Class.forName("org.springframework.context.ApplicationContext"));
+        }
+        catch (Exception ignored) {
+            // No-op.
+        }
+
+        // Non-Ignite classes.
+        MarshallerExclusions.exclude(MBeanServer.class);
+        MarshallerExclusions.exclude(ExecutorService.class);
+        MarshallerExclusions.exclude(ClassLoader.class);
+        MarshallerExclusions.exclude(Thread.class);
+
+        // Ignite classes.
+        MarshallerExclusions.exclude(IgniteLogger.class);
+        MarshallerExclusions.exclude(ComputeTaskSession.class);
+        MarshallerExclusions.exclude(ComputeLoadBalancer.class);
+        MarshallerExclusions.exclude(ComputeJobContext.class);
+        MarshallerExclusions.exclude(Marshaller.class);
+        MarshallerExclusions.exclude(GridComponent.class);
+        MarshallerExclusions.exclude(ComputeTaskContinuousMapper.class);
+
+        // Ignite classes.
+        MarshallerExclusions.include(GridLoggerProxy.class);
+        MarshallerExclusions.include(GridExecutorService.class);
     }
 
     /** */
@@ -599,7 +639,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         if (CU.isPersistenceEnabled(ctx.config()))
             fileStore.restoreMappings(this);
 
-        MarshallerUtils.setNodeName(jdkMarsh, ctx.igniteInstanceName());
+        jdkMarsh.nodeName(ctx.igniteInstanceName());
     }
 
     /**

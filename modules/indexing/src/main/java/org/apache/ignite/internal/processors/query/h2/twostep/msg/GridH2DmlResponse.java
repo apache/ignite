@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshalla
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -37,9 +36,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Response to remote DML request.
  */
 public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Request id. */
     @GridToStringInclude
     private long reqId;
@@ -111,7 +107,7 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
     }
 
     /** {@inheritDoc} */
-    @Override public void marshall(Marshaller m) {
+    @Override public void marshall(BinaryMarshaller m) {
         if (errKeysBytes != null || errKeys == null)
             return;
 
@@ -125,22 +121,14 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
 
     /** {@inheritDoc} */
     @SuppressWarnings("IfMayBeConditional")
-    @Override public void unmarshall(Marshaller m, GridKernalContext ctx) {
+    @Override public void unmarshall(GridKernalContext ctx) {
         if (errKeys != null || errKeysBytes == null)
             return;
 
-        try {
-            final ClassLoader ldr = U.resolveClassLoader(ctx.config());
+        final ClassLoader ldr = U.resolveClassLoader(ctx.config());
 
-            if (m instanceof BinaryMarshaller)
-                // To avoid deserializing of enum types.
-                errKeys = BinaryUtils.rawArrayFromBinary(((BinaryMarshaller)m).binaryMarshaller().unmarshal(errKeysBytes, ldr));
-            else
-                errKeys = U.unmarshal(m, errKeysBytes, ldr);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        // To avoid deserializing of enum types.
+        errKeys = BinaryUtils.rawArrayFromBinary(ctx.marshaller().binaryMarshaller().unmarshal(errKeysBytes, ldr));
     }
 
     /** {@inheritDoc} */
@@ -153,7 +141,7 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -161,25 +149,25 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("err", err))
+                if (!writer.writeString(err))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByteArray("errKeysBytes", errKeysBytes))
+                if (!writer.writeByteArray(errKeysBytes))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("reqId", reqId))
+                if (!writer.writeLong(reqId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeLong("updCnt", updCnt))
+                if (!writer.writeLong(updCnt))
                     return false;
 
                 writer.incrementState();
@@ -193,12 +181,9 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                err = reader.readString("err");
+                err = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -206,7 +191,7 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 1:
-                errKeysBytes = reader.readByteArray("errKeysBytes");
+                errKeysBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -214,7 +199,7 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 2:
-                reqId = reader.readLong("reqId");
+                reqId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -222,7 +207,7 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 3:
-                updCnt = reader.readLong("updCnt");
+                updCnt = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -231,7 +216,7 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
 
         }
 
-        return reader.afterMessageRead(GridH2DmlResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -239,14 +224,5 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
         return -56;
     }
 
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op
-    }
 }
 

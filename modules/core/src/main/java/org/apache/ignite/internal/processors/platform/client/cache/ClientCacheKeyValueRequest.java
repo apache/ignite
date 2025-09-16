@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 
 /**
  * Cache request involving key and value.
@@ -31,7 +31,7 @@ public abstract class ClientCacheKeyValueRequest extends ClientCacheKeyRequest {
      *
      * @param reader Reader.
      */
-    ClientCacheKeyValueRequest(BinaryRawReaderEx reader) {
+    ClientCacheKeyValueRequest(BinaryReaderEx reader) {
         super(reader);
 
         val = reader.readObjectDetached();

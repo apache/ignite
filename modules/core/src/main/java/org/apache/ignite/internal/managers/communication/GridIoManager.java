@@ -44,6 +44,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -167,6 +168,8 @@ import static org.apache.ignite.internal.processors.tracing.MTC.support;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_ORDERED_PROCESS;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_REGULAR_PROCESS;
 import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.localNode;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
 import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.threadProcessingMessage;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_PAIRED_CONN;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIMIZED_RMV;
@@ -232,7 +235,7 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * @see IgniteMessaging
  * @see TransmissionHandler
  */
-public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializable>> {
+public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> {
     /** Io communication metrics registry name. */
     public static final String COMM_METRICS = metricName("io", "communication");
 
@@ -328,7 +331,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private final ConcurrentMap<UUID, Deque<DelayedMessage>> waitMap = new ConcurrentHashMap<>();
 
     /** Communication message listener. */
-    private CommunicationListenerEx<Serializable> commLsnr;
+    private CommunicationListenerEx<Object> commLsnr;
 
     /** Grid marshaller. */
     private final Marshaller marsh;
@@ -382,7 +385,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         locNodeId = ctx.localNodeId();
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
 
         synchronized (sysLsnrsMux) {
             sysLsnrs = new GridMessageListener[GridTopic.values().length];
@@ -430,14 +433,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         else {
             formatter = new MessageFormatter() {
-                @Override public MessageWriter writer(UUID rmtNodeId) {
+                @Override public MessageWriter writer(UUID rmtNodeId, MessageFactory msgFactory) {
                     assert rmtNodeId != null;
 
-                    return new DirectMessageWriter();
+                    return new DirectMessageWriter(msgFactory);
                 }
 
                 @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
-                    return new DirectMessageReader(msgFactory);
+                    return new DirectMessageReader(msgFactory, ctx.cacheObjects());
                 }
             };
         }
@@ -463,7 +466,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         msgFactory = new IgniteMessageFactoryImpl(msgs);
 
-        CommunicationSpi<Serializable> spi = getSpi();
+        CommunicationSpi<Object> spi = getSpi();
 
         if ((CommunicationSpi<?>)spi instanceof TcpCommunicationSpi)
             getTcpCommunicationSpi().setConnectionRequestor(invConnHandler);
@@ -484,8 +487,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         ioMetric.register(RCVD_BYTES_CNT, spi::getReceivedBytesCount, "Received bytes count.");
 
-        getSpi().setListener(commLsnr = new CommunicationListenerEx<Serializable>() {
-            @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {
+        getSpi().setListener(commLsnr = new CommunicationListenerEx<Object>() {
+            @Override public void onMessage(UUID nodeId, Object msg, IgniteRunnable msgC) {
                 try {
                     onMessage0(nodeId, (GridIoMessage)msg, msgC);
                 }
@@ -501,7 +504,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     lsnr.onNodeDisconnected(nodeId);
             }
 
-            @Override public void onChannelOpened(UUID rmtNodeId, Serializable initMsg, Channel channel) {
+            @Override public void onChannelOpened(UUID rmtNodeId, Object initMsg, Channel channel) {
                 try {
                     onChannelOpened0(rmtNodeId, (GridIoMessage)initMsg, channel);
                 }
@@ -1866,7 +1869,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         Byte oldPlc = CUR_PLC.get();
 
-        boolean change = !F.eq(oldPlc, plc);
+        boolean change = !Objects.equals(oldPlc, plc);
 
         if (change)
             CUR_PLC.set(plc);
@@ -2398,9 +2401,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             );
         }
         else {
-            ClusterNode locNode = F.find(nodes, null, F.localNode(locNodeId));
+            ClusterNode locNode = F.find(nodes, null, localNode(locNodeId));
 
-            Collection<? extends ClusterNode> rmtNodes = F.view(nodes, F.remoteNodes(locNodeId));
+            Collection<? extends ClusterNode> rmtNodes = F.view(nodes, remoteNodes(locNodeId));
 
             if (!rmtNodes.isEmpty())
                 sendToGridTopic(rmtNodes, TOPIC_COMM_USER, ioMsg, PUBLIC_POOL);
@@ -3620,7 +3623,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         ioMsg.topic(msgTopic); // Save topic to avoid future unmarshallings.
                     }
 
-                    if (!F.eq(topic, msgTopic))
+                    if (!Objects.equals(topic, msgTopic))
                         return;
 
                     if (msgBody == null) {
@@ -3663,7 +3666,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
             GridUserMessageListener l = (GridUserMessageListener)o;
 
-            return F.eq(predLsnr, l.predLsnr) && F.eq(topic, l.topic);
+            return Objects.equals(predLsnr, l.predLsnr) && Objects.equals(topic, l.topic);
         }
 
         /** {@inheritDoc} */

@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -656,7 +657,7 @@ public class IgniteSqlSkipReducerOnUpdateDmlFlagSelfTest extends AbstractIndexin
 
             Account other = (Account)obj;
 
-            return F.eq(name, other.name) && sn == other.sn && depo == other.depo;
+            return Objects.equals(name, other.name) && sn == other.sn && depo == other.depo;
         }
     }
 

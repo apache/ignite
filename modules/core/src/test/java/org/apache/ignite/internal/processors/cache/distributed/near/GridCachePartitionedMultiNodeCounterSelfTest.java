@@ -56,6 +56,7 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -240,8 +241,8 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackups(CNTR_KEY);
 
-        X.println("*** Affinity nodes [key=" + CNTR_KEY + ", nodes=" + U.nodeIds(affNodes) + ", igniteInstanceNames=" +
-            igniteInstanceNames(U.nodeIds(affNodes)) + ']');
+        X.println("*** Affinity nodes [key=" + CNTR_KEY + ", nodes=" + nodeIds(affNodes) + ", igniteInstanceNames=" +
+            igniteInstanceNames(nodeIds(affNodes)) + ']');
 
         assertEquals(1 + backups, affNodes.size());
 

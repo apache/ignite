@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Binary {@link TreeSet} write replacer.
  */
-public class BinaryTreeSetWriteReplacer implements BinaryWriteReplacer {
+class BinaryTreeSetWriteReplacer implements BinaryWriteReplacer {
     /** {@inheritDoc} */
     @Nullable @Override public Object replace(Object target) {
         assert target instanceof TreeSet;

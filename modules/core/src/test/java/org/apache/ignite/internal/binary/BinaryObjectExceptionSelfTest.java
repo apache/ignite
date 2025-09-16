@@ -90,7 +90,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
 
         b.deserialize(); // deserialize working
 
-        byte[] a = b.array();
+        byte[] a = b.bytes();
 
         int unexpectedCnt = 0;
 

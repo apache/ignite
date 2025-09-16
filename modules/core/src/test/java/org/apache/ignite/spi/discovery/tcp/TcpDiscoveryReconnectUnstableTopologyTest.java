@@ -133,7 +133,7 @@ public class TcpDiscoveryReconnectUnstableTopologyTest extends GridCommonAbstrac
     /**
      * @param ig Ignite.
      */
-    private TcpDiscoverySpi spi(Ignite ig) {
-        return (TcpDiscoverySpi)ig.configuration().getDiscoverySpi();
+    private TestTcpDiscoverySpi spi(Ignite ig) {
+        return (TestTcpDiscoverySpi)ig.configuration().getDiscoverySpi();
     }
 }

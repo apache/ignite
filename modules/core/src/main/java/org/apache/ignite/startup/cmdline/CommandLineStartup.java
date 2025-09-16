@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import javax.swing.ImageIcon;
@@ -39,8 +40,6 @@ import org.apache.ignite.IgniteState;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.IgnitionListener;
 import org.apache.ignite.SystemProperty;
-import org.apache.ignite.internal.binary.BinaryArray;
-import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -51,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.util.GridConfigurationFinder;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.lang.GridTuple3;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -89,7 +87,6 @@ public final class CommandLineStartup {
     /** Classes with Ignite system properties. */
     static final List<Class<?>> PROPS_CLS = new ArrayList<>(Arrays.asList(
         IgniteSystemProperties.class,
-        ExchangeContext.class,
         GridCacheMapEntry.class,
         LocalDeploymentSpi.class,
         GridCacheDatabaseSharedManager.class,
@@ -100,8 +97,7 @@ public final class CommandLineStartup {
         CacheContinuousQueryEventBuffer.class,
         CacheContinuousQueryHandler.class,
         OffheapReadWriteLock.class,
-        TcpCommunicationConfiguration.class,
-        BinaryArray.class
+        TcpCommunicationConfiguration.class
     ));
 
     static {
@@ -386,7 +382,7 @@ public final class CommandLineStartup {
         G.addListener(new IgnitionListener() {
             @Override public void onStateChange(String name, IgniteState state) {
                 // Skip all grids except loaded from the command line.
-                if (!F.eq(igniteInstanceName, name))
+                if (!Objects.equals(igniteInstanceName, name))
                     return;
 
                 if (state != STARTED)

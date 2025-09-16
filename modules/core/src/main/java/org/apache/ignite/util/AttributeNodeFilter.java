@@ -20,11 +20,11 @@ package org.apache.ignite.util;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -100,7 +100,7 @@ public class AttributeNodeFilter implements IgnitePredicate<ClusterNode> {
         Map<String, Object> nodeAttrs = node.attributes();
 
         for (Map.Entry<String, Object> attr : attrs.entrySet()) {
-            if (!F.eq(nodeAttrs.get(attr.getKey()), attr.getValue()))
+            if (!Objects.equals(nodeAttrs.get(attr.getKey()), attr.getValue()))
                 return false;
         }
 

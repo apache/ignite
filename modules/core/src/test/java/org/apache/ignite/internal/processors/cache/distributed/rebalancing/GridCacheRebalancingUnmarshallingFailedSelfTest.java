@@ -29,10 +29,6 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -48,9 +44,6 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
 
     /** Allows to change behavior of readExternal method. */
     protected static AtomicInteger readCnt = new AtomicInteger();
-
-    /** */
-    private volatile Marshaller marshaller;
 
     /** */
     private ListeningTestLogger customLog;
@@ -124,7 +117,6 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
         cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         iCfg.setCacheConfiguration(cfg);
-        iCfg.setMarshaller(marshaller);
         iCfg.setGridLogger(customLog);
 
         return iCfg;
@@ -135,42 +127,11 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
      */
     @Test
     public void testBinary() throws Exception {
-        marshaller = new BinaryMarshaller();
-
-        runTest();
-    }
-
-    /**
-     * @throws Exception e.
-     */
-    @Test
-    public void testOptimized() throws Exception {
-        marshaller = new OptimizedMarshaller();
-
-        runTest();
-    }
-
-    /**
-     * @throws Exception e.
-     */
-    @Test
-    public void testJdk() throws Exception {
-        marshaller = new JdkMarshaller();
-
-        runTest();
-    }
-
-    /**
-     * @throws Exception e.
-     */
-    private void runTest() throws Exception {
         customLog = new ListeningTestLogger(log);
 
         LogListener unmarshalErrorLogListener = LogListener.matches(UNMARSHALING_ERROR_PATTERN).atLeast(1).build();
 
         customLog.registerListener(unmarshalErrorLogListener);
-
-        assert marshaller != null;
 
         readCnt.set(Integer.MAX_VALUE);
 

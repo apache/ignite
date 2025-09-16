@@ -210,7 +210,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
                 final int expMsgs0 = expMsgs;
 
                 for (TcpCommunicationSpi spi : spis) {
-                    final TestListener lsnr = (TestListener)spi.getListener();
+                    final TestListener lsnr = U.field(spi, "lsnr");
 
                     GridTestUtils.waitForCondition(new GridAbsPredicate() {
                         @Override public boolean apply() {
@@ -316,7 +316,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
         final int expMsgs = sentMsgs + 100;
 
-        final TestListener lsnr = (TestListener)spi1.getListener();
+        final TestListener lsnr = U.field(spi1, "lsnr");
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {

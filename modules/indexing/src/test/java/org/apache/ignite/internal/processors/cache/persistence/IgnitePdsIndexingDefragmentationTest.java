@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
@@ -40,8 +39,7 @@ import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.defragmentation.DefragmentationFileUtils;
-import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
+import org.apache.ignite.internal.processors.cache.persistence.filename.CacheFileTree;
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
@@ -49,7 +47,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 
 /**
  * Defragmentation tests with enabled ignite-indexing.
@@ -118,7 +115,8 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         ig.cluster().state(ClusterState.ACTIVE);
 
-        NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
+        CacheConfiguration<?, ?> dfltCacheCfg = ig.cachex(DEFAULT_CACHE_NAME).configuration();
+        CacheFileTree cft = ig.context().pdsFolderResolver().fileTree().cacheTree(dfltCacheCfg);
 
         fillCache(keyMapper, ig.cache(DEFAULT_CACHE_NAME));
 
@@ -128,23 +126,22 @@ public class IgnitePdsIndexingDefragmentationTest extends IgnitePdsDefragmentati
 
         stopGrid(0);
 
-        File cacheStorage = ft.cacheStorage(true, GRP_NAME);
-
-        long oldIdxFileLen = new File(cacheStorage, partitionFileName(INDEX_PARTITION)).length();
+        long oldIdxFileLen = cft.partitionFile(INDEX_PARTITION).length();
 
         startGrid(0);
 
         waitForDefragmentation(0);
 
-        long newIdxFileLen = new File(cacheStorage, partitionFileName(INDEX_PARTITION)).length();
+        long newIdxFileLen = cft.partitionFile(INDEX_PARTITION).length();
 
         assertTrue(
             "newIdxFileLen=" + newIdxFileLen + ", oldIdxFileLen=" + oldIdxFileLen,
             newIdxFileLen <= oldIdxFileLen
         );
 
-        File completionMarkerFile = DefragmentationFileUtils.defragmentationCompletionMarkerFile(cacheStorage);
-        assertTrue(Arrays.toString(cacheStorage.listFiles()), completionMarkerFile.exists());
+        File completionMarkerFile = cft.defragmentationCompletionMarkerFile();
+
+        assertTrue("Completion marker file must exists", completionMarkerFile.exists());
 
         stopGrid(0);
 

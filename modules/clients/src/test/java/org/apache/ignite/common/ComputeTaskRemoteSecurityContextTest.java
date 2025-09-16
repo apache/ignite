@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.Ignite;
@@ -46,21 +45,13 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientCompute;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.internal.client.GridClientNode;
 import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -79,7 +70,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 import static org.apache.ignite.events.EventType.EVT_TASK_REDUCED;
 import static org.apache.ignite.events.EventType.EVT_TASK_STARTED;
 import static org.apache.ignite.events.EventType.EVT_TASK_TIMEDOUT;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.RESULT;
 
@@ -184,33 +174,6 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractEventSecurityC
             .setClientConnectorConfiguration(new ClientConnectorConfiguration()
                 .setThinClientConfiguration(new ThinClientConfiguration()
                     .setMaxActiveComputeTasksPerConnection(1)));
-    }
-
-    /** Tests task execution security context in case task was initiated from the {@link GridClient}. */
-    @Test
-    public void testGridClient() throws Exception {
-        Assume.assumeFalse(failWithTimeout);
-
-        GridClientConfiguration cfg = new GridClientConfiguration()
-            .setServers(singletonList("127.0.0.1:11211"))
-            .setSecurityCredentialsProvider(new SecurityCredentialsBasicProvider(new SecurityCredentials(GRID_CLIENT_LOGIN, "")));
-
-        try (GridClient cli = GridClientFactory.start(cfg)) {
-            GridClientNode taskReqRecipient = cli.compute().nodes().stream()
-                .filter(n -> "crd".equals(n.attribute(ATTR_IGNITE_INSTANCE_NAME)))
-                .findFirst().orElseThrow(NoSuchElementException::new);
-
-            GridClientCompute comp = cli.compute().projection(taskReqRecipient);
-
-            String taskName = mapAsync ? MapAsyncTestTask.class.getName() : TestTask.class.getName();
-
-            if (async)
-                comp.executeAsync(taskName, GRID_CLIENT_LOGIN).get();
-            else
-                comp.execute(taskName, GRID_CLIENT_LOGIN);
-
-            checkTaskEvents("crd", GRID_CLIENT_LOGIN, REDUCER_SUCCEEDED_TASK_EVENTS, MAP_NODE_SUCCEEDED_TASK_EVENTS);
-        }
     }
 
     /** Tests task execution security context in case task was initiated from the {@link IgniteClient}. */

@@ -74,7 +74,6 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.dumpPartFileName;
 import static org.apache.ignite.internal.util.IgniteUtils.toLong;
 
 /**
@@ -212,10 +211,10 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
             int grp = e.getKey();
 
-            File grpDumpDir = sft.cacheStorage(cctx.cache().cacheGroup(grp).config());
-
-            if (!grpDumpDir.mkdirs())
-                throw new IgniteCheckedException("Dump directory can't be created: " + grpDumpDir);
+            for (File grpDumpDir : sft.cacheStorages(cctx.cache().cacheGroup(grp).config())) {
+                if (!grpDumpDir.mkdirs())
+                    throw new IgniteCheckedException("Dump directory can't be created: " + grpDumpDir);
+            }
 
             CacheGroupContext gctx = cctx.cache().cacheGroup(grp);
 
@@ -234,9 +233,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         return processed.keySet().stream().map(grp -> runAsync(() -> {
             CacheGroupContext gctx = cctx.cache().cacheGroup(grp);
 
-            File grpDir = sft.cacheStorage(gctx.config());
-
-            IgniteUtils.ensureDirectory(grpDir, "dump group directory", null);
+            for (File grpDir : sft.cacheStorages(gctx.config()))
+                IgniteUtils.ensureDirectory(grpDir, "dump group directory", null);
 
             for (GridCacheContext<?, ?> cacheCtx : gctx.caches()) {
                 DynamicCacheDescriptor desc = cctx.kernalContext().cache().cacheDescriptor(cacheCtx.cacheId());
@@ -486,7 +484,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
                 for (int cache : gctx.cacheIds())
                     changed.put(cache, new GridConcurrentHashSet<>());
 
-                File dumpFile = new File(sft.cacheStorage(gctx.config()), dumpPartFileName(part, compress));
+                File dumpFile = sft.dumpPartition(gctx.config(), part, compress);
 
                 if (!dumpFile.createNewFile())
                     throw new IgniteException("Dump file can't be created: " + dumpFile);

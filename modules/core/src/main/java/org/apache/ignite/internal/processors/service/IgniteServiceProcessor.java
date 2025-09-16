@@ -1691,7 +1691,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
 
         return spi instanceof TcpDiscoverySpi ?
             ((TcpDiscoverySpi)spi).isLocalNodeCoordinator() :
-            F.eq(ctx.discovery().localNode(), coordinator());
+            Objects.equals(ctx.discovery().localNode(), coordinator());
     }
 
     /**

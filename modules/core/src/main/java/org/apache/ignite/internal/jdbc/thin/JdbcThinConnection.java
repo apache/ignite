@@ -77,12 +77,12 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.MarshallerPlatformIds;
-import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.jdbc2.JdbcBlob;
 import org.apache.ignite.internal.jdbc2.JdbcClob;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
@@ -121,12 +121,12 @@ import org.apache.ignite.internal.sql.optimizer.affinity.PartitionClientContext;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -297,7 +297,7 @@ public class JdbcThinConnection implements Connection {
         netTimeout = connProps.getConnectionTimeout();
         qryTimeout = connProps.getQueryTimeout();
         maintenanceExecutor = Executors.newScheduledThreadPool(2,
-            new IgniteThreadFactory(ctx.configuration().getIgniteInstanceName(), "jdbc-maintenance"));
+            new IgniteThreadFactory(ctx.igniteInstanceName(), "jdbc-maintenance"));
 
         schema = JdbcUtils.normalizeSchema(connProps.getSchema());
 
@@ -324,11 +324,12 @@ public class JdbcThinConnection implements Connection {
         BinaryMarshaller marsh = new BinaryMarshaller();
         marsh.setContext(marshCtx);
 
-        BinaryConfiguration binCfg = new BinaryConfiguration().setCompactFooter(true);
-
-        BinaryContext ctx = new BinaryContext(metaHnd, new IgniteConfiguration(), new NullLogger());
-
-        ctx.configure(marsh, binCfg);
+        BinaryContext ctx = U.binaryContext(
+            metaHnd,
+            marsh,
+            new IgniteConfiguration().setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(true)),
+            NullLogger.INSTANCE
+        );
 
         ctx.registerUserTypesSchema();
 
@@ -1608,7 +1609,7 @@ public class JdbcThinConnection implements Connection {
         void addBatch(String sql, List<Object> args) throws SQLException {
             checkError();
 
-            boolean newQry = (args == null || !F.eq(lastStreamQry, sql));
+            boolean newQry = (args == null || !Objects.equals(lastStreamQry, sql));
 
             // Providing null as SQL here allows for recognizing subbatches on server and handling them more efficiently.
             JdbcQuery q = new JdbcQuery(newQry ? sql : null, args != null ? args.toArray() : null);
@@ -2465,7 +2466,7 @@ public class JdbcThinConnection implements Connection {
 
         /** {@inheritDoc} */
         @Override public JdkMarshaller jdkMarshaller() {
-            return new JdkMarshaller();
+            return Marshallers.jdk();
         }
     }
 
@@ -2474,7 +2475,7 @@ public class JdbcThinConnection implements Connection {
      */
     private class JdbcBinaryMetadataHandler extends BlockingJdbcChannel implements BinaryMetadataHandler {
         /** In-memory metadata cache. */
-        private final BinaryMetadataHandler cache = BinaryCachingMetadataHandler.create();
+        private final BinaryMetadataHandler cache = BinaryUtils.cachingMetadataHandler();
 
         /** {@inheritDoc} */
         @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered)

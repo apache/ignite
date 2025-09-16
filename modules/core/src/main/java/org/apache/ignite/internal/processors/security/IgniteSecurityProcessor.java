@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.security;
 import java.security.Security;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -441,7 +442,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
         String rmtCls = node.attribute(ATTR_GRID_SEC_PROC_CLASS);
         String locCls = secPrc.getClass().getName();
 
-        if (!F.eq(locCls, rmtCls)) {
+        if (!Objects.equals(locCls, rmtCls)) {
             return new IgniteNodeValidationResult(node.id(),
                 String.format(MSG_SEC_PROC_CLS_IS_INVALID, ctx.localNodeId(), node.id(), locCls, rmtCls),
                 String.format(MSG_SEC_PROC_CLS_IS_INVALID, node.id(), ctx.localNodeId(), rmtCls, locCls));

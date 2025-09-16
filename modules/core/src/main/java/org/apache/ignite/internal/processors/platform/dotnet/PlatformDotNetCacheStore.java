@@ -29,8 +29,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -172,15 +172,15 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
         try {
             final GridTuple<V> val = new GridTuple<>();
 
-            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
-                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
+            doInvoke(new IgniteInClosureX<BinaryWriterEx>() {
+                @Override public void applyx(BinaryWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_LOAD);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
                     writer.writeObject(key);
                 }
-            }, new IgniteInClosureX<BinaryRawReaderEx>() {
-                @Override public void applyx(BinaryRawReaderEx reader) {
+            }, new IgniteInClosureX<BinaryReaderEx>() {
+                @Override public void applyx(BinaryReaderEx reader) {
                     val.set((V)reader.readObjectDetached());
                 }
             });
@@ -199,8 +199,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             final Collection keys0 = (Collection)keys;
 
-            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
-                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
+            doInvoke(new IgniteInClosureX<BinaryWriterEx>() {
+                @Override public void applyx(BinaryWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_LOAD_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
@@ -210,8 +210,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     for (Object o : keys0)
                         writer.writeObject(o);
                 }
-            }, new IgniteInClosureX<BinaryRawReaderEx>() {
-                @Override public void applyx(BinaryRawReaderEx reader) {
+            }, new IgniteInClosureX<BinaryReaderEx>() {
+                @Override public void applyx(BinaryReaderEx reader) {
                     int cnt = reader.readInt();
 
                     for (int i = 0; i < cnt; i++)
@@ -229,15 +229,15 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @Override public void loadCache(final IgniteBiInClosure<K, V> clo, @Nullable final Object... args) {
         try {
-            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
-                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
+            doInvoke(new IgniteInClosureX<BinaryWriterEx>() {
+                @Override public void applyx(BinaryWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_LOAD_CACHE);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
                     writer.writeObjectArray(args);
                 }
-            }, new IgniteInClosureX<BinaryRawReaderEx>() {
-                @Override public void applyx(BinaryRawReaderEx reader) {
+            }, new IgniteInClosureX<BinaryReaderEx>() {
+                @Override public void applyx(BinaryReaderEx reader) {
                     int cnt = reader.readInt();
 
                     for (int i = 0; i < cnt; i++)
@@ -253,8 +253,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @Override public void write(final Cache.Entry<? extends K, ? extends V> entry) {
         try {
-            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
-                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
+            doInvoke(new IgniteInClosureX<BinaryWriterEx>() {
+                @Override public void applyx(BinaryWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_PUT);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
@@ -272,8 +272,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     @Override public void writeAll(final Collection<Cache.Entry<? extends K, ? extends V>> entries) {
         assert entries != null;
         try {
-            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
-                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
+            doInvoke(new IgniteInClosureX<BinaryWriterEx>() {
+                @Override public void applyx(BinaryWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_PUT_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
@@ -295,8 +295,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @Override public void delete(final Object key) {
         try {
-            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
-                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
+            doInvoke(new IgniteInClosureX<BinaryWriterEx>() {
+                @Override public void applyx(BinaryWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_RMV);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
@@ -312,8 +312,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @Override public void deleteAll(final Collection<?> keys) {
         try {
-            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
-                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
+            doInvoke(new IgniteInClosureX<BinaryWriterEx>() {
+                @Override public void applyx(BinaryWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_RMV_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
@@ -333,8 +333,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @Override public void sessionEnd(final boolean commit) {
         try {
-            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
-                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
+            doInvoke(new IgniteInClosureX<BinaryWriterEx>() {
+                @Override public void applyx(BinaryWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_SES_END);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
@@ -392,7 +392,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = platformCtx.writer(out);
+            BinaryWriterEx writer = platformCtx.writer(out);
 
             write(writer, convertBinary);
 
@@ -415,7 +415,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * @param writer Writer.
      * @param convertBinary Convert binary flag.
      */
-    protected void write(BinaryRawWriterEx writer, boolean convertBinary) {
+    protected void write(BinaryWriterEx writer, boolean convertBinary) {
         writer.writeBoolean(convertBinary);
         writer.writeObjectDetached(nativeFactory);
 
@@ -462,12 +462,12 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * @return Result.
      * @throws org.apache.ignite.IgniteCheckedException If failed.
      */
-    protected int doInvoke(IgniteInClosure<BinaryRawWriterEx> task, IgniteInClosure<BinaryRawReaderEx> readClo)
+    protected int doInvoke(IgniteInClosure<BinaryWriterEx> task, IgniteInClosure<BinaryReaderEx> readClo)
         throws IgniteCheckedException {
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = platformCtx.writer(out);
+            BinaryWriterEx writer = platformCtx.writer(out);
 
             writer.writeLong(ptr);
 
@@ -485,7 +485,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
             }
 
             if (readClo != null) {
-                BinaryRawReaderEx reader = platformCtx.reader(mem);
+                BinaryReaderEx reader = platformCtx.reader(mem);
 
                 readClo.apply(reader);
             }

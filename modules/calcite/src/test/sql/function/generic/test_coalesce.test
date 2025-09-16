@@ -50,3 +50,13 @@ SELECT COALESCE(CAST(a AS VARCHAR), 11) FROM test3 ORDER BY a;
 11
 12
 13
+
+query T
+SELECT COALESCE(null, null, 'first', 'second', null)
+----
+first
+
+query T
+SELECT COALESCE(COALESCE(null::varchar, 'world'), 'blabla')
+----
+world

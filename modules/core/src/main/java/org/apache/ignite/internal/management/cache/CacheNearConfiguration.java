@@ -23,10 +23,10 @@ import java.io.ObjectOutput;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.evictionPolic
 /**
  * Data transfer object for near cache configuration properties.
  */
-public class CacheNearConfiguration extends VisorDataTransferObject {
+public class CacheNearConfiguration extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -114,7 +114,7 @@ public class CacheNearConfiguration extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         nearEnabled = in.readBoolean();
         nearStartSize = in.readInt();
         nearEvictPlc = U.readString(in);

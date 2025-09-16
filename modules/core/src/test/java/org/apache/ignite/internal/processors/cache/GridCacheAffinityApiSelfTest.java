@@ -39,6 +39,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 
 /**
  * Affinity API tests.
@@ -128,7 +129,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
                 ClusterNode primary = F.first(owners);
 
-                assert F.eqNodes(node, primary);
+                assert eqNodes(node, primary);
             }
         }
     }
@@ -167,7 +168,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
             ClusterNode primary = F.first(owners);
 
-            assert F.eqNodes(n0, primary);
+            assert eqNodes(n0, primary);
         }
     }
 
@@ -274,7 +275,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
         List<List<ClusterNode>> assignment = aff.assignPartitions(ctx);
 
         for (Map.Entry<Integer, ClusterNode> e : map.entrySet())
-            assert F.eqNodes(F.first(nodes(assignment, aff, e.getKey())), e.getValue());
+            assert eqNodes(F.first(nodes(assignment, aff, e.getKey())), e.getValue());
     }
 
     /**
@@ -295,7 +296,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
         List<List<ClusterNode>> assignment = aff.assignPartitions(ctx);
 
         for (Map.Entry<Integer, ClusterNode> e : map.entrySet())
-            assert F.eqNodes(F.first(nodes(assignment, aff, e.getKey())), e.getValue());
+            assert eqNodes(F.first(nodes(assignment, aff, e.getKey())), e.getValue());
     }
 
     /**
@@ -321,7 +322,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
         List<List<ClusterNode>> assignment = aff.assignPartitions(ctx);
 
         for (Map.Entry<Integer, ClusterNode> e : map.entrySet())
-            assert F.eqNodes(F.first(nodes(assignment, aff, e.getKey())), e.getValue());
+            assert eqNodes(F.first(nodes(assignment, aff, e.getKey())), e.getValue());
     }
 
     /**

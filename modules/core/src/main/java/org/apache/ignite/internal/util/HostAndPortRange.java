@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util;
 import java.io.Serializable;
 import java.net.Inet6Address;
 import java.net.UnknownHostException;
+import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -257,7 +258,7 @@ public class HostAndPortRange implements Serializable {
         if (o != null && o instanceof HostAndPortRange) {
             HostAndPortRange other = (HostAndPortRange)o;
 
-            return F.eq(host, other.host) && portFrom == other.portFrom && portTo == other.portTo;
+            return Objects.equals(host, other.host) && portFrom == other.portFrom && portTo == other.portTo;
         }
         else
             return false;

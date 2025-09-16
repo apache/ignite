@@ -75,8 +75,10 @@ includeToClassPath() {
 # Include target libraries for enterprise modules to classpath.
 #
 includeToClassPath modules
+includeToClassPath modules/binary
 
 #
 # Include target libraries for opensourse modules to classpath.
 #
 includeToClassPath "${IGNITE_HOME}"/modules
+includeToClassPath "${IGNITE_HOME}"/modules/binary

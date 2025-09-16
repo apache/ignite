@@ -18,11 +18,14 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -44,7 +47,6 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.DetachedClusterNode;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
@@ -67,12 +69,11 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
-import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
-import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_AWARE_QUERIES_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_SERIALIZABLE_ENABLED;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isDefaultDataRegionPersistent;
+import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.nodeStorages;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
 
 /**
@@ -173,7 +174,7 @@ public class ValidationOnNodeJoinUtils {
 
                 // Peform checks of SQL schema. If schemas' names not equal, only valid case is if local or joined
                 // QuerySchema is empty and schema name is null (when indexing enabled dynamically).
-                if (!F.eq(joinedSchema, locSchema)
+                if (!Objects.equals(joinedSchema, locSchema)
                         && (locSchema != null || !locDesc.schema().isEmpty())
                         && (joinedSchema != null || !F.isEmpty(joinedQryEntities))) {
                     errorMsg.append(String.format(SQL_SCHEMA_CONFLICTS_MESSAGE, locDesc.cacheName(), joinedSchema,
@@ -283,14 +284,6 @@ public class ValidationOnNodeJoinUtils {
                     " 'true' [cacheName=" + U.maskName(cc.getName()) + ']');
         }
 
-        DeploymentMode depMode = c.getDeploymentMode();
-
-        if (c.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
-            !CU.isSystemCache(cc.getName()) && !(c.getMarshaller() instanceof BinaryMarshaller))
-            throw new IgniteCheckedException("Cache can be started in PRIVATE or ISOLATED deployment mode only when" +
-                " BinaryMarshaller is used [depMode=" + ctx.config().getDeploymentMode() + ", marshaller=" +
-                c.getMarshaller().getClass().getName() + ']');
-
         if (cc.getAffinity().partitions() > CacheConfiguration.MAX_PARTITIONS_COUNT)
             throw new IgniteCheckedException("Affinity function must return at most " +
                 CacheConfiguration.MAX_PARTITIONS_COUNT + " partitions [actual=" + cc.getAffinity().partitions() +
@@ -362,7 +355,7 @@ public class ValidationOnNodeJoinUtils {
         if (ctx.query().moduleEnabled()) {
             String schema = QueryUtils.normalizeSchemaName(cc.getName(), cc.getSqlSchema());
 
-            if (F.eq(schema, QueryUtils.SCHEMA_SYS)) {
+            if (Objects.equals(schema, QueryUtils.SCHEMA_SYS)) {
                 if (cc.getSqlSchema() == null) {
                     // Conflict on cache name.
                     throw new IgniteCheckedException("SQL schema name derived from cache name is reserved (" +
@@ -398,6 +391,32 @@ public class ValidationOnNodeJoinUtils {
             if (cc.getDiskPageCompression() != DiskPageCompression.DISABLED)
                 throw new IgniteCheckedException("Encryption cannot be used with disk page compression " +
                     cacheSpec.toString());
+        }
+
+        if (!ctx.clientNode()) {
+            if (!F.isEmpty(cc.getStoragePaths())) {
+                List<String> csp = Arrays.asList(cc.getStoragePaths());
+
+                Set<String> nodeStorages = nodeStorages(c.getDataStorageConfiguration());
+
+                if (!nodeStorages.containsAll(csp)) {
+                    throw new IgniteCheckedException(
+                        "Unknown storage path. Storage path must be from DataStorageConfiguration " +
+                            "[cacheStorage=" + csp + ", nodeStorages=" + nodeStorages + ']'
+                    );
+                }
+            }
+
+            if (!F.isEmpty(cc.getIndexPath())) {
+                Set<String> nodeStorages = nodeStorages(c.getDataStorageConfiguration());
+
+                if (!nodeStorages.contains(cc.getIndexPath())) {
+                    throw new IgniteCheckedException(
+                        "Unknown storage path. Storage path must be from DataStorageConfiguration " +
+                            "[indexPath=" + cc.getIndexPath() + ", nodeStorages=" + nodeStorages + ']'
+                    );
+                }
+            }
         }
     }
 

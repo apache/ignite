@@ -134,7 +134,12 @@ public class DumpCacheConfigTest extends GridCommonAbstractTest {
         };
 
         new DumpReader(
-            new DumpReaderConfiguration(new File(sharedFileTree(srv.configuration()).snapshotsRoot(), name), cnsmr),
+            new DumpReaderConfiguration(
+                null,
+                new File(sharedFileTree(srv.configuration()).snapshotsRoot(), name).getAbsolutePath(),
+                null,
+                cnsmr
+            ),
             log
         ).run();
 

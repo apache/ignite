@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.pool.PoolProcessor;
 import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcessor;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -37,6 +38,7 @@ public class QueryBlockingTaskExecutorTest extends GridCommonAbstractTest {
     public void testConcurrentTasks() throws Exception {
         GridTestKernalContext ctx = newContext(new IgniteConfiguration().setQueryThreadPoolSize(10));
         ctx.add(new NoOpIgniteSecurityProcessor(ctx));
+        ctx.add(new PoolProcessor(ctx));
         QueryBlockingTaskExecutor executor = new QueryBlockingTaskExecutor(ctx);
         executor.onStart(ctx);
 
@@ -77,6 +79,7 @@ public class QueryBlockingTaskExecutorTest extends GridCommonAbstractTest {
     public void testSameQueryTasks() throws Exception {
         GridTestKernalContext ctx = newContext(new IgniteConfiguration().setQueryThreadPoolSize(10));
         ctx.add(new NoOpIgniteSecurityProcessor(ctx));
+        ctx.add(new PoolProcessor(ctx));
         QueryBlockingTaskExecutor executor = new QueryBlockingTaskExecutor(ctx);
         executor.onStart(ctx);
 

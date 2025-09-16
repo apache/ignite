@@ -83,8 +83,8 @@ public class IntervalTest extends AbstractBasicIntegrationTest {
         assertEquals(Period.of(1, 6, 0), eval("CAST(1.5 AS INTERVAL YEARS)"));
         assertEquals(Duration.ofHours(36), eval("CAST(f AS INTERVAL DAYS) FROM (VALUES(1.5)) AS t(f)"));
         assertEquals(Period.of(1, 6, 0), eval("CAST(f AS INTERVAL YEARS) FROM (VALUES(1.5)) AS t(f)"));
-        assertEquals(Duration.ofHours(36), eval("CAST(1.5::DECIMAL AS INTERVAL DAYS)"));
-        assertEquals(Period.of(1, 6, 0), eval("CAST(1.5::DECIMAL AS INTERVAL YEARS)"));
+        assertEquals(Duration.ofHours(36), eval("CAST(1.5::DECIMAL(2,1) AS INTERVAL DAYS)"));
+        assertEquals(Period.of(1, 6, 0), eval("CAST(1.5::DECIMAL(2,1) AS INTERVAL YEARS)"));
 
         // Compound interval types cannot be cast.
         assertThrows("SELECT CAST(INTERVAL '1-2' YEAR TO MONTH AS INT)", IgniteSQLException.class, "cannot convert");

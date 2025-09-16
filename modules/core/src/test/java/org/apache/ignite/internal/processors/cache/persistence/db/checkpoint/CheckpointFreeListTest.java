@@ -261,7 +261,8 @@ public class CheckpointFreeListTest extends GridCommonAbstractTest {
 
         forceCheckpoint();
 
-        Path cacheFolder = ignite0.context().pdsFolderResolver().fileTree().cacheStorage(false, CACHE_NAME).toPath();
+        Path cacheFolder = ignite0.context().pdsFolderResolver().fileTree()
+            .defaultCacheStorage(ignite0.cachex(CACHE_NAME).configuration()).toPath();
 
         Optional<Long> totalPartSizeBeforeStop = totalPartitionsSize(cacheFolder);
 

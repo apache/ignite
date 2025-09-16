@@ -22,14 +22,14 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.List;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Data transfer object for {@link org.apache.ignite.cache.QueryIndex}.
  */
-public class QueryIndex extends VisorDataTransferObject {
+public class QueryIndex extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -91,7 +91,7 @@ public class QueryIndex extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         name = U.readString(in);
         type = QueryIndexType.fromOrdinal(in.readByte());
         fields = U.readList(in);

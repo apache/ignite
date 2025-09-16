@@ -25,6 +25,7 @@ import java.util.stream.StreamSupport;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -44,6 +45,7 @@ import static org.apache.ignite.internal.IgnitionEx.gridx;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CLIENT_ATTR;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListener.MANAGEMENT_CONNECTION_SHIFTED_ID;
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLI_CONN_VIEW;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.stopThreads;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -69,6 +71,10 @@ public class RecoveryModeTest extends AbstractThinClientTest {
         startGridInRecovery(0);
 
         assertThrowsWithCause(() -> startClient(0), ClientConnectionException.class);
+
+        try (IgniteClient client = startClientRecoveryEnabled(0)) {
+            assertThrows(log, () -> client.cluster().state(), ClientException.class, "Node in recovery mode");
+        }
     }
 
     /** */

@@ -40,6 +40,7 @@ import static org.apache.ignite.cache.CachePeekMode.BACKUP;
 import static org.apache.ignite.cache.CachePeekMode.NEAR;
 import static org.apache.ignite.cache.CachePeekMode.PRIMARY;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Multi-node tests for partitioned cache.
@@ -190,7 +191,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             Affinity<Object> aff = ignite(i).affinity(DEFAULT_CACHE_NAME);
 
-            info("Affinity nodes [nodes=" + F.nodeIds(aff.mapKeyToPrimaryAndBackups("key")) +
+            info("Affinity nodes [nodes=" + nodeIds(aff.mapKeyToPrimaryAndBackups("key")) +
                 ", locNode=" + ignite(i).cluster().localNode().id() + ']');
 
             if (aff.isBackup(grid(i).localNode(), "key")) {

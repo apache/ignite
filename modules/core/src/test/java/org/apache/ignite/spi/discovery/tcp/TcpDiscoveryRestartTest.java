@@ -32,7 +32,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -140,7 +139,7 @@ public class TcpDiscoveryRestartTest extends GridCommonAbstractTest {
         for (int i = 0; i < NODE_CNT; i++) {
             Ignite ignite = ignite(i);
 
-            TestEventListener lsnr = (TestEventListener)F.firstKey(ignite.configuration().getLocalEventListeners());
+            TestEventListener lsnr = (TestEventListener)ignite.configuration().getLocalEventListeners().keySet().iterator().next();
 
             assertNotNull(lsnr);
 

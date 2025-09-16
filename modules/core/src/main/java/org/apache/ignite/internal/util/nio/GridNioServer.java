@@ -416,7 +416,7 @@ public class GridNioServer<T> {
 
             clientWorkers.add(worker);
 
-            clientThreads[i] = new IgniteThread(worker);
+            clientThreads[i] = U.newThread(worker);
 
             clientThreads[i].setDaemon(daemon);
         }
@@ -504,7 +504,7 @@ public class GridNioServer<T> {
         filterChain.start();
 
         if (acceptWorker != null)
-            new IgniteThread(acceptWorker).start();
+            U.newThread(acceptWorker).start();
 
         for (IgniteThread thread : clientThreads)
             thread.start();
@@ -1588,9 +1588,6 @@ public class GridNioServer<T> {
 
                 assert msg != null;
 
-                if (writer != null)
-                    writer.setCurrentWriteClass(msg.getClass());
-
                 int startPos = buf.position();
 
                 finished = msg.writeTo(buf, writer);
@@ -1780,9 +1777,6 @@ public class GridNioServer<T> {
 
             try (TraceSurroundings ignore = span.equals(NoopSpan.INSTANCE) ? null : MTC.support(span)) {
                 span.addTag(SpanTags.MESSAGE, () -> traceName(msg));
-
-                if (writer != null)
-                    writer.setCurrentWriteClass(msg.getClass());
 
                 int startPos = buf.position();
 
@@ -2145,9 +2139,7 @@ public class GridNioServer<T> {
                             }
 
                             case REQUIRE_WRITE: {
-                                SessionWriteRequest req = (SessionWriteRequest)req0;
-
-                                registerWrite((GridSelectorNioSessionImpl)req.session());
+                                registerWrite((GridSelectorNioSessionImpl)req0.session());
 
                                 break;
                             }
@@ -2345,7 +2337,7 @@ public class GridNioServer<T> {
         /**
          * @param ses Session.
          */
-        @Override public final void registerWrite(GridSelectorNioSessionImpl ses) {
+        protected void registerWrite(GridSelectorNioSessionImpl ses) {
             SelectionKey key = ses.key();
 
             if (key.isValid()) {
@@ -3242,6 +3234,11 @@ public class GridNioServer<T> {
         /** */
         private Span span;
 
+        /** @param ses Session. */
+        WriteRequestSystemImpl(GridNioSession ses) {
+            this(ses, null);
+        }
+
         /**
          * @param ses Session.
          * @param msg Message.
@@ -3265,11 +3262,6 @@ public class GridNioServer<T> {
         /** {@inheritDoc} */
         @Override public boolean skipRecovery() {
             return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onAckReceived() {
-            throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
@@ -3370,13 +3362,6 @@ public class GridNioServer<T> {
         /** {@inheritDoc} */
         @Override public boolean skipRecovery() {
             return skipRecovery;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onAckReceived() {
-            assert msg instanceof Message;
-
-            ((Message)msg).onAckReceived();
         }
 
         /** {@inheritDoc} */
@@ -3609,13 +3594,6 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public void onAckReceived() {
-            assert msg instanceof Message : msg;
-
-            ((Message)msg).onAckReceived();
-        }
-
-        /** {@inheritDoc} */
         @Override public void onMessageWritten() {
             onDone();
         }
@@ -3735,7 +3713,7 @@ public class GridNioServer<T> {
                         GridNioWorker worker = ses0.worker();
 
                         if (worker != null)
-                            worker.registerWrite(ses0);
+                            worker.offer(new WriteRequestSystemImpl(ses0));
                     }
 
                     return null;

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -38,9 +37,6 @@ import org.jetbrains.annotations.Nullable;
  * Near cache lock request to primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
 public class GridNearLockRequest extends GridDistributedLockRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     private static final int NEED_RETURN_VALUE_FLAG_MASK = 0x01;
 
@@ -79,7 +75,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     private String txLbl;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearLockRequest() {
         // No-op.
@@ -304,57 +300,57 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
+            case 20:
+                if (!writer.writeLong(accessTtl))
+                    return false;
+
+                writer.incrementState();
+
             case 21:
-                if (!writer.writeLong("accessTtl", accessTtl))
+                if (!writer.writeLong(createTtl))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeLong("createTtl", createTtl))
+                if (!writer.writeObjectArray(dhtVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeObjectArray("dhtVers", dhtVers, MessageCollectionItemType.MSG))
+                if (!writer.writeByte(flags))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeInt(miniId))
                     return false;
 
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeInt("miniId", miniId))
+                if (!writer.writeInt(taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 26:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
 
             case 27:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 28:
-                if (!writer.writeString("txLbl", txLbl))
+                if (!writer.writeString(txLbl))
                     return false;
 
                 writer.incrementState();
@@ -367,15 +363,20 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
+            case 20:
+                accessTtl = reader.readLong();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
             case 21:
-                accessTtl = reader.readLong("accessTtl");
+                createTtl = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -383,7 +384,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 22:
-                createTtl = reader.readLong("createTtl");
+                dhtVers = reader.readObjectArray(MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -391,7 +392,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 23:
-                dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
+                flags = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -399,7 +400,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 24:
-                flags = reader.readByte("flags");
+                miniId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -407,7 +408,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 25:
-                miniId = reader.readInt("miniId");
+                taskNameHash = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -415,7 +416,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 26:
-                taskNameHash = reader.readInt("taskNameHash");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -423,15 +424,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 27:
-                topVer = reader.readAffinityTopologyVersion("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 28:
-                txLbl = reader.readString("txLbl");
+                txLbl = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -440,17 +433,12 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
         }
 
-        return reader.afterMessageRead(GridNearLockRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 51;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 29;
     }
 
     /** {@inheritDoc} */

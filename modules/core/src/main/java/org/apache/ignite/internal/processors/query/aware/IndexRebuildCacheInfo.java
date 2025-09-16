@@ -67,12 +67,9 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(
-        byte protoVer,
-        ObjectInput in
-    ) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         cacheName = U.readLongString(in);
-        recreate = protoVer == V2 && in.readBoolean();
+        recreate = in.readBoolean();
     }
 
     /**
@@ -87,11 +84,6 @@ public class IndexRebuildCacheInfo extends IgniteDataTransferObject {
     /** @return {@code True} if index.bin recreating, {@code false} otherwise. */
     public boolean recreate() {
         return recreate;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V2;
     }
 
     /** {@inheritDoc} */

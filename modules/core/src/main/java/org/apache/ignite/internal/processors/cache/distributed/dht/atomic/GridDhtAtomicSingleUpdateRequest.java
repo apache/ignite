@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -45,9 +44,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  *
  */
 public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdateRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Key to update. */
     @GridToStringInclude
     protected KeyCacheObject key;
@@ -64,7 +60,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     protected long updateCntr;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtAtomicSingleUpdateRequest() {
         // No-op.
@@ -212,7 +208,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public boolean hasKey(KeyCacheObject key) {
-        return !near() && F.eq(this.key, key);
+        return !near() && Objects.equals(this.key, key);
     }
 
     /** {@inheritDoc} */
@@ -366,7 +362,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -374,25 +370,25 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
         switch (writer.state()) {
             case 12:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeKeyCacheObject(key))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeMessage("prevVal", prevVal))
+                if (!writer.writeCacheObject(prevVal))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeLong("updateCntr", updateCntr))
+                if (!writer.writeLong(updateCntr))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeMessage("val", val))
+                if (!writer.writeCacheObject(val))
                     return false;
 
                 writer.incrementState();
@@ -406,15 +402,12 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 12:
-                key = reader.readMessage("key");
+                key = reader.readKeyCacheObject();
 
                 if (!reader.isLastRead())
                     return false;
@@ -422,7 +415,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
                 reader.incrementState();
 
             case 13:
-                prevVal = reader.readMessage("prevVal");
+                prevVal = reader.readCacheObject();
 
                 if (!reader.isLastRead())
                     return false;
@@ -430,7 +423,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
                 reader.incrementState();
 
             case 14:
-                updateCntr = reader.readLong("updateCntr");
+                updateCntr = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -438,7 +431,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
                 reader.incrementState();
 
             case 15:
-                val = reader.readMessage("val");
+                val = reader.readCacheObject();
 
                 if (!reader.isLastRead())
                     return false;
@@ -447,7 +440,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
         }
 
-        return reader.afterMessageRead(GridDhtAtomicSingleUpdateRequest.class);
+        return true;
     }
 
     /**
@@ -483,11 +476,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /** {@inheritDoc} */
     @Override public short directType() {
         return -36;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 16;
     }
 
     /** {@inheritDoc} */

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.cache;
 
 import java.util.Collection;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
@@ -48,7 +48,7 @@ public class PlatformCachePartialUpdateException extends PlatformExtendedExcepti
     }
 
     /** {@inheritDoc} */
-    @Override public void writeData(BinaryRawWriterEx writer) {
+    @Override public void writeData(BinaryWriterEx writer) {
         Collection keys = ((CachePartialUpdateCheckedException)getCause()).failedKeys();
 
         writer.writeBoolean(keepBinary);

@@ -22,14 +22,14 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  *
  */
-public class ViewCacheTaskResult extends VisorDataTransferObject {
+public class ViewCacheTaskResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -62,7 +62,7 @@ public class ViewCacheTaskResult extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         cacheInfos = U.readList(in);
     }
 

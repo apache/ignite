@@ -225,7 +225,8 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
             assertTrue(GridTestUtils.waitForCondition(() ->
                 grid0.cluster().forClients().node(clientId) == null, 5_000));
 
-            assertTrue(strLog.toString().contains("Node excluded, node="));
+            assertTrue(GridTestUtils.waitForCondition(() ->
+                strLog.toString().contains("Node excluded, node="), 5_000));
 
             bean.excludeNode(new UUID(0, 0).toString());
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 
@@ -35,11 +34,12 @@ public class JavaObjectKeySerializer {
     /**
      * Constructor.
      *
-     * @param cfg Ignite configuration.
+     * @param marshaller Marshaller.
+     * @param clsLdr Class loader.
      */
-    public JavaObjectKeySerializer(IgniteConfiguration cfg) {
-        marshaller = cfg.getMarshaller();
-        clsLdr = U.resolveClassLoader(cfg);
+    public JavaObjectKeySerializer(ClassLoader clsLdr, Marshaller marshaller) {
+        this.clsLdr = clsLdr;
+        this.marshaller = marshaller;
     }
 
     /** */

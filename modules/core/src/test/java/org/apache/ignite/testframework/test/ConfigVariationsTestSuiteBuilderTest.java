@@ -74,23 +74,23 @@ public class ConfigVariationsTestSuiteBuilderTest {
         public void testDefaults() {
             List<Class<?>> classes = basicBuild(NoopTest.class);
 
-            assertEquals(4, classes.size());
+            assertEquals(2, classes.size());
 
             classes = new ConfigVariationsTestSuiteBuilder(NoopTest.class)
                 .withBasicCacheParams().classes();
 
-            assertEquals(4 * 4 * 2, classes.size());
+            assertEquals(4 * 4, classes.size());
 
             // With clients.
             classes = new ConfigVariationsTestSuiteBuilder(NoopTest.class)
                 .testedNodesCount(2).withClients().classes();
 
-            assertEquals(4 * 2, classes.size());
+            assertEquals(4, classes.size());
 
             classes = new ConfigVariationsTestSuiteBuilder(NoopTest.class)
                 .withBasicCacheParams().testedNodesCount(3).withClients().classes();
 
-            assertEquals(4 * 4 * 2 * 3, classes.size());
+            assertEquals(4 * 4 * 3, classes.size());
         }
 
         /** */
@@ -169,7 +169,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
         /** */
         @AfterClass
         public static void verify() {
-            assertEquals(8, SuiteWithIgnored.cntr.get());
+            assertEquals(4, SuiteWithIgnored.cntr.get());
         }
     }
 
@@ -188,7 +188,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
         /** */
         @AfterClass
         public static void verify() {
-            assertEquals(4, SuiteWithExtendsIgnored.cntr.get());
+            assertEquals(2, SuiteWithExtendsIgnored.cntr.get());
         }
     }
 

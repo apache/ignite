@@ -20,8 +20,6 @@ package org.apache.ignite.internal.binary;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -32,19 +30,6 @@ import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_M
  * Tests testing framewrok, epecially BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER test property.
  */
 public class BinarySimpleNameTestPropertySelfTest extends GridCommonAbstractTest {
-    /**
-     * flag for facade disabled test. As we use binary marshaller by default al
-     */
-    private boolean enableJdkMarshaller;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        final IgniteConfiguration configuration = super.getConfiguration(igniteInstanceName);
-        if (enableJdkMarshaller)
-            configuration.setMarshaller(new JdkMarshaller());
-        return configuration;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -75,16 +60,6 @@ public class BinarySimpleNameTestPropertySelfTest extends GridCommonAbstractTest
     @Test
     public void testPropertyDisabled() throws Exception {
         checkProperty("org.ignite.test.TestClass");
-    }
-
-    /**
-     * Check if Binary facade is disabled test. Test uses JDK marshaller to provide warranty facade is not available
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testBinaryDisabled() throws Exception {
-        enableJdkMarshaller = true;
-        assertNull(startGrid().binary());
     }
 
     /**

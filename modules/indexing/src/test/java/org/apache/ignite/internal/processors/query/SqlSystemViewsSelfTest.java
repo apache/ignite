@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
@@ -880,7 +881,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             UUID nodeId = grid.cluster().localNode().id();
 
             // Metrics for node must be collected from another node to avoid race and get consistent metrics snapshot.
-            Ignite ignite = F.eq(nodeId, nodeId0) ? igniteCli : igniteSrv;
+            Ignite ignite = Objects.equals(nodeId, nodeId0) ? igniteCli : igniteSrv;
 
             for (int i = 0; i < METRICS_CHECK_ATTEMPTS; i++) {
                 ClusterMetrics metrics = ignite.cluster().node(nodeId).metrics();

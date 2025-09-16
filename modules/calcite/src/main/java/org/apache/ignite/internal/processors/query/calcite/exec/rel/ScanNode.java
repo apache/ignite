@@ -139,9 +139,6 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
 
         inLoop = true;
         try {
-            if (it == null)
-                it = src.iterator();
-
             processNextBatch();
         }
         finally {
@@ -153,6 +150,9 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
      * @return Count of processed rows.
      */
     protected int processNextBatch() throws Exception {
+        if (it == null)
+            it = src.iterator();
+
         int processed = 0;
         while (requested > 0 && it.hasNext()) {
             checkState();

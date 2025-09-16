@@ -73,7 +73,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        client.shutdown();
+        client.close();
 
         grid().cache(DEFAULT_CACHE_NAME).clear();
         grid().cache(CACHE_NAME).clear();

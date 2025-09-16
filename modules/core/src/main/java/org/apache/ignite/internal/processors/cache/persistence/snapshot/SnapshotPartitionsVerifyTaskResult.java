@@ -57,7 +57,7 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
      * @param metas Map of snapshot metadata information found on each cluster node.
      * @param idleRes Result of cluster nodes partitions comparison.
      */
-    public SnapshotPartitionsVerifyTaskResult(
+    SnapshotPartitionsVerifyTaskResult(
         Map<ClusterNode, List<SnapshotMetadata>> metas,
         @Nullable IdleVerifyResult idleRes
     ) {
@@ -121,7 +121,7 @@ public class SnapshotPartitionsVerifyTaskResult extends IgniteDataTransferObject
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         metas = U.readMap(in);
         idleRes = (IdleVerifyResult)in.readObject();
     }

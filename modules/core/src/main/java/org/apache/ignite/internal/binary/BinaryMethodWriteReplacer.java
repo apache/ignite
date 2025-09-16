@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Write replacer based on method invocation.
  */
-public class BinaryMethodWriteReplacer implements BinaryWriteReplacer {
+class BinaryMethodWriteReplacer implements BinaryWriteReplacer {
     /** Method. */
     private final Method mthd;
 

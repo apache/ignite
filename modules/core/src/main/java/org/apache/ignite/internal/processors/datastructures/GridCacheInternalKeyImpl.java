@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Objects;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -87,7 +88,7 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
         if (obj instanceof GridCacheInternalKeyImpl) {
             GridCacheInternalKeyImpl other = (GridCacheInternalKeyImpl)obj;
 
-            return F.eq(name, other.name) && F.eq(grpName, other.grpName);
+            return Objects.equals(name, other.name) && Objects.equals(grpName, other.grpName);
         }
 
         return false;

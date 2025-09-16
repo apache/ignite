@@ -22,7 +22,7 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 /**
  * Binary writer schema holder.
  */
-public class BinaryWriterSchemaHolder {
+class BinaryWriterSchemaHolder {
     /** Maximum offset which fits in 1 byte. */
     private static final int MAX_OFFSET_1 = 1 << 8;
 

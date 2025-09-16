@@ -183,4 +183,55 @@ public abstract class PageAbstractEvictionTracker implements PageEvictionTracker
     int pageIdx(int trackingIdx) {
         return pageMem.pageIndex(trackingIdx);
     }
+
+    /** {@inheritDoc} */
+    @Override public void trackFragmentPage(long pageId, long prevPageId, boolean isHeadPage) throws IgniteCheckedException {
+        // Do nothing if called for tail page.
+        if (prevPageId == 0)
+            return;
+
+        if (isHeadPage) {
+            // Store link to head fragment page in tail fragment page.
+            linkFragmentPages(tailPageTrackingIdx(prevPageId), trackingIdx(PageIdUtils.pageIndex(pageId)));
+        }
+        else {
+            // Store link to tail fragment page in each fragment page.
+            linkFragmentPages(trackingIdx(PageIdUtils.pageIndex(pageId)), tailPageTrackingIdx(prevPageId));
+        }
+    }
+
+    /**
+     * Determine tail page tracking index given page id of previously written fragment.
+     *
+     * @param prevPageId Page id of previously written fragment.
+     * @return tail page tracking index.
+     */
+    private int tailPageTrackingIdx(long prevPageId) {
+        int prevPageTrackingIdx = trackingIdx(PageIdUtils.pageIndex(prevPageId));
+
+        int link = getFragmentLink(prevPageTrackingIdx);
+
+        if (link == 0) {
+            // The previous page is just the tail one.
+            return prevPageTrackingIdx;
+        }
+        else
+            return link;
+    }
+
+    /**
+     * Link two pages containing fragments of row.
+     *
+     * @param pageTrackingIdx     Page tracking index.
+     * @param nextPageTrackingIdx Tracking index of page to link to.
+     */
+    protected abstract void linkFragmentPages(int pageTrackingIdx, int nextPageTrackingIdx);
+
+    /**
+     * Get tracking index of page linked to this one.
+     *
+     * @param pageTrackingIdx Page tracking index.
+     * @return Tracking index of linked page, or {@code 0} if this page is not linked to any.
+     */
+    protected abstract int getFragmentLink(int pageTrackingIdx);
 }

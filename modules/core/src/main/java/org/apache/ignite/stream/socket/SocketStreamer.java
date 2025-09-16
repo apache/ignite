@@ -38,8 +38,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.stream.StreamAdapter;
 import org.apache.ignite.stream.StreamTupleExtractor;
 import org.jetbrains.annotations.Nullable;
@@ -229,9 +228,9 @@ public class SocketStreamer<T, K, V> extends StreamAdapter<T, K, V> {
          * @param igniteInstanceName Ignite instance name.
          */
         private DefaultConverter(@Nullable String igniteInstanceName) {
-            marsh = new JdkMarshaller(((IgniteKernal)ignite).context().marshallerContext().classNameFilter());
+            marsh = Marshallers.jdk(((IgniteKernal)ignite).context().marshallerContext().classNameFilter());
 
-            MarshallerUtils.setNodeName(marsh, igniteInstanceName);
+            marsh.nodeName(igniteInstanceName);
         }
 
         /** {@inheritDoc} */

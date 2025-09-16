@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 
 /**
  * Reader closure.
@@ -30,5 +30,5 @@ public interface PlatformReaderClosure<T> {
      * @param reader Reader.
      * @return Object.
      */
-    T read(BinaryRawReaderEx reader);
+    T read(BinaryReaderEx reader);
 }

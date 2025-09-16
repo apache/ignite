@@ -25,7 +25,7 @@ import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractPredicate;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTargetProxy;
@@ -79,7 +79,7 @@ public class PlatformStreamReceiverImpl extends PlatformAbstractPredicate implem
             out.writeLong(ptr);
             out.writeBoolean(keepBinary);
 
-            BinaryRawWriterEx writer = ctx.writer(out);
+            BinaryWriterEx writer = ctx.writer(out);
 
             writer.writeObject(pred);
 

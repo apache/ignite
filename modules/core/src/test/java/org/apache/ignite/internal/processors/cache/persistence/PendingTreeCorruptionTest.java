@@ -17,10 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.cache.expiry.AccessedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -28,20 +33,35 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
+import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /** */
 public class PendingTreeCorruptionTest extends GridCommonAbstractTest {
+    /** PDS enabled. */
+    private boolean pds;
+
     /** */
     @Before
     public void before() throws Exception {
@@ -66,7 +86,7 @@ public class PendingTreeCorruptionTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setPersistenceEnabled(true)
+                .setPersistenceEnabled(pds)
             )
             .setWalSegments(3)
             .setWalSegmentSize(512 * 1024)
@@ -78,6 +98,8 @@ public class PendingTreeCorruptionTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCorruptionWhileLoadingData() throws Exception {
+        pds = true;
+
         IgniteEx ig = startGrid(0);
 
         ig.cluster().state(ClusterState.ACTIVE);
@@ -155,6 +177,94 @@ public class PendingTreeCorruptionTest extends GridCommonAbstractTest {
         }
         finally {
             ig.context().cache().context().database().checkpointReadUnlock();
+        }
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_UNWIND_THROTTLING_TIMEOUT, value = "1000")
+    public void testCorruptionOnExpiration() throws Exception {
+        pds = false;
+
+        IgniteEx srv = startGrid();
+
+        CountDownLatch expirationStarted = new CountDownLatch(1);
+        CountDownLatch entryUpdated = new CountDownLatch(1);
+
+        IgniteCache<Object, Object> cache = srv.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAffinity(new ExpirationWaitingRendezvousAffinityFunction(expirationStarted, entryUpdated)));
+
+        // Warmup to ensure that the next put/remove/put will create row with the same link.
+        cache.put(0, 0);
+        cache.remove(0);
+
+        IgniteInternalCache<Object, Object> cachex = srv.cachex(DEFAULT_CACHE_NAME);
+
+        GridCacheVersion ver = new GridCacheVersion(1, 1, 1, 2);
+        KeyCacheObject key = new KeyCacheObjectImpl(0, null, -1);
+        CacheObjectImpl val = new CacheObjectImpl(0, null);
+        GridCacheDrInfo drInfo = new GridCacheDrExpirationInfo(val, ver, 1, CU.toExpireTime(1000));
+
+        Map<KeyCacheObject, GridCacheDrInfo> map = F.asMap(key, drInfo);
+
+        cachex.putAllConflict(map);
+
+        // Wait for PendingTree row removal.
+        assertTrue(expirationStarted.await(10, SECONDS));
+
+        // Remove entry and put entry with the same key, with the same expire time to the same place (with the same link).
+        cachex.removeAllConflict(F.asMap(key, ver));
+        cachex.putAllConflict(map);
+
+        // Resume expiration thread.
+        entryUpdated.countDown();
+
+        // Wait for entry removal by expiration.
+        assertTrue(GridTestUtils.waitForCondition(() -> !cache.containsKey(0), 1_000L));
+
+        // Check pending tree is in consistent state.
+        CacheGroupContext grp = cachex.context().group();
+        PendingEntriesTree pendingTree = grp.topology().localPartition(0).dataStore().pendingTree();
+
+        int cacheId = CU.cacheId(DEFAULT_CACHE_NAME);
+
+        List<PendingRow> rows = pendingTree.remove(new PendingRow(cacheId, Long.MIN_VALUE, 0),
+            new PendingRow(cacheId, U.currentTimeMillis(), 0), 1);
+
+        assertTrue(rows.isEmpty());
+    }
+
+    /** */
+    @SuppressWarnings("TransientFieldNotInitialized")
+    private static class ExpirationWaitingRendezvousAffinityFunction extends RendezvousAffinityFunction {
+        /** */
+        private final transient CountDownLatch expirationStarted;
+
+        /** */
+        private final transient CountDownLatch entryUpdated;
+
+        /** */
+        public ExpirationWaitingRendezvousAffinityFunction(
+            CountDownLatch expirationStarted,
+            CountDownLatch entryUpdated
+        ) {
+            this.expirationStarted = expirationStarted;
+            this.entryUpdated = entryUpdated;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partition(Object key) {
+            // Partition calculation is invoked during expiration of each key for in-memory cluster.
+            // Inject code to simulate race here.
+            if (Thread.currentThread().getName().contains("ttl-cleanup-worker")) {
+                expirationStarted.countDown();
+
+                // Suspend ttl-cleanup-worker after PendingTree row is removed, but before the corresponding
+                // expired row is deleted from cache data tree and row store.
+                U.awaitQuiet(entryUpdated);
+            }
+
+            return super.partition(key);
         }
     }
 }

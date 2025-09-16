@@ -21,6 +21,9 @@ import java.io.Serializable;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.client.ClientAuthenticationException;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
@@ -32,13 +35,17 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.apache.ignite.Ignition.startClient;
+import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.CONN_DISABLED_BY_ADMIN_ERR_MSG;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.processors.cache.ConnectionEnabledPropertyTest.THIN_CONN_ENABLED_PROP;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.DFLT_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.HISTORICAL_REBALANCE_THRESHOLD_DMS_KEY;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DFLT_SNAPSHOT_TRANSFER_RATE_BYTES;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Checks command line property commands.
@@ -286,6 +293,39 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
         );
 
         assertDistributedPropertyEquals(SNAPSHOT_TRANSFER_RATE_DMS_KEY, newVal);
+    }
+
+    /** */
+    @Test
+    public void testConnectionEnabled() {
+        assertEquals(EXIT_CODE_OK, execute("--state"));
+
+        assertEquals(EXIT_CODE_OK,
+            execute(
+                "--property", "set",
+                "--name", THIN_CONN_ENABLED_PROP,
+                "--val", "false"
+            )
+        );
+
+        assertThrows(log, () -> startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800")),
+            ClientAuthenticationException.class, CONN_DISABLED_BY_ADMIN_ERR_MSG);
+
+        assertEquals(EXIT_CODE_OK, execute("--state"));
+
+        assertEquals(EXIT_CODE_OK,
+            execute(
+                "--property", "set",
+                "--name", THIN_CONN_ENABLED_PROP,
+                "--val", "true"
+            )
+        );
+
+        assertEquals(EXIT_CODE_OK, execute("--state"));
+
+        try (IgniteClient cli = startClient(new ClientConfiguration().setAddresses("127.0.0.1:10800"))) {
+            assertTrue(cli.cluster().state().active());
+        }
     }
 
     /**

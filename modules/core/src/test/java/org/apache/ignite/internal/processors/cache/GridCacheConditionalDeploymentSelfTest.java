@@ -147,11 +147,6 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 3;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean addDeploymentInfo() {
             return addDepInfo;
         }

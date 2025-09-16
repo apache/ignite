@@ -226,7 +226,10 @@ public class IgniteStdSqlOperatorTable extends ReflectiveSqlOperatorTable {
         register(SqlStdOperatorTable.POSIX_REGEX_CASE_SENSITIVE);
         register(SqlStdOperatorTable.NEGATED_POSIX_REGEX_CASE_INSENSITIVE);
         register(SqlStdOperatorTable.NEGATED_POSIX_REGEX_CASE_SENSITIVE);
-        register(SqlLibraryOperators.REGEXP_REPLACE);
+        register(SqlLibraryOperators.REGEXP_REPLACE_3);
+        register(SqlLibraryOperators.REGEXP_REPLACE_4);
+        register(SqlLibraryOperators.REGEXP_REPLACE_5_ORACLE);
+        register(SqlLibraryOperators.REGEXP_REPLACE_6);
 
         // Collections.
         register(SqlStdOperatorTable.MAP_VALUE_CONSTRUCTOR);

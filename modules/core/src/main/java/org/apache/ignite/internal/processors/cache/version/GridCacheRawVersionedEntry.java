@@ -267,15 +267,12 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 2:
-                expireTime = reader.readLong("expireTime");
+                expireTime = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -283,7 +280,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
                 reader.incrementState();
 
             case 3:
-                ttl = reader.readLong("ttl");
+                ttl = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -291,7 +288,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
                 reader.incrementState();
 
             case 4:
-                valBytes = reader.readByteArray("valBytes");
+                valBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -299,62 +296,12 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
                 reader.incrementState();
 
             case 5:
-                ver = reader.readMessage("ver");
+                ver = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
-
-        }
-
-        assert key != null;
-        assert !(val != null && valBytes != null);
-
-        return reader.afterMessageRead(GridCacheRawVersionedEntry.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        assert key != null;
-        assert !(val != null && valBytes != null);
-
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 2:
-                if (!writer.writeLong("expireTime", expireTime))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeLong("ttl", ttl))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeByteArray("valBytes", valBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeMessage("ver", ver))
-                    return false;
-
-                writer.incrementState();
 
         }
 
@@ -362,8 +309,47 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 6;
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!super.writeTo(buf, writer))
+            return false;
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 2:
+                if (!writer.writeLong(expireTime))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
+                if (!writer.writeLong(ttl))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeByteArray(valBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeMessage(ver))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */

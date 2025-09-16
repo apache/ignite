@@ -55,6 +55,19 @@
         </dependency>
 
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-calcite</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+        </dependency>
+
+        <dependency>
+            <groupId>io.trino.tpch</groupId>
+            <artifactId>tpch</artifactId>
+            <version>1.2</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.javassist</groupId>
             <artifactId>javassist</artifactId>
             <version>${javassist.version}</version>

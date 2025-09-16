@@ -28,6 +28,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
 /**
@@ -64,6 +65,8 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTransa
             .addQueryField("COL0", Integer.class.getName(), null)
             .setIndexes(Collections.singletonList(new QueryIndex(fields1, QueryIndexType.SORTED)));
 
+        QueryEntity tbl12 = new QueryEntity(tbl1).setTableName("TBL12");
+
         QueryEntity part = new QueryEntity()
             .setTableName("TEST")
             .setKeyType(Integer.class.getName())
@@ -74,7 +77,8 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTransa
             .addQueryField("GRP1", Integer.class.getName(), null)
             .addQueryField("VAL0", Integer.class.getName(), null)
             .addQueryField("VAL1", Integer.class.getName(), null)
-            .setIndexes(Collections.singletonList(new QueryIndex(Arrays.asList("GRP0", "GRP1"), QueryIndexType.SORTED)));
+            .setIndexes(F.asList(new QueryIndex(Arrays.asList("GRP0", "GRP1"), QueryIndexType.SORTED),
+                new QueryIndex(Collections.singletonList("VAL1"), QueryIndexType.SORTED)));
 
         return super.getConfiguration(igniteInstanceName)
             .setCacheConfiguration(
@@ -83,6 +87,12 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTransa
                     .setAffinity(new RendezvousAffinityFunction(false, 8))
                     .setCacheMode(CacheMode.PARTITIONED)
                     .setQueryEntities(Arrays.asList(tbl1, part))
+                    .setSqlSchema("PUBLIC"),
+                cacheConfiguration()
+                    .setName(tbl12.getTableName())
+                    .setAffinity(new RendezvousAffinityFunction(false, 8))
+                    .setCacheMode(CacheMode.PARTITIONED)
+                    .setQueryEntities(Collections.singletonList(tbl12))
                     .setSqlSchema("PUBLIC")
             );
     }
@@ -107,6 +117,17 @@ public class SortAggregateIntegrationTest extends AbstractBasicIntegrationTransa
 
             assertEquals(s0 * 2, s1);
         });
+    }
+
+    /** */
+    @Test
+    public void testSubqueryOtherTable() throws Exception {
+        fillCacheTbl1(client.cache("TBL12"), ROWS);
+        fillCacheTest(client.cache("TEST"), ROWS);
+
+        assertQuery("SELECT COL0 FROM TBL12 WHERE PK IN (SELECT VAL1 FROM TEST WHERE VAL0 < 2)")
+            .returns(2)
+            .check();
     }
 
     /** */

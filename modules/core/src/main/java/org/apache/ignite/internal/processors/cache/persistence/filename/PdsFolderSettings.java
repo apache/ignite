@@ -130,14 +130,6 @@ public class PdsFolderSettings<L extends FileLockHolder> {
     }
 
     /**
-     * @return DB storage absolute root path resolved as 'db' folder in Ignite work dir (by default) or using persistent
-     * store configuration. Note WAL storage may be configured outside this path. May return null for non pds mode.
-     */
-    @Nullable public File persistentStoreRootPath() {
-        return persistentStoreRootPath;
-    }
-
-    /**
      * @return Storage directory for node.
      */
     public File persistentStoreNodePath() {

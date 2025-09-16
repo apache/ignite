@@ -81,7 +81,7 @@ public class ConsistencyRepairCommandArg extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         cache = U.readString(in);
         partitions = U.readIntArray(in);
         strategy = U.readEnum(in, ReadRepairStrategy.class);

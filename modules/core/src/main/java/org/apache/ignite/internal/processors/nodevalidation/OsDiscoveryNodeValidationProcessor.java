@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.nodevalidation;
 
+import java.util.Objects;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
@@ -47,7 +47,7 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
         String locBuildVer = locNode.attribute(ATTR_BUILD_VER);
         String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
 
-        if (!F.eq(rmtBuildVer, locBuildVer)) {
+        if (!Objects.equals(rmtBuildVer, locBuildVer)) {
             // OS nodes don't support rolling updates.
             if (!locBuildVer.equals(rmtBuildVer)) {
                 String errMsg = "Local node and remote node have different version numbers " +

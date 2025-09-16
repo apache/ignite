@@ -263,7 +263,7 @@ public class GridCommandHandlerIndexingUtils {
 
         GridCacheContext<K, V> cacheCtx = internalCache.context();
 
-        GridDhtLocalPartition locPart = cacheCtx.topology().localPartitions().get(partId);
+        GridDhtLocalPartition locPart = cacheCtx.topology().localPartition(partId);
         GridIterator<CacheDataRow> cacheDataGridIter = cacheCtx.group().offheap().partitionIterator(locPart.id());
 
         GridQueryProcessor qryProc = internalCache.context().kernalContext().query();

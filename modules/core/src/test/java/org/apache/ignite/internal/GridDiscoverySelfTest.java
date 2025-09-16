@@ -48,6 +48,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
 
 /**
@@ -388,7 +389,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            return F.eqNodes(this, o);
+            return eqNodes(this, o);
         }
 
         /** {@inheritDoc} */

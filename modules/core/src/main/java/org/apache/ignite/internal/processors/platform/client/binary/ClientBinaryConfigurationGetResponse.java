@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client.binary;
 
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
@@ -45,7 +45,7 @@ public class ClientBinaryConfigurationGetResponse extends ClientResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+    @Override public void encode(ClientConnectionContext ctx, BinaryWriterEx writer) {
         super.encode(ctx, writer);
 
         writer.writeBoolean(compactFooter);

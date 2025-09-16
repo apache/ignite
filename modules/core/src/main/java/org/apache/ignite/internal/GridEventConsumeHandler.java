@@ -238,7 +238,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                                                         GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
 
                                                         if (cache != null && cache.context().deploymentEnabled()) {
-                                                            wrapper.p2pMarshal(ctx.config().getMarshaller());
+                                                            wrapper.p2pMarshal(ctx.marshaller());
 
                                                             wrapper.cacheName = cacheName;
 
@@ -387,7 +387,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                             "with default class loader.");
                     }
 
-                    wrapper.p2pUnmarshal(ctx.config().getMarshaller(), U.resolveClassLoader(ldr, ctx.config()));
+                    wrapper.p2pUnmarshal(ctx.marshaller(), U.resolveClassLoader(ldr, ctx.config()));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(ctx.log(getClass()), "Failed to unmarshal event.", e);
@@ -419,7 +419,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
             depInfo = new GridDeploymentInfoBean(dep);
 
-            filterBytes = U.marshal(ctx.config().getMarshaller(), filter);
+            filterBytes = U.marshal(ctx.marshaller(), filter);
         }
     }
 

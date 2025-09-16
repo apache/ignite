@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.util.typedef.F;
@@ -106,7 +107,7 @@ public class GridLoadTestStatistics {
                     AtomicInteger cnt;
 
                     synchronized (nodeCnts) {
-                        cnt = F.addIfAbsent(nodeCnts, id, F.newAtomicInt());
+                        cnt = F.addIfAbsent(nodeCnts, id, (Callable<AtomicInteger>)AtomicInteger::new);
                     }
 
                     assert cnt != null;

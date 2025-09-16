@@ -69,7 +69,7 @@ public final class GenericValueMessage implements ValueMessage {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -77,7 +77,7 @@ public final class GenericValueMessage implements ValueMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("serialized", serialized))
+                if (!writer.writeByteArray(serialized))
                     return false;
 
                 writer.incrementState();
@@ -91,12 +91,9 @@ public final class GenericValueMessage implements ValueMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                serialized = reader.readByteArray("serialized");
+                serialized = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -105,16 +102,11 @@ public final class GenericValueMessage implements ValueMessage {
 
         }
 
-        return reader.afterMessageRead(GenericValueMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public MessageType type() {
         return MessageType.GENERIC_VALUE_MESSAGE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 }

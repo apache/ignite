@@ -35,10 +35,6 @@
             </bean>
         </property>
 
-        <property name="marshaller">
-            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller"/>
-        </property>
-
         <property name="cacheKeyConfiguration">
             <list>
                 <bean class="org.apache.ignite.cache.CacheKeyConfiguration">

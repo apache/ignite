@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -30,7 +31,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -373,12 +373,12 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                         else {
                             String v2 = cache.get(i);
 
-                            if (!F.eq(v2, v1)) {
+                            if (!Objects.equals(v2, v1)) {
                                 v1 = this.<Integer, String>jcache(0).get(i);
                                 v2 = cache.get(i);
                             }
 
-                            assert F.eq(v2, v1) :
+                            assert Objects.equals(v2, v1) :
                                 "Invalid cached value [key=" + i + ", v1=" + v1 + ", v2=" + v2 + ", grid=" + j + ']';
                         }
                     }

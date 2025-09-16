@@ -46,7 +46,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.X;
@@ -417,7 +417,7 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
             try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
                 int typeId = GridBinaryMarshaller.OBJ;
 
-                BinaryObjectImpl binObj = (BinaryObjectImpl)ignite.binary().builder(Character.toString((char)typeId))
+                BinaryObjectEx binObj = (BinaryObjectEx)ignite.binary().builder(Character.toString((char)typeId))
                         .setField("dummy", "dummy")
                         .build();
 

@@ -104,7 +104,7 @@ public class SortedIndexDescriptorFactory extends AbstractIndexDescriptorFactory
         if (cacheInfo.affinityNode()) {
             GridCacheContext<?, ?> cctx = cacheInfo.cacheContext();
 
-            int typeId = cctx.binaryMarshaller() ? typeDesc.typeId() : typeDesc.valueClass().hashCode();
+            int typeId = typeDesc.typeId();
 
             String treeName = BPlusTree.treeName(typeId + "_" + idxName, H2_TREE);
 

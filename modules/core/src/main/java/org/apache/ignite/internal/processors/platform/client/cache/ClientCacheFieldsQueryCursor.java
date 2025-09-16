@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 
 import java.util.List;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 
 /**
@@ -43,7 +43,7 @@ class ClientCacheFieldsQueryCursor extends ClientCacheQueryCursor<List> {
     }
 
     /** {@inheritDoc} */
-    @Override void writeEntry(BinaryRawWriterEx writer, List e) {
+    @Override void writeEntry(BinaryWriterEx writer, List e) {
         assert e.size() >= columnCount : "Column count less then requested: " + e.size() + " < " + columnCount;
 
         // H2 engine can add extra columns at the end of result set.

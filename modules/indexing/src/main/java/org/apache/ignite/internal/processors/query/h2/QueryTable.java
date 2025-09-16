@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.util.typedef.F;
+import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -28,9 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Query table descriptor.
  */
 public class QueryTable implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Schema. */
     private String schema;
 
@@ -38,7 +35,7 @@ public class QueryTable implements Message {
     private String tbl;
 
     /**
-     * Defalt constructor.
+     * Default constructor.
      */
     public QueryTable() {
         // No-op.
@@ -74,7 +71,7 @@ public class QueryTable implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -82,13 +79,13 @@ public class QueryTable implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("schema", schema))
+                if (!writer.writeString(schema))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeString("tbl", tbl))
+                if (!writer.writeString(tbl))
                     return false;
 
                 writer.incrementState();
@@ -102,12 +99,9 @@ public class QueryTable implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                schema = reader.readString("schema");
+                schema = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -115,7 +109,7 @@ public class QueryTable implements Message {
                 reader.incrementState();
 
             case 1:
-                tbl = reader.readString("tbl");
+                tbl = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -124,22 +118,12 @@ public class QueryTable implements Message {
 
         }
 
-        return reader.afterMessageRead(QueryTable.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return -54;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -152,7 +136,7 @@ public class QueryTable implements Message {
         if (obj instanceof QueryTable) {
             QueryTable other = (QueryTable)obj;
 
-            return F.eq(tbl, other.tbl) && F.eq(schema, other.schema);
+            return Objects.equals(tbl, other.tbl) && Objects.equals(schema, other.schema);
         }
 
         return super.equals(obj);

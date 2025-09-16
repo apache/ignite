@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Internal binary mapper.
  */
-public class BinaryInternalMapper {
+class BinaryInternalMapper {
     /** */
     private final BinaryNameMapper nameMapper;
 

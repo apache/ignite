@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Interface to perform write replace.
  */
-public interface BinaryWriteReplacer {
+interface BinaryWriteReplacer {
     /**
      * Perform replace.
      *

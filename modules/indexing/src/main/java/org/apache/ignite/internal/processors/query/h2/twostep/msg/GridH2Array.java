@@ -76,7 +76,7 @@ public class GridH2Array extends GridH2ValueMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -84,7 +84,7 @@ public class GridH2Array extends GridH2ValueMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeCollection("x", x, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(x, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -98,15 +98,12 @@ public class GridH2Array extends GridH2ValueMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 0:
-                x = reader.readCollection("x", MessageCollectionItemType.MSG);
+                x = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -115,17 +112,12 @@ public class GridH2Array extends GridH2ValueMessage {
 
         }
 
-        return reader.afterMessageRead(GridH2Array.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return -18;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

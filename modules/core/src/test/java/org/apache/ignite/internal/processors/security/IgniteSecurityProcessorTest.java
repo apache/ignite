@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.security;
 import java.lang.reflect.Method;
 import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.communication.GridIoSecurityAwareMessage;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -81,7 +81,7 @@ public class IgniteSecurityProcessorTest extends AbstractSecurityTest {
             PUBLIC_POOL,
             TOPIC_CACHE,
             TOPIC_CACHE.ordinal(),
-            new AffinityTopologyVersion(),
+            new IgniteDiagnosticMessage(),
             false,
             0,
             false

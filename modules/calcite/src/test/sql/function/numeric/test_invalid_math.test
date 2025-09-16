@@ -7,13 +7,17 @@ SELECT SQRT(-1), SQRT(0)
 ----
 NaN	0.000000
 
-query RRRR
-SELECT LN(-1), LN(0), LOG10(-1), LOG10(0)
-----
-NaN
--Infinity
-NaN
--Infinity
+statement error
+SELECT LN(-1)
+
+statement error
+SELECT LN(0)
+
+statement error
+SELECT LOG10(-1)
+
+statement error
+SELECT LOG10(0)
 
 query RRR
 SELECT POWER(1e300,100), POWER(-1e300,100), POWER(-1.0, 0.5)

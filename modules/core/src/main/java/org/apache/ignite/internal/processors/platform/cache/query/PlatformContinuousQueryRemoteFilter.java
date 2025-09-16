@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
@@ -114,7 +114,7 @@ public class PlatformContinuousQueryRemoteFilter implements PlatformContinuousQu
             try (PlatformMemory mem = ctx.memory().allocate()) {
                 PlatformOutputStream out = mem.output();
 
-                BinaryRawWriterEx writer = ctx.writer(out);
+                BinaryWriterEx writer = ctx.writer(out);
 
                 writer.writeObject(filter);
 

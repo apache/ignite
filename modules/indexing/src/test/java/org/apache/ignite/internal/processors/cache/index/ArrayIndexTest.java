@@ -36,7 +36,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.junit.After;
 import org.junit.Before;
@@ -185,7 +185,7 @@ public class ArrayIndexTest extends AbstractIndexingCommonTest {
     /** */
     private void checkTableExpression(boolean useTypedArrays) throws Exception {
         System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useTypedArrays));
-        BinaryArray.initUseBinaryArrays();
+        BinaryUtils.initUseBinaryArrays();
 
         try (IgniteEx ex = startGrid(0);
              IgniteEx cli = startClientGrid(1);
@@ -221,7 +221,7 @@ public class ArrayIndexTest extends AbstractIndexingCommonTest {
         }
         finally {
             System.clearProperty(IGNITE_USE_BINARY_ARRAYS);
-            BinaryArray.initUseBinaryArrays();
+            BinaryUtils.initUseBinaryArrays();
         }
     }
 

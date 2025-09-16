@@ -49,6 +49,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 
 /**
  * Node for {@link TcpDiscoverySpi}.
@@ -623,7 +624,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        return F.eqNodes(this, o);
+        return eqNodes(this, o);
     }
 
     /** {@inheritDoc} */

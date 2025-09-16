@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,9 +41,6 @@ import org.jetbrains.annotations.Nullable;
  * Near transaction prepare request to primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
 public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     private static final int NEAR_FLAG_MASK = 0x01;
 
@@ -84,7 +80,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     @Nullable private String txLbl;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearTxPrepareRequest() {
         // No-op.
@@ -315,45 +311,45 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
+            case 20:
+                if (!writer.writeByte(flags))
+                    return false;
+
+                writer.incrementState();
+
             case 21:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeIgniteUuid(futId))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeInt(miniId))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeInt("miniId", miniId))
+                if (!writer.writeInt(taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 26:
-                if (!writer.writeString("txLbl", txLbl))
+                if (!writer.writeString(txLbl))
                     return false;
 
                 writer.incrementState();
@@ -367,15 +363,20 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
+            case 20:
+                flags = reader.readByte();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
             case 21:
-                flags = reader.readByte("flags");
+                futId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -383,7 +384,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 22:
-                futId = reader.readIgniteUuid("futId");
+                miniId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -391,7 +392,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 23:
-                miniId = reader.readInt("miniId");
+                taskNameHash = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -399,7 +400,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 24:
-                taskNameHash = reader.readInt("taskNameHash");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -407,15 +408,7 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 25:
-                topVer = reader.readAffinityTopologyVersion("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 26:
-                txLbl = reader.readString("txLbl");
+                txLbl = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -424,17 +417,12 @@ public class GridNearTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
         }
 
-        return reader.afterMessageRead(GridNearTxPrepareRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 55;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 27;
     }
 
     /** {@inheritDoc} */

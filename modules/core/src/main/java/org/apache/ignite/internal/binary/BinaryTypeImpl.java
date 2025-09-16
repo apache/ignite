@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -67,7 +68,7 @@ public class BinaryTypeImpl implements BinaryType {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryFieldImpl field(String fieldName) {
+    @Override public BinaryField field(String fieldName) {
         return ctx.createField(meta.typeId(), fieldName);
     }
 

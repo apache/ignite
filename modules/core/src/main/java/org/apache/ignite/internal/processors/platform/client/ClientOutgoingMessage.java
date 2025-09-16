@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 
 /**
  * Thin client outgoing message (from server to client).
@@ -28,5 +28,5 @@ public interface ClientOutgoingMessage {
      * @param ctx Connection context.
      * @param writer Writer.
      */
-    public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer);
+    public void encode(ClientConnectionContext ctx, BinaryWriterEx writer);
 }

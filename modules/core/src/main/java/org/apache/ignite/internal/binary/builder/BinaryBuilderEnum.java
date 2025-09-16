@@ -18,14 +18,15 @@
 package org.apache.ignite.internal.binary.builder;
 
 import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.marshaller.Marshallers;
 
 /**
  *
  */
-public class BinaryBuilderEnum implements BinaryBuilderSerializationAware {
+class BinaryBuilderEnum implements BinaryBuilderSerializationAware {
     /** */
     private final int ordinal;
 
@@ -57,13 +58,13 @@ public class BinaryBuilderEnum implements BinaryBuilderSerializationAware {
             Class cls;
 
             try {
-                cls = U.forName(reader.readString(), reader.binaryContext().configuration().getClassLoader());
+                cls = CommonUtils.forName(reader.readString(), reader.binaryContext().classLoader(), null, Marshallers.USE_CACHE.get());
             }
             catch (ClassNotFoundException e) {
                 throw new BinaryInvalidTypeException("Failed to load the class: " + clsName, e);
             }
 
-            this.typeId = reader.binaryContext().registerClass(cls, true, false).typeId();
+            this.typeId = reader.binaryContext().registerType(cls, true, false);
         }
         else {
             this.typeId = typeId;
@@ -81,7 +82,7 @@ public class BinaryBuilderEnum implements BinaryBuilderSerializationAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx) {
+    @Override public void writeTo(BinaryWriterEx writer, BinaryBuilderSerializer ctx) {
         writer.writeByte(GridBinaryMarshaller.ENUM);
 
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {

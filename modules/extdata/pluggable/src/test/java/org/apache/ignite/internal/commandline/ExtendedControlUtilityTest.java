@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.util.GridCommandHandlerAbstractTest;
+import org.junit.Assume;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
@@ -72,6 +73,8 @@ public class ExtendedControlUtilityTest extends GridCommandHandlerAbstractTest {
      */
     @Test
     public void testAdditionalCommandHelp() {
+        Assume.assumeTrue(cliCommandHandler());
+
         injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute("--help"));

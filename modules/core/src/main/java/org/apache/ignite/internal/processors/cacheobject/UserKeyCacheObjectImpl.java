@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cacheobject;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -66,7 +66,7 @@ public class UserKeyCacheObjectImpl extends KeyCacheObjectImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+    @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
         try {
             IgniteCacheObjectProcessor proc = ctx.kernalContext().cacheObjects();
 

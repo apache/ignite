@@ -153,15 +153,10 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             writer.setBuffer(buf);
 
-            if (!writer.writeHeader(directType(), (byte)0))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onAckReceived() {
-            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -173,11 +168,6 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         @Override public short directType() {
             return DIRECT_TYPE;
         }
-
-        /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 0;
-        }
     }
 
     /** */
@@ -186,15 +176,10 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             writer.setBuffer(buf);
 
-            if (!writer.writeHeader(directType(), (byte)0))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onAckReceived() {
-            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -205,11 +190,6 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         /** {@inheritDoc} */
         @Override public short directType() {
             return DIRECT_TYPE_OVER_BYTE;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 0;
         }
     }
 

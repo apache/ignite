@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Binary {@link TreeMap} write replacer.
  */
-public class BinaryTreeMapWriteReplacer implements BinaryWriteReplacer {
+class BinaryTreeMapWriteReplacer implements BinaryWriteReplacer {
     /** {@inheritDoc} */
     @Nullable @Override public Object replace(Object target) {
         assert target instanceof TreeMap;

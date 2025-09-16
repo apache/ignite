@@ -19,8 +19,8 @@ package org.apache.ignite.platform.plugin;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAsyncResult;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
@@ -72,18 +72,18 @@ class PlatformTestPluginTarget implements PlatformTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public long processInStreamOutLong(int type, BinaryReaderEx reader) throws IgniteCheckedException {
         return reader.readString().length();
     }
 
     /** {@inheritDoc} */
-    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader, PlatformMemory mem)
+    @Override public long processInStreamOutLong(int type, BinaryReaderEx reader, PlatformMemory mem)
             throws IgniteCheckedException {
         return processInStreamOutLong(type, reader);
     }
 
     /** {@inheritDoc} */
-    @Override public void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+    @Override public void processInStreamOutStream(int type, BinaryReaderEx reader, BinaryWriterEx writer)
             throws IgniteCheckedException {
         String s = reader.readString();
 
@@ -91,14 +91,14 @@ class PlatformTestPluginTarget implements PlatformTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget processInStreamOutObject(int type, BinaryRawReaderEx reader)
+    @Override public PlatformTarget processInStreamOutObject(int type, BinaryReaderEx reader)
             throws IgniteCheckedException {
         return new PlatformTestPluginTarget(platformCtx, reader.readString());
     }
 
     /** {@inheritDoc} */
     @Override public PlatformTarget processInObjectStreamOutObjectStream(
-            int type, @Nullable PlatformTarget arg, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+        int type, @Nullable PlatformTarget arg, BinaryReaderEx reader, BinaryWriterEx writer)
             throws IgniteCheckedException {
         PlatformTestPluginTarget t = (PlatformTestPluginTarget)arg;
 
@@ -118,7 +118,7 @@ class PlatformTestPluginTarget implements PlatformTarget {
         PlatformMemory inMem = platformCtx.memory().allocate();
 
         PlatformOutputStream outStream = outMem.output();
-        BinaryRawWriterEx writer = platformCtx.writer(outStream);
+        BinaryWriterEx writer = platformCtx.writer(outStream);
 
         writer.writeString(val);
 
@@ -126,13 +126,13 @@ class PlatformTestPluginTarget implements PlatformTarget {
 
         platformCtx.gateway().pluginCallback(1, outMem, inMem);
 
-        BinaryRawReaderEx reader = platformCtx.reader(inMem);
+        BinaryReaderEx reader = platformCtx.reader(inMem);
 
         return reader.readString();
     }
 
     /** {@inheritDoc} */
-    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, BinaryWriterEx writer) throws IgniteCheckedException {
         writer.writeString(name);
     }
 
@@ -142,7 +142,7 @@ class PlatformTestPluginTarget implements PlatformTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformAsyncResult processInStreamAsync(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public PlatformAsyncResult processInStreamAsync(int type, BinaryReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case 1: {
                 // Async upper case.
@@ -172,7 +172,7 @@ class PlatformTestPluginTarget implements PlatformTarget {
                         return new IgniteFutureImpl(fa);
                     }
 
-                    @Override public void write(BinaryRawWriterEx writer, Object result) {
+                    @Override public void write(BinaryWriterEx writer, Object result) {
                         writer.writeString((String)result);
                     }
                 };
@@ -203,7 +203,7 @@ class PlatformTestPluginTarget implements PlatformTarget {
                         return new IgniteFutureImpl(fa);
                     }
 
-                    @Override public void write(BinaryRawWriterEx writer, Object result) {
+                    @Override public void write(BinaryWriterEx writer, Object result) {
                         // No-op.
                     }
                 };

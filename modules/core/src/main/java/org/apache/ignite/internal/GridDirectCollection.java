@@ -26,9 +26,11 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Annotates iterable fields.
  * Note that for any {@link Message} implementations it is enough to set item type to {@code Message.class}.
+ * Deprecated, see {@link Order} and {@link MessageProcessor} for details.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
+@Deprecated
 public @interface GridDirectCollection {
     /**
      * @return Item type.

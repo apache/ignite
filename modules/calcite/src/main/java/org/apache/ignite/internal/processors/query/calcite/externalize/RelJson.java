@@ -26,6 +26,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.google.common.cache.CacheBuilder;
@@ -67,7 +68,6 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexOver;
 import org.apache.calcite.rex.RexSlot;
-import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.rex.RexVariable;
 import org.apache.calcite.rex.RexWindow;
 import org.apache.calcite.rex.RexWindowBound;
@@ -113,6 +113,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteCustomType;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -265,7 +266,8 @@ class RelJson {
         if (value == null
             || value instanceof Number
             || value instanceof String
-            || value instanceof Boolean)
+            || value instanceof Boolean
+            || value instanceof UUID)
             return value;
         else if (value instanceof Enum)
             return toJson((Enum)value);
@@ -392,8 +394,12 @@ class RelJson {
                     type = typeFactory.createSqlIntervalType(
                         new SqlIntervalQualifier(startUnit, endUnit, SqlParserPos.ZERO));
                 }
-                else if (sqlTypeName == SqlTypeName.ARRAY)
+                else if (sqlTypeName == SqlTypeName.ARRAY) {
                     type = typeFactory.createArrayType(toType(typeFactory, map.get("elementType")), -1);
+
+                    if (Boolean.TRUE == map.get("nullable"))
+                        type = typeFactory.createTypeWithNullability(type, true);
+                }
                 else if (sqlTypeName == SqlTypeName.MAP)
                     type = typeFactory.createMapType(
                         toType(typeFactory, map.get("keyType")),
@@ -534,6 +540,8 @@ class RelJson {
                     literal = toByteString(literal);
                 else if (type.getSqlTypeName().getFamily() == SqlTypeFamily.NUMERIC && literal instanceof Number)
                     literal = SqlFunctions.toBigDecimal((Number)literal);
+                else if (type.getSqlTypeName() == SqlTypeName.UUID)
+                    literal = UUID.fromString(literal.toString());
 
                 return rexBuilder.makeLiteral(literal, type, true);
             }
@@ -764,6 +772,7 @@ class RelJson {
             Map<String, Object> map = map();
             map.put("type", toJson(node.getSqlTypeName()));
             map.put("elementType", toJson(node.getComponentType()));
+            map.put("nullable", node.isNullable());
             return map;
         }
         else if (node.getSqlTypeName() == SqlTypeName.MAP) {
@@ -808,8 +817,8 @@ class RelJson {
 
     /** */
     private Object toJson(RexNode node) {
-        // removes calls to SEARCH and the included Sarg and converts them to comparisons
-        node = RexUtil.expandSearch(Commons.emptyCluster().getRexBuilder(), null, node);
+        // Removes calls to SEARCH and the included Sarg and converts them to comparisons.
+        node = RexUtils.expandSearchNullableRecursive(Commons.emptyCluster().getRexBuilder(), null, node);
 
         Map<String, Object> map;
         switch (node.getKind()) {

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 
 /**
  * Message which needs to be marshalled and unmarshalled before sending or processing it.
@@ -27,11 +27,10 @@ public interface GridCacheQueryMarshallable {
     /**
      * @param m Marshaller.
      */
-    public void marshall(Marshaller m);
+    public void marshall(BinaryMarshaller m);
 
     /**
-     * @param m Marshaller.
      * @param ctx Context.
      */
-    public void unmarshall(Marshaller m, GridKernalContext ctx);
+    public void unmarshall(GridKernalContext ctx);
 }

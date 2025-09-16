@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.util.GridConcurrentWeakHashSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -96,7 +97,7 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
         assert set.retainAll(c);
         assert !set.retainAll(c);
 
-        Collection<Integer> c2 = F.retain(c1, true, c);
+        Collection<Integer> c2 = c1.stream().filter(c::contains).collect(Collectors.toList());
 
         assert set.containsAll(c2);
         assert !set.containsAll(c1);

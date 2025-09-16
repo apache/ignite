@@ -19,7 +19,6 @@ package org.apache.ignite.cdc;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -40,12 +39,14 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cdc.CdcConsumerState;
 import org.apache.ignite.internal.cdc.CdcMain;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.spi.metric.LongMetric;
@@ -120,8 +121,8 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         cdcCfg.setMetricExporterSpi(metricExporters());
 
         return new CdcMain(cfg, null, cdcCfg) {
-            @Override protected CdcConsumerState createState(Path stateDir) {
-                return new CdcConsumerState(log, stateDir) {
+            @Override protected CdcConsumerState createState(NodeFileTree ft) {
+                return new CdcConsumerState(log, ft) {
                     @Override public void saveWal(T2<WALPointer, Integer> state) throws IOException {
                         super.saveWal(state);
 
@@ -167,7 +168,7 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
         else
             cdc = createCdc(cnsmr, cfg);
 
-        IgniteInternalFuture<?> fut = runAsync(cdc);
+        IgniteInternalFuture<?> fut = runCdcAsync(cdc, latch);
 
         addData.apply(cache, from, to);
 
@@ -277,6 +278,22 @@ public abstract class AbstractCdcTest extends GridCommonAbstractTest {
     /** */
     protected MetricExporterSpi[] metricExporters() {
         return null;
+    }
+
+    /** */
+    protected IgniteInternalFuture<?> runCdcAsync(CdcMain cdc, CountDownLatch latch) {
+        IgniteInternalFuture<?> fut = runAsync(cdc);
+
+        fut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> initFut) {
+                if (initFut.error() != null)
+                    log.error("The CDC main process has failed", initFut.error());
+
+                latch.countDown();
+            }
+        });
+
+        return fut;
     }
 
     /** */

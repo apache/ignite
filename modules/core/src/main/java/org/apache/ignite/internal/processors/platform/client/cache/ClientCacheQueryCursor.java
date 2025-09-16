@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.platform.client.cache;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientCloseableResource;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 
@@ -67,7 +67,7 @@ abstract class ClientCacheQueryCursor<T> implements ClientCloseableResource {
      *
      * @param writer Writer.
      */
-    void writePage(BinaryRawWriterEx writer) {
+    void writePage(BinaryWriterEx writer) {
         Iterator<T> iter = iterator();
 
         int cntPos = writer.reserveInt();
@@ -95,7 +95,7 @@ abstract class ClientCacheQueryCursor<T> implements ClientCloseableResource {
      * @param writer Writer.
      * @param e Entry.
      */
-    abstract void writeEntry(BinaryRawWriterEx writer, T e);
+    abstract void writeEntry(BinaryWriterEx writer, T e);
 
     /**
      * Closes the cursor.

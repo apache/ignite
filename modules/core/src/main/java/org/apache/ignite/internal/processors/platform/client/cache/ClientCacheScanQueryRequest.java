@@ -23,7 +23,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientPlatform;
@@ -57,7 +57,7 @@ public class ClientCacheScanQueryRequest extends ClientCacheQueryRequest impleme
      *
      * @param reader Reader.
      */
-    public ClientCacheScanQueryRequest(BinaryRawReaderEx reader) {
+    public ClientCacheScanQueryRequest(BinaryReaderEx reader) {
         super(reader);
 
         filterObj = reader.readObjectDetached();

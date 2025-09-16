@@ -27,11 +27,11 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.ExecutionNodeMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTracker;
-import org.apache.ignite.internal.processors.query.calcite.exec.tracker.ObjectSizeCalculator;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.RowTracker;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlan;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
@@ -81,7 +81,7 @@ public class ListFieldsQueryCursor<Row> implements FieldsQueryCursor<List<?>>, Q
         ArrayList<List<?>> res = new ArrayList<>();
 
         RowTracker<List<?>> rowTracker = ExecutionNodeMemoryTracker.create(qryMemoryTracker,
-            ObjectSizeCalculator.OBJ_REF_SIZE);
+            GridUnsafe.OBJ_REF_SIZE);
 
         try {
             getAll(row -> {

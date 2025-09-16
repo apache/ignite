@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.metric.impl.LongAdderWithDelegateMe
 import org.apache.ignite.internal.processors.metric.impl.LongGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectGauge;
 import org.apache.ignite.internal.processors.metric.impl.ObjectMetricImpl;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.Metric;
 import org.jetbrains.annotations.NotNull;
@@ -50,7 +51,6 @@ import static org.apache.ignite.internal.processors.metric.impl.HitRateMetric.DF
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.customMetric;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.fromFullName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.apache.ignite.internal.util.lang.GridFunc.nonThrowableSupplier;
 
 /**
  * Metric registry.
@@ -310,5 +310,110 @@ public class MetricRegistryImpl implements MetricRegistry {
     /** {@inheritDoc} */
     @Override public String name() {
         return regName;
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    private static BooleanSupplier nonThrowableSupplier(BooleanSupplier s, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.getAsBoolean();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return false;
+            }
+        };
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    private static DoubleSupplier nonThrowableSupplier(DoubleSupplier s, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.getAsDouble();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return .0d;
+            }
+        };
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    private static IntSupplier nonThrowableSupplier(IntSupplier s, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.getAsInt();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return 0;
+            }
+        };
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    private static LongSupplier nonThrowableSupplier(LongSupplier s, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.getAsLong();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return 0;
+            }
+        };
+    }
+
+    /**
+     * Return supplier that suppress any exception throwed by {@code s}.
+     * Returned supplier will produce {@code dfltVal} on any exception in {@code s}.
+     *
+     * @param s Root supplier.
+     * @param log Logger.
+     * @return Supplier that suppress any exception throwed by {@code s}.
+     */
+    private static <T> Supplier<T> nonThrowableSupplier(Supplier<T> s, IgniteLogger log) {
+        return () -> {
+            try {
+                return s.get();
+            }
+            catch (Exception e) {
+                LT.warn(log, e, "Exception in supplier", false, true);
+
+                return null;
+            }
+        };
     }
 }

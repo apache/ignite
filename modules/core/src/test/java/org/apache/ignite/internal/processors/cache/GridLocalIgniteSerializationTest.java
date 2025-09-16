@@ -33,7 +33,6 @@ import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.AbstractNodeNameAwareMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -89,21 +88,19 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
         GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 try (final Ignite ignite = startGrid(igniteInstanceName)) {
-                    if (ignite.configuration().getMarshaller() instanceof AbstractNodeNameAwareMarshaller) {
-                        final IgniteCache<Integer, TestObject> cache = ignite.getOrCreateCache(CACHE_NAME);
+                    final IgniteCache<Integer, TestObject> cache = ignite.getOrCreateCache(CACHE_NAME);
 
-                        assertNull(obj.ignite());
+                    assertNull(obj.ignite());
 
-                        cache.put(1, obj);
+                    cache.put(1, obj);
 
-                        assertNotNull(obj.ignite());
+                    assertNotNull(obj.ignite());
 
-                        final TestObject loadedObj = cache.get(1);
+                    final TestObject loadedObj = cache.get(1);
 
-                        assertNotNull(loadedObj.ignite());
+                    assertNotNull(loadedObj.ignite());
 
-                        assertEquals(obj, loadedObj);
-                    }
+                    assertEquals(obj, loadedObj);
                 }
 
                 return null;

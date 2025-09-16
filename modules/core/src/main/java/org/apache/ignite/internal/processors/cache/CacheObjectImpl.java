@@ -127,16 +127,6 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 89;
-    }
-
-    /** {@inheritDoc} */
     @Override public int hashCode() {
         assert false;
 
@@ -151,7 +141,7 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+    @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
         return this;
     }
 }

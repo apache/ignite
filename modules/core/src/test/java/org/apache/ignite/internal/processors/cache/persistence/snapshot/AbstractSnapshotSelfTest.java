@@ -103,6 +103,7 @@ import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -116,8 +117,6 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.FILE_SUFFIX;
-import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_DIR_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.CP_SNAPSHOT_REASON;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -176,7 +175,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     @Parameterized.Parameter
     public boolean encryption;
 
-    /** . */
+    /** */
     @Parameterized.Parameter(1)
     public boolean onlyPrimary;
 
@@ -266,10 +265,10 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
                 if (ig.configuration().isClientMode() || !persistence)
                     continue;
 
-                Path snpTempDir = ((IgniteEx)ig).context().pdsFolderResolver().fileTree().snapshotTempRoot().toPath();
-
-                assertEquals("Snapshot working directory must be empty at the moment test execution stopped: " + snpTempDir,
-                    0, U.fileCount(snpTempDir));
+                for (File tmpRoot : ((IgniteEx)ig).context().pdsFolderResolver().fileTree().snapshotsTempRoots()) {
+                    assertEquals("Snapshot working directory must be empty at the moment test execution stopped: " + tmpRoot,
+                        0, U.fileCount(tmpRoot.toPath()));
+                }
             }
         }
         finally {
@@ -312,7 +311,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
             assertTrue("The process has not finished on the node " + kctx.localNodeId(), success);
 
-            File dir = kctx.pdsFolderResolver().fileTree().cacheStorage(ccfg);
+            File dir = kctx.pdsFolderResolver().fileTree().defaultCacheStorage(ccfg);
 
             String errMsg = String.format("%s, dir=%s, exists=%b, files=%s",
                 ignite.name(), dir, dir.exists(), Arrays.toString(dir.list()));
@@ -336,27 +335,29 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /**
      * Calculate CRC for all partition files of specified cache.
      *
-     * @param cacheDir Cache directory to iterate over partition files.
+     * @param cacheDirs Cache directories to iterate over partition files.
      * @return The map of [fileName, checksum].
      */
-    public static Map<String, Integer> calculateCRC32Partitions(File cacheDir) {
-        assert cacheDir.isDirectory() : cacheDir.getAbsolutePath();
-
+    public static Map<String, Integer> calculateCRC32Partitions(File... cacheDirs) {
         Map<String, Integer> result = new HashMap<>();
 
-        try {
-            try (DirectoryStream<Path> partFiles = newDirectoryStream(cacheDir.toPath(),
-                p -> NodeFileTree.partitionFile(p.toFile()) && p.toFile().getName().endsWith(FILE_SUFFIX))
-            ) {
-                for (Path path : partFiles)
-                    result.put(path.toFile().getName(), FastCrc.calcCrc(path.toFile()));
-            }
+        for (File cacheDir : cacheDirs) {
+            assert cacheDir.isDirectory() : cacheDir.getAbsolutePath();
 
-            return result;
+            try {
+                try (DirectoryStream<Path> partFiles = newDirectoryStream(cacheDir.toPath(),
+                    p -> NodeFileTree.partitionFile(p.toFile()) && NodeFileTree.binFile(p.toFile()))
+                ) {
+                    for (Path path : partFiles)
+                        result.put(path.toFile().getName(), FastCrc.calcCrc(path.toFile()));
+                }
+            }
+            catch (IOException e) {
+                throw new IgniteException(e);
+            }
         }
-        catch (IOException e) {
-            throw new IgniteException(e);
-        }
+
+        return result;
     }
 
     /**
@@ -632,7 +633,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             if (!sft.nodeStorage().exists())
                 continue;
 
-            for (File cacheDir : sft.cacheDirectories(f -> !f.getName().equals(METASTORAGE_DIR_NAME))) {
+            for (File cacheDir : sft.existingCacheDirsWithoutMeta()) {
                 String name = NodeFileTree.cacheName(cacheDir);
 
                 Map<Integer, Integer> cacheParts = cachesParts.computeIfAbsent(name, k -> new HashMap<>());
@@ -936,14 +937,28 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             blockPred = pred;
         }
 
-        /** Unblock and send previously saved discovery custom messages */
+        /** Reassigns blocking predicate and releases current blocked queue. */
+        public synchronized void blockNextAndRelease(IgnitePredicate<DiscoveryCustomMessage> pred) {
+            blockPred = pred;
+
+            releaseBlocked();
+        }
+
+        /** Unblock and send previously saved discovery custom messages. */
         public synchronized void unblock() {
             blockPred = null;
 
+            releaseBlocked();
+        }
+
+        /** Releases the blocked messages. */
+        private void releaseBlocked() {
+            List<DiscoverySpiCustomMessage> blocked = new CopyOnWriteArrayList<>(this.blocked);
+
+            this.blocked.clear();
+
             for (DiscoverySpiCustomMessage msg : blocked)
                 sendCustomEvent(msg);
-
-            blocked.clear();
         }
 
         /**
@@ -952,6 +967,14 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
          */
         public void waitBlocked(long timeout) throws IgniteInterruptedCheckedException {
             GridTestUtils.waitForCondition(() -> !blocked.isEmpty(), timeout);
+        }
+
+        /**
+         * @param timeout Timeout to wait blocking messages.
+         * @throws IgniteInterruptedCheckedException If interrupted.
+         */
+        public void waitBlockedSize(int size, long timeout) throws IgniteInterruptedCheckedException {
+            GridTestUtils.waitForCondition(() -> blocked.size() == size, timeout);
         }
     }
 
@@ -993,8 +1016,8 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendCacheConfig0(File ccfg, String cacheDirName) {
-            delegate.sendCacheConfig(ccfg, cacheDirName);
+        @Override public void sendCacheConfig0(File ccfgFile, CacheConfiguration<?, ?> ccfg) {
+            delegate.sendCacheConfig(ccfgFile, ccfg);
         }
 
         /** {@inheritDoc} */
@@ -1008,13 +1031,13 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void sendPart0(File part, String cacheDirName, GroupPartitionId pair, Long length) {
-            delegate.sendPart(part, cacheDirName, pair, length);
+        @Override public void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long length) {
+            delegate.sendPart(from, to, storagePath, pair, length);
         }
 
         /** {@inheritDoc} */
-        @Override public void sendDelta0(File delta, String cacheDirName, GroupPartitionId pair) {
-            delegate.sendDelta(delta, cacheDirName, pair);
+        @Override public void sendDelta0(File delta, File snpPart, GroupPartitionId pair) {
+            delegate.sendDelta(delta, snpPart, pair);
         }
 
         /** {@inheritDoc} */

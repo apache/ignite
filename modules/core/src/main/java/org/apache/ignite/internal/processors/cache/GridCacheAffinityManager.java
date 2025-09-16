@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -263,7 +264,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      * @return {@code True} if checked node is primary for given key.
      */
     public boolean primaryByKey(ClusterNode n, Object key, AffinityTopologyVersion topVer) {
-        return F.eq(primaryByKey(key, topVer), n);
+        return Objects.equals(primaryByKey(key, topVer), n);
     }
 
     /**
@@ -273,7 +274,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      * @return {@code True} if checked node is primary for given partition.
      */
     public boolean primaryByPartition(ClusterNode n, int part, AffinityTopologyVersion topVer) {
-        return F.eq(primaryByPartition(part, topVer), n);
+        return Objects.equals(primaryByPartition(part, topVer), n);
     }
 
     /**

@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -262,8 +263,8 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
             try (Connection c = connect(node0)) {
                 try (ResultSet rs = c.getMetaData().getIndexInfo(null, cacheName, tblName, false, false)) {
                     while (rs.next()) {
-                        if (F.eq(idxName, rs.getString("INDEX_NAME")))
-                            res.add(new T2<>(rs.getString("COLUMN_NAME"), F.eq("A", rs.getString("ASC_OR_DESC"))));
+                        if (Objects.equals(idxName, rs.getString("INDEX_NAME")))
+                            res.add(new T2<>(rs.getString("COLUMN_NAME"), Objects.equals("A", rs.getString("ASC_OR_DESC"))));
                     }
                 }
             }
@@ -404,7 +405,7 @@ public abstract class AbstractSchemaSelfTest extends AbstractIndexingCommonTest 
                 try (ResultSet rs = c.getMetaData().getIndexInfo(null, cacheName, tblName, false, false)) {
                     while (rs.next()) {
                         assertFalse("Index exists, although shouldn't: " + tblName + '.' + idxName,
-                            F.eq(idxName, rs.getString("INDEX_NAME")));
+                            Objects.equals(idxName, rs.getString("INDEX_NAME")));
                     }
                 }
             }

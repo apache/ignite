@@ -22,14 +22,12 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.stream.IntStream;
-
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
@@ -54,7 +52,7 @@ public class TableSpoolExecutionTest extends AbstractExecutionTest {
 
     /** */
     @Test
-    public void testLazyTableSpool() throws Exception {
+    public void testLazyTableSpool() {
         checkTableSpool(
             (ctx, rowType) -> new TableSpoolNode<>(ctx, rowType, true)
         );
@@ -62,7 +60,7 @@ public class TableSpoolExecutionTest extends AbstractExecutionTest {
 
     /** */
     @Test
-    public void testEagerTableSpool() throws Exception {
+    public void testEagerTableSpool() {
         checkTableSpool(
             (ctx, rowType) -> new TableSpoolNode<>(ctx, rowType, false)
         );
@@ -80,9 +78,7 @@ public class TableSpoolExecutionTest extends AbstractExecutionTest {
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, int.class);
 
-        int inBufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
-
-        int[] sizes = {inBufSize / 2, inBufSize, inBufSize + 1, inBufSize * 2};
+        int[] sizes = {IN_BUFFER_SIZE / 2, IN_BUFFER_SIZE, IN_BUFFER_SIZE + 1, IN_BUFFER_SIZE * 2};
 
         for (int size : sizes) {
             log.info("Check: size=" + size);
@@ -116,16 +112,14 @@ public class TableSpoolExecutionTest extends AbstractExecutionTest {
     }
 
     /** */
-    public void checkTableSpool(BiFunction<ExecutionContext<Object[]>, RelDataType, TableSpoolNode<Object[]>> spoolFactory)
-        throws Exception {
+    public void checkTableSpool(BiFunction<ExecutionContext<Object[]>, RelDataType, TableSpoolNode<Object[]>> spoolFactory) {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, int.class);
 
-        int inBufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
+        int[] sizes = {1, IN_BUFFER_SIZE / 2 - 1, IN_BUFFER_SIZE / 2, IN_BUFFER_SIZE / 2 + 1, IN_BUFFER_SIZE,
+            IN_BUFFER_SIZE + 1, IN_BUFFER_SIZE * 4};
 
-        int[] sizes = {1, inBufSize / 2 - 1, inBufSize / 2, inBufSize / 2 + 1, inBufSize, inBufSize + 1, inBufSize * 4};
-//        int[] sizes = {inBufSize * 4};
         int rewindCnts = 32;
 
         for (int size : sizes) {

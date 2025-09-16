@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.cluster;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractPredicate;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -56,7 +56,7 @@ public class PlatformClusterNodeFilterImpl extends PlatformAbstractPredicate imp
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = ctx.writer(out);
+            BinaryWriterEx writer = ctx.writer(out);
 
             writer.writeObject(pred);
             ctx.writeNode(writer, clusterNode);

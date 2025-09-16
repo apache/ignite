@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.binary.noncompact;
 
-import org.apache.ignite.internal.binary.BinaryObjectBuilderAdditionalSelfTest;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderAdditionalSelfTest;
 
 /**
  *

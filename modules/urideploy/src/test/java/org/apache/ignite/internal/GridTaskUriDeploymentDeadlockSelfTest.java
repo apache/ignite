@@ -93,7 +93,7 @@ public class GridTaskUriDeploymentDeadlockSelfTest extends GridCommonAbstractTes
 
             info(">>> Starting task.");
 
-            assert "2".equals(executeAsync(compute(g.cluster().forPredicate(F.equalTo(F.first(g.cluster().forRemotes().nodes())))),
+            assert "2".equals(executeAsync(compute(g.cluster().forPredicate(n -> n.equals(F.first(g.cluster().forRemotes().nodes())))),
                 "GarHelloWorldTask", "HELLOWORLD.MSG").get(60000));
 
             f.get();

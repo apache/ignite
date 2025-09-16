@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,9 +41,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * DHT cache lock response.
  */
 public class GridDhtLockResponse extends GridDistributedLockResponse {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Mini ID. */
     private IgniteUuid miniId;
 
@@ -58,7 +54,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
     private List<GridCacheEntryInfo> preloadEntries;
 
     /**
-     * Empty constructor (required by {@link Externalizable}).
+     * Empty constructor.
      */
     public GridDhtLockResponse() {
         // No-op.
@@ -167,27 +163,27 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
+            case 10:
+                if (!writer.writeCollection(invalidParts, MessageCollectionItemType.INT))
+                    return false;
+
+                writer.incrementState();
+
             case 11:
-                if (!writer.writeCollection("invalidParts", invalidParts, MessageCollectionItemType.INT))
+                if (!writer.writeIgniteUuid(miniId))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeIgniteUuid("miniId", miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeCollection("preloadEntries", preloadEntries, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(preloadEntries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -201,15 +197,20 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
+            case 10:
+                invalidParts = reader.readCollection(MessageCollectionItemType.INT);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
             case 11:
-                invalidParts = reader.readCollection("invalidParts", MessageCollectionItemType.INT);
+                miniId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -217,15 +218,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 12:
-                miniId = reader.readIgniteUuid("miniId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                preloadEntries = reader.readCollection("preloadEntries", MessageCollectionItemType.MSG);
+                preloadEntries = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -234,17 +227,12 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
 
         }
 
-        return reader.afterMessageRead(GridDhtLockResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 31;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 14;
     }
 
     /** {@inheritDoc} */

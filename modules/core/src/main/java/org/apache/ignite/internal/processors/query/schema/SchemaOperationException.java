@@ -79,6 +79,18 @@ public class SchemaOperationException extends IgniteCheckedException {
     }
 
     /**
+     * Constructor for specific error type.
+     *
+     * @param msg Message.
+     * @param code Code.
+     */
+    public SchemaOperationException(String msg, int code) {
+        super(msg);
+
+        this.code = code;
+    }
+
+    /**
      * Constructor for generic error.
      *
      * @param msg Message.

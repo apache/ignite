@@ -72,7 +72,7 @@ public class H2RowCachePageEvictionTest extends AbstractIndexingCommonTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
+        recreateDefaultDb();
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "wal", true);
     }
 

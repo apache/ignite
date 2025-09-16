@@ -345,7 +345,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         node = super.performUnconditionalRewrites(node, underFrom);
 
-        if (config().callRewrite() && node instanceof SqlCall)
+        if (node instanceof SqlCall)
             node = IgniteSqlCallRewriteTable.INSTANCE.rewrite(this, (SqlCall)node);
 
         return node;
@@ -648,5 +648,13 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
         }
 
         return super.resolveLiteral(literal);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void validateUnnest(SqlCall call, SqlValidatorScope scope, RelDataType targetRowType) {
+        if (call.operandCount() > 1)
+            throw newValidationError(call, RESOURCE.invalidArgCount(call.getOperator().getName(), 1));
+
+        super.validateUnnest(call, scope, targetRowType);
     }
 }

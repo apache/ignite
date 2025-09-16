@@ -34,7 +34,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -256,7 +256,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeHandshake(BinaryWriterExImpl writer) {
+    @Override public void writeHandshake(BinaryWriterEx writer) {
         writer.writeBoolean(true);
     }
 

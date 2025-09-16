@@ -22,15 +22,15 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  *  Data transfer object for {@link org.apache.ignite.cluster.ClusterNode}.
  */
-public class ClusterNode extends VisorDataTransferObject {
+public class ClusterNode extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -113,7 +113,7 @@ public class ClusterNode extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         consistentId = U.readString(in);
         attrs = U.readMap(in);
         hostNames = U.readCollection(in);

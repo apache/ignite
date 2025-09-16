@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Objects;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -61,7 +61,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
                 assert primary != null : "primary is null";
                 assert backup != null : "backup is null";
 
-                return !F.eq(primary.attribute(SPLIT_ATTRIBUTE_NAME), backup.attribute(SPLIT_ATTRIBUTE_NAME));
+                return !Objects.equals(primary.attribute(SPLIT_ATTRIBUTE_NAME), backup.attribute(SPLIT_ATTRIBUTE_NAME));
             }
         };
 
@@ -192,7 +192,7 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
             ClusterNode primary = F.first(nodes);
             ClusterNode backup = F.last(nodes);
 
-            assertFalse(F.eq(primary.attribute(SPLIT_ATTRIBUTE_NAME), backup.attribute(SPLIT_ATTRIBUTE_NAME)));
+            assertFalse(Objects.equals(primary.attribute(SPLIT_ATTRIBUTE_NAME), backup.attribute(SPLIT_ATTRIBUTE_NAME)));
         }
     }
 

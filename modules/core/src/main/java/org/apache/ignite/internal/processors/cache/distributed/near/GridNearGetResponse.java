@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,9 +45,6 @@ import org.jetbrains.annotations.NotNull;
  * Get response.
  */
 public class GridNearGetResponse extends GridCacheIdMessage implements GridCacheDeployable, GridCacheVersionable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Future ID. */
     private IgniteUuid futId;
 
@@ -79,7 +75,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
     private byte[] errBytes;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearGetResponse() {
         // No-op.
@@ -220,7 +216,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -228,43 +224,43 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeCollection("entries", entries, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(entries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeByteArray(errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeIgniteUuid("futId", futId))
+                if (!writer.writeIgniteUuid(futId))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeCollection("invalidParts", invalidParts, MessageCollectionItemType.INT))
+                if (!writer.writeCollection(invalidParts, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeIgniteUuid(miniId))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeMessage("ver", ver))
+                if (!writer.writeMessage(ver))
                     return false;
 
                 writer.incrementState();
@@ -278,15 +274,12 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 4:
-                entries = reader.readCollection("entries", MessageCollectionItemType.MSG);
+                entries = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -294,7 +287,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
                 reader.incrementState();
 
             case 5:
-                errBytes = reader.readByteArray("errBytes");
+                errBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -302,7 +295,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
                 reader.incrementState();
 
             case 6:
-                futId = reader.readIgniteUuid("futId");
+                futId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -310,7 +303,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
                 reader.incrementState();
 
             case 7:
-                invalidParts = reader.readCollection("invalidParts", MessageCollectionItemType.INT);
+                invalidParts = reader.readCollection(MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -318,7 +311,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
                 reader.incrementState();
 
             case 8:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -326,7 +319,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
                 reader.incrementState();
 
             case 9:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -334,7 +327,7 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
                 reader.incrementState();
 
             case 10:
-                ver = reader.readMessage("ver");
+                ver = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -343,17 +336,12 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
 
         }
 
-        return reader.afterMessageRead(GridNearGetResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 50;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 11;
     }
 
     /** {@inheritDoc} */

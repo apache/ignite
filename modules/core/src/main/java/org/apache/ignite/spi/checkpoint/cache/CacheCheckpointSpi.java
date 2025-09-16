@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.checkpoint.cache;
 
+import java.util.Objects;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.events.CacheEvent;
@@ -170,7 +171,7 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
 
                 CacheEvent e = (CacheEvent)evt;
 
-                if (!F.eq(e.cacheName(), cacheName))
+                if (!Objects.equals(e.cacheName(), cacheName))
                     return;
 
                 if (e.oldValue() != null) {

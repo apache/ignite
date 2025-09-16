@@ -272,10 +272,7 @@ public class CachesRegistry {
         // Pre-create cache work directories if they don't exist.
         for (StoredCacheData data : cacheConfigsToPersist) {
             try {
-                FilePageStoreManager.checkAndInitCacheWorkDir(
-                    cctx.kernalContext().pdsFolderResolver().fileTree().cacheStorage(data.config()),
-                    log
-                );
+                FilePageStoreManager.checkAndInitCacheWorkDir(cctx.kernalContext().pdsFolderResolver().fileTree().cacheTree(data.config()));
             }
             catch (IgniteCheckedException e) {
                 if (!cctx.kernalContext().isStopping()) {

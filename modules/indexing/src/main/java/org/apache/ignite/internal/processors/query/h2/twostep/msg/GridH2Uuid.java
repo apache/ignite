@@ -66,7 +66,7 @@ public class GridH2Uuid extends GridH2ValueMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -74,13 +74,13 @@ public class GridH2Uuid extends GridH2ValueMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("high", high))
+                if (!writer.writeLong(high))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("low", low))
+                if (!writer.writeLong(low))
                     return false;
 
                 writer.incrementState();
@@ -94,15 +94,12 @@ public class GridH2Uuid extends GridH2ValueMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 0:
-                high = reader.readLong("high");
+                high = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -110,7 +107,7 @@ public class GridH2Uuid extends GridH2ValueMessage {
                 reader.incrementState();
 
             case 1:
-                low = reader.readLong("low");
+                low = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -119,17 +116,12 @@ public class GridH2Uuid extends GridH2ValueMessage {
 
         }
 
-        return reader.afterMessageRead(GridH2Uuid.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return -20;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

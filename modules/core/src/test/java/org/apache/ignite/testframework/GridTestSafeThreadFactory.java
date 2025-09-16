@@ -29,8 +29,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.GridBusyLock;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -187,14 +185,7 @@ public final class GridTestSafeThreadFactory implements ThreadFactory {
             startedThreadsLock.unblock();
         }
 
-        boolean aliveThreads = F.forAny(
-            all,
-            new P1<Thread>() {
-                @Override public boolean apply(Thread t) {
-                    return t.isAlive();
-                }
-            }
-        );
+        boolean aliveThreads = all.stream().anyMatch(Thread::isAlive);
 
         if (!aliveThreads)
             return;

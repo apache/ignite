@@ -64,7 +64,6 @@ import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.StorageException;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileVersionCheckingFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
@@ -280,7 +279,7 @@ public class IgniteIndexReader implements AutoCloseable {
         for (int i = 0; i < partCnt; i++)
             partStores[i] = filePageStore(i, FLAG_DATA, storeFactory);
 
-        Arrays.stream(FilePageStoreManager.cacheDataFiles(root)).forEach(f -> {
+        NodeFileTree.existingCacheConfigFiles(root).forEach(f -> {
             try {
                 StoredCacheData data = GridLocalConfigManager.readCacheData(f, null, null);
 
@@ -1194,7 +1193,7 @@ public class IgniteIndexReader implements AutoCloseable {
         byte type,
         FileVersionCheckingFactory storeFactory
     ) throws IgniteCheckedException {
-        File file = new File(root, NodeFileTree.partitionFileName(partId));
+        File file = new File(root, partitionFileName(partId));
 
         if (!file.exists())
             return null;

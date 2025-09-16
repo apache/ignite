@@ -62,6 +62,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
 
 /**
  * Force keys request future.
@@ -353,7 +354,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
             assert pick != null;
 
             if (!cctx.rebalanceEnabled() && loc.id().equals(pick.id()))
-                pick = F.first(F.view(owners, F.remoteNodes(loc.id())));
+                pick = F.first(F.view(owners, remoteNodes(loc.id())));
 
             if (pick == null) {
                 if (log.isTraceEnabled())

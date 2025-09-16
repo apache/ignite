@@ -62,7 +62,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -107,6 +106,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CRED
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.withSecurityContext;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.zookeeper.CreateMode.EPHEMERAL_SEQUENTIAL;
 import static org.apache.zookeeper.CreateMode.PERSISTENT;
 
@@ -205,9 +205,6 @@ public class ZookeeperDiscoveryImpl {
     private final Object stateMux = new Object();
 
     /** */
-    public volatile IgniteDiscoverySpiInternalListener internalLsnr;
-
-    /** */
     private final ConcurrentHashMap<Long, PingFuture> pingFuts = new ConcurrentHashMap<>();
 
     /** */
@@ -227,7 +224,6 @@ public class ZookeeperDiscoveryImpl {
      * @param locNode Local node instance.
      * @param lsnr Discovery events listener.
      * @param exchange Discovery data exchange.
-     * @param internalLsnr Internal listener (used for testing only).
      * @param stats Zookeeper DiscoverySpi statistics collector.
      * @param marsh Marshaller.
      */
@@ -239,7 +235,6 @@ public class ZookeeperDiscoveryImpl {
         ZookeeperClusterNode locNode,
         DiscoverySpiListener lsnr,
         DiscoverySpiDataExchange exchange,
-        IgniteDiscoverySpiInternalListener internalLsnr,
         ZookeeperDiscoveryStatistics stats,
         JdkMarshaller marsh
     ) {
@@ -265,9 +260,6 @@ public class ZookeeperDiscoveryImpl {
             evtsAckThreshold = 1;
 
         this.evtsAckThreshold = evtsAckThreshold;
-
-        if (internalLsnr != null)
-            this.internalLsnr = internalLsnr;
 
         this.stats = stats;
     }
@@ -791,10 +783,7 @@ public class ZookeeperDiscoveryImpl {
             // Need fire EVT_CLIENT_NODE_RECONNECTED event if reconnect after already joined.
             boolean reconnect = locNode.isClient() && prevState != null && (prevState.joined || prevState.reconnect);
 
-            IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
-
-            if (internalLsnr != null)
-                internalLsnr.beforeJoin(locNode, log);
+            spi.beforeJoinTopology(locNode);
 
             if (reconnect)
                 locNode.setAttributes(spi.getLocNodeAttrs());
@@ -3423,7 +3412,7 @@ public class ZookeeperDiscoveryImpl {
                             if (log.isInfoEnabled()) {
                                 log.info("Communication error resolver forced nodes stop [reqId=" + futId +
                                     ", killNodeCnt=" + killedNodes.size() +
-                                    ", nodeIds=" + U.nodeIds(killedNodes) + ']');
+                                    ", nodeIds=" + nodeIds(killedNodes) + ']');
                             }
 
                             killedNodesList = new GridLongList(killedNodes.size());
@@ -3835,7 +3824,7 @@ public class ZookeeperDiscoveryImpl {
         }
 
         if (processed)
-            handleProcessedEvents("fail-" + U.nodeIds(failedNodes));
+            handleProcessedEvents("fail-" + nodeIds(failedNodes));
     }
 
     /**

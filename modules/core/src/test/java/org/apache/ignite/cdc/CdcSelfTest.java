@@ -629,14 +629,15 @@ public class CdcSelfTest extends AbstractCdcTest {
         CdcMain cdc1 = createCdc(cnsmr1, cfg1, latch, sizePredicate1);
         CdcMain cdc2 = createCdc(cnsmr2, cfg2, latch, sizePredicate2);
 
-        IgniteInternalFuture<?> fut1 = runAsync(cdc1);
-        IgniteInternalFuture<?> fut2 = runAsync(cdc2);
+        IgniteInternalFuture<?> fut1 = runCdcAsync(cdc1, latch);
+        IgniteInternalFuture<?> fut2 = runCdcAsync(cdc2, latch);
 
         addDataFut.get(getTestTimeout());
 
         runAsync(() -> addData(cache, KEYS_CNT, KEYS_CNT * 2)).get(getTestTimeout());
 
-        // Wait while predicate will become true and state saved on the disk for both cdc.
+        // Wait while predicate will become true and state saved on the disk for both cdc or
+        // while CdcMain futures completes when assertions fail in UserCdcConsumer methods.
         assertTrue(latch.await(getTestTimeout(), MILLISECONDS));
 
         checkMetrics(cdc1, keysCnt[0]);

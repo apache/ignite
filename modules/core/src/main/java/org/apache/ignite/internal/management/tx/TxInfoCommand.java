@@ -28,7 +28,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
-import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.management.api.NativeCommand;
 import org.apache.ignite.internal.management.tx.TxCommand.AbstractTxCommandArg;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.DOUBLE_INDE
 import static org.apache.ignite.internal.management.tx.TxCommand.nodeDescription;
 
 /** */
-public class TxInfoCommand implements LocalCommand<AbstractTxCommandArg, Map<ClusterNode, TxTaskResult>> {
+public class TxInfoCommand implements NativeCommand<AbstractTxCommandArg, Map<ClusterNode, TxTaskResult>> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print detailed information (topology and key lock ownership) about specific transaction";

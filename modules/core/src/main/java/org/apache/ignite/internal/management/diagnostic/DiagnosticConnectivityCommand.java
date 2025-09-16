@@ -27,9 +27,9 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_UUIDS;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /** */
 public class DiagnosticConnectivityCommand
@@ -75,7 +75,7 @@ public class DiagnosticConnectivityCommand
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, DiagnosticConnectivityCommandArg arg) {
         // Task runs on default node but maps to all nodes in cluster.
-        arg.nodes(F.nodeIds(nodes).toArray(EMPTY_UUIDS));
+        arg.nodes(nodeIds(nodes).toArray(EMPTY_UUIDS));
 
         return null;
     }

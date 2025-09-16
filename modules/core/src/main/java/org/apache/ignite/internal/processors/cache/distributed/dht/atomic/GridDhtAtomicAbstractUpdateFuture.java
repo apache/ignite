@@ -52,6 +52,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * DHT atomic cache backup update future.
@@ -168,7 +169,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
             dhtNodes = affNodes;
 
         if (log.isDebugEnabled())
-            log.debug("Mapping entry to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
+            log.debug("Mapping entry to DHT nodes [nodes=" + nodeIds(dhtNodes) + ", entry=" + entry + ']');
 
         CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
 
@@ -349,6 +350,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
                 else
                     return false;
             }
+
+            req.cleanup();
 
             if (resCnt0 == mappings.size())
                 onDone();

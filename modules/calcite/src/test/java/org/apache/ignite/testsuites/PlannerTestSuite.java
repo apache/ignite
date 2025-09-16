@@ -32,9 +32,11 @@ import org.apache.ignite.internal.processors.query.calcite.planner.JoinCommutePl
 import org.apache.ignite.internal.processors.query.calcite.planner.JoinWithUsingPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.LimitOffsetPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.MergeJoinPlannerTest;
-import org.apache.ignite.internal.processors.query.calcite.planner.PlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.PlanExecutionTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.PlanSplitterTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.PlannerTimeoutTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.ProjectFilterScanMergePlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.RexSimplificationPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SerializationPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SetOpPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.SortAggregatePlannerTest;
@@ -43,6 +45,7 @@ import org.apache.ignite.internal.processors.query.calcite.planner.StatisticsPla
 import org.apache.ignite.internal.processors.query.calcite.planner.TableDmlPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TableFunctionPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.TableSpoolPlannerTest;
+import org.apache.ignite.internal.processors.query.calcite.planner.UncollectPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.UnionPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.UserDefinedViewsPlannerTest;
 import org.apache.ignite.internal.processors.query.calcite.planner.hints.HintsTestSuite;
@@ -54,7 +57,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    PlannerTest.class,
+    PlanExecutionTest.class,
+    PlanSplitterTest.class,
     CorrelatedNestedLoopJoinPlannerTest.class,
     TableSpoolPlannerTest.class,
     SortedIndexSpoolPlannerTest.class,
@@ -81,9 +85,11 @@ import org.junit.runners.Suite;
     IndexSearchBoundsPlannerTest.class,
     InlineIndexScanPlannerTest.class,
     UserDefinedViewsPlannerTest.class,
+    RexSimplificationPlannerTest.class,
+    SerializationPlannerTest.class,
+    UncollectPlannerTest.class,
 
     HintsTestSuite.class,
-    SerializationPlannerTest.class,
 })
 public class PlannerTestSuite {
 }

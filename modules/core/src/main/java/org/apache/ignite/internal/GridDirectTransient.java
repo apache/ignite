@@ -24,9 +24,11 @@ import java.lang.annotation.Target;
 
 /**
  * Annotates transient fields.
+ * Deprecated, see {@link Order} and {@link MessageProcessor} for details.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
+@Deprecated
 public @interface GridDirectTransient {
     // No-op.
 }

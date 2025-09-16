@@ -26,7 +26,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.client.GridClientCacheMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -298,7 +298,7 @@ public class GridClientNodeBean implements Externalizable {
             caches = new ArrayList<>(cacheMap.size());
 
             for (Map.Entry<String, String> e : cacheMap.entrySet())
-                caches.add(new GridClientCacheBean(e.getKey(), GridClientCacheMode.valueOf(e.getValue()), null));
+                caches.add(new GridClientCacheBean(e.getKey(), CacheMode.valueOf(e.getValue()), null));
         }
 
         tcpAddrs = U.readCollection(in);

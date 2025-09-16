@@ -90,6 +90,10 @@ public class TooManyOpenFilesTcpCommunicationSpiTest extends GridCommonAbstractT
 
         IgniteEx txNode = grid(1);
 
+        // There is a race for a socket channel creation between rebalance and transaction. In case the socket is created
+        // and fails during rebalance, the node don't own partitions and don't participate in the transaction.
+        stopNode.context().cache().internalCache(DEFAULT_CACHE_NAME).preloader().rebalanceFuture().get(10_000);
+
         try (Transaction tx = txNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 60_000, 4)) {
             IgniteCache<Object, Object> cache = txNode.cache(DEFAULT_CACHE_NAME);
 

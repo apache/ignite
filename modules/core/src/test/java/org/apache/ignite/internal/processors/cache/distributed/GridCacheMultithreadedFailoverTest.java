@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
@@ -51,7 +52,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -525,7 +525,7 @@ public class GridCacheMultithreadedFailoverTest extends GridCommonAbstractTest {
 
         boolean failed = false;
 
-        if (!F.eq(expVals.keySet(), cacheKeys)) {
+        if (!Objects.equals(expVals.keySet(), cacheKeys)) {
             Collection<Integer> expOnly = new HashSet<>();
             Collection<Integer> cacheOnly = new HashSet<>();
 
@@ -544,7 +544,7 @@ public class GridCacheMultithreadedFailoverTest extends GridCommonAbstractTest {
             failed = true;
         }
 
-        if (dhtCaches != null && !F.eq(expVals.keySet(), dhtCacheKeys)) {
+        if (dhtCaches != null && !Objects.equals(expVals.keySet(), dhtCacheKeys)) {
             Collection<Integer> expOnly = new HashSet<>();
             Collection<Integer> cacheOnly = new HashSet<>();
 
@@ -568,7 +568,7 @@ public class GridCacheMultithreadedFailoverTest extends GridCommonAbstractTest {
 
         for (Map.Entry<Integer, Integer> entry : expVals.entrySet()) {
             for (int i = 0; i < dataNodes(); i++) {
-                if (!F.eq(caches.get(i).get(entry.getKey()), entry.getValue()))
+                if (!Objects.equals(caches.get(i).get(entry.getKey()), entry.getValue()))
                     failedKeys.add(entry.getKey());
             }
         }
@@ -582,7 +582,7 @@ public class GridCacheMultithreadedFailoverTest extends GridCommonAbstractTest {
 
                     UUID nodeId = G.ignite(nodeName(i)).cluster().localNode().id();
 
-                    if (!F.eq(cache.get(key), expVals.get(key)))
+                    if (!Objects.equals(cache.get(key), expVals.get(key)))
                         log.error("key=" + key + ", expVal=" + expVals.get(key) + ", nodeId=" + nodeId);
                 }
             }

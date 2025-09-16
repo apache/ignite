@@ -46,6 +46,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Ignite type factory.
@@ -148,6 +149,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 case OTHER:
                 case NULL:
                     return Object.class;
+                case UUID:
+                    return UUID.class;
                 default:
                     break;
             }
@@ -234,6 +237,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                     return Object.class;
                 case NULL:
                     return Void.class;
+                case UUID:
+                    return UUID.class;
                 default:
                     break;
             }
@@ -255,7 +260,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public RelDataType leastRestrictive(List<RelDataType> types) {
+    @Override public @Nullable RelDataType leastRestrictive(List<RelDataType> types) {
         assert types != null;
         assert types.size() >= 1;
 
@@ -269,7 +274,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
         if (res != null && res.getSqlTypeName() == SqlTypeName.FLOAT && types.size() > 1) {
             for (RelDataType type : types) {
                 if (type.getSqlTypeName() == SqlTypeName.DOUBLE && type.getPrecision() >= res.getPrecision())
-                    return type;
+                    return type.isNullable() == res.isNullable() ? type : createTypeWithNullability(type, true);
             }
         }
 
@@ -296,6 +301,8 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
                 return createTypeWithNullability(createSqlType(SqlTypeName.DATE), true);
             else if (clazz == LocalTime.class)
                 return createTypeWithNullability(createSqlType(SqlTypeName.TIME), true);
+            else if (clazz == UUID.class)
+                return createTypeWithNullability(createSqlType(SqlTypeName.UUID), true);
             else {
                 RelDataType relType = createCustomType(clazz);
 
@@ -314,9 +321,7 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
 
     /** @return Nullable custom type by storage type. {@code Null} if custom type not found. */
     public RelDataType createCustomType(Type type, boolean nullable) {
-        if (UUID.class == type)
-            return canonize(new UuidType(nullable));
-        else if (Object.class == type || (type instanceof Class && BinaryObject.class.isAssignableFrom((Class<?>)type)))
+        if (Object.class == type || (type instanceof Class && BinaryObject.class.isAssignableFrom((Class<?>)type)))
             return canonize(new OtherType(nullable));
 
         return null;
@@ -340,6 +345,9 @@ public class IgniteTypeFactory extends JavaTypeFactoryImpl {
 
         if (customType != null)
             return customType;
+
+        if (UUID.class == type)
+            return createSqlType(SqlTypeName.UUID);
 
         return super.createType(type);
     }

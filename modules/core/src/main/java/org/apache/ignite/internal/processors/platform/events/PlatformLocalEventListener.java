@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.events;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
@@ -62,7 +62,7 @@ public class PlatformLocalEventListener implements IgnitePredicate<Event> {
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = ctx.writer(out);
+            BinaryWriterEx writer = ctx.writer(out);
 
             writer.writeInt(id);
 

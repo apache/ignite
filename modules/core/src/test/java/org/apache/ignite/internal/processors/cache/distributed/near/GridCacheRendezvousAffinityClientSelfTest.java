@@ -29,9 +29,10 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Tests rendezvous affinity function with CLIENT_ONLY node (GG-8768).
@@ -82,9 +83,9 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
                     Collection<UUID> cur = mapping.get(p);
 
                     if (cur == null)
-                        mapping.put(p, F.nodeIds(nodes));
+                        mapping.put(p, nodeIds(nodes));
                     else {
-                        Iterator<UUID> nodesIt = F.nodeIds(nodes).iterator();
+                        Iterator<UUID> nodesIt = nodeIds(nodes).iterator();
 
                         for (UUID curNode : cur) {
                             UUID node = nodesIt.next();

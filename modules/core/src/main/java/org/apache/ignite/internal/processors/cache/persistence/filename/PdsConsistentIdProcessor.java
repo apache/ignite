@@ -112,14 +112,7 @@ public class PdsConsistentIdProcessor extends GridProcessorAdapter implements Pd
     private void initFileTree() throws IgniteCheckedException {
         assert ft == null;
 
-        if (ctx.clientNode()) {
-            ft = new NodeFileTree(
-                U.workDirectory(ctx.config().getWorkDirectory(), ctx.config().getIgniteHome()),
-                resolveFolders().folderName()
-            );
-        }
-        else
-            ft = new NodeFileTree(ctx.config(), resolveFolders().folderName());
+        ft = new NodeFileTree(ctx.config(), resolveFolders().folderName());
     }
 
     /**

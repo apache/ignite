@@ -23,7 +23,7 @@ import java.util.List;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -39,7 +39,7 @@ public class PlatformAffinityUtils {
      * @param writer Writer.
      * @param ctx Platform context.
      */
-    public static void writeAffinityFunctionContext(AffinityFunctionContext affCtx, BinaryRawWriterEx writer,
+    public static void writeAffinityFunctionContext(AffinityFunctionContext affCtx, BinaryWriterEx writer,
         PlatformContext ctx) {
         assert affCtx != null;
         assert writer != null;
@@ -72,7 +72,7 @@ public class PlatformAffinityUtils {
      * @param partitions Partitions.
      * @param writer Writer.
      */
-    public static void writePartitionAssignment(Collection<List<ClusterNode>> partitions, BinaryRawWriterEx writer,
+    public static void writePartitionAssignment(Collection<List<ClusterNode>> partitions, BinaryWriterEx writer,
         PlatformContext ctx) {
         assert partitions != null;
         assert writer != null;

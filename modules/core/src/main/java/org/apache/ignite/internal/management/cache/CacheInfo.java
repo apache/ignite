@@ -24,15 +24,15 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Cache info DTO.
  */
-public class CacheInfo extends VisorDataTransferObject {
+public class CacheInfo extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -343,11 +343,6 @@ public class CacheInfo extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V2;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, seqName);
         out.writeLong(seqVal);
@@ -366,7 +361,7 @@ public class CacheInfo extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         seqName = U.readString(in);
         seqVal = in.readLong();
         cacheName = U.readString(in);
@@ -380,7 +375,7 @@ public class CacheInfo extends VisorDataTransferObject {
         backupsCnt = in.readInt();
         affinityClsName = U.readString(in);
         cachesCnt = in.readInt();
-        atomicityMode = protoVer >= V2 ? CacheAtomicityMode.fromOrdinal(in.readByte()) : null;
+        atomicityMode = CacheAtomicityMode.fromOrdinal(in.readByte());
     }
 
     /** {@inheritDoc} */

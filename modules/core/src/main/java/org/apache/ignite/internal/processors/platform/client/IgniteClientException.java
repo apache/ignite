@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.platform.client;
 
 import java.sql.SQLException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.plugin.security.SecurityException;
+
+import static org.apache.ignite.internal.processors.platform.client.ClientStatus.SECURITY_VIOLATION;
 
 /**
  * Client exception.
@@ -60,5 +63,14 @@ public class IgniteClientException extends IgniteException {
      */
     public int statusCode() {
         return statusCode;
+    }
+
+    /** */
+    public static IgniteClientException wrapAuthorizationExeption(SecurityException e) {
+        return new IgniteClientException(
+            SECURITY_VIOLATION,
+            "Client is not authorized to perform this operation [errMsg=" + e.getMessage() + ']',
+            e
+        );
     }
 }

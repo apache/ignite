@@ -900,7 +900,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
                     if (nodeHashBytes == null) {
                         Object nodeHash = resolveNodeHash(node);
 
-                        byte[] nodeHashBytes0 = U.marshal(ignite.configuration().getMarshaller(), nodeHash);
+                        byte[] nodeHashBytes0 = U.marshal(marshaller(ignite), nodeHash);
 
                         // Add 4 bytes for partition bytes.
                         nodeHashBytes = new byte[nodeHashBytes0.length + 4];

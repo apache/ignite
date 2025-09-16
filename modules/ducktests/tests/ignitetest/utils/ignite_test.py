@@ -61,7 +61,7 @@ class IgniteTest(Test):
     Basic ignite test.
     """
     def __init__(self, test_context):
-        assert isinstance(test_context, IgniteTestContext),\
+        assert isinstance(test_context, IgniteTestContext), \
             "any IgniteTest MUST BE decorated with the @ignitetest.utils.cluster decorator"
 
         super().__init__(test_context=test_context)

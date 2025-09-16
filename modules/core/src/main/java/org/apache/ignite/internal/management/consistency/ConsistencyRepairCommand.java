@@ -26,7 +26,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
-import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.management.api.NativeCommand;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.nodes;
 
 /** */
 @IgniteExperimental
-public class ConsistencyRepairCommand implements LocalCommand<ConsistencyRepairCommandArg, String> {
+public class ConsistencyRepairCommand implements NativeCommand<ConsistencyRepairCommandArg, String> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Check/Repair cache consistency using Read Repair approach";

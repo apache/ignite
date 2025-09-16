@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.platform.cache;
 import java.util.Iterator;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 
@@ -47,7 +47,7 @@ public class PlatformCacheIterator extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, BinaryWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_NEXT:
                 if (iter.hasNext()) {

@@ -263,11 +263,6 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 4;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             writer.setBuffer(buf);
 
@@ -275,7 +270,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                 return false;
 
             if (!writer.isHeaderWritten()) {
-                if (!writer.writeHeader(directType(), fieldsCount()))
+                if (!writer.writeHeader(directType()))
                     return false;
 
                 writer.onHeaderWritten();
@@ -283,7 +278,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
             switch (writer.state()) {
                 case 3:
-                    if (!writer.writeCollection("entries", entries, MessageCollectionItemType.MSG))
+                    if (!writer.writeCollection(entries, MessageCollectionItemType.MSG))
                         return false;
 
                     writer.incrementState();
@@ -297,15 +292,12 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
             reader.setBuffer(buf);
 
-            if (!reader.beforeMessageRead())
-                return false;
-
             if (!super.readFrom(buf, reader))
                 return false;
 
             switch (reader.state()) {
                 case 3:
-                    entries = reader.readCollection("entries", MessageCollectionItemType.MSG);
+                    entries = reader.readCollection(MessageCollectionItemType.MSG);
 
                     if (!reader.isLastRead())
                         return false;
@@ -375,11 +367,6 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 5;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             writer.setBuffer(buf);
 
@@ -387,7 +374,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                 return false;
 
             if (!writer.isHeaderWritten()) {
-                if (!writer.writeHeader(directType(), fieldsCount()))
+                if (!writer.writeHeader(directType()))
                     return false;
 
                 writer.onHeaderWritten();
@@ -395,13 +382,13 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
             switch (writer.state()) {
                 case 3:
-                    if (!writer.writeString("body", body))
+                    if (!writer.writeString(body))
                         return false;
 
                     writer.incrementState();
 
                 case 4:
-                    if (!writer.writeMessage("msg", msg))
+                    if (!writer.writeMessage(msg))
                         return false;
 
                     writer.incrementState();
@@ -415,15 +402,12 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
             reader.setBuffer(buf);
 
-            if (!reader.beforeMessageRead())
-                return false;
-
             if (!super.readFrom(buf, reader))
                 return false;
 
             switch (reader.state()) {
                 case 3:
-                    body = reader.readString("body");
+                    body = reader.readString();
 
                     if (!reader.isLastRead())
                         return false;
@@ -431,7 +415,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                     reader.incrementState();
 
                 case 4:
-                    msg = reader.readMessage("msg");
+                    msg = reader.readMessage();
 
                     if (!reader.isLastRead())
                         return false;
@@ -522,11 +506,6 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 7;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             writer.setBuffer(buf);
 
@@ -534,7 +513,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                 return false;
 
             if (!writer.isHeaderWritten()) {
-                if (!writer.writeHeader(directType(), fieldsCount()))
+                if (!writer.writeHeader(directType()))
                     return false;
 
                 writer.onHeaderWritten();
@@ -542,25 +521,25 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
             switch (writer.state()) {
                 case 3:
-                    if (!writer.writeUuid("nodeId", nodeId))
+                    if (!writer.writeUuid(nodeId))
                         return false;
 
                     writer.incrementState();
 
                 case 4:
-                    if (!writer.writeInt("id", id))
+                    if (!writer.writeInt(id))
                         return false;
 
                     writer.incrementState();
 
                 case 5:
-                    if (!writer.writeString("body", body))
+                    if (!writer.writeString(body))
                         return false;
 
                     writer.incrementState();
 
                 case 6:
-                    if (!writer.writeMessage("msg", msg))
+                    if (!writer.writeMessage(msg))
                         return false;
 
                     writer.incrementState();
@@ -573,15 +552,12 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
             reader.setBuffer(buf);
 
-            if (!reader.beforeMessageRead())
-                return false;
-
             if (!super.readFrom(buf, reader))
                 return false;
 
             switch (reader.state()) {
                 case 3:
-                    nodeId = reader.readUuid("nodeId");
+                    nodeId = reader.readUuid();
 
                     if (!reader.isLastRead())
                         return false;
@@ -589,7 +565,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                     reader.incrementState();
 
                 case 4:
-                    id = reader.readInt("id");
+                    id = reader.readInt();
 
                     if (!reader.isLastRead())
                         return false;
@@ -597,7 +573,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                     reader.incrementState();
 
                 case 5:
-                    body = reader.readString("body");
+                    body = reader.readString();
 
                     if (!reader.isLastRead())
                         return false;
@@ -605,7 +581,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                     reader.incrementState();
 
                 case 6:
-                    msg = reader.readMessage("msg");
+                    msg = reader.readMessage();
 
                     if (!reader.isLastRead())
                         return false;
@@ -696,11 +672,6 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte fieldsCount() {
-            return 7;
-        }
-
-        /** {@inheritDoc} */
         @Override public String toString() {
             throw new RuntimeException("Exception while log message");
         }
@@ -713,7 +684,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                 return false;
 
             if (!writer.isHeaderWritten()) {
-                if (!writer.writeHeader(directType(), fieldsCount()))
+                if (!writer.writeHeader(directType()))
                     return false;
 
                 writer.onHeaderWritten();
@@ -721,25 +692,25 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
             switch (writer.state()) {
                 case 3:
-                    if (!writer.writeUuid("nodeId", nodeId))
+                    if (!writer.writeUuid(nodeId))
                         return false;
 
                     writer.incrementState();
 
                 case 4:
-                    if (!writer.writeInt("id", id))
+                    if (!writer.writeInt(id))
                         return false;
 
                     writer.incrementState();
 
                 case 5:
-                    if (!writer.writeString("body", body))
+                    if (!writer.writeString(body))
                         return false;
 
                     writer.incrementState();
 
                 case 6:
-                    if (!writer.writeMessage("msg", msg))
+                    if (!writer.writeMessage(msg))
                         return false;
 
                     writer.incrementState();
@@ -753,15 +724,12 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
             reader.setBuffer(buf);
 
-            if (!reader.beforeMessageRead())
-                return false;
-
             if (!super.readFrom(buf, reader))
                 return false;
 
             switch (reader.state()) {
                 case 3:
-                    nodeId = reader.readUuid("nodeId");
+                    nodeId = reader.readUuid();
 
                     if (!reader.isLastRead())
                         return false;
@@ -769,7 +737,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                     reader.incrementState();
 
                 case 4:
-                    id = reader.readInt("id");
+                    id = reader.readInt();
 
                     if (!reader.isLastRead())
                         return false;
@@ -777,7 +745,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                     reader.incrementState();
 
                 case 5:
-                    body = reader.readString("body");
+                    body = reader.readString();
 
                     if (!reader.isLastRead())
                         return false;
@@ -785,7 +753,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
                     reader.incrementState();
 
                 case 6:
-                    msg = reader.readMessage("msg");
+                    msg = reader.readMessage();
 
                     if (!reader.isLastRead())
                         return false;

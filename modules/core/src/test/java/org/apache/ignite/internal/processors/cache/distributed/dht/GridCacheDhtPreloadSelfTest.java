@@ -56,6 +56,7 @@ import static org.apache.ignite.events.EventType.EVTS_CACHE_REBALANCE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
@@ -602,8 +603,8 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 assertEquals("Key check failed [igniteInstanceName=" + ignite.name() +
                         ", cache=" + cache.getName() + ", key=" + i + ", expected=" + i + ", actual=" + val +
-                        ", part=" + aff.partition(i) + ", primary=" + primary + ", affNodes=" + U.nodeIds(affNodes) +
-                        ", locId=" + loc.id() + ", allNodes=" + U.nodeIds(nodes) + ", allParts=" + top2string(grids) + ']',
+                        ", part=" + aff.partition(i) + ", primary=" + primary + ", affNodes=" + nodeIds(affNodes) +
+                        ", locId=" + loc.id() + ", allNodes=" + nodeIds(nodes) + ", allParts=" + top2string(grids) + ']',
                     Integer.toString(i), val);
             }
         }

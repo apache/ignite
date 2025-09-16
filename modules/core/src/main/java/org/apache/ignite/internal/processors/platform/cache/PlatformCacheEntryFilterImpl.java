@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.cache;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractPredicate;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -65,7 +65,7 @@ public class PlatformCacheEntryFilterImpl extends PlatformAbstractPredicate impl
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = ctx.writer(out);
+            BinaryWriterEx writer = ctx.writer(out);
 
             writer.writeLong(ptr);
 
@@ -145,7 +145,7 @@ public class PlatformCacheEntryFilterImpl extends PlatformAbstractPredicate impl
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = ctx.writer(out);
+            BinaryWriterEx writer = ctx.writer(out);
 
             writer.writeObject(pred);
 

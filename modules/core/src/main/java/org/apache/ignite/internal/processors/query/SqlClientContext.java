@@ -195,7 +195,7 @@ public class SqlClientContext implements AutoCloseable {
             this.totalProcessedOrderedReqs = 0;
 
             if (ordered) {
-                orderedBatchThread = new IgniteThread(orderedBatchWorkerFactory.create());
+                orderedBatchThread = U.newThread(orderedBatchWorkerFactory.create());
 
                 orderedBatchThread.start();
             }

@@ -226,8 +226,6 @@ public class GridNioRecoveryDescriptor {
             if (req.ackClosure() != null)
                 req.ackClosure().apply(null);
 
-            req.onAckReceived();
-
             acked++;
         }
     }

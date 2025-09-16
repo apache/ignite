@@ -25,7 +25,7 @@ IGNITE_NUM_CONTAINERS=${IGNITE_NUM_CONTAINERS:-13}
 
 # Image name to run nodes
 JDK_VERSION="${JDK_VERSION:-11}"
-IMAGE_PREFIX="ducker-ignite-openjdk"
+IMAGE_PREFIX="ducker-ignite-eclipse-temurin"
 
 ###
 # DuckerTest parameters are specified with options to the script
@@ -137,7 +137,7 @@ done
 
 if [ -z "$IMAGE_NAME" ]; then
     IMAGE_NAME="$IMAGE_PREFIX-$JDK_VERSION"
-    "$SCRIPT_DIR"/ducker-ignite build -j "openjdk:$JDK_VERSION" $IMAGE_NAME || die "ducker-ignite build failed"
+    "$SCRIPT_DIR"/ducker-ignite build -j "eclipse-temurin:$JDK_VERSION" $IMAGE_NAME || die "ducker-ignite build failed"
 else
     echo "[WARN] Used non-default image $IMAGE_NAME. Be sure you use actual version of the image. " \
          "Otherwise build it with 'ducker-ignite build' command"

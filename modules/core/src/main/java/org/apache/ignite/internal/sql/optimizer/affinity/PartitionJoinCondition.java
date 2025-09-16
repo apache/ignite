@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.internal.util.typedef.F;
+import java.util.Objects;
 
 /**
  * Join condition.
@@ -123,8 +123,8 @@ public class PartitionJoinCondition {
         if (obj instanceof PartitionJoinCondition) {
             PartitionJoinCondition other = (PartitionJoinCondition)obj;
 
-            return F.eq(leftAlias, other.leftAlias) && F.eq(rightAlias, other.rightAlias) &&
-                F.eq(leftCol, other.leftCol) && F.eq(rightCol, other.rightCol) && F.eq(cross, other.cross);
+            return Objects.equals(leftAlias, other.leftAlias) && Objects.equals(rightAlias, other.rightAlias) &&
+                Objects.equals(leftCol, other.leftCol) && Objects.equals(rightCol, other.rightCol) && Objects.equals(cross, other.cross);
         }
 
         return false;

@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.distributed.PartitionsExchang
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManagerTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingOrderingTest;
 import org.apache.ignite.internal.processors.cache.transactions.StartImplicitlyTxOnStopCacheTest;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionContextCleanupTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLabelTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxMultiCacheAsyncOpsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOnCachesStartTest;
@@ -70,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTime
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTopologyChangeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxStateChangeEventTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxTimeoutOnInitializationTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.junit.runner.RunWith;
@@ -111,6 +113,7 @@ public class IgniteCacheTestSuite6 {
         GridTestUtils.addTestIfNeeded(suite, TxRollbackAsyncNearCacheTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxRollbackOnTopologyChangeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxRollbackOnTimeoutOnePhaseCommitTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, TxTimeoutOnInitializationTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, TxOptimisticPrepareOnUnstableTopologyTest.class, ignoredTests);
 
@@ -166,6 +169,8 @@ public class IgniteCacheTestSuite6 {
         GridTestUtils.addTestIfNeeded(suite, TxRollbackDuringPreparingTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, StartImplicitlyTxOnStopCacheTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, TransactionContextCleanupTest.class, ignoredTests);
 
         return suite;
     }

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.binary.builder;
 
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 
 /**
  *
@@ -27,5 +27,5 @@ interface BinaryBuilderSerializationAware {
      * @param writer Writer.
      * @param ctx Context.
      */
-    public void writeTo(BinaryWriterExImpl writer, BinaryBuilderSerializer ctx);
+    public void writeTo(BinaryWriterEx writer, BinaryBuilderSerializer ctx);
 }

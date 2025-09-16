@@ -44,7 +44,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskR
 import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskResultBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientTopologyRequest;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage;
-import org.apache.ignite.internal.util.GridClientByteUtils;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLogger;
@@ -65,7 +65,7 @@ import static org.apache.ignite.internal.processors.rest.client.message.GridClie
 /**
  * Test client.
  */
-final class TestBinaryClient {
+final class TestBinaryClient implements AutoCloseable {
     /** Logger. */
     private final IgniteLogger log = new JavaLogger();
 
@@ -121,6 +121,9 @@ final class TestBinaryClient {
 
             // Wait for handshake response.
             int read = input.read(buf);
+
+            if (read == -1)
+                throw new RuntimeException("Client disconnected");
 
             assert read == 2 : read;
 
@@ -189,9 +192,9 @@ final class TestBinaryClient {
 
                                     GridClientResponse msg = marsh.unmarshal(msgBytes);
 
-                                    long reqId = GridClientByteUtils.bytesToLong(hdrBytes, 0);
-                                    UUID clientId = GridClientByteUtils.bytesToUuid(hdrBytes, 8);
-                                    UUID destId = GridClientByteUtils.bytesToUuid(hdrBytes, 24);
+                                    long reqId = IgniteUtils.bytesToLong(hdrBytes, 0);
+                                    UUID clientId = IgniteUtils.bytesToUuid(hdrBytes, 8);
+                                    UUID destId = IgniteUtils.bytesToUuid(hdrBytes, 24);
 
                                     msg.requestId(reqId);
                                     msg.clientId(clientId);
@@ -223,22 +226,6 @@ final class TestBinaryClient {
         });
 
         rdr.start();
-    }
-
-    /** */
-    public void shutdown() throws IgniteCheckedException {
-        try {
-            if (rdr != null) {
-                rdr.interrupt();
-
-                U.closeQuiet(sock);
-
-                rdr.join();
-            }
-        }
-        catch (InterruptedException e) {
-            throw new IgniteCheckedException(e);
-        }
     }
 
     /**
@@ -596,6 +583,22 @@ final class TestBinaryClient {
         msg.includeMetrics(includeMetrics);
 
         return makeRequest(msg).getObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws Exception {
+        try {
+            if (rdr != null) {
+                rdr.interrupt();
+
+                U.closeQuiet(sock);
+
+                rdr.join();
+            }
+        }
+        catch (InterruptedException e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /**

@@ -136,7 +136,7 @@ public class User implements Serializable {
 
         User u = (User)o;
 
-        return F.eq(name, u.name) && F.eq(hashedPasswd, u.hashedPasswd);
+        return Objects.equals(name, u.name) && Objects.equals(hashedPasswd, u.hashedPasswd);
     }
 
     /** {@inheritDoc} */

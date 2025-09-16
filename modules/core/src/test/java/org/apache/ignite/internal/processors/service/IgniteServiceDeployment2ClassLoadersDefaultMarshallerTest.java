@@ -24,7 +24,6 @@ import java.util.Set;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceCallInterceptor;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -89,8 +88,6 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        cfg.setMarshaller(marshaller());
-
         cfg.setUserAttributes(Collections.singletonMap(NODE_NAME_ATTR, igniteInstanceName));
 
         if (grp1.contains(igniteInstanceName))
@@ -100,13 +97,6 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
             cfg.setClassLoader(extClsLdr2);
 
         return cfg;
-    }
-
-    /**
-     * @return Marshaller.
-     */
-    protected Marshaller marshaller() {
-        return null;
     }
 
     /** {@inheritDoc} */

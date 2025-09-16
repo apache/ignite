@@ -54,7 +54,7 @@ public class KillScanCommandArg extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         originNodeId = U.readUuid(in);
         cacheName = U.readString(in);
         queryId = in.readLong();

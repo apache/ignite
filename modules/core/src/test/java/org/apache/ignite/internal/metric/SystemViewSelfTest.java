@@ -2084,7 +2084,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             // Test filtering.
             assertTrue(cacheGrpPageLists instanceof FiltrableSystemView);
 
-            Iterator<CachePagesListView> iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(U.map(
+            Iterator<CachePagesListView> iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(Map.of(
                 CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId("cache1"),
                 CachePagesListViewWalker.PARTITION_ID_FILTER, 0,
                 CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
@@ -2092,7 +2092,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             assertEquals(1, F.size(iter));
 
-            iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(U.map(
+            iter = ((FiltrableSystemView<CachePagesListView>)cacheGrpPageLists).iterator(Map.of(
                 CachePagesListViewWalker.CACHE_GROUP_ID_FILTER, cacheId("cache1"),
                 CachePagesListViewWalker.BUCKET_NUMBER_FILTER, 0
             ));

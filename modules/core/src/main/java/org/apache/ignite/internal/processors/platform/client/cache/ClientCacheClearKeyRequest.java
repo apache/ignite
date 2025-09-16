@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
@@ -31,7 +31,7 @@ public class ClientCacheClearKeyRequest extends ClientCacheKeyRequest {
      *
      * @param reader Reader.
      */
-    public ClientCacheClearKeyRequest(BinaryRawReaderEx reader) {
+    public ClientCacheClearKeyRequest(BinaryReaderEx reader) {
         super(reader);
     }
 

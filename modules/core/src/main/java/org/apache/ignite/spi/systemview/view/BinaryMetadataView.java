@@ -17,10 +17,7 @@
 
 package org.apache.ignite.spi.systemview.view;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -69,12 +66,7 @@ public class BinaryMetadataView {
     /** @return Schema IDs registered for this type. */
     @Order(5)
     public String schemasIds() {
-        List<Integer> ids = new ArrayList<>(meta.schemas().size());
-
-        for (BinarySchema schema : meta.schemas())
-            ids.add(schema.schemaId());
-
-        return U.toStringSafe(ids);
+        return U.toStringSafe(meta.schemaIds());
     }
 
     /** @return {@code True} if this is enum type. */

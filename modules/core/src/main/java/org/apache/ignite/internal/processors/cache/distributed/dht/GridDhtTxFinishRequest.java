@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.UUID;
@@ -38,9 +37,6 @@ import org.jetbrains.annotations.NotNull;
  * Near transaction finish request.
  */
 public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Near node ID. */
     private UUID nearNodeId;
 
@@ -52,7 +48,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     private Collection<PartitionUpdateCountersMessage> updCntrs;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtTxFinishRequest() {
         // No-op.
@@ -221,27 +217,27 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
+            case 20:
+                if (!writer.writeInt(miniId))
+                    return false;
+
+                writer.incrementState();
+
             case 21:
-                if (!writer.writeInt("miniId", miniId))
+                if (!writer.writeUuid(nearNodeId))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeUuid("nearNodeId", nearNodeId))
-                    return false;
-
-                writer.incrementState();
-
-            case 23:
-                if (!writer.writeCollection("updCntrs", updCntrs, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(updCntrs, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
@@ -255,15 +251,20 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
+            case 20:
+                miniId = reader.readInt();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
             case 21:
-                miniId = reader.readInt("miniId");
+                nearNodeId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -271,15 +272,7 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
                 reader.incrementState();
 
             case 22:
-                nearNodeId = reader.readUuid("nearNodeId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 23:
-                updCntrs = reader.readCollection("updCntrs", MessageCollectionItemType.MSG);
+                updCntrs = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -288,17 +281,12 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
 
         }
 
-        return reader.afterMessageRead(GridDhtTxFinishRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 32;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 24;
     }
 
     /** {@inheritDoc} */

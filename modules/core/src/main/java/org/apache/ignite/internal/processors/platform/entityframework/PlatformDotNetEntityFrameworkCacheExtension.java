@@ -33,7 +33,7 @@ import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheExtension;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -75,7 +75,7 @@ public class PlatformDotNetEntityFrameworkCacheExtension implements PlatformCach
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public long processInOutStreamLong(PlatformCache target, int type, BinaryRawReaderEx reader,
+    @Override public long processInOutStreamLong(PlatformCache target, int type, BinaryReaderEx reader,
         PlatformMemory mem) throws IgniteCheckedException {
         switch (type) {
             case OP_INVALIDATE_SETS: {

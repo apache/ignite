@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import org.apache.ignite.internal.cluster.IgniteClusterNameTest;
 import org.apache.ignite.internal.metric.CacheMetricsAddRemoveTest;
 import org.apache.ignite.internal.metric.CacheMetricsConflictResolverTest;
 import org.apache.ignite.internal.metric.CustomMetricsTest;
@@ -51,7 +52,6 @@ import org.apache.ignite.internal.processors.cache.transactions.TxRecoveryOnCoor
 import org.apache.ignite.internal.processors.cache.transform.CacheObjectTransformationCacheApiTest;
 import org.apache.ignite.internal.processors.cache.transform.CacheObjectTransformationEvolutionTest;
 import org.apache.ignite.internal.processors.cache.transform.CacheObjectTransformationTest;
-import org.apache.ignite.internal.processors.cluster.ClusterNameBeforeActivation;
 import org.apache.ignite.internal.processors.continuous.ContinuousQueryBuffersCleanupTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
@@ -108,7 +108,7 @@ public class IgniteCacheTestSuite13 {
         GridTestUtils.addTestIfNeeded(suite, RebalanceStatisticsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, TxRecoveryOnCoordniatorFailTest.class, ignoredTests);
 
-        GridTestUtils.addTestIfNeeded(suite, ClusterNameBeforeActivation.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteClusterNameTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CacheClearAsyncDeadlockTest.class, ignoredTests);
 

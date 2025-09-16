@@ -33,7 +33,8 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnOverrides;
 import org.apache.ignite.internal.processors.query.stat.hll.HLL;
@@ -318,8 +319,8 @@ public class ColumnStatisticsCollector {
             buf = (byte[])obj;
         else if (cls.isAssignableFrom(String.class))
             buf = ((String)obj).getBytes(StandardCharsets.UTF_8);
-        else if (obj instanceof BinaryObjectImpl)
-            buf = ((BinaryObjectImpl)obj).array();
+        else if (BinaryUtils.isBinaryObjectImpl(obj))
+            buf = ((BinaryObjectEx)obj).bytes();
         else {
             try {
                 buf = IndexProcessor.serializer.serialize(obj);

@@ -30,7 +30,7 @@ import org.apache.ignite.binary.Binarylizable;
 /**
  * Binary {@link TreeSet} wrapper.
  */
-public class BinaryTreeSet implements Binarylizable {
+class BinaryTreeSet implements Binarylizable {
     /** Original set. */
     private TreeSet set;
 

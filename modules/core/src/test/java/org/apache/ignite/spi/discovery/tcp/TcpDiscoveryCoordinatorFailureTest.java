@@ -27,7 +27,6 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -300,38 +299,6 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
             }
 
             super.writeToSocket(sock, msg, data, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
-            TcpDiscoveryAbstractMessage msg,
-            long timeout
-        ) throws IOException, IgniteCheckedException {
-            if (isDrop(msg)) {
-                // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
-                // connRecoveryTimeout.
-                msg = new TcpDiscoveryConnectionCheckMessage(locNode);
-            }
-
-            super.writeToSocket(sock, msg, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            ClusterNode node,
-            Socket sock,
-            OutputStream out,
-            TcpDiscoveryAbstractMessage msg,
-            long timeout
-        ) throws IOException, IgniteCheckedException {
-            if (isDrop(msg)) {
-                // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
-                // connRecoveryTimeout.
-                msg = new TcpDiscoveryConnectionCheckMessage(locNode);
-            }
-
-            super.writeToSocket(node, sock, out, msg, timeout);
         }
 
         /** {@inheritDoc} */

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -35,14 +34,11 @@ import org.jetbrains.annotations.NotNull;
  * Near transaction finish request.
  */
 public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Mini future ID. */
     private int miniId;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearTxFinishRequest() {
         // No-op.
@@ -160,15 +156,15 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
-            case 21:
-                if (!writer.writeInt("miniId", miniId))
+            case 20:
+                if (!writer.writeInt(miniId))
                     return false;
 
                 writer.incrementState();
@@ -182,15 +178,12 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
-            case 21:
-                miniId = reader.readInt("miniId");
+            case 20:
+                miniId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -199,17 +192,12 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
 
         }
 
-        return reader.afterMessageRead(GridNearTxFinishRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 53;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 22;
     }
 
     /** {@inheritDoc} */

@@ -85,6 +85,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.ExponentialBackoffTimeoutStrategy;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -94,7 +95,6 @@ import org.apache.ignite.spi.TimeoutStrategy;
 import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.tcp.AttributeNames;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
-import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
@@ -329,8 +329,8 @@ public class GridNioServerWrapper {
      * <li>The remote GridNioAcceptWorker thread accepts new connection.</li>
      * <li>The remote node sends back the {@link NodeIdMessage}.</li>
      * <li>The local node reads NodeIdMessage from created channel.</li>
-     * <li>The local node sends the {@link HandshakeMessage2} to remote.</li>
-     * <li>The remote node processes {@link HandshakeMessage2} in {@link GridNioServerListener#onMessage(GridNioSession,
+     * <li>The local node sends the {@link HandshakeMessage} to remote.</li>
+     * <li>The remote node processes {@link HandshakeMessage} in {@link GridNioServerListener#onMessage(GridNioSession,
      * Object)}.</li>
      * <li>The remote node sends back the {@link RecoveryLastReceivedMessage}.</li>
      * </ol>
@@ -485,7 +485,7 @@ public class GridNioServerWrapper {
                             node.id(),
                             timeout,
                             sslMeta,
-                            new HandshakeMessage2(locNode.id(),
+                            new HandshakeMessage(locNode.id(),
                                 recoveryDesc.incrementConnectCount(),
                                 recoveryDesc.received(),
                                 connIdx));
@@ -807,8 +807,17 @@ public class GridNioServerWrapper {
                         get().register(directType, supplier);
                     }
 
+                    @Override public void register(short directType, Supplier<Message> supplier,
+                        MessageSerializer serializer) throws IgniteException {
+                        get().register(directType, supplier, serializer);
+                    }
+
                     @Nullable @Override public Message create(short type) {
                         return get().create(type);
+                    }
+
+                    @Override public MessageSerializer serializer(short type) {
+                        return get().serializer(type);
                     }
 
                     private MessageFactory get() {
@@ -863,7 +872,7 @@ public class GridNioServerWrapper {
 
                         ConnectionKey key = ses.meta(CONN_IDX_META);
 
-                        return key != null ? formatter.writer(key.nodeId()) : null;
+                        return key != null ? formatter.writer(key.nodeId(), msgFactory) : null;
                     }
                 };
 
@@ -1173,7 +1182,7 @@ public class GridNioServerWrapper {
      * @param rmtNodeId Remote node.
      * @param timeout Timeout for handshake.
      * @param sslMeta Session meta.
-     * @param msg {@link HandshakeMessage} or {@link HandshakeMessage2} to send.
+     * @param msg {@link HandshakeMessage} to send.
      * @return Handshake response.
      * @throws IgniteCheckedException If handshake failed or wasn't completed withing timeout.
      */

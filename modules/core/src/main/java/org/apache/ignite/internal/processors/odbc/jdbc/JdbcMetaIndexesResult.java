@@ -22,8 +22,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -58,7 +58,7 @@ public class JdbcMetaIndexesResult extends JdbcResult {
 
     /** {@inheritDoc} */
     @Override public void writeBinary(
-        BinaryWriterExImpl writer,
+        BinaryWriterEx writer,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         super.writeBinary(writer, protoCtx);
@@ -75,7 +75,7 @@ public class JdbcMetaIndexesResult extends JdbcResult {
 
     /** {@inheritDoc} */
     @Override public void readBinary(
-        BinaryReaderExImpl reader,
+        BinaryReaderEx reader,
         JdbcProtocolContext protoCtx
     ) throws BinaryObjectException {
         super.readBinary(reader, protoCtx);

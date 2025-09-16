@@ -267,19 +267,20 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
     }
 
     /**
-     * @param cacheGrp Cache group.
      * @return Tuple that consists of some inner page id of any index tree, and some link to data.
      * @throws IgniteCheckedException If failed.
      */
-    private IgniteBiTuple<Long, Long> findPagesForAnyCacheKey(String cacheGrp) throws IgniteCheckedException {
-        File dir = ft.cacheStorage(true, cacheGrp);
+    private IgniteBiTuple<Long, Long> findPagesForAnyCacheKey() throws IgniteCheckedException {
+        File[] dirs = ft.cacheStorages(cacheConfig(CACHE_GROUP_NAME));
+
+        assertEquals(1, dirs.length);
 
         // Take any inner page from tree.
         AtomicLong anyLeafId = new AtomicLong();
 
         IgniteLogger log = createTestLogger();
 
-        IgniteIndexReader reader0 = new IgniteIndexReader(PAGE_SIZE, PART_CNT, PAGE_STORE_VER, dir, null, false, log) {
+        IgniteIndexReader reader0 = new IgniteIndexReader(PAGE_SIZE, PART_CNT, PAGE_STORE_VER, dirs[0], null, false, log) {
             @Override ScanContext createContext(
                 String idxName,
                 FilePageStore store,
@@ -340,11 +341,9 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         int partId = partId(pageToCorrupt);
         int pageIdxCorrupt = pageIndex(pageToCorrupt);
 
-        File cacheWorkDir = ft.cacheStorage(true, CACHE_GROUP_NAME);
+        File file = ft.partitionFile(cacheConfig(CACHE_GROUP_NAME), partId);
 
-        File file = ft.partitionFile(cacheWorkDir.getName(), partId);
-
-        File backup = new File(cacheWorkDir, file.getName() + ".backup");
+        File backup = new File(file.getParentFile(), file.getName() + ".backup");
 
         if (!backup.exists())
             Files.copy(file.toPath(), backup.toPath());
@@ -414,11 +413,9 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
      * @throws IOException If failed.
      */
     private void restoreFile(int partId) throws IOException {
-        File cacheWorkDir = ft.cacheStorage(true, CACHE_GROUP_NAME);
+        File file = ft.partitionFile(cacheConfig(CACHE_GROUP_NAME), partId);
 
-        File file = ft.partitionFile(cacheWorkDir.getName(), partId);
-
-        File backupFiles = new File(cacheWorkDir, file.getName() + ".backup");
+        File backupFiles = new File(file.getParentFile(), file.getName() + ".backup");
 
         if (!backupFiles.exists())
             return;
@@ -728,7 +725,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             PAGE_SIZE,
             PART_CNT,
             PAGE_STORE_VER,
-            ft.cacheStorage(true, cacheGrp),
+            ft.defaultCacheStorage(cacheConfig(cacheGrp)),
             isNull(idxs) ? null : idx -> Arrays.stream(idxs).anyMatch(idx::endsWith),
             checkParts,
             log
@@ -899,7 +896,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
      */
     protected void checkCorruptedIdxAndPart() throws Exception {
         try {
-            IgniteBiTuple<Long, Long> pagesToCorrupt = findPagesForAnyCacheKey(CACHE_GROUP_NAME);
+            IgniteBiTuple<Long, Long> pagesToCorrupt = findPagesForAnyCacheKey();
 
             corruptFile(pagesToCorrupt.get1());
             corruptFile(pagesToCorrupt.get2());
@@ -929,7 +926,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
      */
     protected void checkCorruptedPart() throws Exception {
         try {
-            IgniteBiTuple<Long, Long> pagesToCorrupt = findPagesForAnyCacheKey(CACHE_GROUP_NAME);
+            IgniteBiTuple<Long, Long> pagesToCorrupt = findPagesForAnyCacheKey();
 
             corruptFile(pagesToCorrupt.get2());
 
@@ -955,7 +952,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
      */
     protected void checkCorruptedIdxWithCheckParts() throws Exception {
         try {
-            IgniteBiTuple<Long, Long> pagesToCorrupt = findPagesForAnyCacheKey(CACHE_GROUP_NAME);
+            IgniteBiTuple<Long, Long> pagesToCorrupt = findPagesForAnyCacheKey();
 
             corruptFile(pagesToCorrupt.get1());
 
@@ -983,7 +980,7 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
      */
     protected void checkCorruptedIdx() throws Exception {
         try {
-            IgniteBiTuple<Long, Long> pagesToCorrupt = findPagesForAnyCacheKey(CACHE_GROUP_NAME);
+            IgniteBiTuple<Long, Long> pagesToCorrupt = findPagesForAnyCacheKey();
 
             corruptFile(pagesToCorrupt.get1());
 
@@ -1093,10 +1090,12 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
         // Create an empty directory and try to check it.
         String newCleanGrp = "noCache";
 
-        File cleanDir = ft.cacheStorage(true, newCleanGrp);
+        File[] cleanDirs = ft.cacheStorages(cacheConfig(newCleanGrp));
+
+        assertEquals(1, cleanDirs.length);
 
         try {
-            cleanDir.mkdir();
+            cleanDirs[0].mkdir();
 
             assertThrows(
                 log,
@@ -1106,8 +1105,16 @@ public class IgniteIndexReaderTest extends GridCommandHandlerAbstractTest {
             );
         }
         finally {
-            U.delete(cleanDir);
+            U.delete(cleanDirs[0]);
         }
+    }
+
+    /**
+     * @param grpName Group name.
+     * @return Cache configuration.
+     */
+    protected static CacheConfiguration<Object, Object> cacheConfig(String grpName) {
+        return new CacheConfiguration<>("fake").setGroupName(grpName);
     }
 
     /**

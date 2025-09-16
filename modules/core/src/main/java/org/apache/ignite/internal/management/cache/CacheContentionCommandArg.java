@@ -54,7 +54,7 @@ public class CacheContentionCommandArg extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         minQueueSize = in.readInt();
         nodeId = U.readUuid(in);
         maxPrint = in.readInt();

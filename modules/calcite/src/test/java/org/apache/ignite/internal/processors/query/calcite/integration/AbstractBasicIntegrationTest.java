@@ -83,6 +83,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         // Wait for pending queries before destroying caches. If some error occurs during query execution, client code
         // can get control earlier than query leave the running queries registry (need some time for async message
         // exchange), but eventually, all queries should be closed.
@@ -242,6 +244,32 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
         try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
             return srvCursor.getAll();
+        }
+    }
+
+    /** */
+    protected void gatherStatistics() throws Exception {
+        for (List<?> lst : sql("SELECT TABLE_NAME FROM SYS.TABLES")) {
+            assert lst.size() == 1 : "Single table name expected";
+
+            String tbl = lst.get(0).toString().toUpperCase();
+
+            sql("ANALYZE " + tbl);
+
+            waitForCondition(
+                () -> {
+                    for (Ignite node : G.allGrids()) {
+                        if (node.configuration().isClientMode())
+                            continue;
+
+                        if (F.isEmpty(sql((IgniteEx)node, "select * from sys.statistics_local_data where name = ?", tbl)))
+                            return false;
+                    }
+
+                    return true;
+                },
+                getTestTimeout()
+            );
         }
     }
 

@@ -25,27 +25,21 @@ import java.util.function.Supplier;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Runtime hash index based on on-heap hash map.
  */
 public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
-    /**
-     * Placeholder for keys containing NULL values. Used to skip rows with such keys, since condition NULL=NULL
-     * should not satisfy the filter.
-     */
-    private static final GroupKey NULL_KEY = new GroupKey(X.EMPTY_OBJECT_ARRAY);
-
     /** */
     protected final ExecutionContext<Row> ectx;
 
     /** */
-    private final ImmutableBitSet keys;
+    private final RowHandler<Row> keysRowHnd;
 
     /** Rows. */
-    private final HashMap<GroupKey, List<Row>> rows;
+    private final HashMap<GroupKey<Row>, List<Row>> rows;
 
     /** Allow NULL values. */
     private final boolean allowNulls;
@@ -59,19 +53,19 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
         boolean allowNulls
     ) {
         this.ectx = ectx;
+        this.allowNulls = allowNulls;
 
         assert !F.isEmpty(keys);
 
-        this.keys = keys;
-        this.allowNulls = allowNulls;
+        keysRowHnd = new MappingRowHandler<>(ectx.rowHandler(), keys);
         rows = new HashMap<>();
     }
 
     /** {@inheritDoc} */
     @Override public void push(Row r) {
-        GroupKey key = key(r);
+        GroupKey<Row> key = key(r);
 
-        if (key == NULL_KEY)
+        if (key == null)
             return;
 
         List<Row> eqRows = rows.computeIfAbsent(key, k -> new ArrayList<>());
@@ -89,20 +83,20 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
         return new IndexScan(searchRow);
     }
 
-    /** */
-    private GroupKey key(Row r) {
-        GroupKey.Builder b = GroupKey.builder(keys.cardinality());
-
-        for (Integer field : keys) {
-            Object fieldVal = ectx.rowHandler().get(field, r);
-
-            if (fieldVal == null && !allowNulls)
-                return NULL_KEY;
-
-            b.add(fieldVal);
+    /**
+     * @return Group key for provided row. Can be {@code null} if key fields of row contain NULL values.
+     * Since condition NULL=NULL in SQL should not satisfy the filter (but nulls are allowed for
+     * IS NOT DISTINCT FROM condition).
+     */
+    private @Nullable GroupKey<Row> key(Row r) {
+        if (!allowNulls) {
+            for (int i = 0; i < keysRowHnd.columnCount(r); i++) {
+                if (keysRowHnd.get(i, r) == null)
+                    return null;
+            }
         }
 
-        return b.build();
+        return new GroupKey<>(r, keysRowHnd);
     }
 
     /**
@@ -121,9 +115,9 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
 
         /** {@inheritDoc} */
         @NotNull @Override public Iterator<Row> iterator() {
-            GroupKey key = key(searchRow.get());
+            GroupKey<Row> key = key(searchRow.get());
 
-            if (key == NULL_KEY)
+            if (key == null)
                 return Collections.emptyIterator();
 
             List<Row> eqRows = rows.get(key);

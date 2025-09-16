@@ -30,7 +30,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
-import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.management.api.NativeCommand;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.management.cache.ViewCacheCmd.GROUPS;
 import static org.apache.ignite.internal.management.cache.ViewCacheCmd.SEQ;
 
 /** Prints info regarding caches, groups or sequences. */
-public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewCacheTaskResult> {
+public class CacheListCommand implements NativeCommand<CacheListCommandArg, ViewCacheTaskResult> {
     /** */
     Function<CacheListCommandArg, Predicate<ClusterNode>> FILTER = arg -> node ->
         arg.nodeId() == null || Objects.equals(node.id(), arg.nodeId());

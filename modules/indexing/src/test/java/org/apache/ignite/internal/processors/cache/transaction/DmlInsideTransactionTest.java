@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transaction;
 
+import java.util.Objects;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -25,7 +26,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -212,7 +212,7 @@ public class DmlInsideTransactionTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
-            return obj instanceof PersonKey && (F.eq(id, ((PersonKey)obj).id));
+            return obj instanceof PersonKey && (Objects.equals(id, ((PersonKey)obj).id));
         }
     }
 

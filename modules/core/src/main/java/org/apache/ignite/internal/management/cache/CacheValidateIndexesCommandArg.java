@@ -97,7 +97,7 @@ public class CacheValidateIndexesCommandArg extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         value = U.readString(in);
         value2 = U.readString(in);
         caches = U.readArray(in, String.class);

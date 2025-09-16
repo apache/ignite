@@ -20,6 +20,7 @@ package org.apache.ignite.cache.websession;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import javax.cache.CacheException;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
@@ -42,6 +43,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -56,6 +58,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.startup.servlet.ServletContextListenerStartup;
 import org.apache.ignite.transactions.Transaction;
+
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -286,7 +289,7 @@ public class WebSessionFilter implements Filter {
 
         log = webSesIgnite.log();
 
-        marshaller = webSesIgnite.configuration().getMarshaller();
+        marshaller = ((IgniteEx)webSesIgnite).context().marshaller();
 
         initCache();
 
@@ -1030,7 +1033,7 @@ public class WebSessionFilter implements Filter {
 
             final String newId = req.changeSessionId();
 
-            if (!F.eq(newId, ses.getId())) {
+            if (!Objects.equals(newId, ses.getId())) {
                 try {
                     ses = createSessionV2(ses, newId);
                 }
@@ -1050,7 +1053,7 @@ public class WebSessionFilter implements Filter {
 
             final String newId = req.getSession(false).getId();
 
-            if (!F.eq(newId, ses.getId())) {
+            if (!Objects.equals(newId, ses.getId())) {
                 try {
                     ses = createSessionV2(ses, newId);
                 }

@@ -48,6 +48,8 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableCollection;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Task session.
@@ -826,9 +828,9 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     /** {@inheritDoc} */
     @Override public Collection<UUID> getTopology() {
         if (topPred != null)
-            return F.viewReadOnly(ctx.discovery().allNodes(), F.node2id(), topPred);
+            return F.viewReadOnly(ctx.discovery().allNodes(), node2id(), topPred);
 
-        return top != null ? top : F.nodeIds(ctx.discovery().allNodes());
+        return top != null ? top : nodeIds(ctx.discovery().allNodes());
     }
 
     /**

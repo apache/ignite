@@ -25,7 +25,7 @@ import org.apache.ignite.binary.BinaryType;
 /**
  * Simple caching metadata handler. Used mainly in tests.
  */
-public class BinaryCachingMetadataHandler implements BinaryMetadataHandler {
+class BinaryCachingMetadataHandler implements BinaryMetadataHandler {
     /** Cached metadatas. */
     private final HashMap<Integer, BinaryType> metas = new HashMap<>();
 
@@ -34,7 +34,7 @@ public class BinaryCachingMetadataHandler implements BinaryMetadataHandler {
      *
      * @return New handler.
      */
-    public static BinaryCachingMetadataHandler create() {
+    static BinaryCachingMetadataHandler create() {
         return new BinaryCachingMetadataHandler();
     }
 

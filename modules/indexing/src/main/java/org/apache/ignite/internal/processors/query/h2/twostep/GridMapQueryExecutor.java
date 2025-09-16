@@ -847,7 +847,7 @@ public class GridMapQueryExecutor {
             if (node.isLocal())
                 h2.reduceQueryExecutor().onDmlResponse(node, rsp);
             else {
-                rsp.marshall(ctx.config().getMarshaller());
+                rsp.marshall(ctx.marshaller());
 
                 ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, rsp, QUERY_POOL);
             }
@@ -899,7 +899,7 @@ public class GridMapQueryExecutor {
                         res.lockTables();
                         res.checkTablesVersions();
 
-                        Boolean dataPageScanEnabled = isDataPageScanEnabled(req.getFlags());
+                        Boolean dataPageScanEnabled = isDataPageScanEnabled(req.flags());
 
                         GridQueryNextPageResponse msg = h2.executeWithResumableTimeTracking(
                             () -> prepareNextPage(
@@ -984,9 +984,6 @@ public class GridMapQueryExecutor {
 
             if (last) {
                 qr.closeResult(qry);
-
-                if (res.qryInfo() != null)
-                    h2.heavyQueriesTracker().stopTracking(res.qryInfo(), null);
 
                 if (qr.isAllClosed()) {
                     nodeRess.remove(qr.queryRequestId(), segmentId, qr);

@@ -53,7 +53,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
     public GridOffHeapProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
     }
 
     /**

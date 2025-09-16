@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,16 +35,13 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Lock request message.
  */
 public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Keys. */
     @GridToStringInclude
     @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> keys;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDistributedUnlockRequest() {
         /* No-op. */
@@ -112,15 +108,15 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
-            case 8:
-                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
+            case 7:
+                if (!writer.writeCollection(keys, MessageCollectionItemType.KEY_CACHE_OBJECT))
                     return false;
 
                 writer.incrementState();
@@ -134,15 +130,12 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
-            case 8:
-                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
+            case 7:
+                keys = reader.readCollection(MessageCollectionItemType.KEY_CACHE_OBJECT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -151,17 +144,12 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
         }
 
-        return reader.afterMessageRead(GridDistributedUnlockRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 27;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 9;
     }
 
     /** {@inheritDoc} */

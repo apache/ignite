@@ -136,7 +136,7 @@ public class IndexProcessor extends GridProcessorAdapter {
         else
             idxRebuild = new IndexesRebuildTask();
 
-        serializer = new JavaObjectKeySerializer(ctx.config());
+        serializer = new JavaObjectKeySerializer(U.resolveClassLoader(ctx.config()), ctx.marshaller());
     }
 
     /**

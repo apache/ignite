@@ -50,7 +50,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.toSet;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_FILTER;
 
 /**
  *
@@ -191,6 +190,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         NodeFileTree ft = ig.context().pdsFolderResolver().fileTree();
 
         File walSegment = ft.zipWalArchiveSegment(0);
+        File cacheDir = ft.defaultCacheStorage(ig.cachex(CACHE_NAME).configuration());
 
         // Allow compressor to compress WAL segments.
         assertTrue(GridTestUtils.waitForCondition(walSegment::exists, 15_000));
@@ -204,7 +204,6 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         assertNotNull(cpMarkers);
         assertTrue(cpMarkers.length > 0);
 
-        File cacheDir = ft.cacheStorage(false, CACHE_NAME);
         File[] lfsFiles = cacheDir.listFiles();
 
         assertNotNull(lfsFiles);
@@ -397,7 +396,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         // Allow compressor to compress WAL segments.
         assertTrue(GridTestUtils.waitForCondition(zippedWalSegment::exists, 15_000));
 
-        File[] compressedSegments = ft.walArchive().listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER);
+        File[] compressedSegments = ft.walArchive().listFiles(NodeFileTree::walCompactedSegment);
 
         long maxIdx = -1;
         for (File f : compressedSegments)
@@ -484,6 +483,8 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         assertTrue(walSegment.exists());
         assertTrue(walSegment.length() < WAL_SEGMENT_SIZE / 2); // Should be compressed at least in half.
 
+        File cacheDir = ft.defaultCacheStorage(ig.cachex(CACHE_NAME).configuration());
+
         stopAllGrids();
 
         File[] cpMarkers = ft.checkpoint().listFiles((dir, name) -> !cpMarkersToSave.contains(name));
@@ -491,7 +492,6 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         assertNotNull(cpMarkers);
         assertTrue(cpMarkers.length > 0);
 
-        File cacheDir = ft.cacheStorage(false, CACHE_NAME);
         File[] lfsFiles = cacheDir.listFiles();
 
         assertNotNull(lfsFiles);

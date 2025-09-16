@@ -48,7 +48,6 @@ import org.junit.Test;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.partitionFileName;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.apache.ignite.internal.util.IgniteUtils.delete;
 
@@ -299,10 +298,8 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
     protected File indexFile(IgniteInternalCache internalCache) {
         requireNonNull(internalCache);
 
-        File cacheWorkDir = internalCache.context().kernalContext().pdsFolderResolver().fileTree()
-            .cacheStorage(internalCache.configuration());
-
-        return cacheWorkDir.toPath().resolve(partitionFileName(INDEX_PARTITION)).toFile();
+        return internalCache.context().kernalContext().pdsFolderResolver().fileTree()
+            .partitionFile(internalCache.configuration(), INDEX_PARTITION);
     }
 
     /**

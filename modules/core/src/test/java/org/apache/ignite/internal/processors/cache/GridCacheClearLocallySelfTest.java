@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.lang.reflect.Array;
+import java.util.Objects;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
@@ -26,7 +27,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -314,7 +314,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
             String igniteInstanceName = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
 
             for (String attr : attrs) {
-                if (F.eq(attr, igniteInstanceName))
+                if (Objects.equals(attr, igniteInstanceName))
                     return true;
             }
 

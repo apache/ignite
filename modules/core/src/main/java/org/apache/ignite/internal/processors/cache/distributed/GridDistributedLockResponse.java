@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,9 +41,6 @@ import org.jetbrains.annotations.Nullable;
  * Lock response message.
  */
 public class GridDistributedLockResponse extends GridDistributedBaseMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Future ID. */
     private IgniteUuid futId;
 
@@ -61,7 +57,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     private List<CacheObject> vals;
 
     /**
-     * Empty constructor (required by {@link Externalizable}).
+     * Empty constructor.
      */
     public GridDistributedLockResponse() {
         /* No-op. */
@@ -214,27 +210,27 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
+            case 7:
+                if (!writer.writeByteArray(errBytes))
+                    return false;
+
+                writer.incrementState();
+
             case 8:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeIgniteUuid(futId))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeIgniteUuid("futId", futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(vals, MessageCollectionItemType.CACHE_OBJECT))
                     return false;
 
                 writer.incrementState();
@@ -248,15 +244,20 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
+            case 7:
+                errBytes = reader.readByteArray();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
             case 8:
-                errBytes = reader.readByteArray("errBytes");
+                futId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -264,15 +265,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
                 reader.incrementState();
 
             case 9:
-                futId = reader.readIgniteUuid("futId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
+                vals = reader.readCollection(MessageCollectionItemType.CACHE_OBJECT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -281,17 +274,12 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
 
         }
 
-        return reader.afterMessageRead(GridDistributedLockResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 22;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 11;
     }
 
     /** {@inheritDoc} */

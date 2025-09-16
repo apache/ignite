@@ -28,14 +28,13 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Data transfer object for {@link org.apache.ignite.cluster.BaselineNode}.
  */
-public class BaselineNode extends VisorDataTransferObject {
+public class BaselineNode extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -78,11 +77,6 @@ public class BaselineNode extends VisorDataTransferObject {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V3;
-    }
-
     /**
      * @return Node consistent ID.
      */
@@ -121,19 +115,15 @@ public class BaselineNode extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         consistentId = U.readString(in);
         attrs = U.readMap(in);
+        order = (Long)in.readObject();
 
-        if (protoVer >= V2)
-            order = (Long)in.readObject();
+        Collection<ResolvedAddresses> inputAddrs = U.readCollection(in);
 
-        if (protoVer >= V3) {
-            Collection<ResolvedAddresses> inputAddrs = U.readCollection(in);
-
-            if (inputAddrs != null)
-                addrs = inputAddrs;
-        }
+        if (inputAddrs != null)
+            addrs = inputAddrs;
     }
 
     /** {@inheritDoc} */
@@ -175,7 +165,7 @@ public class BaselineNode extends VisorDataTransferObject {
         }
 
         /** {@inheritDoc} */
-        @Override protected void readExternalData(byte protoVer, ObjectInput in)
+        @Override protected void readExternalData(ObjectInput in)
             throws IOException, ClassNotFoundException {
             hostname = U.readString(in);
             addr = U.readString(in);

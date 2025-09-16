@@ -230,7 +230,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -238,67 +238,67 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("fragmentDesc", fragmentDesc))
+                if (!writer.writeMessage(fragmentDesc))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("originatingQryId", originatingQryId))
+                if (!writer.writeLong(originatingQryId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByteArray("paramsBytes", paramsBytes))
+                if (!writer.writeByteArray(paramsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeUuid("qryId", qryId))
+                if (!writer.writeUuid(qryId))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeString("root", root))
+                if (!writer.writeString(root))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeString("schema", schema))
+                if (!writer.writeString(schema))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeLong("timeout", timeout))
+                if (!writer.writeLong(timeout))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeInt("totalFragmentsCnt", totalFragmentsCnt))
+                if (!writer.writeInt(totalFragmentsCnt))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeCollection("qryTxEntries", qryTxEntries, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(qryTxEntries, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeAffinityTopologyVersion("ver", ver))
+                if (!writer.writeAffinityTopologyVersion(ver))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeMap("appAttrs", appAttrs, MessageCollectionItemType.STRING, MessageCollectionItemType.STRING))
+                if (!writer.writeMap(appAttrs, MessageCollectionItemType.STRING, MessageCollectionItemType.STRING))
                     return false;
 
                 writer.incrementState();
@@ -311,12 +311,9 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                fragmentDesc = reader.readMessage("fragmentDesc");
+                fragmentDesc = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -324,7 +321,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 1:
-                originatingQryId = reader.readLong("originatingQryId");
+                originatingQryId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -332,7 +329,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 2:
-                paramsBytes = reader.readByteArray("paramsBytes");
+                paramsBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -340,7 +337,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 3:
-                qryId = reader.readUuid("qryId");
+                qryId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -348,7 +345,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 4:
-                root = reader.readString("root");
+                root = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -356,7 +353,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 5:
-                schema = reader.readString("schema");
+                schema = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -364,7 +361,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 6:
-                timeout = reader.readLong("timeout");
+                timeout = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -372,7 +369,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 7:
-                totalFragmentsCnt = reader.readInt("totalFragmentsCnt");
+                totalFragmentsCnt = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -380,7 +377,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 8:
-                qryTxEntries = reader.readCollection("qryTxEntries", MessageCollectionItemType.MSG);
+                qryTxEntries = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -388,7 +385,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 9:
-                ver = reader.readAffinityTopologyVersion("ver");
+                ver = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -396,7 +393,7 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 10:
-                appAttrs = reader.readMap("appAttrs", MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
+                appAttrs = reader.readMap(MessageCollectionItemType.STRING, MessageCollectionItemType.STRING, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -405,16 +402,11 @@ public class QueryStartRequest implements MarshalableMessage, ExecutionContextAw
 
         }
 
-        return reader.afterMessageRead(QueryStartRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public MessageType type() {
         return MessageType.QUERY_START_REQUEST;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 11;
     }
 }

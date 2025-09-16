@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -36,9 +35,6 @@ import org.jetbrains.annotations.Nullable;
  * Deferred dht atomic update response.
  */
 public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage implements GridCacheDeployable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
@@ -51,7 +47,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
     private GridTimeoutObject timeoutSnd;
 
     /**
-     * Empty constructor required by {@link Externalizable}
+     * Empty constructor.
      */
     public GridDhtAtomicDeferredUpdateResponse() {
         // No-op.
@@ -112,7 +108,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -120,7 +116,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeMessage("futIds", futIds))
+                if (!writer.writeMessage(futIds))
                     return false;
 
                 writer.incrementState();
@@ -134,15 +130,12 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 4:
-                futIds = reader.readMessage("futIds");
+                futIds = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -151,17 +144,12 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
 
         }
 
-        return reader.afterMessageRead(GridDhtAtomicDeferredUpdateResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 37;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 5;
     }
 
     /** {@inheritDoc} */

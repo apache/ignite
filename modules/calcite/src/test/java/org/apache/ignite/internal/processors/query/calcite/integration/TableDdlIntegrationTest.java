@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -49,7 +50,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.TestUtils.hasSize;
-import static org.apache.ignite.internal.util.IgniteUtils.map;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -83,7 +83,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertThat(
             ent.getFields(),
             equalTo(new LinkedHashMap<>(
-                map(
+                Map.of(
                     "ID", Integer.class.getName(),
                     "VAL", String.class.getName()
                 )

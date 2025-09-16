@@ -147,7 +147,7 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
         public static final int DELAY_MSG_PERIOD_MILLIS = 2_000;
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(ClusterNode node, Socket sock, OutputStream out,
+        @Override protected void writeToSocket(Socket sock, OutputStream out,
             TcpDiscoveryAbstractMessage msg, long timeout) throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryNodeAddFinishedMessage && msg.topologyVersion() == 3) {
                 log.info("Catched discovery message: " + msg);
@@ -162,7 +162,7 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
                 }
             }
 
-            super.writeToSocket(node, sock, out, msg, timeout);
+            super.writeToSocket(sock, out, msg, timeout);
         }
     }
 }

@@ -29,7 +29,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.transactions.Transaction;
@@ -40,6 +39,7 @@ import org.junit.Test;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -217,13 +217,13 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
 
             for (String key : dht0.keySet())
                 info("[key=" + key + ", primary=" +
-                    F.eqNodes(grid(0).localNode(), aff.mapKeyToNode(key)) + ", " + dht0Keys++ + ']');
+                    eqNodes(grid(0).localNode(), aff.mapKeyToNode(key)) + ", " + dht0Keys++ + ']');
 
             info("Printing keys in dht1...");
 
             for (String key : dht1.keySet())
                 info("[key=" + key + ", primary=" +
-                    F.eqNodes(grid(1).localNode(), aff.mapKeyToNode(key)) + ", " + dht1Keys++ + ']');
+                    eqNodes(grid(1).localNode(), aff.mapKeyToNode(key)) + ", " + dht1Keys++ + ']');
 
             seen[0] |= dht0Keys == EVICT_CACHE_SIZE;
             seen[1] |= dht1Keys == EVICT_CACHE_SIZE;

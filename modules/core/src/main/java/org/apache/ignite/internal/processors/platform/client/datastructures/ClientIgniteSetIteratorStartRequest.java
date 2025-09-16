@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.platform.client.datastructures;
 import java.util.Iterator;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
@@ -53,7 +53,7 @@ public class ClientIgniteSetIteratorStartRequest extends ClientIgniteSetRequest 
      *
      * @param writer Writer.
      */
-    static void writePage(BinaryRawWriterEx writer, Iterator iter, int pageSize) {
+    static void writePage(BinaryWriterEx writer, Iterator iter, int pageSize) {
         int cntPos = writer.reserveInt();
         int cnt = 0;
 
@@ -87,7 +87,7 @@ public class ClientIgniteSetIteratorStartRequest extends ClientIgniteSetRequest 
         }
 
         /** {@inheritDoc} */
-        @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+        @Override public void encode(ClientConnectionContext ctx, BinaryWriterEx writer) {
             super.encode(ctx, writer);
 
             writePage(writer, iter, pageSize);

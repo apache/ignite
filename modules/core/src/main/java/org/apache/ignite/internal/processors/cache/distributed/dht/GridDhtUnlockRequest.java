@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,15 +34,12 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * DHT cache unlock request.
  */
 public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Near keys. */
     @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> nearKeys;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtUnlockRequest() {
         // No-op.
@@ -106,15 +102,15 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
-            case 9:
-                if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
+            case 8:
+                if (!writer.writeCollection(nearKeys, MessageCollectionItemType.KEY_CACHE_OBJECT))
                     return false;
 
                 writer.incrementState();
@@ -128,15 +124,12 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
-            case 9:
-                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
+            case 8:
+                nearKeys = reader.readCollection(MessageCollectionItemType.KEY_CACHE_OBJECT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -145,16 +138,11 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
         }
 
-        return reader.afterMessageRead(GridDhtUnlockRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 36;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 10;
     }
 }

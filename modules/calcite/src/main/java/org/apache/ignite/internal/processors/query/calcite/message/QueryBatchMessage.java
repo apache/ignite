@@ -147,7 +147,7 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -155,37 +155,37 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("batchId", batchId))
+                if (!writer.writeInt(batchId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("exchangeId", exchangeId))
+                if (!writer.writeLong(exchangeId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong("fragmentId", fragmentId))
+                if (!writer.writeLong(fragmentId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeBoolean("last", last))
+                if (!writer.writeBoolean(last))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollection("mRows", mRows, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(mRows, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeUuid("queryId", qryId))
+                if (!writer.writeUuid(qryId))
                     return false;
 
                 writer.incrementState();
@@ -199,12 +199,9 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                batchId = reader.readInt("batchId");
+                batchId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -212,7 +209,7 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 1:
-                exchangeId = reader.readLong("exchangeId");
+                exchangeId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -220,7 +217,7 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 2:
-                fragmentId = reader.readLong("fragmentId");
+                fragmentId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -228,7 +225,7 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 3:
-                last = reader.readBoolean("last");
+                last = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -236,7 +233,7 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 4:
-                mRows = reader.readCollection("mRows", MessageCollectionItemType.MSG);
+                mRows = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -244,7 +241,7 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
                 reader.incrementState();
 
             case 5:
-                qryId = reader.readUuid("queryId");
+                qryId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -253,16 +250,11 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
 
         }
 
-        return reader.afterMessageRead(QueryBatchMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public MessageType type() {
         return MessageType.QUERY_BATCH_MESSAGE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 6;
     }
 }

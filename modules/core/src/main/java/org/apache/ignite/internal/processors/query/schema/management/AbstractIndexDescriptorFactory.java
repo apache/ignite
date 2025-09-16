@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.schema.management;
 
 import java.util.LinkedHashMap;
+import java.util.Objects;
 import org.apache.ignite.internal.cache.query.index.Order;
 import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
@@ -50,11 +51,11 @@ public abstract class AbstractIndexDescriptorFactory implements IndexDescriptorF
         GridQueryProperty prop = typeDesc.property(field);
 
         // Try to find property by alternative key field name.
-        if (prop == null && F.eq(field, QueryUtils.KEY_FIELD_NAME) && !F.isEmpty(typeDesc.keyFieldName()))
+        if (prop == null && Objects.equals(field, QueryUtils.KEY_FIELD_NAME) && !F.isEmpty(typeDesc.keyFieldName()))
             prop = typeDesc.property(typeDesc.keyFieldName());
 
-        Class<?> fieldType = F.eq(field, QueryUtils.KEY_FIELD_NAME) ? typeDesc.keyClass() :
-            F.eq(field, QueryUtils.VAL_FIELD_NAME) ? typeDesc.valueClass() : prop.type();
+        Class<?> fieldType = Objects.equals(field, QueryUtils.KEY_FIELD_NAME) ? typeDesc.keyClass() :
+            Objects.equals(field, QueryUtils.VAL_FIELD_NAME) ? typeDesc.valueClass() : prop.type();
 
         int fieldPrecision = prop != null ? prop.precision() : -1;
 

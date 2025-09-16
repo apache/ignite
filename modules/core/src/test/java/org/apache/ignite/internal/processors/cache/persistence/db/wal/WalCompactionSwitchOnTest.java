@@ -26,13 +26,12 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_FILTER;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_TEMP_FILE_COMPACTED_FILTER;
 
 /**
@@ -84,13 +83,13 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
         for (int i = 0; i < 500; i++)
             cache.put(i, i);
 
-        File walDir = ex.context().pdsFolderResolver().fileTree().wal();
+        NodeFileTree ft = ex.context().pdsFolderResolver().fileTree();
 
         forceCheckpoint();
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                File[] archivedFiles = walDir.listFiles(WAL_SEGMENT_FILE_FILTER);
+                File[] archivedFiles = ft.walSegments();
 
                 return archivedFiles.length == 39;
             }
@@ -108,7 +107,7 @@ public class WalCompactionSwitchOnTest extends GridCommonAbstractTest {
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                File[] archivedFiles = archiveDir.listFiles(WAL_SEGMENT_FILE_COMPACTED_FILTER);
+                File[] archivedFiles = archiveDir.listFiles(NodeFileTree::walCompactedSegment);
 
                 return archivedFiles.length == 20;
             }

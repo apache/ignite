@@ -48,7 +48,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 
 import static java.sql.Types.BINARY;
-import static org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStream.MAX_ARRAY_SIZE;
+import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 
 /**
  * JDBC prepared statement implementation.

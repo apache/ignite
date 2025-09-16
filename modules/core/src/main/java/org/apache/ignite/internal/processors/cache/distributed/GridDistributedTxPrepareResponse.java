@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -36,9 +35,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Response to prepare request.
  */
 public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage implements IgniteTxStateAware {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Error. */
     @GridToStringExclude
     @GridDirectTransient
@@ -58,7 +54,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     protected byte flags;
 
     /**
-     * Empty constructor (required by {@link Externalizable}).
+     * Empty constructor.
      */
     public GridDistributedTxPrepareResponse() {
         /* No-op. */
@@ -171,27 +167,27 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
+            case 7:
+                if (!writer.writeByteArray(errBytes))
+                    return false;
+
+                writer.incrementState();
+
             case 8:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeByte(flags))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeByte("flags", flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeInt("part", part))
+                if (!writer.writeInt(part))
                     return false;
 
                 writer.incrementState();
@@ -205,15 +201,20 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
+            case 7:
+                errBytes = reader.readByteArray();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
             case 8:
-                errBytes = reader.readByteArray("errBytes");
+                flags = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -221,15 +222,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
                 reader.incrementState();
 
             case 9:
-                flags = reader.readByte("flags");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                part = reader.readInt("part");
+                part = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -238,17 +231,12 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
 
         }
 
-        return reader.afterMessageRead(GridDistributedTxPrepareResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 26;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 11;
     }
 
     /** {@inheritDoc} */

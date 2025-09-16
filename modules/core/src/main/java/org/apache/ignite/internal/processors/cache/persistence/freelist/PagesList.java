@@ -154,7 +154,8 @@ public abstract class PagesList extends DataStructure {
 
             long tailId = io.getNextId(pageAddr);
 
-            assert tailId != 0;
+            if (tailId == 0)
+                throw corruptedFreeListException("nextId is 0 in non-tail page [pageId=" + U.hexLong(pageId) + "]", pageId);
 
             io.setNextId(pageAddr, 0L);
 
@@ -2342,7 +2343,7 @@ public abstract class PagesList extends DataStructure {
 
             Stripe stripe = (Stripe)o;
 
-            return F.eq(tailId, stripe.tailId) && F.eq(empty, stripe.empty);
+            return Objects.equals(tailId, stripe.tailId) && Objects.equals(empty, stripe.empty);
         }
 
         /** {@inheritDoc} */

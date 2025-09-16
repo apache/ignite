@@ -22,7 +22,7 @@ import java.util.IdentityHashMap;
 /**
  * Writer handles. Aimed to delay hash map allocation for some time until it is clearly evident that it is needed.
  */
-public class BinaryWriterHandles {
+class BinaryWriterHandles {
     /** Value denoting null position. */
     public static final int POS_NULL = -1;
 

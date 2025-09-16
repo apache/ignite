@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Map;
@@ -45,9 +44,6 @@ import org.jetbrains.annotations.Nullable;
  * DHT lock request.
  */
 public class GridDhtLockRequest extends GridDistributedLockRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Invalidate reader flags. */
     private BitSet invalidateEntries;
 
@@ -83,7 +79,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     private String txLbl;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtLockRequest() {
         // No-op.
@@ -315,63 +311,63 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
         }
 
         switch (writer.state()) {
+            case 20:
+                if (!writer.writeLong(accessTtl))
+                    return false;
+
+                writer.incrementState();
+
             case 21:
-                if (!writer.writeLong("accessTtl", accessTtl))
+                if (!writer.writeBitSet(invalidateEntries))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeBitSet("invalidateEntries", invalidateEntries))
+                if (!writer.writeIgniteUuid(miniId))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeObjectArray(ownedKeys, MessageCollectionItemType.KEY_CACHE_OBJECT))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeObjectArray("ownedKeys", ownedKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeObjectArray(ownedValues, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeObjectArray("ownedValues", ownedValues, MessageCollectionItemType.MSG))
+                if (!writer.writeBitSet(preloadKeys))
                     return false;
 
                 writer.incrementState();
 
             case 26:
-                if (!writer.writeBitSet("preloadKeys", preloadKeys))
+                if (!writer.writeInt(taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 27:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
 
             case 28:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 29:
-                if (!writer.writeString("txLbl", txLbl))
+                if (!writer.writeString(txLbl))
                     return false;
 
                 writer.incrementState();
@@ -385,15 +381,20 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
+            case 20:
+                accessTtl = reader.readLong();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
             case 21:
-                accessTtl = reader.readLong("accessTtl");
+                invalidateEntries = reader.readBitSet();
 
                 if (!reader.isLastRead())
                     return false;
@@ -401,7 +402,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 22:
-                invalidateEntries = reader.readBitSet("invalidateEntries");
+                miniId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -409,7 +410,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 23:
-                miniId = reader.readIgniteUuid("miniId");
+                ownedKeys = reader.readObjectArray(MessageCollectionItemType.KEY_CACHE_OBJECT, KeyCacheObject.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -417,7 +418,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 24:
-                ownedKeys = reader.readObjectArray("ownedKeys", MessageCollectionItemType.MSG, KeyCacheObject.class);
+                ownedValues = reader.readObjectArray(MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -425,7 +426,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 25:
-                ownedValues = reader.readObjectArray("ownedValues", MessageCollectionItemType.MSG, GridCacheVersion.class);
+                preloadKeys = reader.readBitSet();
 
                 if (!reader.isLastRead())
                     return false;
@@ -433,7 +434,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 26:
-                preloadKeys = reader.readBitSet("preloadKeys");
+                taskNameHash = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -441,7 +442,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 27:
-                taskNameHash = reader.readInt("taskNameHash");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -449,15 +450,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 28:
-                topVer = reader.readAffinityTopologyVersion("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 29:
-                txLbl = reader.readString("txLbl");
+                txLbl = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -466,16 +459,11 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
         }
 
-        return reader.afterMessageRead(GridDhtLockRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 30;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
         return 30;
     }
 

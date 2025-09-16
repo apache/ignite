@@ -114,7 +114,7 @@ public class MockWalIteratorFactory {
             }
 
             @Override public NodeFileTree fileTree() {
-                return new NodeFileTree(new File(".").getAbsolutePath(), subfolderName);
+                return new NodeFileTree(new File("."), subfolderName);
             }
         });
 

@@ -53,6 +53,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.binary.BinaryUtils.mergeMetadata;
@@ -537,7 +538,7 @@ final class BinaryMetadataTransport {
                     ", typeName=" + msg.metadata().typeName() +
                     ", pendingVer=" + msg.pendingVersion() +
                     ", acceptedVer=" + msg.acceptedVersion() +
-                    ", schemasCnt=" + msg.metadata().schemas().size() + ']');
+                    ", schemasCnt=" + msg.metadata().schemaIds().size() + ']');
 
             int typeId = msg.typeId();
 

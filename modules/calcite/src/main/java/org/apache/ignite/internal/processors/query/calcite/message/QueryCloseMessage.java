@@ -51,7 +51,7 @@ public class QueryCloseMessage implements CalciteMessage {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -59,7 +59,7 @@ public class QueryCloseMessage implements CalciteMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeUuid("queryId", qryId))
+                if (!writer.writeUuid(qryId))
                     return false;
 
                 writer.incrementState();
@@ -72,12 +72,9 @@ public class QueryCloseMessage implements CalciteMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                qryId = reader.readUuid("queryId");
+                qryId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -86,16 +83,11 @@ public class QueryCloseMessage implements CalciteMessage {
 
         }
 
-        return reader.afterMessageRead(QueryCloseMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public MessageType type() {
         return MessageType.QUERY_CLOSE_MESSAGE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 }

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.cache.affinity;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -53,7 +53,7 @@ public class PlatformAffinityManager extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override public long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override public long processInStreamOutLong(int type, BinaryReaderEx reader) throws IgniteCheckedException {
         if (type == OP_IS_ASSIGNMENT_VALID) {
             AffinityTopologyVersion ver = new AffinityTopologyVersion(reader.readLong(), reader.readInt());
             int part = reader.readInt();

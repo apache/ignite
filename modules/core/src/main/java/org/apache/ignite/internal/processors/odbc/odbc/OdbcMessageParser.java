@@ -22,13 +22,12 @@ import java.util.Collection;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
-import org.apache.ignite.internal.binary.BinaryThreadLocalContext;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -82,9 +81,9 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
     @Override public ClientListenerRequest decode(ClientMessage msg) {
         assert msg != null;
 
-        BinaryInputStream stream = new BinaryHeapInputStream(msg.payload());
+        BinaryInputStream stream = BinaryStreams.inputStream(msg.payload());
 
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), stream, ctx.config().getClassLoader(), true);
+        BinaryReaderEx reader = BinaryUtils.reader(marsh.context(), stream, ctx.config().getClassLoader(), true);
 
         byte cmd = reader.readByte();
 
@@ -240,7 +239,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
      * @param paramNum Number of parameters in a row
      * @return Parameters array.
      */
-    @NotNull private static Object[] readParameterRow(BinaryReaderExImpl reader, int paramNum) {
+    @NotNull private static Object[] readParameterRow(BinaryReaderEx reader, int paramNum) {
         Object[] params = new Object[paramNum];
 
         for (int i = 0; i < paramNum; ++i)
@@ -258,8 +257,10 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
         OdbcResponse msg = (OdbcResponse)msg0;
 
         // Creating new binary writer
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(marsh.context(), new BinaryHeapOutputStream(INIT_CAP),
-            BinaryThreadLocalContext.get().schemaHolder(), null);
+        BinaryWriterEx writer = BinaryUtils.writer(
+            marsh.context(),
+            BinaryStreams.outputStream(INIT_CAP)
+        );
 
         // Writing status.
         if (ver.compareTo(OdbcConnectionContext.VER_2_1_5) < 0) {
@@ -418,7 +419,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
      * @param writer Writer.
      * @param meta Metadata
      */
-    private void writeResultsetMeta(BinaryWriterExImpl writer, Collection<OdbcColumnMeta> meta) {
+    private void writeResultsetMeta(BinaryWriterEx writer, Collection<OdbcColumnMeta> meta) {
         assert meta != null;
 
         writer.writeInt(meta.size());
@@ -444,7 +445,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
      * @param writer Writer to use.
      * @param affectedRows Affected rows.
      */
-    private void writeAffectedRows(BinaryWriterExImpl writer, long[] affectedRows) {
+    private void writeAffectedRows(BinaryWriterEx writer, long[] affectedRows) {
         if (ver.compareTo(OdbcConnectionContext.VER_2_3_2) < 0) {
             long summ = 0;
 

@@ -42,6 +42,7 @@ import org.apache.ignite.spi.systemview.view.ComputeJobView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.util.Arrays.asList;
@@ -175,6 +176,7 @@ public class KillCommandsControlShTest extends GridCommandHandlerClusterByClassA
     }
 
     /** @throws Exception If failed. */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-25021")
     @Test
     public void testCancelClientConnection() {
         doTestCancelClientConnection(srvs, (nodeId, connId) -> {

@@ -206,7 +206,7 @@ public abstract class AbstractSetOpNode<Row> extends MemoryTrackingNode<Row> {
     /** */
     protected abstract static class Grouping<Row> {
         /** */
-        protected final Map<GroupKey, int[]> groups = new HashMap<>();
+        protected final Map<GroupKey<Row>, int[]> groups = new HashMap<>();
 
         /** */
         protected final RowHandler<Row> hnd;
@@ -261,15 +261,8 @@ public abstract class AbstractSetOpNode<Row> extends MemoryTrackingNode<Row> {
         }
 
         /** */
-        protected GroupKey key(Row row) {
-            int size = hnd.columnCount(row);
-
-            Object[] fields = new Object[size];
-
-            for (int i = 0; i < size; i++)
-                fields[i] = hnd.get(i, row);
-
-            return new GroupKey(fields);
+        protected GroupKey<Row> key(Row row) {
+            return new GroupKey<>(row, hnd);
         }
 
         /** */
@@ -285,7 +278,7 @@ public abstract class AbstractSetOpNode<Row> extends MemoryTrackingNode<Row> {
 
         /** */
         protected void addOnReducer(Row row) {
-            GroupKey grpKey = (GroupKey)hnd.get(0, row);
+            GroupKey<Row> grpKey = key((Row)hnd.get(0, row));
             int[] cntrsMap = (int[])hnd.get(1, row);
 
             int[] cntrs = groups.computeIfAbsent(grpKey, k -> new int[cntrsMap.length]);
@@ -298,17 +291,17 @@ public abstract class AbstractSetOpNode<Row> extends MemoryTrackingNode<Row> {
 
         /** */
         protected List<Row> getOnMapper(int cnt) {
-            Iterator<Map.Entry<GroupKey, int[]>> it = groups.entrySet().iterator();
+            Iterator<Map.Entry<GroupKey<Row>, int[]>> it = groups.entrySet().iterator();
 
             int amount = Math.min(cnt, groups.size());
             List<Row> res = new ArrayList<>(amount);
 
             while (amount > 0 && it.hasNext()) {
-                Map.Entry<GroupKey, int[]> entry = it.next();
+                Map.Entry<GroupKey<Row>, int[]> entry = it.next();
 
                 // Skip row if it doesn't affect the final result.
                 if (affectResult(entry.getValue())) {
-                    res.add(rowFactory.create(entry.getKey(), entry.getValue()));
+                    res.add(rowFactory.create(entry.getKey().row(), entry.getValue()));
 
                     amount--;
                 }
@@ -321,16 +314,16 @@ public abstract class AbstractSetOpNode<Row> extends MemoryTrackingNode<Row> {
 
         /** */
         protected List<Row> getOnSingleOrReducer(int cnt) {
-            Iterator<Map.Entry<GroupKey, int[]>> it = groups.entrySet().iterator();
+            Iterator<Map.Entry<GroupKey<Row>, int[]>> it = groups.entrySet().iterator();
 
             List<Row> res = new ArrayList<>(cnt);
 
             while (it.hasNext() && cnt > 0) {
-                Map.Entry<GroupKey, int[]> entry = it.next();
+                Map.Entry<GroupKey<Row>, int[]> entry = it.next();
 
-                GroupKey key = entry.getKey();
+                GroupKey<Row> key = entry.getKey();
 
-                Row row = rowFactory.create(key.fields());
+                Row row = key.row();
 
                 int[] cntrs = entry.getValue();
 

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.odbc;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
@@ -60,7 +60,7 @@ public interface ClientListenerConnectionContext {
      * @param reader Reader set to the configuration part of the handshake message.
      * @throws IgniteCheckedException On error.
      */
-    void initializeFromHandshake(GridNioSession ses, ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+    void initializeFromHandshake(GridNioSession ses, ClientListenerProtocolVersion ver, BinaryReaderEx reader)
         throws IgniteCheckedException;
 
     /**

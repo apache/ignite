@@ -27,8 +27,9 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Command;
+import org.apache.ignite.internal.management.api.CommandsProvider;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.management.api.NativeCommand;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -62,7 +63,7 @@ public class CommandsProviderExtImpl implements CommandsProvider {
     }
 
     /** */
-    public static class TestCommandCommand implements LocalCommand<TestCommandCommandArg, Void> {
+    public static class TestCommandCommand implements NativeCommand<TestCommandCommandArg, Void> {
         /** {@inheritDoc} */
         @Override public String description() {
             return TEST_COMMAND_USAGE;
@@ -97,7 +98,7 @@ public class CommandsProviderExtImpl implements CommandsProvider {
         }
 
         /** {@inheritDoc} */
-        @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException {
+        @Override protected void readExternalData(ObjectInput in) throws IOException {
             testPrint = U.readString(in);
         }
 

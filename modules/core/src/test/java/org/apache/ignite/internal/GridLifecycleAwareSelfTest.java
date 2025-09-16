@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorMessageInterceptor;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
@@ -104,30 +103,6 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
     /**
      */
-    private static class TestMarshaller extends BinaryMarshaller implements LifecycleAware {
-        /** */
-        private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(null);
-
-        /** {@inheritDoc} */
-        @Override public void start() {
-            lifecycleAware.start();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void stop() {
-            lifecycleAware.stop();
-        }
-
-        /**
-         * @return Lifecycle aware.
-         */
-        TestLifecycleAware lifecycleAware() {
-            return lifecycleAware;
-        }
-    }
-
-    /**
-     */
     private static class TestLogger extends JavaLogger implements LifecycleAware {
         /** */
         private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(null);
@@ -181,12 +156,6 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
         cfg.setLifecycleBeans(lifecycleBean);
 
         lifecycleAwares.add(lifecycleBean);
-
-        TestMarshaller marshaller = new TestMarshaller();
-
-        cfg.setMarshaller(marshaller);
-
-        lifecycleAwares.add(marshaller.lifecycleAware());
 
         TestLogger testLog = new TestLogger();
 

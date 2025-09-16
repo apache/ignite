@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import org.apache.ignite.internal.util.typedef.F;
+import java.util.Objects;
 
 /**
  * Immutable query metrics key used to group metrics.
@@ -77,6 +77,6 @@ public class GridCacheQueryDetailMetricsKey {
 
         GridCacheQueryDetailMetricsKey other = (GridCacheQueryDetailMetricsKey)o;
 
-        return qryType == other.qryType && F.eq(qry, other.qry);
+        return qryType == other.qryType && Objects.equals(qry, other.qry);
     }
 }

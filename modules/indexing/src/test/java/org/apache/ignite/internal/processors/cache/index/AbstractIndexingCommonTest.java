@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +43,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.engine.Session;
 import org.h2.util.CloseWatcher;
 
+import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.util.IgniteUtils.awaitQuiet;
 
 /**
@@ -94,9 +94,7 @@ public class AbstractIndexingCommonTest extends GridCommonAbstractTest {
 
                 assertNotNull(cachex);
 
-                File cacheWorkDir = grid.context().pdsFolderResolver().fileTree().cacheStorage(cachex.configuration());
-
-                return cacheWorkDir.toPath().resolve("index.bin");
+                return grid.context().pdsFolderResolver().fileTree().partitionFile(cachex.configuration(), INDEX_PARTITION).toPath();
             })
             .collect(Collectors.toList());
     }
