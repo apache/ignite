@@ -3398,8 +3398,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryNode newNext = ring.nextNode(failedNodes);
 
                 if (newNext == null) {
-                    if(locNode.order()==1 && sndState!=null) log.error("TEST | no next node, sndState timeout left: " + U.nanosToMillis(sndState.failTimeNanos - System.nanoTime()));
-
                     if (log.isDebugEnabled())
                         log.debug("No next node in topology.");
 
@@ -3467,9 +3465,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     while (true) {
                         if (sock == null) {
-                            if(locNode.order()==1 && sndState!=null)
-                                log.error("TEST | opening socket to " + addr + ", time left: " + U.nanosToMillis(sndState.failTimeNanos - System.nanoTime()));
-
                             // We re-create the helper here because it could be created earlier with wrong timeout on
                             // message sending like IgniteConfiguration.failureDetectionTimeout. Here we are in the
                             // state of conenction recovering and have to work with
@@ -3622,8 +3617,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 }
                             }
                             catch (IOException | IgniteCheckedException e) {
-                                if(locNode.order()==1 && sndState!=null) log.error("TEST | failed to open socket to " + addr + ", time left: " + U.nanosToMillis(sndState.failTimeNanos - System.nanoTime()));
-
                                 if (errs == null)
                                     errs = new ArrayList<>();
 
@@ -3858,10 +3851,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                 } // Iterating node's addresses.
 
                 if (!sent) {
-                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0) {
+                    if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
                         sndState = new CrossRingMessageSendState();
-                        if(locNode.order()==1) log.error("TEST | sndState created, time left: "+ U.nanosToMillis(sndState.failTimeNanos - System.nanoTime()));
-                    }else if (sndState != null && sndState.checkTimeout()) {
+                    else if (sndState != null && sndState.checkTimeout()) {
                         segmentLocalNodeOnSendFail(failedNodes);
 
                         return; // Nothing to do here.
@@ -8010,8 +8002,6 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @return {@code True} if passed timeout is reached. {@code False} otherwise.
          */
         boolean checkTimeout() {
-            log.error("TEST | checkTimeout(), left: " + U.nanosToMillis(failTimeNanos - System.nanoTime()) + " millis");
-
             if (System.nanoTime() >= failTimeNanos) {
                 state = RingMessageSendState.FAILED;
 

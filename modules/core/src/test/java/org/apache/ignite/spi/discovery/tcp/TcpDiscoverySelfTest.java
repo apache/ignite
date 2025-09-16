@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1711,108 +1710,50 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** Tests failure of a joining node on {@link TcpDiscoveryNodeAddedMessage}. */
     @Test
     public void testJoinNodeFails1() throws Exception {
-        doTestJoiningNodeFails(false, false, false, TcpDiscoveryNodeAddedMessage.class);
-
-        stopAllGrids();
-
-        // Wait before the test timeout.
-        doTestJoiningNodeFails(false, true, false, TcpDiscoveryNodeAddedMessage.class);
+        joiningNodeFailsTestsPack(false, TcpDiscoveryNodeAddedMessage.class);
     }
 
     /** Tests failure of an asynchronously joining node on {@link TcpDiscoveryNodeAddedMessage}. */
     @Test
     public void testJoinNodeFails1Async() throws Exception {
-        doTestJoiningNodeFails(false, false, true, TcpDiscoveryNodeAddedMessage.class);
-
-        stopAllGrids();
-
-        // Wait before the test timeout.
-        doTestJoiningNodeFails(false, true, true, TcpDiscoveryNodeAddedMessage.class);
-    }
-
-    // TODO: do e need the recovery timeouts for the tests?
-    /** Tests failure of a joining node on {@link TcpDiscoveryNodeAddedMessage} with no connection recovery timeut. */
-    @Test
-    public void testJoinNodeFails1NoRecoveryTimeout() throws Exception {
-        doTestJoiningNodeFails(true, false, false, TcpDiscoveryNodeAddedMessage.class);
-
-        stopAllGrids();
-
-        // Wait before the test timeout.
-        doTestJoiningNodeFails(true, true, false, TcpDiscoveryNodeAddedMessage.class);
-    }
-
-    /**
-     * Tests failure of an asynchronously joining node on {@link TcpDiscoveryNodeAddedMessage} with
-     * no connection recovery timeut.
-     */
-    @Test
-    public void testJoinNodeFails1NoRecoveryTimeoutAsync() throws Exception {
-        doTestJoiningNodeFails(true, false, true, TcpDiscoveryNodeAddedMessage.class);
-
-        stopAllGrids();
-
-        // Wait before the test timeout.
-        doTestJoiningNodeFails(true, true, true, TcpDiscoveryNodeAddedMessage.class);
+        joiningNodeFailsTestsPack(true, TcpDiscoveryNodeAddedMessage.class);
     }
 
     /** Tests failure of a joining node on {@link TcpDiscoveryNodeAddFinishedMessage}. */
     @Test
     public void testJoinNodeFails2() throws Exception {
-        doTestJoiningNodeFails(false, false, false,
-            TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
-
-        stopAllGrids();
-
-        // Wait before the test timeout.
-        doTestJoiningNodeFails(false, true, false,
-            TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
+        joiningNodeFailsTestsPack(false, TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
     }
 
     /** Tests failure of an asynchronously joining node on {@link TcpDiscoveryNodeAddFinishedMessage}. */
     @Test
     public void testJoinNodeFails2Async() throws Exception {
-        doTestJoiningNodeFails(false, false, false,
-            TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
-
-        stopAllGrids();
-
-        // Wait before the test timeout.
-        doTestJoiningNodeFails(false, true, false,
-            TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
+        joiningNodeFailsTestsPack(true, TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
     }
 
-    /** Tests failure of a joining node on {@link TcpDiscoveryNodeAddFinishedMessage} with no connection recovery timeut. */
-    @Test
-    public void testJoinNodeFails2NoRecoveryTimeout() throws Exception {
-        doTestJoiningNodeFails(true, false, false,
-            TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
+    /** Launches scenarios of {@link #joiningNodeFailsTestRun} allowing to set parameters. */
+    private void joiningNodeFailsTestsPack(boolean asyncStart,
+        Class<? extends TcpDiscoveryAbstractMessage>... msgsBeforeFail) throws Exception {
+        joiningNodeFailsTestRun(false, false, asyncStart, msgsBeforeFail);
 
         stopAllGrids();
 
         // Wait before the test timeout.
-        doTestJoiningNodeFails(true, true, false,
-            TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
-    }
-
-    /**
-     * Tests failure of an asynchronously joining node on {@link TcpDiscoveryNodeAddFinishedMessage} with
-     * no connection recovery timeut.
-     */
-    @Test
-    public void testJoinNodeFails2NoRecoveryTimeoutAsync() throws Exception {
-        doTestJoiningNodeFails(true, false, true,
-            TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
+        joiningNodeFailsTestRun(false, true, asyncStart, msgsBeforeFail);
 
         stopAllGrids();
 
-        // Wait before the test timeout.
-        doTestJoiningNodeFails(true, true, true,
-            TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
+        // No recovery timeout.
+        joiningNodeFailsTestRun(true, false, asyncStart, msgsBeforeFail);
+
+        stopAllGrids();
+
+        // No recovery timeout, wait before the test timeout.
+        joiningNodeFailsTestRun(true, true, asyncStart, msgsBeforeFail);
     }
 
     /** Main routine of joining node failure test. */
-    private void doTestJoiningNodeFails(
+    private void joiningNodeFailsTestRun(
         boolean noConnRecoverTimeout,
         boolean waitBeforeTimeout,
         boolean asyncStart,
@@ -1879,38 +1820,51 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** Tests coordinator failure at {@link TcpDiscoveryNodeAddedMessage} when a node joins cluster. */
     @Test
     public void testCoordinatorFailsOnNodeJoin1() throws Exception {
-        coordinatorFailsOnNodeJoinTestsPack(false);
+        coordinatorFailsOnNodeJoinTestsPack(false, TcpDiscoveryNodeAddedMessage.class);
     }
 
     /** */
     @Test
     public void testCoordinatorFailsOnNodeJoin1Async() throws Exception {
-        coordinatorFailsOnNodeJoinTestsPack(true);
+        coordinatorFailsOnNodeJoinTestsPack(true, TcpDiscoveryNodeAddedMessage.class);
+    }
+
+    /** Tests coordinator failure at {@link TcpDiscoveryNodeAddFinishedMessage} when a node joins cluster. */
+    @Test
+    public void testCoordinatorFailsOnNodeJoin2() throws Exception {
+        coordinatorFailsOnNodeJoinTestsPack(false, TcpDiscoveryNodeAddFinishedMessage.class);
+    }
+
+    /** Tests coordinator failure at {@link TcpDiscoveryNodeAddFinishedMessage} when a node joins cluster. */
+    @Test
+    public void testCoordinatorFailsOnNodeJoin2Async() throws Exception {
+        coordinatorFailsOnNodeJoinTestsPack(true, TcpDiscoveryNodeAddFinishedMessage.class);
     }
 
     /** Launches scenarios with {@link #coordinatorFailsOnNodeJoinTestRun} allowing to set the async-start parameter.  */
-    private void coordinatorFailsOnNodeJoinTestsPack(boolean asyncStart) throws Exception {
+    private void coordinatorFailsOnNodeJoinTestsPack(boolean asyncStart,
+        Class<? extends TcpDiscoveryAbstractMessage> msgBeforeFail) throws Exception {
         // Default recovery timeout. Long enough to cycle all the cluster with the socket timeout.
-        coordinatorFailsOnNodeJoinTestRun(null, asyncStart, false);
+        coordinatorFailsOnNodeJoinTestRun(null, asyncStart, false, msgBeforeFail);
 
         stopAllGrids();
 
         // No recovery timeout. Coordinator won't restore connection.
-        coordinatorFailsOnNodeJoinTestRun(0L, asyncStart, false);
+        coordinatorFailsOnNodeJoinTestRun(0L, asyncStart, false, msgBeforeFail);
 
         stopAllGrids();
 
         // Short recovery timeout. Coordinator can't restore connection.
-        coordinatorFailsOnNodeJoinTestRun(100L, asyncStart, true);
+        coordinatorFailsOnNodeJoinTestRun(100L, asyncStart, true, msgBeforeFail);
     }
 
     /** Main routine of coordinator failure when a node joins. */
     private void coordinatorFailsOnNodeJoinTestRun(@Nullable Long connRecoverTimeout, boolean asyncStart,
-        boolean coordFails) throws Exception {
+        boolean coordFails, Class<? extends TcpDiscoveryAbstractMessage> msgBeforeFail) throws Exception {
         if (connRecoverTimeout != null)
             connectionRecoveryTimeout = connRecoverTimeout;
 
-        TimeoutSimulatingSpi coordDiscoSpi = new TimeoutSimulatingSpi(true, TcpDiscoveryNodeAddedMessage.class);
+        TimeoutSimulatingSpi coordDiscoSpi = new TimeoutSimulatingSpi(true, msgBeforeFail);
 
         int newNodes = asyncStart ? 3 : 1;
 
@@ -1941,111 +1895,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         if (coordFails)
             waitNodeStop(getTestIgniteInstanceName(0));
-    }
-
-//
-//    /**
-//     * Coordinator is added in failed list during node start, but node detected failure dies before
-//     * sending {@link TcpDiscoveryNodeFailedMessage}.
-//     *
-//     * @throws Exception If failed.
-//     */
-//    @Test
-//    public void testFailedNodes4() throws Exception {
-//        try {
-//            final int FAIL_ORDER = 3;
-//
-//            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
-//
-//            final Ignite ignite0 = startGrid(0);
-//
-//            nodeSpi.set(createFailedNodeSpi(FAIL_ORDER));
-//
-//            Ignite ignite1 = startGrid(1);
-//
-//            TestFailedNodesSpi spi = createFailedNodeSpi(FAIL_ORDER);
-//
-//            spi.stopBeforeSndFail = true;
-//
-//            nodeSpi.set(spi);
-//
-//            Ignite ignite2 = startGrid(2);
-//
-//            waitNodeStop(ignite2.name());
-//
-//            log.info("Try start new node.");
-//
-//            Ignite ignite3 = startGrid(3);
-//
-//            waitNodeStop(ignite0.name());
-//
-//            assertEquals(2, ignite1.cluster().nodes().size());
-//            assertEquals(2, ignite3.cluster().nodes().size());
-//
-//            tryCreateCache(2);
-//        }
-//        finally {
-//            stopAllGrids();
-//        }
-//    }
-
-    /**
-     * Adds some node in failed list after join process finished.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testFailedNodes5() throws Exception {
-        try {
-            ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-            for (int iter = 0; iter < 3; iter++) {
-                final int NODES = iter == 0 ? 2 : rnd.nextInt(3, 6);
-
-                for (int i = 0; i < NODES; i++) {
-                    nodeSpi.set(new TestFailedNodesSpi(null));
-
-                    startGrid(i);
-                }
-
-                Map<Long, Ignite> nodes = new HashMap<>();
-
-                for (int i = 0; i < NODES; i++) {
-                    Ignite ignite = ignite(i);
-
-                    nodes.put(ignite.cluster().localNode().order(), ignite);
-                }
-
-                Ignite ignite = ignite(rnd.nextInt(NODES));
-
-                log.info("Iteration [iter=" + iter + ", nodes=" + NODES + ", failFrom=" + ignite.name() + ']');
-
-                TestFailedNodesSpi spi = (TestFailedNodesSpi)ignite.configuration().getDiscoverySpi();
-
-                spi.failSingleMsg = true;
-
-                long order = ignite.cluster().localNode().order();
-
-                long nextOrder = order == NODES ? 1 : order + 1;
-
-                Ignite failingNode = nodes.get(nextOrder);
-
-                assertNotNull(failingNode);
-
-                waitNodeStop(failingNode.name());
-
-                Ignite newNode = startGrid(NODES);
-
-                assertEquals(NODES, newNode.cluster().nodes().size());
-
-                tryCreateCache(NODES);
-
-                stopAllGrids();
-            }
-        }
-        finally {
-            stopAllGrids();
-        }
     }
 
     /**
@@ -2808,8 +2657,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     }
                 }
 
-                log.error("TEST | simulating timeout exception " + timeout);
-
                 throw new SocketTimeoutException("TestTimeout");
             }
         }
@@ -2836,82 +2683,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             simulateTimeot(null, timeout);
 
             super.writeToSocket(sock, msg, data, timeout);
-        }
-    }
-
-    /**
-     * Simulate scenario when node detects node failure trying to send message, but node still alive.
-     */
-    private static class TestFailedNodesSpi extends TcpDiscoverySpi {
-        /** */
-        private final AtomicBoolean failMsg = new AtomicBoolean();
-
-        /** */
-        @Nullable private final Object failConsistId;
-
-        /** */
-        private boolean stopBeforeSndFail;
-
-        /** */
-        private boolean stop;
-
-        /** */
-        private volatile boolean failSingleMsg;
-
-        /** */
-        TestFailedNodesSpi(@Nullable Object failConsistId) {
-            this.failConsistId = failConsistId;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock,
-            OutputStream out,
-            TcpDiscoveryAbstractMessage msg,
-            long timeout) throws IOException, IgniteCheckedException {
-            if (stop)
-                return;
-
-            if (failSingleMsg) {
-                failSingleMsg = false;
-
-                log.info("IO error on message send [locNode=" + locNode + ", msg=" + msg + ']');
-
-                sock.close();
-
-                throw new SocketTimeoutException();
-            }
-
-            if (getLocalNode().consistentId().equals(failConsistId) &&
-                (msg instanceof TcpDiscoveryNodeAddedMessage) &&
-                failMsg.compareAndSet(false, true)) {
-                log.info("IO error on message send [locNode=" + locNode + ", msg=" + msg + ']');
-
-                sock.close();
-
-                throw new SocketTimeoutException();
-            }
-
-            if (stopBeforeSndFail &&
-                locNode.consistentId().equals(failConsistId) &&
-                (msg instanceof TcpDiscoveryNodeFailedMessage)) {
-                stop = true;
-
-                log.info("Skip messages send and stop node [locNode=" + locNode + ", msg=" + msg + ']');
-
-                sock.close();
-
-                GridTestUtils.runAsync(new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        ignite.close();
-
-                        return null;
-                    }
-                }, "stop-node");
-
-                return;
-            }
-
-            super.writeToSocket(sock, out, msg, timeout);
         }
     }
 

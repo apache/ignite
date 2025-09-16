@@ -1589,9 +1589,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             assert addr != null;
 
-            if(locNode.order()==1)
-                log.error("TEST | opening socket to " + addr + ", curOpTimeout: " + timeoutHelper.nextTimeoutChunk(sockTimeout));
-
             sock.connect(resolved, (int)timeoutHelper.nextTimeoutChunk(sockTimeout));
 
             writeToSocket(sock, null, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
