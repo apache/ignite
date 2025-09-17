@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -268,6 +269,14 @@ public interface MessageWriter {
      * @return Whether value was fully written.
      */
     public boolean writeGridLongList(@Nullable GridLongList ll);
+
+    /**
+     * Writes {@link GridByteArrayList}.
+     *
+     * @param val Grid byte array list.
+     * @return Whether value was fully written.
+     */
+    public boolean writeGridByteArrayList(@Nullable GridByteArrayList val);
 
     /**
      * Writes array of objects.

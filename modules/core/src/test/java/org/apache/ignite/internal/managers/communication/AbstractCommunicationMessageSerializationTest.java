@@ -26,6 +26,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -292,6 +293,11 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean writeGridByteArrayList(@Nullable GridByteArrayList val) {
+            return writeField(GridByteArrayList.class);
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean writeMessage(Message val) {
             return writeField(Message.class);
         }
@@ -547,6 +553,13 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         /** {@inheritDoc} */
         @Override public GridLongList readGridLongList() {
             readField(GridLongList.class);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridByteArrayList readGridByteArrayList() {
+            readField(GridByteArrayList.class);
 
             return null;
         }

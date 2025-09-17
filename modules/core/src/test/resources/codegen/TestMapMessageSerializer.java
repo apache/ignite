@@ -190,6 +190,18 @@ public class TestMapMessageSerializer implements MessageSerializer {
 
                 writer.incrementState();
 
+            case 24:
+                if (!writer.writeMap(msg.integerGridByteArrayListMap(), MessageCollectionItemType.INT, MessageCollectionItemType.GRID_BYTE_ARRAY_LIST))
+                    return false;
+
+                writer.incrementState();
+
+            case 25:
+                if (!writer.writeMap(msg.gridByteArrayListIntegerMap(), MessageCollectionItemType.GRID_BYTE_ARRAY_LIST, MessageCollectionItemType.INT))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -388,6 +400,22 @@ public class TestMapMessageSerializer implements MessageSerializer {
 
             case 23:
                 msg.gridLongListIntegerMap(reader.readMap(MessageCollectionItemType.GRID_LONG_LIST, MessageCollectionItemType.INT, false));
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 24:
+                msg.integerGridByteArrayListMap(reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.GRID_BYTE_ARRAY_LIST, false));
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 25:
+                msg.gridByteArrayListIntegerMap(reader.readMap(MessageCollectionItemType.GRID_BYTE_ARRAY_LIST, MessageCollectionItemType.INT, false));
 
                 if (!reader.isLastRead())
                     return false;

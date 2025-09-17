@@ -95,8 +95,11 @@ public enum MessageCollectionItemType {
     /** Cache object. */
     CACHE_OBJECT,
 
-    /** GridLongList */
-    GRID_LONG_LIST;
+    /** GridLongList. */
+    GRID_LONG_LIST,
+
+    /** GridByteArrayList. */
+    GRID_BYTE_ARRAY_LIST;
 
     /** Enum values. */
     private static final MessageCollectionItemType[] VALS = values();
