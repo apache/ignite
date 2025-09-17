@@ -21,7 +21,7 @@
 {% macro apply(config, params) %}
     <bean id="cdcConsumer" class="org.apache.ignite.cdc.IgniteToIgniteCdcStreamer">
         <property name="destinationIgniteConfiguration">
-            {{ ignite_configuration.apply(params.target_cluster_client_config, params.target_cluster) }}
+            {{ ignite_configuration.apply(params.dst_cluster_client_config, params.dst_cluster) }}
         </property>
 
         {% if params.cdc.max_batch_size != None %}
@@ -40,5 +40,5 @@
             </list>
         </property>
     </bean>
-    {{ misc_utils.ext_beans(params.target_cluster_client_config) }}
+    {{ misc_utils.ext_beans(params.dst_cluster_client_config) }}
 {% endmacro %}

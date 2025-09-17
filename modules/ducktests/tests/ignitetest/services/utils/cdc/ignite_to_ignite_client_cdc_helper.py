@@ -16,14 +16,14 @@
 from typing import NamedTuple
 
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.utils.cdc.cdc_configurer import CdcConfigurer, CdcParams
+from ignitetest.services.utils.cdc.cdc_helper import CdcHelper, CdcParams
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration import IgniteThinClientConfiguration
 
 
-class IgniteToIgniteClientCdcConfigurer(CdcConfigurer):
+class IgniteToIgniteClientCdcHelper(CdcHelper):
     """
-    Configurer for the IgniteToIgniteClientCdcStreamer
+    CDC helper for the IgniteToIgniteClientCdcStreamer.
     """
     def get_cdc_beans(self, src_cluster, dst_cluster, cdc_params, ctx):
         beans: list = super().get_cdc_beans(src_cluster, dst_cluster, cdc_params, ctx)
@@ -31,20 +31,20 @@ class IgniteToIgniteClientCdcConfigurer(CdcConfigurer):
         addresses = [dst_cluster.nodes[0].account.hostname + ":" +
                      str(dst_cluster.config.client_connector_configuration.port)]
 
-        target_cluster_client_config = IgniteThinClientConfiguration(
+        dst_cluster_client_config = IgniteThinClientConfiguration(
             addresses=addresses,
             version=dst_cluster.config.version)
 
         dummy_client = IgniteApplicationService(dst_cluster.context,
-                                                target_cluster_client_config,
+                                                dst_cluster_client_config,
                                                 java_class_name="")
-        target_cluster_client_config = dummy_client.spec.extend_config(target_cluster_client_config)
+        dst_cluster_client_config = dummy_client.spec.extend_config(dst_cluster_client_config)
 
         dummy_client.free()
 
         params = IgniteToIgniteClientCdcStreamerTemplateParams(
             dst_cluster,
-            target_cluster_client_config,
+            dst_cluster_client_config,
             cdc=cdc_params
         )
 
@@ -57,7 +57,10 @@ class IgniteToIgniteClientCdcConfigurer(CdcConfigurer):
 
 
 class IgniteToIgniteClientCdcStreamerTemplateParams(NamedTuple):
-    target_cluster: IgniteAwareService
-    target_cluster_client_config: IgniteThinClientConfiguration
+    """
+    IgniteToIgniteClientCdcStreamer template parameters.
+    """
+    dst_cluster: IgniteAwareService
+    dst_cluster_client_config: IgniteThinClientConfiguration
     cdc: CdcParams
-    name: str = "IgniteToIgniteClientCdcStreamerTemplateParams"
+    # name: str = "IgniteToIgniteClientCdcStreamerTemplateParams"

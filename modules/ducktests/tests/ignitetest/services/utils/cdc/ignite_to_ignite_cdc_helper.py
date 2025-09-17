@@ -16,20 +16,20 @@
 from typing import NamedTuple
 
 from ignitetest.services.ignite_app import IgniteApplicationService
-from ignitetest.services.utils.cdc.cdc_configurer import CdcConfigurer, CdcParams
+from ignitetest.services.utils.cdc.cdc_helper import CdcHelper, CdcParams
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.metrics.metrics import OPENCENSUS_TEMPLATE_FILE
 
 
-class IgniteToIgniteCdcConfigurer(CdcConfigurer):
+class IgniteToIgniteCdcHelper(CdcHelper):
     """
-    Configurer for the IgniteToIgniteCdcStreamer
+    CDC helper for the IgniteToIgniteCdcStreamer.
     """
     def get_cdc_beans(self, src_cluster, dst_cluster, cdc_params, ctx):
         beans: list = super().get_cdc_beans(src_cluster, dst_cluster, cdc_params, ctx)
 
-        target_cluster_client_config = dst_cluster.config._replace(
+        dst_cluster_client_config = dst_cluster.config._replace(
             client_mode=True,
             ssl_params=None,
             ext_beans=[],
@@ -37,19 +37,19 @@ class IgniteToIgniteCdcConfigurer(CdcConfigurer):
         )
 
         dummy_client = IgniteApplicationService(dst_cluster.context,
-                                                target_cluster_client_config,
+                                                dst_cluster_client_config,
                                                 java_class_name="")
-        target_cluster_client_config = dummy_client.spec.extend_config(target_cluster_client_config)
+        dst_cluster_client_config = dummy_client.spec.extend_config(dst_cluster_client_config)
 
-        remove_bean_by_template_name(target_cluster_client_config.ext_beans, OPENCENSUS_TEMPLATE_FILE)
+        remove_bean_by_template_name(dst_cluster_client_config.ext_beans, OPENCENSUS_TEMPLATE_FILE)
 
-        target_cluster_client_config = target_cluster_client_config._replace(metric_exporters={})
+        dst_cluster_client_config = dst_cluster_client_config._replace(metric_exporters={})
 
         dummy_client.free()
 
         params = IgniteToIgniteCdcStreamerTemplateParams(
             dst_cluster,
-            target_cluster_client_config,
+            dst_cluster_client_config,
             cdc=cdc_params
         )
 
@@ -75,7 +75,10 @@ def remove_bean_by_template_name(beans, template_name):
 
 
 class IgniteToIgniteCdcStreamerTemplateParams(NamedTuple):
-    target_cluster: IgniteAwareService
-    target_cluster_client_config: IgniteConfiguration
+    """
+    IgniteToIgniteCdcStreamer template parameters.
+    """
+    dst_cluster: IgniteAwareService
+    dst_cluster_client_config: IgniteConfiguration
     cdc: CdcParams
-    name: str = "IgniteToIgniteCdcStreamerTemplateParams"
+    # name: str = "IgniteToIgniteCdcStreamerTemplateParams"
