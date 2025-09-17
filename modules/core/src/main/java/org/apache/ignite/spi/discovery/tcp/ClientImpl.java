@@ -107,6 +107,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpd
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
@@ -297,6 +298,8 @@ class ClientImpl extends TcpDiscoveryImpl {
             true);
 
         locNode = spi.locNode;
+
+        connCheckMsg = new TcpDiscoveryConnectionCheckMessage(locNode);
 
         // Marshal credentials for backward compatibility and security.
         marshalCredentials(locNode);

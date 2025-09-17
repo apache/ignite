@@ -450,6 +450,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         locNode = spi.locNode;
 
+        connCheckMsg = new TcpDiscoveryConnectionCheckMessage(locNode);
+
         // Start TCP server thread after local node is initialized.
         new TcpServerThread(tcpSrvr, log).start();
 
@@ -6216,7 +6218,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return;
 
             if (ring.hasRemoteServerNodes())
-                sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));
+                sendMessageAcrossRing(connCheckMsg);
         }
 
         /** {@inheritDoc} */

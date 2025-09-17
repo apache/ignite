@@ -27,17 +27,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
@@ -82,7 +83,6 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
@@ -116,16 +116,19 @@ import static org.apache.ignite.spi.IgnitePortProtocol.UDP;
  */
 public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
-    private TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private final TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private Map<String, TcpDiscoverySpi> discoMap = new HashMap<>();
+    private final Map<String, TcpDiscoverySpi> discoMap = new ConcurrentHashMap<>();
 
     /** */
     private UUID nodeId;
 
     /** Flag to disable metrics for some tests. */
     private boolean metricsEnabled = true;
+
+    /** */
+    private int failureDetectionTimeout = 7500;
 
     /** */
     private long connectionRecoveryTimeout = -1;
@@ -165,9 +168,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         else
             nodeSpi.set(null);
 
-        if (connectionRecoveryTimeout >= 0)
-            spi.setConnectionRecoveryTimeout(connectionRecoveryTimeout);
-
         discoMap.put(igniteInstanceName, spi);
 
         spi.setIpFinder(ipFinder);
@@ -180,7 +180,10 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(spi);
 
-        cfg.setFailureDetectionTimeout(7500);
+        cfg.setFailureDetectionTimeout(failureDetectionTimeout);
+
+        if (connectionRecoveryTimeout >= 0)
+            spi.setConnectionRecoveryTimeout(connectionRecoveryTimeout);
 
         if (ccfgs != null)
             cfg.setCacheConfiguration(ccfgs);
@@ -262,11 +265,16 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        discoMap = null;
-
         super.afterTest();
 
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void stopAllGrids() {
+        super.stopAllGrids();
+
+        discoMap.clear();
     }
 
     /**
@@ -1728,28 +1736,19 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** Tests failure of an asynchronously joining node on {@link TcpDiscoveryNodeAddFinishedMessage}. */
     @Test
     public void testJoinNodeFails2Async() throws Exception {
-        joiningNodeFailsTestsPack(true, TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
+        joiningNodeFailsTestsPack(false, TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
     }
 
-    /** Launches scenarios of {@link #joiningNodeFailsTestRun} allowing to set parameters. */
+    /** Launches scenarios of joining node failure. */
     private void joiningNodeFailsTestsPack(boolean asyncStart,
         Class<? extends TcpDiscoveryAbstractMessage>... msgsBeforeFail) throws Exception {
-        joiningNodeFailsTestRun(false, false, asyncStart, msgsBeforeFail);
+        for (boolean waitBeforeFail : F.asList(false, true)) {
+            for (boolean noConnRecoveryTimeout : F.asList(false, true)) {
+                joiningNodeFailsTestRun(noConnRecoveryTimeout, waitBeforeFail, asyncStart, msgsBeforeFail);
 
-        stopAllGrids();
-
-        // Wait before the test timeout.
-        joiningNodeFailsTestRun(false, true, asyncStart, msgsBeforeFail);
-
-        stopAllGrids();
-
-        // No recovery timeout.
-        joiningNodeFailsTestRun(true, false, asyncStart, msgsBeforeFail);
-
-        stopAllGrids();
-
-        // No recovery timeout, wait before the test timeout.
-        joiningNodeFailsTestRun(true, true, asyncStart, msgsBeforeFail);
+                stopAllGrids();
+            }
+        }
     }
 
     /** Main routine of joining node failure test. */
@@ -1759,23 +1758,68 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         boolean asyncStart,
         Class<? extends TcpDiscoveryAbstractMessage>... msgsBeforeFail
     ) throws Exception {
+        if (log.isInfoEnabled()) {
+            log.info("Testing joining node failure with params: noConnRecoverTimeout=" + noConnRecoverTimeout
+                + ", async=" + asyncStart + ", waitBeforeTimeout=" + waitBeforeTimeout);
+        }
+
         assert msgsBeforeFail.length > 0;
+
+        // Fastens the tests.
+        failureDetectionTimeout = 3000;
 
         if (noConnRecoverTimeout)
             connectionRecoveryTimeout = 0;
 
-        startGridsMultiThreaded(2);
+        int initNodesCnt = 3;
+        int additionalNodesCnt = asyncStart ? 3 : 1;
+        int testNodeIdx = initNodesCnt + additionalNodesCnt - 1;
+        String testNodeName = getTestIgniteInstanceName(testNodeIdx);
 
-        int testNodeIdx = G.allGrids().size() + (asyncStart ? 2 : 0);
+        // Start grids which will fail everything on the malfunctional node.
+        for (int i = 0; i < initNodesCnt; ++i) {
+            nodeSpi.set(new TimeoutSimulatingSpi(
+                waitBeforeTimeout,
+                () -> {
+                    TcpDiscoverySpi targetFailureSpi = discoMap.get(testNodeName);
+
+                    assert targetFailureSpi != null;
+
+                    return targetFailureSpi.locNode.discoveryPort();
+                },
+                null
+            ).paused());
+
+            startGrid(i);
+        }
 
         AtomicInteger nodeIdxHolder = new AtomicInteger(G.allGrids().size());
+        CountDownLatch nodeFailed = new CountDownLatch(1);
         AtomicReference<Throwable> errHolder = new AtomicReference<>();
+
+        LogListener lsnr = noConnRecoverTimeout
+            ? null
+            : LogListener.matches(Pattern.compile("Unable to connect to next nodes in a ring, " +
+            "it seems local node is experiencing connectivity issues or the rest ")).build();
 
         GridTestUtils.runMultiThreadedAsync(
             () -> {
                 int nodeIdx = nodeIdxHolder.getAndIncrement();
 
                 if (nodeIdx != testNodeIdx) {
+                    // Start additional grid which will fail everything on the malfunctional node.
+                    nodeSpi.set(new TimeoutSimulatingSpi(
+                        waitBeforeTimeout,
+                        () -> {
+                            TcpDiscoverySpi targetFailureSpi = discoMap.get(testNodeName);
+
+                            assert targetFailureSpi != null;
+
+                            return targetFailureSpi.locNode.discoveryPort();
+                        },
+                        null
+                    ).paused());
+
                     try {
                         startGrid(nodeIdx);
                     }
@@ -1786,35 +1830,68 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     return;
                 }
 
-                nodeSpi.set(new TimeoutSimulatingSpi(waitBeforeTimeout, msgsBeforeFail));
+                // Start the malfunctional node.
+                nodeSpi.set(new TimeoutSimulatingSpi(
+                    waitBeforeTimeout,
+                    null,
+                    failureSpi -> {
+                        nodeFailed.countDown();
+
+                        for (TcpDiscoverySpi spi : discoMap.values()) {
+                            if (spi == failureSpi)
+                                continue;
+
+                            assert spi instanceof TimeoutSimulatingSpi;
+
+                            TimeoutSimulatingSpi spi0 = (TimeoutSimulatingSpi)spi;
+
+                            spi0.pause = false;
+                        }
+                    },
+                    msgsBeforeFail
+                ));
 
                 try {
-                    startGrid(nodeIdx);
+                    IgniteConfiguration cfg = getConfiguration(testNodeName);
 
-                    errHolder.set(new IllegalStateException("An exception on malfunctionol node start is expected."));
+                    if (!noConnRecoverTimeout) {
+                        ListeningTestLogger log0 = new ListeningTestLogger(log);
+                        log0.registerListener(lsnr);
+                        cfg.setGridLogger(log0);
+                    }
+
+                    startGrid(cfg);
+
+                    throw new IllegalStateException();
                 }
                 catch (Exception ignored) {
                     // No-op.
                 }
             },
-            asyncStart ? 3 : 1,
+            additionalNodesCnt,
             "testNodeStarter"
         );
 
-        assertNull(errHolder.get());
+        nodeFailed.await(getTestTimeout(), TimeUnit.MILLISECONDS);
 
-        GridTestUtils.waitForCondition(() -> {
+        // Ensure that the cluster denies the test node.
+        assertTrue(GridTestUtils.waitForCondition(() -> {
             for (int i = 0; i < testNodeIdx; ++i) {
                 if (grid(i).cluster().nodes().size() != testNodeIdx)
                     return false;
             }
 
             return true;
-        }, getTestTimeout());
+        }, failureDetectionTimeout * 4));
 
-        waitNodeStop(getTestIgniteInstanceName(testNodeIdx));
+        assertNull(errHolder.get());
 
-        tryCreateCache(testNodeIdx);
+        // Ensure that the test node stops on failure detection.
+        if (!noConnRecoverTimeout) {
+            assertTrue(lsnr.check(failureDetectionTimeout * 4));
+
+            waitNodeStop(testNodeName);
+        }
     }
 
     /** Tests coordinator failure at {@link TcpDiscoveryNodeAddedMessage} when a node joins cluster. */
@@ -1823,7 +1900,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         coordinatorFailsOnNodeJoinTestsPack(false, TcpDiscoveryNodeAddedMessage.class);
     }
 
-    /** */
+    /** Tests coordinator failure at {@link TcpDiscoveryNodeAddedMessage} when a node asynchronously joins cluster. */
     @Test
     public void testCoordinatorFailsOnNodeJoin1Async() throws Exception {
         coordinatorFailsOnNodeJoinTestsPack(true, TcpDiscoveryNodeAddedMessage.class);
@@ -1835,66 +1912,135 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         coordinatorFailsOnNodeJoinTestsPack(false, TcpDiscoveryNodeAddFinishedMessage.class);
     }
 
-    /** Tests coordinator failure at {@link TcpDiscoveryNodeAddFinishedMessage} when a node joins cluster. */
+    /** Tests coordinator failure at {@link TcpDiscoveryNodeAddFinishedMessage} when a node asynchronously joins cluster. */
     @Test
     public void testCoordinatorFailsOnNodeJoin2Async() throws Exception {
         coordinatorFailsOnNodeJoinTestsPack(true, TcpDiscoveryNodeAddFinishedMessage.class);
     }
 
-    /** Launches scenarios with {@link #coordinatorFailsOnNodeJoinTestRun} allowing to set the async-start parameter.  */
+    /** Launches scenarios of coordinator failure at a node joining. */
     private void coordinatorFailsOnNodeJoinTestsPack(boolean asyncStart,
         Class<? extends TcpDiscoveryAbstractMessage> msgBeforeFail) throws Exception {
-        // Default recovery timeout. Long enough to cycle all the cluster with the socket timeout.
-        coordinatorFailsOnNodeJoinTestRun(null, asyncStart, false, msgBeforeFail);
+        for (boolean waitBeforeFail : F.asList(false, true)) {
+            for (Long connRecoveryTimeout : F.asList(null, 0L, 100L)) {
+                coordinatorFailsOnNodeJoinTestRun(
+                    connRecoveryTimeout,
+                    asyncStart,
+                    waitBeforeFail && connRecoveryTimeout != null && connRecoveryTimeout != 0L,
+                    waitBeforeFail,
+                    msgBeforeFail
+                );
 
-        stopAllGrids();
-
-        // No recovery timeout. Coordinator won't restore connection.
-        coordinatorFailsOnNodeJoinTestRun(0L, asyncStart, false, msgBeforeFail);
-
-        stopAllGrids();
-
-        // Short recovery timeout. Coordinator can't restore connection.
-        coordinatorFailsOnNodeJoinTestRun(100L, asyncStart, true, msgBeforeFail);
+                stopAllGrids();
+            }
+        }
     }
 
     /** Main routine of coordinator failure when a node joins. */
     private void coordinatorFailsOnNodeJoinTestRun(@Nullable Long connRecoverTimeout, boolean asyncStart,
-        boolean coordFails, Class<? extends TcpDiscoveryAbstractMessage> msgBeforeFail) throws Exception {
+        boolean coordFails, boolean waitBeforeFail, Class<? extends TcpDiscoveryAbstractMessage> msgBeforeFail) throws Exception {
+        if (log.isInfoEnabled()) {
+            log.info("Testing coord. failure on node join with params: connRecoverTimeout=" + connRecoverTimeout
+                + ", async=" + asyncStart + ", coordFails=" + coordFails + ", waitBeforeFail=" + waitBeforeFail);
+        }
+
+        // Fastens the tests.
+        failureDetectionTimeout = 2500;
+
         if (connRecoverTimeout != null)
             connectionRecoveryTimeout = connRecoverTimeout;
 
-        TimeoutSimulatingSpi coordDiscoSpi = new TimeoutSimulatingSpi(true, msgBeforeFail);
+        AtomicBoolean coordFailed = new AtomicBoolean();
 
-        int newNodes = asyncStart ? 3 : 1;
+        // Start malfunctional coordinator.
+        TimeoutSimulatingSpi coordDiscoSpi = new TimeoutSimulatingSpi(
+            waitBeforeFail,
+            null,
+            testSpi -> {
+                coordFailed.set(true);
 
-        coordDiscoSpi.pause = true;
+                discoMap.values().forEach(spi0 -> {
+                    if (testSpi != spi0)
+                        ((TimeoutSimulatingSpi)spi0).pause = false;
+                });
+            },
+            msgBeforeFail).paused();
 
         nodeSpi.set(coordDiscoSpi);
 
-        // 3 Nodes
-        startGrid(0);
-        startGridsMultiThreaded(G.allGrids().size(), 2);
+        LogListener lsnr = null;
 
+        if (coordFails) {
+            lsnr = LogListener.matches(Pattern.compile("Unable to connect to next nodes in a ring, " +
+                "it seems local node is experiencing connectivity issues. Segmenting local node ")).build();
+            testLog = new ListeningTestLogger(log);
+            testLog.registerListener(lsnr);
+        }
+
+        startGrid(0);
+
+        // Start other 2 initial grids.
+        for (int i = 1; i < 3; ++i) {
+            TimeoutSimulatingSpi spi = new TimeoutSimulatingSpi(waitBeforeFail, () -> coordDiscoSpi.locNode.discoveryPort(), null).paused();
+            nodeSpi.set(spi);
+
+            startGrid(i);
+        }
+
+        // Start test trigger grids.
         coordDiscoSpi.pause = false;
 
-        startGridsMultiThreaded(G.allGrids().size(), newNodes);
+        int newNodes = asyncStart ? 3 : 1;
+        AtomicInteger nodeIdx = new AtomicInteger(G.allGrids().size());
+        AtomicReference<Throwable> errHolder = new AtomicReference<>();
 
-        // The coordinator must leave the cluster.
-        GridTestUtils.waitForCondition(() -> {
-            for (int i = 1; i < G.allGrids().size(); ++i) {
-                if (grid(i).cluster().nodes().size() != 2 + newNodes)
+        GridTestUtils.runMultiThreadedAsync(() -> {
+            TimeoutSimulatingSpi spi = new TimeoutSimulatingSpi(waitBeforeFail, () -> coordDiscoSpi.locNode.discoveryPort(), null);
+
+            if (!coordFailed.get())
+                spi.paused();
+
+            nodeSpi.set(spi);
+
+            try {
+                startGrid(nodeIdx.getAndIncrement());
+            }
+            catch (Exception e) {
+                errHolder.set(e);
+            }
+        }, newNodes, "testStarter");
+
+        assertNull(errHolder.get());
+
+        // Wait until all the new nodes start.
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            for (int i = 3; i < 3 + newNodes; ++i) {
+                try {
+                    grid(i);
+                }
+                catch (Throwable t) {
                     return false;
+                }
+            }
 
-                if (grid(i).localNode().order() == 1)
+            return true;
+        }, failureDetectionTimeout * 4));
+
+        // Wait until cluster excludes the coordinator.
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            for (int i = 1; i < 3 + newNodes; ++i) {
+                if (grid(i).cluster().nodes().size() != 3 + newNodes - 1)
                     return false;
             }
 
             return true;
-        }, getTestTimeout());
+        }, failureDetectionTimeout * 4));
 
-        if (coordFails)
+        if (coordFails) {
+            assertTrue(lsnr.check(failureDetectionTimeout * 4));
+
             waitNodeStop(getTestIgniteInstanceName(0));
+        }
     }
 
     /**
@@ -2208,68 +2354,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testFailedNodeRestoreConnection() throws Exception {
-        checkRestoreConnection(false);
-
-        setLoggerDebugLevel();
-
-        checkRestoreConnection(true);
-    }
-
-    /** @throws Exception If failed.*/
-    private void checkRestoreConnection(boolean logMsgExpected) throws Exception {
-        testLog = new ListeningTestLogger(log);
-
-        LogListener lsnr = LogListener
-            .matches(Pattern.compile("Failed to ping node \\[.*\\]\\. Reached the timeout"))
-            .build();
-
-        testLog.registerListener(lsnr);
-
-        try {
-            TestRestoreConnectedSpi.startTest = false;
-
-            for (int i = 1; i < 5; i++) {
-                TestRestoreConnectedSpi spi = new TestRestoreConnectedSpi(() ->
-                    discoMap.get(getTestIgniteInstanceName(3)).locNode.discoveryPort()
-                );
-
-                spi.setConnectionRecoveryTimeout(0);
-
-                nodeSpi.set(spi);
-
-                startGrid(i);
-            }
-
-            awaitPartitionMapExchange();
-
-            info("Start fail test");
-
-            TestRestoreConnectedSpi.startTest = true;
-
-            waitNodeStop(getTestIgniteInstanceName(3));
-
-            U.sleep(5000);
-
-            for (int i = 1; i < 5; i++) {
-                if (i != 3) {
-                    Ignite node = ignite(i);
-
-                    assertEquals(3, node.cluster().nodes().size());
-                }
-            }
-
-            assertEquals(logMsgExpected, lsnr.check());
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testCheckRingLatency() throws Exception {
         int hops = 1;
 
@@ -2395,80 +2479,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * User class used in {@link #testSystemMarshallerTypesFilteredOut()} test to feed into marshaller cache.
      */
     private static class Employee { }
-
-    /**
-     *
-     */
-    private static class TestRestoreConnectedSpi extends TcpDiscoverySpi {
-        /** */
-        static volatile boolean startTest;
-
-        /** */
-        private long sleepEndTime;
-
-        /** */
-        private final Supplier<Integer> errPortSupplier;
-
-        /** */
-        private int errNextPort;
-
-        /** */
-        TestRestoreConnectedSpi(Supplier<Integer> errPortSupplier) {
-            this.errPortSupplier = errPortSupplier;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
-            OutputStream out,
-            TcpDiscoveryAbstractMessage msg,
-            long timeout) throws IOException, IgniteCheckedException {
-            // Test relies on an error in this thread only.
-            boolean ringMsgWorkerThread = Thread.currentThread().getName().startsWith("tcp-disco-msg-worker");
-
-            if (startTest && !(msg instanceof TcpDiscoveryConnectionCheckMessage) && ringMsgWorkerThread) {
-                int errPort = errPortSupplier.get();
-
-                if (sock.getPort() == errPort) {
-                    log.info("Fail write on message send [port=" + errPort + ", msg=" + msg + ']');
-
-                    throw new SocketTimeoutException();
-                }
-                else if (locNode.discoveryPort() == errPort) {
-                    if (sleepEndTime == 0) {
-                        errNextPort = sock.getPort();
-
-                        sleepEndTime = System.currentTimeMillis() + 3000;
-                    }
-
-                    long sleepTime = sleepEndTime - System.currentTimeMillis();
-
-                    if (sleepTime > 0) {
-                        log.info("Start sleep on message send: " + msg);
-
-                        try {
-                            U.sleep(sleepTime);
-                        }
-                        catch (IgniteInterruptedCheckedException e) {
-                            log.error("Interrupted on socket write: " + e, e);
-
-                            throw new IOException(e);
-                        }
-
-                        log.info("Stop sleep on message send: " + msg);
-
-                        if (sock.getPort() == errNextPort) {
-                            log.info("Fail write after sleep [port=" + sock.getPort() + ", msg=" + msg + ']');
-
-                            throw new SocketTimeoutException();
-                        }
-                    }
-                }
-            }
-
-            super.writeToSocket(sock, out, msg, timeout);
-        }
-    }
 
     /**
      *
@@ -2615,6 +2625,12 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         private final Collection<Class<? extends TcpDiscoveryAbstractMessage>> msgsBeforeFail;
 
         /** */
+        @Nullable private final Supplier<Integer> errPortSupplier;
+
+        /** */
+        @Nullable private final Consumer<TcpDiscoverySpi> failureLsnr;
+
+        /** */
         private final AtomicInteger msgCntToFail;
 
         /** */
@@ -2624,23 +2640,42 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         private volatile boolean pause;
 
         /** */
-        private TimeoutSimulatingSpi(boolean doWaitBeforeTimeout, Class<? extends TcpDiscoveryAbstractMessage>... msgsBeforeFail) {
-            msgCntToFail = new AtomicInteger(msgsBeforeFail.length);
-
+        private TimeoutSimulatingSpi(
+            boolean doWaitBeforeTimeout,
+            @Nullable Supplier<Integer> errPortSupplier,
+            @Nullable Consumer<TcpDiscoverySpi> failureLsnr,
+            Class<? extends TcpDiscoveryAbstractMessage>... msgsBeforeFail
+        ) {
+            this.msgCntToFail = new AtomicInteger(msgsBeforeFail.length);
             this.msgsBeforeFail = Arrays.asList(msgsBeforeFail);
-
             this.doWaitBeforeTimeout = doWaitBeforeTimeout;
+            this.errPortSupplier = errPortSupplier;
+            this.failureLsnr = failureLsnr;
         }
 
         /** */
-        private void simulateTimeot(@Nullable TcpDiscoveryAbstractMessage msg, long timeout) throws SocketTimeoutException {
+        private TimeoutSimulatingSpi paused() {
+            pause = true;
+
+            return this;
+        }
+
+        /** */
+        private void simulateTimeot(Socket sock, @Nullable TcpDiscoveryAbstractMessage msg, long timeout) throws SocketTimeoutException {
             if (pause)
                 return;
 
-            if (msg != null && msgCntToFail.get() > 0) {
+            if (msgCntToFail.get() > 0 && msg != null) {
                 for (Class<? extends TcpDiscoveryAbstractMessage> msgType : msgsBeforeFail) {
                     if (msgType == msg.getClass()) {
-                        msgCntToFail.decrementAndGet();
+                        if (failureLsnr != null) {
+                            synchronized (msgCntToFail) {
+                                if (msgCntToFail.decrementAndGet() <= 0)
+                                    failureLsnr.accept(this);
+                            }
+                        }
+                        else
+                            msgCntToFail.decrementAndGet();
 
                         break;
                     }
@@ -2648,6 +2683,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             }
 
             if (msgCntToFail.get() <= 0) {
+                if (errPortSupplier != null && sock.getPort() != errPortSupplier.get())
+                    return;
+
                 if (doWaitBeforeTimeout) {
                     try {
                         U.sleep(timeout);
@@ -2664,7 +2702,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout)
             throws IOException, IgniteCheckedException {
-            simulateTimeot(msg, timeout);
+            simulateTimeot(sock, msg, timeout);
 
             super.writeToSocket(sock, out, msg, timeout);
         }
@@ -2672,7 +2710,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected void writeToSocket(TcpDiscoveryAbstractMessage msg, Socket sock, int res, long timeout)
             throws IOException {
-            simulateTimeot(null, timeout);
+            simulateTimeot(sock, null, timeout);
 
             super.writeToSocket(msg, sock, res, timeout);
         }
@@ -2680,7 +2718,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data, long timeout)
             throws IOException {
-            simulateTimeot(null, timeout);
+            simulateTimeot(sock, null, timeout);
 
             super.writeToSocket(sock, msg, data, timeout);
         }
