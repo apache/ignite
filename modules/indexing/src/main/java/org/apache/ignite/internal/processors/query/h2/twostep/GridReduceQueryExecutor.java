@@ -745,8 +745,10 @@ public class GridReduceQueryExecutor {
 
                     mapQueries.add(copy);
 
-                    if (qry.explain())
-                        copy.query("EXPLAIN " + mapQry.query()).parameterIndexes(mapQry.parameterIndexes());
+                    if (qry.explain()) {
+                        copy.query("EXPLAIN " + mapQry.query());
+                        copy.parameterIndexes(mapQry.parameterIndexes());
+                    }
                 }
             }
         }
