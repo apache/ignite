@@ -89,30 +89,18 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
         this.flags = flags;
     }
 
-    /** {@inheritDoc} */
-    @Override public int partition() {
-        return partId;
+    /**
+     * @return Errors.
+     */
+    @Nullable public UpdateErrors errors() {
+        return errs;
     }
 
     /**
-     * @param partId Partition ID.
+     * @param errs Errors.
      */
-    public void partition(int partId) {
-        this.partId = partId;
-    }
-
-    /**
-     * @return Future ID.
-     */
-    public long futureId() {
-        return futId;
-    }
-
-    /**
-     * @param futId Future ID.
-     */
-    public void futureId(long futId) {
-        this.futId = futId;
+    public void errors(UpdateErrors errs) {
+        this.errs = errs;
     }
 
     /**
@@ -143,18 +131,16 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
         this.flags = flags;
     }
 
-    /**
-     * @return Errors.
-     */
-    @Nullable public UpdateErrors errors() {
-        return errs;
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        return partId;
     }
 
     /**
-     * @param errs Errors.
+     * @param partId Partition ID.
      */
-    public void errors(UpdateErrors errs) {
-        this.errs = errs;
+    public void partition(int partId) {
+        this.partId = partId;
     }
 
     /**
@@ -192,6 +178,20 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
      */
     private boolean isFlag(int mask) {
         return (flags & mask) != 0;
+    }
+
+    /**
+     * @return Future ID.
+     */
+    public long futureId() {
+        return futId;
+    }
+
+    /**
+     * @param futId Future ID.
+     */
+    public void futureId(long futId) {
+        this.futId = futId;
     }
 
     /** {@inheritDoc} */
