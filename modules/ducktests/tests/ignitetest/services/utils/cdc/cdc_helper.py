@@ -14,8 +14,8 @@
 # limitations under the License
 
 """
-This module contains helper classes for CDC configuration with different CDC consumers
-implemented in ignite extensions.
+This module contains base helper class for CDC configuration with different
+CDC consumers implemented in ignite extensions.
 """
 
 import time
@@ -27,15 +27,10 @@ from ignitetest.services.utils.cdc.ignite_cdc import IgniteCdcUtility
 from ignitetest.services.utils.jmx_utils import JmxClient
 
 
-class CdcConfiguration(NamedTuple):
-    check_frequency: int = None
-    keep_binary: bool = None
-    lock_timeout: int = None
-    metric_exporter_spi: set = None
-    name: str = "IgniteCdcParams"
-
-
 class CdcParams:
+    """
+    CDC parameters.
+    """
     def __init__(self, caches=None, max_batch_size=None, only_primary=None,
                  conflict_resolve_field=None, cdc_configuration=None):
         self.caches = caches
@@ -46,23 +41,32 @@ class CdcParams:
         self.cdc_configuration = CdcConfiguration() if cdc_configuration is None else cdc_configuration
 
 
-class CdcContext:
-    def __init__(self):
-        self.ignite_cdc = None
-        self.source_cluster = None
+class CdcConfiguration(NamedTuple):
+    """
+    CDC configuration template parameters.
+    """
+    check_frequency: int = None
+    keep_binary: bool = None
+    lock_timeout: int = None
+    metric_exporter_spi: set = None
+    # name: str = "IgniteCdcParams"
 
 
-class CdcConfigurer:
+class CdcHelper:
     """
-    Base CDC configurer class for different CDC consumer extensions.
+    Base CDC helper class for different CDC consumer extensions.
     """
-    def configure_source_cluster(self, src_cluster, dst_cluster, cdc_params: CdcParams):
+    def configure_source_cluster(self, src_cluster, dst_cluster, cdc_params):
         """
-        Configures CDC on the source cluster. Updates the source_cluster in place.
+        Configures the CDC. Updates the src_cluster service in place.
 
-        :param src_cluster Ignite service representing the source cluster.
-        :param dst_cluster Ignite service representing the target cluster.
-        :param cdc_params CDC test params.
+        May be overridden by subclasses.
+
+        :param src_cluster: Ignite service for the source cluster.
+        :param dst_cluster: Ignite service for the destination cluster.
+        :param cdc_params: CDC test parameters.
+
+        :return: CDC context
         """
         ctx = CdcContext()
 
@@ -80,16 +84,18 @@ class CdcConfigurer:
 
         return ctx
 
-    def get_cdc_beans(self, src_cluster, dst_cluster, cdc_params: CdcParams, ctx):
+    def get_cdc_beans(self, src_cluster, dst_cluster, cdc_params, ctx):
         """
         Returns list of CDC beans required to be created in the source Ignite cluster.
-        Each bean is represented as a pair of j2 template and params instance.
+        May update the CDC contex in place.
 
-        :param src_cluster Ignite service representing the source cluster.
-        :param dst_cluster Ignite service representing the destination cluster.
-        :param cdc_params CDC test params.
-        :param ctx CDC context.
-        :return: list of beans
+        Supposed to be overridden and extended by subclasses.
+
+        :param src_cluster: Ignite service for the source cluster.
+        :param dst_cluster: Ignite service for the destination cluster.
+        :param cdc_params: CDC test parameters.
+        :param ctx: CDC context.
+        :return: List of beans. Each bean is represented as a pair of j2 template and params instance.
         """
         if cdc_params.cdc_configuration.metric_exporter_spi is None:
             if src_cluster.config.metric_exporters is None:
@@ -107,22 +113,25 @@ class CdcConfigurer:
 
     def start_ignite_cdc(self, ctx):
         """
-        Starts process executing the CDC consumer (ignite_cdc.sh).
+        Starts CDC.
 
-        :param cdc_params: CDC test params.
-        :param source_cluster: Source Ignite cluster.
-        :return: Service running the CDC consumer.
+        Supposed to be overridden and extended by subclasses.
+        Default implementation starts process executing the CDC consumer (ignite_cdc.sh).
+
+        :param ctx: CDC context.
         """
         ctx.ignite_cdc.start()
 
     def stop_ignite_cdc(self, ctx, timeout_sec):
         """
-        Stops process executing the CDC consumer (ignite_cdc.sh).
+        Stops CDC.
 
-        :param ignite_cdc: Service running the CDC consumer.
-        :param source_cluster: Source Ignite cluster.
+        Supposed to be overridden and extended by subclasses.
+        Default implementation stops process executing the CDC consumer (ignite_cdc.sh).
+
+        :param ctx: CDC context.
         :param timeout_sec: Timeout.
-        :return: arbitrary CDC consumer specific metrics (if any).
+        :return: Arbitrary CDC consumer specific metrics (if any).
         """
         ctx.ignite_cdc.stop()
 
@@ -136,15 +145,29 @@ class CdcConfigurer:
         return {}
 
     def wait_cdc(self, ctx, no_new_events_period_secs, timeout_sec):
+        """
+        Waits all events are processed by the CDC streamer.
+
+        It's considered that all events are processed if no new events are processed
+        for last 'no_new_events_period_secs' seconds.
+
+        :param ctx: CDC context.
+        :param no_new_events_period_secs: Time period to wait for new events.
+        :param timeout_sec: Timeout.
+        """
         wait_ignite_cdc_service(ctx.ignite_cdc, no_new_events_period_secs, timeout_sec)
 
 
 def wait_ignite_cdc_service(ignite_cdc, no_new_events_period_secs, timeout_sec):
     """
-    Waits all events are processed by the CDC streamer.
+    Waits all events are processed by the CDC streamer in service passed.
 
     It's considered that all events are processed if no new events are processed
     for last 'no_new_events_period_secs' seconds.
+
+    :param ignite_cdc: Service running the CDC.
+    :param no_new_events_period_secs: Time period to wait for new events.
+    :param timeout_sec: Timeout.
     """
     start = time.time()
     end = start + timeout_sec
@@ -165,7 +188,10 @@ def wait_ignite_cdc_service(ignite_cdc, no_new_events_period_secs, timeout_sec):
 def last_ignite_cdc_event_time(ignite_cdc):
     """
     Requests timestamp (unix time in seconds) of the last CDC event processed
-    by the CDC streamer.
+    by the CDC streamer in service passed.
+
+    :param ignite_cdc: Service running the CDC.
+    :return: Timestamp of the last CDC event (unix time in seconds).
     """
     def last_event_time_on(node):
         jmx_client = JmxClient(node)
@@ -193,3 +219,17 @@ def last_ignite_cdc_event_time(ignite_cdc):
             return -1
 
     return max([last_event_time_on(node) for node in ignite_cdc.nodes]) / 1_000
+
+
+class CdcContext:
+    """
+    CDC context.
+
+    Keeps information about CDC configuration needed to control the CDC (start, stop, wait etc.).
+    In particular stores references to ignite-cdc and source cluster services.
+    Different CDC extension helpers may add more fields.
+    """
+    def __init__(self):
+        self.cdc_params = None
+        self.ignite_cdc = None
+        self.source_cluster = None

@@ -32,7 +32,7 @@ class KafkaToIgniteService(IgniteService):
     """
     Kafka to Ignite utility (kafka-to-ignite.sh) wrapper.
     """
-    def __init__(self, context, kafka, target_cluster, cdc_params, jvm_opts=None,
+    def __init__(self, context, kafka, dst_cluster, cdc_params, jvm_opts=None,
                  merge_with_default=True, startup_timeout_sec=60, shutdown_timeout_sec=60, modules=None):
         def add_cdc_ext_module(_modules):
             if _modules:
@@ -46,7 +46,7 @@ class KafkaToIgniteService(IgniteService):
             (f"number of nodes ({cdc_params.kafka_to_ignite_nodes}) more then "
              f"kafka topic partitions ({cdc_params.kafka_partitions})")
 
-        super().__init__(context, self.__get_config(target_cluster, cdc_params.kafka_to_ignite_client_type),
+        super().__init__(context, self.__get_config(dst_cluster, cdc_params.kafka_to_ignite_client_type),
                          cdc_params.kafka_to_ignite_nodes, jvm_opts, merge_with_default, startup_timeout_sec,
                          shutdown_timeout_sec, add_cdc_ext_module(modules))
 
@@ -99,19 +99,19 @@ class KafkaToIgniteService(IgniteService):
         return self.config._replace(ext_beans=ext_beans)
 
     @staticmethod
-    def __get_config(target_cluster, client_type):
+    def __get_config(dst_cluster, client_type):
         if client_type == IgniteServiceType.NODE:
-            return target_cluster.config._replace(
+            return dst_cluster.config._replace(
                 client_mode=True,
                 data_storage=None
             )
         else:
-            addresses = [target_cluster.nodes[0].account.hostname + ":" +
-                         str(target_cluster.config.client_connector_configuration.port)]
+            addresses = [dst_cluster.nodes[0].account.hostname + ":" +
+                         str(dst_cluster.config.client_connector_configuration.port)]
 
             return IgniteThinClientConfiguration(
                 addresses=addresses,
-                version=target_cluster.config.version
+                version=dst_cluster.config.version
             )
 
     def await_started(self):
