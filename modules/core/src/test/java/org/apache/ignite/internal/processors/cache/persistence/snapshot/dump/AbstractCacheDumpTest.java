@@ -261,20 +261,6 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         return ign;
     }
 
-    /**
-     * Creates some data structures in cluster.
-     * Cache group filter must exclude ds groups from dump.
-     */
-    private void createDataStructures() {
-        IgniteCountDownLatch latch = cli.countDownLatch("testSeq", 2, true, true);
-
-        latch.countDown();
-
-        IgniteAtomicSequence seq = cli.atomicSequence("testSeq", 0, true);
-
-        seq.incrementAndGet();
-    }
-
     /** */
     protected T2<CountDownLatch, IgniteInternalFuture<?>> runDumpAsyncAndStopBeforeStart(
         IgniteEx srv
@@ -749,5 +735,19 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             assertTrue(cacheCfgCb);
             assertTrue(stopped);
         }
+    }
+
+    /**
+     * Creates some data structures in cluster.
+     * Cache group filter must exclude ds groups from dump.
+     */
+    private void createDataStructures() {
+        IgniteCountDownLatch latch = cli.countDownLatch("testSeq", 2, true, true);
+
+        latch.countDown();
+
+        IgniteAtomicSequence seq = cli.atomicSequence("testSeq", 0, true);
+
+        seq.incrementAndGet();
     }
 }
