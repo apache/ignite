@@ -499,35 +499,35 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     private Collection<UUID> query(Query<?> qry) {
         Collection<UUID> expNodeIds = new ArrayList<>();
 
-        QueryCursor<?> query = null;
+        QueryCursor<?> cursor = null;
 
         if (clientType == SERVER) {
-            query = srv.cache(DEFAULT_CACHE_NAME).query(qry);
+            cursor = srv.cache(DEFAULT_CACHE_NAME).query(qry);
 
             expNodeIds.add(srv.localNode().id());
         }
         else if (clientType == CLIENT) {
-            query = client.cache(DEFAULT_CACHE_NAME).query(qry);
+            cursor = client.cache(DEFAULT_CACHE_NAME).query(qry);
 
             expNodeIds.add(client.localNode().id());
         }
         else if (clientType == THIN_CLIENT) {
-            query = thinClient.cache(DEFAULT_CACHE_NAME).query(qry);
+            cursor = thinClient.cache(DEFAULT_CACHE_NAME).query(qry);
 
             expNodeIds.addAll(nodeIds(client.cluster().forServers().nodes()));
         }
 
         if (fetchAll)
-            query.getAll();
+            cursor.getAll();
         else {
-            Iterator<?> iter = query.iterator();
+            Iterator<?> iter = cursor.iterator();
 
             for (int i = 0; i < 3; i++) {
                 if (iter.hasNext())
                     iter.next();
             }
 
-            query.close();
+            cursor.close();
         }
 
         return expNodeIds;
