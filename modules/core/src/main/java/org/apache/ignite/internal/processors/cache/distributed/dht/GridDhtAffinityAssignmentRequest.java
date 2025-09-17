@@ -30,7 +30,7 @@ public class GridDhtAffinityAssignmentRequest extends GridCacheGroupIdMessage {
     private static final int SND_PART_STATE_MASK = 0x01;
 
     /** */
-    @Order(value = 4, method = "flags")
+    @Order(4)
     private byte flags;
 
     /** */

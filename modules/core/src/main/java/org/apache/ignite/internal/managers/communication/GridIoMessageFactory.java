@@ -33,6 +33,7 @@ import org.apache.ignite.internal.codegen.GridCacheEntryInfoSerializer;
 import org.apache.ignite.internal.codegen.GridCacheVersionExSerializer;
 import org.apache.ignite.internal.codegen.GridCacheVersionSerializer;
 import org.apache.ignite.internal.codegen.GridCheckpointRequestSerializer;
+import org.apache.ignite.internal.codegen.GridDhtAffinityAssignmentRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtPartitionExchangeIdSerializer;
 import org.apache.ignite.internal.codegen.GridDhtTxOnePhaseCommitAckRequestSerializer;
 import org.apache.ignite.internal.codegen.GridIntListSerializer;
@@ -257,7 +258,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)25, GridDistributedTxPrepareRequest::new);
         factory.register((short)26, GridDistributedTxPrepareResponse::new);
         factory.register((short)27, GridDistributedUnlockRequest::new);
-        factory.register((short)28, GridDhtAffinityAssignmentRequest::new);
+        factory.register((short)28, GridDhtAffinityAssignmentRequest::new, new GridDhtAffinityAssignmentRequestSerializer());
         factory.register((short)29, GridDhtAffinityAssignmentResponse::new);
         factory.register((short)30, GridDhtLockRequest::new);
         factory.register((short)31, GridDhtLockResponse::new);
