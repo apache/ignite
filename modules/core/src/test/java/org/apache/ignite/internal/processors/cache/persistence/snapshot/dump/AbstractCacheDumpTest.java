@@ -32,8 +32,10 @@ import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -252,9 +254,26 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
         ign.cluster().state(ClusterState.ACTIVE);
 
+        createDataStructures();
+
         putData(cli.cache(DEFAULT_CACHE_NAME), cli.cache(CACHE_0), cli.cache(CACHE_1));
 
         return ign;
+    }
+
+    /** */
+    private void createDataStructures() {
+        IgniteCountDownLatch latch = cli.countDownLatch("testSeq", 2, true, true);
+
+        latch.countDown();
+
+        //testLatch.countDown();
+
+        //testLatch.close();
+
+        IgniteAtomicSequence seq = cli.atomicSequence("testSeq", 0, true);
+
+        seq.incrementAndGet();
     }
 
     /** */

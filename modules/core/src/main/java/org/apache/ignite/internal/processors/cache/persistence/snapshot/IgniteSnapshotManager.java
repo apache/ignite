@@ -2013,9 +2013,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             Set<String> cacheGrpNames0 = cacheGrpNames == null ? null : new HashSet<>(cacheGrpNames);
 
             List<String> grps = (dump ? cctx.cache().cacheGroupDescriptors().values() : cctx.cache().persistentGroups()).stream()
+                .filter(desc -> cctx.cache().cacheType(desc.config().getName()) == CacheType.USER)
                 .map(CacheGroupDescriptor::cacheOrGroupName)
                 .filter(n -> cacheGrpNames0 == null || cacheGrpNames0.remove(n))
-                .filter(cacheName -> cctx.cache().cacheType(cacheName) == CacheType.USER)
                 .collect(Collectors.toList());
 
             if (!F.isEmpty(cacheGrpNames0))
