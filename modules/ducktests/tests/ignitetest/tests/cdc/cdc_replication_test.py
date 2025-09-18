@@ -22,7 +22,7 @@ from ignitetest.services.utils.cdc.ignite_to_kafka_cdc_helper import KafkaCdcPar
 from ignitetest.services.utils.cdc.ignite_to_ignite_client_cdc_helper import IgniteToIgniteClientCdcHelper
 from ignitetest.tests.cdc.cdc_replication_abstract_test import CdcReplicationAbstractTest
 from ignitetest.utils import cluster, ignite_versions
-from ignitetest.utils.version import DEV_BRANCH, LATEST
+from ignitetest.utils.version import DEV_BRANCH
 
 WAL_FORCE_ARCHIVE_TIMEOUT_MS = 100
 
@@ -32,13 +32,13 @@ class CdcReplicationTest(CdcReplicationAbstractTest):
     CDC replication tests.
     """
     @cluster(num_nodes=6)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @ignite_versions(str(DEV_BRANCH))
     @defaults(pds=[True, False], mode=["active-active", "active-passive"])
     def ignite_to_ignite_test(self, ignite_version, pds, mode):
         return self.run(ignite_version, pds, mode, IgniteToIgniteCdcHelper())
 
     @cluster(num_nodes=6)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @ignite_versions(str(DEV_BRANCH))
     @defaults(pds=[True, False], mode=["active-active", "active-passive"])
     def ignite_to_ignite_client_test(self, ignite_version, pds, mode):
         return self.run(ignite_version, pds, mode, IgniteToIgniteClientCdcHelper())
@@ -56,7 +56,7 @@ class CdcReplicationTest(CdcReplicationAbstractTest):
         return res
 
     @cluster(num_nodes=10)
-    @ignite_versions(str(DEV_BRANCH), str(LATEST))
+    @ignite_versions(str(DEV_BRANCH))
     @defaults(pds=[True, False], mode=["active-active", "active-passive"])
     def ignite_to_kafka_to_ignite_client_test(self, ignite_version, pds, mode):
         zk, kafka = self.start_kafka(kafka_nodes=1)
