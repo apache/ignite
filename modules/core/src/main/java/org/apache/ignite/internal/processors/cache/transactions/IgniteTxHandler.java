@@ -32,6 +32,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.CacheWriteSynchronizationModeMessage;
 import org.apache.ignite.internal.pagemem.wal.record.RollbackRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -1061,9 +1062,12 @@ public class IgniteTxHandler {
         try {
             assert tx != null : "Transaction is null for near finish request [nodeId=" +
                 nodeId + ", req=" + req + "]";
-            assert req.syncMode() != null : req;
 
-            tx.syncMode(req.syncMode());
+            CacheWriteSynchronizationModeMessage msg = req.syncMode();
+
+            assert msg != null && msg.value() != null : req;
+
+            tx.syncMode(msg.value());
             tx.nearFinishFutureId(req.futureId());
             tx.nearFinishMiniId(req.miniId());
             tx.storeEnabled(req.storeEnabled());
@@ -1354,7 +1358,7 @@ public class IgniteTxHandler {
             if (req.checkCommitted()) {
                 boolean committed = req.waitRemoteTransactions() || !ctx.tm().addRolledbackTx(null, req.version());
 
-                if (!committed || req.syncMode() != FULL_SYNC)
+                if (!committed || (req.syncMode() != null && req.syncMode().value() != FULL_SYNC))
                     sendReply(nodeId, req, committed, null);
                 else {
                     IgniteInternalFuture<?> fut = ctx.tm().remoteTxFinishFuture(req.version());
