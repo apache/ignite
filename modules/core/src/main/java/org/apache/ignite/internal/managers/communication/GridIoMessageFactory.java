@@ -41,6 +41,8 @@ import org.apache.ignite.internal.codegen.GridDhtTxOnePhaseCommitAckRequestSeria
 import org.apache.ignite.internal.codegen.GridIntListSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridJobSiblingsRequestSerializer;
+import org.apache.ignite.internal.codegen.GridNearAtomicCheckUpdateRequestSerializer;
+import org.apache.ignite.internal.codegen.GridNearAtomicUpdateResponseSerializer;
 import org.apache.ignite.internal.codegen.GridQueryCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryFailResponseSerializer;
 import org.apache.ignite.internal.codegen.GridQueryKillRequestSerializer;
@@ -221,7 +223,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)-53, SchemaOperationStatusMessage::new, new SchemaOperationStatusMessageSerializer());
         factory.register((short)-52, GridIntList::new, new GridIntListSerializer());
         factory.register((short)-51, NearCacheUpdates::new, new NearCacheUpdatesSerializer());
-        factory.register((short)-50, GridNearAtomicCheckUpdateRequest::new);
+        factory.register((short)-50, GridNearAtomicCheckUpdateRequest::new, new GridNearAtomicCheckUpdateRequestSerializer());
         factory.register((short)-49, UpdateErrors::new);
         factory.register((short)-48, GridDhtAtomicNearResponse::new);
         factory.register((short)-45, GridChangeGlobalStateMessageResponse::new);
@@ -273,7 +275,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)38, GridDhtAtomicUpdateRequest::new);
         factory.register((short)39, GridDhtAtomicUpdateResponse::new);
         factory.register((short)40, GridNearAtomicFullUpdateRequest::new);
-        factory.register((short)41, GridNearAtomicUpdateResponse::new);
+        factory.register((short)41, GridNearAtomicUpdateResponse::new, new GridNearAtomicUpdateResponseSerializer());
         factory.register((short)42, GridDhtForceKeysRequest::new);
         factory.register((short)43, GridDhtForceKeysResponse::new);
         factory.register((short)45, GridDhtPartitionDemandMessage::new);
