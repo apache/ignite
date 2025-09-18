@@ -30,11 +30,14 @@ import org.apache.ignite.internal.codegen.CacheGroupAffinityMessageSerializer;
 import org.apache.ignite.internal.codegen.CacheVersionedValueSerializer;
 import org.apache.ignite.internal.codegen.GenerateEncryptionKeyRequestSerializer;
 import org.apache.ignite.internal.codegen.GridCacheEntryInfoSerializer;
+import org.apache.ignite.internal.codegen.GridCacheSqlQuerySerializer;
 import org.apache.ignite.internal.codegen.GridCacheVersionExSerializer;
 import org.apache.ignite.internal.codegen.GridCacheVersionSerializer;
 import org.apache.ignite.internal.codegen.GridCheckpointRequestSerializer;
+import org.apache.ignite.internal.codegen.GridDeploymentResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDhtAffinityAssignmentRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtPartitionExchangeIdSerializer;
+import org.apache.ignite.internal.codegen.GridDhtPartitionsSingleRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtTxOnePhaseCommitAckRequestSerializer;
 import org.apache.ignite.internal.codegen.GridIntListSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
@@ -56,6 +59,7 @@ import org.apache.ignite.internal.codegen.MissingMappingRequestMessageSerializer
 import org.apache.ignite.internal.codegen.MissingMappingResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.NearCacheUpdatesSerializer;
 import org.apache.ignite.internal.codegen.SchemaOperationStatusMessageSerializer;
+import org.apache.ignite.internal.codegen.ServiceSingleNodeDeploymentResultBatchSerializer;
 import org.apache.ignite.internal.codegen.SessionChannelMessageSerializer;
 import org.apache.ignite.internal.codegen.SnapshotFilesFailureMessageSerializer;
 import org.apache.ignite.internal.codegen.SnapshotFilesRequestMessageSerializer;
@@ -194,7 +198,6 @@ import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeployment
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResultBatch;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridIntList;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -246,7 +249,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)9, GridIoUserMessage::new);
         factory.register((short)10, GridDeploymentInfoBean::new);
         factory.register((short)11, GridDeploymentRequest::new);
-        factory.register((short)12, GridDeploymentResponse::new);
+        factory.register((short)12, GridDeploymentResponse::new, new GridDeploymentResponseSerializer());
         factory.register((short)13, GridEventStorageMessage::new);
         factory.register((short)16, GridCacheTxRecoveryRequest::new);
         factory.register((short)17, GridCacheTxRecoveryResponse::new);
@@ -277,7 +280,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)45, GridDhtPartitionDemandMessage::new);
         factory.register((short)46, GridDhtPartitionsFullMessage::new);
         factory.register((short)47, GridDhtPartitionsSingleMessage::new);
-        factory.register((short)48, GridDhtPartitionsSingleRequest::new);
+        factory.register((short)48, GridDhtPartitionsSingleRequest::new, new GridDhtPartitionsSingleRequestSerializer());
         factory.register((short)49, GridNearGetRequest::new);
         factory.register((short)50, GridNearGetResponse::new);
         factory.register((short)51, GridNearLockRequest::new);
@@ -300,7 +303,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)81, MetadataResponseMessage::new);
         factory.register((short)82, JobStealingRequest::new, new JobStealingRequestSerializer());
         factory.register((short)84, GridByteArrayList::new);
-        factory.register((short)85, GridLongList::new);
         factory.register((short)86, GridCacheVersion::new, new GridCacheVersionSerializer());
         factory.register((short)87, GridDhtPartitionExchangeId::new, new GridDhtPartitionExchangeIdSerializer());
         factory.register((short)88, GridCacheReturn::new);
@@ -322,7 +324,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)107, GridQueryFailResponse::new, new GridQueryFailResponseSerializer());
         factory.register((short)108, GridQueryNextPageRequest::new, new GridQueryNextPageRequestSerializer());
         factory.register((short)109, GridQueryNextPageResponse::new, new GridQueryNextPageResponseSerializer());
-        factory.register((short)112, GridCacheSqlQuery::new);
+        factory.register((short)112, GridCacheSqlQuery::new, new GridCacheSqlQuerySerializer());
         // 113 - BinaryObjectImpl
         factory.register((short)114, GridDhtPartitionSupplyMessage::new);
         factory.register((short)115, UUIDCollectionMessage::new);
@@ -347,7 +349,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)162, GenerateEncryptionKeyRequest::new, new GenerateEncryptionKeyRequestSerializer());
         factory.register((short)163, GenerateEncryptionKeyResponse::new);
         factory.register((short)167, ServiceDeploymentProcessId::new);
-        factory.register((short)168, ServiceSingleNodeDeploymentResultBatch::new);
+        factory.register((short)168, ServiceSingleNodeDeploymentResultBatch::new, new ServiceSingleNodeDeploymentResultBatchSerializer());
         factory.register((short)169, ServiceSingleNodeDeploymentResult::new);
         factory.register(GridQueryKillRequest.TYPE_CODE, GridQueryKillRequest::new, new GridQueryKillRequestSerializer());
         factory.register(GridQueryKillResponse.TYPE_CODE, GridQueryKillResponse::new, new GridQueryKillResponseSerializer());

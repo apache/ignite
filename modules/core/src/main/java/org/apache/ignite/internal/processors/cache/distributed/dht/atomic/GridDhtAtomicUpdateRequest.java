@@ -555,7 +555,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
 
         switch (writer.state()) {
             case 12:
-                if (!writer.writeMessage(conflictExpireTimes))
+                if (!writer.writeGridLongList(conflictExpireTimes))
                     return false;
 
                 writer.incrementState();
@@ -597,7 +597,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeMessage(nearExpireTimes))
+                if (!writer.writeGridLongList(nearExpireTimes))
                     return false;
 
                 writer.incrementState();
@@ -609,7 +609,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeMessage(nearTtls))
+                if (!writer.writeGridLongList(nearTtls))
                     return false;
 
                 writer.incrementState();
@@ -633,13 +633,13 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeMessage(ttls))
+                if (!writer.writeGridLongList(ttls))
                     return false;
 
                 writer.incrementState();
 
             case 26:
-                if (!writer.writeMessage(updateCntrs))
+                if (!writer.writeGridLongList(updateCntrs))
                     return false;
 
                 writer.incrementState();
@@ -664,7 +664,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
 
         switch (reader.state()) {
             case 12:
-                conflictExpireTimes = reader.readMessage();
+                conflictExpireTimes = reader.readGridLongList();
 
                 if (!reader.isLastRead())
                     return false;
@@ -720,7 +720,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 19:
-                nearExpireTimes = reader.readMessage();
+                nearExpireTimes = reader.readGridLongList();
 
                 if (!reader.isLastRead())
                     return false;
@@ -736,7 +736,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 21:
-                nearTtls = reader.readMessage();
+                nearTtls = reader.readGridLongList();
 
                 if (!reader.isLastRead())
                     return false;
@@ -768,7 +768,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 25:
-                ttls = reader.readMessage();
+                ttls = reader.readGridLongList();
 
                 if (!reader.isLastRead())
                     return false;
@@ -776,7 +776,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 26:
-                updateCntrs = reader.readMessage();
+                updateCntrs = reader.readGridLongList();
 
                 if (!reader.isLastRead())
                     return false;

@@ -17,24 +17,25 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Grid deployment response containing requested resource bytes.
  */
 public class GridDeploymentResponse implements Message {
     /** Result state. */
+    @Order(0)
     private boolean success;
 
     /** */
+    @Order(value = 1, method = "errorMessage")
     private String errMsg;
 
     /** Raw class/resource/task. */
+    @Order(value = 2, method = "byteSource")
     private GridByteArrayList byteSrc;
 
     /**
@@ -50,7 +51,7 @@ public class GridDeploymentResponse implements Message {
      *
      * @param byteSrc Class/resource/task source.
      */
-    void byteSource(GridByteArrayList byteSrc) {
+    public void byteSource(GridByteArrayList byteSrc) {
         this.byteSrc = byteSrc;
     }
 
@@ -58,7 +59,7 @@ public class GridDeploymentResponse implements Message {
      * Gets raw class/resource or serialized task source as bytes array.
      * @return Class/resource/task source.
      */
-    GridByteArrayList byteSource() {
+    public GridByteArrayList byteSource() {
         return byteSrc;
     }
 
@@ -68,7 +69,7 @@ public class GridDeploymentResponse implements Message {
      * @return {@code true} if request for the source processed
      *      successfully and {@code false} if not.
      */
-    boolean success() {
+    public boolean success() {
         return success;
     }
 
@@ -78,7 +79,7 @@ public class GridDeploymentResponse implements Message {
      * @param success {@code true} if request processed successfully and
      *      response keeps source inside and {@code false} otherwise.
      */
-    void success(boolean success) {
+    public void success(boolean success) {
         this.success = success;
     }
 
@@ -88,7 +89,7 @@ public class GridDeploymentResponse implements Message {
      *
      * @return  Request processing error message.
      */
-    String errorMessage() {
+    public String errorMessage() {
         return errMsg;
     }
 
@@ -97,77 +98,8 @@ public class GridDeploymentResponse implements Message {
      *
      * @param errMsg Request processing error message.
      */
-    void errorMessage(String errMsg) {
+    public void errorMessage(String errMsg) {
         this.errMsg = errMsg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeMessage(byteSrc))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeString(errMsg))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeBoolean(success))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                byteSrc = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                errMsg = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                success = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

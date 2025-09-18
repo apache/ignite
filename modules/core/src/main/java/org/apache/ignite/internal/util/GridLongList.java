@@ -21,28 +21,20 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+
+import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_LONGS;
 
 /**
  * Minimal list API to work with primitive longs. This list exists
  * to avoid boxing/unboxing when using standard list from Java.
  */
-@IgniteCodeGeneratingFail
-public class GridLongList implements Message, Externalizable {
+public class GridLongList implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Empty array. */
-    public static final long[] EMPTY_ARRAY = new long[0];
 
     /** */
     private long[] arr;
@@ -72,26 +64,6 @@ public class GridLongList implements Message, Externalizable {
         this.arr = arr;
 
         idx = arr.length;
-    }
-
-    /**
-     * @param vals Values.
-     * @return List from values.
-     */
-    public static GridLongList asList(long... vals) {
-        if (F.isEmpty(vals))
-            return new GridLongList();
-
-        return new GridLongList(vals);
-    }
-
-    /**
-     * @param arr Array.
-     * @param size Size.
-     */
-    private GridLongList(long[] arr, int size) {
-        this.arr = arr;
-        idx = size;
     }
 
     /** {@inheritDoc} */
@@ -189,44 +161,6 @@ public class GridLongList implements Message, Externalizable {
     }
 
     /**
-     * Returns (possibly reordered) copy of this list, excluding all elements of given list.
-     *
-     * @param l List of elements to remove.
-     * @return New list without all elements from {@code l}.
-     */
-    public GridLongList copyWithout(GridLongList l) {
-        assert l != null;
-
-        if (idx == 0)
-            return new GridLongList();
-
-        if (l.idx == 0)
-            return new GridLongList(Arrays.copyOf(arr, idx));
-
-        long[] newArr = Arrays.copyOf(arr, idx);
-        int newIdx = idx;
-
-        for (int i = 0; i < l.size(); i++) {
-            long rmVal = l.get(i);
-
-            for (int j = 0; j < newIdx; j++) {
-                if (newArr[j] == rmVal) {
-
-                    while (newIdx > 0 && newArr[newIdx - 1] == rmVal)
-                        newIdx--;
-
-                    if (newIdx > 0) {
-                        newArr[j] = newArr[newIdx - 1];
-                        newIdx--;
-                    }
-                }
-            }
-        }
-
-        return new GridLongList(newArr, newIdx);
-    }
-
-    /**
      * @param i Index.
      * @return Value.
      */
@@ -241,6 +175,13 @@ public class GridLongList implements Message, Externalizable {
      */
     public int size() {
         return idx;
+    }
+
+    /**
+     * @return Array.
+     */
+    public long[] array() {
+        return arr;
     }
 
     /**
@@ -325,9 +266,9 @@ public class GridLongList implements Message, Externalizable {
     /**
      * @return Array copy.
      */
-    public long[] array() {
+    public long[] arrayCopy() {
         if (arr == null)
-            return EMPTY_ARRAY;
+            return EMPTY_LONGS;
 
         long[] res = new long[idx];
 
@@ -381,65 +322,5 @@ public class GridLongList implements Message, Externalizable {
             Arrays.sort(arr, 0, idx);
 
         return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeLongArray(arr, idx))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeInt(idx))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                arr = reader.readLongArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                idx = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 85;
     }
 }
