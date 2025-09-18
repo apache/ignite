@@ -1249,7 +1249,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         try {
             return cctx != null ?
                 cctx.affinity().partition(obj, false) :
-                cctx.kernalContext().affinity().partition0(ctx.cacheName(), obj, null);
+                ctx.kernalContext().affinity().partition0(ctx.cacheName(), obj, null);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to get partition", e);
@@ -1299,7 +1299,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             case CacheObject.TYPE_REGULAR:
                 return ctx == null
                     ? new KeyCacheObjectImpl(null, bytes, -1)
-                    : new KeyCacheObjectImpl(ctx.unmarshal(bytes, null), bytes, -1);
+                    : new KeyCacheObjectImpl(ctx.kernalContext().cacheObjects().unmarshal(ctx, bytes, null), bytes, -1);
         }
 
         throw new IllegalArgumentException("Invalid object type: " + type);
