@@ -41,11 +41,6 @@ from ignitetest.utils.version import DEV_BRANCH
 
 SHARED_PREPARED_FILE = ".ignite_prepared"
 
-EXTENSIONS_MODULES = [
-    "cdc-ext",
-    "performance-statistics-ext"
-]
-
 
 def resolve_spec(service, **kwargs):
     """
@@ -220,10 +215,12 @@ class IgniteSpec(metaclass=ABCMeta):
         if module_name == "ducktests":
             return self.__get_module_libs(self.__home(str(DEV_BRANCH)), module_name, is_dev=True)
 
-        if module_name in EXTENSIONS_MODULES:
-            return self.__get_module_libs(self.extensions_home(), module_name, is_dev=True)
+        if module_name.endswith("-ext") and self.service.config.version.is_dev:
+            home = self.extensions_home()
+        else:
+            home = self.__home()
 
-        return self.__get_module_libs(self.__home(), module_name, self.service.config.version.is_dev)
+        return self.__get_module_libs(home, module_name, self.service.config.version.is_dev)
 
     @abstractmethod
     def command(self, node):
