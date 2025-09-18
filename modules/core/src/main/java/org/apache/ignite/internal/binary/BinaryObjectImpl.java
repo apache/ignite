@@ -815,7 +815,7 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
      * @return {@code True} need to copy value returned to user.
      */
     private boolean needCopy(CacheObjectValueContext ctx) {
-        return ctx.copyOnGet() && obj != null && !ctx.immutable(obj);
+        return ctx.copyOnGet() && obj != null && !BinaryUtils.immutable(obj);
     }
 
     /**

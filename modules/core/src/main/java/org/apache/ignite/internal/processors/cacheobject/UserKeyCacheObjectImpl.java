@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cacheobject;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -68,7 +69,7 @@ public class UserKeyCacheObjectImpl extends KeyCacheObjectImpl {
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
         try {
-            if (!ctx.immutable(val)) {
+            if (!BinaryUtils.immutable(val)) {
                 if (valBytes == null)
                     valBytes = ctx.marshal(val);
 

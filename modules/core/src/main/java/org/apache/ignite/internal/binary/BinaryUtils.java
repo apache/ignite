@@ -79,6 +79,7 @@ import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.platform.PlatformType;
 import org.jetbrains.annotations.Nullable;
@@ -103,6 +104,9 @@ public class BinaryUtils {
 
     /** */
     public static final Map<Byte, Class<?>> FLAG_TO_CLASS;
+
+    /** Immutable classes. */
+    private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
 
     /** */
     public static final boolean USE_STR_SERIALIZATION_VER_2 = IgniteSystemProperties.getBoolean(
@@ -181,6 +185,19 @@ public class BinaryUtils {
      * Static class initializer.
      */
     static {
+        IMMUTABLE_CLS.add(String.class);
+        IMMUTABLE_CLS.add(Boolean.class);
+        IMMUTABLE_CLS.add(Byte.class);
+        IMMUTABLE_CLS.add(Short.class);
+        IMMUTABLE_CLS.add(Character.class);
+        IMMUTABLE_CLS.add(Integer.class);
+        IMMUTABLE_CLS.add(Long.class);
+        IMMUTABLE_CLS.add(Float.class);
+        IMMUTABLE_CLS.add(Double.class);
+        IMMUTABLE_CLS.add(UUID.class);
+        IMMUTABLE_CLS.add(IgniteUuid.class);
+        IMMUTABLE_CLS.add(BigDecimal.class);
+
         Map<Class<?>, Byte> clsToFlag = new HashMap<>();
 
         clsToFlag.put(Byte.class, GridBinaryMarshaller.BYTE);
@@ -3074,6 +3091,16 @@ public class BinaryUtils {
      */
     public static int fieldId(BinaryReaderEx reader, int order) {
         return ((BinaryReaderExImpl)reader).getOrCreateSchema().fieldId(order);
+    }
+
+    /**
+     * @param obj Value.
+     * @return {@code True} if object is of known immutable type.
+     */
+    public static boolean immutable(Object obj) {
+        assert obj != null;
+
+        return IMMUTABLE_CLS.contains(obj.getClass());
     }
 
     /**

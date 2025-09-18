@@ -19,12 +19,10 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import java.io.File;
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -104,7 +102,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
@@ -127,9 +124,6 @@ import static org.apache.ignite.internal.util.typedef.internal.CU.affinityFieldN
  * Binary processor implementation.
  */
 public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter implements IgniteCacheObjectProcessor {
-    /** Immutable classes. */
-    private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
-
     /** @see IgniteSystemProperties#IGNITE_WAIT_SCHEMA_UPDATE */
     public static final int DFLT_WAIT_SCHEMA_UPDATE = 30_000;
 
@@ -182,24 +176,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** Dummy {@code CacheObjectValueContext} used for mocking. */
     private CacheObjectValueContext fakeCacheObjCtx;
-
-    /*
-     * Static initializer
-     */
-    static {
-        IMMUTABLE_CLS.add(String.class);
-        IMMUTABLE_CLS.add(Boolean.class);
-        IMMUTABLE_CLS.add(Byte.class);
-        IMMUTABLE_CLS.add(Short.class);
-        IMMUTABLE_CLS.add(Character.class);
-        IMMUTABLE_CLS.add(Integer.class);
-        IMMUTABLE_CLS.add(Long.class);
-        IMMUTABLE_CLS.add(Float.class);
-        IMMUTABLE_CLS.add(Double.class);
-        IMMUTABLE_CLS.add(UUID.class);
-        IMMUTABLE_CLS.add(IgniteUuid.class);
-        IMMUTABLE_CLS.add(BigDecimal.class);
-    }
 
     /**
      * @param ctx Kernal context.
@@ -389,13 +365,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             return 0;
 
         return binaryCtx.typeId(typeName);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean immutable(Object obj) {
-        assert obj != null;
-
-        return IMMUTABLE_CLS.contains(obj.getClass());
     }
 
     /** {@inheritDoc} */

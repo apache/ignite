@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cacheobject;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -64,7 +65,7 @@ public class UserCacheObjectImpl extends CacheObjectImpl {
                 ClassLoader ldr = p2pEnabled ?
                     IgniteUtils.detectClass(val).getClassLoader() : val.getClass().getClassLoader();
 
-                Object val = this.val != null && ctx.immutable(this.val) ? this.val : valueFromValueBytes(ctx, ldr);
+                Object val = this.val != null && BinaryUtils.immutable(this.val) ? this.val : valueFromValueBytes(ctx, ldr);
 
                 return new CacheObjectImpl(val, valBytes);
             }

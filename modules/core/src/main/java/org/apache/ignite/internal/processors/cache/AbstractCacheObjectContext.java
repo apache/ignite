@@ -63,11 +63,6 @@ public abstract class AbstractCacheObjectContext implements CacheObjectValueCont
     }
 
     /** {@inheritDoc} */
-    @Override public boolean immutable(Object obj) {
-        return ctx.cacheObjects().immutable(obj);
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteLogger log(Class<?> cls) {
         return ctx.log(cls);
     }

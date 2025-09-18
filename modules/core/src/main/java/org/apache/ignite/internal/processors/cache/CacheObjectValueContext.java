@@ -79,12 +79,6 @@ public interface CacheObjectValueContext {
     public ClassLoader globalLoader();
 
     /**
-     * @param obj Value.
-     * @return {@code True} if object is of known immutable type.
-     */
-    public boolean immutable(Object obj);
-
-    /**
      * @param cls Class
      * @return Logger for class.
      */
