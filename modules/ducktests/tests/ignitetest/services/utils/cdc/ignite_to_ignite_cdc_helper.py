@@ -81,4 +81,3 @@ class IgniteToIgniteCdcStreamerTemplateParams(NamedTuple):
     dst_cluster: IgniteAwareService
     dst_cluster_client_config: IgniteConfiguration
     cdc: CdcParams
-    # name: str = "IgniteToIgniteCdcStreamerTemplateParams"

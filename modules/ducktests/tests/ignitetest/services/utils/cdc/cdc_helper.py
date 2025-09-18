@@ -49,7 +49,20 @@ class CdcConfiguration(NamedTuple):
     keep_binary: bool = None
     lock_timeout: int = None
     metric_exporter_spi: set = None
-    # name: str = "IgniteCdcParams"
+
+
+class CdcContext:
+    """
+    CDC context.
+
+    Keeps information about CDC configuration needed to control the CDC (start, stop, wait etc.).
+    In particular stores references to ignite-cdc and source cluster services.
+    Different CDC extension helpers may add more fields.
+    """
+    def __init__(self):
+        self.cdc_params = None
+        self.ignite_cdc = None
+        self.source_cluster = None
 
 
 class CdcHelper:
@@ -82,6 +95,8 @@ class CdcHelper:
             ]
         )
 
+        ctx.ignite_cdc = IgniteCdcUtility(src_cluster)
+
         return ctx
 
     def get_cdc_beans(self, src_cluster, dst_cluster, cdc_params, ctx):
@@ -106,8 +121,6 @@ class CdcHelper:
         cdc_params.cdc_configuration = cdc_params.cdc_configuration._replace(
             metric_exporter_spi=src_cluster.config.metric_exporters
         )
-
-        ctx.ignite_cdc = IgniteCdcUtility(src_cluster)
 
         return [("ignite_cdc.j2", cdc_params.cdc_configuration)]
 
@@ -213,23 +226,8 @@ def last_ignite_cdc_event_time(ignite_cdc):
 
             return int(next(mbean.LastEventTime).strip())
         except (StopIteration, RemoteCommandError):
-            ignite_cdc.logger.warn(
-                "Filed to read LastEventTime metric from ignite_cdc, node: " + node.account.hostname)
+            ignite_cdc.logger.warn("Filed to read LastEventTime metric from ignite_cdc, node: " + node.account.hostname)
 
             return -1
 
     return max([last_event_time_on(node) for node in ignite_cdc.nodes]) / 1_000
-
-
-class CdcContext:
-    """
-    CDC context.
-
-    Keeps information about CDC configuration needed to control the CDC (start, stop, wait etc.).
-    In particular stores references to ignite-cdc and source cluster services.
-    Different CDC extension helpers may add more fields.
-    """
-    def __init__(self):
-        self.cdc_params = None
-        self.ignite_cdc = None
-        self.source_cluster = None

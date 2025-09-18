@@ -103,12 +103,12 @@ class IgniteToKafkaCdcHelper(CdcHelper):
 
 def get_ignite_to_kafka_spec(base, kafka_connection_string, service):
     """
-    Dynamically create IgniteSpec subclass to run ignite-to-kafka application in scope of service provided.
+    Dynamically create IgniteSpec subclass to run IgniteToKafkaCdcStreamer in scope of service provided.
 
     :param base: Base IgniteSpec class.
     :param kafka_connection_string: Kafka connection string.
     :param service: IgniteService.
-    :return: IgniteSpec instance for ignite-to-kafka application.
+    :return: IgniteSpec instance for IgniteToKafkaCdcStreamer.
     """
     class IgniteToKafkaSpec(base):
         def libs(self):

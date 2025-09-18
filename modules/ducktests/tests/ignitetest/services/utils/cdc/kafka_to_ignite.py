@@ -46,7 +46,7 @@ class KafkaToIgniteService(IgniteService):
             (f"number of nodes ({cdc_params.kafka_to_ignite_nodes}) more then "
              f"kafka topic partitions ({cdc_params.kafka_partitions})")
 
-        super().__init__(context, self.__get_config(dst_cluster, cdc_params.kafka_to_ignite_client_type),
+        super().__init__(context, self.get_config(dst_cluster, cdc_params.kafka_to_ignite_client_type),
                          cdc_params.kafka_to_ignite_nodes, jvm_opts, merge_with_default, startup_timeout_sec,
                          shutdown_timeout_sec, add_cdc_ext_module(modules))
 
@@ -73,11 +73,11 @@ class KafkaToIgniteService(IgniteService):
         else:
             parts_to = (idx + 1) * parts_per_node
 
-        self.config = self.__add_kafka_streamer_config(parts_from, parts_to)
+        self.config = self.add_kafka_streamer_config(parts_from, parts_to)
 
         super()._prepare_configs(node)
 
-    def __add_kafka_streamer_config(self, parts_from, parts_to):
+    def add_kafka_streamer_config(self, parts_from, parts_to):
         ext_beans = [("bean.j2", Bean(
                 "org.apache.ignite.cdc.kafka.KafkaToIgniteCdcStreamerConfiguration",
                 caches=self.cdc_params.caches,
@@ -99,7 +99,14 @@ class KafkaToIgniteService(IgniteService):
         return self.config._replace(ext_beans=ext_beans)
 
     @staticmethod
-    def __get_config(dst_cluster, client_type):
+    def get_config(dst_cluster, client_type):
+        """
+        Returns kafka-to-ignite.sh ignite client configuration.
+
+        :param dst_cluster: Destination cluster.
+        :param client_type: Client type.
+        :return: Ignite client configuration.
+        """
         if client_type == IgniteServiceType.NODE:
             return dst_cluster.config._replace(
                 client_mode=True,
@@ -116,7 +123,7 @@ class KafkaToIgniteService(IgniteService):
 
     def await_started(self):
         """
-        Awaits start finished.
+        Awaits kafka-to-ignite.sh started.
         """
         self.logger.info("Waiting for KafkaToIgnite(s) to start ...")
 
@@ -125,8 +132,9 @@ class KafkaToIgniteService(IgniteService):
 
     def await_all_consumed(self, timeout_sec):
         """
-        Awaits all events are consumed from Kafka
-        :param timeout_sec: Timeout
+        Awaits all events are consumed from Kafka.
+
+        :param timeout_sec: Timeout.
         """
         start = time.time()
         end = start + timeout_sec
@@ -162,10 +170,12 @@ class KafkaToIgniteService(IgniteService):
 
 def get_kafka_to_ignite_spec(base, kafka_connection_string, service):
     """
-    :param base: either IgniteNodeSpec or ISENodeSpec
-    :param kafka_connection_string: Kafka connection string
-    :param service IgniteService
-    :return: Spec for kafka-to-ignite application
+    Dynamically create IgniteSpec subclass to run KafkaToIgniteCdcStreamer in scope of service provided.
+
+    :param base: Base IgniteSpec class.
+    :param kafka_connection_string: Kafka connection string.
+    :param service: IgniteService.
+    :return: IgniteSpec instance for kafka-to-ignite application.
     """
     class KafkaToIgniteSpec(base):
         def command(self, _):
@@ -209,13 +219,14 @@ def get_kafka_to_ignite_spec(base, kafka_connection_string, service):
             else:
                 return self.service.script(cmd)
 
-    return KafkaToIgniteSpec(service, service.spec.jvm_opts, merge_with_default=True)
+    return KafkaToIgniteSpec(service, service.spec.jvm_opts)
 
 
 class KafkaPropertiesTemplate(ConfigTemplate):
     """
-    Kafka client configuration properties file
+    Kafka client configuration properties file.
     """
     def __init__(self, template_file_name, params):
         super().__init__(template_file_name)
+
         self.default_params = params
