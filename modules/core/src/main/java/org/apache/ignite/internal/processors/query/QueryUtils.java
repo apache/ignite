@@ -265,7 +265,7 @@ public class QueryUtils {
      * @param cfg Cache config.
      * @return Normalized query entities.
      */
-    public static Collection<QueryEntity> normalizeQueryEntities(GridKernalContext ctx,
+    public static Collection<QueryEntity> normalizeQueryEntities(boolean recoveryMode,
         Collection<QueryEntity> entities, CacheConfiguration<?, ?> cfg) {
         Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
 
@@ -273,7 +273,7 @@ public class QueryUtils {
             if (!F.isEmpty(entity.getNotNullFields()))
                 checkNotNullAllowed(cfg);
 
-            normalEntities.add(normalizeQueryEntity(ctx, entity, cfg.isSqlEscapeAll()));
+            normalEntities.add(normalizeQueryEntity(recoveryMode, entity, cfg.isSqlEscapeAll()));
         }
 
         return normalEntities;
@@ -287,7 +287,7 @@ public class QueryUtils {
      * @param escape Escape flag taken form configuration.
      * @return Normalized query entity.
      */
-    public static QueryEntity normalizeQueryEntity(GridKernalContext ctx, QueryEntity entity, boolean escape) {
+    public static QueryEntity normalizeQueryEntity(boolean recoveryMode, QueryEntity entity, boolean escape) {
         if (escape) {
             String tblName = tableName(entity);
 
@@ -381,7 +381,7 @@ public class QueryUtils {
 
         validateQueryEntity(normalEntity);
 
-        if (!ctx.recoveryMode())
+        if (!recoveryMode)
             normalEntity.fillAbsentPKsWithDefaults(true);
         else if (entity instanceof QueryEntityEx)
             normalEntity.fillAbsentPKsWithDefaults(((QueryEntityEx)entity).fillAbsentPKsWithDefaults());
@@ -475,7 +475,12 @@ public class QueryUtils {
 
         CacheObjectContext coCtx = ctx.cacheObjects().contextForCache(ccfg);
 
-        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cacheName, coCtx);
+        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(
+            cacheName,
+            coCtx,
+            ctx.cacheObjects(),
+            ctx.config().getSqlConfiguration().isValidationEnabled()
+        );
 
         desc.schemaName(schemaName);
 

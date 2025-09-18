@@ -1652,7 +1652,7 @@ public class GridCacheUtils {
      * @throws IgniteCheckedException If configuration is not valid.
      */
     public static void initializeConfigDefaults(IgniteLogger log, CacheConfiguration cfg,
-        CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+        CacheObjectContext cacheObjCtx, boolean recoveryMode) throws IgniteCheckedException {
         if (cfg.getCacheMode() == null)
             cfg.setCacheMode(DFLT_CACHE_MODE);
 
@@ -1717,7 +1717,7 @@ public class GridCacheUtils {
 
         if (!F.isEmpty(entities)) {
             cfg.clearQueryEntities().setQueryEntities(
-                QueryUtils.normalizeQueryEntities(cacheObjCtx.kernalContext(), entities, cfg));
+                QueryUtils.normalizeQueryEntities(recoveryMode, entities, cfg));
         }
     }
 

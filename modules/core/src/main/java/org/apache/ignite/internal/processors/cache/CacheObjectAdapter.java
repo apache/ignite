@@ -50,14 +50,14 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
      * @return {@code True} need to copy value returned to user.
      */
     protected boolean needCopy(CacheObjectValueContext ctx) {
-        return ctx.copyOnGet() && val != null && !ctx.kernalContext().cacheObjects().immutable(val);
+        return ctx.copyOnGet() && val != null && !ctx.immutable(val);
     }
 
     /**
      * @return Value bytes from value.
      */
     protected byte[] valueBytesFromValue(CacheObjectValueContext ctx) throws IgniteCheckedException {
-        byte[] bytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
+        byte[] bytes = ctx.marshal(val);
 
         return CacheObjectTransformerUtils.transformIfNecessary(bytes, ctx);
     }
@@ -68,7 +68,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     protected Object valueFromValueBytes(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         byte[] bytes = CacheObjectTransformerUtils.restoreIfNecessary(valBytes, ctx);
 
-        return ctx.kernalContext().cacheObjects().unmarshal(ctx, bytes, ldr);
+        return ctx.unmarshal(bytes, ldr);
     }
 
     /** {@inheritDoc} */

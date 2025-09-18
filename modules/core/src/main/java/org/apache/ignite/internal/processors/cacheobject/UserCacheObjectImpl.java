@@ -55,18 +55,16 @@ public class UserCacheObjectImpl extends CacheObjectImpl {
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
         try {
-            IgniteCacheObjectProcessor proc = ctx.kernalContext().cacheObjects();
-
             if (valBytes == null)
                 valBytes = valueBytesFromValue(ctx);
 
             if (ctx.storeValue()) {
-                boolean p2pEnabled = ctx.kernalContext().config().isPeerClassLoadingEnabled();
+                boolean p2pEnabled = ctx.isPeerClassLoadingEnabled();
 
                 ClassLoader ldr = p2pEnabled ?
                     IgniteUtils.detectClass(val).getClassLoader() : val.getClass().getClassLoader();
 
-                Object val = this.val != null && proc.immutable(this.val) ? this.val : valueFromValueBytes(ctx, ldr);
+                Object val = this.val != null && ctx.immutable(this.val) ? this.val : valueFromValueBytes(ctx, ldr);
 
                 return new CacheObjectImpl(val, valBytes);
             }

@@ -29,13 +29,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -134,7 +135,10 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     private List<GridQueryProperty> propsWithDefaultValue;
 
     /** */
-    private final CacheObjectContext coCtx;
+    private final CacheObjectValueContext coCtx;
+
+    /** */
+    private final IgniteCacheObjectProcessor cacheObjects;
 
     /** Primary key fields. */
     private Set<String> pkFields;
@@ -151,8 +155,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private int affFieldInlineSize;
 
-    /** Logger. */
-    private final IgniteLogger log;
+    /** @see SqlConfiguration#isValidationEnabled() */
+    private final boolean validateTypes;
 
     /**
      * Constructor.
@@ -160,10 +164,16 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * @param cacheName Cache name.
      * @param coCtx Cache object context.
      */
-    public QueryTypeDescriptorImpl(String cacheName, CacheObjectContext coCtx) {
+    public QueryTypeDescriptorImpl(
+        String cacheName,
+        CacheObjectValueContext coCtx,
+        IgniteCacheObjectProcessor cacheObjects,
+        boolean validateTypes
+    ) {
         this.cacheName = cacheName;
         this.coCtx = coCtx;
-        this.log = coCtx.kernalContext().log(getClass());
+        this.cacheObjects = cacheObjects;
+        this.validateTypes = validateTypes;
     }
 
     /** {@inheritDoc} */
@@ -443,7 +453,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             throw new IgniteCheckedException("Property with upper cased name '" + name + "' already exists.");
 
         if ((prop.notNull() && !prop.name().equals(KEY_FIELD_NAME) && !prop.name().equals(VAL_FIELD_NAME))
-            || prop.precision() != -1 || coCtx.kernalContext().config().getSqlConfiguration().isValidationEnabled()) {
+            || prop.precision() != -1 || validateTypes) {
             if (validateProps == null)
                 validateProps = new ArrayList<>();
 
@@ -610,8 +620,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (F.isEmpty(validateProps))
             return;
 
-        final boolean validateTypes = coCtx.kernalContext().config().getSqlConfiguration().isValidationEnabled();
-
         for (int i = 0; i < validateProps.size(); ++i) {
             GridQueryProperty prop = validateProps.get(i);
 
@@ -729,7 +737,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 && Arrays.stream(BinaryUtils.rawArrayFromBinary(val))
                     .allMatch(x -> x == null || U.box(expColType.getComponentType()).isAssignableFrom(U.box(x.getClass())));
         }
-        else if (coCtx.kernalContext().cacheObjects().typeId(expColType.getName()) != ((BinaryObject)val).type().typeId()) {
+        else if (cacheObjects.typeId(expColType.getName()) != ((BinaryObject)val).type().typeId()) {
             final Class<?> cls = U.classForName(((BinaryObject)val).type().typeName(), null, true);
 
             return (cls == null && expColType == Object.class) || (cls != null && expColType.isAssignableFrom(cls));

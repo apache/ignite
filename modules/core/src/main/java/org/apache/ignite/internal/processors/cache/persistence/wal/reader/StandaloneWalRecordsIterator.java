@@ -398,7 +398,12 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final List<DataEntry> postProcessedEntries = new ArrayList<>(entryCnt);
 
         for (int i = 0; i < entryCnt; i++) {
-            final DataEntry postProcessedEntry = postProcessDataEntry(processor, fakeCacheObjCtx, dataRec.get(i));
+            final DataEntry postProcessedEntry = postProcessDataEntry(
+                keepBinary || !kernalCtx.marshallerContext().initialized(),
+                processor,
+                fakeCacheObjCtx,
+                dataRec.get(i)
+            );
 
             postProcessedEntries.add(postProcessedEntry);
         }
@@ -421,6 +426,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @throws IgniteCheckedException if failed
      */
     private @NotNull DataEntry postProcessDataEntry(
+        final boolean keepBinary,
         final IgniteCacheObjectProcessor processor,
         final CacheObjectContext fakeCacheObjCtx,
         final DataEntry dataEntry) throws IgniteCheckedException {
@@ -429,7 +435,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         final KeyCacheObject key;
         final CacheObject val;
-        boolean keepBinary = this.keepBinary || !fakeCacheObjCtx.kernalContext().marshallerContext().initialized();
 
         if (dataEntry instanceof LazyDataEntry) {
             final LazyDataEntry lazyDataEntry = (LazyDataEntry)dataEntry;

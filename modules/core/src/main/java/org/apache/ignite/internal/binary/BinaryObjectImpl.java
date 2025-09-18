@@ -39,7 +39,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObjectTransformerUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.Marshallers;
@@ -233,11 +232,9 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
         if (arr == null)
             arr = arrayFromValueBytes(ctx);
 
-        CacheObjectBinaryProcessorImpl binaryProc = (CacheObjectBinaryProcessorImpl)ctx.kernalContext().cacheObjects();
+        this.ctx = ctx.binaryContext();
 
-        this.ctx = binaryProc.binaryContext();
-
-        binaryProc.waitMetadataWriteIfNeeded(typeId());
+        ctx.waitMetadataWriteIfNeeded(typeId());
     }
 
     /** {@inheritDoc} */
@@ -799,8 +796,7 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
      * @return Object.
      */
     private Object deserializeValue(@Nullable CacheObjectValueContext coCtx) {
-        BinaryReaderEx reader = reader(null, coCtx != null ?
-            coCtx.kernalContext().config().getClassLoader() : ctx.classLoader(), true);
+        BinaryReaderEx reader = reader(null, coCtx != null ? coCtx.classLoader() : ctx.classLoader(), true);
 
         Object obj0 = reader.deserialize();
 
@@ -819,7 +815,7 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
      * @return {@code True} need to copy value returned to user.
      */
     private boolean needCopy(CacheObjectValueContext ctx) {
-        return ctx.copyOnGet() && obj != null && !ctx.kernalContext().cacheObjects().immutable(obj);
+        return ctx.copyOnGet() && obj != null && !ctx.immutable(obj);
     }
 
     /**

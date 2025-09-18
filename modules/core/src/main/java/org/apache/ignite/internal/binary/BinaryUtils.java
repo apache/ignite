@@ -72,7 +72,7 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
@@ -2745,7 +2745,7 @@ public class BinaryUtils {
      * @param typeId Type id.
      * @param schemaId Schema id.
      */
-    public static int[] getSchema(CacheObjectBinaryProcessorImpl cacheObjProc, int typeId, int schemaId) {
+    public static int[] getSchema(IgniteCacheObjectProcessor cacheObjProc, int typeId, int schemaId) {
         assert cacheObjProc != null;
 
         BinarySchemaRegistry schemaReg = cacheObjProc.binaryContext().schemaRegistry(typeId);
