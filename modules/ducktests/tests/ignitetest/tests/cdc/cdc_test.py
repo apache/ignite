@@ -95,7 +95,7 @@ class CdcTest(IgniteTest):
                            log_file="ignite-cdc.log")
 
         ignite.await_event("CountingCdcConsumer stopped",
-                           timeout_sec=60, from_the_beginning=True,
+                           timeout_sec=1, from_the_beginning=True,
                            log_file="ignite-cdc.log")
 
         ignite.stop()
