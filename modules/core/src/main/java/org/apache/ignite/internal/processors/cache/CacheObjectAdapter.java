@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -50,7 +51,7 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
      * @return {@code True} need to copy value returned to user.
      */
     protected boolean needCopy(CacheObjectValueContext ctx) {
-        return ctx.copyOnGet() && val != null && !ctx.kernalContext().cacheObjects().immutable(val);
+        return ctx.copyOnGet() && val != null && !BinaryUtils.immutable(val);
     }
 
     /**

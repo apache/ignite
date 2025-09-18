@@ -209,12 +209,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
         @Nullable IncompleteCacheObject incompleteObj) throws IgniteCheckedException;
 
     /**
-     * @param obj Value.
-     * @return {@code True} if object is of known immutable type.
-     */
-    public boolean immutable(Object obj);
-
-    /**
      * @return Ignite binary interface.
      * @throws IgniteException If failed.
      */
