@@ -284,7 +284,7 @@ class CdcReplicationAbstractTest(IgniteTest):
 
         dst_cluster.config.discovery_spi.prepare_on_start(cluster=dst_cluster)
 
-        ctx = cdc_helper.configure_source_cluster(src_cluster, dst_cluster, cdc_params)
+        ctx = cdc_helper.configure(src_cluster, dst_cluster, cdc_params)
 
         dst_cluster.start()
         ControlUtility(dst_cluster).activate()
@@ -329,11 +329,11 @@ class CdcReplicationAbstractTest(IgniteTest):
 
         src_config_orig = deepcopy(src_cluster.config)
 
-        src_ctx = cdc_helper.configure_source_cluster(src_cluster, dst_cluster, src_cdc_params)
+        src_ctx = cdc_helper.configure(src_cluster, dst_cluster, src_cdc_params)
         src_config_cdc_configured = src_cluster.config
 
         src_cluster.config = src_config_orig
-        dst_ctx = cdc_helper.configure_source_cluster(dst_cluster, src_cluster, dst_cdc_params)
+        dst_ctx = cdc_helper.configure(dst_cluster, src_cluster, dst_cdc_params)
 
         src_cluster.config = src_config_cdc_configured
 
