@@ -32,15 +32,15 @@ class IgniteToKafkaCdcHelper(CdcHelper):
     """
     CDC helper for IgniteToKafkaCdcStreamer.
     """
-    def configure_source_cluster(self, src_cluster, dst_cluster, cdc_params):
-        ctx = super().configure_source_cluster(src_cluster, dst_cluster, cdc_params)
+    def configure(self, src_cluster, dst_cluster, cdc_params):
+        ctx = super().configure(src_cluster, dst_cluster, cdc_params)
 
         src_cluster.spec = get_ignite_to_kafka_spec(src_cluster.spec.__class__,
                                                     cdc_params.kafka.connection_string(),
                                                     src_cluster)
         return ctx
 
-    def get_cdc_beans(self, src_cluster, dst_cluster, cdc_params, ctx):
+    def get_src_cluster_cdc_ext_beans(self, src_cluster, dst_cluster, cdc_params, ctx):
         ctx.kafka_to_ignite = KafkaToIgniteService(
             dst_cluster.context,
             cdc_params.kafka,
@@ -51,7 +51,7 @@ class IgniteToKafkaCdcHelper(CdcHelper):
             modules=dst_cluster.modules
         )
 
-        beans = super().get_cdc_beans(src_cluster, dst_cluster, cdc_params, ctx)
+        beans = super().get_src_cluster_cdc_ext_beans(src_cluster, dst_cluster, cdc_params, ctx)
 
         beans.append((
             "ignite_to_kafka_cdc_streamer.j2",

@@ -26,8 +26,8 @@ class IgniteToIgniteCdcHelper(CdcHelper):
     """
     CDC helper for the IgniteToIgniteCdcStreamer.
     """
-    def get_cdc_beans(self, src_cluster, dst_cluster, cdc_params, ctx):
-        beans: list = super().get_cdc_beans(src_cluster, dst_cluster, cdc_params, ctx)
+    def get_src_cluster_cdc_ext_beans(self, src_cluster, dst_cluster, cdc_params, ctx):
+        beans: list = super().get_src_cluster_cdc_ext_beans(src_cluster, dst_cluster, cdc_params, ctx)
 
         dst_cluster_client_config = dst_cluster.config._replace(
             client_mode=True,

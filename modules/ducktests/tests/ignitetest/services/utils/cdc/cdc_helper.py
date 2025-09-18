@@ -69,7 +69,7 @@ class CdcHelper:
     """
     Base CDC helper class for different CDC consumer extensions.
     """
-    def configure_source_cluster(self, src_cluster, dst_cluster, cdc_params):
+    def configure(self, src_cluster, dst_cluster, cdc_params):
         """
         Configures the CDC. Updates the src_cluster service in place.
 
@@ -86,7 +86,7 @@ class CdcHelper:
         ctx.cdc_params = cdc_params
         ctx.source_cluster = src_cluster
 
-        beans = self.get_cdc_beans(src_cluster, dst_cluster, cdc_params, ctx)
+        beans = self.get_src_cluster_cdc_ext_beans(src_cluster, dst_cluster, cdc_params, ctx)
 
         src_cluster.config = src_cluster.config._replace(
             ext_beans=[
@@ -99,7 +99,7 @@ class CdcHelper:
 
         return ctx
 
-    def get_cdc_beans(self, src_cluster, dst_cluster, cdc_params, ctx):
+    def get_src_cluster_cdc_ext_beans(self, src_cluster, dst_cluster, cdc_params, ctx):
         """
         Returns list of CDC beans required to be created in the source Ignite cluster.
         May update the CDC contex in place.
