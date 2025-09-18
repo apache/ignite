@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -43,6 +44,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
@@ -863,6 +865,16 @@ public class DirectByteBufferStream {
     }
 
     /**
+     * @param val Value.
+     */
+    public void writeGridLongList(@Nullable GridLongList val) {
+        if (val != null)
+            writeLongArray(val.array(), val.size());
+        else
+            writeInt(-1);
+    }
+
+    /**
      * @param msg Message.
      * @param writer Writer.
      */
@@ -1493,6 +1505,15 @@ public class DirectByteBufferStream {
     }
 
     /**
+     * @return Value.
+     */
+    public GridLongList readGridLongList() {
+        long[] arr = readLongArray();
+
+        return arr != null ? new GridLongList(arr) : null;
+    }
+
+    /**
      * @param reader Reader.
      * @return Message.
      */
@@ -2052,6 +2073,11 @@ public class DirectByteBufferStream {
 
                 break;
 
+            case GRID_LONG_LIST:
+                writeGridLongList((GridLongList)val);
+
+                break;
+
             case MSG:
                 try {
                     if (val != null)
@@ -2146,6 +2172,9 @@ public class DirectByteBufferStream {
 
             case CACHE_OBJECT:
                 return readCacheObject();
+
+            case GRID_LONG_LIST:
+                return readGridLongList();
 
             case MSG:
                 return readMessage(reader);

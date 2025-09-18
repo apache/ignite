@@ -31,6 +31,7 @@ public abstract class GridCacheIdMessage extends GridCacheMessage {
     /** Cache ID. */
     @Order(3)
     @GridToStringInclude
+    @Order(3)
     protected int cacheId;
 
     /**
@@ -54,6 +55,7 @@ public abstract class GridCacheIdMessage extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        // TODO: Remove #writeTo() after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf, writer))
@@ -80,6 +82,7 @@ public abstract class GridCacheIdMessage extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        // TODO: Remove #readFrom() after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf, reader))
