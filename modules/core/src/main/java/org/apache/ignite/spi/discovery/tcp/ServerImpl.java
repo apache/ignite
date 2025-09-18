@@ -291,9 +291,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Last time received message from ring. */
     private volatile long lastRingMsgReceivedTime;
 
-    /** Time of last sent and acknowledged message. */
-    private volatile long lastRingMsgSentTime;
-
     /** Map with proceeding ping requests. */
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap<>();
@@ -400,8 +397,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         lastRingMsgReceivedTime = 0;
-
-        lastRingMsgSentTime = 0;
 
         // Foundumental timeout value for actions related to connection check.
         connCheckTick = effectiveExchangeTimeout() / 3;
@@ -2936,6 +2931,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Last time metrics update message has been sent. */
         private long lastTimeMetricsUpdateMsgSentNanos = System.nanoTime() - U.millisToNanos(spi.metricsUpdateFreq);
 
+        /** Time of last sent and acknowledged message. */
+        private long lastRingMsgSentTime;
+
         /** */
         private List<DiscoveryDataPacket> joiningNodesDiscoDataList;
 
@@ -3356,6 +3354,11 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
         }
 
+        /** Fixates time of last sent message. */
+        private void updateLastSentMessageTime() {
+            lastRingMsgSentTime = System.nanoTime();
+        }
+
         /**
          * Sends message across the ring.
          *
@@ -3407,9 +3410,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                         debugLog(msg, "No next node in topology.");
 
                     if (ring.hasRemoteNodes() && !(msg instanceof TcpDiscoveryConnectionCheckMessage)) {
-                        // Successfully found remote nodes, but failed to connect to any at the last stage.
-                        if (state == CONNECTING || (state == CONNECTED && (msg instanceof TcpDiscoveryNodeAddFinishedMessage) &&
-                            ((TcpDiscoveryNodeAddFinishedMessage)msg).nodeId().equals(locNodeId))) {
+                        // Failed to connect at all.
+                        if (state == CONNECTING
+                            // Successfully finds remote nodes, but fails to connect to any at the last stage.
+                            || (state == CONNECTED && (msg instanceof TcpDiscoveryNodeAddFinishedMessage) &&
+                                ((TcpDiscoveryNodeAddFinishedMessage)msg).nodeId().equals(locNodeId))
+                        ) {
                             segmentLocalNodeOnSendFail(failedNodes);
 
                             return;
@@ -4033,7 +4039,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @param node New next node.
          */
-        private void newNextNode(TcpDiscoveryNode node) {
+        private void newNextNode(@Nullable TcpDiscoveryNode node) {
             next = node;
             nextAddrs = node == null ? null : spi.getEffectiveNodeAddresses(node);
         }
@@ -6255,11 +6261,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             absoluteThreshold = Math.min(sndState.failTimeNanos, System.nanoTime() + U.millisToNanos(connCheckTick));
 
         return new IgniteSpiOperationTimeoutHelper(spi, true, lastOperationNanos, absoluteThreshold);
-    }
-
-    /** Fixates time of last sent message. */
-    private void updateLastSentMessageTime() {
-        lastRingMsgSentTime = System.nanoTime();
     }
 
     /** Thread that executes {@link TcpServer}'s code. */
