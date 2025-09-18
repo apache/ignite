@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.IndexSpoo
 import org.apache.ignite.internal.processors.query.calcite.integration.IntervalTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.JoinIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KeepBinaryIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.KeyClassChangeIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillQueryCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LimitOffsetIntegrationTest;
@@ -167,6 +168,7 @@ import org.junit.runners.Suite;
     TpchScale100Test.class,
     UnnestIntegrationTest.class,
     CalcitePlanningDumpTest.class,
+    KeyClassChangeIntegrationTest.class,
 })
 public class IntegrationTestSuite {
 }
