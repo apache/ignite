@@ -22,9 +22,9 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -102,7 +102,7 @@ public class CacheObjectUtils {
         for (Object obj : col)
             col0.add(unwrapBinary(ctx, obj, keepBinary, cpy, null));
 
-        return (col0 instanceof MutableSingletonList) ? U.convertToSingletonList(col0) : col0;
+        return (col0 instanceof MutableSingletonList) ? CommonUtils.convertToSingletonList(col0) : col0;
     }
 
     /**

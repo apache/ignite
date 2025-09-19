@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -99,7 +98,7 @@ public interface CacheObjectValueContext {
     public boolean isPeerClassLoadingEnabled();
 
     /**
-     * Transforms bytes according to {@link CacheObjectTransformerProcessor} when specified.
+     * Transforms bytes according to {@code CacheObjectTransformerProcessor} when specified.
      * @param bytes Given bytes.
      * @return Transformed bytes.
      */
@@ -108,7 +107,7 @@ public interface CacheObjectValueContext {
     }
 
     /**
-     * Transforms bytes according to {@link CacheObjectTransformerProcessor} when specified.
+     * Transforms bytes according to {@code CacheObjectTransformerProcessor} when specified.
      * @param bytes Given bytes.
      * @param offset Index to start from.
      * @param length Data length.
