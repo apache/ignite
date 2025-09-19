@@ -43,7 +43,23 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
- *
+ * Tests data recovery after a node failure during a checkpoint.
+ * <p>
+ * Expected result: After node restart, data should be successfully recovered,
+ * except for a small number of the latest entries (up to 100) due to the 'default' WAL mode.
+ * <p>
+ * Possible causes of instability:
+ * - Incorrect handling of I/O failures during a checkpoint.
+ * - Changes in the page replacement mechanism in PageMemory.
+ * - Modifications to the checkpoint marker storage format.
+ * - Lack of memory.
+ * <p>
+ * Test scenario:
+ * 1. Start a node with persistence enabled.
+ * 2. Load cache data to trigger page replacement in memory.
+ * 3. Simulate an I/O failure during the checkpoint process.
+ * 4. The node crashes due to the failure.
+ * 5. After restart, the node should recover data from the WAL.
  */
 public class CheckpointFailBeforeWriteMarkTest extends GridCommonAbstractTest {
     /** */
@@ -85,7 +101,7 @@ public class CheckpointFailBeforeWriteMarkTest extends GridCommonAbstractTest {
 
         storageCfg.getDefaultDataRegionConfiguration()
             .setPersistenceEnabled(true)
-            .setMaxSize((isCompression ? 70 : 10) * 1024 * 1024);
+            .setMaxSize((isCompression ? 70 : 55) * 1024 * 1024);
 
         cfg.setDataStorageConfiguration(storageCfg)
             .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
