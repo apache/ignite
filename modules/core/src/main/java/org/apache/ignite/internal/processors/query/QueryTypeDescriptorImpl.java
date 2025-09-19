@@ -163,6 +163,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      *
      * @param cacheName Cache name.
      * @param coCtx Cache object context.
+     * @param cacheObjects Cache object processor.
+     * @param validateTypes Value of {@link SqlConfiguration#isValidationEnabled()}.
      */
     public QueryTypeDescriptorImpl(
         String cacheName,

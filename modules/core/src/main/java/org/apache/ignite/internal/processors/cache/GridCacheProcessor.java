@@ -650,6 +650,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param recoveryMode Value of {@link GridKernalContext#recoveryMode()}.
      * @param cfg Initializes cache configuration with proper defaults.
      * @param cacheObjCtx Cache object context.
      * @throws IgniteCheckedException If configuration is not valid.

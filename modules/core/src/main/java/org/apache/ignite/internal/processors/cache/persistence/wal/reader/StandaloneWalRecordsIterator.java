@@ -419,6 +419,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /**
      * Converts entry or lazy data entry into unwrapped entry
      *
+     * @param keepBinary Keep binary. This flag disables converting of non primitive types (BinaryObjects will be used instead).
      * @param processor cache object processor for de-serializing objects.
      * @param fakeCacheObjCtx cache object context for de-serializing binary and unwrapping objects.
      * @param dataEntry entry to process

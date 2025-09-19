@@ -261,6 +261,7 @@ public class QueryUtils {
     /**
      * Normalize cache query entities.
      *
+     * @param recoveryMode Value of {@link GridKernalContext#recoveryMode()}.
      * @param entities Query entities.
      * @param cfg Cache config.
      * @return Normalized query entities.
@@ -283,6 +284,7 @@ public class QueryUtils {
      * Normalize query entity. If "escape" flag is set, nothing changes. Otherwise we convert all object names to
      * upper case and replace inner class separator characters ('$' for Java and '.' for .NET) with underscore.
      *
+     * @param recoveryMode Value of {@link GridKernalContext#recoveryMode()}.
      * @param entity Query entity.
      * @param escape Escape flag taken form configuration.
      * @return Normalized query entity.

@@ -1647,8 +1647,10 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param log Logger.
      * @param cfg Initializes cache configuration with proper defaults.
      * @param cacheObjCtx Cache object context.
+     * @param recoveryMode Value of {@link GridKernalContext#recoveryMode()}.
      * @throws IgniteCheckedException If configuration is not valid.
      */
     public static void initializeConfigDefaults(IgniteLogger log, CacheConfiguration cfg,
