@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -96,9 +95,6 @@ public class TestCollectionsMessage implements Message {
 
     @Order(22)
     private List<GridLongList> gridLongListList;
-
-    @Order(23)
-    private List<GridByteArrayList> gridByteArrayListList;
 
     public List<boolean[]> booleanArrayList() {
         return booleanArrayList;
@@ -282,14 +278,6 @@ public class TestCollectionsMessage implements Message {
 
     public void gridLongListList(List<GridLongList> gridLongListList) {
         this.gridLongListList = gridLongListList;
-    }
-
-    public List<GridByteArrayList> gridByteArrayListList() {
-        return gridByteArrayListList;
-    }
-
-    public void gridByteArrayListList(List<GridByteArrayList> gridByteArrayListList) {
-        this.gridByteArrayListList = gridByteArrayListList;
     }
 
     public short directType() {

@@ -26,7 +26,6 @@ import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -218,13 +217,6 @@ public interface MessageReader {
      * @return Grid long list.
      */
     public GridLongList readGridLongList();
-
-    /**
-     * Reads {@link GridByteArrayList}.
-     *
-     * @return Grid byte array list.
-     */
-    public GridByteArrayList readGridByteArrayList();
 
     /**
      * Reads array of objects.

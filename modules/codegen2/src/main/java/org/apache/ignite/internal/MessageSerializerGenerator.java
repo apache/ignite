@@ -373,9 +373,6 @@ class MessageSerializerGenerator {
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
                 returnFalseIfWriteFailed(write, "writer.writeGridLongList", getExpr);
 
-            else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridByteArrayList")))
-                returnFalseIfWriteFailed(write, "writer.writeGridByteArrayList", getExpr);
-
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr);
 
@@ -508,9 +505,6 @@ class MessageSerializerGenerator {
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
                 returnFalseIfReadFailed(name, "reader.readGridLongList");
 
-            else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridByteArrayList")))
-                returnFalseIfReadFailed(name, "reader.readGridByteArrayList");
-
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfReadFailed(name, "reader.readMessage");
 
@@ -579,9 +573,6 @@ class MessageSerializerGenerator {
 
             if (sameType(type, "org.apache.ignite.internal.util.GridLongList"))
                 return "GRID_LONG_LIST";
-
-            if (sameType(type, "org.apache.ignite.internal.util.GridByteArrayList"))
-                return "GRID_BYTE_ARRAY_LIST";
 
             PrimitiveType primitiveType = unboxedType(type);
 

@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -876,16 +875,6 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * @param val Value.
-     */
-    public void writeGridByteArrayList(@Nullable GridByteArrayList val) {
-        if (val != null)
-            writeByteArray(val.internalArray(), 0, val.size());
-        else
-            writeInt(-1);
-    }
-
-    /**
      * @param msg Message.
      * @param writer Writer.
      */
@@ -1525,15 +1514,6 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * @return Value.
-     */
-    public GridByteArrayList readGridByteArrayList() {
-        byte[] data = readByteArray();
-
-        return data != null ? new GridByteArrayList(data) : null;
-    }
-
-    /**
      * @param reader Reader.
      * @return Message.
      */
@@ -2098,11 +2078,6 @@ public class DirectByteBufferStream {
 
                 break;
 
-            case GRID_BYTE_ARRAY_LIST:
-                writeGridByteArrayList((GridByteArrayList)val);
-
-                break;
-
             case MSG:
                 try {
                     if (val != null)
@@ -2200,9 +2175,6 @@ public class DirectByteBufferStream {
 
             case GRID_LONG_LIST:
                 return readGridLongList();
-
-            case GRID_BYTE_ARRAY_LIST:
-                return readGridByteArrayList();
 
             case MSG:
                 return readMessage(reader);

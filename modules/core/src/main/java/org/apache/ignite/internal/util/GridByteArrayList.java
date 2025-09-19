@@ -30,11 +30,14 @@ import org.apache.ignite.internal.util.io.GridUnsafeDataOutput;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Re-sizable array implementation of the byte list (eliminating auto-boxing of primitive byte type).
  */
-public class GridByteArrayList implements Externalizable {
+public class GridByteArrayList implements Message, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -409,6 +412,66 @@ public class GridByteArrayList implements Externalizable {
         data = new byte[size];
 
         in.readFully(data, 0, size);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeByteArray(data))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeInt(size))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        switch (reader.state()) {
+            case 0:
+                data = reader.readByteArray();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                size = reader.readInt();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 84;
     }
 
     /** {@inheritDoc} */
