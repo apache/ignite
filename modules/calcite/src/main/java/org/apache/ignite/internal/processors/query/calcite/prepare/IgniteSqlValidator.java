@@ -48,6 +48,7 @@ import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.SqlUpdate;
 import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.SqlWindow;
 import org.apache.calcite.sql.dialect.CalciteSqlDialect;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.FamilyOperandTypeChecker;
@@ -296,6 +297,13 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             if (call.getOperandList().size() > 2)
                 throw newValidationError(call, IgniteResource.INSTANCE.invalidCastParameters());
         }
+        else if (call.getKind() == SqlKind.OVER && call.operand(1) instanceof SqlWindow) {
+            SqlLiteral exclude = call.<SqlWindow>operand(1).getExclude();
+            if (exclude != null && !SqlWindow.isExcludeNoOthers(exclude)) {
+                String clause = exclude.toSqlString(CalciteSqlDialect.DEFAULT).getSql();
+                throw newValidationError(exclude, IgniteResource.INSTANCE.unsupportedClause(clause));
+            }
+        }
 
         super.validateCall(call, scope);
     }
@@ -425,10 +433,6 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
     /** */
     private void validateAggregateFunction(SqlCall call, SqlAggFunction aggFunction) {
-        if (!SqlKind.AGGREGATE.contains(aggFunction.kind))
-            throw newValidationError(call,
-                IgniteResource.INSTANCE.unsupportedAggregationFunction(aggFunction.getName()));
-
         switch (aggFunction.kind) {
             case COUNT:
                 if (call.operandCount() > 1)
@@ -448,6 +452,17 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
             case BIT_AND:
             case BIT_OR:
             case BIT_XOR:
+            case ROW_NUMBER:
+            case DENSE_RANK:
+            case RANK:
+            case PERCENT_RANK:
+            case CUME_DIST:
+            case LAG:
+            case LEAD:
+            case FIRST_VALUE:
+            case LAST_VALUE:
+            case NTILE:
+            case NTH_VALUE:
                 return;
             default:
                 throw newValidationError(call,
