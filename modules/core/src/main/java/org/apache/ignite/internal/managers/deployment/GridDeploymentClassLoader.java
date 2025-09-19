@@ -39,9 +39,10 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
-import org.apache.ignite.internal.util.GridByteArrayList;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -535,18 +536,25 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
 
         String path = U.classNameToResourceName(name);
 
-        GridByteArrayList byteSrc = sendClassRequest(name, path);
+        T2<byte[], Integer> tuple = sendClassRequest(name, path);
+        byte[] byteSrc = tuple.get1();
+        int byteSize = tuple.get2();
 
         synchronized (this) {
             Class<?> cls = findLoadedClass(name);
 
             if (cls == null) {
                 cls = ctx.security().sandbox().enabled()
-                    ? defineClass(name, byteSrc.internalArray(), 0, byteSrc.size(), PROTECTION_DOMAIN)
-                    : defineClass(name, byteSrc.internalArray(), 0, byteSrc.size());
+                    ? defineClass(name, byteSrc, 0, byteSize, PROTECTION_DOMAIN)
+                    : defineClass(name, byteSrc, 0, byteSize);
 
-                if (byteMap != null)
-                    byteMap.put(path, byteSrc.array());
+                if (byteMap != null) {
+                    byte[] resBuf = new byte[byteSize];
+
+                    GridUnsafe.arrayCopy(byteSrc, 0, resBuf, 0, byteSize);
+
+                    byteMap.put(path, resBuf);
+                }
 
                 /* Define package in classloader. See URLClassLoader.defineClass(). */
                 int i = name.lastIndexOf('.');
@@ -588,10 +596,10 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
      *
      * @param name Class name.
      * @param path Class path.
-     * @return Class byte source.
+     * @return Tuple of class byte source and number of filled bytes.
      * @throws ClassNotFoundException If class was not found.
      */
-    private GridByteArrayList sendClassRequest(String name, String path) throws ClassNotFoundException {
+    private T2<byte[], Integer> sendClassRequest(String name, String path) throws ClassNotFoundException {
         assert !Thread.holdsLock(mux);
 
         long endTime = computeEndTime(p2pTimeout);
@@ -635,7 +643,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 GridDeploymentResponse res = comm.sendResourceRequest(path, ldrId, node, endTime);
 
                 if (res.success())
-                    return res.byteSource();
+                    return new T2<>(res.byteSource(), res.byteSize());
                 else {
                     // In case of shared resources/classes all nodes should have it.
                     String msg = "Failed to find class on remote node [class=" + name + ", nodeId=" + node.id() +
@@ -808,8 +816,7 @@ class GridDeploymentClassLoader extends ClassLoader implements GridDeploymentInf
                 GridDeploymentResponse res = comm.sendResourceRequest(name, ldrId, node, endTime);
 
                 if (res.success()) {
-                    return new ByteArrayInputStream(res.byteSource().internalArray(), 0,
-                        res.byteSource().size());
+                    return new ByteArrayInputStream(res.byteSource(), 0, res.byteSize());
                 }
                 else {
                     synchronized (mux) {
