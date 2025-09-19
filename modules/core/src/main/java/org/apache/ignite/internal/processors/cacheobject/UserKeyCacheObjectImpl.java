@@ -69,18 +69,16 @@ public class UserKeyCacheObjectImpl extends KeyCacheObjectImpl {
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
         try {
-            IgniteCacheObjectProcessor proc = ctx.kernalContext().cacheObjects();
-
             if (!BinaryUtils.immutable(val)) {
                 if (valBytes == null)
-                    valBytes = proc.marshal(ctx, val);
+                    valBytes = ctx.marshal(val);
 
-                boolean p2pEnabled = ctx.kernalContext().config().isPeerClassLoadingEnabled();
+                boolean p2pEnabled = ctx.isPeerClassLoadingEnabled();
 
                 ClassLoader ldr = p2pEnabled ?
                     IgniteUtils.detectClassLoader(IgniteUtils.detectClass(this.val)) : U.gridClassLoader();
 
-                Object val = proc.unmarshal(ctx, valBytes, ldr);
+                Object val = ctx.unmarshal(valBytes, ldr);
 
                 KeyCacheObject key = new KeyCacheObjectImpl(val, valBytes, partition());
 

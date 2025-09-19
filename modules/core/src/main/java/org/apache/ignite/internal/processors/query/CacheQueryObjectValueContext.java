@@ -18,27 +18,19 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.processors.cache.AbstractCacheObjectContext;
 
 /**
  * Cache object value context for queries.
  */
-public class CacheQueryObjectValueContext implements CacheObjectValueContext {
-    /** Kernal context. */
-    private final GridKernalContext ctx;
-
+public class CacheQueryObjectValueContext extends AbstractCacheObjectContext {
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
      */
     public CacheQueryObjectValueContext(GridKernalContext ctx) {
-        this.ctx = ctx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridKernalContext kernalContext() {
-        return ctx;
+        super(ctx);
     }
 
     /** {@inheritDoc} */

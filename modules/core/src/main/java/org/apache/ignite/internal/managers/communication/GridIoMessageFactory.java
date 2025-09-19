@@ -25,6 +25,7 @@ import org.apache.ignite.internal.GridJobSiblingsResponse;
 import org.apache.ignite.internal.GridTaskCancelRequest;
 import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
+import org.apache.ignite.internal.codegen.AtomicApplicationAttributesAwareRequestSerializer;
 import org.apache.ignite.internal.codegen.CacheEvictionEntrySerializer;
 import org.apache.ignite.internal.codegen.CacheGroupAffinityMessageSerializer;
 import org.apache.ignite.internal.codegen.CacheVersionedValueSerializer;
@@ -35,6 +36,7 @@ import org.apache.ignite.internal.codegen.GridCacheVersionExSerializer;
 import org.apache.ignite.internal.codegen.GridCacheVersionSerializer;
 import org.apache.ignite.internal.codegen.GridCheckpointRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDeploymentResponseSerializer;
+import org.apache.ignite.internal.codegen.GridDhtAffinityAssignmentRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtAtomicNearResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDhtPartitionExchangeIdSerializer;
 import org.apache.ignite.internal.codegen.GridDhtPartitionsSingleRequestSerializer;
@@ -266,7 +268,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)25, GridDistributedTxPrepareRequest::new, new GridDistributedTxPrepareRequestSerializer());
         factory.register((short)26, GridDistributedTxPrepareResponse::new);
         factory.register((short)27, GridDistributedUnlockRequest::new);
-        factory.register((short)28, GridDhtAffinityAssignmentRequest::new);
+        factory.register((short)28, GridDhtAffinityAssignmentRequest::new, new GridDhtAffinityAssignmentRequestSerializer());
         factory.register((short)29, GridDhtAffinityAssignmentResponse::new);
         factory.register((short)30, GridDhtLockRequest::new);
         factory.register((short)31, GridDhtLockResponse::new);
@@ -366,7 +368,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
             new SnapshotFilesRequestMessageSerializer());
         factory.register(SnapshotFilesFailureMessage.TYPE_CODE, SnapshotFilesFailureMessage::new,
             new SnapshotFilesFailureMessageSerializer());
-        factory.register((short)180, AtomicApplicationAttributesAwareRequest::new);
+        factory.register((short)180, AtomicApplicationAttributesAwareRequest::new, new AtomicApplicationAttributesAwareRequestSerializer());
         factory.register((short)181, TransactionAttributesAwareRequest::new, new TransactionAttributesAwareRequestSerializer());
 
         // Incremental snapshot.
