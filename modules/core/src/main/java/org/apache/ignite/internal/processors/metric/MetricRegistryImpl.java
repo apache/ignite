@@ -321,6 +321,9 @@ public class MetricRegistryImpl implements MetricRegistry {
                 ((HistogramMetricImpl)metric).reset(cfgBounds);
         }
         else if (metric instanceof AbstractIntervalMetric) {
+            if (intervalMetricCfgProvider == null)
+                return;
+
             Long cfgTimeInterval = intervalMetricCfgProvider.apply(metric.name());
 
             if (cfgTimeInterval != null)
