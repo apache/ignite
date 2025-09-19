@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter implements DiscoveryNodeValidationProcessor {
     /** Enables version check for rolling upgrade. */
     @SystemProperty(value = "Enables version check for rolling upgrade.")
-    public static final String IGNITE_ROLLING_UPGRADE_VERSION_CHECK = "IGNITE.ROLLING.UPGRADE.VERSION.CHECK";
+    public static final String IGNITE_ROLLING_UPGRADE_VERSION_CHECK = "IGNITE_ROLLING_UPGRADE_VERSION_CHECK";
 
     /**
      * @param ctx Kernal context.
