@@ -36,7 +36,6 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
-import org.apache.ignite.internal.processors.cache.CacheObjectTransformerUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -249,7 +248,7 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
      * @return Array.
      */
     private byte[] arrayFromValueBytes(CacheObjectValueContext ctx) {
-        return CacheObjectTransformerUtils.restoreIfNecessary(valBytes, ctx);
+        return ctx.restoreIfNecessary(valBytes);
     }
 
     /**
@@ -258,7 +257,7 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
     private byte[] valueBytesFromArray(CacheObjectValueContext ctx) {
         assert part == -1; // Keys should never be transformed.
 
-        return CacheObjectTransformerUtils.transformIfNecessary(arr, start, length(), ctx);
+        return ctx.transformIfNecessary(arr, start, length());
     }
 
     /** {@inheritDoc} */

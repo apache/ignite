@@ -19,19 +19,14 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Context to get value of cache object.
  */
 public interface CacheObjectValueContext {
-    /**
-     * @return Kernal context.
-     */
-    public GridKernalContext kernalContext();
-
     /**
      * @return Copy on get flag.
      */
@@ -102,4 +97,29 @@ public interface CacheObjectValueContext {
 
     /** @return {@code true} if peer class loading is enabled, {@code false} otherwise. */
     public boolean isPeerClassLoadingEnabled();
+
+    /**
+     * Transforms bytes according to {@link CacheObjectTransformerProcessor} when specified.
+     * @param bytes Given bytes.
+     * @return Transformed bytes.
+     */
+    public default byte[] transformIfNecessary(byte[] bytes) {
+        return transformIfNecessary(bytes, 0, bytes.length);
+    }
+
+    /**
+     * Transforms bytes according to {@link CacheObjectTransformerProcessor} when specified.
+     * @param bytes Given bytes.
+     * @param offset Index to start from.
+     * @param length Data length.
+     * @return Transformed bytes.
+     */
+    public byte[] transformIfNecessary(byte[] bytes, int offset, int length);
+
+    /**
+     * Restores transformed bytes if necessary.
+     * @param bytes Given bytes.
+     * @return Restored bytes.
+     */
+    public byte[] restoreIfNecessary(byte[] bytes);
 }
