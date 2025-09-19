@@ -33,6 +33,8 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Expression factory.
@@ -60,11 +62,15 @@ public interface ExpressionFactory<Row> {
      *
      * @param left Collations of left row.
      * @param right Collations of right row.
-     * @param nullsEqual If {@code true}, nulls are considered equal. Usually, NULL <> NULL in SQL. So, the value should
-     *                   be {@code false}. Except cases with IS DISTINCT / IS NOT DISTINCT.
+     * @param nullsMatch Provider of matching null conditions based on left column idx and right column idx.
+     *                   If {@code null}, ignored. Usually, NULL <> NULL in SQL. Except IS DISTINCT / IS NOT DISTINCT.
      * @return Rows comparator.
      */
-    Comparator<Row> comparator(List<RelFieldCollation> left, List<RelFieldCollation> right, boolean nullsEqual);
+    Comparator<Row> comparator(
+        List<RelFieldCollation> left,
+        List<RelFieldCollation> right,
+        @Nullable IgniteBiPredicate<Integer, Integer> nullsMatch
+    );
 
     /**
      * Creates a Filter predicate.
