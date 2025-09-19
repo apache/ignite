@@ -29,7 +29,7 @@ public class MetricConfigureIntervalCommandArg extends MetricCommandArg {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Argument(description = "Time interval of hitrate", example = "newTimeInterval")
+    @Argument(description = "Time interval of the metric", example = "newTimeInterval")
     @Positional
     private long newTimeInterval;
 
