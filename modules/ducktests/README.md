@@ -11,6 +11,19 @@ Structure of the `tests` directory is:
 - `./ignitetest/tests` contains tests.
 - `./checks` contains unit tests of utils, tests' decorators etc. 
 
+Some tests (like the CDC replication ones) require modules maintained in the 
+separate [ignite-extensions](https://github.com/apache/ignite-extensions) repository.
+
+To run these tests the `ignite-extensions` working directory should be checked out
+to the same directory as the `${IGNITE_HOME}` one. The needed extension module should
+be built before tests run. 
+
+For example for the CDC replication tests the `cdc-ext` module should be built as:  
+```
+cd ${IGNITE_HOME}\..\ignite-extensions
+mvn clean package -pl :ignite-cdc-ext -Pskip-docs -DskipTests
+```
+
 # Local run
 Docker is used to emulate distributed environment. Single container represents 
 a running node.
@@ -22,6 +35,7 @@ For development process requirements are `python` >= 3.7.
 ## Run tests
 - Change a current directory to`${IGNITE_HOME}`
 - Build Apache IGNITE invoking `${IGNITE_HOME}/scripts/build-module.sh ducktests`
+- (Optionally) Build the needed extension modules in the `${IGNITE_HOME}\..\ignite-extensions` directory
 - Change a current directory to `${IGNITE_HOME}/modules/ducktests/tests`
 - Run tests in docker containers using a following command:
 ```
@@ -50,6 +64,7 @@ Custom cluster, Vagrant, K8s, Mesos, Docker, cloud providers, etc.
 ## Run tests
 - Change a current directory to`${IGNITE_HOME}`
 - Build Apache IGNITE invoking `${IGNITE_HOME}/scripts/build-module.sh ducktests`
+- (Optionally) Build the needed extension modules in the `${IGNITE_HOME}\..\ignite-extensions` directory
 - Run tests using [Ducktape](https://ducktape-docs.readthedocs.io/en/latest/run_tests.html). \
   For example:
   ```
