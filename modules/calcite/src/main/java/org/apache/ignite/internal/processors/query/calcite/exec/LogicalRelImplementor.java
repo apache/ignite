@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -36,6 +37,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -49,6 +51,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.CollectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.CorrelatedNestedLoopJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.FilterNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashAggregateNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.HashJoinNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.IndexSpoolNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.IntersectNode;
@@ -75,9 +78,11 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedN
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteFilter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexBound;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexCount;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoinInfo;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteMergeJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteNestedLoopJoin;
@@ -116,8 +121,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
-import static org.apache.calcite.sql.SqlKind.IS_DISTINCT_FROM;
-import static org.apache.calcite.sql.SqlKind.IS_NOT_DISTINCT_FROM;
 import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils.combinedRowType;
 
 /**
@@ -269,6 +272,34 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     }
 
     /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteHashJoin rel) {
+        RelDataType outType = rel.getRowType();
+        RelDataType leftType = rel.getLeft().getRowType();
+        RelDataType rightType = rel.getRight().getRowType();
+        JoinRelType joinType = rel.getJoinType();
+
+        IgniteJoinInfo joinInfo = IgniteJoinInfo.of(rel);
+
+        RexNode nonEquiConditionExpression = RexUtil.composeConjunction(Commons.emptyCluster().getRexBuilder(),
+            rel.analyzeCondition().nonEquiConditions, true);
+
+        BiPredicate<Row, Row> nonEquiCondition = null;
+
+        if (nonEquiConditionExpression != null) {
+            RelDataType rowType = combinedRowType(ctx.getTypeFactory(), leftType, rightType);
+
+            nonEquiCondition = expressionFactory.biPredicate(rel.getCondition(), rowType);
+        }
+
+        Node<Row> node = HashJoinNode.create(ctx, outType, leftType, rightType, joinType, joinInfo,
+            nonEquiCondition);
+
+        node.register(Arrays.asList(visit(rel.getLeft()), visit(rel.getRight())));
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
     @Override public Node<Row> visit(IgniteCorrelatedNestedLoopJoin rel) {
         RelDataType outType = rel.getRowType();
         RelDataType leftType = rel.getLeft().getRowType();
@@ -298,12 +329,18 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RelDataType rightType = rel.getRight().getRowType();
         JoinRelType joinType = rel.getJoinType();
 
+        IgniteJoinInfo info = IgniteJoinInfo.of(rel);
+
+        assert !info.pairs().isEmpty() && info.isEqui();
+
         int pairsCnt = rel.analyzeCondition().pairs().size();
 
+        // TODO : revise after https://issues.apache.org/jira/browse/IGNITE-26048
+        assert !info.hasMatchingNulls() || info.matchingNullsCnt() == info.pairs().size();
         Comparator<Row> comp = expressionFactory.comparator(
             rel.leftCollation().getFieldCollations().subList(0, pairsCnt),
             rel.rightCollation().getFieldCollations().subList(0, pairsCnt),
-            rel.getCondition().getKind() == IS_NOT_DISTINCT_FROM || rel.getCondition().getKind() == IS_DISTINCT_FROM
+            info.hasMatchingNulls()
         );
 
         Node<Row> node = MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, comp, hasExchange(rel));
