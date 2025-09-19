@@ -538,24 +538,26 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
         CorruptedTreeException e = new CorruptedTreeException(msg, cause, grpName, cacheName,
             idxName, grpId, pageIds);
 
-        String errorMsg = "Index " + idx + " of the table " + tableName + " (cache " + cacheName + ") is " +
-            "corrupted, to fix this issue a rebuild is required. On the next restart, node will enter the " +
-            "maintenance mode and rebuild corrupted indexes.";
+        if (grpCtx.persistenceEnabled()) {
+            String errorMsg = "Index " + idx + " of the table " + tableName + " (cache " + cacheName + ") is " +
+                    "corrupted, to fix this issue a rebuild is required. On the next restart, node will enter the " +
+                    "maintenance mode and rebuild corrupted indexes.";
 
-        log.warning(errorMsg);
+            log.warning(errorMsg);
 
-        int cacheId = CU.cacheId(cacheName);
+            int cacheId = CU.cacheId(cacheName);
 
-        try {
-            MaintenanceTask task = toMaintenanceTask(cacheId, idxName);
+            try {
+                MaintenanceTask task = toMaintenanceTask(cacheId, idxName);
 
-            grpCtx.shared().kernalContext().maintenanceRegistry().registerMaintenanceTask(
-                task,
-                oldTask -> mergeTasks(oldTask, task)
-            );
-        }
-        catch (IgniteCheckedException ex) {
-            log.warning("Failed to register maintenance record for corrupted partition files.", ex);
+                grpCtx.shared().kernalContext().maintenanceRegistry().registerMaintenanceTask(
+                        task,
+                        oldTask -> mergeTasks(oldTask, task)
+                );
+            }
+            catch (IgniteCheckedException ex) {
+                log.warning("Failed to register maintenance record for corrupted partition files.", ex);
+            }
         }
 
         processFailure(FailureType.CRITICAL_ERROR, e);
