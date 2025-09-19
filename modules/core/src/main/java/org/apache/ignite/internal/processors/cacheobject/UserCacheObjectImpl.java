@@ -60,7 +60,7 @@ public class UserCacheObjectImpl extends CacheObjectImpl {
                 valBytes = valueBytesFromValue(ctx);
 
             if (ctx.storeValue()) {
-                boolean p2pEnabled = ctx.kernalContext().config().isPeerClassLoadingEnabled();
+                boolean p2pEnabled = ctx.isPeerClassLoadingEnabled();
 
                 ClassLoader ldr = p2pEnabled ?
                     IgniteUtils.detectClass(val).getClassLoader() : val.getClass().getClassLoader();

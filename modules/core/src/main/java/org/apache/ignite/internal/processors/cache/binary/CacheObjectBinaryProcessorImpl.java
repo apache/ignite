@@ -648,14 +648,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         return meta != null ? meta.wrap(binaryCtx) : null;
     }
 
-    /**
-     * Forces caller thread to wait for binary metadata write operation for given type ID.
-     *
-     * In case of in-memory mode this method becomes a No-op as no binary metadata is written to disk in this mode.
-     *
-     * @param typeId ID of binary type to wait for metadata write operation.
-     */
-    public void waitMetadataWriteIfNeeded(final int typeId) {
+    /** {@inheritDoc} */
+    @Override public void waitMetadataWriteIfNeeded(final int typeId) {
         if (metadataFileStore == null)
             return;
 
@@ -1090,10 +1084,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         return obj != null && ((BinaryObject)obj).hasField(fieldName);
     }
 
-    /**
-     * @return Binary context.
-     */
-    public BinaryContext binaryContext() {
+    /** {@inheritDoc} */
+    @Override public BinaryContext binaryContext() {
         return binaryCtx;
     }
 
@@ -1126,7 +1118,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     /** {@inheritDoc} */
     @Override public byte[] marshal(CacheObjectValueContext ctx, Object val) throws IgniteCheckedException {
         if (!ctx.binaryEnabled() || binaryMarsh == null)
-            return CU.marshal(ctx.kernalContext().cache().context(), ctx.addDeploymentInfo(), val);
+            return CU.marshal(this.ctx.cache().context(), ctx.addDeploymentInfo(), val);
 
         byte[] arr = binaryMarsh.marshal(val, false);
 
@@ -1139,7 +1131,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     @Override public Object unmarshal(CacheObjectValueContext ctx, byte[] bytes, ClassLoader clsLdr)
         throws IgniteCheckedException {
         if (!ctx.binaryEnabled() || binaryMarsh == null)
-            return U.unmarshal(ctx.kernalContext(), bytes, U.resolveClassLoader(clsLdr, ctx.kernalContext().config()));
+            return U.unmarshal(this.ctx, bytes, U.resolveClassLoader(clsLdr, this.ctx.config()));
 
         return binaryMarsh.unmarshal(bytes, clsLdr);
     }
