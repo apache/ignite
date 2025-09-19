@@ -367,7 +367,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testMaxValueMetric() throws Exception {
+    public void testMaxValueMetric() {
         try {
             long timeInterval = 500;
 

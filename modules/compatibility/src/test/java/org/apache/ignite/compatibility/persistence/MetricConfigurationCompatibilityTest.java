@@ -64,7 +64,7 @@ public class MetricConfigurationCompatibilityTest extends IgnitePersistenceCompa
             cfg.setConsistentId(CONSISTENT_ID);
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
-        }, (ignite) -> {
+        }, ignite -> {
             ignite.cluster().state(ClusterState.ACTIVE);
 
             try {
