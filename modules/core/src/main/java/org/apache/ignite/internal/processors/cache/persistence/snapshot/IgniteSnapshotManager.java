@@ -2225,6 +2225,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (clusterSnpReq == null || cctx.kernalContext().clientNode() || !isSnapshotOperation(fut.firstEvent()))
             return;
 
+        if (cctx.kernalContext().isStopping())
+            return;
+
         SnapshotOperationRequest snpReq = clusterSnpReq;
 
         if (snpReq.incremental())
