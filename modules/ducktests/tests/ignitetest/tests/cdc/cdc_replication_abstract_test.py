@@ -46,15 +46,19 @@ DEFAULT_CLIENT_NODES_COUNT = 1
 
 
 class CdcReplicationAbstractTest(IgniteTest):
+    def __init__(self, test_context):
+        super().__init__(test_context)
+
+        self.pds = True
+
     """
     Base class for CDC replication tests.
     """
-    def run(self, ignite_version, pds, mode, cdc_helper, cdc_params=None):
+    def run(self, ignite_version, mode, cdc_helper, cdc_params=None):
         """
         Run CDC replication test.
 
         :param ignite_version: Ignite version.
-        :param pds: True if PDS should be used.
         :param mode: Active-passive or active-active mode.
         :param cdc_helper: CDC helper for particular CDC streamer implementation.
         :param cdc_params: CDC test parameters.
@@ -66,9 +70,9 @@ class CdcReplicationAbstractTest(IgniteTest):
         if cdc_params.caches is None:
             cdc_params.caches = self.caches()
 
-        src_cluster = self.src_cluster(ignite_version, pds)
+        src_cluster = self.src_cluster(ignite_version)
 
-        dst_cluster = self.dst_cluster(ignite_version, pds)
+        dst_cluster = self.dst_cluster(ignite_version)
 
         if mode == "active-active":
             cdc_streamer_metrics = self.run_active_active(src_cluster, dst_cluster, cdc_helper, cdc_params,
@@ -99,8 +103,6 @@ class CdcReplicationAbstractTest(IgniteTest):
         :param do_load: lambda function to run client operations against source cluster. Use default if None.
         :return: CDC metrics if any.
         """
-        cdc_params.kafka_to_ignite_nodes = 2
-
         src_cluster_config = deepcopy(src_cluster.config)
         dst_cluster_config = deepcopy(dst_cluster.config)
 
@@ -128,8 +130,6 @@ class CdcReplicationAbstractTest(IgniteTest):
         :param do_load: lambda function to run client operations against source cluster. Use default if None.
         :return: CDC metrics if any.
         """
-        cdc_params.kafka_to_ignite_nodes = 1
-
         src_cluster_config = deepcopy(src_cluster.config)
         dst_cluster_config = deepcopy(dst_cluster.config)
 
@@ -399,18 +399,18 @@ class CdcReplicationAbstractTest(IgniteTest):
 
         zk.stop(force_stop=False)
 
-    def src_cluster(self, ignite_version, pds):
+    def src_cluster(self, ignite_version):
         """
         :return: Source cluster service.
         """
-        return IgniteService(self.test_context, self.ignite_config(ignite_version, pds, "src"),
+        return IgniteService(self.test_context, self.ignite_config(ignite_version, "src"),
                              DEFAULT_SERVER_NODES_COUNT, modules=self.modules())
 
-    def dst_cluster(self, ignite_version, pds):
+    def dst_cluster(self, ignite_version):
         """
         :return: Destination cluster service.
         """
-        return IgniteService(self.test_context, self.ignite_config(ignite_version, pds, "dst"),
+        return IgniteService(self.test_context, self.ignite_config(ignite_version, "dst"),
                              DEFAULT_SERVER_NODES_COUNT, modules=self.modules())
 
     def modules(self):
@@ -434,12 +434,11 @@ class CdcReplicationAbstractTest(IgniteTest):
             discovery_spi=from_ignite_cluster(cluster)
         )
 
-    def ignite_config(self, ignite_version, pds, ignite_instance_name):
+    def ignite_config(self, ignite_version, ignite_instance_name):
         """
         Create ignite configuration for server nodes.
 
         :param ignite_version: Ignite version.
-        :param pds: True if PDS should be used.
         :param ignite_instance_name: Ignite instance name.
         :return: Server node ignite configuration.
         """
@@ -452,7 +451,7 @@ class CdcReplicationAbstractTest(IgniteTest):
             client_connector_configuration=ClientConnectorConfiguration()
         )
 
-        if pds:
+        if self.pds:
             config = config._replace(
                 data_storage=config.data_storage._replace(
                     default=config.data_storage.default._replace(

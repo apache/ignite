@@ -35,21 +35,27 @@ class CdcReplicationTest(CdcReplicationAbstractTest):
     @ignite_versions(str(DEV_BRANCH))
     @defaults(pds=[True, False], mode=["active-active", "active-passive"])
     def ignite_to_ignite_test(self, ignite_version, pds, mode):
-        return self.run(ignite_version, pds, mode, IgniteToIgniteCdcHelper())
+        self.pds = pds
+
+        return self.run(ignite_version, mode, IgniteToIgniteCdcHelper())
 
     @cluster(num_nodes=6)
     @ignite_versions(str(DEV_BRANCH))
     @defaults(pds=[True, False], mode=["active-active", "active-passive"])
     def ignite_to_ignite_client_test(self, ignite_version, pds, mode):
-        return self.run(ignite_version, pds, mode, IgniteToIgniteClientCdcHelper())
+        self.pds = pds
+
+        return self.run(ignite_version, mode, IgniteToIgniteClientCdcHelper())
 
     @cluster(num_nodes=10)
     @ignite_versions(str(DEV_BRANCH))
     @defaults(pds=[True, False], mode=["active-active", "active-passive"])
     def ignite_to_kafka_to_ignite_test(self, ignite_version, pds, mode):
+        self.pds = pds
+
         zk, kafka = self.start_kafka(kafka_nodes=1)
 
-        res = self.run(ignite_version, pds, mode, IgniteToKafkaCdcHelper(), KafkaCdcParams(kafka=kafka))
+        res = self.run(ignite_version, mode, IgniteToKafkaCdcHelper(), KafkaCdcParams(kafka=kafka))
 
         self.stop_kafka(zk, kafka)
 
@@ -59,9 +65,11 @@ class CdcReplicationTest(CdcReplicationAbstractTest):
     @ignite_versions(str(DEV_BRANCH))
     @defaults(pds=[True, False], mode=["active-active", "active-passive"])
     def ignite_to_kafka_to_ignite_client_test(self, ignite_version, pds, mode):
+        self.pds = pds
+
         zk, kafka = self.start_kafka(kafka_nodes=1)
 
-        res = self.run(ignite_version, pds, mode, IgniteToKafkaCdcHelper(), KafkaCdcParams(
+        res = self.run(ignite_version, mode, IgniteToKafkaCdcHelper(), KafkaCdcParams(
             kafka=kafka,
             kafka_to_ignite_client_type=IgniteServiceType.THIN_CLIENT
         ))
@@ -70,8 +78,8 @@ class CdcReplicationTest(CdcReplicationAbstractTest):
 
         return res
 
-    def ignite_config(self, ignite_version, pds, ignite_instance_name):
-        cfg = super().ignite_config(ignite_version, pds, ignite_instance_name)
+    def ignite_config(self, ignite_version, ignite_instance_name):
+        cfg = super().ignite_config(ignite_version, ignite_instance_name)
 
         cfg = cfg._replace(
             data_storage=cfg.data_storage._replace(

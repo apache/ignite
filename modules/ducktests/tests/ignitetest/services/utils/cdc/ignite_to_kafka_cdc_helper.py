@@ -22,7 +22,7 @@ from ignitetest.services.utils.cdc.kafka_to_ignite import KafkaToIgniteService, 
 from ignitetest.utils.bean import BeanRef, Bean
 
 DEFAULT_KAFKA_PARTITIONS_COUNT = 16
-DEFAULT_KAFKA_TO_IGNITE_NODES = 2
+DEFAULT_KAFKA_TO_IGNITE_NODES = 1
 DEFAULT_KAFKA_TO_IGNITE_THREAD_COUNT = 8
 DEFAULT_KAFKA_TOPIC = "ignite"
 DEFAULT_KAFKA_METADATA_TOPIC = "ignite-metadata"
