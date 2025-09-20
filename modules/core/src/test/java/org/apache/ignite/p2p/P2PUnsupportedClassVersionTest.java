@@ -173,7 +173,7 @@ public class P2PUnsupportedClassVersionTest extends GridCommonAbstractTest {
 
         /** */
         private void incComputeClassVersion(GridDeploymentResponse resp) {
-            GridByteArrayList byteSrc = U.field(resp, "byteSrc");
+            GridByteArrayList byteSrc = new GridByteArrayList(U.field(resp, "byteSrc"), U.field(resp, "byteSize"));
 
             // Assert byte array contains class file.
             assertEquals(0xCAFEBABE, byteSrc.getInt(0));
