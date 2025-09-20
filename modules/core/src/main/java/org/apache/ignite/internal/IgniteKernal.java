@@ -89,6 +89,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
@@ -1412,6 +1413,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
             throw new IgniteException(msg);
         }
+
+        GridBinaryMarshaller.binaryContextSupplier(IgnitionEx.localIgnite().context().cacheObjects()::binaryContext);
 
         Marshaller marsh = ctx.marshaller();
 
