@@ -205,6 +205,9 @@ class IgniteSpec(metaclass=ABCMeta):
 
         return [os.path.join(project_dir, module_path) for module_path in module_libs]
 
+    def extensions_home(self):
+        return os.path.join(self.service.install_root, "ignite-extensions")
+
     def _module_libs(self, module_name):
         """
         Get list of paths to be added to classpath for the passed module for current spec.
@@ -212,7 +215,12 @@ class IgniteSpec(metaclass=ABCMeta):
         if module_name == "ducktests":
             return self.__get_module_libs(self.__home(str(DEV_BRANCH)), module_name, is_dev=True)
 
-        return self.__get_module_libs(self.__home(), module_name, self.service.config.version.is_dev)
+        if module_name.endswith("-ext") and self.service.config.version.is_dev:
+            home = self.extensions_home()
+        else:
+            home = self.__home()
+
+        return self.__get_module_libs(home, module_name, self.service.config.version.is_dev)
 
     @abstractmethod
     def command(self, node):
