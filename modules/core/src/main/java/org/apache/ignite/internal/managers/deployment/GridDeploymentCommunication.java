@@ -266,7 +266,8 @@ class GridDeploymentCommunication {
                     bytes.readAll(in);
 
                     res.success(true);
-                    res.byteSource(bytes);
+                    res.byteSource(bytes.internalArray());
+                    res.byteSize(bytes.size());
                 }
                 catch (IOException e) {
                     String errMsg = "Failed to read resource due to IO failure " + resourceRequestDetails(nodeId, req);
