@@ -131,9 +131,6 @@ public class QueryUtils {
         getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, DFLT_INDEXING_DISCOVERY_HISTORY_SIZE);
 
     /** */
-    private static final Class<?> GEOMETRY_CLASS = U.classForName("org.locationtech.jts.geom.Geometry", null);
-
-    /** */
     private static final Set<Class<?>> SQL_TYPES = createSqlTypes();
 
     /** Default SQL delimeter. */
@@ -1157,17 +1154,7 @@ public class QueryUtils {
     public static boolean isSqlType(Class<?> cls) {
         cls = U.box(cls);
 
-        return SQL_TYPES.contains(cls) || QueryUtils.isGeometryClass(cls);
-    }
-
-    /**
-     * Checks if the given class is GEOMETRY.
-     *
-     * @param cls Class.
-     * @return {@code true} If this is geometry.
-     */
-    public static boolean isGeometryClass(Class<?> cls) {
-        return GEOMETRY_CLASS != null && GEOMETRY_CLASS.isAssignableFrom(cls);
+        return SQL_TYPES.contains(cls) || U.isGeometryClass(cls);
     }
 
     /**

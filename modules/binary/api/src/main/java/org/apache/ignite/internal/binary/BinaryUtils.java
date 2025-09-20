@@ -56,6 +56,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -72,7 +73,6 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
@@ -2758,18 +2758,19 @@ public class BinaryUtils {
     /**
      * Gets the schema.
      *
-     * @param cacheObjProc Cache object processor.
+     * @param ctx Binary context.
+     * @param metadataProvider Function to provide binary type metadata.
      * @param typeId Type id.
      * @param schemaId Schema id.
      */
-    public static int[] getSchema(IgniteCacheObjectProcessor cacheObjProc, int typeId, int schemaId) {
-        assert cacheObjProc != null;
+    public static int[] getSchema(BinaryContext ctx, IntFunction<BinaryType> metadataProvider, int typeId, int schemaId) {
+        assert ctx != null;
 
-        BinarySchemaRegistry schemaReg = cacheObjProc.binaryContext().schemaRegistry(typeId);
+        BinarySchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
         BinarySchema schema = schemaReg.schema(schemaId);
 
         if (schema == null) {
-            BinaryTypeImpl meta = (BinaryTypeImpl)cacheObjProc.metadata(typeId);
+            BinaryTypeImpl meta = (BinaryTypeImpl)metadataProvider.apply(typeId);
 
             if (meta != null) {
                 for (BinarySchema typeSchema : meta.metadata().schemas()) {

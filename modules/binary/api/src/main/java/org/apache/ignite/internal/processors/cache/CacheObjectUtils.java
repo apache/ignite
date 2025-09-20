@@ -17,20 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache object utility methods.
  */
 public class CacheObjectUtils {
+    /** Head size. */
+    protected static final int HEAD_SIZE = 5; // 4 bytes len + 1 byte type
+
     /**
      * @param o Object to unwrap.
      * @param keepBinary Keep binary flag.
@@ -102,7 +108,7 @@ public class CacheObjectUtils {
         for (Object obj : col)
             col0.add(unwrapBinary(ctx, obj, keepBinary, cpy, null));
 
-        return (col0 instanceof MutableSingletonList) ? U.convertToSingletonList(col0) : col0;
+        return (col0 instanceof MutableSingletonList) ? CommonUtils.convertToSingletonList(col0) : col0;
     }
 
     /**
@@ -208,6 +214,106 @@ public class CacheObjectUtils {
             return ((BinaryObject)o).deserialize(ldr);
 
         return o;
+    }
+
+    /**
+     * @param dataLen Serialized value length.
+     * @return Full size required to store cache object.
+     * @see #putValue(byte, ByteBuffer, int, int, byte[], int)
+     */
+    public static int objectPutSize(int dataLen) {
+        return dataLen + HEAD_SIZE;
+    }
+
+    /**
+     * @param addr Write address.
+     * @param type Object type.
+     * @param valBytes Value bytes array.
+     * @return Offset shift compared to initial address.
+     */
+    public static int putValue(long addr, byte type, byte[] valBytes) {
+        return putValue(addr, type, valBytes, 0, valBytes.length);
+    }
+
+    /**
+     * @param addr Write address.
+     * @param type Object type.
+     * @param srcBytes Source value bytes array.
+     * @param srcOff Start position in sourceBytes.
+     * @param len Number of bytes for write.
+     * @return Offset shift compared to initial address.
+     */
+    public static int putValue(long addr, byte type, byte[] srcBytes, int srcOff, int len) {
+        int off = 0;
+
+        PageUtils.putInt(addr, off, len);
+        off += 4;
+
+        PageUtils.putByte(addr, off, type);
+        off++;
+
+        PageUtils.putBytes(addr, off, srcBytes, srcOff, len);
+        off += len;
+
+        return off;
+    }
+
+    /**
+     * @param cacheObjType Cache object type.
+     * @param buf Buffer to write value to.
+     * @param off Offset in source binary data.
+     * @param len Length of the data to write.
+     * @param valBytes Binary data.
+     * @param start Start offset in binary data.
+     * @return {@code True} if data were successfully written.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static boolean putValue(byte cacheObjType,
+                                   final ByteBuffer buf,
+                                   int off,
+                                   int len,
+                                   byte[] valBytes,
+                                   final int start
+    ) throws IgniteCheckedException {
+        int dataLen = valBytes.length;
+
+        if (buf.remaining() < len)
+            return false;
+
+        if (off == 0 && len >= HEAD_SIZE) {
+            buf.putInt(dataLen);
+            buf.put(cacheObjType);
+
+            len -= HEAD_SIZE;
+        }
+        else if (off >= HEAD_SIZE)
+            off -= HEAD_SIZE;
+        else {
+            // Partial header write.
+            final ByteBuffer head = ByteBuffer.allocate(HEAD_SIZE);
+
+            head.order(buf.order());
+
+            head.putInt(dataLen);
+            head.put(cacheObjType);
+
+            head.position(off);
+
+            if (len < head.capacity())
+                head.limit(off + Math.min(len, head.capacity() - off));
+
+            buf.put(head);
+
+            if (head.limit() < HEAD_SIZE)
+                return true;
+
+            len -= HEAD_SIZE - off;
+            off = 0;
+        }
+
+        buf.put(valBytes, start + off, len);
+
+        return true;
     }
 
     /**

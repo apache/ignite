@@ -101,7 +101,7 @@ public interface CacheObject {
     /**
      * Gets flag indicating whether object value is a platform type. Platform types will be automatically
      * deserialized on public API cache operations regardless whether
-     * {@link org.apache.ignite.IgniteCache#withKeepBinary()} is used or not.
+     * {@code org.apache.ignite.IgniteCache#withKeepBinary()} is used or not.
      *
      * @return Platform type flag.
      */
@@ -127,4 +127,11 @@ public interface CacheObject {
      * @throws IgniteCheckedException If failed.
      */
     public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException;
+
+    /**
+     * @return {@code True} if postWriteHashCode call required, {@code false} otherwise.
+     */
+    public default boolean postWriteRequired() {
+        return true;
+    }
 }

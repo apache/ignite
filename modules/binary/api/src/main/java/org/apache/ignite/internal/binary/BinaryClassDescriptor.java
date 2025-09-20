@@ -44,8 +44,7 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -54,7 +53,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.QueryUtils.isGeometryClass;
 import static org.apache.ignite.internal.util.CommonUtils.isLambda;
 
 /**
@@ -202,7 +200,7 @@ class BinaryClassDescriptor {
         initialSerializer = serializer;
 
         // If serializer is not defined at this point, then we have to use OptimizedMarshaller.
-        useOptMarshaller = serializer == null || isGeometryClass(cls);
+        useOptMarshaller = serializer == null || CommonUtils.isGeometryClass(cls);
 
         // Reset reflective serializer so that we rely on existing reflection-based serialization.
         if (serializer instanceof BinaryReflectiveSerializer)
@@ -233,7 +231,7 @@ class BinaryClassDescriptor {
                 mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
         }
 
-        if (useOptMarshaller && userType && !CommonUtils.isIgnite(cls) && !CommonUtils.isJdk(cls) && !QueryUtils.isGeometryClass(cls)) {
+        if (useOptMarshaller && userType && !CommonUtils.isIgnite(cls) && !CommonUtils.isJdk(cls) && !CommonUtils.isGeometryClass(cls)) {
             CommonUtils.warnDevOnly(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
                 BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
                 "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
@@ -1066,8 +1064,9 @@ class BinaryClassDescriptor {
      * @param obj Object.
      */
     private void postWriteHashCode(BinaryWriterExImpl writer, Object obj) {
+        boolean postWriteRequired = !(obj instanceof CacheObject) || ((CacheObject)obj).postWriteRequired();
         // No need to call "postWriteHashCode" here because we do not care about hash code.
-        if (!(obj instanceof CacheObjectImpl))
+        if (postWriteRequired)
             writer.postWriteHashCode(registered ? null : cls.getName());
     }
 

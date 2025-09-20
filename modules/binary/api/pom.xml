@@ -41,6 +41,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- TODO: remove me after extraction of implementation -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-grid-unsafe</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
