@@ -81,24 +81,24 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
         assert val != null : "Value is not initialized";
 
-        return putValue(buf, 0, CacheObjectAdapter.objectPutSize(val.length));
+        return putValue(buf, 0, CacheObjectUtils.objectPutSize(val.length));
     }
 
     /** {@inheritDoc} */
     @Override public int putValue(long addr) throws IgniteCheckedException {
-        return CacheObjectAdapter.putValue(addr, cacheObjectType(), val);
+        return CacheObjectUtils.putValue(addr, cacheObjectType(), val);
     }
 
     /** {@inheritDoc} */
     @Override public boolean putValue(final ByteBuffer buf, int off, int len) throws IgniteCheckedException {
         assert val != null : "Value is not initialized";
 
-        return CacheObjectAdapter.putValue(cacheObjectType(), buf, off, len, val, 0);
+        return CacheObjectUtils.putValue(cacheObjectType(), buf, off, len, val, 0);
     }
 
     /** {@inheritDoc} */
     @Override public int valueBytesLength(CacheObjectValueContext ctx) throws IgniteCheckedException {
-        return CacheObjectAdapter.objectPutSize(val.length);
+        return CacheObjectUtils.objectPutSize(val.length);
     }
 
     /** {@inheritDoc} */

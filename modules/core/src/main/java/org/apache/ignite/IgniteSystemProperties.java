@@ -508,14 +508,6 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
         "than specified by this property", type = Integer.class, defaults = "512")
     public static final String IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT = "IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT";
 
-    /**
-     * Flag that will force Ignite to fill memory block with some recognisable pattern right before
-     * this memory block is released. This will help to recognize cases when already released memory is accessed.
-     */
-    @SystemProperty("Force Ignite to fill memory block with some recognisable pattern right before this " +
-        "memory block is released. This will help to recognize cases when already released memory is accessed")
-    public static final String IGNITE_OFFHEAP_SAFE_RELEASE = "IGNITE_OFFHEAP_SAFE_RELEASE";
-
     /** Maximum size for atomic cache queue delete history (default is 200 000 entries per partition). */
     @SystemProperty(value = "Maximum size for atomic cache queue delete history",
         type = Integer.class, defaults = "" + DFLT_ATOMIC_CACHE_DELETE_HISTORY_SIZE + " per partition")

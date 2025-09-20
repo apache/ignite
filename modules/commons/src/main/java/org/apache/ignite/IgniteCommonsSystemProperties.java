@@ -146,6 +146,14 @@ public class IgniteCommonsSystemProperties {
     public static final String IGNITE_BINARY_SORT_OBJECT_FIELDS = "IGNITE_BINARY_SORT_OBJECT_FIELDS";
 
     /**
+     * Flag that will force Ignite to fill memory block with some recognisable pattern right before
+     * this memory block is released. This will help to recognize cases when already released memory is accessed.
+     */
+    @SystemProperty("Force Ignite to fill memory block with some recognisable pattern right before this " +
+        "memory block is released. This will help to recognize cases when already released memory is accessed")
+    public static final String IGNITE_OFFHEAP_SAFE_RELEASE = "IGNITE_OFFHEAP_SAFE_RELEASE";
+
+    /**
      * @param enumCls Enum type.
      * @param name Name of the system property or environment variable.
      * @param <E> Type of the enum.
