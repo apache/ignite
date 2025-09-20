@@ -27,6 +27,7 @@ import org.apache.ignite.internal.management.metric.MetricCommand;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.MaxValueMetric;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.Test;
@@ -53,6 +54,9 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
     /** */
     private static final String CONFIGURE_HITRATE = "--configure-hitrate";
+
+    /** */
+    private static final String CONFIGURE_INTERVAL = "--configure-interval";
 
     /** Test node with 0 index. */
     private IgniteEx ignite0;
@@ -219,11 +223,33 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
 
         HitRateMetric hitrate = mreg.hitRateMetric("hitrate", null, 500, 5);
 
-        assertEquals(500, hitrate.rateTimeInterval());
+        assertEquals(500, hitrate.timeInterval());
 
         executeCommand(EXIT_CODE_OK, CMD_METRIC, CONFIGURE_HITRATE, hitrate.name(), "100");
 
-        assertEquals(100, hitrate.rateTimeInterval());
+        assertEquals(100, hitrate.timeInterval());
+    }
+
+    /** Tests configuration of interval metric. */
+    @Test
+    public void testConfigureInterval() {
+        String mregName = "configure-registry";
+
+        ignite0.context().metric().remove(mregName);
+
+        MetricRegistryImpl mreg = ignite0.context().metric().registry(mregName);
+
+        HitRateMetric hitrate = mreg.hitRateMetric("hitrate", null, 500, 5);
+        MaxValueMetric maxVal = mreg.maxValueMetric("maxval", null, 500, 5);
+
+        assertEquals(500, hitrate.timeInterval());
+        assertEquals(500, maxVal.timeInterval());
+
+        executeCommand(EXIT_CODE_OK, CMD_METRIC, CONFIGURE_INTERVAL, hitrate.name(), "100");
+        executeCommand(EXIT_CODE_OK, CMD_METRIC, CONFIGURE_INTERVAL, maxVal.name(), "100");
+
+        assertEquals(100, hitrate.timeInterval());
+        assertEquals(100, maxVal.timeInterval());
     }
 
     /** */

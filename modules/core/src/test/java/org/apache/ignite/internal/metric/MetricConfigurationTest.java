@@ -93,7 +93,7 @@ public class MetricConfigurationTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrowsAnyCause(
             log,
             () -> {
-                grid(0).context().metric().configureHitRate(name, 1000);
+                grid(0).context().metric().configureIntervalMetric(name, 1000);
 
                 return null;
             },

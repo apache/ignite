@@ -382,7 +382,15 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
       newRateTimeInterval  - Rate time interval of hitrate.
       --node-id node_id    - Node id.
 
-  Print information about potentially corrupted caches on local node:
+  Configure interval metric:
+    control.(sh|bat) --metric --configure-interval name newTimeInterval [--node-id node_id]
+
+    Parameters:
+      name               - Name of the metric.
+      newTimeInterval    - Time interval of the metric.
+      --node-id node_id  - Node id.
+
+Print information about potentially corrupted caches on local node:
     control.(sh|bat) --persistence
 
   The same information is printed when info subcommand is passed:
