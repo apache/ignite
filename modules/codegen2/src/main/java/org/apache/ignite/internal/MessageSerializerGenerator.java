@@ -373,6 +373,9 @@ class MessageSerializerGenerator {
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
                 returnFalseIfWriteFailed(write, "writer.writeGridLongList", getExpr);
 
+            else if (assignableFrom(type, type(Throwable.class.getName())))
+                returnFalseIfWriteFailed(write, "writer.writeThrowable", getExpr);
+
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr);
 
@@ -504,6 +507,9 @@ class MessageSerializerGenerator {
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
                 returnFalseIfReadFailed(name, "reader.readGridLongList");
+
+            else if (assignableFrom(type, type(Throwable.class.getName())))
+                returnFalseIfReadFailed(name, "reader.readThrowable");
 
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfReadFailed(name, "reader.readMessage");

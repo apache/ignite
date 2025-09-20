@@ -38,6 +38,8 @@ import org.apache.ignite.internal.codegen.GridCheckpointRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDeploymentResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDhtAffinityAssignmentRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtPartitionExchangeIdSerializer;
+import org.apache.ignite.internal.codegen.GridDhtPartitionSupplyErrorMessageSerializer;
+import org.apache.ignite.internal.codegen.GridDhtPartitionSupplyMessageSerializer;
 import org.apache.ignite.internal.codegen.GridDhtPartitionsSingleRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtTxOnePhaseCommitAckRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtTxPrepareRequestSerializer;
@@ -332,7 +334,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)109, GridQueryNextPageResponse::new, new GridQueryNextPageResponseSerializer());
         factory.register((short)112, GridCacheSqlQuery::new, new GridCacheSqlQuerySerializer());
         // 113 - BinaryObjectImpl
-        factory.register((short)114, GridDhtPartitionSupplyMessage::new);
+        factory.register((short)114, GridDhtPartitionSupplyMessage::new, new GridDhtPartitionSupplyMessageSerializer());
         factory.register((short)115, UUIDCollectionMessage::new);
         factory.register((short)116, GridNearSingleGetRequest::new);
         factory.register((short)117, GridNearSingleGetResponse::new);
@@ -351,7 +353,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)134, ContinuousRoutineStartResultMessage::new);
         factory.register((short)135, LatchAckMessage::new, new LatchAckMessageSerializer());
         factory.register((short)157, PartitionUpdateCountersMessage::new);
-        factory.register((short)158, GridDhtPartitionSupplyErrorMessage::new);
+        factory.register((short)158, GridDhtPartitionSupplyErrorMessage::new, new GridDhtPartitionSupplyErrorMessageSerializer());
         factory.register((short)162, GenerateEncryptionKeyRequest::new, new GenerateEncryptionKeyRequestSerializer());
         factory.register((short)163, GenerateEncryptionKeyResponse::new);
         factory.register((short)167, ServiceDeploymentProcessId::new);
