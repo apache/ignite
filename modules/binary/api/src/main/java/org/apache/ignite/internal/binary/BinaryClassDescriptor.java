@@ -44,7 +44,7 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -1064,8 +1064,9 @@ class BinaryClassDescriptor {
      * @param obj Object.
      */
     private void postWriteHashCode(BinaryWriterExImpl writer, Object obj) {
+        boolean postWriteRequired = !(obj instanceof CacheObject) || ((CacheObject)obj).postWriteRequired();
         // No need to call "postWriteHashCode" here because we do not care about hash code.
-        if (!(obj instanceof CacheObjectImpl))
+        if (postWriteRequired)
             writer.postWriteHashCode(registered ? null : cls.getName());
     }
 
