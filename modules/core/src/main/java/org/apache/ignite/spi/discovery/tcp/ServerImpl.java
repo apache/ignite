@@ -218,6 +218,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Fundamental value for connection checking actions. */
     private long connCheckTick;
 
+    /**  */
+    private int backwardCheckTimeout;
+
     /** */
     private final IgniteThreadPoolExecutor utilityPool;
 
@@ -400,6 +403,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         // Foundumental timeout value for actions related to connection check.
         connCheckTick = effectiveExchangeTimeout() / 3;
+
+        // The connection recovery connection to one node is connCheckTick.
+        // We need to suppose network delays. So we use half of this time.
+        backwardCheckTimeout = (int)(connCheckTick >> 1);
 
         // Since we take in account time of last sent message, the interval should be quite short to give enough piece
         // of failure detection timeout as send-and-acknowledge timeout of the message to send.
@@ -703,13 +710,19 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
+    /** @see #pingNode(TcpDiscoveryNode, long) */
+    private boolean pingNode(TcpDiscoveryNode node) {
+        return pingNode(node, 0);
+    }
+
     /**
      * Pings the remote node to see if it's alive.
      *
      * @param node Node.
+     * @param timeout timeout.
      * @return {@code True} if ping succeeds.
      */
-    private boolean pingNode(TcpDiscoveryNode node) {
+    private boolean pingNode(TcpDiscoveryNode node, long timeout) {
         assert node != null;
 
         if (node.id().equals(getLocalNodeId()))
@@ -729,7 +742,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         for (InetSocketAddress addr : spi.getEffectiveNodeAddresses(node)) {
             try {
                 // ID returned by the node should be the same as ID of the parameter for ping to succeed.
-                IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), clientNodeId, 0, true);
+                IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), clientNodeId, timeout, true);
 
                 if (t == null)
                     // Remote node left topology.
@@ -3295,7 +3308,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (locNode == null)
                 return;
 
-            checkConnection();
+            if (ring.hasRemoteServerNodes())
+                checkConnection();
 
             sendMetricsUpdateMessage();
 
@@ -3410,12 +3424,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         debugLog(msg, "No next node in topology.");
 
                     if (ring.hasRemoteNodes() && !(msg instanceof TcpDiscoveryConnectionCheckMessage)) {
-                        // Failed to connect at all.
-                        if (state == CONNECTING
-                            // Successfully finds remote nodes, but fails to connect to any at the last stage.
-                            || (state == CONNECTED && (msg instanceof TcpDiscoveryNodeAddFinishedMessage) &&
-                                ((TcpDiscoveryNodeAddFinishedMessage)msg).nodeId().equals(locNodeId))
-                        ) {
+                        // Successfully found remote nodes, but failed to connect to any at the last stage.
+                        if (state == CONNECTING || (state == CONNECTED && (msg instanceof TcpDiscoveryNodeAddFinishedMessage) &&
+                            ((TcpDiscoveryNodeAddFinishedMessage)msg).nodeId().equals(locNodeId))) {
                             segmentLocalNodeOnSendFail(failedNodes);
 
                             return;
@@ -4039,7 +4050,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @param node New next node.
          */
-        private void newNextNode(@Nullable TcpDiscoveryNode node) {
+        private void newNextNode(TcpDiscoveryNode node) {
             next = node;
             nextAddrs = node == null ? null : spi.getEffectiveNodeAddresses(node);
         }
@@ -6218,13 +6229,25 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Check connection to next node in the ring.
          */
         private void checkConnection() {
-            long elapsed = (lastRingMsgSentTime + U.millisToNanos(connCheckInterval)) - System.nanoTime();
+            long interval = U.millisToNanos(connCheckInterval);
 
-            if (elapsed > 0)
-                return;
-
-            if (ring.hasRemoteServerNodes())
+            if (lastRingMsgSentTime + interval - System.nanoTime() < 0)
                 sendMessageAcrossRing(connCheckMsg);
+
+            // Special case if one of nodes experiences connection troubles. If cluster has more than 2 nodes, previous
+            // node myst be pinged from another node.
+            if (ring.serverNodes().size() == 2 && next != null && spi.getEffectiveConnectionRecoveryTimeout() > 0
+                && spiStateCopy() == CONNECTED && lastRingMsgReceivedTime + interval * 1.5 - System.nanoTime() < 0) {
+                // Might be async usining the utility pool.
+                boolean pingPrevResult = pingNode(next, backwardCheckTimeout);
+
+                if (!pingPrevResult) {
+                    U.warn(log, "Current node doesn't receive any messages from previous node for too long and " +
+                        "failed to ping the previous node [" + next + "].");
+
+                    notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
+                }
+            }
         }
 
         /** {@inheritDoc} */
@@ -6612,10 +6635,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             if (previous != null && !previous.id().equals(nodeId) &&
                                 (req.checkPreviousNodeId() == null || previous.id().equals(req.checkPreviousNodeId()))) {
-
-                                // The connection recovery connection to one node is connCheckTick.
-                                // We need to suppose network delays. So we use half of this time.
-                                int backwardCheckTimeout = (int)(connCheckTick / 2);
 
                                 if (log.isDebugEnabled()) {
                                     log.debug("Remote node requests topology change. Checking connection to " +
