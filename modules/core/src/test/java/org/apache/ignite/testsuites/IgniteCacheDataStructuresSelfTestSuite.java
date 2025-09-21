@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.AtomicCacheAffinityConfigurationTest;
+import org.apache.ignite.internal.processors.cache.datastructures.AtomicDataStructuresWithCacheStoreTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueCleanupSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueClientDisconnectTest;
 import org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueMultiNodeConsistencySelfTest;
@@ -187,7 +188,9 @@ import org.junit.runners.Suite;
     IgniteCountDownLatchClusterReadOnlyTest.class,
     IgniteDataStructuresCreateDeniedInClusterReadOnlyMode.class,
     IgniteQueueClusterReadOnlyTest.class,
-    IgniteSetClusterReadOnlyTest.class
+    IgniteSetClusterReadOnlyTest.class,
+
+    AtomicDataStructuresWithCacheStoreTest.class
 })
 public class IgniteCacheDataStructuresSelfTestSuite {
 }
