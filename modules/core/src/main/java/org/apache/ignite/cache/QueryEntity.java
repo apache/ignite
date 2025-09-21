@@ -44,7 +44,6 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
-import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -814,11 +813,11 @@ public class QueryEntity implements Serializable {
      */
     private static void processAnnotationsInClass(boolean key, Class<?> cls, QueryEntityTypeDescriptor type,
         @Nullable QueryEntityClassProperty parent) {
-        if (U.isJdk(cls) || CommonUtils.isGeometryClass(cls)) {
+        if (U.isJdk(cls) || U.isGeometryClass(cls)) {
             if (parent == null && !key && QueryUtils.isSqlType(cls)) { // We have to index primitive _val.
                 String idxName = cls.getSimpleName() + "_" + QueryUtils.VAL_FIELD_NAME + "_idx";
 
-                type.addIndex(idxName, CommonUtils.isGeometryClass(cls) ?
+                type.addIndex(idxName, U.isGeometryClass(cls) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, QueryIndex.DFLT_INLINE_SIZE);
 
                 type.addFieldToIndex(idxName, QueryUtils.VAL_FIELD_NAME, 0, false);
@@ -897,7 +896,7 @@ public class QueryEntity implements Serializable {
                 if (cls != curCls)
                     idxName = cls.getSimpleName() + "_" + idxName;
 
-                desc.addIndex(idxName, CommonUtils.isGeometryClass(prop.type()) ?
+                desc.addIndex(idxName, U.isGeometryClass(prop.type()) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, sqlAnn.inlineSize());
 
                 desc.addFieldToIndex(idxName, prop.fullName(), 0, sqlAnn.descending());
