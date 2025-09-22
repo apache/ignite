@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -867,6 +868,16 @@ public class DirectByteBufferStream {
     /**
      * @param val Value.
      */
+    public void writeGridIntList(@Nullable GridIntList val) {
+        if (val != null)
+            writeIntArray(val.array());
+        else
+            writeInt(-1);
+    }
+
+    /**
+     * @param val Value.
+     */
     public void writeGridLongList(@Nullable GridLongList val) {
         if (val != null)
             writeLongArray(val.array(), val.size());
@@ -1502,6 +1513,15 @@ public class DirectByteBufferStream {
         }
 
         return cacheObjProc.toCacheObject(null, cacheObjType, cacheObjArr);
+    }
+
+    /**
+     * @return Value.
+     */
+    public GridIntList readGridIntList() {
+        int[] arr = readIntArray();
+
+        return arr != null ? new GridIntList(arr) : null;
     }
 
     /**
