@@ -1672,7 +1672,7 @@ public class GridDhtPartitionDemander {
 
             // Not compatible if a supplier has left.
             for (UUID nodeId : rebalancingParts.keySet()) {
-                if (!grp.cacheObjectContext().kernalContext().discovery().alive(nodeId))
+                if (!grp.shared().kernalContext().discovery().alive(nodeId))
                     return false;
             }
 

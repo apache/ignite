@@ -19,12 +19,10 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import java.io.File;
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -104,7 +102,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
@@ -127,9 +124,6 @@ import static org.apache.ignite.internal.util.typedef.internal.CU.affinityFieldN
  * Binary processor implementation.
  */
 public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter implements IgniteCacheObjectProcessor {
-    /** Immutable classes. */
-    private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
-
     /** @see IgniteSystemProperties#IGNITE_WAIT_SCHEMA_UPDATE */
     public static final int DFLT_WAIT_SCHEMA_UPDATE = 30_000;
 
@@ -180,23 +174,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     /** Cached affinity key field names. */
     private final ConcurrentHashMap<Integer, T1<BinaryField>> affKeyFields = new ConcurrentHashMap<>();
 
-    /*
-     * Static initializer
-     */
-    static {
-        IMMUTABLE_CLS.add(String.class);
-        IMMUTABLE_CLS.add(Boolean.class);
-        IMMUTABLE_CLS.add(Byte.class);
-        IMMUTABLE_CLS.add(Short.class);
-        IMMUTABLE_CLS.add(Character.class);
-        IMMUTABLE_CLS.add(Integer.class);
-        IMMUTABLE_CLS.add(Long.class);
-        IMMUTABLE_CLS.add(Float.class);
-        IMMUTABLE_CLS.add(Double.class);
-        IMMUTABLE_CLS.add(UUID.class);
-        IMMUTABLE_CLS.add(IgniteUuid.class);
-        IMMUTABLE_CLS.add(BigDecimal.class);
-    }
+    /** Dummy {@code CacheObjectValueContext} used for mocking. */
+    private CacheObjectValueContext fakeCacheObjCtx;
 
     /**
      * @param ctx Kernal context.
@@ -326,6 +305,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         if (!ctx.clientNode())
             metadataFileStore.restoreMetadata();
+
+        fakeCacheObjCtx = new CacheObjectContext(ctx, null, null, false, false, false, false, false);
     }
 
     /** {@inheritDoc} */
@@ -384,13 +365,6 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             return 0;
 
         return binaryCtx.typeId(typeName);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean immutable(Object obj) {
-        assert obj != null;
-
-        return IMMUTABLE_CLS.contains(obj.getClass());
     }
 
     /** {@inheritDoc} */
@@ -674,14 +648,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         return meta != null ? meta.wrap(binaryCtx) : null;
     }
 
-    /**
-     * Forces caller thread to wait for binary metadata write operation for given type ID.
-     *
-     * In case of in-memory mode this method becomes a No-op as no binary metadata is written to disk in this mode.
-     *
-     * @param typeId ID of binary type to wait for metadata write operation.
-     */
-    public void waitMetadataWriteIfNeeded(final int typeId) {
+    /** {@inheritDoc} */
+    @Override public void waitMetadataWriteIfNeeded(final int typeId) {
         if (metadataFileStore == null)
             return;
 
@@ -1116,10 +1084,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         return obj != null && ((BinaryObject)obj).hasField(fieldName);
     }
 
-    /**
-     * @return Binary context.
-     */
-    public BinaryContext binaryContext() {
+    /** {@inheritDoc} */
+    @Override public BinaryContext binaryContext() {
         return binaryCtx;
     }
 
@@ -1152,7 +1118,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     /** {@inheritDoc} */
     @Override public byte[] marshal(CacheObjectValueContext ctx, Object val) throws IgniteCheckedException {
         if (!ctx.binaryEnabled() || binaryMarsh == null)
-            return CU.marshal(ctx.kernalContext().cache().context(), ctx.addDeploymentInfo(), val);
+            return CU.marshal(this.ctx.cache().context(), ctx.addDeploymentInfo(), val);
 
         byte[] arr = binaryMarsh.marshal(val, false);
 
@@ -1165,7 +1131,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     @Override public Object unmarshal(CacheObjectValueContext ctx, byte[] bytes, ClassLoader clsLdr)
         throws IgniteCheckedException {
         if (!ctx.binaryEnabled() || binaryMarsh == null)
-            return U.unmarshal(ctx.kernalContext(), bytes, U.resolveClassLoader(clsLdr, ctx.kernalContext().config()));
+            return U.unmarshal(this.ctx, bytes, U.resolveClassLoader(clsLdr, this.ctx.config()));
 
         return binaryMarsh.unmarshal(bytes, clsLdr);
     }
@@ -1293,10 +1259,19 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) {
+    @Override public CacheObject toCacheObject(@Nullable CacheObjectContext ctx, byte type, byte[] bytes) {
         switch (type) {
             case CacheObject.TYPE_BINARY:
-                return (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes, ctx);
+                CacheObjectValueContext coctx = ctx;
+
+                // CacheObjectContext is actually required only if transformation is enabled.
+                // In this case CacheObjectContext#kernalContext is used only.
+                if (coctx == null && this.ctx.transformer() != null)
+                    coctx = fakeCacheObjCtx;
+
+                return coctx == null
+                    ? (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes)
+                    : (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes, coctx);
 
             case CacheObject.TYPE_BINARY_ENUM:
                 return (CacheObject)BinaryUtils.binaryEnum(binaryContext(), bytes);
@@ -1312,7 +1287,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes)
+    @Override public KeyCacheObject toKeyCacheObject(@Nullable CacheObjectContext ctx, byte type, byte[] bytes)
         throws IgniteCheckedException {
         switch (type) {
             case CacheObject.TYPE_BINARY:
@@ -1322,7 +1297,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");
 
             case CacheObject.TYPE_REGULAR:
-                return new KeyCacheObjectImpl(ctx.kernalContext().cacheObjects().unmarshal(ctx, bytes, null), bytes, -1);
+                return ctx == null
+                    ? new KeyCacheObjectImpl(null, bytes, -1)
+                    : new KeyCacheObjectImpl(ctx.kernalContext().cacheObjects().unmarshal(ctx, bytes, null), bytes, -1);
         }
 
         throw new IllegalArgumentException("Invalid object type: " + type);

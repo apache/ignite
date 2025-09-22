@@ -83,9 +83,4 @@ public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate 
     @Nullable protected CacheObject peekVisibleValue(GridCacheEntryEx entry) {
         return locked ? entry.rawGet() : entry.peekVisibleValue();
     }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
 }

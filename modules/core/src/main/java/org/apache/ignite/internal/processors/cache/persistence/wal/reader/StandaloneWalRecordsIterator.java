@@ -398,7 +398,12 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final List<DataEntry> postProcessedEntries = new ArrayList<>(entryCnt);
 
         for (int i = 0; i < entryCnt; i++) {
-            final DataEntry postProcessedEntry = postProcessDataEntry(processor, fakeCacheObjCtx, dataRec.get(i));
+            final DataEntry postProcessedEntry = postProcessDataEntry(
+                keepBinary || !kernalCtx.marshallerContext().initialized(),
+                processor,
+                fakeCacheObjCtx,
+                dataRec.get(i)
+            );
 
             postProcessedEntries.add(postProcessedEntry);
         }
@@ -414,6 +419,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     /**
      * Converts entry or lazy data entry into unwrapped entry
      *
+     * @param keepBinary Keep binary. This flag disables converting of non primitive types (BinaryObjects will be used instead).
      * @param processor cache object processor for de-serializing objects.
      * @param fakeCacheObjCtx cache object context for de-serializing binary and unwrapping objects.
      * @param dataEntry entry to process
@@ -421,6 +427,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @throws IgniteCheckedException if failed
      */
     private @NotNull DataEntry postProcessDataEntry(
+        final boolean keepBinary,
         final IgniteCacheObjectProcessor processor,
         final CacheObjectContext fakeCacheObjCtx,
         final DataEntry dataEntry) throws IgniteCheckedException {
@@ -429,7 +436,6 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         final KeyCacheObject key;
         final CacheObject val;
-        boolean keepBinary = this.keepBinary || !fakeCacheObjCtx.kernalContext().marshallerContext().initialized();
 
         if (dataEntry instanceof LazyDataEntry) {
             final LazyDataEntry lazyDataEntry = (LazyDataEntry)dataEntry;

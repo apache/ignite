@@ -24,6 +24,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -193,6 +196,27 @@ public interface MessageReader {
      * @return Message.
      */
     public <T extends Message> T readMessage();
+
+    /**
+     * Reads {@link CacheObject}.
+     *
+     * @return Cache object.
+     */
+    public CacheObject readCacheObject();
+
+    /**
+     * Reads {@link KeyCacheObject}.
+     *
+     * @return Key cache object.
+     */
+    public KeyCacheObject readKeyCacheObject();
+
+    /**
+     * Reads {@link GridLongList}.
+     *
+     * @return Grid long list.
+     */
+    public GridLongList readGridLongList();
 
     /**
      * Reads array of objects.

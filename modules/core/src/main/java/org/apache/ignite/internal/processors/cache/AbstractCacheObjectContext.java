@@ -18,40 +18,85 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.events.CacheObjectTransformedEvent;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_TRANSFORMED;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
 
-/** */
-public class CacheObjectTransformerUtils {
-    /** */
-    private static CacheObjectTransformerProcessor transformer(CacheObjectValueContext ctx) {
-        return ctx.kernalContext().transformer();
+/**
+ * Abstract implementation of {@link CacheObjectValueContext}.
+ */
+public abstract class AbstractCacheObjectContext implements CacheObjectValueContext {
+    /** Kernal context. */
+    protected final GridKernalContext ctx;
+
+    /**
+     * @param ctx Kernal context.
+     */
+    protected AbstractCacheObjectContext(GridKernalContext ctx) {
+        this.ctx = ctx;
     }
 
     /**
-     * Transforms bytes according to {@link CacheObjectTransformerProcessor} when specified.
-     * @param bytes Given bytes.
-     * @param ctx Context.
-     * @return Transformed bytes.
+     * @return Kernal context.
      */
-    public static byte[] transformIfNecessary(byte[] bytes, CacheObjectValueContext ctx) {
-        return transformIfNecessary(bytes, 0, bytes.length, ctx);
+    public GridKernalContext kernalContext() {
+        return ctx;
     }
 
-    /**
-     * Transforms bytes according to {@link CacheObjectTransformerProcessor} when specified.
-     * @param bytes Given bytes.
-     * @param ctx Context.
-     * @return Transformed bytes.
-     */
-    public static byte[] transformIfNecessary(byte[] bytes, int offset, int length, CacheObjectValueContext ctx) {
+    /** {@inheritDoc} */
+    @Override public BinaryContext binaryContext() {
+        return ctx.cacheObjects().binaryContext();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void waitMetadataWriteIfNeeded(final int typeId) {
+        ctx.cacheObjects().waitMetadataWriteIfNeeded(typeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable ClassLoader classLoader() {
+        return ctx.config().getClassLoader();
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClassLoader globalLoader() {
+        return ctx.cache().context().deploy().globalLoader();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteLogger log(Class<?> cls) {
+        return ctx.log(cls);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] marshal(Object val) throws IgniteCheckedException {
+        return ctx.cacheObjects().marshal(this, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object unmarshal(byte[] bytes, ClassLoader clsLdr)
+        throws IgniteCheckedException {
+        return ctx.cacheObjects().unmarshal(this, bytes, clsLdr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isPeerClassLoadingEnabled() {
+        return ctx.config().isPeerClassLoadingEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte[] transformIfNecessary(byte[] bytes, int offset, int length) {
         assert bytes[offset] != TRANSFORMED;
 
-        CacheObjectTransformerProcessor transformer = transformer(ctx);
+        CacheObjectTransformerProcessor transformer = ctx.transformer();
 
         if (transformer == null)
             return bytes;
@@ -64,9 +109,9 @@ public class CacheObjectTransformerUtils {
 
             byte[] res = toArray(transformed);
 
-            if (recordable(ctx, EVT_CACHE_OBJECT_TRANSFORMED)) {
-                ctx.kernalContext().event().record(
-                    new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
+            if (recordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
+                ctx.event().record(
+                    new CacheObjectTransformedEvent(ctx.discovery().localNode(),
                         "Object transformed",
                         EVT_CACHE_OBJECT_TRANSFORMED,
                         detachIfNecessary(bytes, offset, length),
@@ -79,9 +124,9 @@ public class CacheObjectTransformerUtils {
         else {
             byte[] res = detachIfNecessary(bytes, offset, length);
 
-            if (recordable(ctx, EVT_CACHE_OBJECT_TRANSFORMED)) {
-                ctx.kernalContext().event().record(
-                    new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
+            if (recordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
+                ctx.event().record(
+                    new CacheObjectTransformedEvent(ctx.discovery().localNode(),
                         "Object transformation was cancelled.",
                         EVT_CACHE_OBJECT_TRANSFORMED,
                         res,
@@ -93,9 +138,32 @@ public class CacheObjectTransformerUtils {
         }
     }
 
-    /**
-     *
-     */
+    /** {@inheritDoc} */
+    @Override public byte[] restoreIfNecessary(byte[] bytes) {
+        if (bytes[0] != TRANSFORMED)
+            return bytes;
+
+        CacheObjectTransformerProcessor transformer = ctx.transformer();
+
+        ByteBuffer src = ByteBuffer.wrap(bytes, 1, bytes.length - 1); // Skipping TRANSFORMED.
+        ByteBuffer restored = transformer.restore(src);
+
+        byte[] res = toArray(restored);
+
+        if (recordable(EVT_CACHE_OBJECT_TRANSFORMED)) {
+            ctx.event().record(
+                new CacheObjectTransformedEvent(ctx.discovery().localNode(),
+                    "Object restored",
+                    EVT_CACHE_OBJECT_TRANSFORMED,
+                    res,
+                    bytes,
+                    true));
+        }
+
+        return res;
+    }
+
+    /** */
     private static byte[] detachIfNecessary(byte[] bytes, int offset, int length) {
         if (offset == 0 && length == bytes.length)
             return bytes;
@@ -103,36 +171,6 @@ public class CacheObjectTransformerUtils {
         byte[] res = new byte[length];
 
         GridUnsafe.arrayCopy(bytes, offset, res, 0, length);
-
-        return res;
-    }
-
-    /**
-     * Restores transformed bytes if necessary.
-     * @param bytes Given bytes.
-     * @param ctx Context.
-     * @return Restored bytes.
-     */
-    public static byte[] restoreIfNecessary(byte[] bytes, CacheObjectValueContext ctx) {
-        if (bytes[0] != TRANSFORMED)
-            return bytes;
-
-        CacheObjectTransformerProcessor transformer = transformer(ctx);
-
-        ByteBuffer src = ByteBuffer.wrap(bytes, 1, bytes.length - 1); // Skipping TRANSFORMED.
-        ByteBuffer restored = transformer.restore(src);
-
-        byte[] res = toArray(restored);
-
-        if (recordable(ctx, EVT_CACHE_OBJECT_TRANSFORMED)) {
-            ctx.kernalContext().event().record(
-                new CacheObjectTransformedEvent(ctx.kernalContext().discovery().localNode(),
-                    "Object restored",
-                    EVT_CACHE_OBJECT_TRANSFORMED,
-                    res,
-                    bytes,
-                    true));
-        }
 
         return res;
     }
@@ -160,11 +198,10 @@ public class CacheObjectTransformerUtils {
     }
 
     /**
-     * @param ctx Context.
      * @param type Type.
      */
-    private static boolean recordable(CacheObjectValueContext ctx, int type) {
-        return ctx.kernalContext().event() != null // Can be null at external usage (via StandaloneGridKernalContext)
-            && ctx.kernalContext().event().isRecordable(type);
+    private boolean recordable(int type) {
+        return ctx.event() != null // Can be null at external usage (via StandaloneGridKernalContext)
+            && ctx.event().isRecordable(type);
     }
 }

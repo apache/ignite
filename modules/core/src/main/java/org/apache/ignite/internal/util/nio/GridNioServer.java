@@ -3265,11 +3265,6 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public void onAckReceived() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
         @Override public IgniteInClosure<IgniteException> ackClosure() {
             return null;
         }
@@ -3367,13 +3362,6 @@ public class GridNioServer<T> {
         /** {@inheritDoc} */
         @Override public boolean skipRecovery() {
             return skipRecovery;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onAckReceived() {
-            assert msg instanceof Message;
-
-            ((Message)msg).onAckReceived();
         }
 
         /** {@inheritDoc} */
@@ -3603,13 +3591,6 @@ public class GridNioServer<T> {
         /** {@inheritDoc} */
         @Override public void onError(Exception e) {
             onDone(e);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onAckReceived() {
-            assert msg instanceof Message : msg;
-
-            ((Message)msg).onAckReceived();
         }
 
         /** {@inheritDoc} */

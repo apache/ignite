@@ -55,9 +55,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -74,16 +72,16 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.platform.PlatformType;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -106,6 +104,9 @@ public class BinaryUtils {
 
     /** */
     public static final Map<Byte, Class<?>> FLAG_TO_CLASS;
+
+    /** Immutable classes. */
+    private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
 
     /** */
     public static final boolean USE_STR_SERIALIZATION_VER_2 = IgniteSystemProperties.getBoolean(
@@ -184,6 +185,19 @@ public class BinaryUtils {
      * Static class initializer.
      */
     static {
+        IMMUTABLE_CLS.add(String.class);
+        IMMUTABLE_CLS.add(Boolean.class);
+        IMMUTABLE_CLS.add(Byte.class);
+        IMMUTABLE_CLS.add(Short.class);
+        IMMUTABLE_CLS.add(Character.class);
+        IMMUTABLE_CLS.add(Integer.class);
+        IMMUTABLE_CLS.add(Long.class);
+        IMMUTABLE_CLS.add(Float.class);
+        IMMUTABLE_CLS.add(Double.class);
+        IMMUTABLE_CLS.add(UUID.class);
+        IMMUTABLE_CLS.add(IgniteUuid.class);
+        IMMUTABLE_CLS.add(BigDecimal.class);
+
         Map<Class<?>, Byte> clsToFlag = new HashMap<>();
 
         clsToFlag.put(Byte.class, GridBinaryMarshaller.BYTE);
@@ -1684,14 +1698,6 @@ public class BinaryUtils {
         return new BinaryEnumObjectImpl(ctx, arr);
     }
 
-    /**
-     * @param register Register method.
-     */
-    public static void registerMessages(BiConsumer<Short, Supplier<Message>> register) {
-        register.accept((short)113, BinaryObjectImpl::new);
-        register.accept((short)119, BinaryEnumObjectImpl::new);
-    }
-
     /** */
     public static BinaryObjectEx binaryObject(BinaryContext ctx, byte[] arr, int start) {
         return new BinaryObjectImpl(ctx, arr, start);
@@ -2756,7 +2762,7 @@ public class BinaryUtils {
      * @param typeId Type id.
      * @param schemaId Schema id.
      */
-    public static int[] getSchema(CacheObjectBinaryProcessorImpl cacheObjProc, int typeId, int schemaId) {
+    public static int[] getSchema(IgniteCacheObjectProcessor cacheObjProc, int typeId, int schemaId) {
         assert cacheObjProc != null;
 
         BinarySchemaRegistry schemaReg = cacheObjProc.binaryContext().schemaRegistry(typeId);
@@ -3085,6 +3091,16 @@ public class BinaryUtils {
      */
     public static int fieldId(BinaryReaderEx reader, int order) {
         return ((BinaryReaderExImpl)reader).getOrCreateSchema().fieldId(order);
+    }
+
+    /**
+     * @param obj Value.
+     * @return {@code True} if object is of known immutable type.
+     */
+    public static boolean immutable(Object obj) {
+        assert obj != null;
+
+        return IMMUTABLE_CLS.contains(obj.getClass());
     }
 
     /**

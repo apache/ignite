@@ -85,7 +85,7 @@ public class IndexingDefragmentation {
         IgniteThreadPoolExecutor defragmentationThreadPool,
         IgniteLogger log
     ) throws IgniteCheckedException {
-        int pageSize = grpCtx.cacheObjectContext().kernalContext().grid().configuration().getDataStorageConfiguration().getPageSize();
+        int pageSize = grpCtx.shared().kernalContext().grid().configuration().getDataStorageConfiguration().getPageSize();
 
         PageMemoryEx oldCachePageMem = (PageMemoryEx)grpCtx.dataRegion().pageMemory();
 
@@ -204,7 +204,7 @@ public class IndexingDefragmentation {
             return true;
         }
         catch (Throwable t) {
-            newCtx.cacheObjectContext().kernalContext()
+            newCtx.shared().kernalContext()
                 .failure().process(new FailureContext(CRITICAL_ERROR, t));
 
             throw t;

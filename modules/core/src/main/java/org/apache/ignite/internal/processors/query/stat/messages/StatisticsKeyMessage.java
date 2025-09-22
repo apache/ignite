@@ -164,11 +164,6 @@ public class StatisticsKeyMessage implements Message, Serializable {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(StatisticsKeyMessage.class, this);
     }

@@ -617,7 +617,7 @@ public class GridLocalConfigManager {
         CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
 
         // Initialize defaults.
-        cacheProcessor.initialize(cfg, cacheObjCtx);
+        cacheProcessor.initialize(cfg, cacheObjCtx, ctx.recoveryMode());
 
         StoredCacheData cacheData = new StoredCacheData(cfg);
 

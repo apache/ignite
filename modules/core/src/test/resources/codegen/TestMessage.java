@@ -20,13 +20,13 @@ package org.apache.ignite.internal;
 import java.lang.String;
 import java.util.UUID;
 import java.util.BitSet;
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 public class TestMessage implements Message {
     @Order(0)
@@ -64,6 +64,15 @@ public class TestMessage implements Message {
 
     @Order(value = 11, method = "overridenFieldMethod")
     private String field;
+
+    @Order(value = 12)
+    private KeyCacheObject keyCacheObject;
+
+    @Order(value = 13)
+    private CacheObject cacheObject;
+
+    @Order(value = 14)
+    private GridLongList gridLongList;
 
     public int id() {
         return id;
@@ -161,11 +170,32 @@ public class TestMessage implements Message {
         this.field = field;
     }
 
-    public short directType() {
-        return 0;
+    public KeyCacheObject keyCacheObject() {
+        return keyCacheObject;
     }
 
-    public void onAckReceived() {
-        // No-op.
+    public void keyCacheObject(KeyCacheObject keyCacheObject) {
+        this.keyCacheObject = keyCacheObject;
+    }
+
+    public CacheObject cacheObject() {
+        return cacheObject;
+    }
+
+    public void cacheObject(CacheObject cacheObject) {
+        this.cacheObject = cacheObject;
+    }
+
+    public GridLongList gridLongList() {
+        return gridLongList;
+    }
+
+    public void gridLongList(GridLongList gridLongList) {
+        this.gridLongList = gridLongList;
+    }
+
+
+    public short directType() {
+        return 0;
     }
 }

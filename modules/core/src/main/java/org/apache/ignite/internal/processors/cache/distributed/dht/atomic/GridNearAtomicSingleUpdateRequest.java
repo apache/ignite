@@ -241,13 +241,13 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
         switch (writer.state()) {
             case 10:
-                if (!writer.writeMessage(key))
+                if (!writer.writeKeyCacheObject(key))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeMessage(val))
+                if (!writer.writeCacheObject(val))
                     return false;
 
                 writer.incrementState();
@@ -266,7 +266,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
         switch (reader.state()) {
             case 10:
-                key = reader.readMessage();
+                key = reader.readKeyCacheObject();
 
                 if (!reader.isLastRead())
                     return false;
@@ -274,7 +274,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
                 reader.incrementState();
 
             case 11:
-                val = reader.readMessage();
+                val = reader.readCacheObject();
 
                 if (!reader.isLastRead())
                     return false;

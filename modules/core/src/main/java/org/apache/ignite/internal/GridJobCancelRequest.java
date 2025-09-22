@@ -127,11 +127,6 @@ public class GridJobCancelRequest implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 0;
     }

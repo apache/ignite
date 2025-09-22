@@ -54,11 +54,6 @@ public class TcpInverseConnectionResponseMessage implements TcpConnectionIndexAw
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 177;
     }

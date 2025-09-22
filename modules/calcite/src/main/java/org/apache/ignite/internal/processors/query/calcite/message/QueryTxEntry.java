@@ -137,13 +137,13 @@ public class QueryTxEntry implements CalciteMessage {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage(key))
+                if (!writer.writeKeyCacheObject(key))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage(val))
+                if (!writer.writeCacheObject(val))
                     return false;
 
                 writer.incrementState();
@@ -173,7 +173,7 @@ public class QueryTxEntry implements CalciteMessage {
                 reader.incrementState();
 
             case 1:
-                key = reader.readMessage();
+                key = reader.readKeyCacheObject();
 
                 if (!reader.isLastRead())
                     return false;
@@ -181,7 +181,7 @@ public class QueryTxEntry implements CalciteMessage {
                 reader.incrementState();
 
             case 2:
-                val = reader.readMessage();
+                val = reader.readCacheObject();
 
                 if (!reader.isLastRead())
                     return false;

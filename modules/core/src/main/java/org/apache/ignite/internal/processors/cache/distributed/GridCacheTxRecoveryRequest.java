@@ -144,37 +144,37 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
         }
 
         switch (writer.state()) {
-            case 8:
+            case 7:
                 if (!writer.writeIgniteUuid(futId))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 8:
                 if (!writer.writeIgniteUuid(miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 9:
                 if (!writer.writeBoolean(nearTxCheck))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 10:
                 if (!writer.writeMessage(nearXidVer))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 11:
                 if (!writer.writeBoolean(sys))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 12:
                 if (!writer.writeInt(txNum))
                     return false;
 
@@ -193,7 +193,7 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
             return false;
 
         switch (reader.state()) {
-            case 8:
+            case 7:
                 futId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
@@ -201,7 +201,7 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 9:
+            case 8:
                 miniId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
@@ -209,7 +209,7 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 10:
+            case 9:
                 nearTxCheck = reader.readBoolean();
 
                 if (!reader.isLastRead())
@@ -217,7 +217,7 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 11:
+            case 10:
                 nearXidVer = reader.readMessage();
 
                 if (!reader.isLastRead())
@@ -225,7 +225,7 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 12:
+            case 11:
                 sys = reader.readBoolean();
 
                 if (!reader.isLastRead())
@@ -233,7 +233,7 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
 
                 reader.incrementState();
 
-            case 13:
+            case 12:
                 txNum = reader.readInt();
 
                 if (!reader.isLastRead())

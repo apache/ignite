@@ -178,6 +178,12 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
 
                 writer.incrementState();
 
+            case 22:
+                if (!writer.writeCollection(msg.gridLongListList(), MessageCollectionItemType.GRID_LONG_LIST))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -360,6 +366,14 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
 
             case 21:
                 msg.messageList(reader.readCollection(MessageCollectionItemType.MSG));
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 22:
+                msg.gridLongListList(reader.readCollection(MessageCollectionItemType.GRID_LONG_LIST));
 
                 if (!reader.isLastRead())
                     return false;
