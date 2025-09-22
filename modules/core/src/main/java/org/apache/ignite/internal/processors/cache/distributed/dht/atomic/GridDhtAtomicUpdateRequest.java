@@ -621,7 +621,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeMessage(obsoleteIndexes))
+                if (!writer.writeGridIntList(obsoleteIndexes))
                     return false;
 
                 writer.incrementState();
@@ -752,7 +752,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 23:
-                obsoleteIndexes = reader.readMessage();
+                obsoleteIndexes = reader.readGridIntList();
 
                 if (!reader.isLastRead())
                     return false;

@@ -372,6 +372,9 @@ class MessageSerializerGenerator {
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.CacheObject")))
                 returnFalseIfWriteFailed(write, "writer.writeCacheObject", getExpr);
 
+            else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridIntList")))
+                returnFalseIfWriteFailed(write, "writer.writeGridIntList", getExpr);
+
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
                 returnFalseIfWriteFailed(write, "writer.writeGridLongList", getExpr);
 
@@ -512,6 +515,9 @@ class MessageSerializerGenerator {
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.CacheObject")))
                 returnFalseIfReadFailed(name, "reader.readCacheObject");
 
+            else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridIntList")))
+                returnFalseIfReadFailed(name, "reader.readGridIntList");
+
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
                 returnFalseIfReadFailed(name, "reader.readGridLongList");
 
@@ -580,6 +586,9 @@ class MessageSerializerGenerator {
 
             if (sameType(type, "org.apache.ignite.internal.processors.cache.CacheObject"))
                 return "CACHE_OBJECT";
+
+            if (sameType(type, "org.apache.ignite.internal.util.GridIntList"))
+                return "GRID_INT_LIST";
 
             if (sameType(type, "org.apache.ignite.internal.util.GridLongList"))
                 return "GRID_LONG_LIST";

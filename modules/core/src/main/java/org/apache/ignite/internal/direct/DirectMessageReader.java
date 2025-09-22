@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -330,6 +331,17 @@ public class DirectMessageReader implements MessageReader {
         lastRead = stream.lastFinished();
 
         return key;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridIntList readGridIntList() {
+        DirectByteBufferStream stream = state.item().stream;
+
+        GridIntList il = stream.readGridIntList();
+
+        lastRead = stream.lastFinished();
+
+        return il;
     }
 
     /** {@inheritDoc} */
