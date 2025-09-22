@@ -74,6 +74,9 @@ public class TcpDiscoveryNodesRing {
     @GridToStringInclude
     private NavigableSet<TcpDiscoveryNode> nodes = new TreeSet<>();
 
+    /** */
+    private volatile boolean hasRemoteServerNodes;
+
     /** All started nodes. */
     @GridToStringExclude
     private Map<UUID, TcpDiscoveryNode> nodesMap = new HashMap<>();
@@ -206,21 +209,7 @@ public class TcpDiscoveryNodesRing {
      * @return {@code true} if the topology has remote server nodes in.
      */
     public boolean hasRemoteServerNodes() {
-        rwLock.readLock().lock();
-
-        try {
-            if (nodes.size() < 2)
-                return false;
-
-            for (TcpDiscoveryNode node : nodes)
-                if (node.clientRouterNodeId() == null && !node.id().equals(locNode.id()))
-                    return true;
-
-            return false;
-        }
-        finally {
-            rwLock.readLock().unlock();
-        }
+        return hasRemoteServerNodes;
     }
 
     /**
@@ -252,6 +241,9 @@ public class TcpDiscoveryNodesRing {
             node.lastUpdateTimeNanos(System.nanoTime());
 
             nodes.add(node);
+
+            if (!node.isClient() && !node.id().equals(locNode.id()))
+                hasRemoteServerNodes = true;
 
             nodeOrder = node.internalOrder();
 
@@ -325,6 +317,9 @@ public class TcpDiscoveryNodesRing {
                 node.lastUpdateTimeNanos(System.nanoTime());
 
                 this.nodes.add(node);
+
+                if (!node.isClient() && !node.id().equals(locNode.id()))
+                    hasRemoteServerNodes = true;
             }
 
             nodeOrder = topVer;
@@ -374,6 +369,9 @@ public class TcpDiscoveryNodesRing {
                 nodes = new TreeSet<>(nodes);
 
                 nodes.remove(rmv);
+
+                if (!rmv.isClient() && nodes.size() < 2)
+                    hasRemoteServerNodes = false;
             }
 
             initializeMinimumVersion();
@@ -407,7 +405,7 @@ public class TcpDiscoveryNodesRing {
 
             nodeOrder = 0;
             maxInternalOrder = 0;
-
+            hasRemoteServerNodes = false;
             topVer = 0;
 
             if (locNode != null)

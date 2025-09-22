@@ -1527,23 +1527,22 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     @Test
     public void testNoRingMessageWorkerAbnormalFailureOnSegmentation() throws Exception {
         try {
-            TimeoutSimulatingSpi spi1 = new TimeoutSimulatingSpi(
+            FailureSimulatingSpi spi1 = new FailureSimulatingSpi(
                 true,
-                () -> discoMap.get("noRingMessageFailureNode").locNode.discoveryPort(),
+                () -> discoMap.get("noRingMessageNormalNode").locNode.discoveryPort(),
                 null
             ).paused();
 
             nodeSpi.set(spi1);
 
+            Ignite failureNode = startGrid("noRingMessageFailureNode");
+
             startGrid("noRingMessageNormalNode");
 
-            final Ignite ignite2 = startGrid("noRingMessageFailureNode");
-
             final AtomicBoolean segmented = new AtomicBoolean();
+            final UUID failedNodeId = failureNode.cluster().localNode().id();
 
-            final UUID failedNodeId = ignite2.cluster().localNode().id();
-
-            ignite2.events().localListen(new IgnitePredicate<>() {
+            failureNode.events().localListen(new IgnitePredicate<>() {
                 @Override public boolean apply(Event evt) {
                     if (!failedNodeId.equals(((DiscoveryEvent)evt).eventNode().id()))
                         return true;
@@ -1557,10 +1556,10 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             spi1.pause = false;
 
+            assertTrue(GridTestUtils.waitForCondition(segmented::get, failureDetectionTimeout * 4L));
+
             assertTrue(GridTestUtils.waitForCondition(() -> grid("noRingMessageNormalNode").cluster().nodes().size() == 1,
                 failureDetectionTimeout * 4L));
-
-            assertTrue(GridTestUtils.waitForCondition(segmented::get, failureDetectionTimeout * 4L));
         }
         finally {
             stopAllGrids();
@@ -1677,59 +1676,27 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** Tests failure of a joining node on {@link TcpDiscoveryNodeAddedMessage}. */
     @Test
     public void testJoinNodeFails1() throws Exception {
-        joiningNodeFailsTestsPack(false, false, TcpDiscoveryNodeAddedMessage.class);
-    }
-
-    /** Tests failure of a joining node on {@link TcpDiscoveryNodeAddedMessage} with a timeout error. */
-    @Test
-    public void testJoinNodeFails1WithTimeout() throws Exception {
-        joiningNodeFailsTestsPack(false, true, TcpDiscoveryNodeAddedMessage.class);
-    }
-
-    /** Tests failure of an asynchronously joining node on {@link TcpDiscoveryNodeAddedMessage}. */
-    @Test
-    public void testJoinNodeFails1Async() throws Exception {
-        joiningNodeFailsTestsPack(true, false, TcpDiscoveryNodeAddedMessage.class);
-    }
-
-    /** Tests failure of an asynchronously joining node on {@link TcpDiscoveryNodeAddedMessage} with a timeout error. */
-    @Test
-    public void testJoinNodeFails1WithTimeoutAsync() throws Exception {
-        joiningNodeFailsTestsPack(true, true, TcpDiscoveryNodeAddedMessage.class);
+        joiningNodeFailsTestsPack(TcpDiscoveryNodeAddedMessage.class);
     }
 
     /** Tests failure of a joining node on {@link TcpDiscoveryNodeAddFinishedMessage}. */
     @Test
     public void testJoinNodeFails2() throws Exception {
-        joiningNodeFailsTestsPack(false, false, TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
+        joiningNodeFailsTestsPack(TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
     }
 
-    /** Tests failure of a joining node on {@link TcpDiscoveryNodeAddFinishedMessage} with a timeout error. */
-    @Test
-    public void testJoinNodeFails2WithTimeout() throws Exception {
-        joiningNodeFailsTestsPack(false, true, TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
-    }
-
-    /** Tests failure of an asynchronously joining node on {@link TcpDiscoveryNodeAddFinishedMessage}. */
-    @Test
-    public void testJoinNodeFails2Async() throws Exception {
-        joiningNodeFailsTestsPack(false, false, TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
-    }
-
-    /** Tests failure of an asynchronously joining node on {@link TcpDiscoveryNodeAddFinishedMessage} with a timeout error. */
-    @Test
-    public void testJoinNodeFails2WithTimeoutAsync() throws Exception {
-        joiningNodeFailsTestsPack(false, true, TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
-    }
-
-    /** Launches scenarios of joining node failure. */
-    private void joiningNodeFailsTestsPack(boolean asyncStart, boolean timeoutErr,
+    /** Launches the scenarios of joining node failure. */
+    private void joiningNodeFailsTestsPack(
         Class<? extends TcpDiscoveryAbstractMessage>... msgsBeforeFail) throws Exception {
-        joiningNodeFailsTestRun(false, timeoutErr, asyncStart, msgsBeforeFail);
+        for (boolean asyncStart : Arrays.asList(false, true)) {
+            for (boolean noConnRecover : Arrays.asList(false, true)) {
+                for (boolean timeoutErr : Arrays.asList(true, false)) {
+                    joiningNodeFailsTestRun(noConnRecover, timeoutErr, asyncStart, msgsBeforeFail);
 
-        stopAllGrids();
-
-        joiningNodeFailsTestRun(true, timeoutErr, asyncStart, msgsBeforeFail);
+                    stopAllGrids();
+                }
+            }
+        }
     }
 
     /** Main routine of joining node failure test. */
@@ -1741,7 +1708,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     ) throws Exception {
         if (log.isInfoEnabled()) {
             log.info("Testing joining node failure with params: noConnRecoverTimeout=" + noConnRecoverTimeout
-                + ", async=" + asyncStart + ", timeoutErr=" + timeoutErr);
+                + ", asyncStart=" + asyncStart + ", timeoutErr=" + timeoutErr);
         }
 
         assert msgsBeforeFail.length > 0;
@@ -1759,7 +1726,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         // Start grids which will fail everything on the malfunctional node.
         for (int i = 0; i < initNodesCnt; ++i) {
-            nodeSpi.set(new TimeoutSimulatingSpi(
+            nodeSpi.set(new FailureSimulatingSpi(
                 timeoutErr,
                 () -> discoMap.get(testNodeName).locNode.discoveryPort(),
                 null
@@ -1781,9 +1748,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             () -> {
                 int nodeIdx = nodeIdxHolder.getAndIncrement();
 
+                // Start additional normal grid which will fail everything on the malfunctional node.
                 if (nodeIdx != testNodeIdx) {
-                    // Start additional grid which will fail everything on the malfunctional node.
-                    nodeSpi.set(new TimeoutSimulatingSpi(
+                    nodeSpi.set(new FailureSimulatingSpi(
                         timeoutErr,
                         () -> discoMap.get(testNodeName).locNode.discoveryPort(),
                         null
@@ -1800,7 +1767,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }
 
                 // Start the malfunctional node.
-                nodeSpi.set(new TimeoutSimulatingSpi(
+                nodeSpi.set(new FailureSimulatingSpi(
                     timeoutErr,
                     null,
                     failureSpi -> {
@@ -1810,9 +1777,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                             if (spi == failureSpi)
                                 continue;
 
-                            assert spi instanceof TimeoutSimulatingSpi;
-
-                            TimeoutSimulatingSpi spi0 = (TimeoutSimulatingSpi)spi;
+                            FailureSimulatingSpi spi0 = (FailureSimulatingSpi)spi;
 
                             spi0.pause = false;
                         }
@@ -1855,7 +1820,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         assertNull(errHolder.get());
 
-        // Ensure that the test node stops on failure detection.
+        // Ensure that the test malfunctional node stops on failure detection.
         if (!noConnRecoverTimeout) {
             assertTrue(lsnr.check(failureDetectionTimeout * 4L));
 
@@ -1922,7 +1887,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         AtomicBoolean coordFailed = new AtomicBoolean();
 
         // Start malfunctional coordinator.
-        TimeoutSimulatingSpi coordDiscoSpi = new TimeoutSimulatingSpi(
+        FailureSimulatingSpi coordDiscoSpi = new FailureSimulatingSpi(
             waitBeforeFail,
             null,
             testSpi -> {
@@ -1930,7 +1895,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                 discoMap.values().forEach(spi0 -> {
                     if (testSpi != spi0)
-                        ((TimeoutSimulatingSpi)spi0).pause = false;
+                        ((FailureSimulatingSpi)spi0).pause = false;
                 });
             },
             msgBeforeFail).paused();
@@ -1951,7 +1916,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         // Start other 2 initial grids.
         for (int i = 1; i < 3; ++i) {
-            TimeoutSimulatingSpi spi = new TimeoutSimulatingSpi(waitBeforeFail, () -> coordDiscoSpi.locNode.discoveryPort(), null).paused();
+            FailureSimulatingSpi spi = new FailureSimulatingSpi(waitBeforeFail, () -> coordDiscoSpi.locNode.discoveryPort(), null).paused();
             nodeSpi.set(spi);
 
             startGrid(i);
@@ -1965,7 +1930,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         coordDiscoSpi.pause = false;
 
         GridTestUtils.runMultiThreadedAsync(() -> {
-            TimeoutSimulatingSpi spi = new TimeoutSimulatingSpi(waitBeforeFail, () -> coordDiscoSpi.locNode.discoveryPort(), null);
+            FailureSimulatingSpi spi = new FailureSimulatingSpi(waitBeforeFail, () -> coordDiscoSpi.locNode.discoveryPort(), null);
 
             if (!coordFailed.get())
                 spi.paused();
@@ -2578,7 +2543,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TimeoutSimulatingSpi extends TcpDiscoverySpi {
+    private static class FailureSimulatingSpi extends TcpDiscoverySpi {
         /** */
         private final Collection<Class<? extends TcpDiscoveryAbstractMessage>> msgsBeforeFail;
 
@@ -2601,7 +2566,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         private volatile boolean pause;
 
         /** */
-        private TimeoutSimulatingSpi(
+        private FailureSimulatingSpi(
             boolean doWaitBeforeTimeout,
             @Nullable Supplier<Integer> errPortSupplier,
             @Nullable Consumer<TcpDiscoverySpi> failureLsnr,
@@ -2616,7 +2581,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
 
         /** */
-        private TimeoutSimulatingSpi paused() {
+        private FailureSimulatingSpi paused() {
             pause = true;
 
             return this;

@@ -294,6 +294,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Last time received message from ring. */
     private volatile long lastRingMsgReceivedTime;
 
+    /** Time of last sent and acknowledged message. */
+    private volatile long lastRingMsgSentTime;
+
     /** Map with proceeding ping requests. */
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap<>();
@@ -400,6 +403,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         lastRingMsgReceivedTime = 0;
+
+        lastRingMsgSentTime = 0;
 
         // Foundumental timeout value for actions related to connection check.
         connCheckTick = effectiveExchangeTimeout() / 3;
@@ -710,19 +715,13 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
-    /** @see #pingNode(TcpDiscoveryNode, long) */
-    private boolean pingNode(TcpDiscoveryNode node) {
-        return pingNode(node, 0);
-    }
-
     /**
      * Pings the remote node to see if it's alive.
      *
      * @param node Node.
-     * @param timeout timeout.
      * @return {@code True} if ping succeeds.
      */
-    private boolean pingNode(TcpDiscoveryNode node, long timeout) {
+    private boolean pingNode(TcpDiscoveryNode node) {
         assert node != null;
 
         if (node.id().equals(getLocalNodeId()))
@@ -742,7 +741,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         for (InetSocketAddress addr : spi.getEffectiveNodeAddresses(node)) {
             try {
                 // ID returned by the node should be the same as ID of the parameter for ping to succeed.
-                IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), clientNodeId, timeout, true);
+                IgniteBiTuple<UUID, Boolean> t = pingNode(addr, node.id(), clientNodeId, 0, true);
 
                 if (t == null)
                     // Remote node left topology.
@@ -1088,13 +1087,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         tracing.messages().beforeSend(joinReqMsg);
 
-        boolean ringFailedAtJoin = false;
+        boolean joinFailed = false;
 
         while (true) {
-            if (!ringFailedAtJoin && !sendJoinRequestMessage(joinReqMsg)) {
+            if (!joinFailed && !sendJoinRequestMessage(joinReqMsg)) {
                 synchronized (mux) {
                     if (spiState == RING_FAILED) {
-                        ringFailedAtJoin = true;
+                        joinFailed = true;
 
                         continue;
                     }
@@ -2944,9 +2943,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Last time metrics update message has been sent. */
         private long lastTimeMetricsUpdateMsgSentNanos = System.nanoTime() - U.millisToNanos(spi.metricsUpdateFreq);
 
-        /** Time of last sent and acknowledged message. */
-        private long lastRingMsgSentTime;
-
         /** */
         private List<DiscoveryDataPacket> joiningNodesDiscoDataList;
 
@@ -3308,8 +3304,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (locNode == null)
                 return;
 
-            if (ring.hasRemoteServerNodes())
-                checkConnection();
+            checkConnection();
 
             sendMetricsUpdateMessage();
 
@@ -3368,11 +3363,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
         }
 
-        /** Fixates time of last sent message. */
-        private void updateLastSentMessageTime() {
-            lastRingMsgSentTime = System.nanoTime();
-        }
-
         /**
          * Sends message across the ring.
          *
@@ -3424,7 +3414,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         debugLog(msg, "No next node in topology.");
 
                     if (ring.hasRemoteNodes() && !(msg instanceof TcpDiscoveryConnectionCheckMessage)) {
-                        // Successfully found remote nodes, but failed to connect to any at the last stage.
+                        // This is a special case like 2PC transaction failure at the commit phase where the ring and
+                        // the connection checks aren't stable, aren't consistent. Such node should stop and close its sockets,
+                        // connections asap.
                         if (state == CONNECTING || (state == CONNECTED && (msg instanceof TcpDiscoveryNodeAddFinishedMessage) &&
                             ((TcpDiscoveryNodeAddFinishedMessage)msg).nodeId().equals(locNodeId))) {
                             segmentLocalNodeOnSendFail(failedNodes);
@@ -3506,10 +3498,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 // Handshake.
                                 TcpDiscoveryHandshakeRequest hndMsg = new TcpDiscoveryHandshakeRequest(locNodeId);
 
-                                // Topology treated as changes if next node is not available.
-                                boolean changeTop = sndState != null && !sndState.isStartingPoint();
-
-                                if (changeTop)
+                                if (newNextNode)
                                     hndMsg.changeTopology(ring.previousNodeOf(next).id());
 
                                 if (log.isDebugEnabled()) {
@@ -3533,8 +3522,16 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 // We should take previousNodeAlive flag into account
                                 // only if we received the response from the correct node.
-                                if (res.creatorNodeId().equals(next.id()) && res.previousNodeAlive() && sndState != null) {
-                                    sndState.checkTimeout();
+                                if (res.creatorNodeId().equals(next.id()) && res.previousNodeAlive()) {
+                                    U.closeQuiet(sock);
+                                    sock = null;
+
+                                    if (sndState == null || !sndState.checkTimeout()) {
+                                        // No recovery timeout.
+                                        segmentLocalNodeOnSendFail(failedNodes);
+
+                                        return; // Nothing to do here.
+                                    }
 
                                     // Remote node checked connection to it's previous and got success.
                                     boolean previousNode = sndState.markLastFailedNodeAlive();
@@ -3547,19 +3544,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         newNextNode(ring.nextNode(failedNodes));
                                     }
 
-                                    U.closeQuiet(sock);
-
-                                    sock = null;
-
-                                    if (sndState.isFailed()) {
-                                        segmentLocalNodeOnSendFail(failedNodes);
-
-                                        return; // Nothing to do here.
-                                    }
-
-                                    if (previousNode)
+                                    if (previousNode) {
                                         U.warn(log, "New next node has connection to it's previous, trying previous " +
                                             "again. [next=" + next + ']');
+                                    }
 
                                     continue ringLoop;
                                 }
@@ -6229,25 +6217,13 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Check connection to next node in the ring.
          */
         private void checkConnection() {
-            long interval = U.millisToNanos(connCheckInterval);
+            long elapsed = (lastRingMsgSentTime + U.millisToNanos(connCheckInterval)) - System.nanoTime();
 
-            if (lastRingMsgSentTime + interval - System.nanoTime() < 0)
-                sendMessageAcrossRing(connCheckMsg);
+            if (elapsed > 0)
+                return;
 
-            // Special case if one of nodes experiences connection troubles. If cluster has more than 2 nodes, previous
-            // node myst be pinged from another node.
-            if (ring.serverNodes().size() == 2 && next != null && spi.getEffectiveConnectionRecoveryTimeout() > 0
-                && spiStateCopy() == CONNECTED && lastRingMsgReceivedTime + interval * 1.5 - System.nanoTime() < 0) {
-                // Might be async usining the utility pool.
-                boolean pingPrevResult = pingNode(next, backwardCheckTimeout);
-
-                if (!pingPrevResult) {
-                    U.warn(log, "Current node doesn't receive any messages from previous node for too long and " +
-                        "failed to ping the previous node [" + next + "].");
-
-                    notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
-                }
-            }
+            if (ring.hasRemoteServerNodes())
+                sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));
         }
 
         /** {@inheritDoc} */
@@ -6284,6 +6260,11 @@ class ServerImpl extends TcpDiscoveryImpl {
             absoluteThreshold = Math.min(sndState.failTimeNanos, System.nanoTime() + U.millisToNanos(connCheckTick));
 
         return new IgniteSpiOperationTimeoutHelper(spi, true, lastOperationNanos, absoluteThreshold);
+    }
+
+    /** Fixates time of last sent message. */
+    private void updateLastSentMessageTime() {
+        lastRingMsgSentTime = System.nanoTime();
     }
 
     /** Thread that executes {@link TcpServer}'s code. */
@@ -7105,7 +7086,24 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Update last ring message received timestamp.
          */
         private void ringMessageReceived() {
-            lastRingMsgReceivedTime = System.nanoTime();
+            long t = System.nanoTime();
+
+            // Node has lost the ring but still receives pings..
+            // Case with no failureDetectionTimeout and reconnectCount > 1 isn't conidered. The current timing should be enough.
+            if (!ring.hasRemoteServerNodes() && !spi.isNodeStopping0() && t > lastRingMsgReceivedTime +
+                U.millisToNanos(effectiveExchangeTimeout() + spi.getConnectionRecoveryTimeout())) {
+                synchronized (mux) {
+                    if (spiState == CONNECTED) {
+                        U.warn(log, "Current node keeps receiving ping from an empty ring. The ring state is invalid.");
+
+                        notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
+
+                        return;
+                    }
+                }
+            }
+
+            lastRingMsgReceivedTime = t;
         }
 
         /**
@@ -8024,7 +8022,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @return {@code True} if passed timeout is reached. {@code False} otherwise.
          */
         boolean checkTimeout() {
-            if (System.nanoTime() >= failTimeNanos) {
+            if (state != RingMessageSendState.FAILED && System.nanoTime() >= failTimeNanos) {
                 state = RingMessageSendState.FAILED;
 
                 return true;
