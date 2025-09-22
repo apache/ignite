@@ -161,11 +161,6 @@ public class GridH2RowRange implements Message {
         return -34;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
     /**
      * @return Number of rows.
      */

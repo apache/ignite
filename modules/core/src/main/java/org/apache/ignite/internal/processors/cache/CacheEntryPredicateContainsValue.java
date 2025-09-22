@@ -105,7 +105,7 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage(val))
+                if (!writer.writeCacheObject(val))
                     return false;
 
                 writer.incrementState();
@@ -124,7 +124,7 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
 
         switch (reader.state()) {
             case 0:
-                val = reader.readMessage();
+                val = reader.readCacheObject();
 
                 if (!reader.isLastRead())
                     return false;

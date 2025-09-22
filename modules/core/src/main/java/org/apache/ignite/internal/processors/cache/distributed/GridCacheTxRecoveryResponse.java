@@ -125,19 +125,19 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
         }
 
         switch (writer.state()) {
-            case 8:
+            case 7:
                 if (!writer.writeIgniteUuid(futId))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 8:
                 if (!writer.writeIgniteUuid(miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 9:
                 if (!writer.writeBoolean(success))
                     return false;
 
@@ -156,7 +156,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
             return false;
 
         switch (reader.state()) {
-            case 8:
+            case 7:
                 futId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
@@ -164,7 +164,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
 
                 reader.incrementState();
 
-            case 9:
+            case 8:
                 miniId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
@@ -172,7 +172,7 @@ public class GridCacheTxRecoveryResponse extends GridDistributedBaseMessage impl
 
                 reader.incrementState();
 
-            case 10:
+            case 9:
                 success = reader.readBoolean();
 
                 if (!reader.isLastRead())

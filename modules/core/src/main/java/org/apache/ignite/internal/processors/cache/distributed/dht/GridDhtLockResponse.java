@@ -170,19 +170,19 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
         }
 
         switch (writer.state()) {
-            case 11:
+            case 10:
                 if (!writer.writeCollection(invalidParts, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
+            case 11:
                 if (!writer.writeIgniteUuid(miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 12:
                 if (!writer.writeCollection(preloadEntries, MessageCollectionItemType.MSG))
                     return false;
 
@@ -201,7 +201,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
             return false;
 
         switch (reader.state()) {
-            case 11:
+            case 10:
                 invalidParts = reader.readCollection(MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
@@ -209,7 +209,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
 
                 reader.incrementState();
 
-            case 12:
+            case 11:
                 miniId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
@@ -217,7 +217,7 @@ public class GridDhtLockResponse extends GridDistributedLockResponse {
 
                 reader.incrementState();
 
-            case 13:
+            case 12:
                 preloadEntries = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())

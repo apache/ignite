@@ -17,17 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Context to get value of cache object.
  */
 public interface CacheObjectValueContext {
-    /**
-     * @return Kernal context.
-     */
-    public GridKernalContext kernalContext();
-
     /**
      * @return Copy on get flag.
      */
@@ -47,4 +46,80 @@ public interface CacheObjectValueContext {
      * @return Binary enabled flag.
      */
     public boolean binaryEnabled();
+
+    /**
+     * @return Binary context.
+     */
+    public BinaryContext binaryContext();
+
+    /**
+     * Forces caller thread to wait for binary metadata write operation for given type ID.
+     *
+     * In case of in-memory mode this method becomes a No-op as no binary metadata is written to disk in this mode.
+     *
+     * @param typeId ID of binary type to wait for metadata write operation.
+     */
+    public void waitMetadataWriteIfNeeded(final int typeId);
+
+    /**
+     * @return User's class loader.
+     */
+    public @Nullable ClassLoader classLoader();
+
+    /**
+     * Gets distributed class loader.
+     *
+     * @return Cache class loader.
+     */
+    public ClassLoader globalLoader();
+
+    /**
+     * @param cls Class
+     * @return Logger for class.
+     */
+    public IgniteLogger log(Class<?> cls);
+
+    /**
+     * @param val Value.
+     * @return Value bytes.
+     * @throws IgniteCheckedException If failed.
+     */
+    public byte[] marshal(Object val) throws IgniteCheckedException;
+
+    /**
+     * @param bytes Bytes.
+     * @param clsLdr Class loader.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Object unmarshal(byte[] bytes, ClassLoader clsLdr)
+        throws IgniteCheckedException;
+
+    /** @return {@code true} if peer class loading is enabled, {@code false} otherwise. */
+    public boolean isPeerClassLoadingEnabled();
+
+    /**
+     * Transforms bytes according to {@link CacheObjectTransformerProcessor} when specified.
+     * @param bytes Given bytes.
+     * @return Transformed bytes.
+     */
+    public default byte[] transformIfNecessary(byte[] bytes) {
+        return transformIfNecessary(bytes, 0, bytes.length);
+    }
+
+    /**
+     * Transforms bytes according to {@link CacheObjectTransformerProcessor} when specified.
+     * @param bytes Given bytes.
+     * @param offset Index to start from.
+     * @param length Data length.
+     * @return Transformed bytes.
+     */
+    public byte[] transformIfNecessary(byte[] bytes, int offset, int length);
+
+    /**
+     * Restores transformed bytes if necessary.
+     * @param bytes Given bytes.
+     * @return Restored bytes.
+     */
+    public byte[] restoreIfNecessary(byte[] bytes);
 }

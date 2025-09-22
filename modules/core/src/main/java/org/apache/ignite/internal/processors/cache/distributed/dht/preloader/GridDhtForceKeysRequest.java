@@ -169,7 +169,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeCollection(keys, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(keys, MessageCollectionItemType.KEY_CACHE_OBJECT))
                     return false;
 
                 writer.incrementState();
@@ -208,7 +208,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
                 reader.incrementState();
 
             case 5:
-                keys = reader.readCollection(MessageCollectionItemType.MSG);
+                keys = reader.readCollection(MessageCollectionItemType.KEY_CACHE_OBJECT);
 
                 if (!reader.isLastRead())
                     return false;

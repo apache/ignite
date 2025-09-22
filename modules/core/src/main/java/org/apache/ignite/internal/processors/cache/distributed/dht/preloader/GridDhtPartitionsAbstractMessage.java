@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -37,12 +38,15 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     private static final byte RESTORE_STATE_FLAG_MASK = 0x02;
 
     /** Exchange ID. */
+    @Order(value = 3, method = "exchangeId")
     private GridDhtPartitionExchangeId exchId;
 
     /** Last used cache version. */
+    @Order(value = 4, method = "lastVersion")
     private GridCacheVersion lastVer;
 
     /** */
+    @Order(5)
     protected byte flags;
 
     /**
@@ -112,6 +116,27 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     }
 
     /**
+     * @param lastVer Last used version among all nodes.
+     */
+    public void lastVersion(GridCacheVersion lastVer) {
+        this.lastVer = lastVer;
+    }
+
+    /**
+     * @return Flags.
+     */
+    public byte flags() {
+        return flags;
+    }
+
+    /**
+     * @param flags Flags.
+     */
+    public void flags(byte flags) {
+        this.flags = flags;
+    }
+
+    /**
      * @return {@code True} if message data is compressed.
      */
     public final boolean compressed() {
@@ -141,6 +166,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        // TODO: Remove #writeTo() after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf, writer))
@@ -179,6 +205,7 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        // TODO: Remove #readFrom() after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf, reader))

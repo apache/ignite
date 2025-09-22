@@ -116,8 +116,4 @@ public class TxLockList implements Message {
         return -26;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
 }

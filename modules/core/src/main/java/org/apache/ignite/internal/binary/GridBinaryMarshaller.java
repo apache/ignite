@@ -20,16 +20,12 @@ package org.apache.ignite.internal.binary;
 import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Map;
-import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.jetbrains.annotations.Nullable;
@@ -480,17 +476,8 @@ public class GridBinaryMarshaller {
     public static BinaryContext threadLocalContext() {
         BinaryContext ctx = BINARY_CTX.get().get();
 
-        if (ctx == null) {
-            IgniteKernal ignite = IgnitionEx.localIgnite();
-
-            IgniteCacheObjectProcessor proc = ignite.context().cacheObjects();
-
-            if (proc instanceof CacheObjectBinaryProcessorImpl)
-                return ((CacheObjectBinaryProcessorImpl)proc).binaryContext();
-            else
-                throw new IgniteIllegalStateException("Ignite instance must be started with " +
-                    BinaryMarshaller.class.getName() + " [name=" + ignite.name() + ']');
-        }
+        if (ctx == null)
+            return IgnitionEx.localIgnite().context().cacheObjects().binaryContext();
 
         return ctx;
     }

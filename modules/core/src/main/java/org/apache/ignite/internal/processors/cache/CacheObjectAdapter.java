@@ -23,13 +23,11 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
@@ -43,7 +41,6 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
 
     /** */
     @GridToStringInclude(sensitive = true)
-    @GridDirectTransient
     protected Object val;
 
     /** */
@@ -54,25 +51,25 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
      * @return {@code True} need to copy value returned to user.
      */
     protected boolean needCopy(CacheObjectValueContext ctx) {
-        return ctx.copyOnGet() && val != null && !ctx.kernalContext().cacheObjects().immutable(val);
+        return ctx.copyOnGet() && val != null && !BinaryUtils.immutable(val);
     }
 
     /**
      * @return Value bytes from value.
      */
     protected byte[] valueBytesFromValue(CacheObjectValueContext ctx) throws IgniteCheckedException {
-        byte[] bytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
+        byte[] bytes = ctx.marshal(val);
 
-        return CacheObjectTransformerUtils.transformIfNecessary(bytes, ctx);
+        return ctx.transformIfNecessary(bytes);
     }
 
     /**
      * @return Value from value bytes.
      */
     protected Object valueFromValueBytes(CacheObjectValueContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        byte[] bytes = CacheObjectTransformerUtils.restoreIfNecessary(valBytes, ctx);
+        byte[] bytes = ctx.restoreIfNecessary(valBytes);
 
-        return ctx.kernalContext().cacheObjects().unmarshal(ctx, bytes, ldr);
+        return ctx.unmarshal(bytes, ldr);
     }
 
     /** {@inheritDoc} */
@@ -152,47 +149,6 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
             valueBytes(ctx);
 
         return objectPutSize(valBytes.length);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                valBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByteArray(valBytes))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

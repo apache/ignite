@@ -22,11 +22,11 @@ import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -39,19 +39,18 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public abstract class GridDistributedBaseMessage extends GridCacheIdMessage implements GridCacheDeployable,
     GridCacheVersionable {
     /** Lock or transaction version. */
+    @Order(value = 4, method = "version")
     @GridToStringInclude
     protected GridCacheVersion ver;
 
-    /** */
-    @GridToStringExclude
-    private byte[] candsByIdxBytes;
-
     /** Committed versions with order higher than one for this message (needed for commit ordering). */
+    @Order(value = 5, method = "committedVersions")
     @GridToStringInclude
     @GridDirectCollection(GridCacheVersion.class)
     private Collection<GridCacheVersion> committedVers;
 
     /** Rolled back versions with order higher than one for this message (needed for commit ordering). */
+    @Order(value = 6, method = "rolledbackVersions")
     @GridToStringInclude
     @GridDirectCollection(GridCacheVersion.class)
     private Collection<GridCacheVersion> rolledbackVers;
@@ -129,10 +128,24 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
     }
 
     /**
+     * @param committedVers Committed versions.
+     */
+    public void committedVersions(Collection<GridCacheVersion> committedVers) {
+        this.committedVers = committedVers;
+    }
+
+    /**
      * @return Rolled back versions.
      */
     public Collection<GridCacheVersion> rolledbackVersions() {
         return rolledbackVers == null ? Collections.<GridCacheVersion>emptyList() : rolledbackVers;
+    }
+
+    /**
+     * @param rolledbackVers Rolled back versions.
+     */
+    public void rolledbackVersions(Collection<GridCacheVersion> rolledbackVers) {
+        this.rolledbackVers = rolledbackVers;
     }
 
     /**
@@ -144,6 +157,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        // TODO: Remove #writeTo() after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf, writer))
@@ -158,24 +172,18 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeByteArray(candsByIdxBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
                 if (!writer.writeCollection(committedVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 5:
                 if (!writer.writeCollection(rolledbackVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
+            case 6:
                 if (!writer.writeMessage(ver))
                     return false;
 
@@ -188,6 +196,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        // TODO: Remove #readFrom() after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf, reader))
@@ -195,14 +204,6 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
 
         switch (reader.state()) {
             case 4:
-                candsByIdxBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
                 committedVers = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -210,7 +211,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
 
                 reader.incrementState();
 
-            case 6:
+            case 5:
                 rolledbackVers = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -218,7 +219,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
 
                 reader.incrementState();
 
-            case 7:
+            case 6:
                 ver = reader.readMessage();
 
                 if (!reader.isLastRead())
