@@ -20,7 +20,6 @@ package org.apache.ignite.plugin.extensions.communication;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -236,19 +235,6 @@ public interface MessageReader {
      * @return Collection.
      */
     public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType);
-
-    /**
-     * Reads map.
-     *
-     * @param keyType Map key type.
-     * @param valType Map value type.
-     * @param linked Whether {@link LinkedHashMap} should be created.
-     * @param <M> Type of the red map.
-     * @return Map.
-     */
-    @Deprecated
-    public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
-        MessageCollectionItemType valType, boolean linked);
 
     /**
      * Reads map.
