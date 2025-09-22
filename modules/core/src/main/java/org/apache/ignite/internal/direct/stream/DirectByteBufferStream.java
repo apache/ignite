@@ -1445,12 +1445,11 @@ public class DirectByteBufferStream {
     /**
      * @param keyType Key type.
      * @param valType Value type.
-     * @param linked Whether linked map should be created.
      * @param reader Reader.
      * @return Map.
      */
     public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType, MessageCollectionItemType valType,
-                                           boolean linked, MessageReader reader) {
+                                           MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1462,7 +1461,7 @@ public class DirectByteBufferStream {
 
         if (readSize >= 0) {
             if (map == null)
-                map = linked ? U.newLinkedHashMap(readSize) : U.newHashMap(readSize);
+                map = U.newHashMap(readSize);
 
             for (int i = readItems; i < readSize; i++) {
                 if (!keyDone) {
