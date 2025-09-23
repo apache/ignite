@@ -1666,15 +1666,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * Writes response to the socket.
+     * Writes message to the socket.
      *
      * @param sock Socket.
-     * @param msg Message being processed. Might be {@code null} in cases like an initial connection, a handshake.
+     * @param msg Message.
      * @param data Raw data to write.
      * @param timeout Socket write timeout.
      * @throws IOException If IO failed or write timed out.
      */
-    protected void writeToSocket(Socket sock, @Nullable TcpDiscoveryAbstractMessage msg, byte[] data, long timeout) throws IOException {
+    protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data, long timeout) throws IOException {
         assert sock != null;
         assert data != null;
 

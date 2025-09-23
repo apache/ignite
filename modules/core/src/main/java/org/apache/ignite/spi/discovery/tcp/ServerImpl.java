@@ -8027,7 +8027,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @return {@code True} if passed timeout is reached. {@code False} otherwise.
          */
         boolean checkTimeout() {
-            if (state != RingMessageSendState.FAILED && System.nanoTime() >= failTimeNanos) {
+            if (System.nanoTime() >= failTimeNanos) {
                 state = RingMessageSendState.FAILED;
 
                 return true;
