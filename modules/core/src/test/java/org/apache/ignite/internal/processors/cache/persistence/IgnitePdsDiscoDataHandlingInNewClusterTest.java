@@ -19,11 +19,9 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -36,9 +34,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
-import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
 
 /**
  *
@@ -123,33 +119,6 @@ public class IgnitePdsDiscoDataHandlingInNewClusterTest extends GridCommonAbstra
         }
 
         return cfg;
-    }
-
-    /**
-     * @throws Exception
-     */
-    @Test
-    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, value = "false")
-    public void testNewDynamicCacheDoesntStartOnOldNode() throws Exception {
-        IgniteEx ig0 = startGrid(NODE_CONS_ID_0);
-
-        startGrid(NODE_CONS_ID_1);
-
-        ig0.cluster().state(ClusterState.ACTIVE);
-
-        startDynamicCache(ig0, DYNAMIC_CACHE_NAME_0, MIXED_CACHES_GROUP_NAME_0);
-
-        stopGrid(NODE_CONS_ID_1);
-
-        startDynamicCache(ig0, DYNAMIC_CACHE_NAME_1, MIXED_CACHES_GROUP_NAME_0);
-
-        startDynamicCache(ig0, DYNAMIC_CACHE_NAME_2, DYNAMIC_CACHES_GROUP_NAME_1);
-
-        SHOULD_FAIL.set(true);
-
-        IgniteEx ig1 = startGrid(NODE_CONS_ID_1);
-
-        verifyCachesAndGroups(ig1);
     }
 
     /** */

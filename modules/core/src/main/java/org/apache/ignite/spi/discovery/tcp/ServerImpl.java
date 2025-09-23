@@ -3409,7 +3409,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (ring.hasRemoteNodes() && !(msg instanceof TcpDiscoveryConnectionCheckMessage)) {
                         // This is a special case like 2PC transaction failure at the commit phase where the ring and
                         // the connection checks aren't stable, aren't consistent. Such node should stop and close its sockets,
-                        // connections asap.
+                        // connections asap. Or this may cause cases like IGNITE-13590
                         if (state == CONNECTING || (state == CONNECTED && (msg instanceof TcpDiscoveryNodeAddFinishedMessage) &&
                             ((TcpDiscoveryNodeAddFinishedMessage)msg).nodeId().equals(locNodeId))) {
                             segmentLocalNodeOnSendFail(failedNodes);

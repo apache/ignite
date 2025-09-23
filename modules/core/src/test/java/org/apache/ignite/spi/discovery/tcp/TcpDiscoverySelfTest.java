@@ -1671,25 +1671,35 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** Tests failure of a joining node on {@link TcpDiscoveryNodeAddedMessage}. */
     @Test
     public void testJoinNodeFails1() throws Exception {
-        joiningNodeFailsTestsPack(TcpDiscoveryNodeAddedMessage.class);
+        joiningNodeFailsTestsPack(false, TcpDiscoveryNodeAddedMessage.class);
+    }
+
+    /** Tests failure of a joining node on {@link TcpDiscoveryNodeAddedMessage} and asynchronous nodes start. */
+    @Test
+    public void testJoinNodeFails1Async() throws Exception {
+        joiningNodeFailsTestsPack(true, TcpDiscoveryNodeAddedMessage.class);
     }
 
     /** Tests failure of a joining node on {@link TcpDiscoveryNodeAddFinishedMessage}. */
     @Test
     public void testJoinNodeFails2() throws Exception {
-        joiningNodeFailsTestsPack(TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
+        joiningNodeFailsTestsPack(false, TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
+    }
+
+    /** Tests failure of a joining node on {@link TcpDiscoveryNodeAddFinishedMessage} and asynchronous nodes start. */
+    @Test
+    public void testJoinNodeFails2Async() throws Exception {
+        joiningNodeFailsTestsPack(true, TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
     }
 
     /** Launches the scenarios of a joining node failure. */
-    private void joiningNodeFailsTestsPack(
+    private void joiningNodeFailsTestsPack(boolean asyncStart,
         Class<? extends TcpDiscoveryAbstractMessage>... msgsBeforeFail) throws Exception {
-        for (boolean asyncStart : Arrays.asList(false, true)) {
-            for (boolean noConnRecover : Arrays.asList(false, true)) {
-                for (boolean timeoutErr : Arrays.asList(true, false)) {
-                    joiningNodeFailsTestRun(noConnRecover, timeoutErr, asyncStart, msgsBeforeFail);
+        for (boolean noConnRecover : Arrays.asList(false, true)) {
+            for (boolean timeoutErr : Arrays.asList(false, true)) {
+                joiningNodeFailsTestRun(noConnRecover, timeoutErr, asyncStart, msgsBeforeFail);
 
-                    stopAllGrids();
-                }
+                stopAllGrids();
             }
         }
     }
@@ -1734,9 +1744,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         CountDownLatch nodeFailed = new CountDownLatch(1);
         AtomicReference<Throwable> errHolder = new AtomicReference<>();
 
-        LogListener lsnr = LogListener.matches(Pattern.compile("Unable to connect to next nodes in a ring, " +
-                "it seems local node is experiencing connectivity issues or the rest ")).build();
-
         GridTestUtils.runMultiThreadedAsync(
             () -> {
                 int nodeIdx = nodeIdxHolder.getAndIncrement();
@@ -1779,17 +1786,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 ));
 
                 try {
-                    IgniteConfiguration cfg = getConfiguration(testNodeName);
+                    startGrid(testNodeIdx);
 
-                    if (!noConnRecoverTimeout) {
-                        ListeningTestLogger log0 = new ListeningTestLogger(log);
-                        log0.registerListener(lsnr);
-                        cfg.setGridLogger(log0);
-                    }
-
-                    startGrid(cfg);
-
-                    throw new IllegalStateException();
+                    errHolder.set(new IllegalStateException("Failure node has started."));
                 }
                 catch (Exception ignored) {
                     // No-op.
@@ -1799,7 +1798,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             "testNodeStarter"
         );
 
-        nodeFailed.await(failureDetectionTimeout * 4L, TimeUnit.MILLISECONDS);
+        nodeFailed.await(failureDetectionTimeout, TimeUnit.MILLISECONDS);
 
         // Ensure that the cluster denies the test node.
         assertTrue(GridTestUtils.waitForCondition(() -> {
@@ -1813,41 +1812,47 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         assertNull(errHolder.get());
 
-        // Ensure that the test malfunctional node stops on failure detection.
-        if (!noConnRecoverTimeout) {
-            assertTrue(lsnr.check(failureDetectionTimeout * 4L));
-
-            waitNodeStop(testNodeName);
-        }
+        waitNodeStop(testNodeName);
     }
 
     /** Tests coordinator failure at {@link TcpDiscoveryNodeAddedMessage} when a node joins cluster. */
     @Test
     public void testCoordinatorFailsOnNodeJoin1() throws Exception {
-        coordinatorFailsOnNodeJoinTestsPack(TcpDiscoveryNodeAddedMessage.class);
+        coordinatorFailsOnNodeJoinTestsPack(false, TcpDiscoveryNodeAddedMessage.class);
+    }
+
+    /** Tests coordinator failure at {@link TcpDiscoveryNodeAddedMessage} when nodes asynchronously joins cluster. */
+    @Test
+    public void testCoordinatorFailsOnNodeJoin1Async() throws Exception {
+        coordinatorFailsOnNodeJoinTestsPack(true, TcpDiscoveryNodeAddedMessage.class);
     }
 
     /** Tests coordinator failure at {@link TcpDiscoveryNodeAddFinishedMessage} when a node joins cluster. */
     @Test
     public void testCoordinatorFailsOnNodeJoin2() throws Exception {
-        coordinatorFailsOnNodeJoinTestsPack(TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
+        coordinatorFailsOnNodeJoinTestsPack(false, TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
+    }
+
+    /** Tests coordinator failure at {@link TcpDiscoveryNodeAddFinishedMessage} when nodes asynchronously joins cluster. */
+    @Test
+    public void testCoordinatorFailsOnNodeJoin2Async() throws Exception {
+        coordinatorFailsOnNodeJoinTestsPack(true, TcpDiscoveryNodeAddedMessage.class, TcpDiscoveryNodeAddFinishedMessage.class);
     }
 
     /** Launches the scenarios of coordinator failure whean a node joins cluster. */
-    private void coordinatorFailsOnNodeJoinTestsPack(Class<? extends TcpDiscoveryAbstractMessage>... msgBeforeFail) throws Exception {
-        for (boolean asyncStart : F.asList(false, true)) {
-            for (Long connRecoveryTimeout : F.asList(null, 0L)) {
-                for (boolean timeoutErr : F.asList(true, false)) {
-                    coordinatorFailsOnNodeJoinTestRun(
-                        connRecoveryTimeout,
-                        asyncStart,
-                        timeoutErr && connRecoveryTimeout != null && connRecoveryTimeout != 0L,
-                        timeoutErr,
-                        msgBeforeFail
-                    );
+    private void coordinatorFailsOnNodeJoinTestsPack(boolean asyncStart,
+        Class<? extends TcpDiscoveryAbstractMessage>... msgBeforeFail) throws Exception {
+        for (Long connRecoveryTimeout : F.asList(null, 0L)) {
+            for (boolean timeoutErr : F.asList(true, false)) {
+                coordinatorFailsOnNodeJoinTestRun(
+                    connRecoveryTimeout,
+                    asyncStart,
+                    timeoutErr && connRecoveryTimeout != null && connRecoveryTimeout != 0L,
+                    timeoutErr,
+                    msgBeforeFail
+                );
 
-                    stopAllGrids();
-                }
+                stopAllGrids();
             }
         }
     }

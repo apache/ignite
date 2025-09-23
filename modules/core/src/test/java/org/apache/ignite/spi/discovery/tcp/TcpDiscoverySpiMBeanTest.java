@@ -200,52 +200,57 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNodeExclusion() throws Exception {
-        int srvCnt = 2;
+        try {
+            int srvCnt = 2;
 
-        IgniteEx grid0 = startGrids(srvCnt);
-        IgniteEx client = startClientGrid("client");
+            IgniteEx grid0 = startGrids(srvCnt);
+            IgniteEx client = startClientGrid("client");
 
-        TcpDiscoverySpiMBean bean0 = getMxBean(grid0.context().igniteInstanceName(), "SPIs",
-            TcpDiscoverySpi.class, TcpDiscoverySpiMBean.class);
+            TcpDiscoverySpiMBean bean0 = getMxBean(grid0.context().igniteInstanceName(), "SPIs",
+                TcpDiscoverySpi.class, TcpDiscoverySpiMBean.class);
 
-        assertEquals(grid0.cluster().forServers().nodes().size(), srvCnt);
-        assertEquals(grid0.cluster().forClients().nodes().size(), 1);
+            assertEquals(grid0.cluster().forServers().nodes().size(), srvCnt);
+            assertEquals(grid0.cluster().forClients().nodes().size(), 1);
 
-        UUID clientId = client.localNode().id();
+            UUID clientId = client.localNode().id();
 
-        bean0.excludeNode(clientId.toString());
+            bean0.excludeNode(clientId.toString());
 
-        assertTrue(GridTestUtils.waitForCondition(() -> strLog.toString().contains("Node excluded, node=" + clientId), 5_000));
-        assertTrue(GridTestUtils.waitForCondition(() -> grid0.cluster().forClients().node(clientId) == null, 5_000));
+            assertTrue(GridTestUtils.waitForCondition(() -> strLog.toString().contains("Node excluded, node=" + clientId), 5_000));
+            assertTrue(GridTestUtils.waitForCondition(() -> grid0.cluster().forClients().node(clientId) == null, 5_000));
 
-        // Client reconnects.
-        assertTrue(GridTestUtils.waitForCondition(
-            () -> strLog.toString().contains("Local node was dropped from cluster due to network problems, will try to reconnect"),
-            5_000)
-        );
-        assertTrue(GridTestUtils.waitForCondition(() -> !grid0.cluster().forClients().nodes().isEmpty(), 5_000));
+            // Client reconnects.
+            assertTrue(GridTestUtils.waitForCondition(
+                () -> strLog.toString().contains("Local node was dropped from cluster due to network problems, will try to reconnect"),
+                5_000)
+            );
+            assertTrue(GridTestUtils.waitForCondition(() -> !grid0.cluster().forClients().nodes().isEmpty(), 5_000));
 
-        bean0.excludeNode(new UUID(0, 0).toString());
-        bean0.excludeNode("fakeUUID");
+            bean0.excludeNode(new UUID(0, 0).toString());
+            bean0.excludeNode("fakeUUID");
 
-        U.sleep(3000);
+            U.sleep(3000);
 
-        assertEquals(grid0.cluster().forServers().nodes().size(), srvCnt);
+            assertEquals(grid0.cluster().forServers().nodes().size(), srvCnt);
 
-        CountDownLatch segmentedLatch = new CountDownLatch(1);
+            CountDownLatch segmentedLatch = new CountDownLatch(1);
 
-        grid0.events().localListen(new IgnitePredicate<>() {
-            @Override public boolean apply(Event evt) {
-                segmentedLatch.countDown();
+            grid0.events().localListen(new IgnitePredicate<>() {
+                @Override public boolean apply(Event evt) {
+                    segmentedLatch.countDown();
 
-                return false;
-            }
-        }, EVT_NODE_SEGMENTED);
+                    return false;
+                }
+            }, EVT_NODE_SEGMENTED);
 
-        bean0.excludeNode(grid(1).localNode().id().toString());
+            bean0.excludeNode(grid(1).localNode().id().toString());
 
-        assertTrue(GridTestUtils.waitForCondition(() -> grid0.cluster().forServers().nodes().size() == srvCnt - 1, 15_000));
+            assertTrue(GridTestUtils.waitForCondition(() -> grid0.cluster().forServers().nodes().size() == srvCnt - 1, 15_000));
 
-        assertTrue(segmentedLatch.await(15_000, TimeUnit.MILLISECONDS));
+            assertTrue(segmentedLatch.await(15_000, TimeUnit.MILLISECONDS));
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 }
