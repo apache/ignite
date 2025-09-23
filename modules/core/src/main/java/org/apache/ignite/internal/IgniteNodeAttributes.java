@@ -117,7 +117,7 @@ public final class IgniteNodeAttributes {
     /** Internal attribute name constant. */
     public static final String ATTR_MACS = ATTR_PREFIX + ".macs";
 
-    /** Human-readable Data Center identifier the node belongs to. */
+    /** Human-readable Data Center ID where the node is running. */
     public static final String ATTR_DATA_CENTER_ID = ATTR_PREFIX + ".data.center.id";
 
     /** Allows to override {@link #ATTR_MACS} by adding this attribute in the user attributes. */

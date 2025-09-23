@@ -1,41 +1,64 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.spi.discovery.datacenter;
 
-import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- *
+ * Tests for {@link DataCenterResolver} feature.
  */
 public class DataCenterResolverTest extends GridCommonAbstractTest {
-    private static final String DC_ID = "DC_1";
+    /** */
+    private static final String DC_ID = "DC0";
 
     /** */
-    private TcpDiscoverySpi tcpDiscoSpi;
+    private static final DataCenterResolver NULL_DC_RESOLVER = new DataCenterResolver() {
+        /** {@inheritDoc} */
+        @Override public String resolveDataCenterId() {
+            return null;
+        }
+    };
 
     /** */
-    private final AtomicReference<String> dcIdRef = new AtomicReference<>();
+    private static final DataCenterResolver EMPTY_DC_RESOLVER = new DataCenterResolver() {
+        /** {@inheritDoc} */
+        @Override public String resolveDataCenterId() {
+            return "";
+        }
+    };
+
+    /** */
+    private DataCenterResolver dcResolver;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDataCenterResolver(new SystemPropertyDataCenterResolver());
-
-        if (tcpDiscoSpi != null) {
-            tcpDiscoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
-
-            cfg.setDiscoverySpi(tcpDiscoSpi);
-        }
-
-        cfg.setConsistentId(igniteInstanceName);
+        if (dcResolver != null)
+            cfg.setDataCenterResolver(dcResolver);
 
         return cfg;
     }
@@ -45,15 +68,34 @@ public class DataCenterResolverTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
+
+        dcResolver = null;
     }
 
     /**
+     * Verifies that node's attribute is not set if no resolver is configured.
      *
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = "IGNITE_DATA_CENTER_ID", value = DC_ID)
+    public void testAttributeNotSetIfNoResolverConfigured() throws Exception {
+        IgniteEx testGrid = startGrid();
+
+        Object dcId = testGrid.localNode().attribute(IgniteNodeAttributes.ATTR_DATA_CENTER_ID);
+
+        assertNull(dcId);
+    }
+
+    /**
+     * Verifies that node's attribute for DC ID is set from system property.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DATA_CENTER_ID, value = DC_ID)
     public void testAttributeSetLocallyFromSysProp() throws Exception {
+        dcResolver = new SystemPropertyDataCenterResolver();
+
         IgniteEx testGrid = startGrid();
 
         Object dcId = testGrid.localNode().attribute(IgniteNodeAttributes.ATTR_DATA_CENTER_ID);
@@ -62,30 +104,18 @@ public class DataCenterResolverTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Verifies that attempt to start a node with DC ID resolved to null or empty string ends up with an exception.
      *
      * @throws Exception If failed.
      */
     @Test
-    @WithSystemProperty(key = "IGNITE_DATA_CENTER_ID", value = DC_ID)
-    public void testAttributeIsSentInJoinRequest() throws Exception {
-        tcpDiscoSpi = new TcpDiscoverySpi() {
-            @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
-                if (msg instanceof TcpDiscoveryJoinRequestMessage) {
-                    TcpDiscoveryJoinRequestMessage joinReq = (TcpDiscoveryJoinRequestMessage)msg;
+    public void testEmptyDCIdIsNotAllowed() throws Exception {
+        dcResolver = NULL_DC_RESOLVER;
 
-                    dcIdRef.set(joinReq.node().getAttributes().get(IgniteNodeAttributes.ATTR_DATA_CENTER_ID).toString());
-                }
-            }
-        };
+        GridTestUtils.assertThrows(log, () -> startGrid(), IgniteCheckedException.class, "Data center ID should not be empty");
 
-        startGrid("crd"); //start coordinator
+        dcResolver = EMPTY_DC_RESOLVER;
 
-        tcpDiscoSpi = null;
-
-        startGrid("srv0"); //start another server node
-
-        waitForTopology(2);
-
-        assertEquals(DC_ID, dcIdRef.get());
+        GridTestUtils.assertThrows(log, () -> startGrid(), IgniteCheckedException.class, "Data center ID should not be empty");
     }
 }
