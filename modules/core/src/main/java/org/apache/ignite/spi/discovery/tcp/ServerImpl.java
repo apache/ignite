@@ -6447,6 +6447,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private volatile UUID nodeId;
 
+        /** */
+        private volatile boolean client;
+
         /**
          * Constructor.
          *
@@ -6581,6 +6584,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     UUID nodeId = req.creatorNodeId();
 
                     this.nodeId = nodeId;
+                    this.client = req.client();
 
                     U.enhanceThreadName(U.id8(nodeId) + ' ' + sock.getInetAddress().getHostAddress()
                         + ":" + sock.getPort() + (req.client() ? " client" : ""));
@@ -7088,10 +7092,14 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void ringMessageReceived() {
             long t = System.nanoTime();
 
-            // Node has lost the ring but still receives pings..
-            // Case with no failureDetectionTimeout and reconnectCount > 1 isn't conidered. The current timing should be enough.
-            if (!ring.hasRemoteServerNodes() && !spi.isNodeStopping0() && t > lastRingMsgReceivedTime +
-                U.millisToNanos(effectiveExchangeTimeout() + spi.getConnectionRecoveryTimeout())) {
+            // Node has lost the ring but still receives messages from another server node.
+            // Case with no failureDetectionTimeout and reconnectCount > 1 isn't considered. The current timing
+            // should be enough for such case.
+            if (!client && !spi.isNodeStopping0()
+                && (t > lastRingMsgReceivedTime + U.millisToNanos(effectiveExchangeTimeout() * locNode.addresses().size()
+                    + spi.getConnectionRecoveryTimeout()))
+                && !ring.hasRemoteServerNodes()
+            ) {
                 synchronized (mux) {
                     if (spiState == CONNECTED) {
                         U.warn(log, "Current node keeps receiving ping from an empty ring. The ring state is invalid.");
