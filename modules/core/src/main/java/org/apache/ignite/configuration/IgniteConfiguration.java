@@ -71,8 +71,8 @@ import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
-import org.apache.ignite.spi.discovery.datacenter.DataCenterResolver;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.datacenter.DataCenterResolver;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
@@ -199,13 +199,6 @@ public class IgniteConfiguration {
 
     /** Default segmentation policy. */
     public static final SegmentationPolicy DFLT_SEG_PLC = USE_FAILURE_HANDLER;
-
-    /** */
-    public static final DataCenterResolver DFLT_DATA_CENTER_RESOLVER = new DataCenterResolver() {
-        @Override public String resolveDataCenterId() {
-            return "";
-        }
-    };
 
     /** Default value for wait for segment on startup flag. */
     public static final boolean DFLT_WAIT_FOR_SEG_ON_START = true;
@@ -378,8 +371,8 @@ public class IgniteConfiguration {
     /** Discovery SPI. */
     private DiscoverySpi discoSpi;
 
-    /** */
-    private DataCenterResolver dcResolver = DFLT_DATA_CENTER_RESOLVER;
+    /** Data center resolver. */
+    private DataCenterResolver dcResolver;
 
     /** Segmentation policy. */
     private SegmentationPolicy segPlc = DFLT_SEG_PLC;
@@ -1966,7 +1959,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Returns data center resolver configured for this node or {@code null} if none is configured.
+     * Returns {@link DataCenterResolver} configured for this node or {@code null} if none is configured.
      *
      * @return {@link DataCenterResolver} instance.
      */
