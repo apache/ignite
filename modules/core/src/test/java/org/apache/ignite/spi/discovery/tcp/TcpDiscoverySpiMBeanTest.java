@@ -205,7 +205,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
         IgniteEx grid0 = startGrids(srvCnt);
         IgniteEx client = startClientGrid("client");
 
-        TcpDiscoverySpiMBean bean = getMxBean(grid0.context().igniteInstanceName(), "SPIs",
+        TcpDiscoverySpiMBean bean0 = getMxBean(grid0.context().igniteInstanceName(), "SPIs",
             TcpDiscoverySpi.class, TcpDiscoverySpiMBean.class);
 
         assertEquals(grid0.cluster().forServers().nodes().size(), srvCnt);
@@ -213,7 +213,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
 
         UUID clientId = client.localNode().id();
 
-        bean.excludeNode(clientId.toString());
+        bean0.excludeNode(clientId.toString());
 
         assertTrue(GridTestUtils.waitForCondition(() -> strLog.toString().contains("Node excluded, node=" + clientId), 5_000));
         assertTrue(GridTestUtils.waitForCondition(() -> grid0.cluster().forClients().node(clientId) == null, 5_000));
@@ -225,16 +225,14 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
         );
         assertTrue(GridTestUtils.waitForCondition(() -> !grid0.cluster().forClients().nodes().isEmpty(), 5_000));
 
-        bean.excludeNode(new UUID(0, 0).toString());
-        bean.excludeNode("fakeUUID");
+        bean0.excludeNode(new UUID(0, 0).toString());
+        bean0.excludeNode("fakeUUID");
 
         U.sleep(3000);
 
         assertEquals(grid0.cluster().forServers().nodes().size(), srvCnt);
 
-        ClusterNode node = grid(1).localNode();
-
-        final CountDownLatch segmentedLatch = new CountDownLatch(1);
+        CountDownLatch segmentedLatch = new CountDownLatch(1);
 
         grid0.events().localListen(new IgnitePredicate<>() {
             @Override public boolean apply(Event evt) {
@@ -244,7 +242,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
             }
         }, EVT_NODE_SEGMENTED);
 
-        bean.excludeNode(node.id().toString());
+        bean0.excludeNode(grid(1).localNode().id().toString());
 
         assertTrue(GridTestUtils.waitForCondition(() -> grid0.cluster().forServers().nodes().size() == srvCnt - 1, 15_000));
 

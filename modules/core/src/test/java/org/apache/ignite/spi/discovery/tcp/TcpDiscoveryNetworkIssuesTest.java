@@ -378,7 +378,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         AtomicReference<Boolean> node1AliveStatus = new AtomicReference<>();
 
-        // Listener of handshake response from node2 to node1.
+        // Listener of handshake response from node2 to node0.
         testSpi(node2).hsRespLsnr.set(((socket1, response) -> {
             testSpi(node2).simulatedPrevNodeAddr.set(null);
 
@@ -387,7 +387,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             node1AliveStatus.set(response.previousNodeAlive());
         }));
 
-        // Simulate malfunction of connection node0 to mode1.
+        // Simulate malfunction of connection node0 to node1.
         testSpi(node0).addrsToBlock = spi(node1).locNodeAddrs;
         assertTrue(waitForCondition(() -> testSpi(node0).blocked, failureDetectionTimeout));
 
