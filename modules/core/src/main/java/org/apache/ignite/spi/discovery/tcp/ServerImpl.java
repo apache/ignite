@@ -218,9 +218,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Fundamental value for connection checking actions. */
     private long connCheckTick;
 
-    /**  */
-    private int backwardCheckTimeout;
-
     /** */
     private final IgniteThreadPoolExecutor utilityPool;
 
@@ -408,10 +405,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         // Foundumental timeout value for actions related to connection check.
         connCheckTick = effectiveExchangeTimeout() / 3;
-
-        // The connection recovery connection to one node is connCheckTick.
-        // We need to suppose network delays. So we use half of this time.
-        backwardCheckTimeout = (int)(connCheckTick >> 1);
 
         // Since we take in account time of last sent message, the interval should be quite short to give enough piece
         // of failure detection timeout as send-and-acknowledge timeout of the message to send.
@@ -3544,10 +3537,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         newNextNode(ring.nextNode(failedNodes));
                                     }
 
-                                    if (previousNode) {
+                                    if (previousNode)
                                         U.warn(log, "New next node has connection to it's previous, trying previous " +
                                             "again. [next=" + next + ']');
-                                    }
 
                                     continue ringLoop;
                                 }
@@ -3630,7 +3622,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 errs.add(e);
 
                                 if (log.isDebugEnabled())
-                                    U.error(log, "Failed to connect to next node [msg=" + msg + ", err=" + e.getMessage() + ']', e);
+                                    U.error(log, "Failed to connect to next node [msg=" + msg
+                                        + ", err=" + e.getMessage() + ']', e);
 
                                 onException("Failed to connect to next node [msg=" + msg + ", err=" + e + ']', e);
 
@@ -6621,6 +6614,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (previous != null && !previous.id().equals(nodeId) &&
                                 (req.checkPreviousNodeId() == null || previous.id().equals(req.checkPreviousNodeId()))) {
 
+                                // The connection recovery connection to one node is connCheckTick.
+                                // We need to suppose network delays. So we use half of this time.
+                                int backwardCheckTimeout = (int)(connCheckTick / 2);
+
                                 if (log.isDebugEnabled()) {
                                     log.debug("Remote node requests topology change. Checking connection to " +
                                         "previous [" + previous + "] with timeout " + backwardCheckTimeout);
@@ -7102,7 +7099,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             ) {
                 synchronized (mux) {
                     if (spiState == CONNECTED) {
-                        U.warn(log, "Current node keeps receiving ping from an empty ring. The ring state is invalid.");
+                        U.warn(log, "Current node keeps receiving messages from an empty ring. The ring state is invalid.");
 
                         notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
 

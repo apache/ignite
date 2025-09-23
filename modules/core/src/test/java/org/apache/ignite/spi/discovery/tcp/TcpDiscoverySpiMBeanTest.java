@@ -59,6 +59,7 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
 
         cfg.setGridLogger(strLog);
 
+        // Fastens the tests.
         cfg.setFailureDetectionTimeout(3000);
 
         return cfg;
