@@ -189,7 +189,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         unmarshalKey(ctx, marsh);
 
         if (val == null && valBytes != null) {
-            val = U.unmarshal(marsh, valBytes, U.resolveClassLoader(ctx.kernalContext().config()));
+            val = U.unmarshal(marsh, valBytes, U.resolveClassLoader(null, ctx.classLoader()));
 
             val.finishUnmarshal(ctx, null);
         }
@@ -220,7 +220,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         if (key == null) {
             assert keyBytes != null;
 
-            key = U.unmarshal(marsh, keyBytes, U.resolveClassLoader(ctx.kernalContext().config()));
+            key = U.unmarshal(marsh, keyBytes, U.resolveClassLoader(null, ctx.classLoader()));
 
             key.finishUnmarshal(ctx, null);
         }

@@ -15,36 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.GridKernalContext;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Context to get value of cache object.
+ * Annotates transient fields.
+ * Deprecated, see {@code Order} and {@code MessageProcessor} for details.
  */
-public interface CacheObjectValueContext {
-    /**
-     * @return Kernal context.
-     */
-    public GridKernalContext kernalContext();
-
-    /**
-     * @return Copy on get flag.
-     */
-    public boolean copyOnGet();
-
-    /**
-     * @return {@code True} if should store unmarshalled value in cache.
-     */
-    public boolean storeValue();
-
-    /**
-     * @return {@code True} if deployment info should be associated with the objects of this cache.
-     */
-    public boolean addDeploymentInfo();
-
-    /**
-     * @return Binary enabled flag.
-     */
-    public boolean binaryEnabled();
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+@Deprecated
+public @interface GridDirectTransient {
+    // No-op.
 }

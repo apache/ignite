@@ -219,6 +219,9 @@ public abstract class CommonUtils {
     private static final ConcurrentMap<ClassLoader, ConcurrentMap<String, Class>> classCache =
         new ConcurrentHashMap<>();
 
+    /** */
+    private static final Class<?> GEOMETRY_CLASS = classForName("org.locationtech.jts.geom.Geometry", null);
+
     static {
         primitiveMap.put("byte", byte.class);
         primitiveMap.put("short", short.class);
@@ -2107,5 +2110,15 @@ public abstract class CommonUtils {
             return (IgniteException)e.getCause();
 
         return new IgniteException(e.getMessage(), e);
+    }
+
+    /**
+     * Checks if the given class is GEOMETRY.
+     *
+     * @param cls Class.
+     * @return {@code true} If this is geometry.
+     */
+    public static boolean isGeometryClass(Class<?> cls) {
+        return GEOMETRY_CLASS != null && GEOMETRY_CLASS.isAssignableFrom(cls);
     }
 }

@@ -160,11 +160,6 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public void onAckReceived() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
             return true;
         }
@@ -185,11 +180,6 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
                 return false;
 
             return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onAckReceived() {
-            // No-op.
         }
 
         /** {@inheritDoc} */

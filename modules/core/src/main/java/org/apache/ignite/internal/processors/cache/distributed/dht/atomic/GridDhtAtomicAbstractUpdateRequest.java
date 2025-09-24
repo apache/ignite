@@ -271,11 +271,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         return ctx.atomicMessageLogger();
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        cleanup();
-    }
-
     /**
      * @param key Key to add.
      * @param val Value, {@code null} if should be removed.

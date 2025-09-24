@@ -64,11 +64,6 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public void entryLocked(boolean locked) {
         assert p != null;
 

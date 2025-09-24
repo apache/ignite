@@ -15,20 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.binary;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.apache.ignite.binary.BinaryField;
 
 /**
- * Annotates transient fields.
- * Deprecated, see {@link Order} and {@link MessageProcessor} for details.
+ * Extended binary object field.
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-@Deprecated
-public @interface GridDirectTransient {
-    // No-op.
+public interface BinaryFieldEx extends BinaryField {
+    /** Get field's enclosing type ID.  */
+    public int enclosingTypeId();
 }

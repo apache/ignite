@@ -6036,7 +6036,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Array of page ids.
      */
     private long[] pages(boolean empty, Supplier<long[]> pages) {
-        return empty ? GridLongList.EMPTY_ARRAY : pages.get();
+        return empty ? U.EMPTY_LONGS : pages.get();
     }
 
     /**

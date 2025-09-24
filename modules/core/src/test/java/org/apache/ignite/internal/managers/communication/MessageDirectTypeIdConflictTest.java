@@ -111,9 +111,5 @@ public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
             return MSG_DIRECT_TYPE;
         }
 
-        /** {@inheritDoc} */
-        @Override public void onAckReceived() {
-            // No-op.
-        }
     }
 }

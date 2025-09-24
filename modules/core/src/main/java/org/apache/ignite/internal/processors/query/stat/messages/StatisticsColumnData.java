@@ -323,8 +323,4 @@ public class StatisticsColumnData implements Message, Serializable {
         return TYPE_CODE;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-
-    }
 }

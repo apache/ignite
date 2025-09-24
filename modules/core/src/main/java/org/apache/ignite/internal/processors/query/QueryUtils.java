@@ -131,9 +131,6 @@ public class QueryUtils {
         getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, DFLT_INDEXING_DISCOVERY_HISTORY_SIZE);
 
     /** */
-    private static final Class<?> GEOMETRY_CLASS = U.classForName("org.locationtech.jts.geom.Geometry", null);
-
-    /** */
     private static final Set<Class<?>> SQL_TYPES = createSqlTypes();
 
     /** Default SQL delimeter. */
@@ -261,11 +258,12 @@ public class QueryUtils {
     /**
      * Normalize cache query entities.
      *
+     * @param recoveryMode Value of {@link GridKernalContext#recoveryMode()}.
      * @param entities Query entities.
      * @param cfg Cache config.
      * @return Normalized query entities.
      */
-    public static Collection<QueryEntity> normalizeQueryEntities(GridKernalContext ctx,
+    public static Collection<QueryEntity> normalizeQueryEntities(boolean recoveryMode,
         Collection<QueryEntity> entities, CacheConfiguration<?, ?> cfg) {
         Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
 
@@ -273,7 +271,7 @@ public class QueryUtils {
             if (!F.isEmpty(entity.getNotNullFields()))
                 checkNotNullAllowed(cfg);
 
-            normalEntities.add(normalizeQueryEntity(ctx, entity, cfg.isSqlEscapeAll()));
+            normalEntities.add(normalizeQueryEntity(recoveryMode, entity, cfg.isSqlEscapeAll()));
         }
 
         return normalEntities;
@@ -283,11 +281,12 @@ public class QueryUtils {
      * Normalize query entity. If "escape" flag is set, nothing changes. Otherwise we convert all object names to
      * upper case and replace inner class separator characters ('$' for Java and '.' for .NET) with underscore.
      *
+     * @param recoveryMode Value of {@link GridKernalContext#recoveryMode()}.
      * @param entity Query entity.
      * @param escape Escape flag taken form configuration.
      * @return Normalized query entity.
      */
-    public static QueryEntity normalizeQueryEntity(GridKernalContext ctx, QueryEntity entity, boolean escape) {
+    public static QueryEntity normalizeQueryEntity(boolean recoveryMode, QueryEntity entity, boolean escape) {
         if (escape) {
             String tblName = tableName(entity);
 
@@ -381,7 +380,7 @@ public class QueryUtils {
 
         validateQueryEntity(normalEntity);
 
-        if (!ctx.recoveryMode())
+        if (!recoveryMode)
             normalEntity.fillAbsentPKsWithDefaults(true);
         else if (entity instanceof QueryEntityEx)
             normalEntity.fillAbsentPKsWithDefaults(((QueryEntityEx)entity).fillAbsentPKsWithDefaults());
@@ -475,7 +474,12 @@ public class QueryUtils {
 
         CacheObjectContext coCtx = ctx.cacheObjects().contextForCache(ccfg);
 
-        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cacheName, coCtx);
+        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(
+            cacheName,
+            coCtx,
+            ctx.cacheObjects(),
+            ctx.config().getSqlConfiguration().isValidationEnabled()
+        );
 
         desc.schemaName(schemaName);
 
@@ -1150,17 +1154,7 @@ public class QueryUtils {
     public static boolean isSqlType(Class<?> cls) {
         cls = U.box(cls);
 
-        return SQL_TYPES.contains(cls) || QueryUtils.isGeometryClass(cls);
-    }
-
-    /**
-     * Checks if the given class is GEOMETRY.
-     *
-     * @param cls Class.
-     * @return {@code true} If this is geometry.
-     */
-    public static boolean isGeometryClass(Class<?> cls) {
-        return GEOMETRY_CLASS != null && GEOMETRY_CLASS.isAssignableFrom(cls);
+        return SQL_TYPES.contains(cls) || U.isGeometryClass(cls);
     }
 
     /**

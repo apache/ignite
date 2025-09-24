@@ -427,13 +427,13 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
         switch (writer.state()) {
             case 10:
-                if (!writer.writeMessage(conflictExpireTimes))
+                if (!writer.writeGridLongList(conflictExpireTimes))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeMessage(conflictTtls))
+                if (!writer.writeGridLongList(conflictTtls))
                     return false;
 
                 writer.incrementState();
@@ -494,7 +494,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
         switch (reader.state()) {
             case 10:
-                conflictExpireTimes = reader.readMessage();
+                conflictExpireTimes = reader.readGridLongList();
 
                 if (!reader.isLastRead())
                     return false;
@@ -502,7 +502,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 reader.incrementState();
 
             case 11:
-                conflictTtls = reader.readMessage();
+                conflictTtls = reader.readGridLongList();
 
                 if (!reader.isLastRead())
                     return false;
