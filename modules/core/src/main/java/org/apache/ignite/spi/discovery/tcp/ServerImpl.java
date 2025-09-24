@@ -1080,16 +1080,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         tracing.messages().beforeSend(joinReqMsg);
 
-        boolean joinFailed = false;
-
         while (true) {
-            if (!joinFailed && !sendJoinRequestMessage(joinReqMsg)) {
+            if (!sendJoinRequestMessage(joinReqMsg)) {
                 synchronized (mux) {
-                    if (spiState == RING_FAILED) {
-                        joinFailed = true;
-
-                        continue;
-                    }
+                    // The ring is found but a significant error has occured at the end of the joining.
+                    // This is a special case like failure at the end of 2PC transaction commit and can cause issues
+                    // like IGNITE-13590 or IGNITE-23372. We shuold not try further.
+                    if (spiState == RING_FAILED)
+                        break;
                 }
 
                 if (log.isDebugEnabled())
@@ -3409,7 +3407,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (ring.hasRemoteNodes() && !(msg instanceof TcpDiscoveryConnectionCheckMessage)) {
                         // This is a special case like 2PC transaction failure at the commit phase where the ring and
                         // the connection checks aren't stable, aren't consistent. Such node should stop and close its sockets,
-                        // connections asap. Or this may cause cases like IGNITE-13590
+                        // connections asap. Or this may cause cases like IGNITE-13590 or IGNITE-23372.
+                        // Also, there is a related optimization suggestion IGNITE-11269.
                         if (state == CONNECTING || (state == CONNECTED && (msg instanceof TcpDiscoveryNodeAddFinishedMessage) &&
                             ((TcpDiscoveryNodeAddFinishedMessage)msg).nodeId().equals(locNodeId))) {
                             segmentLocalNodeOnSendFail(failedNodes);

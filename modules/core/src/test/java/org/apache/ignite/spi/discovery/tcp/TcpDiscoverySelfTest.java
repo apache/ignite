@@ -130,7 +130,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
     private int failureDetectionTimeout = 7500;
 
-    /** */
+    /** If < 0, ignored. */
     private long connectionRecoveryTimeout = -1;
 
     /** */

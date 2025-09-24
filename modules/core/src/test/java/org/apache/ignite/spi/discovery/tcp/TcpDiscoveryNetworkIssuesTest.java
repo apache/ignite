@@ -204,13 +204,13 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             }
         };
 
-        Ignite illNode2 = startGrid(NODE_2_NAME);
+        Ignite ill2 = startGrid(NODE_2_NAME);
 
         specialSpi = null;
 
         AtomicBoolean illNodeSegmented = new AtomicBoolean(false);
 
-        illNode2.events().localListen((e) -> {
+        ill2.events().localListen((e) -> {
             illNodeSegmented.set(true);
 
             return false;

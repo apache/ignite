@@ -147,6 +147,8 @@ public class TcpDiscoverySegmentationPolicyTest extends GridCommonAbstractTest {
             startGrid(cfg);
         }
 
+        assert NODES_CNT > 2;
+
         IgniteEx ignite1 = grid(1);
         IgniteEx ignite2 = grid(2);
 

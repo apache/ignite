@@ -87,7 +87,7 @@ abstract class TcpDiscoveryImpl {
     /** */
     protected volatile TcpDiscoveryNode locNode;
 
-    /** */
+    /** Avoids the message creation at each hartbeat. */
     protected volatile TcpDiscoveryConnectionCheckMessage connCheckMsg;
 
     /** Debug mode. */
