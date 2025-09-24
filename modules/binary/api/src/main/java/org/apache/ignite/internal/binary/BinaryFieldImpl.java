@@ -29,7 +29,7 @@ import static java.util.Objects.nonNull;
 /**
  * Implementation of binary field descriptor.
  */
-class BinaryFieldImpl implements BinaryField {
+class BinaryFieldImpl implements BinaryFieldEx {
     /** Binary context that created this field. */
     private final BinaryContext ctx;
 
@@ -146,6 +146,11 @@ class BinaryFieldImpl implements BinaryField {
         assert schema != null;
 
         return schema.order(fieldId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int enclosingTypeId() {
+        return typeId;
     }
 
     /** {@inheritDoc} */
