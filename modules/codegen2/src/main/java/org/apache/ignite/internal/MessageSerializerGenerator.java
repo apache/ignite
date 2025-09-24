@@ -462,6 +462,9 @@ class MessageSerializerGenerator {
             if (componentType.getKind() == TypeKind.DECLARED) {
                 String cls = ((DeclaredType)arrType.getComponentType()).asElement().getSimpleName().toString();
 
+                if ("KeyCacheObject".equals(cls))
+                    imports.add("org.apache.ignite.internal.processors.cache.KeyCacheObject");
+
                 returnFalseIfReadFailed(name, "reader.readObjectArray",
                     "MessageCollectionItemType." + messageCollectionItemType(componentType),
                     cls + ".class");
