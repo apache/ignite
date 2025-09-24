@@ -111,10 +111,6 @@ SELECT i, (SELECT SUM(s1.i) FROM integers s1 FULL OUTER JOIN integers s2 ON s1.i
 # REQUIRE(CHECK_COLUMN(result, 0, {Value(), 1, 2, 3}));
 # REQUIRE(CHECK_COLUMN(result, 1, {6, 6, 9, 12}));
 
-# correlated expression inside window function not supported
-statement error
-SELECT i, (SELECT row_number() OVER (ORDER BY i)) FROM integers i1 ORDER BY i;
-
 # union with correlated expression
 query II
 SELECT i, (SELECT i FROM integers WHERE i=i1.i UNION SELECT i FROM integers WHERE i=i1.i) AS j FROM integers i1 ORDER BY i;

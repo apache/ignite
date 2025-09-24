@@ -38,6 +38,7 @@ import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.Window;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
@@ -296,6 +297,11 @@ public class RelJsonReader {
         /** {@inheritDoc} */
         @Override public List<SearchBounds> getSearchBounds(String tag) {
             return relJson.toSearchBoundList(this, (List<Map<String, Object>>)get(tag));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Window.Group getWindowGroup(String tag) {
+            return relJson.toWindowGroup(this, (Map<String, Object>)get(tag));
         }
 
         /** {@inheritDoc} */
