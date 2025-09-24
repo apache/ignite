@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.util.offheap.unsafe;
 
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.offheap.GridOffHeapEventListener;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiTuple;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_OFFHEAP_SAFE_RELEASE;
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_OFFHEAP_SAFE_RELEASE;
 import static org.apache.ignite.internal.util.offheap.GridOffHeapEvent.ALLOCATE;
 import static org.apache.ignite.internal.util.offheap.GridOffHeapEvent.RELEASE;
 
@@ -38,7 +38,7 @@ public class GridUnsafeMemory {
     private static final byte FREE = (byte)0;
 
     /** Safe offheap release flag. */
-    private static final boolean SAFE_RELEASE = IgniteSystemProperties.getBoolean(IGNITE_OFFHEAP_SAFE_RELEASE);
+    private static final boolean SAFE_RELEASE = IgniteCommonsSystemProperties.getBoolean(IGNITE_OFFHEAP_SAFE_RELEASE);
 
     /** Total size. */
     @GridToStringInclude

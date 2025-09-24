@@ -138,4 +138,9 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
         return this;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean postWriteRequired() {
+        return false;
+    }
 }
