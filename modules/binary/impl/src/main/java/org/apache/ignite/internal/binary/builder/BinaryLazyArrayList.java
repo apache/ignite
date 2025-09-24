@@ -18,18 +18,18 @@
 package org.apache.ignite.internal.binary.builder;
 
 import java.util.AbstractList;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.ListIterator;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+
+import static org.apache.ignite.internal.binary.builder.BinaryObjectBuildersFactoryImpl.unwrapLazy;
 
 /**
  *
  */
-class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilderSerializationAware {
+class BinaryLazyArrayList extends AbstractList<Object> implements BinaryBuilderSerializationAware {
     /** */
     private final BinaryBuilderReader reader;
 
@@ -43,7 +43,7 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
      * @param reader Reader.
      * @param size Size,
      */
-    BinaryLazyLinkedList(BinaryBuilderReader reader, int size) {
+    BinaryLazyArrayList(BinaryBuilderReader reader, int size) {
         this.reader = reader;
         off = reader.position() - 1/* flag */ - 4/* size */ - 1/* col type */;
 
@@ -62,7 +62,7 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
 
             reader.position(off + 1/* flag */ + 4/* size */ + 1/* col type */);
 
-            delegate = new LinkedList<>();
+            delegate = new ArrayList<>(size);
 
             for (int i = 0; i < size; i++)
                 delegate.add(reader.parseValue());
@@ -73,7 +73,7 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
     @Override public Object get(int idx) {
         ensureDelegateInit();
 
-        return BinaryObjectBuilders.unwrapLazy(delegate.get(idx));
+        return unwrapLazy(delegate.get(idx));
     }
 
     /** {@inheritDoc} */
@@ -94,28 +94,26 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
     @Override public Object set(int idx, Object element) {
         ensureDelegateInit();
 
-        return BinaryObjectBuilders.unwrapLazy(delegate.set(idx, element));
+        return unwrapLazy(delegate.set(idx, element));
     }
 
     /** {@inheritDoc} */
     @Override public Object remove(int idx) {
         ensureDelegateInit();
 
-        return BinaryObjectBuilders.unwrapLazy(delegate.remove(idx));
+        return unwrapLazy(delegate.remove(idx));
     }
 
     /** {@inheritDoc} */
     @Override public void clear() {
         if (delegate == null)
-            delegate = new LinkedList<>();
+            delegate = new ArrayList<>();
         else
             delegate.clear();
     }
 
     /** {@inheritDoc} */
     @Override public boolean addAll(int idx, Collection<?> c) {
-        ensureDelegateInit();
-
         return delegate.addAll(idx, c);
     }
 
@@ -135,64 +133,12 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
     }
 
     /** {@inheritDoc} */
-    @Override public ListIterator<Object> listIterator(final int idx) {
-        ensureDelegateInit();
-
-        return new ListIterator<Object>() {
-            /** */
-            private final ListIterator<Object> delegate = BinaryLazyLinkedList.super.listIterator(idx);
-
-            @Override public boolean hasNext() {
-                return delegate.hasNext();
-            }
-
-            @Override public Object next() {
-                return BinaryObjectBuilders.unwrapLazy(delegate.next());
-            }
-
-            @Override public boolean hasPrevious() {
-                return delegate.hasPrevious();
-            }
-
-            @Override public Object previous() {
-                return BinaryObjectBuilders.unwrapLazy(delegate.previous());
-            }
-
-            @Override public int nextIndex() {
-                return delegate.nextIndex();
-            }
-
-            @Override public int previousIndex() {
-                return delegate.previousIndex();
-            }
-
-            @Override public void remove() {
-                delegate.remove();
-            }
-
-            @Override public void set(Object o) {
-                delegate.set(o);
-            }
-
-            @Override public void add(Object o) {
-                delegate.add(o);
-            }
-        };
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterator<Object> iterator() {
-        ensureDelegateInit();
-
-        return BinaryObjectBuilders.unwrapLazyIterator(super.iterator());
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeTo(BinaryWriterEx writer, BinaryBuilderSerializer ctx) {
         if (delegate == null) {
             int size = reader.readIntPositioned(off + 1);
 
             int hdrSize = 1 /* flag */ + 4 /* size */ + 1 /* col type */;
+
             writer.write(reader.array(), off, hdrSize);
 
             reader.position(off + hdrSize);
@@ -210,8 +156,13 @@ class BinaryLazyLinkedList extends AbstractList<Object> implements BinaryBuilder
             byte colType = reader.array()[off + 1 /* flag */ + 4 /* size */];
             writer.writeByte(colType);
 
+            int oldPos = reader.position();
+
             for (Object o : delegate)
                 ctx.writeValue(writer, o);
+
+            // BinaryBuilderImpl might have been written. It could override reader's position.
+            reader.position(oldPos);
         }
     }
 }
