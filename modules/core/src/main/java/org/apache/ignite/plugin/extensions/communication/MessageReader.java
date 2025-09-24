@@ -219,6 +219,14 @@ public interface MessageReader {
     public GridLongList readGridLongList();
 
     /**
+     * Reads value from {@link Enum}.
+     *
+     * @param <T> Type of the value.
+     * @return Value from enum.
+     */
+    public <T extends Enum<?>> T readEnumValue();
+
+    /**
      * Reads array of objects.
      *
      * @param itemType Array component type.

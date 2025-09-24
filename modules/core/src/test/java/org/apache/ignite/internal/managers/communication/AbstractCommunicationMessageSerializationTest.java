@@ -292,6 +292,11 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean writeEnumValue(@Nullable Enum<?> val) {
+            return writeField(Enum.class);
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean writeMessage(Message val) {
             return writeField(Message.class);
         }
@@ -547,6 +552,13 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         /** {@inheritDoc} */
         @Override public GridLongList readGridLongList() {
             readField(GridLongList.class);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T extends Enum<?>> T readEnumValue() {
+            readField(Enum.class);
 
             return null;
         }

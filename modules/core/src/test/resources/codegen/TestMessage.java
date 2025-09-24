@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 public class TestMessage implements Message {
     @Order(0)
@@ -73,6 +74,9 @@ public class TestMessage implements Message {
 
     @Order(value = 14)
     private GridLongList gridLongList;
+
+    @Order(value = 15, method = "enumValue")
+    private TransactionIsolation enumVal;
 
     public int id() {
         return id;
@@ -192,6 +196,14 @@ public class TestMessage implements Message {
 
     public void gridLongList(GridLongList gridLongList) {
         this.gridLongList = gridLongList;
+    }
+
+    public TransactionIsolation enumValue() {
+        return enumVal;
+    }
+
+    public void enumValue(TransactionIsolation enumVal) {
+        this.enumVal = enumVal;
     }
 
 

@@ -36,6 +36,7 @@ import java.util.UUID;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -389,6 +390,9 @@ class MessageSerializerGenerator {
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
 
+            else if (enumType(erasedType(type)))
+                returnFalseIfWriteFailed(write, "writer.writeEnumValue", getExpr);
+
             else
                 throw new IllegalArgumentException("Unsupported declared type: " + type);
 
@@ -527,6 +531,9 @@ class MessageSerializerGenerator {
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
 
+            else if (enumType(erasedType(type)))
+                returnFalseIfReadFailed(name, "reader.readEnumValue");
+
             else
                 throw new IllegalArgumentException("Unsupported declared type: " + type);
 
@@ -583,6 +590,9 @@ class MessageSerializerGenerator {
 
             if (sameType(type, "org.apache.ignite.internal.util.GridLongList"))
                 return "GRID_LONG_LIST";
+
+            if (enumType(type))
+                return "ENUM_VAL";
 
             PrimitiveType primitiveType = unboxedType(type);
 
@@ -712,6 +722,13 @@ class MessageSerializerGenerator {
     /** */
     private boolean assignableFrom(TypeMirror type, TypeMirror superType) {
         return env.getTypeUtils().isAssignable(type, superType);
+    }
+
+    /** */
+    private boolean enumType(TypeMirror type) {
+        Element element = env.getTypeUtils().asElement(type);
+
+        return element != null && element.getKind() == ElementKind.ENUM;
     }
 
     /** */

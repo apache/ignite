@@ -344,6 +344,17 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
+    @Override public <T extends Enum<?>> T readEnumValue() {
+        DirectByteBufferStream stream = state.item().stream;
+
+        T val = stream.readEnumValue();
+
+        lastRead = stream.lastFinished();
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls) {
         DirectByteBufferStream stream = state.item().stream;
 

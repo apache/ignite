@@ -314,6 +314,15 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean writeEnumValue(@Nullable Enum<?> val) {
+        DirectByteBufferStream stream = state.item().stream;
+
+        stream.writeEnumValue(val);
+
+        return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> boolean writeObjectArray(T[] arr, MessageCollectionItemType itemType) {
         DirectByteBufferStream stream = state.item().stream;
 
