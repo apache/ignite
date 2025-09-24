@@ -236,8 +236,17 @@ public class H2QueryInfo implements TrackableQuery {
      * @return SQL plan without the scanCount suffix.
      */
     public String planWithoutScanCount(String plan) {
-        return plan.replaceAll("(?s)/\\* scanCount.*?\\*/", "")
-            .replaceAll("(?s)/\\+\\+ scanCount.*?\\+\\+/", "");
+        String res = null;
+
+        int start = plan.indexOf("\n    /* scanCount");
+
+        if (start != -1) {
+            int end = plan.indexOf("*/", start);
+
+            res = plan.substring(0, start) + plan.substring(end + 2);
+        }
+
+        return (res == null) ? plan : res;
     }
 
     /**
