@@ -22,10 +22,13 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Tests for {@link DataCenterResolver} feature.
@@ -59,6 +62,10 @@ public class DataCenterResolverTest extends GridCommonAbstractTest {
 
         if (dcResolver != null)
             cfg.setDataCenterResolver(dcResolver);
+
+        // To speed up tests involving nodes shutting down.
+        TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
+        discoSpi.setNetworkTimeout(500);
 
         return cfg;
     }
@@ -104,18 +111,101 @@ public class DataCenterResolverTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that attempt to start a node with DC ID resolved to null or empty string ends up with an exception.
+     * Verifies that node with configured DataCenterResolver fails to start if the resolver returns {@code null} or empty DC_ID.
      *
      * @throws Exception If failed.
      */
     @Test
-    public void testEmptyDCIdIsNotAllowed() throws Exception {
+    public void testEmptyDcIdIsNotAllowed() throws Exception {
         dcResolver = NULL_DC_RESOLVER;
 
-        GridTestUtils.assertThrows(log, () -> startGrid(), IgniteCheckedException.class, "Data center ID should not be empty");
+        assertThrows(log, () -> startGrid(), IgniteCheckedException.class, "Data center ID should not be empty");
 
         dcResolver = EMPTY_DC_RESOLVER;
 
-        GridTestUtils.assertThrows(log, () -> startGrid(), IgniteCheckedException.class, "Data center ID should not be empty");
+        assertThrows(log, () -> startGrid(), IgniteCheckedException.class, "Data center ID should not be empty");
+    }
+
+    /**
+     * Verifies that cluster with configured DataCenterResolver rejects server nodes without DataCenterResolver and vise versa.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DATA_CENTER_ID, value = DC_ID)
+    public void testServerWithWrongDcIdConfigIsProhibitedToJoin() throws Exception {
+        dcResolver = new SystemPropertyDataCenterResolver();
+        startGrid(0);
+
+        dcResolver = null;
+
+        try {
+            startGrid(1);
+        }
+        catch (IgniteCheckedException e) {
+            Throwable cause = e.getCause();
+            assertNotNull(cause);
+            assertTrue(cause instanceof IgniteCheckedException);
+
+            cause = cause.getCause();
+            assertNotNull(cause);
+            assertTrue(cause instanceof IgniteSpiException);
+
+            String errMsg = cause.getMessage();
+            assertNotNull(errMsg);
+            assertTrue(errMsg.contains("Remote node declares DataCenter ID but local node doesn't"));
+        }
+
+        stopAllGrids();
+
+        dcResolver = null;
+        startGrid(0);
+
+        dcResolver = new SystemPropertyDataCenterResolver();
+
+        try {
+            startGrid(1);
+        }
+        catch (IgniteCheckedException e) {
+            Throwable cause = e.getCause();
+            assertNotNull(cause);
+            assertTrue(cause instanceof IgniteCheckedException);
+
+            cause = cause.getCause();
+            assertNotNull(cause);
+            assertTrue(cause instanceof IgniteSpiException);
+
+            String errMsg = cause.getMessage();
+            assertNotNull(errMsg);
+            assertTrue(errMsg.contains("Local node declares DataCenter ID but remote node doesn't"));
+        }
+    }
+
+    /**
+     * Verifies that clients with or without DataCenterResolver are allowed to join a cluster with a configured one.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DATA_CENTER_ID, value = DC_ID)
+    public void testClientWithoutDcIdIsAllowedToJoin() throws Exception {
+        dcResolver = new SystemPropertyDataCenterResolver();
+        startGrid(0);
+
+        try {
+            startClientGrid(1);
+        }
+        catch (IgniteCheckedException e) {
+            assertFalse("Unexpected exception was thrown: " + e, true);
+        }
+
+        dcResolver = null;
+
+        try {
+            startClientGrid(2);
+        }
+        catch (IgniteCheckedException e) {
+            assertFalse("Unexpected exception was thrown: " + e, true);
+        }
     }
 }
