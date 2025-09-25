@@ -1295,7 +1295,9 @@ Parameters:
 == Working with Cluster Properties
 
 The `control.sh|bat` script allows administrators to view and modify cluster-wide properties.
-To get the full list of available properties, use the --property list command. This command returns the list of all available properties to work with:
+
+To get the full list of available properties, use the `--property list` command. This command returns the list of all available properties to work with:
+
 [tabs]
 --
 tab:Unix[]
