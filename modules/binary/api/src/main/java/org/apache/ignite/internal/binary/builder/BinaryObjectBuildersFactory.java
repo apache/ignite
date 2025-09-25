@@ -17,45 +17,30 @@
 
 package org.apache.ignite.internal.binary.builder;
 
-import java.util.Iterator;
+import java.util.ServiceLoader;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.util.CommonUtils;
-import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Utility class to provide static methods to create {@link BinaryObjectBuilder}.
+ * Binary object builders factory.
+ * Implementation loaded via {@link ServiceLoader} mechanism.
+ *
+ * @see CommonUtils#loadService(Class)
+ * @see BinaryObjectBuilder
  */
-public class BinaryObjectBuilders {
-    /** Streams factory implementation. */
-    private static final BinaryObjectBuildersFactory factory;
-
-    static {
-        Iterator<BinaryObjectBuildersFactory> factories = CommonUtils.loadService(BinaryObjectBuildersFactory.class).iterator();
-
-        A.ensure(
-            factories.hasNext(),
-            "Implementation for BinaryObjectBuildersFactory service not found. Please add ignite-binary-impl to classpath"
-        );
-
-        factory = factories.next();
-    }
-
+public interface BinaryObjectBuildersFactory {
     /**
      * @param obj Object to convert to builder.
      * @return Builder instance.
      */
-    public static BinaryObjectBuilder builder(BinaryObject obj) {
-        return factory.builder(obj);
-    }
+    public BinaryObjectBuilder builder(BinaryObject obj);
 
     /**
      * @param binaryCtx Binary context.
      * @param clsName Class name.
      * @return Builder instance.
      */
-    public static BinaryObjectBuilder builder(BinaryContext binaryCtx, String clsName) {
-        return factory.builder(binaryCtx, clsName);
-    }
+    public BinaryObjectBuilder builder(BinaryContext binaryCtx, String clsName);
 }

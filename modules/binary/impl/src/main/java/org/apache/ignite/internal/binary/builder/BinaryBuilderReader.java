@@ -37,6 +37,7 @@ import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.util.CommonUtils;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.internal.binary.builder.BinaryObjectBuildersFactoryImpl.unwrapLazy;
 
 /**
  *
@@ -938,7 +939,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
 
         /** {@inheritDoc} */
         @Override public Object value() {
-            return BinaryObjectBuilders.unwrapLazy(wrappedCollection());
+            return unwrapLazy(wrappedCollection());
         }
     }
 }
