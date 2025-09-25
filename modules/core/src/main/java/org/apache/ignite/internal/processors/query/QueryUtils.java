@@ -955,10 +955,10 @@ public class QueryUtils {
         String alias = aliases.get(pathStr);
 
         if (pathStr.equals(keyFieldName))
-            return new KeyOrValProperty(true, pathStr, keyCls, alias);
+            return new KeyOrValProperty(true, alias == null ? pathStr : alias, keyCls);
 
         if (pathStr.equals(valueFieldName))
-            return new KeyOrValProperty(false, pathStr, valCls, alias);
+            return new KeyOrValProperty(false, alias == null ? pathStr : alias, valCls);
 
         return buildClassProperty(keyCls,
                 valCls,
@@ -1803,14 +1803,10 @@ public class QueryUtils {
         Class<?> cls;
 
         /** */
-        String alias;
-
-        /** */
-        public KeyOrValProperty(boolean key, String name, Class<?> cls, String alias) {
+        public KeyOrValProperty(boolean key, String name, Class<?> cls) {
             this.isKey = key;
             this.name = name;
             this.cls = cls;
-            this.alias = alias;
         }
 
         /** {@inheritDoc} */
@@ -1825,7 +1821,7 @@ public class QueryUtils {
 
         /** {@inheritDoc} */
         @Override public String name() {
-            return alias == null ? name : alias;
+            return name;
         }
 
         /** {@inheritDoc} */

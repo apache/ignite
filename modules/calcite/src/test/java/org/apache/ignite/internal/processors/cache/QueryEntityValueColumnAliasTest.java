@@ -73,7 +73,7 @@ public class QueryEntityValueColumnAliasTest extends GridCommonAbstractTest {
 
                 cache.put(1, date);
 
-                assert cache.get(1).equals(date);
+                assertEquals(date, cache.get(1));
             }
         }
     }
