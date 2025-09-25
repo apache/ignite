@@ -2761,16 +2761,14 @@ public class BinaryUtils {
      * @param typeId Type id.
      * @param schemaId Schema id.
      */
-    public static int[] getSchema(BinaryContext ctx, IntFunction<BinaryType> metadataProvider, int typeId, int schemaId) {
+    public static int[] getSchema(BinaryContext ctx, IntFunction<BinaryMetadata> metadataProvider, int typeId, int schemaId) {
         assert ctx != null;
 
         BinarySchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
         BinarySchema schema = schemaReg.schema(schemaId);
 
         if (schema == null) {
-            BinaryTypeImpl meta = (BinaryTypeImpl)metadataProvider.apply(typeId);
-            BinaryMetadata meta = cacheObjProc.metadata0(typeId);
-            BinaryMetadata meta = cacheObjProc.binaryMetadata(typeId);
+            BinaryMetadata meta = metadataProvider.apply(typeId);
 
             if (meta != null) {
                 for (BinarySchema typeSchema : meta.schemas()) {

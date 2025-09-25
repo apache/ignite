@@ -19,8 +19,6 @@ package org.apache.ignite.internal.binary;
 
 import java.util.Collection;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
 
 /**
  * Binary metadata handler.
