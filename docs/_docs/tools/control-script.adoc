@@ -1295,8 +1295,7 @@ Parameters:
 == Working with Cluster Properties
 
 The `control.sh|bat` script allows administrators to view and modify cluster-wide properties.
-To see all available cluster properties and their descriptions, use:
-
+To get the full list of available properties, use the --property list command. This command returns the list of all available properties to work with:
 [tabs]
 --
 tab:Unix[]
@@ -1349,7 +1348,7 @@ use `true|false`.
 
 === Managing Cluster Connection Properties
 
-You can control whether new client or server connections are accepted by the cluster.
+You can control whether new client or server connections are accepted by the cluster setting the cluster-wide properties.
 
 The following properties are available:
 
