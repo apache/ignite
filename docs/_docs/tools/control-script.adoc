@@ -1345,7 +1345,7 @@ control.bat --property get --name 'statistics.usage.state'
 --
 
 NOTE: Available values depend on the property.
-For example, link:SQL/sql-statistics[SQL statistics,window=_blank] use `ON|OFF|NO_UPDATE`, while link:control-script.adoc#managing-cluster-connection-properties[connection properties,window=_blank]
+For example, link:SQL/sql-statistics[SQL statistics,window=_blank] use `ON|OFF|NO_UPDATE`, while link:#managing_cluster_connection_properties[Cluster Connection Properties,window=_blank]
 use `true|false`.
 
 === Managing Cluster Connection Properties
