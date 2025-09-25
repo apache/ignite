@@ -1294,9 +1294,7 @@ Parameters:
 
 == Working with Cluster Properties
 
-The control script allows administrators to view and modify cluster-wide properties.
-
-=== Listing Properties
+The `control.sh|bat` script allows administrators to view and modify cluster-wide properties.
 To see all available cluster properties and their descriptions, use:
 
 [tabs]
@@ -1313,45 +1311,41 @@ control.bat --property list
 ----
 --
 
-=== Getting a Property
-To view the current value of a property, use:
+You can set property value with `--property set` command. For example, to enable or disable SQL statistics in cluster use, specify `ON`, `OFF`,  or `NO_UPDATE` values:
 
 [tabs]
 --
 tab:Unix[]
 [source,shell]
 ----
-control.sh --property get --name <propertyName>
+control.sh --property set --name 'statistics.usage.state' --val 'ON'
 ----
 tab:Windows[]
 [source,shell]
 ----
-control.bat --property get --name <propertyName>
+control.bat --property set --name 'statistics.usage.state' --val 'ON'
 ----
 --
 
-=== Setting a Property
-To change a property value, use:
+You can also get property value with `--property get` command. For example:
 
 [tabs]
 --
 tab:Unix[]
 [source,shell]
 ----
-control.sh --property set --name <propertyName> --val <value>
+control.sh --property get --name 'statistics.usage.state'
 ----
 tab:Windows[]
 [source,shell]
 ----
-control.bat --property set --name <propertyName> --val <value>
+control.bat --property get --name 'statistics.usage.state'
 ----
 --
 
 NOTE: Available values depend on the property.
-For example, SQL statistics use `ON|OFF|NO_UPDATE`, while connection properties use `true|false`.
-
-For details on configuring SQL statistics, see the
-link:SQL/sql-statistics[SQL statistics,window=_blank] Configuring Statistics section.
+For example, link:SQL/sql-statistics[SQL statistics,window=_blank] use `ON|OFF|NO_UPDATE`, while link:control-script.adoc#managing-cluster-connection-properties[connection properties,window=_blank]
+use `true|false`.
 
 === Managing Cluster Connection Properties
 
@@ -1359,17 +1353,33 @@ You can control whether new client or server connections are accepted by the clu
 
 The following properties are available:
 
-[cols="2,5", opts="header"]
+[cols="3,5,2,2", opts="header"]
 |===
-|Property | Description
-|newClientNodeConnectionsEnabled | Enables or disables new client node connections.
-|newServerNodeConnectionsEnabled | Enables or disables new server node connections.
-|newThinConnectionsEnabled | Enables or disables new thin client connections.
-|newJdbcConnectionsEnabled | Enables or disables new JDBC connections.
-|newOdbcConnectionsEnabled | Enables or disables new ODBC connections.
+|Property | Description | Available values | Default value
+|newClientNodeConnectionsEnabled | If true then new client node connections allowed. | true / false | true
+|newServerNodeConnectionsEnabled | If true then new server node connections allowed. | true / false | true
+|newThinConnectionsEnabled | If true then new thin client connections allowed. | true / false | true
+|newJdbcConnectionsEnabled | If true then new JDBC connections allowed. | true / false | true
+|newOdbcConnectionsEnabled | If true then new ODBC connections allowed. | true / false | true
 |===
 
-NOTE: Disabling a property affects only new connections. Existing connections remain active.
+NOTE: Setting a property to `false` affects only new connections. Existing connections remain active.
+
+For example, the following command disables new thin client connections:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --property set --name newThinConnectionsEnabled --val false
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat --property set --name newThinConnectionsEnabled --val false
+----
+--
 
 == Manage cache metrics collection
 
