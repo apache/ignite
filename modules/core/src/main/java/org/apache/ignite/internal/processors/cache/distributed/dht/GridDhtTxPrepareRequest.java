@@ -128,7 +128,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param txNodes Transaction nodes mapping.
      * @param nearXidVer Near transaction ID.
      * @param last {@code True} if this is last prepare request for node.
-     * @param addDepInfo Deployment info flag.
      * @param storeWriteThrough Cache store write through flag.
      * @param retVal Need return value flag
      * @param updCntrs Update counters for Tx.
@@ -146,19 +145,19 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         boolean last,
         boolean onePhaseCommit,
         int taskNameHash,
-        boolean addDepInfo,
         boolean storeWriteThrough,
         boolean retVal,
         Collection<PartitionUpdateCountersMessage> updCntrs) {
-        super(tx,
+        super(
+            tx,
             timeout,
             null,
             dhtWrites,
             txNodes,
             retVal,
             last,
-            onePhaseCommit,
-            addDepInfo);
+            onePhaseCommit
+        );
 
         assert futId != null;
         assert miniId != 0;

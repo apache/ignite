@@ -918,8 +918,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             skipStore,
                             cctx.store().configured(),
                             keepBinary,
-                            cctx.deploymentEnabled(),
-                            inTx() ? tx.label() : null);
+                            inTx() ? tx.label() : null
+                        );
 
                         try {
                             for (ListIterator<GridDhtCacheEntry> it = dhtMapping.listIterator(); it.hasNext(); ) {

@@ -91,11 +91,11 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
             topVer,
             updateReq.taskNameHash(),
             null,
-            cctx.deploymentEnabled(),
             updateReq.keepBinary(),
             updateReq.skipStore(),
             false,
-            readRepairRecovery);
+            readRepairRecovery
+        );
     }
 
     /** {@inheritDoc} */

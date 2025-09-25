@@ -71,7 +71,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
      * @param op Cache update operation.
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
-     * @param addDepInfo Deployment info flag.
      */
     GridNearAtomicSingleUpdateRequest(
         int cacheId,
@@ -81,18 +80,17 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         int taskNameHash,
-        byte flags,
-        boolean addDepInfo
+        byte flags
     ) {
-        super(cacheId,
+        super(
+            cacheId,
             nodeId,
             futId,
             topVer,
             syncMode,
             op,
             taskNameHash,
-            flags,
-            addDepInfo
+            flags
         );
     }
 

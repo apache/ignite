@@ -232,9 +232,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
             }
             else
                 activeCacheIds.add(cacheId);
-
-            if (activeCacheIds.size() == 1)
-                tx.activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
         }
     }
 

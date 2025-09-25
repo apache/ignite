@@ -1083,8 +1083,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                         keepBinary,
                                         clientFirst,
                                         false,
-                                        cctx.deploymentEnabled(),
-                                        inTx() ? tx.label() : null);
+                                        inTx() ? tx.label() : null
+                                    );
 
                                     mapping.request(req);
                                 }

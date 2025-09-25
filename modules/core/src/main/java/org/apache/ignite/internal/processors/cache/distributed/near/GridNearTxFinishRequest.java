@@ -79,8 +79,8 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
         int txSize,
-        int taskNameHash,
-        boolean addDepInfo) {
+        int taskNameHash
+    ) {
         super(
             xidVer,
             futId,
@@ -96,8 +96,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
             committedVers,
             rolledbackVers,
             taskNameHash,
-            txSize,
-            addDepInfo
+            txSize
         );
 
         explicitLock(explicitLock);

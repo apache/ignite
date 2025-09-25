@@ -117,7 +117,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @param op Cache update operation.
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
-     * @param addDepInfo Deployment info flag.
      */
     protected GridNearAtomicAbstractUpdateRequest(
         int cacheId,
@@ -127,8 +126,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         int taskNameHash,
-        byte flags,
-        boolean addDepInfo
+        byte flags
     ) {
         this.cacheId = cacheId;
         this.nodeId = nodeId;
@@ -138,7 +136,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         this.op = op;
         this.taskNameHash = taskNameHash;
         this.flags = flags;
-        this.addDepInfo = addDepInfo;
     }
 
     /**

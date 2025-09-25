@@ -1759,8 +1759,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             nodeId,
             req.futureId(),
             req.partition(),
-            false,
-            ctx.deploymentEnabled());
+            false
+        );
 
         res.addFailedKeys(req.keys(), e);
 
@@ -1783,8 +1783,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             node.id(),
             req.futureId(),
             req.partition(),
-            false,
-            ctx.deploymentEnabled());
+            false
+        );
 
         assert !req.returnValue() || (req.operation() == TRANSFORM || req.size() == 1);
 
@@ -3251,8 +3251,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             nodeId,
             checkReq.futureId(),
             checkReq.partition(),
-            false,
-            false);
+            false
+        );
 
         GridCacheReturn ret = new GridCacheReturn(false, true);
 
@@ -3419,10 +3419,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
 
             if (nearEvicted != null) {
-                dhtRes = new GridDhtAtomicUpdateResponse(ctx.cacheId(),
+                dhtRes = new GridDhtAtomicUpdateResponse(
+                    ctx.cacheId(),
                     req.partition(),
-                    req.futureId(),
-                    ctx.deploymentEnabled());
+                    req.futureId()
+                );
 
                 dhtRes.nearEvicted(nearEvicted);
             }
@@ -3453,10 +3454,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             sendDhtNearResponse(req, nearRes);
 
         if (dhtRes == null && req.replyWithoutDelay()) {
-            dhtRes = new GridDhtAtomicUpdateResponse(ctx.cacheId(),
+            dhtRes = new GridDhtAtomicUpdateResponse(
+                ctx.cacheId(),
                 req.partition(),
-                req.futureId(),
-                ctx.deploymentEnabled());
+                req.futureId()
+            );
         }
 
         if (dhtRes != null)
