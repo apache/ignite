@@ -270,6 +270,14 @@ public interface MessageWriter {
     public boolean writeGridLongList(@Nullable GridLongList ll);
 
     /**
+     * Writes {@link Throwable}.
+     *
+     * @param t Throwable.
+     * @return Whether value was fully written.
+     */
+    public boolean writeThrowable(@Nullable Throwable t);
+
+    /**
      * Writes array of objects.
      *
      * @param arr Array of objects.

@@ -219,6 +219,13 @@ public interface MessageReader {
     public GridLongList readGridLongList();
 
     /**
+     * Reads {@link Throwable}.
+     *
+     * @return Throwable.
+     */
+    public Throwable readThrowable();
+
+    /**
      * Reads array of objects.
      *
      * @param itemType Array component type.

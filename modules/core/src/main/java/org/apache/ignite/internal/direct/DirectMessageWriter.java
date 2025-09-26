@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.direct;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
@@ -311,6 +313,15 @@ public class DirectMessageWriter implements MessageWriter {
         stream.writeGridLongList(ll);
 
         return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeThrowable(@Nullable Throwable t) {
+        StringWriter sw = new StringWriter();
+
+        t.printStackTrace(new PrintWriter(sw));
+
+        return writeString(sw.toString());
     }
 
     /** {@inheritDoc} */
