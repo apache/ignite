@@ -34,7 +34,7 @@ import java.lang.annotation.Target;
  * should be performed strictly through corresponding getter and setter methods
  * following the naming convention: {@code fieldName()} for getter and {@code fieldName(Type)} for setter.
  */
-@Retention(RetentionPolicy.SOURCE)
+@Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
 public @interface Order {
     /** @return Order of the field. */

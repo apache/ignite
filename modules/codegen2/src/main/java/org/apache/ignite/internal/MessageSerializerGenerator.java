@@ -28,10 +28,10 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -48,7 +48,6 @@ import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
-
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
@@ -83,13 +82,13 @@ class MessageSerializerGenerator {
     private static final String METHOD_JAVADOC = "/** */";
 
     /** Collection of lines for {@code writeTo} method. */
-    private final Collection<String> write = new ArrayList<>();
+    private final List<String> write = new ArrayList<>();
 
     /** Collection of lines for {@code readFrom} method. */
-    private final Collection<String> read = new ArrayList<>();
+    private final List<String> read = new ArrayList<>();
 
     /** Collection of message-specific imports. */
-    private final Set<String> imports = new HashSet<>();
+    private final Set<String> imports = new TreeSet<>();
 
     /** */
     private final ProcessingEnvironment env;
@@ -154,6 +153,8 @@ class MessageSerializerGenerator {
             writer.write(TAB + "}" + NL);
 
             writer.write("}");
+
+            writer.write(NL);
 
             return writer.toString();
         }
@@ -404,7 +405,7 @@ class MessageSerializerGenerator {
      * </pre>
      */
     private void returnFalseIfWriteFailed(Collection<String> code, String accessor, @Nullable String... args) {
-        String argsStr = String.join(",", args);
+        String argsStr = String.join(", ", args);
 
         code.add(line("if (!%s(msg.%s))", accessor, argsStr));
 
@@ -465,6 +466,11 @@ class MessageSerializerGenerator {
                 returnFalseIfReadFailed(name, "reader.readObjectArray",
                     "MessageCollectionItemType." + messageCollectionItemType(componentType),
                     cls + ".class");
+
+                String importCls = ((QualifiedNameable)env.getTypeUtils().asElement(componentType)).getQualifiedName()
+                    .toString();
+
+                imports.add(importCls);
 
                 return;
             }
@@ -583,10 +589,6 @@ class MessageSerializerGenerator {
         if (!assignableFrom(type, type(MESSAGE_INTERFACE)))
             throw new Exception("Do not support type: " + type);
 
-        String cls = ((QualifiedNameable)env.getTypeUtils().asElement(type)).getQualifiedName().toString();
-
-        imports.add(cls);
-
         return "MSG";
     }
 
@@ -635,7 +637,11 @@ class MessageSerializerGenerator {
     }
 
     /** */
-    private void finish(Collection<String> code) {
+    private void finish(List<String> code) {
+        // Remove the last empty line for the last "case".
+        String removed = code.remove(code.size() - 1);
+        assert EMPTY.equals(removed) : removed;
+
         code.add(line("}"));
         code.add(EMPTY);
 
@@ -673,11 +679,12 @@ class MessageSerializerGenerator {
 
         writer.write(NL);
         writer.write("package " + pkgName + ";" + NL + NL);
-        writer.write("import java.nio.ByteBuffer;" + NL);
-        writer.write("import org.apache.ignite.plugin.extensions.communication.Message;" + NL);
-        writer.write("import org.apache.ignite.plugin.extensions.communication.MessageSerializer;" + NL);
-        writer.write("import org.apache.ignite.plugin.extensions.communication.MessageWriter;" + NL);
-        writer.write("import org.apache.ignite.plugin.extensions.communication.MessageReader;" + NL);
+
+        imports.add("java.nio.ByteBuffer");
+        imports.add("org.apache.ignite.plugin.extensions.communication.Message");
+        imports.add("org.apache.ignite.plugin.extensions.communication.MessageSerializer");
+        imports.add("org.apache.ignite.plugin.extensions.communication.MessageWriter");
+        imports.add("org.apache.ignite.plugin.extensions.communication.MessageReader");
 
         for (String i: imports)
             writer.write("import " + i + ";" + NL);
