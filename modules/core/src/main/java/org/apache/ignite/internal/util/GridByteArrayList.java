@@ -19,25 +19,17 @@ package org.apache.ignite.internal.util;
 
 import java.io.Externalizable;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
-import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
-import org.apache.ignite.internal.util.io.GridUnsafeDataOutput;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Re-sizable array implementation of the byte list (eliminating auto-boxing of primitive byte type).
  */
-public class GridByteArrayList implements Message, Externalizable {
+public class GridByteArrayList implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -65,41 +57,6 @@ public class GridByteArrayList implements Message, Externalizable {
         assert cap > 0;
 
         data = new byte[cap];
-    }
-
-    /**
-     * Wraps existing array into byte array list.
-     *
-     * @param data Array to wrap.
-     * @param size Size of data inside of array.
-     */
-    public GridByteArrayList(byte[] data, int size) {
-        assert data != null;
-        assert size > 0;
-
-        this.data = data;
-        this.size = size;
-    }
-
-    /**
-     * Wraps existing array into byte array list.
-     *
-     * @param data Array to wrap.
-     */
-    public GridByteArrayList(byte[] data) {
-        assert data != null;
-
-        this.data = data;
-
-        size = data.length;
-    }
-
-    /**
-     * Resets byte array to empty. Note that this method simply resets the size
-     * as there is no need to reset every byte in the array.
-     */
-    public void reset() {
-        size = 0;
     }
 
     /**
@@ -141,7 +98,7 @@ public class GridByteArrayList implements Message, Externalizable {
      *
      * @return Initial capacity.
      */
-    public int capacity() {
+    private int capacity() {
         return data.length;
     }
 
@@ -174,17 +131,6 @@ public class GridByteArrayList implements Message, Externalizable {
     }
 
     /**
-     * Pre-allocates internal array for specified byte number only
-     * if it currently is smaller than desired number.
-     *
-     * @param cnt Byte number to preallocate.
-     */
-    public void allocate(int cnt) {
-        if (size + cnt > capacity())
-            capacity(size + cnt);
-    }
-
-    /**
      * Re-sizes internal byte array representation.
      *
      * @param cnt Number of bytes to request.
@@ -203,19 +149,6 @@ public class GridByteArrayList implements Message, Externalizable {
         requestFreeSize(1);
 
         data[size++] = b;
-    }
-
-    /**
-     * Sets a byte at specified position.
-     *
-     * @param pos Specified position.
-     * @param b Byte to set.
-     */
-    public void set(int pos, byte b) {
-        assert pos >= 0;
-        assert pos < size;
-
-        data[pos] = b;
     }
 
     /**
@@ -245,32 +178,6 @@ public class GridByteArrayList implements Message, Externalizable {
     }
 
     /**
-     * Sets short at specified position.
-     *
-     * @param pos Specified position.
-     * @param i Short to set.
-     */
-    public void set(int pos, short i) {
-        assert pos >= 0;
-        assert pos + 2 <= size;
-
-        U.shortToBytes(i, data, pos);
-    }
-
-    /**
-     * Sets integer at specified position.
-     *
-     * @param pos Specified position.
-     * @param i Integer to set.
-     */
-    public void set(int pos, int i) {
-        assert pos >= 0;
-        assert pos + 4 <= size;
-
-        U.intToBytes(i, data, pos);
-    }
-
-    /**
      * Appends long to the next 8 bytes of list.
      *
      * @param l Long to append.
@@ -284,19 +191,6 @@ public class GridByteArrayList implements Message, Externalizable {
     }
 
     /**
-     * Sets long at specified position.
-     *
-     * @param pos Specified position.
-     * @param l Long to set.
-     */
-    public void set(int pos, long l) {
-        assert pos >= 0;
-        assert pos + 8 <= size;
-
-        U.longToBytes(l, data, pos);
-    }
-
-    /**
      * @param bytes Byte to add.
      * @param off Offset at which to add.
      * @param len Number of bytes to add.
@@ -307,95 +201,6 @@ public class GridByteArrayList implements Message, Externalizable {
         GridUnsafe.arrayCopy(bytes, off, data, size, len);
 
         size += len;
-    }
-
-    /**
-     * Adds data from byte buffer into array.
-     *
-     * @param buf Buffer to read bytes from.
-     * @param len Number of bytes to add.
-     */
-    public void add(ByteBuffer buf, int len) {
-        requestFreeSize(len);
-
-        buf.get(data, size, len);
-
-        size += len;
-    }
-
-    /**
-     * Gets the element (byte) at the specified position in the list.
-     *
-     * @param i Index of element to return.
-     * @return The element at the specified position in the list.
-     */
-    public byte get(int i) {
-        assert i < size;
-
-        return data[i];
-    }
-
-    /**
-     * Gets 4 bytes from byte list as an integer.
-     *
-     * @param i Index into the byte list.
-     * @return Integer starting at index location.
-     */
-    public int getInt(int i) {
-        assert i + 4 <= size;
-
-        return U.bytesToInt(data, i);
-    }
-
-    /**
-     * Reads all data from input stream until the end into this byte list.
-     *
-     * @param in Input stream to read from.
-     * @throws IOException Thrown if any I/O error occurred.
-     */
-    public void readAll(InputStream in) throws IOException {
-        assert in != null;
-
-        int read = 0;
-
-        while (read >= 0) {
-            int free = capacity() - size;
-
-            if (free == 0) {
-                requestFreeSize(1);
-
-                free = capacity() - size;
-
-                assert free > 0;
-            }
-
-            read = in.read(data, size, free);
-
-            if (read > 0)
-                size += read;
-        }
-    }
-
-    /**
-     * @return Output stream based on this byte array list.
-     */
-    public OutputStream outputStream() {
-        GridUnsafeDataOutput out = new GridUnsafeDataOutput();
-
-        out.bytes(data, size);
-
-        return out;
-    }
-
-    /**
-     * @return Input stream based on this byte array list.
-     */
-    public InputStream inputStream() {
-        GridUnsafeDataInput in = new GridUnsafeDataInput();
-
-        in.bytes(data, size);
-
-        return in;
     }
 
     /** {@inheritDoc} */
@@ -412,66 +217,6 @@ public class GridByteArrayList implements Message, Externalizable {
         data = new byte[size];
 
         in.readFully(data, 0, size);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByteArray(data))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeInt(size))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                data = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                size = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 84;
     }
 
     /** {@inheritDoc} */
