@@ -72,6 +72,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.datacenter.DataCenterResolver;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
@@ -370,6 +371,9 @@ public class IgniteConfiguration {
     /** Discovery SPI. */
     private DiscoverySpi discoSpi;
 
+    /** Data center resolver. */
+    private DataCenterResolver dcResolver;
+
     /** Segmentation policy. */
     private SegmentationPolicy segPlc = DFLT_SEG_PLC;
 
@@ -664,6 +668,7 @@ public class IgniteConfiguration {
         connectorCfg = cfg.getConnectorConfiguration();
         consistentId = cfg.getConsistentId();
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
+        dcResolver = cfg.getDataCenterResolver();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         execCfgs = cfg.getExecutorConfiguration();
@@ -1949,6 +1954,26 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setSegmentationPolicy(SegmentationPolicy segPlc) {
         this.segPlc = segPlc;
+
+        return this;
+    }
+
+    /**
+     * Returns {@link DataCenterResolver} configured for this node or {@code null} if none is configured.
+     *
+     * @return {@link DataCenterResolver} instance.
+     */
+    public @Nullable DataCenterResolver getDataCenterResolver() {
+        return dcResolver;
+    }
+
+    /**
+     * @param dcResolver Instance of {@link DataCenterResolver} to obtain local node's Data Center ID.
+     *
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setDataCenterResolver(DataCenterResolver dcResolver) {
+        this.dcResolver = dcResolver;
 
         return this;
     }
