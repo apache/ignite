@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.UUID;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -48,7 +49,6 @@ import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
-
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
@@ -387,6 +387,12 @@ class MessageSerializerGenerator {
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
 
+            else if (isEnum(type)) {
+                imports.add(type.toString());
+
+                returnFalseIfEnumWriteFailed(write, "writer.writeByte", getExpr);
+            }
+
             else
                 throw new IllegalArgumentException("Unsupported declared type: " + type);
 
@@ -407,6 +413,25 @@ class MessageSerializerGenerator {
         String argsStr = String.join(",", args);
 
         code.add(line("if (!%s(msg.%s))", accessor, argsStr));
+
+        indent++;
+
+        code.add(line("return false;"));
+
+        indent--;
+    }
+
+    /**
+     * Generate code of writing single enum field:
+     * <pre>
+     * if (!writer.writeByte(msg.op() != null ? (byte)msg.op().ordinal() : -1)))
+     *     return false;
+     * </pre>
+     */
+    private void returnFalseIfEnumWriteFailed(Collection<String> code, String accessor, String mtd) {
+        String enumToByte = String.format("msg.%1$s != null ? (byte)msg.%1$s.ordinal() : -1", mtd);
+
+        code.add(line("if (!%s(%s))", accessor, enumToByte));
 
         indent++;
 
@@ -460,7 +485,7 @@ class MessageSerializerGenerator {
             }
 
             if (componentType.getKind() == TypeKind.DECLARED) {
-                String cls = ((DeclaredType)arrType.getComponentType()).asElement().getSimpleName().toString();
+                String cls = simpleName(arrType.getComponentType());
 
                 returnFalseIfReadFailed(name, "reader.readObjectArray",
                     "MessageCollectionItemType." + messageCollectionItemType(componentType),
@@ -515,6 +540,12 @@ class MessageSerializerGenerator {
 
                 returnFalseIfReadFailed(name, "reader.readCollection",
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
+            }
+
+            else if (isEnum(type)) {
+                String mtd = simpleName(type) + ".fromOrdinal(reader.readByte";
+
+                returnFalseIfReadFailed(name, mtd, ")");
             }
 
             else
@@ -604,6 +635,22 @@ class MessageSerializerGenerator {
         catch (IllegalArgumentException e) {
             return null;
         }
+    }
+
+    /**
+     * @param type Type.
+     * @return <code>true<code/> if specified type represents enum.
+     */
+    private boolean isEnum(TypeMirror type) {
+        return ((DeclaredType)type).asElement().getKind() == ElementKind.ENUM;
+    }
+
+    /**
+     * @param type Type.
+     * @return Simple name of class, represented by a specified type mirror.
+     */
+    private String simpleName(TypeMirror type) {
+        return ((DeclaredType)type).asElement().getSimpleName().toString();
     }
 
     /**
