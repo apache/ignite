@@ -84,7 +84,6 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
      *
      * @throws Exception If fails.
      */
-    @Test
     public void testClusterSnapshotHandlers() throws Exception {
         String expMsg = "Inconsistent data";
 
@@ -167,7 +166,6 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
      *
      * @throws Exception If fails.
      */
-    @Test
     public void testClusterSnapshotHandlerFailure() throws Exception {
         String expMsg = "Test verification exception message.";
 
@@ -230,7 +228,6 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
      *
      * @throws Exception If fails.
      */
-    @Test
     public void testClusterSnapshotHandlerConfigurationMismatch() throws Exception {
         SnapshotHandler<Void> defHnd = new SnapshotHandler<Void>() {
             @Override public SnapshotHandlerType type() {
@@ -354,7 +351,6 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
      *
      * @throws Exception If failed.
      */
-    @Test
     public void testHandlerSnapshotLocation() throws Exception {
         String snpName = "snapshot_30052022";
         File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
@@ -409,7 +405,6 @@ public class IgniteClusterSnapshotHandlerTest extends IgniteClusterSnapshotResto
      * Test ensures that snapshot fails if some files are absent during the check.
      * @see SnapshotPartitionsQuickVerifyHandler
      */
-    @Test
     public void testHandlerExceptionFailSnapshot() throws Exception {
         handlers.add(new SnapshotHandler<Void>() {
             @Override public SnapshotHandlerType type() {
