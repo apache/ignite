@@ -562,19 +562,6 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
                 log,
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        cache.query(new SpiQuery<Integer, Integer>(), transformer);
-
-                        return null;
-                    }
-                },
-                UnsupportedOperationException.class,
-                "Transformers are supported only for SCAN queries."
-            );
-
-            GridTestUtils.assertThrows(
-                log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
                         cache.query(new ContinuousQuery<Integer, Integer>(), transformer);
 
                         return null;
