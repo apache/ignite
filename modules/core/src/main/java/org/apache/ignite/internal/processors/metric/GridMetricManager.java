@@ -41,6 +41,7 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
+import org.apache.ignite.internal.processors.metric.impl.AbstractIntervalMetric;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.DoubleMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
@@ -156,8 +157,11 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     /** */
     private static final Collection<GarbageCollectorMXBean> gc = ManagementFactory.getGarbageCollectorMXBeans();
 
-    /** Prefix for {@link HitRateMetric} configuration property name. */
+    /** Prefix for {@link HitRateMetric} configuration property name (legacy, need to be converted). */
     public static final String HITRATE_CFG_PREFIX = metricName("metrics", "hitrate");
+
+    /** Prefix for {@link AbstractIntervalMetric} configuration property name. */
+    public static final String INTERVAL_METRIC_CFG_PREFIX = metricName("metrics", "interval");
 
     /** Prefix for {@link HistogramMetric} configuration property name. */
     public static final String HISTOGRAM_CFG_PREFIX = metricName("metrics", "histogram");
@@ -278,8 +282,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                     roMetastorage = metastorage;
 
                     try {
-                        metastorage.iterate(HITRATE_CFG_PREFIX, (name, val) -> onHitRateConfigChanged(
-                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long)val));
+                        metastorage.iterate(INTERVAL_METRIC_CFG_PREFIX, (name, val) -> onIntervalMetricConfigChanged(
+                            name.substring(INTERVAL_METRIC_CFG_PREFIX.length() + 1), (Long)val));
 
                         metastorage.iterate(HISTOGRAM_CFG_PREFIX, (name, val) -> onHistogramConfigChanged(
                             name.substring(HISTOGRAM_CFG_PREFIX.length() + 1), (long[])val));
@@ -288,9 +292,9 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                         throw new IgniteException(e);
                     }
 
-                    metastorage.listen(n -> n.startsWith(HITRATE_CFG_PREFIX),
-                        (name, oldVal, newVal) -> onHitRateConfigChanged(
-                            name.substring(HITRATE_CFG_PREFIX.length() + 1), (Long)newVal));
+                    metastorage.listen(n -> n.startsWith(INTERVAL_METRIC_CFG_PREFIX),
+                        (name, oldVal, newVal) -> onIntervalMetricConfigChanged(
+                            name.substring(INTERVAL_METRIC_CFG_PREFIX.length() + 1), (Long)newVal));
 
                     metastorage.listen(n -> n.startsWith(HISTOGRAM_CFG_PREFIX),
                         (name, oldVal, newVal) -> onHistogramConfigChanged(
@@ -300,6 +304,32 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
                 /** {@inheritDoc} */
                 @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
                     GridMetricManager.this.metastorage = metastorage;
+
+                    if (!U.isLocalNodeCoordinator(ctx.discovery()))
+                        return;
+
+                    // Convert hit rate metrics configuration.
+                    try {
+                        metastorage.iterate(HITRATE_CFG_PREFIX, (name, val) -> {
+                            try {
+                                // New metric configuration for old prefix will be applied by DMS listener.
+                                metastorage.writeAsync(
+                                    metricName(INTERVAL_METRIC_CFG_PREFIX,
+                                        name.substring(HITRATE_CFG_PREFIX.length() + 1)),
+                                    val
+                                );
+
+                                metastorage.removeAsync(name);
+                            }
+                            catch (IgniteCheckedException e) {
+                                throw new IgniteException(e);
+                            }
+                        });
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+
                 }
             });
     }
@@ -323,7 +353,7 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
         return (MetricRegistryImpl)registries.computeIfAbsent(name, n -> {
             MetricRegistryImpl mreg = new MetricRegistryImpl(name,
-                custom ? null : mname -> readFromMetastorage(metricName(HITRATE_CFG_PREFIX, mname)),
+                custom ? null : mname -> readFromMetastorage(metricName(INTERVAL_METRIC_CFG_PREFIX, mname)),
                 custom ? null : mname -> readFromMetastorage(metricName(HISTOGRAM_CFG_PREFIX, mname)),
                 log);
 
@@ -403,8 +433,8 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
 
             try {
                 for (Metric m : mreg) {
-                    if (m instanceof HitRateMetric)
-                        opsFut.add(metastorage0.removeAsync(metricName(HITRATE_CFG_PREFIX, m.name())));
+                    if (m instanceof AbstractIntervalMetric)
+                        opsFut.add(metastorage0.removeAsync(metricName(INTERVAL_METRIC_CFG_PREFIX, m.name())));
                     else if (m instanceof HistogramMetric)
                         opsFut.add(metastorage0.removeAsync(metricName(HISTOGRAM_CFG_PREFIX, m.name())));
                 }
@@ -437,16 +467,45 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
      * @see HitRateMetric#reset(long, int)
      */
     public void configureHitRate(String name, long rateTimeInterval) throws IgniteCheckedException {
+        configureIntervalMetric(name, HitRateMetric.class, rateTimeInterval);
+    }
+
+    /**
+     * Change {@link AbstractIntervalMetric} configuration if it exists.
+     *
+     * @param name Metric name.
+     * @param interval New time interval.
+     * @throws IgniteCheckedException If write of configuration failed.
+     * @see AbstractIntervalMetric#reset(long, int)
+     */
+    public void configureIntervalMetric(String name, long interval) throws IgniteCheckedException {
+        configureIntervalMetric(name, AbstractIntervalMetric.class, interval);
+    }
+
+    /**
+     * Change {@link AbstractIntervalMetric} configuration if it exists.
+     *
+     * @param name Metric name.
+     * @param cls Metric class.
+     * @param interval New time interval.
+     * @throws IgniteCheckedException If write of configuration failed.
+     * @see AbstractIntervalMetric#reset(long, int)
+     */
+    private void configureIntervalMetric(
+        String name,
+        Class<? extends AbstractIntervalMetric> cls,
+        long interval
+    ) throws IgniteCheckedException {
         A.notNullOrEmpty(name, "name");
-        A.ensure(rateTimeInterval > 0, "rateTimeInterval should be positive");
+        A.ensure(interval > 0, "interval should be positive");
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
 
         if (ctx.isStopping())
             throw new NodeStoppingException("Operation has been cancelled (node is stopping)");
 
-        ensureMetricRegistered(name, HitRateMetric.class);
+        ensureMetricRegistered(name, cls);
 
-        metastorage.write(metricName(HITRATE_CFG_PREFIX, name), rateTimeInterval);
+        metastorage.write(metricName(INTERVAL_METRIC_CFG_PREFIX, name), interval);
     }
 
     /**
@@ -470,24 +529,24 @@ public class GridMetricManager extends GridManagerAdapter<MetricExporterSpi> imp
     }
 
     /**
-     * Change {@link HitRateMetric} instance configuration.
+     * Change {@link AbstractIntervalMetric} instance configuration.
      *
      * @param name Metric name.
-     * @param rateTimeInterval New rateTimeInterval.
-     * @see HitRateMetric#reset(long)
+     * @param interval New interval.
+     * @see AbstractIntervalMetric#reset(long)
      */
-    private void onHitRateConfigChanged(String name, @Nullable Long rateTimeInterval) {
-        if (rateTimeInterval == null)
+    private void onIntervalMetricConfigChanged(String name, @Nullable Long interval) {
+        if (interval == null)
             return;
 
-        A.ensure(rateTimeInterval > 0, "rateTimeInterval should be positive");
+        A.ensure(interval > 0, "interval should be positive");
 
-        HitRateMetric m = find(name, HitRateMetric.class);
+        AbstractIntervalMetric m = find(name, AbstractIntervalMetric.class);
 
         if (m == null)
             return;
 
-        m.reset(rateTimeInterval);
+        m.reset(interval);
     }
 
     /**
