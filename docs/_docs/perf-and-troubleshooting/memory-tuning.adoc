@@ -122,10 +122,8 @@ Note that 10GB heap is used as an example and a smaller heap can be enough for y
 
 [NOTE]
 ====
-//TODO: Is this still valid? What does it do?
-If you use link:persistence/native-persistence[Ignite native persistence], we recommend that you set the
-`MaxDirectMemorySize` JVM parameter to `walSegmentSize * 4`.
-With the default WAL settings, this value is equal to 256MB.
+If you use link:persistence/native-persistence[Ignite native persistence], we recommend relying on the JVM default for direct memory. By default, the JVM allows direct buffers grow up to the Java heap size (-Xmx), which is sufficient in most cases.
+If you need an explicit limit, set `-XX:MaxDirectMemorySize` to at least `walSegmentSize * 4` (256 MB with the default WAL settings).
 ====
 
 === Advanced Memory Tuning
