@@ -46,7 +46,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SPI;
 
 /**
  * Query request.
@@ -362,8 +361,8 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         @Nullable Collection<KeyCacheObject> skipKeys
     ) {
         assert type != null || fields;
-        assert clause != null || (type == SCAN || type == SET || type == SPI || type == INDEX);
-        assert clsName != null || fields || type == SCAN || type == SET || type == SPI;
+        assert clause != null || (type == SCAN || type == SET || type == INDEX);
+        assert clsName != null || fields || type == SCAN || type == SET;
 
         this.cacheId = cacheId;
         this.id = id;

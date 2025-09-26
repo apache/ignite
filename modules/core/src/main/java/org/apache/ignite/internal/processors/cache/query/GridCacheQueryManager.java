@@ -125,7 +125,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
-import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -139,7 +138,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SPI;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
@@ -660,7 +658,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         T2<String, List<Object>> resKey = null;
 
-        if (qry.clause() == null && qry.type() != SPI) {
+        if (qry.clause() == null) {
             assert !loc;
 
             throw new IgniteCheckedException("Received next page request after iterator was removed. " +
@@ -699,46 +697,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 resKey = null; // Failed to cache result.
         }
         else {
-            assert qry.type() == SPI : "Unexpected query type: " + qry.type();
-
-            if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
-                    cctx.localNode(),
-                    "SPI query executed.",
-                    EVT_CACHE_QUERY_EXECUTED,
-                    CacheQueryType.SPI.name(),
-                    cctx.name(),
-                    null,
-                    null,
-                    null,
-                    null,
-                    args,
-                    securitySubjectId(cctx),
-                    taskName));
-            }
-
-            res = new FieldsResult(rcpt);
-        }
-
-        try {
-            if (qry.type() == SPI) {
-                IgniteSpiCloseableIterator<?> iter = cctx.kernalContext().indexing().query(cacheName, F.asList(args),
-                    filter(qry));
-
-                res.onDone(iter);
-            }
-            else {
-                assert qry.type() == SQL_FIELDS;
-
-                throw new IllegalStateException("Should never be called.");
-            }
-        }
-        catch (Exception e) {
-            res.onDone(e);
-        }
-        finally {
-            if (resKey != null)
-                qryResCache.remove(resKey, res);
+            throw new IllegalStateException("Unexpected query type: " + qry.type());
         }
 
         return res;
@@ -2825,24 +2784,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         public int size() {
             return size;
         }
-    }
-
-    /**
-     * Query for {@link IndexingSpi}.
-     *
-     * @param keepBinary Keep binary flag.
-     * @return Query.
-     */
-    public <R> CacheQuery<R> createSpiQuery(boolean keepBinary) {
-        return new CacheQuery<>(cctx,
-            SPI,
-            null,
-            null,
-            null,
-            keepBinary,
-            false,
-            null,
-            null);
     }
 
     /**
