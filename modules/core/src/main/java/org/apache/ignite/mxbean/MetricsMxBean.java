@@ -18,6 +18,7 @@
 package org.apache.ignite.mxbean;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.metric.impl.AbstractIntervalMetric;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
 import org.apache.ignite.spi.metric.HistogramMetric;
 
@@ -52,6 +53,20 @@ public interface MetricsMxBean {
     public void configureHitRateMetric(
         @MXBeanParameter(name = "name", description = "Metric name.") String name,
         @MXBeanParameter(name = "cfg", description = "New rate time interval.") long rateTimeInterval
+    ) throws IgniteException;
+
+    /**
+     * Change {@link AbstractIntervalMetric} configuration.
+     * Call of this method will change metric configuration across all cluster nodes.
+     *
+     * @param name Metric name.
+     * @param interval New time interval.
+     * @throws IgniteException If some error occured.
+     */
+    @MXBeanDescription("Configure interval metric.")
+    public void configureIntervalMetric(
+        @MXBeanParameter(name = "name", description = "Metric name.") String name,
+        @MXBeanParameter(name = "cfg", description = "New time interval.") long interval
     ) throws IgniteException;
 
     /**
