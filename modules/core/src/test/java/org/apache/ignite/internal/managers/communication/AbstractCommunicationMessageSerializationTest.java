@@ -292,6 +292,11 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean writeThrowable(@Nullable Throwable t) {
+            return writeField(Throwable.class);
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean writeMessage(Message val) {
             return writeField(Message.class);
         }
@@ -547,6 +552,13 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         /** {@inheritDoc} */
         @Override public GridLongList readGridLongList() {
             readField(GridLongList.class);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Throwable readThrowable() {
+            readField(Throwable.class);
 
             return null;
         }

@@ -1301,7 +1301,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 // Fail the whole compound future.
                 onError(res.error());
             else {
-                Collection<Integer> invalidParts = res.invalidPartitions();
+                Collection<Integer> invalidParts = res.invalidPartitions() == null ? Collections.emptySet() :
+                    res.invalidPartitions();
 
                 // Removing mappings for invalid partitions.
                 if (!F.isEmpty(invalidParts)) {
@@ -1339,7 +1340,10 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                     if (checkDone())
                         return;
 
-                    for (GridCacheEntryInfo info : res.preloadEntries()) {
+                    Collection<GridCacheEntryInfo> infos = res.preloadEntries() == null ? Collections.emptyList() :
+                        res.preloadEntries();
+
+                    for (GridCacheEntryInfo info : infos) {
                         try {
                             GridCacheEntryEx entry = cache0.entryEx(info.key(), topVer);
 
