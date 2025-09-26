@@ -35,6 +35,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -461,16 +462,19 @@ class MessageSerializerGenerator {
             }
 
             if (componentType.getKind() == TypeKind.DECLARED) {
-                String cls = ((DeclaredType)arrType.getComponentType()).asElement().getSimpleName().toString();
+                Element componentElement = ((DeclaredType)componentType).asElement();
+
+                String cls = componentElement.getSimpleName().toString();
 
                 returnFalseIfReadFailed(name, "reader.readObjectArray",
                     "MessageCollectionItemType." + messageCollectionItemType(componentType),
                     cls + ".class");
 
-                String importCls = ((QualifiedNameable)env.getTypeUtils().asElement(componentType)).getQualifiedName()
-                    .toString();
+                if (!"java.lang".equals(env.getElementUtils().getPackageOf(componentElement).getQualifiedName().toString())) {
+                    String importCls = ((QualifiedNameable)componentElement).getQualifiedName().toString();
 
-                imports.add(importCls);
+                    imports.add(importCls);
+                }
 
                 return;
             }
