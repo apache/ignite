@@ -17,8 +17,10 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntFunction;
 import javax.cache.CacheException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -31,7 +33,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.TestFailureHandler;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /** */
@@ -48,6 +49,9 @@ public class KeyClassChangeIntegrationTest extends AbstractMultiEngineIntegratio
     /** */
     private Class<?> indexedKeyCls;
 
+    /** */
+    private boolean pds;
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
@@ -55,6 +59,7 @@ public class KeyClassChangeIntegrationTest extends AbstractMultiEngineIntegratio
         failureHnd = new TestFailureHandler(true);
         validateTypes = false;
         indexedKeyCls = BaseKey.class;
+        pds = false;
 
         cleanPersistenceDir();
     }
@@ -72,7 +77,7 @@ public class KeyClassChangeIntegrationTest extends AbstractMultiEngineIntegratio
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setPersistenceEnabled(true)));
+                .setPersistenceEnabled(pds)));
 
         cfg.setFailureHandler(failureHnd);
 
@@ -122,10 +127,58 @@ public class KeyClassChangeIntegrationTest extends AbstractMultiEngineIntegratio
     }
 
     /** */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-26467")
     @Test
     public void testIncompatibleAffinityField() throws Exception {
         testDifferentKeyTypes(false, IncompatibleAffinityFieldKey::new, true, false);
+    }
+
+    /** */
+    @Test
+    public void testConcurrentIndexRecreate() throws Exception {
+        startGrid(0);
+
+        AtomicBoolean stop = new AtomicBoolean();
+
+        sql(grid(0), "CREATE INDEX IDX_NAME ON \"" + DEFAULT_CACHE_NAME + "\".TESTVALUE(NAME)");
+
+        GridTestUtils.runAsync(() -> {
+            while (!stop.get()) {
+                sql(grid(0), "CREATE INDEX IDX ON \"" + DEFAULT_CACHE_NAME + "\".TESTVALUE(UID)");
+                sql(grid(0), "DROP INDEX \"" + DEFAULT_CACHE_NAME + "\".IDX");
+            }
+        });
+
+        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        try {
+            for (int i = 0; i < 100_000; i++) {
+                Object key = new BaseKey(i);
+                cache.put(key, new TestValue(UUID.randomUUID(), Integer.toString(i)));
+                cache.remove(key);
+            }
+        }
+        finally {
+            stop.set(true);
+        }
+    }
+
+    /** */
+    @Test
+    public void testPrimitiveKey() throws Exception {
+        indexedKeyCls = Integer.class;
+
+        Ignite ignite = startGrid(0);
+
+        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        cache.put(0, new TestValue(UUID.randomUUID(), "0"));
+
+        GridTestUtils.assertThrowsWithCause(() -> cache.put("0", new TestValue(UUID.randomUUID(), "0")),
+            CacheException.class);
+
+        assertEquals(1, cache.size());
+        assertEquals(1,
+            sql(grid(0), "select _KEY, name from \"" + DEFAULT_CACHE_NAME + "\".TESTVALUE").size());
     }
 
     /** */
@@ -135,6 +188,8 @@ public class KeyClassChangeIntegrationTest extends AbstractMultiEngineIntegratio
         boolean expFailureOnPut,
         boolean expFailureOnSelect
     ) throws Exception {
+        pds = restart;
+
         startGrids(SRV_CNT).cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Object, Object> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);

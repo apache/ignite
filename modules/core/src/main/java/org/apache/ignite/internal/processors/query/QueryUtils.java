@@ -624,6 +624,8 @@ public class QueryUtils {
             desc.affinityFieldInlineSize(-1);
         }
 
+        desc.onInitialized();
+
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }
 
