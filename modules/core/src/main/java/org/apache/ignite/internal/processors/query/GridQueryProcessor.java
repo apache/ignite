@@ -1714,7 +1714,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         assert nonNull(qryField);
 
         try {
-            BinaryType binaryType = ctx.cacheObjects().binaryType(typeId);
+            BinaryType binaryType = ctx.cacheObjects().metadata(typeId);
             String binaryFieldType = nonNull(binaryType) ? binaryType.fieldTypeName(qryField.name()) : null;
 
             return isNull(binaryFieldType) ||

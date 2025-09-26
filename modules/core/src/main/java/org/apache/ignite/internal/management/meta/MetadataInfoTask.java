@@ -75,7 +75,7 @@ public class MetadataInfoTask extends VisorMultiNodeTask<IgniteDataTransferObjec
             if (arg0 instanceof NoArg) {
                 // returns full metadata
                 return new MetadataListResult(
-                    ((CacheObjectBinaryProcessorImpl)ignite.context().cacheObjects()).localBinaryMetadata());
+                    ((CacheObjectBinaryProcessorImpl)ignite.context().cacheObjects()).binaryMetadata());
             }
             else {
                 MetaDetailsCommandArg arg = (MetaDetailsCommandArg)arg0;
@@ -83,8 +83,7 @@ public class MetadataInfoTask extends VisorMultiNodeTask<IgniteDataTransferObjec
                 // returns specified metadata
                 int typeId = typeId(ignite.context(), arg.typeId(), arg.typeName());
 
-                BinaryMetadata binMeta = ((CacheObjectBinaryProcessorImpl)ignite.context().cacheObjects())
-                    .localBinaryMetadata(typeId);
+                BinaryMetadata binMeta = ((CacheObjectBinaryProcessorImpl)ignite.context().cacheObjects()).binaryMetadata(typeId);
 
                 if (binMeta == null)
                     throw new IgniteException("Failed to get metadata, type not found: " + typeId);

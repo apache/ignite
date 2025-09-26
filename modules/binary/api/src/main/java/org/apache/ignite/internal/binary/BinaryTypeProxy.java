@@ -110,7 +110,7 @@ class BinaryTypeProxy implements BinaryType {
                     if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID && clsName != null)
                         typeId = ctx.typeId(clsName);
 
-                    target = ctx.binaryType(typeId);
+                    target = ctx.metadata(typeId);
 
                     if (target == null)
                         throw new BinaryObjectException("Failed to get binary type details [typeId=" + typeId + ']');

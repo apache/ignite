@@ -98,12 +98,12 @@ public class ClientBinary implements IgniteBinary {
 
     /** {@inheritDoc} */
     @Override public BinaryType type(int typeId) {
-        return binaryContext().binaryType(typeId);
+        return binaryContext().metadata(typeId);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<BinaryType> types() {
-        return binaryContext().binaryTypes();
+        return binaryContext().metadata();
     }
 
     /** {@inheritDoc} */
@@ -130,7 +130,7 @@ public class ClientBinary implements IgniteBinary {
 
         int typeId = ctx.typeId(typeName);
 
-        BinaryMetadata metadata = ctx.binaryMetadata(typeId);
+        BinaryMetadata metadata = ctx.metadata0(typeId);
 
         if (metadata == null)
             throw new BinaryObjectException(
@@ -161,14 +161,14 @@ public class ClientBinary implements IgniteBinary {
 
         ctx.updateMetadata(typeId, new BinaryMetadata(typeId, typeName, null, null, true, vals), false);
 
-        return ctx.binaryType(typeId);
+        return ctx.metadata(typeId);
     }
 
     /** {@inheritDoc} */
     @Override public BinaryType registerClass(Class<?> cls) throws BinaryObjectException {
         int typeId = binaryContext().registerType(cls, true, false);
 
-        return binaryContext().binaryType(typeId);
+        return binaryContext().metadata(typeId);
     }
 
     /** @return Binary context. */

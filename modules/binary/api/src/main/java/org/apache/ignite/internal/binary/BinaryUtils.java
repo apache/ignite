@@ -2580,7 +2580,7 @@ public class BinaryUtils {
         if (ctx == null)
             throw new BinaryObjectException("BinaryContext is not set for the object.");
 
-        return ctx.binaryType(obj.typeId());
+        return ctx.metadata(obj.typeId());
     }
 
     /** @param fileName Name of file with marshaller mapping information. */

@@ -58,19 +58,19 @@ class BinaryCachingMetadataHandler implements BinaryMetadataHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryMetadata metadata(int typeId) throws BinaryObjectException {
+    @Override public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
         return metas.get(typeId);
     }
 
     /** */
-    @Override public BinaryMetadata metadata(int typeId, int schemaId) throws BinaryObjectException {
+    @Override public BinaryMetadata metadata0(int typeId, int schemaId) throws BinaryObjectException {
         BinaryMetadata meta = metas.get(typeId);
 
         return meta != null && meta.hasSchema(schemaId) ? meta : null;
     }
 
     /** */
-    @Override public Collection<BinaryMetadata> metadata() throws BinaryObjectException {
+    @Override public Collection<BinaryMetadata> metadata0() throws BinaryObjectException {
         return metas.values();
     }
 }

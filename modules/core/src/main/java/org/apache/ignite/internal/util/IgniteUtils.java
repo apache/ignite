@@ -8225,8 +8225,8 @@ public abstract class IgniteUtils extends CommonUtils {
 
 
         /** {@inheritDoc} */
-        @Nullable @Override public BinaryType binaryType(int typeId) throws BinaryObjectException {
-            BinaryType metadata = super.binaryType(typeId);
+        @Nullable @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
+            BinaryType metadata = super.metadata(typeId);
 
             if (listeners != null) {
                 for (TestBinaryContextListener listener : listeners)

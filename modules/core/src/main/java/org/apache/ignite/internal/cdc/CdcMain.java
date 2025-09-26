@@ -690,7 +690,7 @@ public class CdcMain implements Runnable {
                         throw new IgniteException(e);
                     }
 
-                    return kctx.cacheObjects().binaryType(typeId);
+                    return kctx.cacheObjects().metadata(typeId);
                 })
                 .filter(Objects::nonNull)
                 .iterator();

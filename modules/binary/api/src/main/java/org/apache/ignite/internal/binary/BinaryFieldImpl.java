@@ -110,7 +110,7 @@ class BinaryFieldImpl implements BinaryFieldEx {
      */
     public int fieldOrder(BinaryObjectExImpl obj) {
         if (typeId != obj.typeId()) {
-            BinaryType expType = ctx.binaryType(typeId);
+            BinaryType expType = ctx.metadata(typeId);
             BinaryType actualType = obj.type();
             String actualTypeName = null;
             Exception actualTypeNameEx = null;

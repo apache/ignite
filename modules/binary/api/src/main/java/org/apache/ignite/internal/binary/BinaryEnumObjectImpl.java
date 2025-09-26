@@ -229,7 +229,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
 
     /** {@inheritDoc} */
     @Override public String enumName() throws BinaryObjectException {
-        BinaryMetadata metadata = ctx.binaryMetadata(typeId);
+        BinaryMetadata metadata = ctx.metadata0(typeId);
 
         if (metadata == null)
             throw new BinaryObjectException("Failed to get metadata for enum [typeId=" +

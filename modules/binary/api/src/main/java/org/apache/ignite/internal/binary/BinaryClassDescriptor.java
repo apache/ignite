@@ -1004,7 +1004,7 @@ class BinaryClassDescriptor {
     /**
      * @return Instance of {@link BinaryMetadata} for this type.
      */
-    BinaryMetadata binaryMetadata(boolean includeSchema) {
+    BinaryMetadata metadata(boolean includeSchema) {
         return new BinaryMetadata(
             typeId,
             typeName,

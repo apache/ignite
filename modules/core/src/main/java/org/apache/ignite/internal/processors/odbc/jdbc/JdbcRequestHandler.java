@@ -1291,7 +1291,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
      */
     private JdbcResponse getBinaryType(JdbcBinaryTypeGetRequest req) {
         try {
-            BinaryMetadata meta = connCtx.kernalContext().cacheObjects().binaryMetadata(req.typeId());
+            BinaryMetadata meta = connCtx.kernalContext().cacheObjects().metadata0(req.typeId());
 
             return resultToResonse(new JdbcBinaryTypeGetResult(req.requestId(), meta));
         }

@@ -343,22 +343,22 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
     /** {@inheritDoc} */
     @Override public void writeMetadata(BinaryWriterEx writer, int typeId, boolean includeSchemas) {
-        writeBinaryMetadata(writer, cacheObjProc.binaryMetadata(typeId), includeSchemas);
+        writeMetadata0(writer, cacheObjProc.metadata0(typeId), includeSchemas);
     }
 
     /** {@inheritDoc} */
     @Override public void writeAllMetadata(BinaryWriterEx writer) {
-        Collection<BinaryMetadata> metas = cacheObjProc.localBinaryMetadata();
+        Collection<BinaryMetadata> metas = cacheObjProc.binaryMetadata();
 
         writer.writeInt(metas.size());
 
         for (BinaryMetadata m : metas)
-            writeBinaryMetadata(writer, m, false);
+            writeMetadata0(writer, m, false);
     }
 
     /** {@inheritDoc} */
     @Override public void writeSchema(BinaryWriterEx writer, int typeId, int schemaId) {
-        writer.writeIntArray(BinaryUtils.getSchema(cacheObjProc.binaryContext(), cacheObjProc::binaryMetadata, typeId, schemaId));
+        writer.writeIntArray(BinaryUtils.getSchema(cacheObjProc.binaryContext(), cacheObjProc::metadata0, typeId, schemaId));
     }
 
     /**
@@ -367,7 +367,7 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
      * @param writer Writer.
      * @param meta Metadata.
      */
-    private void writeBinaryMetadata(BinaryWriterEx writer, BinaryMetadata meta, boolean includeSchemas) {
+    private void writeMetadata0(BinaryWriterEx writer, BinaryMetadata meta, boolean includeSchemas) {
         if (meta == null)
             writer.writeBoolean(false);
         else {

@@ -43,7 +43,7 @@ public class ClientBinaryTypeGetRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        BinaryMetadata meta = ctx.kernalContext().cacheObjects().binaryMetadata(typeId);
+        BinaryMetadata meta = ctx.kernalContext().cacheObjects().metadata0(typeId);
 
         return new ClientBinaryTypeGetResponse(requestId(), meta);
     }

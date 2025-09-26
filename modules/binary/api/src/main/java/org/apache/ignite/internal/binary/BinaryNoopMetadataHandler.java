@@ -54,17 +54,17 @@ class BinaryNoopMetadataHandler implements BinaryMetadataHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryMetadata metadata(int typeId) throws BinaryObjectException {
+    @Override public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryMetadata metadata(int typeId, int schemaId) throws BinaryObjectException {
+    @Override public BinaryMetadata metadata0(int typeId, int schemaId) throws BinaryObjectException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<BinaryMetadata> metadata() throws BinaryObjectException {
+    @Override public Collection<BinaryMetadata> metadata0() throws BinaryObjectException {
         return null;
     }
 }

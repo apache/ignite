@@ -202,7 +202,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
 
             Set<Integer> remainsFlds = null;
 
-            BinaryType meta = ctx.binaryType(typeId);
+            BinaryType meta = ctx.metadata(typeId);
 
             Map<String, BinaryFieldMetadata> fieldsMeta = null;
 

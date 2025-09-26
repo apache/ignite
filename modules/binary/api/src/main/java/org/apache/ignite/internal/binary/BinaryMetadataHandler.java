@@ -52,7 +52,7 @@ public interface BinaryMetadataHandler {
      * @return unwrapped Metadata.
      * @throws BinaryObjectException In case of error.
      */
-    public BinaryMetadata metadata(int typeId) throws BinaryObjectException;
+    public BinaryMetadata metadata0(int typeId) throws BinaryObjectException;
 
     /**
      * Gets metadata for provided type ID and schema ID.
@@ -62,7 +62,7 @@ public interface BinaryMetadataHandler {
      * @return unwrapped Metadata.
      * @throws BinaryObjectException In case of error.
      */
-    public BinaryMetadata metadata(int typeId, int schemaId) throws BinaryObjectException;
+    public BinaryMetadata metadata0(int typeId, int schemaId) throws BinaryObjectException;
 
     /**
      * Gets all metadata known to the node.
@@ -70,5 +70,5 @@ public interface BinaryMetadataHandler {
      * @return unwrapped Metadata collection
      * @throws BinaryObjectException If failed.
      */
-    public Collection<BinaryMetadata> metadata() throws BinaryObjectException;
+    public Collection<BinaryMetadata> metadata0() throws BinaryObjectException;
 }

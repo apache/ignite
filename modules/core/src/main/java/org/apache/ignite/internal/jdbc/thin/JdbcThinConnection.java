@@ -2495,8 +2495,8 @@ public class JdbcThinConnection implements Connection {
         }
 
         /** {@inheritDoc} */
-        @Override public BinaryMetadata metadata(int typeId) throws BinaryObjectException {
-            BinaryMetadata meta = cache.metadata(typeId);
+        @Override public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
+            BinaryMetadata meta = cache.metadata0(typeId);
 
             if (meta == null)
                 meta = getBinaryMetadata(typeId);
@@ -2549,15 +2549,15 @@ public class JdbcThinConnection implements Connection {
         }
 
         /** {@inheritDoc} */
-        @Override public BinaryMetadata metadata(int typeId, int schemaId) throws BinaryObjectException {
-            BinaryMetadata meta = metadata(typeId);
+        @Override public BinaryMetadata metadata0(int typeId, int schemaId) throws BinaryObjectException {
+            BinaryMetadata meta = metadata0(typeId);
 
             return meta != null && meta.hasSchema(schemaId) ? meta : null;
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<BinaryMetadata> metadata() throws BinaryObjectException {
-            return cache.metadata();
+        @Override public Collection<BinaryMetadata> metadata0() throws BinaryObjectException {
+            return cache.metadata0();
         }
     }
 

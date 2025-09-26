@@ -138,7 +138,7 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
 
         int beforeTypeId = timeValBinObj.typeId();
 
-        String fieldType = binaryContext(marsh).binaryType(timeValBinObj.typeId()).fieldTypeName(timeBinField.name());
+        String fieldType = binaryContext(marsh).metadata(timeValBinObj.typeId()).fieldTypeName(timeBinField.name());
 
         Field startField = U.findField(timeValBinObj.getClass(), "start");
         int start = (int)startField.get(timeValBinObj);

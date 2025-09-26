@@ -726,11 +726,11 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
                 if (shouldExists) {
                     assertTrue(mappings.stream().anyMatch(m -> m.containsKey(persTypeId)));
-                    assertNotNull(objPrc.binaryType(objPrc.typeId(Person.class.getName())));
+                    assertNotNull(objPrc.metadata(objPrc.typeId(Person.class.getName())));
                 }
                 else {
                     assertFalse(mappings.stream().anyMatch(m -> m.containsKey(persTypeId)));
-                    assertNull(objPrc.binaryType(objPrc.typeId(Person.class.getName())));
+                    assertNull(objPrc.metadata(objPrc.typeId(Person.class.getName())));
                 }
             }
 
@@ -769,7 +769,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
             for (int n = 0; n < nodes(); n++) {
                 IgniteCacheObjectProcessor objPrc = grid(n).context().cacheObjects();
 
-                BinaryType binType = objPrc.binaryType(objPrc.typeId("TestType"));
+                BinaryType binType = objPrc.metadata(objPrc.typeId("TestType"));
 
                 assertNotNull(binType);
 
