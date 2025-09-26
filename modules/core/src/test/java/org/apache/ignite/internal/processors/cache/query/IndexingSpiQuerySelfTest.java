@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.SpiQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
