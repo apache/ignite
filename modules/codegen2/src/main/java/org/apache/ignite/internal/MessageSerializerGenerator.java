@@ -375,6 +375,12 @@ class MessageSerializerGenerator {
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
                 returnFalseIfWriteFailed(write, "writer.writeGridLongList", getExpr);
 
+            else if (assignableFrom(type, type(Throwable.class.getName()))) {
+                imports.add("org.apache.ignite.internal.managers.communication.ErrorMessage");
+
+                returnFalseIfWriteFailed(write, "writer.writeMessage(ErrorMessage.fromThrowable(msg." + getExpr + ")");
+            }
+
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr);
 
@@ -408,7 +414,18 @@ class MessageSerializerGenerator {
     private void returnFalseIfWriteFailed(Collection<String> code, String accessor, @Nullable String... args) {
         String argsStr = String.join(", ", args);
 
-        code.add(line("if (!%s(msg.%s))", accessor, argsStr));
+        returnFalseIfWriteFailed(code, String.format("%s(msg.%s", accessor, argsStr));
+    }
+
+    /**
+     * Generate code of writing:
+     * <pre>
+     * if (!<b>***write_something***</b>)
+     *     return false;
+     * </pre>
+     */
+    private void returnFalseIfWriteFailed(Collection<String> code, String str) {
+        code.add(line("if (!%s))", str));
 
         indent++;
 
@@ -514,6 +531,9 @@ class MessageSerializerGenerator {
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
                 returnFalseIfReadFailed(name, "reader.readGridLongList");
+
+            else if (assignableFrom(type, type(Throwable.class.getName())))
+                returnFalseIfReadFailed(line("msg.%s(ErrorMessage.toThrowable(reader.readMessage()));", name));
 
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfReadFailed(name, "reader.readMessage");
@@ -627,7 +647,24 @@ class MessageSerializerGenerator {
     private void returnFalseIfReadFailed(String var, String mtd, String... args) {
         String argsStr = String.join(", ", args);
 
-        read.add(line("msg.%s(%s(%s));", var, mtd, argsStr));
+        String line = line("msg.%s(%s(%s));", var, mtd, argsStr);
+
+        returnFalseIfReadFailed(line);
+    }
+
+    /**
+     * Generate code of reading:
+     * <pre>
+     * <b>***read_something***</b>
+     *
+     * if (!reader.isLastRead())
+     *     return false;
+     * </pre>
+     *
+     * @param line Compiled line.
+     */
+    private void returnFalseIfReadFailed(String line) {
+        read.add(line);
 
         read.add(EMPTY);
 
