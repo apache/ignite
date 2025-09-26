@@ -369,13 +369,25 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         // idxs iterator must be guarded by idxMux.
         for (GridQueryIndexDescriptor idx : idxs.values()) {
             for (String fld : idx.fields()) {
-                if (usedProps.add(fld))
-                    idxProps.add(props.get(fld));
+                // Entity is defined by _VAL type, so we can skip _VAL type validation.
+                if (VAL_FIELD_NAME.equals(fld))
+                    continue;
+
+                if (usedProps.add(fld)) {
+                    GridQueryProperty prop = props.get(fld);
+
+                    if (prop != null)
+                        idxProps.add(prop);
+                }
             }
         }
 
-        if (affKey != null && usedProps.add(affKey))
-            idxProps.add(props.get(affKey));
+        if (affKey != null && usedProps.add(affKey)) {
+            GridQueryProperty prop = props.get(affKey);
+
+            if (prop != null)
+                idxProps.add(prop);
+        }
 
         validateIdxProps = idxProps;
     }
