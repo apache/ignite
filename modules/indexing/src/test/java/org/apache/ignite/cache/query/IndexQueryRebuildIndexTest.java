@@ -21,28 +21,20 @@ import java.util.LinkedHashMap;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.processors.query.QueryIndexDescriptorImpl;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
-import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -121,40 +113,47 @@ public class IndexQueryRebuildIndexTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testConcurrentCreateIndex() throws Exception {
-        GridQueryProcessor.idxCls = BlockingIndexing.class;
+        persistenceEnabled = true;
 
-        startGrids(3);
+        IndexProcessor.idxRebuildCls = BlockingRebuildIndexes.class;
+
+        Ignite crd = startGrids(3);
+
+        crd.cluster().state(ClusterState.ACTIVE);
 
         IgniteCache<Long, Integer> cache = cache();
 
         insertData();
 
-        BlockingIndexing idx0 = (BlockingIndexing)grid(0).context().query().getIndexing();
+        BlockingRebuildIndexes rebuild = (BlockingRebuildIndexes)grid(0).context().indexProcessor().idxRebuild();
 
-        multithreadedAsync(() -> {
-            idx0.setUp();
+        rebuild.setUp();
 
-            SqlFieldsQuery idxCreate = new SqlFieldsQuery("create index " + IDX + " on Person(fld)");
-
-            cache.query(idxCreate).getAll();
+        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
+            cache.query(new SqlFieldsQuery("create index " + IDX + " on Person(fld)")).getAll();
         }, 1);
+
+        rebuild.idxRebuildStartLatch.await();
 
         IndexQuery<Long, Integer> qry = new IndexQuery<Long, Integer>(Integer.class)
             .setCriteria(between("fld", 0, CNT));
 
-        GridTestUtils.assertThrows(null,
-            () -> {
-                idx0.idxBuildStartLatch.await();
+        GridTestUtils.assertThrows(
+            null,
+            () -> cache.query(qry).getAll(),
+            IgniteException.class,
+            "Failed to run IndexQuery: index " + IDX + " isn't completed yet."
+        );
 
-                cache.query(qry).getAll();
-            }, IgniteException.class, "Failed to run IndexQuery: index " + IDX + " isn't completed yet.");
+        rebuild.blockIdxRebuildLatch.countDown();
 
-        idx0.blockIdxBuildLatch.countDown();
-
-        idx0.idxCreatedLatch.await();
+        crd.cache(CACHE).indexReadyFuture().get();
 
         assertEquals(CNT, cache.query(qry).getAll().size());
+
+        fut.get();
     }
+
 
     /** */
     @Test
@@ -244,69 +243,6 @@ public class IndexQueryRebuildIndexTest extends GridCommonAbstractTest {
         public void setUp() {
             blockIdxRebuildLatch = new CountDownLatch(1);
             idxRebuildStartLatch = new CountDownLatch(1);
-        }
-    }
-
-    /** Blocks filling dynamically created index with cache data. */
-    public static class BlockingIndexing extends GridQueryProcessor {
-        /** */
-        public volatile CountDownLatch blockIdxBuildLatch = new CountDownLatch(0);
-
-        /** */
-        public volatile CountDownLatch idxBuildStartLatch = new CountDownLatch(0);
-
-        /** */
-        public volatile CountDownLatch idxCreatedLatch = new CountDownLatch(0);
-
-        /**
-         * Constructor.
-         *
-         * @param ctx Kernal context.
-         */
-        public BlockingIndexing(GridKernalContext ctx) throws IgniteCheckedException {
-            super(ctx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<?> dynamicIndexCreate(
-            String cacheName,
-            String schemaName,
-            String tblName,
-            QueryIndex idx,
-            boolean ifNotExists,
-            int parallel
-        ) {
-            SchemaIndexCacheVisitor blockVisitor = new SchemaIndexCacheVisitor() {
-                @Override public void visit(SchemaIndexCacheVisitorClosure clo) {
-                    SchemaIndexCacheVisitorClosure blkClo = new SchemaIndexCacheVisitorClosure() {
-                        @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
-                            try {
-                                idxBuildStartLatch.countDown();
-
-                                blockIdxBuildLatch.await();
-                            }
-                            catch (InterruptedException e) {
-                                throw new IgniteException(e);
-                            }
-
-                            clo.apply(row);
-                        }
-                    };
-
-                    cacheVisitor.visit(blkClo);
-                }
-            };
-
-            super.dynamicIndexCreate(schemaName, tblName, idxDesc, ifNotExists, blockVisitor);
-
-            idxCreatedLatch.countDown();
-        }
-
-        /** */
-        public void setUp() {
-            blockIdxBuildLatch = new CountDownLatch(1);
-            idxCreatedLatch = new CountDownLatch(1);
-            idxBuildStartLatch = new CountDownLatch(1);
         }
     }
 }
