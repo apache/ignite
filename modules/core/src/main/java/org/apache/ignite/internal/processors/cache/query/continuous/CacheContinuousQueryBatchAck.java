@@ -17,27 +17,24 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Batch acknowledgement.
  */
 public class CacheContinuousQueryBatchAck extends GridCacheIdMessage {
     /** Routine ID. */
+    @Order(4)
     private UUID routineId;
 
     /** Update counters. */
+    @Order(5)
     @GridToStringInclude
-    @GridDirectMap(keyType = Integer.class, valueType = Long.class)
     private Map<Integer, Long> updateCntrs;
 
     /**
@@ -61,76 +58,29 @@ public class CacheContinuousQueryBatchAck extends GridCacheIdMessage {
     /**
      * @return Routine ID.
      */
-    UUID routineId() {
+    public UUID routineId() {
         return routineId;
+    }
+
+    /**
+     * @param routineId Routine ID.
+     */
+    public void routineId(UUID routineId) {
+        this.routineId = routineId;
     }
 
     /**
      * @return Update counters.
      */
-    Map<Integer, Long> updateCntrs() {
+    public Map<Integer, Long> updateCntrs() {
         return updateCntrs;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeUuid(routineId))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeMap(updateCntrs, MessageCollectionItemType.INT, MessageCollectionItemType.LONG))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                routineId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                updateCntrs = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.LONG, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
+    /**
+     * @param updateCntrs Update counters.
+     */
+    public void updateCntrs(Map<Integer, Long> updateCntrs) {
+        this.updateCntrs = updateCntrs;
     }
 
     /** {@inheritDoc} */
