@@ -17,43 +17,36 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Lock response message.
  */
+@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     /** Future ID. */
+    @Order(value = 7, method = "futureId")
     private IgniteUuid futId;
 
     /** Error. */
-    @GridDirectTransient
+    @Order(value = 8, method = "error")
     private Throwable err;
-
-    /** Serialized error. */
-    private byte[] errBytes;
 
     /** Values. */
     @GridToStringInclude
-    @GridDirectCollection(CacheObject.class)
+    @Order(value = 9, method = "values")
     private List<CacheObject> vals;
 
     /**
@@ -139,16 +132,37 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         return futId;
     }
 
+    /**
+     * @param futId New future ID.
+     */
+    public void futureId(IgniteUuid futId) {
+        this.futId = futId;
+    }
+
     /** {@inheritDoc} */
     @Override public Throwable error() {
         return err;
     }
 
     /**
-     * @param err Error to set.
+     * @param err New error.
      */
     public void error(Throwable err) {
         this.err = err;
+    }
+
+    /**
+     * @return Values.
+     */
+    public List<CacheObject> values() {
+        return vals;
+    }
+
+    /**
+     * @param vals New values.
+     */
+    public void values(List<CacheObject> vals) {
+        this.vals = vals;
     }
 
     /**
@@ -187,9 +201,6 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         super.prepareMarshal(ctx);
 
         prepareMarshalCacheObjects(vals, ctx.cacheContext(cacheId));
-
-        if (err != null && errBytes == null)
-            errBytes = U.marshal(ctx.marshaller(), err);
     }
 
     /** {@inheritDoc} */
@@ -197,84 +208,6 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         super.finishUnmarshal(ctx, ldr);
 
         finishUnmarshalCacheObjects(vals, ctx.cacheContext(cacheId), ldr);
-
-        if (errBytes != null)
-            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 7:
-                if (!writer.writeByteArray(errBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeIgniteUuid(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeCollection(vals, MessageCollectionItemType.CACHE_OBJECT))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 7:
-                errBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                futId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                vals = reader.readCollection(MessageCollectionItemType.CACHE_OBJECT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
