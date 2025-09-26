@@ -1294,7 +1294,7 @@ Parameters:
 
 == Working with Cluster Properties
 
-The `control.sh|bat` script provides an ability to work with link:SQL/sql-statistics[SQL statistics,window=_blank] functionality.
+The `control.sh|bat` script allows administrators to view and modify cluster-wide properties.
 
 To get the full list of available properties, use the `--property list` command. This command returns the list of all available properties to work with:
 
@@ -1308,7 +1308,7 @@ control.sh --property list
 tab:Windows[]
 [source,shell]
 ----
-control.bat  --property list
+control.bat --property list
 ----
 --
 
@@ -1324,7 +1324,7 @@ control.sh --property set --name 'statistics.usage.state' --val 'ON'
 tab:Windows[]
 [source,shell]
 ----
-control.bat  --property set --name 'statistics.usage.state' --val 'ON'
+control.bat --property set --name 'statistics.usage.state' --val 'ON'
 ----
 --
 
@@ -1341,6 +1341,44 @@ tab:Windows[]
 [source,shell]
 ----
 control.bat --property get --name 'statistics.usage.state'
+----
+--
+
+NOTE: Available values depend on the property.
+For example, link:SQL/sql-statistics[SQL statistics,window=_blank] use `ON|OFF|NO_UPDATE`, while link:#managing_cluster_connection_properties[Cluster Connection Properties,window=_blank]
+use `true|false`.
+
+=== Managing Cluster Connection Properties
+
+You can control whether new client or server connections are accepted by the cluster setting the cluster-wide properties.
+
+The following properties are available:
+
+[cols="3,5,2,2", opts="header"]
+|===
+|Property | Description | Available values | Default value
+|newClientNodeConnectionsEnabled | If true then new client node connections allowed. | true / false | true
+|newServerNodeConnectionsEnabled | If true then new server node connections allowed. | true / false | true
+|newThinConnectionsEnabled | If true then new thin client connections allowed. | true / false | true
+|newJdbcConnectionsEnabled | If true then new JDBC connections allowed. | true / false | true
+|newOdbcConnectionsEnabled | If true then new ODBC connections allowed. | true / false | true
+|===
+
+NOTE: Setting a property to `false` affects only new connections. Existing connections remain active.
+
+For example, the following command disables new thin client connections:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --property set --name newThinConnectionsEnabled --val false
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat --property set --name newThinConnectionsEnabled --val false
 ----
 --
 

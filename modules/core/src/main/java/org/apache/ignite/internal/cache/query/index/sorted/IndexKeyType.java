@@ -31,7 +31,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -245,7 +244,7 @@ public enum IndexKeyType {
             // This includes String[] and so on.
             return ARRAY;
         }
-        else if (QueryUtils.isGeometryClass(cls))
+        else if (U.isGeometryClass(cls))
             return GEOMETRY;
         else if (LocalDate.class == cls)
             return DATE;

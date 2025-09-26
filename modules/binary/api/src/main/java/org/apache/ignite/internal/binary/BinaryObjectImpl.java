@@ -35,7 +35,7 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectAdapter;
+import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -197,22 +197,22 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
 
     /** {@inheritDoc} */
     @Override public boolean putValue(ByteBuffer buf) throws IgniteCheckedException {
-        return putValue(buf, 0, CacheObjectAdapter.objectPutSize(valBytes.length));
+        return putValue(buf, 0, CacheObjectUtils.objectPutSize(valBytes.length));
     }
 
     /** {@inheritDoc} */
     @Override public int putValue(long addr) throws IgniteCheckedException {
-        return CacheObjectAdapter.putValue(addr, cacheObjectType(), valBytes, 0, valBytes.length);
+        return CacheObjectUtils.putValue(addr, cacheObjectType(), valBytes, 0, valBytes.length);
     }
 
     /** {@inheritDoc} */
     @Override public boolean putValue(final ByteBuffer buf, int off, int len) throws IgniteCheckedException {
-        return CacheObjectAdapter.putValue(cacheObjectType(), buf, off, len, valBytes, 0);
+        return CacheObjectUtils.putValue(cacheObjectType(), buf, off, len, valBytes, 0);
     }
 
     /** {@inheritDoc} */
     @Override public int valueBytesLength(CacheObjectValueContext ctx) throws IgniteCheckedException {
-        return CacheObjectAdapter.objectPutSize(valBytes.length);
+        return CacheObjectUtils.objectPutSize(valBytes.length);
     }
 
     /** {@inheritDoc} */

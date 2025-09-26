@@ -43,6 +43,8 @@ import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.binary.builder.BinaryObjectBuildersFactoryImpl.unwrapLazy;
+
 /**
  *
  */
@@ -522,7 +524,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
         else
             return null;
 
-        return (T)BinaryObjectBuilders.unwrapLazy(val);
+        return (T)unwrapLazy(val);
     }
 
     /** {@inheritDoc} */

@@ -56,11 +56,12 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCommonsSystemProperties;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryCollectionFactory;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
@@ -72,7 +73,6 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
-import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
@@ -85,8 +85,9 @@ import org.apache.ignite.platform.PlatformType;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
+import static org.apache.ignite.IgniteCommonsSystemProperties.DFLT_IGNITE_USE_BINARY_ARRAYS;
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.internal.util.GridUnsafe.align;
 
 /**
@@ -109,15 +110,12 @@ public class BinaryUtils {
     private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
 
     /** */
-    public static final boolean USE_STR_SERIALIZATION_VER_2 = IgniteSystemProperties.getBoolean(
+    public static final boolean USE_STR_SERIALIZATION_VER_2 = IgniteCommonsSystemProperties.getBoolean(
         IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, false);
 
-    /** Default value of {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
-    public static final boolean DFLT_IGNITE_USE_BINARY_ARRAYS = false;
-
-    /** Value of {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
+    /** Value of {@link IgniteCommonsSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
     private static boolean USE_BINARY_ARRAYS =
-        IgniteSystemProperties.getBoolean(IGNITE_USE_BINARY_ARRAYS, DFLT_IGNITE_USE_BINARY_ARRAYS);
+        IgniteCommonsSystemProperties.getBoolean(IGNITE_USE_BINARY_ARRAYS, DFLT_IGNITE_USE_BINARY_ARRAYS);
 
     /** Map from class to associated write replacer. */
     private static final Map<Class, BinaryWriteReplacer> CLS_TO_WRITE_REPLACER = Map.of(
@@ -170,7 +168,7 @@ public class BinaryUtils {
 
     /** Whether to sort field in binary objects (doesn't affect Binarylizable). */
     public static boolean FIELDS_SORTED_ORDER =
-        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS);
+        IgniteCommonsSystemProperties.getBoolean(IgniteCommonsSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS);
 
     /** Field type names. */
     private static final String[] FIELD_TYPE_NAMES;
@@ -2758,18 +2756,19 @@ public class BinaryUtils {
     /**
      * Gets the schema.
      *
-     * @param cacheObjProc Cache object processor.
+     * @param ctx Binary context.
+     * @param metadataProvider Function to provide binary type metadata.
      * @param typeId Type id.
      * @param schemaId Schema id.
      */
-    public static int[] getSchema(IgniteCacheObjectProcessor cacheObjProc, int typeId, int schemaId) {
-        assert cacheObjProc != null;
+    public static int[] getSchema(BinaryContext ctx, IntFunction<BinaryType> metadataProvider, int typeId, int schemaId) {
+        assert ctx != null;
 
-        BinarySchemaRegistry schemaReg = cacheObjProc.binaryContext().schemaRegistry(typeId);
+        BinarySchemaRegistry schemaReg = ctx.schemaRegistry(typeId);
         BinarySchema schema = schemaReg.schema(schemaId);
 
         if (schema == null) {
-            BinaryTypeImpl meta = (BinaryTypeImpl)cacheObjProc.metadata(typeId);
+            BinaryTypeImpl meta = (BinaryTypeImpl)metadataProvider.apply(typeId);
 
             if (meta != null) {
                 for (BinarySchema typeSchema : meta.metadata().schemas()) {
@@ -2989,12 +2988,12 @@ public class BinaryUtils {
 
     /**
      * Initialize {@link #USE_BINARY_ARRAYS} value with
-     * {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS} system property value.
+     * {@link IgniteCommonsSystemProperties#IGNITE_USE_BINARY_ARRAYS} system property value.
      *
      * This method invoked using reflection in tests.
      */
     public static void initUseBinaryArrays() {
-        USE_BINARY_ARRAYS = IgniteSystemProperties.getBoolean(IGNITE_USE_BINARY_ARRAYS, DFLT_IGNITE_USE_BINARY_ARRAYS);
+        USE_BINARY_ARRAYS = IgniteCommonsSystemProperties.getBoolean(IGNITE_USE_BINARY_ARRAYS, DFLT_IGNITE_USE_BINARY_ARRAYS);
     }
 
     /**
