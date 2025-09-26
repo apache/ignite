@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -34,6 +35,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.Config;
@@ -183,7 +185,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     public void testScanQuery() throws Exception {
         ScanQuery<Object, Object> qry = new ScanQuery<>().setPageSize(pageSize);
 
-        checkQuery(SCAN, qry, DEFAULT_CACHE_NAME, false);
+        checkQuery(SCAN, qry, DEFAULT_CACHE_NAME, new QueryCheckConfig());
     }
 
     /** @throws Exception If failed. */
@@ -197,7 +199,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         String expText = indexQueryText(DEFAULT_CACHE_NAME,
             new IndexQueryDesc(qry.getCriteria(), qry.getIndexName(), qry.getValueType()));
 
-        checkQuery(INDEX, qry, expText, false);
+        checkQuery(INDEX, qry, expText, new QueryCheckConfig());
     }
 
     /** @throws Exception If failed. */
@@ -207,7 +209,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setPageSize(pageSize);
 
-        checkQuery(SQL_FIELDS, qry, sql, false);
+        checkQuery(SQL_FIELDS, qry, sql, new QueryCheckConfig());
     }
 
     /** @throws Exception If failed. */
@@ -217,7 +219,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setPageSize(pageSize);
 
-        checkQuery(SQL_FIELDS, qry, sql, false);
+        checkQuery(SQL_FIELDS, qry, sql, new QueryCheckConfig());
     }
 
     /** @throws Exception If failed. */
@@ -227,7 +229,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setPageSize(pageSize);
 
-        checkQuery(SQL_FIELDS, qry, sql, true);
+        checkQuery(SQL_FIELDS, qry, sql, new QueryCheckConfig().withReducer(true));
     }
 
     /** @throws Exception If failed. */
@@ -265,13 +267,15 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     }
 
     /** Check query. */
-    private void checkQuery(GridCacheQueryType type, Query<?> qry, String text, boolean hasReducer) throws Exception {
+    private void checkQuery(GridCacheQueryType type, Query<?> qry, String text, QueryCheckConfig qryCheckCfg) throws Exception {
         client.cluster().state(INACTIVE);
         client.cluster().state(ACTIVE);
 
-        runQueryAndCheck(type, qry, text, true, true, hasReducer);
+        QueryCheckConfig cfg = qryCheckCfg.withLogicalReads(true);
 
-        runQueryAndCheck(type, qry, text, true, false, hasReducer);
+        runQueryAndCheck(type, qry, text, cfg.withPhysicalReads(true));
+
+        runQueryAndCheck(type, qry, text, cfg.withPhysicalReads(false));
     }
 
     /** @throws Exception If failed. */
@@ -279,15 +283,30 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     public void testDdlAndDmlQueries() throws Exception {
         String sql = "create table " + SQL_TABLE + " (id int, val varchar, primary key (id))";
 
-        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, false, false, false);
+        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, new QueryCheckConfig());
 
         sql = "insert into " + SQL_TABLE + " (id) values (1)";
 
-        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, false, false, false);
+        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, new QueryCheckConfig());
 
         sql = "update " + SQL_TABLE + " set val = 'abc'";
 
-        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, true, false, false);
+        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, new QueryCheckConfig().withLogicalReads(true));
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testCursorNotFullyRead() throws Exception {
+        query(new SqlFieldsQuery("create table " + SQL_TABLE + " (id int, val varchar, primary key (id))"));
+
+        for (int i = 0; i < 20; i++)
+            query(new SqlFieldsQuery("insert into " + SQL_TABLE + " (id) values (" + i + ")"));
+
+        String sql = "SELECT id FROM " + SQL_TABLE;
+
+        SqlFieldsQuery qry = new SqlFieldsQuery(sql).setPageSize(10);
+
+        runQueryAndCheck(SQL_FIELDS, qry, sql, new QueryCheckConfig().withLogicalReads(true).withFetchAll(false));
     }
 
     /** Runs query and checks statistics. */
@@ -295,37 +314,18 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         GridCacheQueryType expType,
         Query<?> qry,
         String expText,
-        boolean hasLogicalReads,
-        boolean hasPhysicalReads,
-        boolean hasReducer
-    ) throws Exception {
+        QueryCheckConfig checkCfg) throws Exception {
         long startTime = U.currentTimeMillis();
 
         cleanPerformanceStatisticsDir();
 
         startCollectStatistics();
 
-        Collection<UUID> expNodeIds = new ArrayList<>();
-
-        if (clientType == SERVER) {
-            srv.cache(DEFAULT_CACHE_NAME).query(qry).getAll();
-
-            expNodeIds.add(srv.localNode().id());
-        }
-        else if (clientType == CLIENT) {
-            client.cache(DEFAULT_CACHE_NAME).query(qry).getAll();
-
-            expNodeIds.add(client.localNode().id());
-        }
-        else if (clientType == THIN_CLIENT) {
-            thinClient.cache(DEFAULT_CACHE_NAME).query(qry).getAll();
-
-            expNodeIds.addAll(nodeIds(client.cluster().forServers().nodes()));
-        }
+        Collection<UUID> expNodeIds = query(qry, checkCfg.fetchAll());
 
         Set<UUID> readsNodes = new HashSet<>();
 
-        if (hasLogicalReads)
+        if (checkCfg.logicalReads())
             srv.cluster().forServers().nodes().forEach(node -> readsNodes.add(node.id()));
 
         Set<UUID> dataNodes = new HashSet<>(readsNodes);
@@ -360,7 +360,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
                 assertTrue(expNodeIds.contains(queryNodeId));
                 assertEquals(expType, type);
                 assertTrue(logicalReads > 0);
-                assertTrue(hasPhysicalReads ? physicalReads > 0 : physicalReads == 0);
+                assertTrue(checkCfg.physicalReads() ? physicalReads > 0 : physicalReads == 0);
             }
 
             @Override public void queryRows(
@@ -411,10 +411,10 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         assertEquals(1, qryIds.size());
 
         // If query has logical reads, plan and rows info also expected.
-        if (hasLogicalReads && expType == SQL_FIELDS) {
+        if (checkCfg.logicalReads() && expType == SQL_FIELDS) {
             assertEquals(dataNodes.size(), planMapCnt.get());
             assertTrue(mapRowCnt.get() > 0);
-            if (hasReducer) {
+            if (checkCfg.reducer()) {
                 assertTrue(rdcRowCnt.get() > 0);
                 assertEquals(1, planRdcCnt.get());
             }
@@ -487,5 +487,119 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         assertTrue("Queries was not handled: " + expQrs, expQrs.isEmpty());
         assertEquals("Unexpected IDs: " + qryIds, qrsWithReads.size(), qryIds.size());
+    }
+
+    /** */
+    private Collection<UUID> query(Query<?> qry) {
+        return query(qry, true);
+    }
+
+    /** */
+    private Collection<UUID> query(Query<?> qry, boolean fetchAll) {
+        Collection<UUID> expNodeIds = new ArrayList<>();
+
+        QueryCursor<?> cursor = null;
+
+        if (clientType == SERVER) {
+            cursor = srv.cache(DEFAULT_CACHE_NAME).query(qry);
+
+            expNodeIds.add(srv.localNode().id());
+        }
+        else if (clientType == CLIENT) {
+            cursor = client.cache(DEFAULT_CACHE_NAME).query(qry);
+
+            expNodeIds.add(client.localNode().id());
+        }
+        else if (clientType == THIN_CLIENT) {
+            cursor = thinClient.cache(DEFAULT_CACHE_NAME).query(qry);
+
+            expNodeIds.addAll(nodeIds(client.cluster().forServers().nodes()));
+        }
+
+        if (fetchAll)
+            cursor.getAll();
+        else {
+            Iterator<?> iter = cursor.iterator();
+
+            if (iter.hasNext())
+                iter.next();
+
+            cursor.close();
+        }
+
+        return expNodeIds;
+    }
+
+    /** */
+    private static class QueryCheckConfig {
+        /** */
+        private final boolean logicalReads;
+
+        /** */
+        private final boolean physicalReads;
+
+        /** */
+        private final boolean reducer;
+
+        /** */
+        private final boolean fetchAll;
+
+        /** */
+        public QueryCheckConfig() {
+            this(false, false, false, true);
+        }
+
+        /**
+         * @param logicalReads Logical reads.
+         * @param physicalReads Physical reads.
+         * @param reducer Reducer.
+         * @param fetchAll Fetch partial.
+         */
+        private QueryCheckConfig(boolean logicalReads, boolean physicalReads, boolean reducer, boolean fetchAll) {
+            this.logicalReads = logicalReads;
+            this.physicalReads = physicalReads;
+            this.reducer = reducer;
+            this.fetchAll = fetchAll;
+        }
+
+        /** */
+        public boolean logicalReads() {
+            return logicalReads;
+        }
+
+        /** */
+        public QueryCheckConfig withLogicalReads(boolean logicalReads) {
+            return new QueryCheckConfig(logicalReads, physicalReads, reducer, fetchAll);
+        }
+
+        /** */
+        public boolean physicalReads() {
+            return physicalReads;
+        }
+
+        /** */
+        public QueryCheckConfig withPhysicalReads(boolean physicalReads) {
+            return new QueryCheckConfig(logicalReads, physicalReads, reducer, fetchAll);
+        }
+
+        /** */
+        public boolean reducer() {
+            return reducer;
+        }
+
+        /** */
+        public QueryCheckConfig withReducer(boolean reducer) {
+            return new QueryCheckConfig(logicalReads, physicalReads, reducer, fetchAll);
+        }
+
+        /** */
+        public boolean fetchAll() {
+            return fetchAll;
+        }
+
+        /** */
+        public QueryCheckConfig withFetchAll(boolean fetchAll) {
+            return new QueryCheckConfig(logicalReads, physicalReads, reducer, fetchAll);
+        }
     }
 }
