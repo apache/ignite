@@ -762,8 +762,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             null,
             null,
             tx.size(),
-            tx.taskNameHash(),
-            tx.activeCachesDeploymentEnabled()
+            tx.taskNameHash()
         );
 
         // If this is the primary node for the keys.
@@ -886,10 +885,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             null,
             0,
             0,
-            tx.activeCachesDeploymentEnabled(),
             !waitRemoteTxs && (tx.needReturnValue() && tx.implicit()),
             waitRemoteTxs,
-            null);
+            null
+        );
 
         finishReq.checkCommitted(true);
 

@@ -126,7 +126,6 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
      * @param filter Optional filter for atomic check.
      * @param taskNameHash Task name hash code.
      * @param flags Flags.
-     * @param addDepInfo Deployment info flag.
      * @param maxEntryCnt Maximum entries count.
      */
     GridNearAtomicFullUpdateRequest(
@@ -141,18 +140,18 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         @Nullable CacheEntryPredicate[] filter,
         int taskNameHash,
         byte flags,
-        boolean addDepInfo,
         int maxEntryCnt
     ) {
-        super(cacheId,
+        super(
+            cacheId,
             nodeId,
             futId,
             topVer,
             syncMode,
             op,
             taskNameHash,
-            flags,
-            addDepInfo);
+            flags
+        );
 
         this.expiryPlc = expiryPlc;
         this.invokeArgs = invokeArgs;
