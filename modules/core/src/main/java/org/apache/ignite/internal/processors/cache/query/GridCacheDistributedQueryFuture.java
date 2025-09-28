@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.query.reducer.IndexQueryReduc
 import org.apache.ignite.internal.processors.cache.query.reducer.NodePageStream;
 import org.apache.ignite.internal.processors.cache.query.reducer.TextQueryReducer;
 import org.apache.ignite.internal.processors.cache.query.reducer.UnsortedCacheQueryReducer;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -340,7 +341,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
                 reqId,
                 startTimeNanos,
                 System.nanoTime() - startTimeNanos,
-                err == null);
+                err == null || QueryUtils.wasCancelled(err));
         }
 
         return super.onDone(res, err);
