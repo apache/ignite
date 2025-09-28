@@ -89,6 +89,9 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     @Parameterized.Parameter(1)
     public ClientType clientType;
 
+    /** */
+    private boolean fetchAll = true;
+
     /** @return Test parameters. */
     @Parameterized.Parameters(name = "pageSize={0}, clientType={1}")
     public static Collection<?> parameters() {
@@ -185,7 +188,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     public void testScanQuery() throws Exception {
         ScanQuery<Object, Object> qry = new ScanQuery<>().setPageSize(pageSize);
 
-        checkQuery(SCAN, qry, DEFAULT_CACHE_NAME, new QueryTestInfo());
+        checkQuery(SCAN, qry, DEFAULT_CACHE_NAME, false);
     }
 
     /** @throws Exception If failed. */
@@ -199,7 +202,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         String expText = indexQueryText(DEFAULT_CACHE_NAME,
             new IndexQueryDesc(qry.getCriteria(), qry.getIndexName(), qry.getValueType()));
 
-        checkQuery(INDEX, qry, expText, new QueryTestInfo());
+        checkQuery(INDEX, qry, expText, false);
     }
 
     /** @throws Exception If failed. */
@@ -209,7 +212,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setPageSize(pageSize);
 
-        checkQuery(SQL_FIELDS, qry, sql, new QueryTestInfo());
+        checkQuery(SQL_FIELDS, qry, sql, false);
     }
 
     /** @throws Exception If failed. */
@@ -219,7 +222,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setPageSize(pageSize);
 
-        checkQuery(SQL_FIELDS, qry, sql, new QueryTestInfo());
+        checkQuery(SQL_FIELDS, qry, sql, false);
     }
 
     /** @throws Exception If failed. */
@@ -229,7 +232,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setPageSize(pageSize);
 
-        checkQuery(SQL_FIELDS, qry, sql, new QueryTestInfo().hasReducer(true));
+        checkQuery(SQL_FIELDS, qry, sql, true);
     }
 
     /** @throws Exception If failed. */
@@ -267,15 +270,13 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     }
 
     /** Check query. */
-    private void checkQuery(GridCacheQueryType type, Query<?> qry, String text, QueryTestInfo queryTestInfo) throws Exception {
+    private void checkQuery(GridCacheQueryType type, Query<?> qry, String text, boolean hasReducer) throws Exception {
         client.cluster().state(INACTIVE);
         client.cluster().state(ACTIVE);
 
-        queryTestInfo.hasLogicalReads(true);
+        runQueryAndCheck(type, qry, text, true, true, hasReducer);
 
-        runQueryAndCheck(type, qry, text, queryTestInfo.hasPhysicalReads(true));
-
-        runQueryAndCheck(type, qry, text, queryTestInfo.hasPhysicalReads(false));
+        runQueryAndCheck(type, qry, text, true, false, hasReducer);
     }
 
     /** @throws Exception If failed. */
@@ -283,15 +284,15 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     public void testDdlAndDmlQueries() throws Exception {
         String sql = "create table " + SQL_TABLE + " (id int, val varchar, primary key (id))";
 
-        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, new QueryTestInfo());
+        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, false, false, false);
 
         sql = "insert into " + SQL_TABLE + " (id) values (1)";
 
-        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, new QueryTestInfo());
+        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, false, false, false);
 
         sql = "update " + SQL_TABLE + " set val = 'abc'";
 
-        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, new QueryTestInfo().hasLogicalReads(true));
+        runQueryAndCheck(SQL_FIELDS, new SqlFieldsQuery(sql), sql, true, false, false);
     }
 
     /** @throws Exception If failed. */
@@ -304,9 +305,11 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
         String sql = "SELECT id FROM " + SQL_TABLE;
 
+        fetchAll = false;
+
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setPageSize(10);
 
-        runQueryAndCheck(SQL_FIELDS, qry, sql, new QueryTestInfo().hasLogicalReads(true).fetchPartial(true));
+        runQueryAndCheck(SQL_FIELDS, qry, sql, true, false, false);
     }
 
     /** Runs query and checks statistics. */
@@ -314,18 +317,21 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         GridCacheQueryType expType,
         Query<?> qry,
         String expText,
-        QueryTestInfo queryInfo) throws Exception {
+        boolean hasLogicalReads,
+        boolean hasPhysicalReads,
+        boolean hasReducer
+    ) throws Exception {
         long startTime = U.currentTimeMillis();
 
         cleanPerformanceStatisticsDir();
 
         startCollectStatistics();
 
-        Collection<UUID> expNodeIds = query(qry, queryInfo.fetchPartial());
+        Collection<UUID> expNodeIds = query(qry);
 
         Set<UUID> readsNodes = new HashSet<>();
 
-        if (queryInfo.hasLogicalReads())
+        if (hasLogicalReads)
             srv.cluster().forServers().nodes().forEach(node -> readsNodes.add(node.id()));
 
         Set<UUID> dataNodes = new HashSet<>(readsNodes);
@@ -360,7 +366,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
                 assertTrue(expNodeIds.contains(queryNodeId));
                 assertEquals(expType, type);
                 assertTrue(logicalReads > 0);
-                assertTrue(queryInfo.hasPhysicalReads() ? physicalReads > 0 : physicalReads == 0);
+                assertTrue(hasPhysicalReads ? physicalReads > 0 : physicalReads == 0);
             }
 
             @Override public void queryRows(
@@ -411,10 +417,10 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         assertEquals(1, qryIds.size());
 
         // If query has logical reads, plan and rows info also expected.
-        if (queryInfo.hasLogicalReads() && expType == SQL_FIELDS) {
+        if (hasLogicalReads && expType == SQL_FIELDS) {
             assertEquals(dataNodes.size(), planMapCnt.get());
             assertTrue(mapRowCnt.get() > 0);
-            if (queryInfo.hasReducer()) {
+            if (hasReducer) {
                 assertTrue(rdcRowCnt.get() > 0);
                 assertEquals(1, planRdcCnt.get());
             }
@@ -491,11 +497,6 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
 
     /** */
     private Collection<UUID> query(Query<?> qry) {
-        return query(qry, false);
-    }
-
-    /** */
-    private Collection<UUID> query(Query<?> qry, boolean fetchPartial) {
         Collection<UUID> expNodeIds = new ArrayList<>();
 
         QueryCursor<?> cursor = null;
@@ -516,76 +517,19 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
             expNodeIds.addAll(nodeIds(client.cluster().forServers().nodes()));
         }
 
-        if (fetchPartial) {
+        if (fetchAll)
+            cursor.getAll();
+        else {
             Iterator<?> iter = cursor.iterator();
 
-            if (iter.hasNext())
-                iter.next();
+            for (int i = 0; i < 3; i++) {
+                if (iter.hasNext())
+                    iter.next();
+            }
 
             cursor.close();
         }
-        else
-            cursor.getAll();
 
         return expNodeIds;
-    }
-
-    /** */
-    private static class QueryTestInfo {
-        /** */
-        private boolean hasLogicalReads = false;
-
-        /** */
-        private boolean hasPhysicalReads = false;
-
-        /** */
-        private boolean hasReducer = false;
-
-        /** */
-        private boolean fetchPartial = false;
-
-        /** */
-        public boolean hasLogicalReads() {
-            return hasLogicalReads;
-        }
-
-        /** */
-        public QueryTestInfo hasLogicalReads(boolean hasLogicalReads) {
-            this.hasLogicalReads = hasLogicalReads;
-            return this;
-        }
-
-        /** */
-        public boolean hasPhysicalReads() {
-            return hasPhysicalReads;
-        }
-
-        /** */
-        public QueryTestInfo hasPhysicalReads(boolean hasPhysicalReads) {
-            this.hasPhysicalReads = hasPhysicalReads;
-            return this;
-        }
-
-        /** */
-        public boolean hasReducer() {
-            return hasReducer;
-        }
-
-        /** */
-        public QueryTestInfo hasReducer(boolean hasReducer) {
-            this.hasReducer = hasReducer;
-            return this;
-        }
-
-        /** */
-        public boolean fetchPartial() {
-            return fetchPartial;
-        }
-
-        /** */
-        public QueryTestInfo fetchPartial(boolean fetchPartial) {
-            this.fetchPartial = fetchPartial;
-            return this;
-        }
     }
 }
