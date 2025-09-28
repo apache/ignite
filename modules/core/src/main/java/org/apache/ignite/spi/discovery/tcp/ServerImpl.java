@@ -1711,15 +1711,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             String locBuildVer = locNode.attribute(ATTR_BUILD_VER);
             String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
 
-            if (locBuildVer == null || rmtBuildVer == null) {
-                fut.get();
-                return true;
-            }
-
             IgniteProductVersion locVer = IgniteProductVersion.fromString(locBuildVer);
             IgniteProductVersion rmtVer = IgniteProductVersion.fromString(rmtBuildVer);
 
-            if (locVer.minor() != rmtVer.minor() || locVer.major() != rmtVer.major())
+            if (locVer == null || rmtVer == null)
+                fut.get();
+            else if (locVer.minor() != rmtVer.minor() || locVer.major() != rmtVer.major())
                 fut.get();
 
             return true;
