@@ -92,7 +92,8 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
 
     /** Obsolete near values. */
     @GridToStringInclude
-    private GridIntList obsoleteIndexes;
+    @GridDirectCollection(Integer.class)
+    private List<Integer> obsoleteIndexes;
 
     /** Force transform backups flag. */
     private boolean forceTransformBackups;
@@ -273,7 +274,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
 
         if (hasKey(key)) {
             if (obsoleteIndexes == null)
-                obsoleteIndexes = new GridIntList();
+                obsoleteIndexes = new ArrayList<>();
 
             obsoleteIndexes.add(keys.indexOf(key));
 
@@ -621,7 +622,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeMessage(obsoleteIndexes))
+                if (!writer.writeCollection(obsoleteIndexes, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
@@ -752,7 +753,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 23:
-                obsoleteIndexes = reader.readMessage();
+                obsoleteIndexes = reader.readCollection(MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
