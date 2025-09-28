@@ -540,8 +540,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** Tests that H2 query plans for UNION operations do not contain 'scanCount' suffix. */
     @Test
     public void testNoScanCountSuffixForUNION() throws Exception {
-        assumeTrue("ScanCount suffix can only be present in H2 query plans",
-            IndexingQueryEngineConfiguration.ENGINE_NAME.equals(sqlEngine));
+        assumeTrue("ScanCount suffix can only be present in H2 local query plans",
+            IndexingQueryEngineConfiguration.ENGINE_NAME.equals(sqlEngine) && loc);
 
         startTestGrid();
 
