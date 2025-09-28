@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -74,9 +73,6 @@ public class TestMessage implements Message {
 
     @Order(value = 14)
     private GridLongList gridLongList;
-
-    @Order(value = 15)
-    private GridIntList gridIntList;
 
     public int id() {
         return id;
@@ -198,13 +194,6 @@ public class TestMessage implements Message {
         this.gridLongList = gridLongList;
     }
 
-    public GridIntList gridIntList() {
-        return gridIntList;
-    }
-
-    public void gridIntList(GridIntList gridIntList) {
-        this.gridIntList = gridIntList;
-    }
 
     public short directType() {
         return 0;

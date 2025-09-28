@@ -22,21 +22,25 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Arrays;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Minimal list API to work with primitive ints. This list exists
  * to avoid boxing/unboxing when using standard list from Java.
  */
-public class GridIntList implements Externalizable {
+public class GridIntList implements Message, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Order(0)
     private int[] arr;
 
     /** */
+    @Order(1)
     private int idx;
 
     /**
@@ -86,14 +90,14 @@ public class GridIntList implements Externalizable {
     /**
      * @return Array.
      */
-    public int[] array() {
+    public int[] arr() {
         return arr;
     }
 
     /**
      * @param arr New array.
      */
-    public void array(int[] arr) {
+    public void arr(int[] arr) {
         this.arr = arr;
     }
 
@@ -350,6 +354,11 @@ public class GridIntList implements Externalizable {
             Arrays.sort(arr, 0, idx);
 
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return -52;
     }
 
     /**

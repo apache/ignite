@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -99,12 +98,6 @@ public class TestMapMessage implements Message {
 
     @Order(23)
     private Map<GridLongList, Integer> gridLongListIntegerMap;
-
-    @Order(24)
-    private Map<GridLongList, GridIntList> gridLongListGridIntListMap;
-
-    @Order(25)
-    private Map<GridIntList, GridLongList> gridIntListGridLongListMap;
 
     public Map<boolean[], Long> booleanArrayBoxedLongMap() {
         return booleanArrayBoxedLongMap;
@@ -292,22 +285,6 @@ public class TestMapMessage implements Message {
 
     public Map<GridLongList, Integer> gridLongListIntegerMap() {
         return gridLongListIntegerMap;
-    }
-
-    public Map<GridLongList, GridIntList> gridLongListGridIntListMap() {
-        return gridLongListGridIntListMap;
-    }
-
-    public void gridLongListGridIntListMap(Map<GridLongList, GridIntList> gridLongListGridIntListMap) {
-        this.gridLongListGridIntListMap = gridLongListGridIntListMap;
-    }
-
-    public Map<GridIntList, GridLongList> gridIntListGridLongListMap() {
-        return gridIntListGridLongListMap;
-    }
-
-    public void gridIntListGridLongListMap(Map<GridIntList, GridLongList> gridIntListGridLongListMap) {
-        this.gridIntListGridLongListMap = gridIntListGridLongListMap;
     }
 
     public void gridLongListIntegerMap(Map<GridLongList, Integer> gridLongListIntegerMap) {

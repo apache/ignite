@@ -95,9 +95,6 @@ public enum MessageCollectionItemType {
     /** Cache object. */
     CACHE_OBJECT,
 
-    /** GridIntList */
-    GRID_INT_LIST,
-
     /** GridLongList */
     GRID_LONG_LIST;
 
