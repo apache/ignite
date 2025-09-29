@@ -27,6 +27,8 @@ import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.binary.builder.BinaryObjectBuildersFactoryImpl.unwrapLazy;
+
 /**
  *
  */
@@ -80,7 +82,7 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
             delegate = new LinkedHashMap<>();
 
             for (int i = 0; i < size; i++)
-                delegate.put(BinaryObjectBuilders.unwrapLazy(reader.parseValue()), reader.parseValue());
+                delegate.put(unwrapLazy(reader.parseValue()), reader.parseValue());
         }
     }
 
@@ -153,21 +155,21 @@ class BinaryLazyMap extends AbstractMap<Object, Object> implements BinaryBuilder
     @Override public Object get(Object key) {
         ensureDelegateInit();
 
-        return BinaryObjectBuilders.unwrapLazy(delegate.get(key));
+        return unwrapLazy(delegate.get(key));
     }
 
     /** {@inheritDoc} */
     @Override public Object put(Object key, Object val) {
         ensureDelegateInit();
 
-        return BinaryObjectBuilders.unwrapLazy(delegate.put(key, val));
+        return unwrapLazy(delegate.put(key, val));
     }
 
     /** {@inheritDoc} */
     @Override public Object remove(Object key) {
         ensureDelegateInit();
 
-        return BinaryObjectBuilders.unwrapLazy(delegate.remove(key));
+        return unwrapLazy(delegate.remove(key));
     }
 
     /** {@inheritDoc} */

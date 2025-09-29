@@ -1289,7 +1289,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut =
             getDhtAsync(nodeId,
                 req.messageId(),
-                req.keys(),
+                req.keyMap(),
                 req.addReaders(),
                 req.readThrough(),
                 req.topologyVersion(),
