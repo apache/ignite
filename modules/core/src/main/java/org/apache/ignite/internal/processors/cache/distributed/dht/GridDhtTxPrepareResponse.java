@@ -293,7 +293,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
                 reader.incrementState();
 
             case 11:
-                invalidParts = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR, false);
+                invalidParts = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR);
 
                 if (!reader.isLastRead())
                     return false;
