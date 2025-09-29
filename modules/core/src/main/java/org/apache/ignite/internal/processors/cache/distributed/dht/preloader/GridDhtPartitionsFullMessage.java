@@ -727,7 +727,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         switch (reader.state()) {
             case 6:
-                dupPartsData = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.INT, false);
+                dupPartsData = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -751,7 +751,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 9:
-                idealAffDiff = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
+                idealAffDiff = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -759,7 +759,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 10:
-                joinedNodeAff = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
+                joinedNodeAff = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -767,7 +767,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 11:
-                lostParts = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR, false);
+                lostParts = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR);
 
                 if (!reader.isLastRead())
                     return false;

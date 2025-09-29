@@ -451,7 +451,7 @@ public class DataStreamerRequest implements Message {
                 reader.incrementState();
 
             case 7:
-                ldrParticipants = reader.readMap(MessageCollectionItemType.UUID, IGNITE_UUID, false);
+                ldrParticipants = reader.readMap(MessageCollectionItemType.UUID, IGNITE_UUID);
 
                 if (!reader.isLastRead())
                     return false;

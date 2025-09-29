@@ -567,7 +567,7 @@ public abstract class AbstractCommunicationMessageSerializationTest {
 
         /** {@inheritDoc} */
         @Override public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
-            MessageCollectionItemType valType, boolean linked) {
+            MessageCollectionItemType valType) {
             readField(Map.class);
 
             return null;

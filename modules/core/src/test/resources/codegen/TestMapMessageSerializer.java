@@ -201,7 +201,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
 
         switch (reader.state()) {
             case 0:
-                msg.booleanArrayBoxedLongMap(reader.readMap(MessageCollectionItemType.BOOLEAN_ARR, MessageCollectionItemType.LONG, false));
+                msg.booleanArrayBoxedLongMap(reader.readMap(MessageCollectionItemType.BOOLEAN_ARR, MessageCollectionItemType.LONG));
 
                 if (!reader.isLastRead())
                     return false;
@@ -209,7 +209,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 1:
-                msg.byteArrayBooleanArrayMap(reader.readMap(MessageCollectionItemType.BYTE_ARR, MessageCollectionItemType.BOOLEAN_ARR, false));
+                msg.byteArrayBooleanArrayMap(reader.readMap(MessageCollectionItemType.BYTE_ARR, MessageCollectionItemType.BOOLEAN_ARR));
 
                 if (!reader.isLastRead())
                     return false;
@@ -217,7 +217,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 2:
-                msg.shortArrayByteArrayMap(reader.readMap(MessageCollectionItemType.SHORT_ARR, MessageCollectionItemType.BYTE_ARR, false));
+                msg.shortArrayByteArrayMap(reader.readMap(MessageCollectionItemType.SHORT_ARR, MessageCollectionItemType.BYTE_ARR));
 
                 if (!reader.isLastRead())
                     return false;
@@ -225,7 +225,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 3:
-                msg.intArrayShortArrayMap(reader.readMap(MessageCollectionItemType.INT_ARR, MessageCollectionItemType.SHORT_ARR, false));
+                msg.intArrayShortArrayMap(reader.readMap(MessageCollectionItemType.INT_ARR, MessageCollectionItemType.SHORT_ARR));
 
                 if (!reader.isLastRead())
                     return false;
@@ -233,7 +233,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 4:
-                msg.longArrayIntArrayMap(reader.readMap(MessageCollectionItemType.LONG_ARR, MessageCollectionItemType.INT_ARR, false));
+                msg.longArrayIntArrayMap(reader.readMap(MessageCollectionItemType.LONG_ARR, MessageCollectionItemType.INT_ARR));
 
                 if (!reader.isLastRead())
                     return false;
@@ -241,7 +241,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 5:
-                msg.charArrayLongArrayMap(reader.readMap(MessageCollectionItemType.CHAR_ARR, MessageCollectionItemType.LONG_ARR, false));
+                msg.charArrayLongArrayMap(reader.readMap(MessageCollectionItemType.CHAR_ARR, MessageCollectionItemType.LONG_ARR));
 
                 if (!reader.isLastRead())
                     return false;
@@ -249,7 +249,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 6:
-                msg.floatArrayCharArrayMap(reader.readMap(MessageCollectionItemType.FLOAT_ARR, MessageCollectionItemType.CHAR_ARR, false));
+                msg.floatArrayCharArrayMap(reader.readMap(MessageCollectionItemType.FLOAT_ARR, MessageCollectionItemType.CHAR_ARR));
 
                 if (!reader.isLastRead())
                     return false;
@@ -257,7 +257,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 7:
-                msg.doubleArrayFloatArrayMap(reader.readMap(MessageCollectionItemType.DOUBLE_ARR, MessageCollectionItemType.FLOAT_ARR, false));
+                msg.doubleArrayFloatArrayMap(reader.readMap(MessageCollectionItemType.DOUBLE_ARR, MessageCollectionItemType.FLOAT_ARR));
 
                 if (!reader.isLastRead())
                     return false;
@@ -265,7 +265,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 8:
-                msg.stringDoubleArrayMap(reader.readMap(MessageCollectionItemType.STRING, MessageCollectionItemType.DOUBLE_ARR, false));
+                msg.stringDoubleArrayMap(reader.readMap(MessageCollectionItemType.STRING, MessageCollectionItemType.DOUBLE_ARR));
 
                 if (!reader.isLastRead())
                     return false;
@@ -273,7 +273,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 9:
-                msg.uuidStringMap(reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.STRING, false));
+                msg.uuidStringMap(reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.STRING));
 
                 if (!reader.isLastRead())
                     return false;
@@ -281,7 +281,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 10:
-                msg.bitSetUuidMap(reader.readMap(MessageCollectionItemType.BIT_SET, MessageCollectionItemType.UUID, false));
+                msg.bitSetUuidMap(reader.readMap(MessageCollectionItemType.BIT_SET, MessageCollectionItemType.UUID));
 
                 if (!reader.isLastRead())
                     return false;
@@ -289,7 +289,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 11:
-                msg.igniteUuidBitSetMap(reader.readMap(MessageCollectionItemType.IGNITE_UUID, MessageCollectionItemType.BIT_SET, false));
+                msg.igniteUuidBitSetMap(reader.readMap(MessageCollectionItemType.IGNITE_UUID, MessageCollectionItemType.BIT_SET));
 
                 if (!reader.isLastRead())
                     return false;
@@ -297,7 +297,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 12:
-                msg.affTopVersionIgniteUuidMap(reader.readMap(MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION, MessageCollectionItemType.IGNITE_UUID, false));
+                msg.affTopVersionIgniteUuidMap(reader.readMap(MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION, MessageCollectionItemType.IGNITE_UUID));
 
                 if (!reader.isLastRead())
                     return false;
@@ -305,7 +305,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 13:
-                msg.boxedBooleanAffTopVersionMap(reader.readMap(MessageCollectionItemType.BOOLEAN, MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION, false));
+                msg.boxedBooleanAffTopVersionMap(reader.readMap(MessageCollectionItemType.BOOLEAN, MessageCollectionItemType.AFFINITY_TOPOLOGY_VERSION));
 
                 if (!reader.isLastRead())
                     return false;
@@ -313,7 +313,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 14:
-                msg.boxedByteBoxedBooleanMap(reader.readMap(MessageCollectionItemType.BYTE, MessageCollectionItemType.BOOLEAN, false));
+                msg.boxedByteBoxedBooleanMap(reader.readMap(MessageCollectionItemType.BYTE, MessageCollectionItemType.BOOLEAN));
 
                 if (!reader.isLastRead())
                     return false;
@@ -321,7 +321,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 15:
-                msg.boxedShortBoxedByteMap(reader.readMap(MessageCollectionItemType.SHORT, MessageCollectionItemType.BYTE, false));
+                msg.boxedShortBoxedByteMap(reader.readMap(MessageCollectionItemType.SHORT, MessageCollectionItemType.BYTE));
 
                 if (!reader.isLastRead())
                     return false;
@@ -329,7 +329,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 16:
-                msg.boxedIntBoxedShortMap(reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.SHORT, false));
+                msg.boxedIntBoxedShortMap(reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.SHORT));
 
                 if (!reader.isLastRead())
                     return false;
@@ -337,7 +337,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 17:
-                msg.boxedLongBoxedIntMap(reader.readMap(MessageCollectionItemType.LONG, MessageCollectionItemType.INT, false));
+                msg.boxedLongBoxedIntMap(reader.readMap(MessageCollectionItemType.LONG, MessageCollectionItemType.INT));
 
                 if (!reader.isLastRead())
                     return false;
@@ -345,7 +345,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 18:
-                msg.boxedCharBoxedLongMap(reader.readMap(MessageCollectionItemType.CHAR, MessageCollectionItemType.LONG, false));
+                msg.boxedCharBoxedLongMap(reader.readMap(MessageCollectionItemType.CHAR, MessageCollectionItemType.LONG));
 
                 if (!reader.isLastRead())
                     return false;
@@ -353,7 +353,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 19:
-                msg.boxedFloatBoxedCharMap(reader.readMap(MessageCollectionItemType.FLOAT, MessageCollectionItemType.CHAR, false));
+                msg.boxedFloatBoxedCharMap(reader.readMap(MessageCollectionItemType.FLOAT, MessageCollectionItemType.CHAR));
 
                 if (!reader.isLastRead())
                     return false;
@@ -361,7 +361,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 20:
-                msg.boxedDoubleBoxedFloatMap(reader.readMap(MessageCollectionItemType.DOUBLE, MessageCollectionItemType.FLOAT, false));
+                msg.boxedDoubleBoxedFloatMap(reader.readMap(MessageCollectionItemType.DOUBLE, MessageCollectionItemType.FLOAT));
 
                 if (!reader.isLastRead())
                     return false;
@@ -369,7 +369,7 @@ public class TestMapMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 21:
-                msg.messageBoxedDoubleMap(reader.readMap(MessageCollectionItemType.MSG, MessageCollectionItemType.DOUBLE, false));
+                msg.messageBoxedDoubleMap(reader.readMap(MessageCollectionItemType.MSG, MessageCollectionItemType.DOUBLE));
 
                 if (!reader.isLastRead())
                     return false;

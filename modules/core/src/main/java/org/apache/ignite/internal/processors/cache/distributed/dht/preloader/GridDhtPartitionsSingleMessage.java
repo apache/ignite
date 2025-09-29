@@ -537,7 +537,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                 reader.incrementState();
 
             case 7:
-                dupPartsData = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.INT, false);
+                dupPartsData = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
