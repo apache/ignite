@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -36,8 +36,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     /** Keys. */
+    @Order(7)
     @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> keys;
 
     /**
@@ -55,6 +55,13 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
         super(keyCnt, false);
 
         this.cacheId = cacheId;
+    }
+
+    /**
+     * Sets the keys.
+     */
+    public void keys(List<KeyCacheObject> keys) {
+        this.keys = keys;
     }
 
     /**
@@ -82,6 +89,8 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     /** {@inheritDoc}
      * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        assert false;
+
         super.prepareMarshal(ctx);
 
         prepareMarshalCacheObjects(keys, ctx.cacheContext(cacheId));
@@ -89,6 +98,8 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
+        assert false;
+
         super.finishUnmarshal(ctx, ldr);
 
         finishUnmarshalCacheObjects(keys, ctx.cacheContext(cacheId), ldr);
@@ -101,6 +112,8 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        assert false;
+
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf, writer))
@@ -127,6 +140,8 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        assert false;
+
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf, reader))
