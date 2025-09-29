@@ -42,6 +42,7 @@ import org.apache.ignite.internal.codegen.GridDhtAffinityAssignmentRequestSerial
 import org.apache.ignite.internal.codegen.GridDhtAtomicNearResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDhtForceKeysRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtPartitionExchangeIdSerializer;
+import org.apache.ignite.internal.codegen.GridDhtPartitionSupplyMessageSerializer;
 import org.apache.ignite.internal.codegen.GridDhtPartitionsSingleRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtTxOnePhaseCommitAckRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtTxPrepareRequestSerializer;
@@ -145,7 +146,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyErrorMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
@@ -337,7 +337,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)109, GridQueryNextPageResponse::new, new GridQueryNextPageResponseSerializer());
         factory.register((short)112, GridCacheSqlQuery::new, new GridCacheSqlQuerySerializer());
         // 113 - BinaryObjectImpl
-        factory.register((short)114, GridDhtPartitionSupplyMessage::new);
+        factory.register((short)114, GridDhtPartitionSupplyMessage::new, new GridDhtPartitionSupplyMessageSerializer());
         factory.register((short)115, UUIDCollectionMessage::new);
         factory.register((short)116, GridNearSingleGetRequest::new);
         factory.register((short)117, GridNearSingleGetResponse::new);
@@ -356,7 +356,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)134, ContinuousRoutineStartResultMessage::new);
         factory.register((short)135, LatchAckMessage::new, new LatchAckMessageSerializer());
         factory.register((short)157, PartitionUpdateCountersMessage::new);
-        factory.register((short)158, GridDhtPartitionSupplyErrorMessage::new);
         factory.register((short)162, GenerateEncryptionKeyRequest::new, new GenerateEncryptionKeyRequestSerializer());
         factory.register((short)163, GenerateEncryptionKeyResponse::new);
         factory.register((short)167, ServiceDeploymentProcessId::new);
