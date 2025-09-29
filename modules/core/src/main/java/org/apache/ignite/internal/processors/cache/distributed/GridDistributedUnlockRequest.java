@@ -89,8 +89,6 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     /** {@inheritDoc}
      * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        assert false;
-
         super.prepareMarshal(ctx);
 
         prepareMarshalCacheObjects(keys, ctx.cacheContext(cacheId));
@@ -98,8 +96,6 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        assert false;
-
         super.finishUnmarshal(ctx, ldr);
 
         finishUnmarshalCacheObjects(keys, ctx.cacheContext(cacheId), ldr);
@@ -112,6 +108,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        // TODO : remove
         assert false;
 
         writer.setBuffer(buf);
@@ -140,6 +137,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        // TODO : remove
         assert false;
 
         reader.setBuffer(buf);

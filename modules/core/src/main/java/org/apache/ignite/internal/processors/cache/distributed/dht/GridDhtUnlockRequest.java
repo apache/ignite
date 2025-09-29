@@ -79,8 +79,6 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        assert false;
-
         super.prepareMarshal(ctx);
 
         prepareMarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId));
@@ -88,8 +86,6 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        assert false;
-
         super.finishUnmarshal(ctx, ldr);
 
         finishUnmarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId), ldr);
