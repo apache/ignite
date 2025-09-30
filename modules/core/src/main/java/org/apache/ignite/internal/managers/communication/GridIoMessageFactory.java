@@ -116,7 +116,6 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
@@ -273,7 +272,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)24, GridDistributedTxFinishResponse::new);
         factory.register((short)25, GridDistributedTxPrepareRequest::new, new GridDistributedTxPrepareRequestSerializer());
         factory.register((short)26, GridDistributedTxPrepareResponse::new);
-        factory.register((short)27, GridDistributedUnlockRequest::new);
         factory.register((short)28, GridDhtAffinityAssignmentRequest::new, new GridDhtAffinityAssignmentRequestSerializer());
         factory.register((short)29, GridDhtAffinityAssignmentResponse::new);
         factory.register((short)30, GridDhtLockRequest::new);

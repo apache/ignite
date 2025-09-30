@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Lock request message.
  */
-public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
+public abstract class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     /** Keys. */
     @GridToStringInclude
     @Order(7)
