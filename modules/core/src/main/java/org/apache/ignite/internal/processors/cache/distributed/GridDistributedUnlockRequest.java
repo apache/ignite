@@ -108,8 +108,6 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        assert false;
-
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf, writer))
@@ -136,8 +134,6 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        assert false;
-
         reader.setBuffer(buf);
 
         if (!super.readFrom(buf, reader))
