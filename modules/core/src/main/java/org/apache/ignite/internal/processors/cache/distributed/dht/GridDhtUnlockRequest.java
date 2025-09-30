@@ -17,21 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.GridUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * DHT cache unlock request.
  */
-public class GridDhtUnlockRequest extends GridUnlockRequest {
+public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
     /** Near keys. */
-    @Order(8)
+    @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> nearKeys;
 
     /**
@@ -47,13 +51,6 @@ public class GridDhtUnlockRequest extends GridUnlockRequest {
      */
     public GridDhtUnlockRequest(int cacheId, int dhtCnt) {
         super(cacheId, dhtCnt);
-    }
-
-    /**
-     * Sets the near keys.
-     */
-    public void nearKeys(List<KeyCacheObject> nearKeys) {
-        this.nearKeys = nearKeys;
     }
 
     /**
@@ -94,6 +91,53 @@ public class GridDhtUnlockRequest extends GridUnlockRequest {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtUnlockRequest.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!super.writeTo(buf, writer))
+            return false;
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 8:
+                if (!writer.writeCollection(nearKeys, MessageCollectionItemType.KEY_CACHE_OBJECT))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
+            case 8:
+                nearKeys = reader.readCollection(MessageCollectionItemType.KEY_CACHE_OBJECT);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
