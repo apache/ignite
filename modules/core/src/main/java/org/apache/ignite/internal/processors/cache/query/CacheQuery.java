@@ -335,7 +335,7 @@ public class CacheQuery<T> {
     }
 
     /**
-     * Cache query adapter for SET, SPI, TEXT queries.
+     * Cache query adapter for SET, TEXT queries.
      *
      * @param cctx Context.
      * @param type Query type.
