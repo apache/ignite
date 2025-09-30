@@ -56,7 +56,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     private static final String CONFIGURE_HITRATE = "--configure-hitrate";
 
     /** */
-    private static final String CONFIGURE_INTERVAL = "--configure-interval";
+    private static final String CONFIGURE_MAXVAL = "--configure-maxval";
 
     /** Test node with 0 index. */
     private IgniteEx ignite0;
@@ -230,25 +230,21 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
         assertEquals(100, hitrate.timeInterval());
     }
 
-    /** Tests configuration of interval metric. */
+    /** Tests configuration of MaxValue metric. */
     @Test
-    public void testConfigureInterval() {
+    public void testConfigureMaxValue() {
         String mregName = "configure-registry";
 
         ignite0.context().metric().remove(mregName);
 
         MetricRegistryImpl mreg = ignite0.context().metric().registry(mregName);
 
-        HitRateMetric hitrate = mreg.hitRateMetric("hitrate", null, 500, 5);
         MaxValueMetric maxVal = mreg.maxValueMetric("maxval", null, 500, 5);
 
-        assertEquals(500, hitrate.timeInterval());
         assertEquals(500, maxVal.timeInterval());
 
-        executeCommand(EXIT_CODE_OK, CMD_METRIC, CONFIGURE_INTERVAL, hitrate.name(), "100");
-        executeCommand(EXIT_CODE_OK, CMD_METRIC, CONFIGURE_INTERVAL, maxVal.name(), "100");
+        executeCommand(EXIT_CODE_OK, CMD_METRIC, CONFIGURE_MAXVAL, maxVal.name(), "100");
 
-        assertEquals(100, hitrate.timeInterval());
         assertEquals(100, maxVal.timeInterval());
     }
 

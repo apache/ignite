@@ -25,15 +25,15 @@ import org.apache.ignite.internal.management.api.ComputeCommand;
 import static org.apache.ignite.internal.management.api.CommandUtils.nodeOrNull;
 
 /** */
-public class MetricConfigureIntervalCommand implements ComputeCommand<MetricCommandArg, Map<String, ?>> {
+public class MetricConfigureMaxValueCommand implements ComputeCommand<MetricCommandArg, Map<String, ?>> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Configure interval metric";
+        return "Configure MaxValue metric";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<MetricConfigureIntervalCommandArg> argClass() {
-        return MetricConfigureIntervalCommandArg.class;
+    @Override public Class<MetricConfigureMaxValueCommandArg> argClass() {
+        return MetricConfigureMaxValueCommandArg.class;
     }
 
     /** {@inheritDoc} */

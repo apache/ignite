@@ -42,7 +42,7 @@ public class MetricCommand extends CommandRegistryImpl<MetricCommandArg, Map<Str
         super(
             new MetricConfigureHistogramCommand(),
             new MetricConfigureHitrateCommand(),
-            new MetricConfigureIntervalCommand()
+            new MetricConfigureMaxValueCommand()
         );
     }
 

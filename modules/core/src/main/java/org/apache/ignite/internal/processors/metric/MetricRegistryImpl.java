@@ -27,7 +27,6 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.metric.impl.AbstractIntervalMetric;
 import org.apache.ignite.internal.processors.metric.impl.AtomicLongMetric;
 import org.apache.ignite.internal.processors.metric.impl.BooleanGauge;
 import org.apache.ignite.internal.processors.metric.impl.BooleanMetricImpl;
@@ -67,27 +66,33 @@ public class MetricRegistryImpl implements MetricRegistry {
     /** Registered metrics. */
     private final ConcurrentHashMap<String, Metric> metrics = new ConcurrentHashMap<>();
 
-    /** Interval metric config provider. */
-    private final Function<String, Long> intervalMetricCfgProvider;
+    /** HitRate config provider. */
+    private final Function<String, Long> hitRateCfgProvider;
+
+    /** MaxValue metric config provider. */
+    private final Function<String, Long> maxValCfgProvider;
 
     /** Histogram config provider. */
     private final Function<String, long[]> histogramCfgProvider;
 
     /**
      * @param regName Registry name.
-     * @param intervalMetricCfgProvider Interval metric config provider.
+     * @param hitRateCfgProvider HitRate config provider.
+     * @param maxValCfgProvider MaxVal config provider.
      * @param histogramCfgProvider Histogram config provider.
      * @param log Logger.
      */
     public MetricRegistryImpl(
         String regName,
-        Function<String, Long> intervalMetricCfgProvider,
+        Function<String, Long> hitRateCfgProvider,
+        Function<String, Long> maxValCfgProvider,
         Function<String, long[]> histogramCfgProvider,
         IgniteLogger log
     ) {
         this.regName = regName;
         this.log = log;
-        this.intervalMetricCfgProvider = intervalMetricCfgProvider;
+        this.hitRateCfgProvider = hitRateCfgProvider;
+        this.maxValCfgProvider = maxValCfgProvider;
         this.histogramCfgProvider = histogramCfgProvider;
     }
 
@@ -320,15 +325,22 @@ public class MetricRegistryImpl implements MetricRegistry {
             if (cfgBounds != null)
                 ((HistogramMetricImpl)metric).reset(cfgBounds);
         }
-        else if (metric instanceof AbstractIntervalMetric) {
-            if (intervalMetricCfgProvider == null)
+        else if (metric instanceof HitRateMetric) {
+            Long cfgRateTimeInterval = hitRateCfgProvider.apply(metric.name());
+
+            if (cfgRateTimeInterval != null)
+                ((HitRateMetric)metric).reset(cfgRateTimeInterval, DFLT_SIZE);
+        }
+        else if (metric instanceof MaxValueMetric) {
+            if (maxValCfgProvider == null)
                 return;
 
-            Long cfgTimeInterval = intervalMetricCfgProvider.apply(metric.name());
+            Long cfgTimeInterval = maxValCfgProvider.apply(metric.name());
 
             if (cfgTimeInterval != null)
-                ((AbstractIntervalMetric)metric).reset(cfgTimeInterval, DFLT_SIZE);
+                ((MaxValueMetric)metric).reset(cfgTimeInterval, DFLT_SIZE);
         }
+
     }
 
     /** {@inheritDoc} */

@@ -24,7 +24,7 @@ import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
 
 /** */
-public class MetricConfigureIntervalCommandArg extends MetricCommandArg {
+public class MetricConfigureMaxValueCommandArg extends MetricCommandArg {
     /** */
     private static final long serialVersionUID = 0;
 
