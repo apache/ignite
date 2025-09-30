@@ -55,7 +55,6 @@ import org.apache.ignite.internal.codegen.GridNearAtomicCheckUpdateRequestSerial
 import org.apache.ignite.internal.codegen.GridNearAtomicUpdateResponseSerializer;
 import org.apache.ignite.internal.codegen.GridNearGetRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearTxPrepareRequestSerializer;
-import org.apache.ignite.internal.codegen.GridNearUnlockRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryFailResponseSerializer;
 import org.apache.ignite.internal.codegen.GridQueryKillRequestSerializer;
@@ -64,6 +63,7 @@ import org.apache.ignite.internal.codegen.GridQueryNextPageRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryNextPageResponseSerializer;
 import org.apache.ignite.internal.codegen.GridTaskCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridTaskResultRequestSerializer;
+import org.apache.ignite.internal.codegen.GridUnlockRequestSerializer;
 import org.apache.ignite.internal.codegen.IgniteTxKeySerializer;
 import org.apache.ignite.internal.codegen.IncrementalSnapshotAwareMessageSerializer;
 import org.apache.ignite.internal.codegen.JobStealingRequestSerializer;
@@ -116,6 +116,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.distributed.GridUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
@@ -163,7 +164,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFi
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotAwareMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesFailureMessage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotFilesRequestMessage;
@@ -301,7 +301,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)54, GridNearTxFinishResponse::new);
         factory.register((short)55, GridNearTxPrepareRequest::new, new GridNearTxPrepareRequestSerializer());
         factory.register((short)56, GridNearTxPrepareResponse::new);
-        factory.register((short)57, GridNearUnlockRequest::new, new GridNearUnlockRequestSerializer());
+        factory.register((short)57, GridUnlockRequest::new, new GridUnlockRequestSerializer());
         factory.register((short)58, GridCacheQueryRequest::new);
         factory.register((short)59, GridCacheQueryResponse::new);
         factory.register((short)61, GridContinuousMessage::new);

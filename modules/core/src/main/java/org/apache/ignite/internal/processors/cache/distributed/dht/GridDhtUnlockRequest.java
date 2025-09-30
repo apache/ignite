@@ -23,13 +23,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.GridUnlockRequest;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * DHT cache unlock request.
  */
-public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
+public class GridDhtUnlockRequest extends GridUnlockRequest {
     /** Near keys. */
     @Order(8)
     private List<KeyCacheObject> nearKeys;

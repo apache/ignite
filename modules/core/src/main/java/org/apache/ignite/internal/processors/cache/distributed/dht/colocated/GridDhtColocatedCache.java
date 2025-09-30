@@ -44,7 +44,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.GridUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtEmbeddedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFinishedFuture;
@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairCheckOnlyFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -685,7 +684,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
             int keyCnt = -1;
 
-            Map<ClusterNode, GridNearUnlockRequest> map = null;
+            Map<ClusterNode, GridUnlockRequest> map = null;
 
             Collection<KeyCacheObject> locKeys = new ArrayList<>();
 
@@ -730,10 +729,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 "then they need to be unlocked separately): " + keys);
 
                         if (!primary.isLocal()) {
-                            GridNearUnlockRequest req = map.get(primary);
+                            GridUnlockRequest req = map.get(primary);
 
                             if (req == null) {
-                                map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt));
+                                map.put(primary, req = new GridUnlockRequest(ctx.cacheId(), keyCnt));
 
                                 req.version(ver);
                             }
@@ -760,10 +759,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             if (!locKeys.isEmpty())
                 removeLocks(ctx.localNodeId(), ver, locKeys, true);
 
-            for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
+            for (Map.Entry<ClusterNode, GridUnlockRequest> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();
 
-                GridDistributedUnlockRequest req = mapping.getValue();
+                GridUnlockRequest req = mapping.getValue();
 
                 assert !n.isLocal();
 
@@ -802,7 +801,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         int keyCnt = -1;
 
-        Map<ClusterNode, GridNearUnlockRequest> map = null;
+        Map<ClusterNode, GridUnlockRequest> map = null;
 
         Collection<KeyCacheObject> locKeys = new LinkedList<>();
 
@@ -833,10 +832,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 if (!primary.isLocal()) {
                     // Send request to remove from remote nodes.
-                    GridNearUnlockRequest req = map.get(primary);
+                    GridUnlockRequest req = map.get(primary);
 
                     if (req == null) {
-                        map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt));
+                        map.put(primary, req = new GridUnlockRequest(ctx.cacheId(), keyCnt));
 
                         req.version(ver);
                     }
@@ -863,10 +862,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         Collection<GridCacheVersion> committed = versPair.get1();
         Collection<GridCacheVersion> rolledback = versPair.get2();
 
-        for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
+        for (Map.Entry<ClusterNode, GridUnlockRequest> mapping : map.entrySet()) {
             ClusterNode n = mapping.getKey();
 
-            GridDistributedUnlockRequest req = mapping.getValue();
+            GridUnlockRequest req = mapping.getValue();
 
             if (!F.isEmpty(req.keys())) {
                 req.completedVersions(committed, rolledback);

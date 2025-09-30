@@ -30,14 +30,14 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Lock request message.
  */
-public abstract class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
+public class GridUnlockRequest extends GridDistributedBaseMessage {
     /** Keys. */
     @GridToStringInclude
     @Order(7)
     private List<KeyCacheObject> keys;
 
     /** */
-    protected GridDistributedUnlockRequest() {
+    public GridUnlockRequest() {
         // No-op.
     }
 
@@ -45,7 +45,7 @@ public abstract class GridDistributedUnlockRequest extends GridDistributedBaseMe
      * @param cacheId Cache ID.
      * @param keyCnt Key count.
      */
-    protected GridDistributedUnlockRequest(int cacheId, int keyCnt) {
+    public GridUnlockRequest(int cacheId, int keyCnt) {
         super(keyCnt, false);
 
         this.cacheId = cacheId;
@@ -102,6 +102,11 @@ public abstract class GridDistributedUnlockRequest extends GridDistributedBaseMe
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDistributedUnlockRequest.class, this, "super", super.toString());
+        return S.toString(GridUnlockRequest.class, this, "super", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 57;
     }
 }
