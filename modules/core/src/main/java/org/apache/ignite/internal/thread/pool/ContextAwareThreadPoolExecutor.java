@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.ignite.internal.thread.context.function.ContextAwareCallable;
 import org.apache.ignite.internal.thread.context.function.ContextAwareRunnable;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 
 /** */

@@ -21,9 +21,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 /**
  * Executor with busy run support.
