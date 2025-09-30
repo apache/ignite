@@ -36,6 +36,11 @@ public abstract class GridDistributedUnlockRequest extends GridDistributedBaseMe
     @Order(7)
     private List<KeyCacheObject> keys;
 
+    /** */
+    protected GridDistributedUnlockRequest() {
+        // No-op.
+    }
+
     /**
      * @param cacheId Cache ID.
      * @param keyCnt Key count.
@@ -93,11 +98,6 @@ public abstract class GridDistributedUnlockRequest extends GridDistributedBaseMe
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.txLockMessageLogger();
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 27;
     }
 
     /** {@inheritDoc} */

@@ -272,6 +272,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)24, GridDistributedTxFinishResponse::new);
         factory.register((short)25, GridDistributedTxPrepareRequest::new, new GridDistributedTxPrepareRequestSerializer());
         factory.register((short)26, GridDistributedTxPrepareResponse::new);
+        // Message type 27 is unused abstract GridDistributedUnlockRequest
         factory.register((short)28, GridDhtAffinityAssignmentRequest::new, new GridDhtAffinityAssignmentRequestSerializer());
         factory.register((short)29, GridDhtAffinityAssignmentResponse::new);
         factory.register((short)30, GridDhtLockRequest::new);
