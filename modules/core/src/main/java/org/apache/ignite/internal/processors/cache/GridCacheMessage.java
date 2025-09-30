@@ -87,7 +87,9 @@ public abstract class GridCacheMessage implements Message {
     /**
      * @return ID to distinguish message handlers for the same messages but for different caches/cache groups.
      */
-    public abstract int handlerId();
+    public int handlerId() {
+        return 0;
+    };
 
     /**
      * @return {@code True} if cache group message.

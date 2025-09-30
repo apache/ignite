@@ -61,11 +61,6 @@ public class GridChangeGlobalStateMessageResponse extends GridCacheMessage {
         return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public int handlerId() {
-        return 0;
-    }
-
     /**
      *
      */
