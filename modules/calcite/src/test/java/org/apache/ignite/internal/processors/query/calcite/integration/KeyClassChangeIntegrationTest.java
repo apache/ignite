@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntFunction;
@@ -24,6 +26,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterState;
@@ -32,6 +35,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.TestFailureHandler;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
@@ -173,12 +177,48 @@ public class KeyClassChangeIntegrationTest extends AbstractMultiEngineIntegratio
 
         cache.put(0, new TestValue(UUID.randomUUID(), "0"));
 
+        GridTestUtils.assertThrowsWithCause(() -> cache.put(new BaseKey(0), new TestValue(UUID.randomUUID(), "0")),
+            CacheException.class);
+
         GridTestUtils.assertThrowsWithCause(() -> cache.put("0", new TestValue(UUID.randomUUID(), "0")),
             CacheException.class);
 
         assertEquals(1, cache.size());
         assertEquals(1,
             sql(grid(0), "select _KEY, name from \"" + DEFAULT_CACHE_NAME + "\".TESTVALUE").size());
+    }
+
+    /** */
+    @Test
+    public void testPrimitiveKeyWithAlias() throws Exception {
+        Ignite ignite = startGrid(0);
+
+        LinkedHashMap<String, String> fields = new LinkedHashMap<>();
+        fields.put("KEY", Integer.class.getName());
+        fields.put("UID", UUID.class.getName());
+        fields.put("NAME", String.class.getName());
+
+        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(new CacheConfiguration<>("cache")
+            .setQueryEntities(Collections.singletonList(
+                new QueryEntity()
+                    .setKeyType(Integer.class.getName())
+                    .setValueType(TestValue.class.getName())
+                    .setFields(fields)
+                    .setKeyFieldName("KEY")
+                    .setAliases(F.asMap("KEY", "ID"))
+        )));
+
+        cache.put(0, new TestValue(UUID.randomUUID(), "0"));
+
+        GridTestUtils.assertThrowsWithCause(() -> cache.put(new BaseKey(0), new TestValue(UUID.randomUUID(), "0")),
+            CacheException.class);
+
+        GridTestUtils.assertThrowsWithCause(() -> cache.put("0", new TestValue(UUID.randomUUID(), "0")),
+            CacheException.class);
+
+        assertEquals(1, cache.size());
+        assertEquals(1,
+            sql(grid(0), "select id, name from \"cache\".TESTVALUE").size());
     }
 
     /** */

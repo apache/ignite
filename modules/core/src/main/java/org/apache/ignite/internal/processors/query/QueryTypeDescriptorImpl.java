@@ -337,7 +337,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 throw new IgniteCheckedException("Index with name '" + idx.name() + "' already exists.");
 
             if (validateIdxProps != null) // Do not rebuild for each index on initialization.
-                rebuildIdxProps();
+                updateIdxProps();
         }
     }
 
@@ -350,29 +350,25 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         synchronized (idxMux) {
             idxs.remove(idxName);
 
-            rebuildIdxProps();
+            updateIdxProps();
         }
     }
 
     /** */
     public void onInitialized() {
         synchronized (idxMux) {
-            rebuildIdxProps();
+            updateIdxProps();
         }
     }
 
     /** */
-    private void rebuildIdxProps() {
+    private void updateIdxProps() {
         List<GridQueryProperty> idxProps = new ArrayList<>();
         Set<String> usedProps = new HashSet<>();
 
         // idxs iterator must be guarded by idxMux.
         for (GridQueryIndexDescriptor idx : idxs.values()) {
             for (String fld : idx.fields()) {
-                // Entity is defined by _VAL type, so we can skip _VAL type validation.
-                if (VAL_FIELD_NAME.equals(fld))
-                    continue;
-
                 if (usedProps.add(fld)) {
                     GridQueryProperty prop = props.get(fld);
 
@@ -388,6 +384,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             if (prop != null)
                 idxProps.add(prop);
         }
+
+        if (F.isEmpty(keyFieldAlias()) || !usedProps.contains(keyFieldAlias()))
+            idxProps.add(new QueryUtils.KeyOrValProperty(true, KEY_FIELD_NAME, keyClass()));
 
         validateIdxProps = idxProps;
     }
@@ -731,14 +730,22 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             return;
 
         for (GridQueryProperty prop : validateIdxProps) {
-            Object propVal = prop.value(key, val);
+            Object propVal;
+            Class<?> propType = prop.type();
+
+            if (Objects.equals(prop.name(), keyFieldAlias()) || Objects.equals(prop.name(), KEY_FIELD_NAME))
+                propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, true) : key;
+            else if (Objects.equals(prop.name(), valueFieldAlias()) || Objects.equals(prop.name(), VAL_FIELD_NAME))
+                propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
+            else
+                propVal = prop.value(key, val);
 
             if (propVal == null)
                 continue;
 
-            if (!isCompatibleWithPropertyType(propVal, prop.type())) {
+            if (!isCompatibleWithPropertyType(propVal, propType)) {
                 throw new IgniteSQLException("Type for a column '" + prop.name() + "' is not compatible with index definition." +
-                    " Expected '" + prop.type().getSimpleName() + "', actual type '" + typeName(propVal) + "'");
+                    " Expected '" + propType.getSimpleName() + "', actual type '" + typeName(propVal) + "'");
             }
         }
     }
