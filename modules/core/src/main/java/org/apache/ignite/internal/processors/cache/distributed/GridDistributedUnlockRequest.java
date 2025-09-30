@@ -36,8 +36,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     /** Keys. */
-    @Order(7)
     @GridToStringInclude
+    @Order(7)
     private List<KeyCacheObject> keys;
 
     /**
@@ -58,7 +58,7 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * Sets the keys.
+     * Sets the keys
      */
     public void keys(List<KeyCacheObject> keys) {
         this.keys = keys;
@@ -108,7 +108,6 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        // TODO : remove
         assert false;
 
         writer.setBuffer(buf);
@@ -137,7 +136,6 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        // TODO : remove
         assert false;
 
         reader.setBuffer(buf);
