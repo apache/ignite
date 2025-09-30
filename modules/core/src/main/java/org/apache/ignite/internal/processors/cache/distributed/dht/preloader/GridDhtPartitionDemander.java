@@ -96,6 +96,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage.REBALANCE_TOPIC;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.PAGE_SNAPSHOT_TAKEN;
@@ -685,7 +686,7 @@ public class GridDhtPartitionDemander {
                 if (!fut.isDone()) {
                     // Send demand message.
                     try {
-                        ctx.io().sendOrderedMessage(node, d.topic(), d, grp.ioPolicy(), grp.preloader().timeout());
+                        ctx.io().sendOrderedMessage(node, REBALANCE_TOPIC, d, grp.ioPolicy(), grp.preloader().timeout());
 
                         if (log.isDebugEnabled())
                             log.debug("Send next demand message [" + demandRoutineInfo(nodeId, supplyMsg) + "]");
@@ -1241,7 +1242,7 @@ public class GridDhtPartitionDemander {
                         ", histPartitions=" + S.toStringSortedDistinct(parts.historicalSet()) +
                         ", rebalanceId=" + rebalanceId + ']');
 
-                ctx.io().sendOrderedMessage(supplierNode, msg.topic(), msg, grp.ioPolicy(), msg.timeout());
+                ctx.io().sendOrderedMessage(supplierNode, REBALANCE_TOPIC, msg, grp.ioPolicy(), msg.timeout());
 
                 // Cleanup required in case partitions demanded in parallel with cancellation.
                 synchronized (this) {

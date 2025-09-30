@@ -53,6 +53,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_SUPPLIED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage.REBALANCE_TOPIC;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**
@@ -518,7 +519,7 @@ public class GridDhtPartitionSupplier {
             if (log.isDebugEnabled())
                 log.debug("Send next supply message [" + supplyRoutineInfo(topicId, demander.id(), demandMsg) + "]");
 
-            grp.shared().io().sendOrderedMessage(demander, demandMsg.topic(), supplyMsg, grp.ioPolicy(), demandMsg.timeout());
+            grp.shared().io().sendOrderedMessage(demander, REBALANCE_TOPIC, supplyMsg, grp.ioPolicy(), demandMsg.timeout());
 
             // Throttle preloading.
             if (rebalanceThrottleOverride > 0)
