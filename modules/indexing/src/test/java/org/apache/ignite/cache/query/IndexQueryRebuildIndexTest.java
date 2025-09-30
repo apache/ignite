@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.managers.indexing.IndexesRebuildTask;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -109,51 +108,6 @@ public class IndexQueryRebuildIndexTest extends GridCommonAbstractTest {
 
         return cfg;
     }
-
-    /** */
-    @Test
-    public void testConcurrentCreateIndex() throws Exception {
-        persistenceEnabled = true;
-
-        IndexProcessor.idxRebuildCls = BlockingRebuildIndexes.class;
-
-        Ignite crd = startGrids(3);
-
-        crd.cluster().state(ClusterState.ACTIVE);
-
-        IgniteCache<Long, Integer> cache = cache();
-
-        insertData();
-
-        BlockingRebuildIndexes rebuild = (BlockingRebuildIndexes)grid(0).context().indexProcessor().idxRebuild();
-
-        rebuild.setUp();
-
-        IgniteInternalFuture<?> fut = multithreadedAsync(() -> {
-            cache.query(new SqlFieldsQuery("create index " + IDX + " on Person(fld)")).getAll();
-        }, 1);
-
-        rebuild.idxRebuildStartLatch.await();
-
-        IndexQuery<Long, Integer> qry = new IndexQuery<Long, Integer>(Integer.class)
-            .setCriteria(between("fld", 0, CNT));
-
-        GridTestUtils.assertThrows(
-            null,
-            () -> cache.query(qry).getAll(),
-            IgniteException.class,
-            "Failed to run IndexQuery: index " + IDX + " isn't completed yet."
-        );
-
-        rebuild.blockIdxRebuildLatch.countDown();
-
-        crd.cache(CACHE).indexReadyFuture().get();
-
-        assertEquals(CNT, cache.query(qry).getAll().size());
-
-        fut.get();
-    }
-
 
     /** */
     @Test

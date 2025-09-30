@@ -218,25 +218,13 @@ public class IndexProcessor extends GridProcessorAdapter {
         IndexDefinition definition,
         SchemaIndexCacheVisitor cacheVisitor
     ) {
-        IndexFactory dynamicFactory = new IndexFactory() {
-            @Override public Index createIndex(@Nullable GridCacheContext<?, ?> cctx, IndexDefinition definition) {
-                Index idx = factory.createIndex(cctx, definition);
-
-                idx.markIndexRebuild(true);
-
-                return idx;
-            }
-        };
-
-        Index idx = createIndex(cctx, dynamicFactory, definition);
+        Index idx = createIndex(cctx, factory, definition);
 
         // Populate index with cache rows.
         cacheVisitor.visit(row -> {
             if (idx.canHandle(row))
                 idx.onUpdate(null, row, false);
         });
-
-        idx.markIndexRebuild(false);
 
         return idx;
     }
@@ -360,8 +348,10 @@ public class IndexProcessor extends GridProcessorAdapter {
 
             Collection<Index> idxs = cacheToIdx.get(cctx.name()).values();
 
-            for (Index idx: idxs)
-                idx.markIndexRebuild(val);
+            for (Index idx: idxs) {
+                if (idx instanceof AbstractIndex)
+                    idx.markIndexRebuild(val);
+            }
         }
         finally {
             ddlLock.readLock().unlock();
