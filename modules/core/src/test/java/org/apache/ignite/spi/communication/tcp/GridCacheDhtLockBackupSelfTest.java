@@ -28,7 +28,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.cache.distributed.GridUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -88,9 +88,9 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     public void testLock() throws Exception {
         final int kv = 1;
 
-        Ignite ignite1 = startGridWithSpi(1, new TestCommunicationSpi(GridUnlockRequest.class, 1000));
+        Ignite ignite1 = startGridWithSpi(1, new TestCommunicationSpi(GridNearUnlockRequest.class, 1000));
 
-        Ignite ignite2 = startGridWithSpi(2, new TestCommunicationSpi(GridUnlockRequest.class, 1000));
+        Ignite ignite2 = startGridWithSpi(2, new TestCommunicationSpi(GridNearUnlockRequest.class, 1000));
 
         if (!ignite1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(kv).id().equals(ignite1.cluster().localNode().id())) {
             Ignite tmp = ignite1;

@@ -47,7 +47,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
-import org.apache.ignite.internal.processors.cache.distributed.GridUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -142,8 +142,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridDhtLockResponse.class,
             (CI2<UUID, GridDhtLockResponse>)this::processDhtLockResponse);
 
-        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridUnlockRequest.class,
-            (CI2<UUID, GridUnlockRequest>)this::processNearUnlockRequest);
+        ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridNearUnlockRequest.class,
+            (CI2<UUID, GridNearUnlockRequest>)this::processNearUnlockRequest);
 
         ctx.io().addCacheHandler(ctx.cacheId(), ctx.startTopologyVersion(), GridDhtUnlockRequest.class,
             (CI2<UUID, GridDhtUnlockRequest>)this::processDhtUnlockRequest);
@@ -1432,7 +1432,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Node ID.
      * @param req Request.
      */
-    private void clearLocks(UUID nodeId, GridUnlockRequest req) {
+    private void clearLocks(UUID nodeId, GridNearUnlockRequest req) {
         assert nodeId != null;
 
         List<KeyCacheObject> keys = req.keys();
@@ -1486,7 +1486,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Sender ID.
      * @param req Request.
      */
-    private void processNearUnlockRequest(UUID nodeId, GridUnlockRequest req) {
+    private void processNearUnlockRequest(UUID nodeId, GridNearUnlockRequest req) {
         assert ctx.affinityNode();
         assert nodeId != null;
 
