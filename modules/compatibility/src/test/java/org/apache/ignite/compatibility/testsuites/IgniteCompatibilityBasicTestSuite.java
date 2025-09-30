@@ -50,7 +50,7 @@ import org.junit.runners.Suite;
     JavaThinCompatibilityStoragePathTest.class,
     IgnitePKIndexesMigrationToUnwrapPkTest.class,
     CompoundIndexCompatibilityTest.class,
-    SnapshotCompatibilityTest.class,
+    SnapshotCompatibilityTest.class
 })
 public class IgniteCompatibilityBasicTestSuite {
 }
