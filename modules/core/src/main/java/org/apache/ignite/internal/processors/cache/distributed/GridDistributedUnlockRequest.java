@@ -37,17 +37,10 @@ public abstract class GridDistributedUnlockRequest extends GridDistributedBaseMe
     private List<KeyCacheObject> keys;
 
     /**
-     * Empty constructor.
-     */
-    public GridDistributedUnlockRequest() {
-        /* No-op. */
-    }
-
-    /**
      * @param cacheId Cache ID.
      * @param keyCnt Key count.
      */
-    public GridDistributedUnlockRequest(int cacheId, int keyCnt) {
+    protected GridDistributedUnlockRequest(int cacheId, int keyCnt) {
         super(keyCnt, false);
 
         this.cacheId = cacheId;
