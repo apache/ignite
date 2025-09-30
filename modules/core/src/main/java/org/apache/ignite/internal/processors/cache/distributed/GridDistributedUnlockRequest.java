@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -37,7 +37,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     /** Keys. */
     @GridToStringInclude
-    @Order(7)
+    @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> keys;
 
     /**
@@ -50,18 +50,12 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     /**
      * @param cacheId Cache ID.
      * @param keyCnt Key count.
+     * @param addDepInfo Deployment info flag.
      */
-    public GridDistributedUnlockRequest(int cacheId, int keyCnt) {
-        super(keyCnt, false);
+    public GridDistributedUnlockRequest(int cacheId, int keyCnt, boolean addDepInfo) {
+        super(keyCnt, addDepInfo);
 
         this.cacheId = cacheId;
-    }
-
-    /**
-     * Sets the keys
-     */
-    public void keys(List<KeyCacheObject> keys) {
-        this.keys = keys;
     }
 
     /**
