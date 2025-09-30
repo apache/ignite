@@ -385,7 +385,17 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 idxProps.add(prop);
         }
 
-        if (F.isEmpty(keyFieldAlias()) || !usedProps.contains(keyFieldAlias()))
+        if (!F.isEmpty(primaryKeyFields())) {
+            for (String fld : primaryKeyFields()) {
+                if (usedProps.add(fld)) {
+                    GridQueryProperty prop = props.get(fld);
+
+                    if (prop != null)
+                        idxProps.add(prop);
+                }
+            }
+        }
+        else if (F.isEmpty(keyFieldAlias()) || !usedProps.contains(keyFieldAlias()))
             idxProps.add(new QueryUtils.KeyOrValProperty(true, KEY_FIELD_NAME, keyClass()));
 
         validateIdxProps = idxProps;
@@ -734,9 +744,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             Class<?> propType = prop.type();
 
             if (Objects.equals(prop.name(), keyFieldAlias()) || Objects.equals(prop.name(), KEY_FIELD_NAME))
-                propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, true) : key;
+                propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, false) : key;
             else if (Objects.equals(prop.name(), valueFieldAlias()) || Objects.equals(prop.name(), VAL_FIELD_NAME))
-                propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
+                propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, false) : val;
             else
                 propVal = prop.value(key, val);
 
