@@ -644,25 +644,16 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      * @param qry Query.
      * @param args Arguments.
-     * @param loc Local query or not.
      * @param taskName Task name.
      * @param rcpt ID of the recipient.
      * @return Collection of found keys.
      * @throws IgniteCheckedException In case of error.
      */
     private FieldsResult executeFieldsQuery(CacheQuery<?> qry, @Nullable Object[] args,
-        boolean loc, @Nullable String taskName, Object rcpt) throws IgniteCheckedException {
+                                            @Nullable String taskName, Object rcpt) throws IgniteCheckedException {
         assert qry != null;
 
         FieldsResult res;
-
-        if (qry.clause() == null) {
-            assert !loc;
-
-            throw new IgniteCheckedException("Received next page request after iterator was removed. " +
-                "Consider increasing maximum number of stored iterators (see " +
-                "CacheConfiguration.getMaxQueryIteratorsCount() configuration property).");
-        }
 
         if (qry.type() == SQL_FIELDS) {
             if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
@@ -896,7 +887,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 String taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
 
                 res = qryInfo.local() ?
-                    executeFieldsQuery(qry, qryInfo.arguments(), qryInfo.local(), taskName,
+                    executeFieldsQuery(qry, qryInfo.arguments(), taskName,
                         recipient(qryInfo.senderId(), qryInfo.requestId())) :
                     fieldsQueryResult(qryInfo, taskName);
 
@@ -1633,8 +1624,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         if (exec) {
             try {
-                fut.onDone(executeFieldsQuery(qryInfo.query(), qryInfo.arguments(), false,
-                    taskName, recipient(qryInfo.senderId(), qryInfo.requestId())));
+                fut.onDone(executeFieldsQuery(qryInfo.query(), qryInfo.arguments(),
+                        taskName, recipient(qryInfo.senderId(), qryInfo.requestId())));
             }
             catch (IgniteCheckedException e) {
                 fut.onDone(e);
