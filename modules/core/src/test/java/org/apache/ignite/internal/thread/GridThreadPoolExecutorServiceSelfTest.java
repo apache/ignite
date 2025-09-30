@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread;
+package org.apache.ignite.internal.thread;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread;
+package org.apache.ignite.internal.thread;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.BlockingQueue;
