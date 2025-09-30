@@ -56,7 +56,7 @@ public class MetricCommandTest extends GridCommandHandlerClusterByClassAbstractT
     private static final String CONFIGURE_HITRATE = "--configure-hitrate";
 
     /** */
-    private static final String CONFIGURE_MAXVAL = "--configure-maxval";
+    private static final String CONFIGURE_MAXVAL = "--configure-max-value";
 
     /** Test node with 0 index. */
     private IgniteEx ignite0;

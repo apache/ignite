@@ -60,7 +60,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     public static final String HITRATE_NAME = "hitrate";
 
     /** Test maxval metric name. */
-    public static final String MAXVAL_METRIC_NAME = "maxval";
+    public static final String MAXVAL_NAME = "maxval";
 
     /** Test histogram metric name. */
     public static final String HISTOGRAM_NAME = "histogram";
@@ -132,8 +132,8 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
     public void testMaxValueMetricConfiguration() throws Exception {
         try (IgniteEx g = startGrid(0)) {
             MetricRegistryImpl mreg = g.context().metric().registry(TEST_REG);
-            MaxValueMetric metric = mreg.maxValueMetric(MAXVAL_METRIC_NAME, "test", 10000, 5);
-            String metricName = metricName(TEST_REG, MAXVAL_METRIC_NAME);
+            MaxValueMetric metric = mreg.maxValueMetric(MAXVAL_NAME, "test", 10000, 5);
+            String metricName = metricName(TEST_REG, MAXVAL_NAME);
 
             // Empty name.
             assertThrowsWithCause(
@@ -300,17 +300,17 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
             MetricRegistryImpl mreg = g0.context().metric().registry(TEST_REG);
 
             mreg.hitRateMetric(HITRATE_NAME, "test", 10000, 5);
-            mreg.maxValueMetric(MAXVAL_METRIC_NAME, "test", 10000, 5);
+            mreg.maxValueMetric(MAXVAL_NAME, "test", 10000, 5);
             mreg.histogram(HISTOGRAM_NAME, new long[] {250, 500}, "test");
 
             metricsBean(g0).configureHistogramMetric(metricName(TEST_REG, HISTOGRAM_NAME), BOUNDS);
             metricsBean(g0).configureHitRateMetric(metricName(TEST_REG, HITRATE_NAME), 1000);
-            configureMaxValueMetric(g0, metricName(TEST_REG, MAXVAL_METRIC_NAME), 1000);
+            configureMaxValueMetric(g0, metricName(TEST_REG, MAXVAL_NAME), 1000);
         }, (g0, g1) -> {
             MetricRegistryImpl mreg = g0.context().metric().registry(TEST_REG);
 
             HitRateMetric hitRate = mreg.hitRateMetric(HITRATE_NAME, "test", 10000, 5);
-            MaxValueMetric maxVal = mreg.maxValueMetric(MAXVAL_METRIC_NAME, "test", 10000, 5);
+            MaxValueMetric maxVal = mreg.maxValueMetric(MAXVAL_NAME, "test", 10000, 5);
             HistogramMetricImpl histogram = mreg.histogram(HISTOGRAM_NAME, new long[] {250, 500}, "test");
 
             assertEquals(1000, hitRate.timeInterval());
@@ -321,7 +321,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
                 g0.context().distributedMetastorage().read(metricName(HITRATE_CFG_PREFIX, TEST_REG, HITRATE_NAME)));
 
             assertEquals((Long)1000L,
-                g0.context().distributedMetastorage().read(metricName(MAXVAL_CFG_PREFIX, TEST_REG, MAXVAL_METRIC_NAME)));
+                g0.context().distributedMetastorage().read(metricName(MAXVAL_CFG_PREFIX, TEST_REG, MAXVAL_NAME)));
 
             assertArrayEquals(BOUNDS,
                 g0.context().distributedMetastorage().read(metricName(HISTOGRAM_CFG_PREFIX, TEST_REG, HISTOGRAM_NAME)));
@@ -330,7 +330,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
                 g1.context().distributedMetastorage().read(metricName(HITRATE_CFG_PREFIX, TEST_REG, HITRATE_NAME)));
 
             assertEquals((Long)1000L,
-                g1.context().distributedMetastorage().read(metricName(MAXVAL_CFG_PREFIX, TEST_REG, MAXVAL_METRIC_NAME)));
+                g1.context().distributedMetastorage().read(metricName(MAXVAL_CFG_PREFIX, TEST_REG, MAXVAL_NAME)));
 
             assertArrayEquals(BOUNDS,
                 g1.context().distributedMetastorage().read(metricName(HISTOGRAM_CFG_PREFIX, TEST_REG, HISTOGRAM_NAME)));
@@ -340,14 +340,14 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
             assertNull(
                 g0.context().distributedMetastorage().read(metricName(HITRATE_CFG_PREFIX, TEST_REG, HITRATE_NAME)));
             assertNull(
-                g0.context().distributedMetastorage().read(metricName(MAXVAL_CFG_PREFIX, TEST_REG, MAXVAL_METRIC_NAME)));
+                g0.context().distributedMetastorage().read(metricName(MAXVAL_CFG_PREFIX, TEST_REG, MAXVAL_NAME)));
             assertNull(
                 g0.context().distributedMetastorage().read(metricName(HISTOGRAM_CFG_PREFIX, TEST_REG, HISTOGRAM_NAME)));
 
             assertNull(
                 g1.context().distributedMetastorage().read(metricName(HITRATE_CFG_PREFIX, TEST_REG, HITRATE_NAME)));
             assertNull(
-                g1.context().distributedMetastorage().read(metricName(MAXVAL_CFG_PREFIX, TEST_REG, MAXVAL_METRIC_NAME)));
+                g1.context().distributedMetastorage().read(metricName(MAXVAL_CFG_PREFIX, TEST_REG, MAXVAL_NAME)));
             assertNull(
                 g1.context().distributedMetastorage().read(metricName(HISTOGRAM_CFG_PREFIX, TEST_REG, HISTOGRAM_NAME)));
         });
