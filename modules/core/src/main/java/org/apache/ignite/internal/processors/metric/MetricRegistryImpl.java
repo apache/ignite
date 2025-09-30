@@ -340,7 +340,6 @@ public class MetricRegistryImpl implements MetricRegistry {
             if (cfgTimeInterval != null)
                 ((MaxValueMetric)metric).reset(cfgTimeInterval, DFLT_SIZE);
         }
-
     }
 
     /** {@inheritDoc} */
