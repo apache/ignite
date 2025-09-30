@@ -102,11 +102,6 @@ public abstract class GridCacheIdMessage extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public int handlerId() {
-        return cacheId;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheIdMessage.class, this, "super", super.toString());
     }
