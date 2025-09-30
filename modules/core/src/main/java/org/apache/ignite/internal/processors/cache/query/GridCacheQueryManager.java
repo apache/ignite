@@ -652,10 +652,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private FieldsResult executeFieldsQuery(CacheQuery<?> qry, @Nullable Object[] args,
                                             @Nullable String taskName, Object rcpt) throws IgniteCheckedException {
         assert qry != null;
+        assert qry.type() == SQL_FIELDS : "Unexpected query type: " + qry.type();
 
         FieldsResult res;
 
-        if (qry.type() == SQL_FIELDS) {
             if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                 cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                     cctx.localNode(),
@@ -684,10 +684,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             if (qryResCache.putIfAbsent(resKey, res) != null)
                 resKey = null; // Failed to cache result.
-        }
-        else {
-            throw new IllegalStateException("Unexpected query type: " + qry.type());
-        }
 
         return res;
     }
