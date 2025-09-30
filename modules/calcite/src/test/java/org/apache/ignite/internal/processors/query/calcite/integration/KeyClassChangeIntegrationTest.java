@@ -164,6 +164,8 @@ public class KeyClassChangeIntegrationTest extends AbstractMultiEngineIntegratio
         finally {
             stop.set(true);
         }
+
+        assertEquals(0, cache.size());
     }
 
     /** */
