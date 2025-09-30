@@ -17,33 +17,29 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Lock request message.
  */
-public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
+public class GridUnlockRequest extends GridDistributedBaseMessage {
     /** Keys. */
     @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
+    @Order(7)
     private List<KeyCacheObject> keys;
 
     /**
      * Empty constructor.
      */
-    public GridDistributedUnlockRequest() {
+    public GridUnlockRequest() {
         /* No-op. */
     }
 
@@ -52,10 +48,17 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
      * @param keyCnt Key count.
      * @param addDepInfo Deployment info flag.
      */
-    public GridDistributedUnlockRequest(int cacheId, int keyCnt, boolean addDepInfo) {
+    public GridUnlockRequest(int cacheId, int keyCnt, boolean addDepInfo) {
         super(keyCnt, addDepInfo);
 
         this.cacheId = cacheId;
+    }
+
+    /**
+     * Sets the keys
+     */
+    public void keys(List<KeyCacheObject> keys) {
+        this.keys = keys;
     }
 
     /**
@@ -101,59 +104,12 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 7:
-                if (!writer.writeCollection(keys, MessageCollectionItemType.KEY_CACHE_OBJECT))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 7:
-                keys = reader.readCollection(MessageCollectionItemType.KEY_CACHE_OBJECT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
-        return 27;
+        return 57;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDistributedUnlockRequest.class, this, "super", super.toString());
+        return S.toString(GridUnlockRequest.class, this, "super", super.toString());
     }
 }
