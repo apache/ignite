@@ -656,8 +656,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         FieldsResult res;
 
-        T2<String, List<Object>> resKey = null;
-
         if (qry.clause() == null) {
             assert !loc;
 
@@ -684,7 +682,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             // Attempt to get result from cache.
-            resKey = new T2<>(qry.clause(), F.asList(args));
+            T2<String, List<Object>> resKey = new T2<>(qry.clause(), F.asList(args));
 
             res = (FieldsResult)qryResCache.get(resKey);
 
