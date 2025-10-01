@@ -522,10 +522,8 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         else {
             Iterator<?> iter = cursor.iterator();
 
-            for (int i = 0; i < 3; i++) {
-                if (iter.hasNext())
-                    iter.next();
-            }
+            if (iter.hasNext())
+                iter.next();
 
             cursor.close();
         }
