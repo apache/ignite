@@ -744,9 +744,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             Class<?> propType = prop.type();
 
             if (Objects.equals(prop.name(), keyFieldAlias()) || Objects.equals(prop.name(), KEY_FIELD_NAME))
-                propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, false) : key;
+                propVal = unwrap(key);
             else if (Objects.equals(prop.name(), valueFieldAlias()) || Objects.equals(prop.name(), VAL_FIELD_NAME))
-                propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, false) : val;
+                propVal = unwrap(val);
             else
                 propVal = prop.value(key, val);
 
@@ -758,6 +758,16 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                     " Expected '" + propType.getSimpleName() + "', actual type '" + typeName(propVal) + "'");
             }
         }
+    }
+
+    /** */
+    private Object unwrap(Object val) {
+        if (val instanceof BinaryObject)
+            return val;
+        else if (val instanceof CacheObject)
+            return ((CacheObject)val).value(coCtx, false);
+        else
+            return val;
     }
 
     /**
