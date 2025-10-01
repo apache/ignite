@@ -90,16 +90,18 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     public ClientType clientType;
 
     /** */
-    private boolean fetchAll = true;
+    @Parameterized.Parameter(2)
+    public boolean fetchAll;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "pageSize={0}, clientType={1}")
+    @Parameterized.Parameters(name = "pageSize={0}, clientType={1}, fetchAll={2}")
     public static Collection<?> parameters() {
         List<Object[]> res = new ArrayList<>();
 
         for (Integer pageSize : new Integer[] {ENTRY_COUNT, ENTRY_COUNT / 10}) {
             for (ClientType clientType : new ClientType[] {SERVER, CLIENT, THIN_CLIENT})
-                res.add(new Object[] {pageSize, clientType});
+                for (boolean fetchAll : new boolean[] {true, false})
+                    res.add(new Object[] {pageSize, clientType, fetchAll});
         }
 
         return res;
@@ -304,8 +306,6 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
             query(new SqlFieldsQuery("insert into " + SQL_TABLE + " (id) values (" + i + ")"));
 
         String sql = "SELECT id FROM " + SQL_TABLE;
-
-        fetchAll = false;
 
         SqlFieldsQuery qry = new SqlFieldsQuery(sql).setPageSize(10);
 
