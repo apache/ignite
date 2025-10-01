@@ -81,6 +81,7 @@ import org.apache.ignite.internal.codegen.SnapshotFilesFailureMessageSerializer;
 import org.apache.ignite.internal.codegen.SnapshotFilesRequestMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpInverseConnectionResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.TransactionAttributesAwareRequestSerializer;
+import org.apache.ignite.internal.codegen.TransactionIsolationMessageSerializer;
 import org.apache.ignite.internal.codegen.TxLockSerializer;
 import org.apache.ignite.internal.codegen.TxLocksRequestSerializer;
 import org.apache.ignite.internal.codegen.TxLocksResponseSerializer;
@@ -211,6 +212,7 @@ import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRe
 import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId;
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult;
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResultBatch;
+import org.apache.ignite.internal.transactions.TransactionIsolationMessage;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
@@ -389,6 +391,8 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(StatisticsColumnData.TYPE_CODE, StatisticsColumnData::new);
         factory.register(StatisticsRequest.TYPE_CODE, StatisticsRequest::new);
         factory.register(StatisticsResponse.TYPE_CODE, StatisticsResponse::new);
+
+        factory.register(TransactionIsolationMessage.TYPE_CODE, TransactionIsolationMessage::new, new TransactionIsolationMessageSerializer());
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] [183..188] - this
         // [120..123] - DR

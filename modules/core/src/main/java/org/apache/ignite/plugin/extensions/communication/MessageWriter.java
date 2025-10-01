@@ -270,14 +270,6 @@ public interface MessageWriter {
     public boolean writeGridLongList(@Nullable GridLongList ll);
 
     /**
-     * Writes value from {@link Enum}.
-     *
-     * @param val Value from enum.
-     * @return Whether value was fully written.
-     */
-    public boolean writeEnumValue(@Nullable Enum<?> val);
-
-    /**
      * Writes array of objects.
      *
      * @param arr Array of objects.

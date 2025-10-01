@@ -182,12 +182,6 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                     return false;
 
                 writer.incrementState();
-
-            case 23:
-                if (!writer.writeCollection(msg.enumValList(), MessageCollectionItemType.ENUM_VAL))
-                    return false;
-
-                writer.incrementState();
         }
 
         return true;
@@ -378,14 +372,6 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
 
             case 22:
                 msg.gridLongListList(reader.readCollection(MessageCollectionItemType.GRID_LONG_LIST));
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 23:
-                msg.enumValList(reader.readCollection(MessageCollectionItemType.ENUM_VAL));
 
                 if (!reader.isLastRead())
                     return false;

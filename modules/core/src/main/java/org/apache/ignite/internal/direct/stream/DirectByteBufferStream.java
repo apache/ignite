@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.direct.stream;
 
 import java.lang.reflect.Array;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -337,15 +336,6 @@ public class DirectByteBufferStream {
 
     /** */
     private byte cacheObjType;
-
-    /** */
-    private byte enumValState;
-
-    /** */
-    private String enumClsName;
-
-    /** */
-    private byte enumValOrd;
 
     /**
      * Constructror for stream used for writing messages.
@@ -882,33 +872,6 @@ public class DirectByteBufferStream {
             writeLongArray(val.array(), val.size());
         else
             writeInt(-1);
-    }
-
-    /**
-     * @param val Value.
-     */
-    public void writeEnumValue(@Nullable Enum<?> val) {
-        if (val != null) {
-            switch (enumValState) {
-                case 0:
-                    writeByte((byte)val.ordinal());
-
-                    if (!lastFinished)
-                        return;
-
-                    enumValState++;
-
-                case 1:
-                    writeString(val.getClass().getName());
-
-                    if (!lastFinished)
-                        return;
-
-                    enumValState = 0;
-            }
-        }
-        else
-            writeByte((byte)-1);
     }
 
     /**
@@ -1551,43 +1514,6 @@ public class DirectByteBufferStream {
     }
 
     /**
-     * @return Value.
-     */
-    public <T extends Enum<?>> T readEnumValue() {
-        switch (enumValState) {
-            case 0:
-                enumValOrd = readByte();
-
-                if (!lastFinished || enumValOrd == (byte)-1)
-                    return null;
-
-                enumValState++;
-
-            case 1:
-                enumClsName = readString();
-
-                if (!lastFinished)
-                    return null;
-
-                enumValState = 0;
-        }
-
-        if (enumClsName == null)
-            return null;
-
-        try {
-            Class<?> enumCls = Class.forName(enumClsName);
-
-            assert enumCls.isEnum();
-
-            return (T)enumCls.getDeclaredMethod("fromOrdinal", int.class).invoke(null, enumValOrd);
-        }
-        catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-            throw new IgniteException(e);
-        }
-    }
-
-    /**
      * @param reader Reader.
      * @return Message.
      */
@@ -2152,11 +2078,6 @@ public class DirectByteBufferStream {
 
                 break;
 
-            case ENUM_VAL:
-                writeEnumValue((Enum<?>)val);
-
-                break;
-
             case MSG:
                 try {
                     if (val != null)
@@ -2254,9 +2175,6 @@ public class DirectByteBufferStream {
 
             case GRID_LONG_LIST:
                 return readGridLongList();
-
-            case ENUM_VAL:
-                return readEnumValue();
 
             case MSG:
                 return readMessage(reader);

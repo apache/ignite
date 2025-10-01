@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.transactions.TransactionIsolationMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -78,9 +79,9 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     @Order(value = 14, method = "txRead")
     private boolean isRead;
 
-    /** Transaction isolation. */
+    /** Transaction isolation message. */
     @Order(15)
-    private TransactionIsolation isolation;
+    private TransactionIsolationMessage isolation;
 
     /** Key bytes for keys to lock. */
     @Order(16)
@@ -157,7 +158,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         this.futId = futId;
         this.isInTx = isInTx;
         this.isRead = isRead;
-        this.isolation = isolation;
+        this.isolation = new TransactionIsolationMessage(isolation);
         this.isInvalidate = isInvalidate;
         this.timeout = timeout;
         this.txSize = txSize;
@@ -336,16 +337,16 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @return Transaction isolation or <tt>null</tt> if not in transaction.
+     * @return Transaction isolation message.
      */
-    public TransactionIsolation isolation() {
+    public TransactionIsolationMessage isolation() {
         return isolation;
     }
 
     /**
-     * @param isolation Transaction isolation or <tt>null</tt> if not in transaction.
+     * @param isolation Transaction isolation message.
      */
-    public void isolation(TransactionIsolation isolation) {
+    public void isolation(TransactionIsolationMessage isolation) {
         this.isolation = isolation;
     }
 

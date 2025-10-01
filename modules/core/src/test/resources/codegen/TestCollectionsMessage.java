@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.transactions.TransactionIsolation;
 
 public class TestCollectionsMessage implements Message {
     @Order(0)
@@ -96,9 +95,6 @@ public class TestCollectionsMessage implements Message {
 
     @Order(22)
     private List<GridLongList> gridLongListList;
-
-    @Order(23)
-    private List<TransactionIsolation> enumValList;
 
     public List<boolean[]> booleanArrayList() {
         return booleanArrayList;
@@ -282,14 +278,6 @@ public class TestCollectionsMessage implements Message {
 
     public void gridLongListList(List<GridLongList> gridLongListList) {
         this.gridLongListList = gridLongListList;
-    }
-
-    public List<TransactionIsolation> enumValList() {
-        return enumValList;
-    }
-
-    public void enumValList(List<TransactionIsolation> enumValList) {
-        this.enumValList = enumValList;
     }
 
     public short directType() {

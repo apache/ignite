@@ -340,6 +340,9 @@ class MessageSerializerGenerator {
         }
 
         if (type.getKind() == TypeKind.DECLARED) {
+            if (enumType(erasedType(type)))
+                throw new IllegalArgumentException("Unsupported enum type: " + type);
+
             if (sameType(type, String.class))
                 returnFalseIfWriteFailed(write, "writer.writeString", getExpr);
 
@@ -389,9 +392,6 @@ class MessageSerializerGenerator {
                 returnFalseIfWriteFailed(write, "writer.writeCollection", getExpr,
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
-
-            else if (enumType(erasedType(type)))
-                returnFalseIfWriteFailed(write, "writer.writeEnumValue", getExpr);
 
             else
                 throw new IllegalArgumentException("Unsupported declared type: " + type);
@@ -485,6 +485,9 @@ class MessageSerializerGenerator {
         }
 
         if (type.getKind() == TypeKind.DECLARED) {
+            if (enumType(erasedType(type)))
+                throw new IllegalArgumentException("Unsupported enum type: " + type);
+
             if (sameType(type, String.class))
                 returnFalseIfReadFailed(name, "reader.readString");
 
@@ -530,9 +533,6 @@ class MessageSerializerGenerator {
                 returnFalseIfReadFailed(name, "reader.readCollection",
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
-
-            else if (enumType(erasedType(type)))
-                returnFalseIfReadFailed(name, "reader.readEnumValue");
 
             else
                 throw new IllegalArgumentException("Unsupported declared type: " + type);
@@ -590,9 +590,6 @@ class MessageSerializerGenerator {
 
             if (sameType(type, "org.apache.ignite.internal.util.GridLongList"))
                 return "GRID_LONG_LIST";
-
-            if (enumType(type))
-                return "ENUM_VAL";
 
             PrimitiveType primitiveType = unboxedType(type);
 
