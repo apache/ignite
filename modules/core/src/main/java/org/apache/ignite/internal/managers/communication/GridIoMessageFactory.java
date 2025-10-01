@@ -47,6 +47,7 @@ import org.apache.ignite.internal.codegen.GridDhtPartitionSupplyMessageSerialize
 import org.apache.ignite.internal.codegen.GridDhtPartitionsSingleRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtTxOnePhaseCommitAckRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtTxPrepareRequestSerializer;
+import org.apache.ignite.internal.codegen.GridDistributedTxFinishResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDistributedTxPrepareRequestSerializer;
 import org.apache.ignite.internal.codegen.GridIntListSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
@@ -270,7 +271,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)21, GridDistributedLockRequest::new);
         factory.register((short)22, GridDistributedLockResponse::new);
         factory.register((short)23, GridDistributedTxFinishRequest::new);
-        factory.register((short)24, GridDistributedTxFinishResponse::new);
+        factory.register((short)24, GridDistributedTxFinishResponse::new, new GridDistributedTxFinishResponseSerializer());
         factory.register((short)25, GridDistributedTxPrepareRequest::new, new GridDistributedTxPrepareRequestSerializer());
         factory.register((short)26, GridDistributedTxPrepareResponse::new);
         factory.register((short)27, GridDistributedUnlockRequest::new);

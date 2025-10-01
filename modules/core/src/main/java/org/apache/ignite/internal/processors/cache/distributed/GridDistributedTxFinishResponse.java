@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -26,25 +26,27 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Transaction finish response.
  */
 public class GridDistributedTxFinishResponse extends GridCacheMessage {
     /** */
-    private GridCacheVersion txId;
+    @GridToStringExclude
+    @Order(3)
+    private byte flags;
 
     /** Future ID. */
+    @Order(value = 4, method = "futureId")
     private IgniteUuid futId;
 
     /** */
-    @GridToStringExclude
-    private byte flags;
+    @Order(value = 5, method = "partition")
+    private int part;
 
     /** */
-    private int part;
+    @Order(value = 6, method = "xid")
+    private GridCacheVersion txId;
 
     /**
      * Empty constructor required by {@link GridIoMessageFactory}.
@@ -77,6 +79,11 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
         return false;
     }
 
+    /** Sets partition. */
+    public void partition(int part) {
+        this.part = part;
+    }
+
     /** {@inheritDoc} */
     @Override public final int partition() {
         return part;
@@ -103,11 +110,38 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
     }
 
     /**
-     *
+     * Sets transaction id.
+     */
+    public void xid(GridCacheVersion xid) {
+        this.txId = xid;
+    }
+
+    /**
      * @return Transaction id.
      */
     public GridCacheVersion xid() {
         return txId;
+    }
+
+    /**
+     * Sets flags.
+     */
+    public void flags(byte flags) {
+        this.flags = flags;
+    }
+
+    /**
+     * @return Flags.
+     */
+    public byte flags() {
+        return flags;
+    }
+
+    /**
+     * Sets future ID.
+     */
+    public void futureId(IgniteUuid futId) {
+        this.futId = futId;
     }
 
     /**
@@ -125,95 +159,6 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.txFinishMessageLogger();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 3:
-                if (!writer.writeByte(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeIgniteUuid(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeInt(part))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeMessage(txId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 3:
-                flags = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                futId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                part = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                txId = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
