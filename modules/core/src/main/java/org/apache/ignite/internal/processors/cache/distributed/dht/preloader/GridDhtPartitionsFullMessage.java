@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,8 +30,7 @@ import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -46,9 +44,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -63,72 +58,76 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** grpId -> FullMap */
     @GridToStringInclude
-    @GridDirectTransient
     private Map<Integer, GridDhtPartitionFullMap> parts;
-
-    /** */
-    @GridDirectMap(keyType = Integer.class, valueType = Integer.class)
-    private Map<Integer, Integer> dupPartsData;
-
-    /** */
-    private byte[] partsBytes;
 
     /** Partitions update counters. */
     @GridToStringInclude
-    @GridDirectTransient
     private IgniteDhtPartitionCountersMap partCntrs;
-
-    /** Serialized partitions counters. */
-    private byte[] partCntrsBytes;
 
     /** Partitions history suppliers. */
     @GridToStringInclude
-    @GridDirectTransient
     private IgniteDhtPartitionHistorySuppliersMap partHistSuppliers;
-
-    /** Serialized partitions history suppliers. */
-    private byte[] partHistSuppliersBytes;
 
     /** Partitions that must be cleared and re-loaded. */
     @GridToStringInclude
-    @GridDirectTransient
     private IgniteDhtPartitionsToReloadMap partsToReload;
-
-    /** Serialized partitions that must be cleared and re-loaded. */
-    private byte[] partsToReloadBytes;
-
-    /** Serialized partitions sizes. */
-    private byte[] partsSizesBytes;
-
-    /** Topology version. */
-    private AffinityTopologyVersion topVer;
 
     /** Exceptions. */
     @GridToStringInclude
-    @GridDirectTransient
     private Map<UUID, Exception> errs;
 
+    /** */
+    @Order(value = 6, method = "duplicatedPartitionsData")
+    private Map<Integer, Integer> dupPartsData;
+
     /**  */
+    @Order(value = 7, method = "errorBytes")
     private byte[] errsBytes;
 
     /** */
-    private AffinityTopologyVersion resTopVer;
-
-    /** */
-    @GridDirectMap(keyType = Integer.class, valueType = CacheGroupAffinityMessage.class)
-    private Map<Integer, CacheGroupAffinityMessage> joinedNodeAff;
-
-    /** */
-    @GridDirectMap(keyType = Integer.class, valueType = CacheGroupAffinityMessage.class)
-    private Map<Integer, CacheGroupAffinityMessage> idealAffDiff;
-
-    /** */
+    @Order(8)
     private byte flags;
 
     /** */
-    @GridDirectMap(keyType = Integer.class, valueType = int[].class)
+    @Order(value = 9, method = "idealAffinityDiff")
+    private Map<Integer, CacheGroupAffinityMessage> idealAffDiff;
+
+    /** */
+    @Order(value = 10, method = "joinedNodeAffinity")
+    @Nullable private Map<Integer, CacheGroupAffinityMessage> joinedNodeAff;
+
+    /** */
+    @Order(value = 11, method = "lostPartitions")
     @GridToStringExclude
     private Map<Integer, int[]> lostParts;
+
+    /** Serialized partitions counters. */
+    @Order(value = 12, method = "partitionCounterBytes")
+    private byte[] partCntrsBytes;
+
+    /** Serialized partitions history suppliers. */
+    @Order(value = 13, method = "partitionHistorySupplierBytes")
+    private byte[] partHistSuppliersBytes;
+
+    /** */
+    @Order(value = 14, method = "partitionBytes")
+    private byte[] partsBytes;
+
+    /** Serialized partitions sizes. */
+    @Order(value = 15, method = "partitionSizesBytes")
+    private byte[] partsSizesBytes;
+
+    /** Serialized partitions that must be cleared and re-loaded. */
+    @Order(value = 16, method = "partitionsToReloadBytes")
+    private byte[] partsToReloadBytes;
+
+    /** */
+    @Order(value = 17, method = "resultTopologyVersion")
+    private AffinityTopologyVersion resTopVer;
+
+    /** Topology version. */
+    @Order(value = 18, method = "topologyVersion")
+    private AffinityTopologyVersion topVer;
 
     /**
      * Empty constructor.
@@ -235,7 +234,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /**
      * @param joinedNodeAff Caches affinity for joining nodes.
      */
-    GridDhtPartitionsFullMessage joinedNodeAffinity(Map<Integer, CacheGroupAffinityMessage> joinedNodeAff) {
+    public GridDhtPartitionsFullMessage joinedNodeAffinity(Map<Integer, CacheGroupAffinityMessage> joinedNodeAff) {
         this.joinedNodeAff = joinedNodeAff;
 
         return this;
@@ -251,8 +250,88 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /**
      * @param idealAffDiff Difference with ideal affinity.
      */
-    void idealAffinityDiff(Map<Integer, CacheGroupAffinityMessage> idealAffDiff) {
+    public void idealAffinityDiff(Map<Integer, CacheGroupAffinityMessage> idealAffDiff) {
         this.idealAffDiff = idealAffDiff;
+    }
+
+    /** Sets the duplicated data. */
+    public void duplicatedPartitionsData(Map<Integer, Integer> dupPartsData) {
+        this.dupPartsData = dupPartsData;
+    }
+
+    /** @return the duplicated data. */
+    public Map<Integer, Integer> duplicatedPartitionsData() {
+        return dupPartsData;
+    }
+
+    /**  */
+    public void errorBytes(byte[] errBytes) {
+        this.errsBytes = errBytes;
+    }
+
+    /** */
+    public byte[] errorBytes() {
+        return errsBytes;
+    }
+
+    /** @return  the lost partitions. */
+    public Map<Integer, int[]> lostPartitions() {
+        return lostParts;
+    }
+
+    /** Sets the serialized partitions counters. */
+    public void partitionCounterBytes(byte[] partCntrsBytes) {
+        this.partCntrsBytes = partCntrsBytes;
+    }
+
+    /** @return the serialized partitions counters. */
+    public byte[] partitionCounterBytes() {
+        return partCntrsBytes;
+    }
+
+    /** Sets the lost partitions. */
+    public void lostPartitions(Map<Integer, int[]> lostParts) {
+        this.lostParts = lostParts;
+    }
+
+    /** Sets the serialized partitions history suppliers. */
+    public void partitionHistorySupplierBytes(byte[] partHistSuppliersBytes) {
+        this.partHistSuppliersBytes = partHistSuppliersBytes;
+    }
+
+    /** @return The serialized partitions history suppliers. */
+    public byte[] partitionHistorySupplierBytes() {
+        return partHistSuppliersBytes;
+    }
+
+    /** */
+    public void partitionBytes(byte[] partsBytes) {
+        this.partsBytes = partsBytes;
+    }
+
+    /** @return the serialized partitions counters. */
+    public byte[] partitionBytes() {
+        return partsBytes;
+    }
+
+    /** Sets the serialized partitions sizes. */
+    public void partitionSizesBytes(byte[] partsSizesBytes) {
+        this.partsSizesBytes = partsSizesBytes;
+    }
+
+    /** @return The serialized partitions sizes. */
+    public byte[] partitionSizesBytes() {
+        return partsSizesBytes;
+    }
+
+    /** @return The serialized partitions that must be cleared and re-loaded. */
+    public byte[] partitionsToReloadBytes() {
+        return partsToReloadBytes;
+    }
+
+    /** Sets the serialized partitions that must be cleared and re-loaded. */
+    public void partitionsToReloadBytes(byte[] partsToReloadBytes) {
+        this.partsToReloadBytes = partsToReloadBytes;
     }
 
     /** {@inheritDoc} */
@@ -618,221 +697,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         if (errs == null)
             errs = new HashMap<>();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 6:
-                if (!writer.writeMap(dupPartsData, MessageCollectionItemType.INT, MessageCollectionItemType.INT))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeByteArray(errsBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeByte(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeMap(idealAffDiff, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeMap(joinedNodeAff, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeMap(lostParts, MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeByteArray(partCntrsBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeByteArray(partHistSuppliersBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeByteArray(partsBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 15:
-                if (!writer.writeByteArray(partsSizesBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 16:
-                if (!writer.writeByteArray(partsToReloadBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 17:
-                if (!writer.writeAffinityTopologyVersion(resTopVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 18:
-                if (!writer.writeAffinityTopologyVersion(topVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 6:
-                dupPartsData = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.INT, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                errsBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                flags = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                idealAffDiff = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                joinedNodeAff = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                lostParts = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                partCntrsBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                partHistSuppliersBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                partsBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 15:
-                partsSizesBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 16:
-                partsToReloadBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 17:
-                resTopVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 18:
-                topVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

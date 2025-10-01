@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -33,9 +30,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -46,63 +40,66 @@ import org.jetbrains.annotations.Nullable;
 public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMessage {
     /** Local partitions. Serialized as {@link #partsBytes}, may be compressed. */
     @GridToStringInclude
-    @GridDirectTransient
     private Map<Integer, GridDhtPartitionMap> parts;
-
-    /** */
-    @GridDirectMap(keyType = Integer.class, valueType = Integer.class)
-    private Map<Integer, Integer> dupPartsData;
-
-    /** Serialized local partitions. Unmarshalled to {@link #parts}. */
-    private byte[] partsBytes;
 
     /** Partitions update counters. */
     @GridToStringInclude
-    @GridDirectTransient
     private Map<Integer, CachePartitionPartialCountersMap> partCntrs;
-
-    /** Serialized partitions counters. */
-    private byte[] partCntrsBytes;
 
     /** Partitions sizes. */
     @GridToStringInclude
-    @GridDirectTransient
     private Map<Integer, Map<Integer, Long>> partsSizes;
-
-    /** Serialized partitions counters. */
-    private byte[] partsSizesBytes;
 
     /** Partitions history reservation counters. */
     @GridToStringInclude
-    @GridDirectTransient
     private Map<Integer, Map<Integer, Long>> partHistCntrs;
-
-    /** Serialized partitions history reservation counters. */
-    private byte[] partHistCntrsBytes;
 
     /** Exception. */
     @GridToStringInclude
-    @GridDirectTransient
     private Exception err;
 
     /** */
-    private byte[] errBytes;
-
-    /** */
+    @Order(6)
     private boolean client;
 
     /** */
-    @GridDirectCollection(Integer.class)
-    private Collection<Integer> grpsAffRequest;
+    @Order(value = 7, method = "duplicatedPartitionsData")
+    private Map<Integer, Integer> dupPartsData;
+
+    /** */
+    @Order(value = 8, method = "errorBytes")
+    private byte[] errBytes;
 
     /** Start time of exchange on node which sent this message in nanoseconds. */
+    @Order(9)
     private long exchangeStartTime;
 
     /**
      * Exchange finish message, sent to new coordinator when it tries to restore state after previous coordinator failed
      * during exchange.
      */
+    @Order(value = 10, method = "finishMessage")
     private GridDhtPartitionsFullMessage finishMsg;
+
+    /** */
+    @Order(value = 11, method = "groupsAffinityRequest")
+    private Collection<Integer> grpsAffReq;
+
+    /** Serialized partitions counters. */
+    @Order(value = 12, method = "partitionCounterBytes")
+    private byte[] partCntrsBytes;
+
+    /** Serialized partitions history reservation counters. */
+    @Order(value = 13, method = "partitionHistoryCounterBytes")
+    private byte[] partHistCntrsBytes;
+
+    /** Serialized local partitions. Unmarshalled to {@link #parts}. */
+    @Order(value = 14, method = "partitionBytes")
+    private byte[] partsBytes;
+
+    /** Serialized partitions counters. */
+    @Order(value = 15, method = "partitionSizesBytes")
+    private byte[] partsSizesBytes;
 
     /**
      * Empty constructor.
@@ -129,37 +126,54 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         this.client = client;
     }
 
+    /** Sets the duplicated data. */
+    public void duplicatedPartitionsData(Map<Integer, Integer> dupPartsData) {
+        this.dupPartsData = dupPartsData;
+    }
+
+    /** @return the duplicated data. */
+    public Map<Integer, Integer> duplicatedPartitionsData() {
+        return dupPartsData;
+    }
+
     /**
      * @param finishMsg Exchange finish message (used to restore exchange state on new coordinator).
      */
-    void finishMessage(GridDhtPartitionsFullMessage finishMsg) {
+    public void finishMessage(GridDhtPartitionsFullMessage finishMsg) {
         this.finishMsg = finishMsg;
     }
 
     /**
      * @return Exchange finish message (used to restore exchange state on new coordinator).
      */
-    GridDhtPartitionsFullMessage finishMessage() {
+    public GridDhtPartitionsFullMessage finishMessage() {
         return finishMsg;
     }
 
     /**
      * @param grpsAffRequest Cache groups to get affinity for (affinity is requested when node joins cluster).
      */
-    void cacheGroupsAffinityRequest(Collection<Integer> grpsAffRequest) {
-        this.grpsAffRequest = grpsAffRequest;
+    public void cacheGroupsAffinityRequest(Collection<Integer> grpsAffRequest) {
+        this.grpsAffReq = grpsAffRequest;
     }
 
     /**
      * @return Cache groups to get affinity for (affinity is requested when node joins cluster).
      */
     @Nullable public Collection<Integer> cacheGroupsAffinityRequest() {
-        return grpsAffRequest;
+        return grpsAffReq;
     }
 
     /** {@inheritDoc} */
     @Override public int handlerId() {
         return 0;
+    }
+
+    /**
+     * Sets the client flag.
+     */
+    public void client(boolean client) {
+        this.client = client;
     }
 
     /**
@@ -291,6 +305,66 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             parts = new HashMap<>();
 
         return parts;
+    }
+
+    /** */
+    public void groupsAffinityRequest(Collection<Integer> grpsAffReq) {
+        this.grpsAffReq = grpsAffReq;
+    }
+
+    /** */
+    public Collection<Integer> groupsAffinityRequest() {
+        return grpsAffReq;
+    }
+
+    /**  */
+    public void errorBytes(byte[] errBytes) {
+        this.errBytes = errBytes;
+    }
+
+    /** */
+    public byte[] errorBytes() {
+        return errBytes;
+    }
+
+    /** Sets the serialized local partitions. */
+    public void partitionBytes(byte[] partsBytes) {
+        this.partsBytes = partsBytes;
+    }
+
+    /** @return Serialized local partitions. */
+    public byte[] partitionBytes() {
+        return partsBytes;
+    }
+
+    /** @return Serialized partitions counters. */
+    public byte[] partitionCounterBytes() {
+        return partCntrsBytes;
+    }
+
+    /** Sets the serialized partitions counters. */
+    public void partitionCounterBytes(byte[] partCntrsBytes) {
+        this.partCntrsBytes = partCntrsBytes;
+    }
+
+    /** @return Serializaed partitions history reservation counters. */
+    public byte[] partitionHistoryCounterBytes() {
+        return partHistCntrsBytes;
+    }
+
+    /** Sets the serialized partitions history reservation counters. */
+    public void partitionHistoryCounterBytes(byte[] partHistCntrsBytes) {
+        this.partHistCntrsBytes = partHistCntrsBytes;
+    }
+
+    /** Sets the partitions counters. */
+    public void partitionSizesBytes(byte[] partsSizesBytes) {
+        this.partsSizesBytes = partsSizesBytes;
+    }
+
+    /** @return partitions counters. */
+    public byte[] partitionSizesBytes() {
+        return partsSizesBytes;
     }
 
     /**
@@ -438,179 +512,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
                     map1.put(e0.getKey(), e0.getValue());
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 6:
-                if (!writer.writeBoolean(client))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeMap(dupPartsData, MessageCollectionItemType.INT, MessageCollectionItemType.INT))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeByteArray(errBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeLong(exchangeStartTime))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeMessage(finishMsg))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeCollection(grpsAffRequest, MessageCollectionItemType.INT))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeByteArray(partCntrsBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeByteArray(partHistCntrsBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeByteArray(partsBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 15:
-                if (!writer.writeByteArray(partsSizesBytes))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 6:
-                client = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                dupPartsData = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.INT, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                errBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                exchangeStartTime = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                finishMsg = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                grpsAffRequest = reader.readCollection(MessageCollectionItemType.INT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                partCntrsBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                partHistCntrsBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                partsBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 15:
-                partsSizesBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
