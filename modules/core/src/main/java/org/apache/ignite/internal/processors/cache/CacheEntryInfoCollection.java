@@ -17,33 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-/**
- *
- */
+/** TODO : IGNITE-26568. Revise, remove. */
 public class CacheEntryInfoCollection implements Message {
     /** */
-    @GridDirectCollection(GridCacheEntryInfo.class)
-    private List<GridCacheEntryInfo> infos;
-
-    /** */
-    public CacheEntryInfoCollection() {
-        // No-op
-    }
+    @Order(0)
+    private List<GridCacheEntryInfo> infos = new ArrayList<>();
 
     /**
-     *
+     * Sets entries.
      */
-    public void init() {
-        infos = new ArrayList<>();
+    public void infos(List<GridCacheEntryInfo> infos) {
+        this.infos = infos;
     }
 
     /**
@@ -61,67 +50,7 @@ public class CacheEntryInfoCollection implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeCollection(infos, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                infos = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 92;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        StringBuilder b = new StringBuilder();
-        b.append("[");
-
-        for (int i = 0; i < infos().size(); i++) {
-            GridCacheEntryInfo info = infos().get(i);
-
-            Object k = info.key().value(null, false);
-
-            b.append("[key=").append(k == null ? "null" : k).append(", ver=").
-                append(info.version()).append(", val=").append(info.value()).append(']');
-        }
-
-        b.append(']');
-
-        return b.toString();
     }
 }

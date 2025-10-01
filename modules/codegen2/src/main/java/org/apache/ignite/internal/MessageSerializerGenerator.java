@@ -591,7 +591,7 @@ class MessageSerializerGenerator {
         }
 
         if (!assignableFrom(type, type(MESSAGE_INTERFACE)))
-            throw new Exception("Do not support type: " + type);
+            throw new Exception("Unsupported type: " + type + ", kind: " + type.getKind());
 
         return "MSG";
     }
