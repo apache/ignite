@@ -23,6 +23,7 @@ import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
 import org.apache.ignite.internal.util.function.ThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -115,23 +116,23 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testTwoCompatibleVersions() throws Exception {
-        testCompatibleVersions("2.18.0", "2.17.0", false, 17);
-        testCompatibleVersions("2.19.0", "2.20.6", false, 20);
+        testCompatibleVersions("2.18.0", "2.17.0", false, "2.17.0");
+        testCompatibleVersions("2.19.0", "2.20.6", false, "2.20.0");
         testCompatibleVersions("2.20.0", "2.20.2", false, null);
-        testCompatibleVersions("2.21.0", "2.21.1", false, 21);
+        testCompatibleVersions("2.21.0", "2.21.1", false, "2.21.0");
     }
 
     /** */
     @Test
     public void testThreeCompatibleVersions() throws Exception {
-        testCompatibleVersions("2.18.0", "2.18.2", "2.17.0", false, 17);
-        testCompatibleVersions("2.18.0", "2.18.3", "2.19.0", false, 19);
+        testCompatibleVersions("2.18.0", "2.18.2", "2.17.0", false, "2.17.0");
+        testCompatibleVersions("2.18.0", "2.18.3", "2.19.0", false, "2.19.0");
 
-        testCompatibleVersions("2.18.0", "2.19.2", "2.18.1", false, 19);
-        testCompatibleVersions("2.18.0", "2.17.3", "2.18.2", false, 17);
+        testCompatibleVersions("2.18.0", "2.19.2", "2.18.1", false, "2.19.0");
+        testCompatibleVersions("2.18.0", "2.17.3", "2.18.2", false, "2.17.0");
 
-        testCompatibleVersions("2.18.0", "2.19.2", "2.19.6", false, 19);
-        testCompatibleVersions("2.18.0", "2.17.3", "2.17.1", false, 17);
+        testCompatibleVersions("2.18.0", "2.19.2", "2.19.6", false, "2.19.0");
+        testCompatibleVersions("2.18.0", "2.17.3", "2.17.1", false, "2.17.0");
 
         testCompatibleVersions("2.18.1", "2.18.2", "2.18.3", false, null);
     }
@@ -139,23 +140,23 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testTwoCompatibleVersionsWithClient() throws Exception {
-        testCompatibleVersions("2.18.0", "2.17.0", true, 17);
-        testCompatibleVersions("2.19.0", "2.20.6", true, 20);
+        testCompatibleVersions("2.18.0", "2.17.0", true, "2.17.0");
+        testCompatibleVersions("2.19.0", "2.20.6", true, "2.20.0");
         testCompatibleVersions("2.20.0", "2.20.2", true, null);
-        testCompatibleVersions("2.21.0", "2.21.1", true, 21);
+        testCompatibleVersions("2.21.0", "2.21.1", true, "2.21.0");
     }
 
     /** */
     @Test
     public void testThreeCompatibleVersionsWithClients() throws Exception {
-        testCompatibleVersions("2.18.0", "2.18.2", "2.17.0", true, 17);
-        testCompatibleVersions("2.18.0", "2.18.3", "2.19.0", true, 19);
+        testCompatibleVersions("2.18.0", "2.18.2", "2.17.0", true, "2.17.0");
+        testCompatibleVersions("2.18.0", "2.18.3", "2.19.0", true, "2.19.0");
 
-        testCompatibleVersions("2.18.0", "2.19.2", "2.18.1", true, 19);
-        testCompatibleVersions("2.18.0", "2.17.3", "2.18.2", true, 17);
+        testCompatibleVersions("2.18.0", "2.19.2", "2.18.1", true, "2.19.0");
+        testCompatibleVersions("2.18.0", "2.17.3", "2.18.2", true, "2.17.0");
 
-        testCompatibleVersions("2.18.0", "2.19.2", "2.19.6", true, 19);
-        testCompatibleVersions("2.18.0", "2.17.3", "2.17.1", true, 17);
+        testCompatibleVersions("2.18.0", "2.19.2", "2.19.6", true, "2.19.0");
+        testCompatibleVersions("2.18.0", "2.17.3", "2.17.1", true, "2.17.0");
 
         testCompatibleVersions("2.18.1", "2.18.2", "2.18.3", true, null);
     }
@@ -169,7 +170,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
 
-        allowRollingUpgradeVersionCheck(ign0, 19);
+        allowRollingUpgradeVersionCheck(ign0, "2.19.0");
 
         ign2.close();
 
@@ -205,7 +206,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
 
-        allowRollingUpgradeVersionCheck(ign0, 17);
+        allowRollingUpgradeVersionCheck(ign0, "2.17.0");
 
         ign0.close();
 
@@ -241,7 +242,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 3, getTestTimeout()));
 
-        allowRollingUpgradeVersionCheck(ign0, 19);
+        allowRollingUpgradeVersionCheck(ign0, "2.19.0");
 
         ign1.close();
         ign2.close();
@@ -258,7 +259,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == 1, getTestTimeout()));
 
-        allowRollingUpgradeVersionCheck(ign0, 17);
+        allowRollingUpgradeVersionCheck(ign0, "2.17.0");
 
         startGrid(1, "2.17.0", false);
         startGrid(2, "2.17.0", false);
@@ -271,7 +272,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     public void testCoordinatorChange() throws Exception {
         IgniteEx ign0 = startGrid(0, "2.18.0", false);
 
-        allowRollingUpgradeVersionCheck(ign0, 19);
+        allowRollingUpgradeVersionCheck(ign0, "2.19.0");
 
         IgniteEx ign1 = startGrid(1, "2.19.0", false);
 
@@ -283,7 +284,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertRemoteRejected(() -> startGrid(0, "2.17.0", false));
 
-        allowRollingUpgradeVersionCheck(ign1, 20);
+        allowRollingUpgradeVersionCheck(ign1, "2.20.0");
 
         startGrid(0, "2.20.0", false);
 
@@ -299,7 +300,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     public void testDifferentServersAndClients() throws Exception {
         IgniteEx server0 = startGrid(0, "2.18.0", false);
 
-        allowRollingUpgradeVersionCheck(server0, 19);
+        allowRollingUpgradeVersionCheck(server0, "2.19.0");
 
         IgniteEx server1 = startGrid(1, "2.19.0", false);
 
@@ -362,7 +363,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     }
 
     /** Tests two compatible grids. */
-    private void testCompatibleVersions(String acceptedVer1, String acceptedVer2, boolean isClient, Integer rollUpVerCheck) throws Exception {
+    private void testCompatibleVersions(String acceptedVer1, String acceptedVer2, boolean isClient, String rollUpVerCheck) throws Exception {
         IgniteEx grid = startGrid(0, acceptedVer1, false);
 
         allowRollingUpgradeVersionCheck(grid, rollUpVerCheck);
@@ -380,7 +381,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         String acceptedVer2,
         String acceptedVer3,
         boolean isClient,
-        Integer rollUpVerCheck
+        String rollUpVerCheck
     ) throws Exception {
         IgniteEx grid = startGrid(0, acceptedVer1, false);
 
@@ -430,7 +431,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
      * @param ver Version for rolling upgrade support.
      * @throws IgniteCheckedException
      */
-    private void allowRollingUpgradeVersionCheck(IgniteEx grid, Integer ver) throws IgniteCheckedException {
-        grid.context().distributedConfiguration().property(ROLL_UP_VERSION_CHECK).propagate(ver);
+    private void allowRollingUpgradeVersionCheck(IgniteEx grid, String ver) throws IgniteCheckedException {
+        grid.context().distributedConfiguration().property(ROLL_UP_VERSION_CHECK).propagate(ver == null ? "null" : IgniteProductVersion.fromString(ver));
     }
 }
