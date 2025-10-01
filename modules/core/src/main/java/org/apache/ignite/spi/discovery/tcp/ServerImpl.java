@@ -1083,12 +1083,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         while (true) {
             boolean joinRqSent = sendJoinRequestMessage(joinReqMsg);
 
-            if(!joinRqSent){
+            if (!joinRqSent) {
                 synchronized (mux) {
                     // Join request was actually sent and reached the ring, was processed. But a significant error has
                     // occured at the end of the joining. This is a special case like failure at the end of 2PC
-                    // transaction commit and can cause issues like IGNITE-13590 or IGNITE-23372.
-                    // We should not try further.
+                    // transaction commit and can cause issues like IGNITE-13590 or IGNITE-23372. We should not try further.
                     if (spiState == RING_FAILED)
                         joinRqSent = true;
                 }
