@@ -743,6 +743,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             Object propVal;
             Class<?> propType = prop.type();
 
+            if (propType == Object.class)
+                continue;
+
             if (Objects.equals(prop.name(), keyFieldAlias()) || Objects.equals(prop.name(), KEY_FIELD_NAME))
                 propVal = unwrap(key);
             else if (Objects.equals(prop.name(), valueFieldAlias()) || Objects.equals(prop.name(), VAL_FIELD_NAME))
