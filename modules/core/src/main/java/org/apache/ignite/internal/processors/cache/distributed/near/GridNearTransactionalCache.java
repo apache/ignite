@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.GridUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -351,7 +351,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
             int keyCnt = -1;
 
-            Map<ClusterNode, GridUnlockRequest> map = null;
+            Map<ClusterNode, GridNearUnlockRequest> map = null;
 
             Collection<KeyCacheObject> locKeys = new LinkedList<>();
 
@@ -397,10 +397,10 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 break;
                             }
 
-                            GridUnlockRequest req = map.get(primary);
+                            GridNearUnlockRequest req = map.get(primary);
 
                             if (req == null) {
-                                map.put(primary, req = new GridUnlockRequest(ctx.cacheId(), keyCnt,
+                                map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
                                     ctx.deploymentEnabled()));
 
                                 req.version(ver);
@@ -448,10 +448,10 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             if (ver == null)
                 return;
 
-            for (Map.Entry<ClusterNode, GridUnlockRequest> mapping : map.entrySet()) {
+            for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();
 
-                GridUnlockRequest req = mapping.getValue();
+                GridNearUnlockRequest req = mapping.getValue();
 
                 if (n.isLocal())
                     dht.removeLocks(ctx.nodeId(), req.version(), locKeys, true);
@@ -479,11 +479,11 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         try {
             int keyCnt = -1;
 
-            Map<ClusterNode, GridUnlockRequest> map = null;
+            Map<ClusterNode, GridNearUnlockRequest> map = null;
 
             for (KeyCacheObject key : keys) {
                 // Send request to remove from remote nodes.
-                GridUnlockRequest req = null;
+                GridNearUnlockRequest req = null;
 
                 while (true) {
                     GridDistributedCacheEntry entry = peekExx(key);
@@ -517,7 +517,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                     req = map.get(primary);
 
                                     if (req == null) {
-                                        map.put(primary, req = new GridUnlockRequest(ctx.cacheId(), keyCnt,
+                                        map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
                                             ctx.deploymentEnabled()));
 
                                         req.version(ver);
@@ -557,10 +557,10 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             Collection<GridCacheVersion> committed = versPair.get1();
             Collection<GridCacheVersion> rolledback = versPair.get2();
 
-            for (Map.Entry<ClusterNode, GridUnlockRequest> mapping : map.entrySet()) {
+            for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();
 
-                GridUnlockRequest req = mapping.getValue();
+                GridNearUnlockRequest req = mapping.getValue();
 
                 if (!F.isEmpty(req.keys())) {
                     req.completedVersions(committed, rolledback);

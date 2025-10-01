@@ -44,7 +44,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
-import org.apache.ignite.internal.processors.cache.distributed.GridUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtEmbeddedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFinishedFuture;
@@ -684,7 +684,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
             int keyCnt = -1;
 
-            Map<ClusterNode, GridUnlockRequest> map = null;
+            Map<ClusterNode, GridNearUnlockRequest> map = null;
 
             Collection<KeyCacheObject> locKeys = new ArrayList<>();
 
@@ -729,10 +729,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 "then they need to be unlocked separately): " + keys);
 
                         if (!primary.isLocal()) {
-                            GridUnlockRequest req = map.get(primary);
+                            GridNearUnlockRequest req = map.get(primary);
 
                             if (req == null) {
-                                map.put(primary, req = new GridUnlockRequest(ctx.cacheId(), keyCnt,
+                                map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
                                     ctx.deploymentEnabled()));
 
                                 req.version(ver);
@@ -760,10 +760,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             if (!locKeys.isEmpty())
                 removeLocks(ctx.localNodeId(), ver, locKeys, true);
 
-            for (Map.Entry<ClusterNode, GridUnlockRequest> mapping : map.entrySet()) {
+            for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();
 
-                GridUnlockRequest req = mapping.getValue();
+                GridNearUnlockRequest req = mapping.getValue();
 
                 assert !n.isLocal();
 
@@ -802,7 +802,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         int keyCnt = -1;
 
-        Map<ClusterNode, GridUnlockRequest> map = null;
+        Map<ClusterNode, GridNearUnlockRequest> map = null;
 
         Collection<KeyCacheObject> locKeys = new LinkedList<>();
 
@@ -833,10 +833,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 if (!primary.isLocal()) {
                     // Send request to remove from remote nodes.
-                    GridUnlockRequest req = map.get(primary);
+                    GridNearUnlockRequest req = map.get(primary);
 
                     if (req == null) {
-                        map.put(primary, req = new GridUnlockRequest(ctx.cacheId(), keyCnt,
+                        map.put(primary, req = new GridNearUnlockRequest(ctx.cacheId(), keyCnt,
                             ctx.deploymentEnabled()));
 
                         req.version(ver);
@@ -864,10 +864,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         Collection<GridCacheVersion> committed = versPair.get1();
         Collection<GridCacheVersion> rolledback = versPair.get2();
 
-        for (Map.Entry<ClusterNode, GridUnlockRequest> mapping : map.entrySet()) {
+        for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
             ClusterNode n = mapping.getKey();
 
-            GridUnlockRequest req = mapping.getValue();
+            GridNearUnlockRequest req = mapping.getValue();
 
             if (!F.isEmpty(req.keys())) {
                 req.completedVersions(committed, rolledback);

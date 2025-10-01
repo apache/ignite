@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Lock request message.
  */
-public class GridUnlockRequest extends GridDistributedBaseMessage {
+public class GridNearUnlockRequest extends GridDistributedBaseMessage {
     /** Keys. */
     @GridToStringInclude
     @Order(7)
@@ -39,7 +39,7 @@ public class GridUnlockRequest extends GridDistributedBaseMessage {
     /**
      * Empty constructor.
      */
-    public GridUnlockRequest() {
+    public GridNearUnlockRequest() {
         /* No-op. */
     }
 
@@ -48,7 +48,7 @@ public class GridUnlockRequest extends GridDistributedBaseMessage {
      * @param keyCnt Key count.
      * @param addDepInfo Deployment info flag.
      */
-    public GridUnlockRequest(int cacheId, int keyCnt, boolean addDepInfo) {
+    public GridNearUnlockRequest(int cacheId, int keyCnt, boolean addDepInfo) {
         super(keyCnt, addDepInfo);
 
         this.cacheId = cacheId;
@@ -110,6 +110,6 @@ public class GridUnlockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridUnlockRequest.class, this, "super", super.toString());
+        return S.toString(GridNearUnlockRequest.class, this, "super", super.toString());
     }
 }
