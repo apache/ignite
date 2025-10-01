@@ -1623,7 +1623,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (exec) {
             try {
                 fut.onDone(executeFieldsQuery(qryInfo.query(), qryInfo.arguments(), false,
-                        taskName, recipient(qryInfo.senderId(), qryInfo.requestId())));
+                    taskName, recipient(qryInfo.senderId(), qryInfo.requestId())));
             }
             catch (IgniteCheckedException e) {
                 fut.onDone(e);
