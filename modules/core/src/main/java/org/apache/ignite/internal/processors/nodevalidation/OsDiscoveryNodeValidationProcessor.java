@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.nodevalidation;
 
-import java.util.Objects;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.configuration.distributed.DistributedIntegerProperty;
+import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -30,7 +29,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.lang.String.format;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
-import static org.apache.ignite.internal.processors.configuration.distributed.DistributedIntegerProperty.detachedIntegerProperty;
 
 /**
  * Node validation.
@@ -40,7 +38,9 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
     public static final String ROLL_UP_VERSION_CHECK = "rolling.upgrade.version.check";
 
     /** */
-    private final DistributedIntegerProperty rollUpVerCheck = detachedIntegerProperty(ROLL_UP_VERSION_CHECK, "");
+    private final SimpleDistributedProperty<IgniteProductVersion> rollUpVerCheck = new SimpleDistributedProperty<>(ROLL_UP_VERSION_CHECK,
+        SimpleDistributedProperty::parseIgniteProductVersion,
+        "Distributed property that holds the rolling upgrade version check value. If not set, rolling upgrade is considered disabled.");
 
     /**
      * @param ctx Kernal context.
@@ -75,10 +75,11 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
         IgniteProductVersion locVer = IgniteProductVersion.fromString(locBuildVer);
         IgniteProductVersion rmtVer = IgniteProductVersion.fromString(rmtBuildVer);
 
-        Integer rollUpVerCheck = this.rollUpVerCheck.get();
+        IgniteProductVersion rollUpVerCheck = this.rollUpVerCheck.get();
 
-        if (rmtVer.major() == locVer.major() && (rmtVer.minor() == locVer.minor() || Objects.equals(new Integer(rmtVer.minor()), rollUpVerCheck)))
-            return null;
+        if (rmtVer.major() == locVer.major())
+            if (rmtVer.minor() == locVer.minor() || rollUpVerCheck != null && rmtVer.minor() == rollUpVerCheck.minor())
+                return null;
 
         String errMsg = "Remote node rejected due to incompatible version for cluster join.\n"
             + "Remote node info:\n"
@@ -91,7 +92,7 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
             + "  - Node ID     : " + locNode.id() + "\n"
             + "Allowed versions for joining:\n"
             + "  - " + locVer.major() + '.' + locVer.minor() + ".X"
-            + (rollUpVerCheck != null ? "\n  - " + locVer.major() + '.' + rollUpVerCheck + ".X" : "");
+            + (rollUpVerCheck != null ? "\n  - " + locVer.major() + '.' + rollUpVerCheck.minor() + ".X" : "");
 
         LT.warn(log, errMsg);
 
