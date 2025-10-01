@@ -651,7 +651,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @throws IgniteCheckedException In case of error.
      */
     private FieldsResult executeFieldsQuery(CacheQuery<?> qry, @Nullable Object[] args,
-                                            boolean loc, @Nullable String taskName, Object rcpt) throws IgniteCheckedException {
+        boolean loc, @Nullable String taskName, Object rcpt) throws IgniteCheckedException {
         assert qry != null;
         assert qry.type() == SQL_FIELDS : "Unexpected query type: " + qry.type();
 
@@ -659,9 +659,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             assert !loc;
 
             throw new IgniteCheckedException("Received next page request after iterator was removed. " +
-                    "Consider increasing maximum number of stored iterators (see " +
-                    "CacheConfiguration.getMaxQueryIteratorsCount() configuration property).");
+                "Consider increasing maximum number of stored iterators (see " +
+                "CacheConfiguration.getMaxQueryIteratorsCount() configuration property).");
         }
+
         if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
             cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                     cctx.localNode(),
@@ -681,14 +682,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         // Attempt to get result from cache.
         T2<String, List<Object>> resKey = new T2<>(qry.clause(), F.asList(args));
 
-        FieldsResult res = (FieldsResult) qryResCache.get(resKey);
+        FieldsResult res = (FieldsResult)qryResCache.get(resKey);
 
         if (res != null && res.addRecipient(rcpt))
             return res; // Cached result found.
 
-        res = new FieldsResult(rcpt);
-
-        return res;
+        return new FieldsResult(rcpt);
     }
 
     /**
@@ -886,7 +885,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 String taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
 
                 res = qryInfo.local() ?
-                    executeFieldsQuery(qry, qryInfo.arguments(), taskName,
+                    executeFieldsQuery(qry, qryInfo.arguments(), qryInfo.local(), taskName,
                         recipient(qryInfo.senderId(), qryInfo.requestId())) :
                     fieldsQueryResult(qryInfo, taskName);
 
@@ -1623,7 +1622,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         if (exec) {
             try {
-                fut.onDone(executeFieldsQuery(qryInfo.query(), qryInfo.arguments(),
+                fut.onDone(executeFieldsQuery(qryInfo.query(), qryInfo.arguments(), false,
                         taskName, recipient(qryInfo.senderId(), qryInfo.requestId())));
             }
             catch (IgniteCheckedException e) {
