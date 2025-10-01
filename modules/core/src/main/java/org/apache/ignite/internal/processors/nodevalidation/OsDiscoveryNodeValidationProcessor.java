@@ -17,34 +17,52 @@
 
 package org.apache.ignite.internal.processors.nodevalidation;
 
-import java.util.Set;
-import java.util.stream.Collectors;
-import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.SystemProperty;
+import java.util.Objects;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedIntegerProperty;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.String.format;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
+import static org.apache.ignite.internal.processors.configuration.distributed.DistributedIntegerProperty.detachedIntegerProperty;
 
 /**
  * Node validation.
  */
 public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter implements DiscoveryNodeValidationProcessor {
-    /** Enables version check for rolling upgrade. */
-    @SystemProperty(value = "Enables version check for rolling upgrade.")
-    public static final String IGNITE_ROLLING_UPGRADE_VERSION_CHECK = "IGNITE_ROLLING_UPGRADE_VERSION_CHECK";
+    /** */
+    public static final String ROLL_UP_VERSION_CHECK = "rolling.upgrade.version.check";
+
+    /** */
+    private final DistributedIntegerProperty rollUpVerCheck = detachedIntegerProperty(ROLL_UP_VERSION_CHECK, "");
 
     /**
      * @param ctx Kernal context.
      */
     public OsDiscoveryNodeValidationProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        ctx.internalSubscriptionProcessor()
+            .registerDistributedConfigurationListener(dispatcher -> {
+                rollUpVerCheck.addListener((name, oldVal, newVal) -> {
+                    if (log.isInfoEnabled()) {
+                        log.info(format("Distributed property '%s' was changed from '%s' to '%s'.",
+                            name, oldVal, newVal));
+                    }
+
+                    if (newVal == null)
+                        log.warning("Rolling upgrade version check was disabled.");
+                });
+
+                dispatcher.registerProperty(rollUpVerCheck);
+            });
+
     }
 
     /** {@inheritDoc} */
@@ -57,53 +75,30 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
         IgniteProductVersion locVer = IgniteProductVersion.fromString(locBuildVer);
         IgniteProductVersion rmtVer = IgniteProductVersion.fromString(rmtBuildVer);
 
-        Set<Byte> allowedMinors = allowedMinorVersions(locVer);
+        Integer rollUpVerCheck = this.rollUpVerCheck.get();
 
-        if (locVer.major() != rmtVer.major() || !allowedMinors.contains(rmtVer.minor())) {
-            StringBuilder errMsg = new StringBuilder("Remote node rejected due to incompatible version for cluster join.\n"
-                + "Remote node info:\n"
-                + "  - Version     : " + rmtBuildVer + "\n"
-                + "  - Addresses   : " + U.addressesAsString(node) + "\n"
-                + "  - Node ID     : " + node.id() + "\n"
-                + "Local node info:\n"
-                + "  - Version     : " + locBuildVer + "\n"
-                + "  - Addresses   : " + U.addressesAsString(locNode) + "\n"
-                + "  - Node ID     : " + locNode.id() + "\n"
-                + "Allowed versions for joining:");
+        if (rmtVer.major() == locVer.major() && (rmtVer.minor() == locVer.minor() || Objects.equals(new Integer(rmtVer.minor()), rollUpVerCheck)))
+            return null;
 
-            allowedMinors.stream().sorted().forEach(minor -> errMsg.append("\n")
-                .append(" - ").append(locVer.major()).append('.').append(minor).append(".X"));
+        String errMsg = "Remote node rejected due to incompatible version for cluster join.\n"
+            + "Remote node info:\n"
+            + "  - Version     : " + rmtBuildVer + "\n"
+            + "  - Addresses   : " + U.addressesAsString(node) + "\n"
+            + "  - Node ID     : " + node.id() + "\n"
+            + "Local node info:\n"
+            + "  - Version     : " + locBuildVer + "\n"
+            + "  - Addresses   : " + U.addressesAsString(locNode) + "\n"
+            + "  - Node ID     : " + locNode.id() + "\n"
+            + "Allowed versions for joining:\n"
+            + "  - " + locVer.major() + '.' + locVer.minor() + ".X"
+            + (rollUpVerCheck != null ? "\n  - " + locVer.major() + '.' + rollUpVerCheck + ".X" : "");
 
-            LT.warn(log, errMsg.toString());
+        LT.warn(log, errMsg);
 
-            if (log.isDebugEnabled())
-                log.debug(errMsg.toString());
+        if (log.isDebugEnabled())
+            log.debug(errMsg);
 
-            return new IgniteNodeValidationResult(node.id(), errMsg.toString());
-        }
+        return new IgniteNodeValidationResult(node.id(), errMsg);
 
-        return null;
-    }
-
-    /**
-     * A remote version is considered allowed for joining if:
-     * <ul>
-     *   <li>It exactly matches the local version; or</li>
-     *   <li>It has the same major version as the local node and the minor versions differ by at most one.</li>
-     * </ul>
-     * @param locVer Local version.
-     */
-    private Set<Byte> allowedMinorVersions(IgniteProductVersion locVer) {
-        Set<Byte> minors = ctx.discovery().allNodes().stream()
-            .map(node -> IgniteProductVersion.fromString(node.attribute(ATTR_BUILD_VER)).minor())
-            .collect(Collectors.toSet());
-
-        if (minors.size() == 1 && IgniteSystemProperties.getBoolean(IGNITE_ROLLING_UPGRADE_VERSION_CHECK)) {
-            byte base = locVer.minor();
-            minors.add((byte)(base + 1));
-            minors.add((byte)(base - 1));
-        }
-
-        return minors;
     }
 }
