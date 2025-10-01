@@ -55,6 +55,7 @@ import org.apache.ignite.internal.codegen.GridNearAtomicCheckUpdateRequestSerial
 import org.apache.ignite.internal.codegen.GridNearAtomicUpdateResponseSerializer;
 import org.apache.ignite.internal.codegen.GridNearGetRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearTxPrepareRequestSerializer;
+import org.apache.ignite.internal.codegen.GridNearUnlockRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryFailResponseSerializer;
 import org.apache.ignite.internal.codegen.GridQueryKillRequestSerializer;
@@ -63,7 +64,6 @@ import org.apache.ignite.internal.codegen.GridQueryNextPageRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryNextPageResponseSerializer;
 import org.apache.ignite.internal.codegen.GridTaskCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridTaskResultRequestSerializer;
-import org.apache.ignite.internal.codegen.GridNearUnlockRequestSerializer;
 import org.apache.ignite.internal.codegen.IgniteTxKeySerializer;
 import org.apache.ignite.internal.codegen.IncrementalSnapshotAwareMessageSerializer;
 import org.apache.ignite.internal.codegen.JobStealingRequestSerializer;
