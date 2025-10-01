@@ -79,6 +79,7 @@ public class GridDhtForceKeysRequest extends GridCacheIdMessage implements GridC
         assert futId != null;
         assert miniId != null;
         assert !F.isEmpty(keys);
+        assert false;
 
         this.cacheId = cacheId;
         this.futId = futId;
