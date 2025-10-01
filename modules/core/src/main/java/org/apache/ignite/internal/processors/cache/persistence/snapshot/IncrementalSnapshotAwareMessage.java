@@ -131,9 +131,4 @@ public class IncrementalSnapshotAwareMessage extends GridCacheMessage {
     @Override public boolean addDeploymentInfo() {
         return false;
     }
-
-    /** {@inheritDoc} */
-    @Override public boolean cacheGroupMessage() {
-        return false;
-    }
 }

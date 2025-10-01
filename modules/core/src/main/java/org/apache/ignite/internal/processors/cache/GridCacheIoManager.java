@@ -313,7 +313,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param plc Message policy.
      */
     private void handleMessage(UUID nodeId, GridCacheMessage cacheMsg, byte plc) {
-        MessageHandlers msgHandlers = cacheMsg.cacheGroupMessage() ? grpHandlers : cacheHandlers;
+        MessageHandlers msgHandlers = cacheMsg instanceof GridCacheGroupIdMessage ? grpHandlers : cacheHandlers;
 
         Lock lock = rw.readLock();
 

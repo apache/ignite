@@ -68,11 +68,6 @@ public class TxLocksResponse extends GridCacheMessage {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean cacheGroupMessage() {
-        return false;
-    }
-
     /**
      * @return Future ID.
      */

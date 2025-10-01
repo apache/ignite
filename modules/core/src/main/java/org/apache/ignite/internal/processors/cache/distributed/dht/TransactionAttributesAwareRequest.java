@@ -81,11 +81,6 @@ public class TransactionAttributesAwareRequest extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cacheGroupMessage() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
     }

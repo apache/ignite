@@ -64,11 +64,6 @@ public class TxLocksRequest extends GridCacheMessage {
         this.txKeys = txKeys;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean cacheGroupMessage() {
-        return false;
-    }
-
     /**
      * @return Future ID.
      */

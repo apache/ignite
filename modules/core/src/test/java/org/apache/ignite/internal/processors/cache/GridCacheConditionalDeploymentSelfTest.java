@@ -132,11 +132,6 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
         public static final short DIRECT_TYPE = 302;
 
         /** {@inheritDoc} */
-        @Override public boolean cacheGroupMessage() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
         @Override public short directType() {
             return DIRECT_TYPE;
         }
