@@ -53,6 +53,7 @@ import org.apache.ignite.internal.codegen.GridJobSiblingsRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearAtomicCheckUpdateRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearAtomicUpdateResponseSerializer;
 import org.apache.ignite.internal.codegen.GridNearGetRequestSerializer;
+import org.apache.ignite.internal.codegen.GridNearSingleGetRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearTxPrepareRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryFailResponseSerializer;
@@ -339,7 +340,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         // 113 - BinaryObjectImpl
         factory.register((short)114, GridDhtPartitionSupplyMessage::new, new GridDhtPartitionSupplyMessageSerializer());
         factory.register((short)115, UUIDCollectionMessage::new);
-        factory.register((short)116, GridNearSingleGetRequest::new);
+        factory.register((short)116, GridNearSingleGetRequest::new, new GridNearSingleGetRequestSerializer());
         factory.register((short)117, GridNearSingleGetResponse::new);
         factory.register((short)118, CacheContinuousQueryBatchAck::new);
 
