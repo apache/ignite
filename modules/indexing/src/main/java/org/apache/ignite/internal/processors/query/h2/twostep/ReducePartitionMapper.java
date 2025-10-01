@@ -85,6 +85,11 @@ public class ReducePartitionMapper {
         for (int cacheId : cacheIds) {
             GridCacheContext<?, ?> cctx = cacheContext(cacheId);
 
+            if (cctx.affinity().affinityTopologyVersion().after(topVer)) {
+                throw new CacheException(new CacheInvalidStateException("Failed to execute query because " +
+                    "partitions exchange wasn't yet completed for cache creation [cacheName=" + cctx.name() + ']'));
+            }
+
             Collection<Integer> lostParts = cctx.topology().lostPartitions();
 
             if (!lostParts.isEmpty()) {
