@@ -87,7 +87,9 @@ public class ReducePartitionMapper {
 
             if (cctx.affinity().affinityTopologyVersion().after(topVer)) {
                 throw new CacheException(new CacheInvalidStateException("Failed to execute query because " +
-                    "partitions exchange wasn't yet completed for cache creation [cacheName=" + cctx.name() + ']'));
+                    "partitions exchange wasn't yet completed after cache creation " +
+                    "[cacheName=" + cctx.name() + ", topVer=" + topVer +
+                    ", cacheTopVer=" + cctx.affinity().affinityTopologyVersion() + ']'));
             }
 
             Collection<Integer> lostParts = cctx.topology().lostPartitions();

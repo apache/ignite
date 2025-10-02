@@ -29,12 +29,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
-/**
- * Test reproducing the {@code Getting affinity for too old topology version that is
- * already out of history (try to increase 'IGNITE_AFFINITY_HISTORY_SIZE' system property)}
- * error doing SQL query if partitions exchange still not completed for some just created cache
- * used in query.
- */
+/** */
 public class SqlAffinityHistoryForDynamicallyCreatedCachesTest extends AbstractThinClientTest {
     /** */
     private static final String CACHE_NAME = "SQL_TABLE";
@@ -47,7 +42,16 @@ public class SqlAffinityHistoryForDynamicallyCreatedCachesTest extends AbstractT
         stopAllGrids();
     }
 
-    /** */
+    /**
+     * Tests that the correct meaningful error is thrown in case of race between
+     * concurrent cache creation and SQL query. In particular the error is thrown
+     * when partitions exchange is not yet completed after the cache used in query
+     * just dynamically created.
+     * <p>
+     * Before the misleading {@code Getting affinity for too old topology version that is
+     * already out of history (try to increase 'IGNITE_AFFINITY_HISTORY_SIZE' system property)}
+     * error was thrown.
+     */
     @Test
     public void testConcurrentCacheCreateAndSqlQuery() throws Exception {
         startGrids(3);
@@ -56,9 +60,6 @@ public class SqlAffinityHistoryForDynamicallyCreatedCachesTest extends AbstractT
             try (IgniteClient cli = startClient(0)) {
                 while (true) {
                     try {
-                        // Will work OK if uncomment this line.
-                        // cli.getOrCreateCache(getCacheConfiguration());
-
                         cli.query(new SqlFieldsQuery("select * from " + CACHE_NAME)).getAll();
 
                         break;
@@ -68,7 +69,6 @@ public class SqlAffinityHistoryForDynamicallyCreatedCachesTest extends AbstractT
                         if (e.getMessage().contains("Table \"" + CACHE_NAME + "\" not found"))
                             continue;
 
-                        // Remember unexpected error.
                         err.set(e);
 
                         break;
@@ -86,7 +86,7 @@ public class SqlAffinityHistoryForDynamicallyCreatedCachesTest extends AbstractT
         createFut.get();
         selectFut.get();
 
-        if (err.get() != null && !err.get().getMessage().contains("partitions exchange wasn't yet completed for cache creation"))
+        if (err.get() != null && !err.get().getMessage().contains("partitions exchange wasn't yet completed after cache creation"))
             fail("Unexpected error in executing the SQL query: " + err.get().getMessage());
     }
 
