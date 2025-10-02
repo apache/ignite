@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
@@ -26,14 +27,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Future that delegates to some other future.
  */
-public class GridNioEmbeddedFuture<R> extends GridNioFutureImpl<R> {
-    /**
-     *
-     */
-    public GridNioEmbeddedFuture() {
-        super(null);
-    }
-
+public class GridNioEmbeddedFuture<R> extends GridFutureAdapter<R> {
     /**
      * Callback to notify that future is finished.
      * This method must delegate to {@link #onDone(IgniteInternalFuture, Throwable)} method.

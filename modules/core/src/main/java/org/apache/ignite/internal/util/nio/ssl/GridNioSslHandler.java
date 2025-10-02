@@ -30,9 +30,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.GridNioEmbeddedFuture;
 import org.apache.ignite.internal.util.nio.GridNioException;
-import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -220,7 +220,7 @@ class GridNioSslHandler extends ReentrantLock {
                         if (!initHandshakeComplete) {
                             initHandshakeComplete = true;
 
-                            GridNioFutureImpl<?> fut = ses.removeMeta(HANDSHAKE_FUT_META_KEY);
+                            GridFutureAdapter<?> fut = ses.removeMeta(HANDSHAKE_FUT_META_KEY);
 
                             if (fut != null)
                                 fut.onDone();

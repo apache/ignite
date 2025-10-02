@@ -69,6 +69,7 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -3414,7 +3415,7 @@ public class GridNioServer<T> {
     /**
      * Class for requesting write and session close operations.
      */
-    private static class NioOperationFuture<R> extends GridNioFutureImpl<R> implements SessionWriteRequest,
+    private static class NioOperationFuture<R> extends GridFutureAdapter<R> implements SessionWriteRequest,
         SessionChangeRequest, GridNioKeyAttachment {
         /** Socket channel in register request. */
         @GridToStringExclude
@@ -3444,6 +3445,12 @@ public class GridNioServer<T> {
 
         /** */
         private Span span;
+
+        /** */
+        private boolean msgThread;
+
+        /** */
+        private IgniteInClosure<IgniteException> ackC;
 
         /**
          * @param sockCh Socket channel.
@@ -3485,8 +3492,12 @@ public class GridNioServer<T> {
          * @param ses Session to change.
          * @param op Requested operation.
          * @param msg Message.
+         * @param ackC Closure invoked when message ACK is received.
          */
-        NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op, Object msg) {
+        NioOperationFuture(GridSelectorNioSessionImpl ses,
+            NioOperation op,
+            Object msg,
+            IgniteInClosure<IgniteException> ackC) {
             assert ses != null;
             assert op != null;
             assert op != NioOperation.REGISTER;
@@ -3496,6 +3507,7 @@ public class GridNioServer<T> {
             this.op = op;
             this.msg = msg;
             this.span = MTC.span();
+            this.ackC = ackC;
         }
 
         /**
@@ -3522,6 +3534,7 @@ public class GridNioServer<T> {
             this.msg = commMsg;
             this.skipRecovery = skipRecovery;
             this.span = MTC.span();
+            this.ackC = ackC;
         }
 
         /** {@inheritDoc} */
@@ -3587,21 +3600,24 @@ public class GridNioServer<T> {
             onDone();
         }
 
+        /** {@inheritDoc} */
         @Override public void messageThread(boolean msgThread) {
-
+            this.msgThread = msgThread;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean messageThread() {
-            return false;
+            return msgThread;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInClosure<IgniteException> ackClosure() {
+            return ackC;
         }
 
         /** {@inheritDoc} */
         @Override public boolean skipRecovery() {
             return skipRecovery;
-        }
-
-        @Override public IgniteInClosure<IgniteException> ackClosure() {
-            return null;
         }
 
         /** {@inheritDoc} */

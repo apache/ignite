@@ -31,9 +31,9 @@ import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.GridNioException;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
-import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -243,10 +243,10 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
             sslMeta.handler(hnd);
 
             if (handshakeDuration != null) {
-                GridNioFutureImpl<?> fut = ses.meta(HANDSHAKE_FUT_META_KEY);
+                GridFutureAdapter<?> fut = ses.meta(HANDSHAKE_FUT_META_KEY);
 
                 if (fut == null) {
-                    fut = new GridNioFutureImpl<>(null);
+                    fut = new GridFutureAdapter<>();
 
                     ses.addMeta(HANDSHAKE_FUT_META_KEY, fut);
                 }
@@ -271,7 +271,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     /** {@inheritDoc} */
     @Override public void onSessionClosed(GridNioSession ses) throws IgniteCheckedException {
         try {
-            GridNioFutureImpl<?> fut = ses.removeMeta(HANDSHAKE_FUT_META_KEY);
+            GridFutureAdapter<?> fut = ses.removeMeta(HANDSHAKE_FUT_META_KEY);
 
             if (fut != null) {
                 if (rejectedSesCnt != null)
