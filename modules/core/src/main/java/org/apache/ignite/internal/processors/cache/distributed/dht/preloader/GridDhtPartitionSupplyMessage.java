@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -68,12 +67,8 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     private int msgSize;
 
     /** Supplying process error. */
+    @Order(value = 10, method = "error")
     private Throwable err;
-
-    // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-26523
-    /** Serialized form of supplying process error. */
-    @Order(10)
-    private byte[] errBytes;
 
     /**
      * @param rebalanceId Rebalance id.
@@ -243,17 +238,10 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     }
 
     /**
-     * @return Serialized form of supplying process error.
+     * @param err New supplying process error.
      */
-    public byte[] errBytes() {
-        return errBytes;
-    }
-
-    /**
-     * @param errBytes New serialized form of supplying process error.
-     */
-    public void errBytes(byte[] errBytes) {
-        this.errBytes = errBytes;
+    public void error(Throwable err) {
+        this.err = err;
     }
 
     /**
@@ -303,15 +291,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-26523
-        if (err != null && errBytes == null)
-            errBytes = U.marshal(ctx, err);
-    }
-
-    /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
@@ -326,10 +305,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
             for (int i = 0; i < entries.size(); i++)
                 entries.get(i).unmarshal(grp.cacheObjectContext(), ldr);
         }
-
-        // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-26523
-        if (errBytes != null && err == null)
-            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */
