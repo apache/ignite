@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.metric.SqlStatisticsUserQueriesFastTest;
 import org.apache.ignite.internal.metric.SqlStatisticsUserQueriesLongTest;
+import org.apache.ignite.internal.processors.cache.SqlAffinityHistoryTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheQueryReservationOnUnstableTopologyTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedTxMultiNodeBasicTest;
@@ -96,6 +97,7 @@ import org.junit.runners.Suite;
 
     IgniteCacheQueryReservationOnUnstableTopologyTest.class,
     SqlAffinityCacheTest.class,
+    SqlAffinityHistoryTest.class,
 
     ScanQueryTransactionsUnsupportedModesTest.class,
     ScanQueryTransactionIsolationTest.class,
