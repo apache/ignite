@@ -98,7 +98,6 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
             log.debug(errMsg);
 
         return new IgniteNodeValidationResult(node.id(), errMsg);
-
     }
 
     /** Checks if versions has same major, minor and maintenance versions. */
