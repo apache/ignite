@@ -75,6 +75,9 @@ public enum TransactionIsolationType {
      * @return Corresponding type, or {@code null} if there is no match.
      */
     @Nullable public static TransactionIsolationType toInternalIsolationType(TransactionIsolation isolation) {
+        if (isolation == null)
+            return null;
+
         switch (isolation) {
             case READ_COMMITTED:
                 return READ_COMMITTED;
