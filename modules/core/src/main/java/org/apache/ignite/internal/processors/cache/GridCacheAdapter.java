@@ -867,15 +867,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * Undeploys and removes all entries for class loader.
-     *
-     * @param ldr Class loader to undeploy.
-     */
-    public final void onUndeploy(ClassLoader ldr) {
-        ctx.deploy().onUndeploy(ldr, context());
-    }
-
-    /**
      *
      * @param key Entry key.
      * @return Entry or <tt>null</tt>.
