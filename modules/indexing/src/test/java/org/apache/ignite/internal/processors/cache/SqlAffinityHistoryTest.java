@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientCacheConfiguration;
@@ -25,8 +26,6 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
 import org.junit.Test;
-
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
@@ -38,7 +37,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  */
 public class SqlAffinityHistoryTest extends AbstractThinClientTest {
     /** */
-    private final static String CACHE_NAME = "SQL_TABLE";
+    private static final String CACHE_NAME = "SQL_TABLE";
 
     /** */
     private final AtomicReference<Exception> err = new AtomicReference<>();
