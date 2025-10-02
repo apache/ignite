@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.query;
 
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.cache.QueryEntity;
@@ -35,7 +35,7 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  * error doing SQL query if partitions exchange still not completed for some just created cache
  * used in query.
  */
-public class SqlAffinityHistoryTest extends AbstractThinClientTest {
+public class SqlAffinityHistoryForDynamicallyCreatedCachesTest extends AbstractThinClientTest {
     /** */
     private static final String CACHE_NAME = "SQL_TABLE";
 
@@ -49,7 +49,7 @@ public class SqlAffinityHistoryTest extends AbstractThinClientTest {
 
     /** */
     @Test
-    public void testConcurrentCacheCreateAndSqlQueryFromThinClient() throws Exception {
+    public void testConcurrentCacheCreateAndSqlQuery() throws Exception {
         startGrids(3);
 
         IgniteInternalFuture<Object> selectFut = runAsync(() -> {
