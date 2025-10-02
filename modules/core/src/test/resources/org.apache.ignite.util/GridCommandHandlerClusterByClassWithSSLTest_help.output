@@ -390,7 +390,7 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
       newTimeInterval    - Time interval of the metric.
       --node-id node_id  - Node id.
 
-Print information about potentially corrupted caches on local node:
+  Print information about potentially corrupted caches on local node:
     control.(sh|bat) --persistence
 
   The same information is printed when info subcommand is passed:
