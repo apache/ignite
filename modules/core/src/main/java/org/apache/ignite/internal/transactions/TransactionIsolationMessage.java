@@ -20,35 +20,29 @@ package org.apache.ignite.internal.transactions;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.jetbrains.annotations.Nullable;
 
 /** Message for {@link TransactionIsolation}. */
 public class TransactionIsolationMessage implements Message {
-    /** */
+    /** Type code. */
     public static final short TYPE_CODE = 189;
 
-    /** */
-    private TransactionIsolation isolation;
+    /** Transaction isolation. */
+    private TransactionIsolation val;
 
-    /** */
-    private TransactionIsolationType type;
-
-    /** */
+    /** Code. */
     @Order(0)
     private short code = -1;
 
     /** Constructor. */
     public TransactionIsolationMessage() {
-
+        // No-op.
     }
 
     /** Constructor. */
-    public TransactionIsolationMessage(TransactionIsolation isolation) {
-        this.isolation = isolation;
-
-        type = TransactionIsolationType.toInternalIsolationType(isolation);
-
-        if (type != null)
-            code = type.code();
+    public TransactionIsolationMessage(TransactionIsolation val) {
+        this.val = val;
+        code = code(val);
     }
 
     /** @return Code. */
@@ -59,19 +53,59 @@ public class TransactionIsolationMessage implements Message {
     /** @param code Code. */
     public void code(short code) {
         this.code = code;
-
-        type = TransactionIsolationType.fromCode(code);
-
-        isolation = type != null ? type.toPublicIsolationType() : null;
+        val = isolation(code);
     }
 
     /** @return Transaction isolation. */
-    public TransactionIsolation isolation() {
-        return isolation;
+    public TransactionIsolation value() {
+        return val;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;
+    }
+
+    /**
+     * @param val Transaction isolation.
+     * @return Code.
+     */
+    private short code(@Nullable TransactionIsolation val) {
+        if (val == null)
+            return -1;
+
+        switch (val) {
+            case READ_COMMITTED:
+                return 0;
+
+            case REPEATABLE_READ:
+                return 1;
+
+            case SERIALIZABLE:
+                return 2;
+
+            default:
+                return -1;
+        }
+    }
+
+    /**
+     * @param code Code.
+     * @return Transaction isolation or null.
+     */
+    @Nullable private TransactionIsolation isolation(short code) {
+        switch (code) {
+            case 0:
+                return TransactionIsolation.READ_COMMITTED;
+
+            case 1:
+                return TransactionIsolation.REPEATABLE_READ;
+
+            case 2:
+                return TransactionIsolation.SERIALIZABLE;
+
+            default:
+                return null;
+        }
     }
 }
