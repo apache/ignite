@@ -32,6 +32,7 @@ public class TransactionIsolationMessage implements Message {
     /** */
     private TransactionIsolationType type;
 
+    /** */
     @Order(0)
     private short code = -1;
 

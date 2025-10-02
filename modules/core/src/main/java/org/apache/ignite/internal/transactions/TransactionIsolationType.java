@@ -22,6 +22,7 @@ import java.util.Map;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
+/** Transaction isolation codes. */
 public enum TransactionIsolationType {
     /** Read committed isolation level. */
     READ_COMMITTED(0),
@@ -35,6 +36,7 @@ public enum TransactionIsolationType {
     /** Code. */
     private final int code;
 
+    /** Constructor. */
     TransactionIsolationType(int code) {
         this.code = code;
     }

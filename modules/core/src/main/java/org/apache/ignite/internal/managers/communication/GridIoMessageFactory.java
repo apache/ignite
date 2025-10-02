@@ -392,7 +392,8 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(StatisticsRequest.TYPE_CODE, StatisticsRequest::new);
         factory.register(StatisticsResponse.TYPE_CODE, StatisticsResponse::new);
 
-        factory.register(TransactionIsolationMessage.TYPE_CODE, TransactionIsolationMessage::new, new TransactionIsolationMessageSerializer());
+        factory.register(TransactionIsolationMessage.TYPE_CODE, TransactionIsolationMessage::new,
+            new TransactionIsolationMessageSerializer());
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] [183..188] - this
         // [120..123] - DR
