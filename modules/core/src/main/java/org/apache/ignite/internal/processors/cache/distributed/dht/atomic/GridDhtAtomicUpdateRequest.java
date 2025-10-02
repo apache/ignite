@@ -271,11 +271,13 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         long expireTime) {
         assert key.partition() >= 0 : key;
 
-        if (hasKey(key)) {
+        int idx = keys == null ? -1 : keys.indexOf(key);
+
+        if (idx > -1) {
             if (obsoleteIndexes == null)
                 obsoleteIndexes = new ArrayList<>();
 
-            obsoleteIndexes.add(keys.indexOf(key));
+            obsoleteIndexes.add(idx);
 
             return;
         }
