@@ -56,7 +56,7 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
                             name, oldVal, newVal));
                     }
 
-                    if (newVal == null)
+                    if (newVal == null || newVal == -1)
                         log.warning("Rolling upgrade version check was disabled.");
                 });
 
