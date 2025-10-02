@@ -35,12 +35,18 @@ import static org.apache.ignite.internal.processors.configuration.distributed.Di
  * Node validation.
  */
 public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter implements DiscoveryNodeValidationProcessor {
-    /** */
+    /** Key for the distributed property that holds the rolling upgrade minor version check value. */
     public static final String ROLL_UP_VERSION_CHECK = "rolling.upgrade.version.check";
 
-    /** */
+    /**
+     * Distributed property that holds the minor version number for rolling upgrade validation.
+     * If this property is not set or set to -1, rolling upgrade is considered disabled,
+     * and nodes must have the exact same version to join the cluster.
+     */
     private final DistributedIntegerProperty rollUpVerCheck = detachedIntegerProperty(ROLL_UP_VERSION_CHECK,
-        "Distributed property that holds the rolling upgrade minor version check value. If not set or set to -1, rolling upgrade is considered disabled.");
+        "Distributed property that holds the minor version number for rolling upgrade validation. " +
+            "If this property is not set or set to -1, rolling upgrade is considered disabled, " +
+            "and nodes must have the exact same version to join the cluster.");
 
     /**
      * @param ctx Kernal context.
