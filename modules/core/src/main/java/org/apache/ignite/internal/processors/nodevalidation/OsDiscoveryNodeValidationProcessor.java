@@ -78,9 +78,9 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
 
         Integer rollUpVerCheck = this.rollUpVerCheck.get();
 
-        if (rmtVer.major() == locVer.major())
-            if (rmtVer.minor() == locVer.minor() || rollUpVerCheck != null && rollUpVerCheck != -1 && rmtVer.minor() == rollUpVerCheck)
-                return null;
+        if (rmtVer.major() == locVer.major() &&
+            (rmtVer.minor() == locVer.minor() || rollUpVerCheck != null && rollUpVerCheck != -1 && rmtVer.minor() == rollUpVerCheck))
+            return null;
 
         String errMsg = "Remote node rejected due to incompatible version for cluster join.\n"
             + "Remote node info:\n"
