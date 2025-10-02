@@ -38,7 +38,7 @@ public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommu
         if (msg instanceof NodeIdMessage) {
             int msgSize = U.field(NodeIdMessage.class, "MESSAGE_SIZE");
 
-            FieldUtils.writeField(msg, "nodeIdBytes", new byte[msgSize], true);
+            FieldUtils.writeField(msg, "nodeId", new byte[msgSize], true);
         }
 
         return msg;

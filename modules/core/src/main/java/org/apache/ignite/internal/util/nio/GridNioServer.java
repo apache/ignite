@@ -57,6 +57,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.odbc.ClientMessage;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.NoopSpan;
@@ -83,7 +84,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -286,6 +289,9 @@ public class GridNioServer<T> {
     /** Tracing processor. */
     private Tracing tracing;
 
+    /** Message factory. */
+    private final MessageFactory msgFactory;
+
     /**
      * @param addr Address.
      * @param port Port.
@@ -338,6 +344,7 @@ public class GridNioServer<T> {
         @Nullable GridWorkerListener workerLsnr,
         @Nullable MetricRegistryImpl mreg,
         Tracing tracing,
+        MessageFactory msgFactory,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
         if (port != -1)
@@ -365,6 +372,7 @@ public class GridNioServer<T> {
         this.readWriteSelectorsAssign = readWriteSelectorsAssign;
         this.lsnr = lsnr;
         this.tracing = tracing == null ? new NoopTracing() : tracing;
+        this.msgFactory = msgFactory;
 
         filterChain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
 
@@ -538,6 +546,13 @@ public class GridNioServer<T> {
      */
     public InetSocketAddress localAddress() {
         return locAddr;
+    }
+
+    /**
+     * @return Message factory.
+     */
+    public MessageFactory messageFactory() {
+        return msgFactory;
     }
 
     /**
@@ -1590,7 +1605,16 @@ public class GridNioServer<T> {
 
                 int startPos = buf.position();
 
-                finished = msg.writeTo(buf, writer);
+                if (messageFactory() == null) {
+                    assert msg instanceof ClientMessage;  // TODO: Will refactor in IGNITE-26554.
+
+                    finished = msg.writeTo(buf, writer);
+                }
+                else {
+                    MessageSerializer msgSer = messageFactory().serializer(msg.directType());
+
+                    finished = msgSer.writeTo(msg, buf, writer);
+                }
 
                 span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));
 
@@ -1780,7 +1804,16 @@ public class GridNioServer<T> {
 
                 int startPos = buf.position();
 
-                finished = msg.writeTo(buf, writer);
+                if (msgFactory == null) {
+                    assert msg instanceof ClientMessage;  // TODO: Will refactor in IGNITE-26554.
+
+                    finished = msg.writeTo(buf, writer);
+                }
+                else {
+                    MessageSerializer msgSer = msgFactory.serializer(msg.directType());
+
+                    finished = msgSer.writeTo(msg, buf, writer);
+                }
 
                 span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));
 
@@ -3719,6 +3752,7 @@ public class GridNioServer<T> {
                     return null;
                 }
                 else
+                    // TODO: cast short.
                     return send(ses, (Message)msg, fut, ackC);
             }
             else
@@ -3842,6 +3876,9 @@ public class GridNioServer<T> {
         /** Tracing processor */
         private Tracing tracing;
 
+        /** Message factory. */
+        private MessageFactory msgFactory;
+
         /**
          * Finishes building the instance.
          *
@@ -3873,6 +3910,7 @@ public class GridNioServer<T> {
                 workerLsnr,
                 mreg,
                 tracing,
+                msgFactory,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
             );
 
@@ -4144,6 +4182,16 @@ public class GridNioServer<T> {
          */
         public Builder<T> metricRegistry(MetricRegistryImpl mreg) {
             this.mreg = mreg;
+
+            return this;
+        }
+
+        /**
+         * @param msgFactory Message factory.
+         * @return This for chaining.
+         */
+        public Builder<T> messageFactory(MessageFactory msgFactory) {
+            this.msgFactory = msgFactory;
 
             return this;
         }

@@ -19,7 +19,6 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.util.BitSet;
 import java.util.Collection;
@@ -1154,17 +1153,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpCommunicationSpi.class, this);
-    }
-
-    /**
-     * Write message type to byte buffer.
-     *
-     * @param buf Byte buffer.
-     * @param type Message type.
-     */
-    public static void writeMessageType(ByteBuffer buf, short type) {
-        buf.put((byte)(type & 0xFF));
-        buf.put((byte)((type >> 8) & 0xFF));
     }
 
     /**
