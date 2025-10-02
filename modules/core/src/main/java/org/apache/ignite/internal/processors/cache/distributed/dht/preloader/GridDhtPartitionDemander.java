@@ -407,7 +407,7 @@ public class GridDhtPartitionDemander {
                     metrics.clearRebalanceCounters();
 
                     for (GridDhtPartitionDemandMessage msg : assignments.values()) {
-                        for (Integer partId : msg.partitions().fullSet())
+                        for (Integer partId : msg.partitions().full())
                             metrics.onRebalancingKeysCountEstimateReceived(grp.topology().globalPartSizes().get(partId));
 
                         CachePartitionPartialCountersMap histMap = msg.partitions().historicalMap();
@@ -1063,13 +1063,13 @@ public class GridDhtPartitionDemander {
                 HashSet<Integer> parts = new HashSet<>(v.partitions().size());
 
                 parts.addAll(v.partitions().historicalSet());
-                parts.addAll(v.partitions().fullSet());
+                parts.addAll(v.partitions().full());
 
                 rebalancingParts.put(k.id(), parts);
 
                 historical.addAll(v.partitions().historicalSet());
 
-                Stream.concat(v.partitions().historicalSet().stream(), v.partitions().fullSet().stream())
+                Stream.concat(v.partitions().historicalSet().stream(), v.partitions().full().stream())
                     .forEach(
                         p -> {
                             queued.put(p, new LongAdder());
@@ -1182,11 +1182,11 @@ public class GridDhtPartitionDemander {
                     // Make sure partitions scheduled for full rebalancing are cleared first.
                     // Clearing attempt is also required for in-memory caches because some partitions can be switched
                     // from RENTING to MOVING state in the middle of clearing.
-                    final int fullSetSize = d.partitions().fullSet().size();
+                    final int fullSetSize = d.partitions().full().size();
 
                     AtomicInteger waitCnt = new AtomicInteger(fullSetSize);
 
-                    for (Integer partId : d.partitions().fullSet()) {
+                    for (Integer partId : d.partitions().full()) {
                         GridDhtLocalPartition part = grp.topology().localPartition(partId);
 
                         // Due to rebalance cancellation it's possible for a group to be already partially rebalanced,
@@ -1214,7 +1214,7 @@ public class GridDhtPartitionDemander {
                     }
 
                     // The special case for historical only rebalancing.
-                    if (d.partitions().fullSet().isEmpty() && !d.partitions().historicalSet().isEmpty())
+                    if (d.partitions().full().isEmpty() && !d.partitions().historicalSet().isEmpty())
                         ctx.kernalContext().closure().runLocalSafe((GridPlainRunnable)() -> requestPartitions0(node, parts, d));
                 }
             }
@@ -1238,7 +1238,7 @@ public class GridDhtPartitionDemander {
                     log.info("Starting rebalance routine [" + grp.cacheOrGroupName() +
                         ", topVer=" + topVer +
                         ", supplier=" + supplierNode.id() +
-                        ", fullPartitions=" + S.toStringSortedDistinct(parts.fullSet()) +
+                        ", fullPartitions=" + S.toStringSortedDistinct(parts.full()) +
                         ", histPartitions=" + S.toStringSortedDistinct(parts.historicalSet()) +
                         ", rebalanceId=" + rebalanceId + ']');
 
@@ -1677,7 +1677,7 @@ public class GridDhtPartitionDemander {
                 p0.addAll(partitions);
 
             for (GridDhtPartitionDemandMessage msg : newAssignments.values()) {
-                p1.addAll(msg.partitions().fullSet());
+                p1.addAll(msg.partitions().full());
                 p1.addAll(msg.partitions().historicalSet());
             }
 

@@ -165,16 +165,11 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
     }
 
     /** */
-    public Set<Integer> fullSet() {
+    public Collection<Integer> full() {
         if (full == null)
             return Collections.emptySet();
 
-        return Collections.unmodifiableSet((Set<Integer>)full);
-    }
-
-    /** */
-    public Collection<Integer> full() {
-        return full;
+        return Collections.unmodifiableCollection(full);
     }
 
     /** */
@@ -200,7 +195,7 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
 
     /** */
     public Collection<Integer> all() {
-        return F.concat(false, fullSet(), historicalSet());
+        return F.concat(false, full(), historicalSet());
     }
 
 

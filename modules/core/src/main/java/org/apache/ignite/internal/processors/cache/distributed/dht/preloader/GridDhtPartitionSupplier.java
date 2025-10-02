@@ -268,7 +268,7 @@ public class GridDhtPartitionSupplier {
             if (sctx == null) {
                 if (log.isDebugEnabled())
                     log.debug("Starting supplying rebalancing [" + supplyRoutineInfo(topicId, nodeId, demandMsg) +
-                        ", fullPartitions=" + S.toStringSortedDistinct(demandMsg.partitions().fullSet()) +
+                        ", fullPartitions=" + S.toStringSortedDistinct(demandMsg.partitions().full()) +
                         ", histPartitions=" + S.toStringSortedDistinct(demandMsg.partitions().historicalSet()) + "]");
             }
             else
@@ -276,7 +276,7 @@ public class GridDhtPartitionSupplier {
 
             if (sctx == null || sctx.iterator == null) {
 
-                remainingParts = new HashSet<>(demandMsg.partitions().fullSet());
+                remainingParts = new HashSet<>(demandMsg.partitions().full());
 
                 CachePartitionPartialCountersMap histMap = demandMsg.partitions().historicalMap();
 
@@ -457,7 +457,7 @@ public class GridDhtPartitionSupplier {
 
                     // Mark all remaining partitions as missed to trigger full rebalance.
                     if (iter == null && F.isEmpty(remainingParts)) {
-                        remainingParts = new HashSet<>(demandMsg.partitions().fullSet());
+                        remainingParts = new HashSet<>(demandMsg.partitions().full());
                         remainingParts.addAll(demandMsg.partitions().historicalSet());
                     }
 
