@@ -36,11 +36,11 @@ public class GridNioEmbeddedFuture<R> extends GridNioFutureImpl<R> {
 
     /**
      * Callback to notify that future is finished.
-     * This method must delegate to {@link #onDone(GridNioFuture, Throwable)} method.
+     * This method must delegate to {@link #onDone(IgniteInternalFuture, Throwable)} method.
      *
      * @param res Result.
      */
-    public final void onDone(GridNioFuture<R> res) {
+    public final void onDone(IgniteInternalFuture<R> res) {
         onDone(res, null);
     }
 
@@ -51,7 +51,7 @@ public class GridNioEmbeddedFuture<R> extends GridNioFutureImpl<R> {
      * @param delegate Optional result.
      * @param err Optional error.
      */
-    public void onDone(@Nullable GridNioFuture<R> delegate, @Nullable Throwable err) {
+    public void onDone(@Nullable IgniteInternalFuture<R> delegate, @Nullable Throwable err) {
         assert delegate != null || err != null;
 
         if (err != null)

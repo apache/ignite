@@ -26,13 +26,13 @@ import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.IntMetricImpl;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioException;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
-import org.apache.ignite.internal.util.nio.GridNioFinishedFuture;
-import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
@@ -340,7 +340,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> onSessionWrite(
+    @Override public IgniteInternalFuture<?> onSessionWrite(
         GridNioSession ses,
         Object msg,
         boolean fut,
@@ -352,7 +352,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
         ByteBuffer input = checkMessage(ses, msg);
 
         if (!input.hasRemaining())
-            return new GridNioFinishedFuture<Object>(null);
+            return new GridFinishedFuture<Object>(null);
 
         GridNioSslHandler hnd = sslHandler(ses);
 
@@ -360,7 +360,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
 
         try {
             if (hnd.isOutboundDone())
-                return new GridNioFinishedFuture<Object>(new IOException("Failed to send data (secure session was " +
+                return new GridFinishedFuture<Object>(new IOException("Failed to send data (secure session was " +
                     "already closed): " + ses));
 
             if (hnd.isHandshakeFinished()) {
@@ -426,7 +426,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
         GridNioSslHandler hnd = sslHandler(ses);
 
         hnd.lock();
@@ -447,7 +447,7 @@ public class GridNioSslFilter extends GridNioFilterAdapter {
      * @return Close future.
      * @throws GridNioException If failed to forward requests to filter chain.
      */
-    private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, GridNioSslHandler hnd)
+    private IgniteInternalFuture<Boolean> shutdownSession(GridNioSession ses, GridNioSslHandler hnd)
         throws IgniteCheckedException {
         try {
             hnd.closeOutbound();

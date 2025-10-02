@@ -17,50 +17,11 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * Default future implementation.
  */
-public class GridNioFutureImpl<R> extends GridFutureAdapter<R> implements GridNioFuture<R> {
-    /** */
-    private boolean msgThread;
+public class GridNioFutureImpl<R> extends GridFutureAdapter<R> {
 
-    /** */
-    protected final IgniteInClosure<IgniteException> ackC;
-
-    /**
-     * @param ackC Ack closure.
-     */
-    public GridNioFutureImpl(IgniteInClosure<IgniteException> ackC) {
-        this.ackC = ackC;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void messageThread(boolean msgThread) {
-        this.msgThread = msgThread;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean messageThread() {
-        return msgThread;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean skipRecovery() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInClosure<IgniteException> ackClosure() {
-        return ackC;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridNioFutureImpl.class, this);
-    }
 }

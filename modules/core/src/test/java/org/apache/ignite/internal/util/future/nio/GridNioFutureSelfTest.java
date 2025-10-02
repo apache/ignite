@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.nio.GridNioFuture;
+import org.apache.ignite.internal.util.nio.IgniteInternalFuture;
 import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -69,7 +69,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
 
         fut.onDone("test", new IgniteCheckedException("TestMessage"));
 
-        final GridNioFuture<String> callFut2 = fut;
+        final IgniteInternalFuture<String> callFut2 = fut;
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {

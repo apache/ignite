@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.thin.ClientSslUtils;
 import org.apache.ignite.internal.client.thin.io.ClientConnection;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
@@ -38,7 +39,6 @@ import org.apache.ignite.internal.client.thin.io.ClientConnectionStateHandler;
 import org.apache.ignite.internal.client.thin.io.ClientMessageHandler;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
-import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -173,7 +173,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
             }
 
             Map<Integer, Object> meta = new HashMap<>();
-            GridNioFuture<?> sslHandshakeFut = null;
+            IgniteInternalFuture<?> sslHandshakeFut = null;
 
             if (sslCtx != null) {
                 sslHandshakeFut = new GridNioFutureImpl<>(null);
@@ -181,7 +181,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
                 meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
             }
 
-            GridNioFuture<GridNioSession> sesFut = srv.createSession(ch, meta, false, null);
+            IgniteInternalFuture<GridNioSession> sesFut = srv.createSession(ch, meta, false, null);
 
             if (sesFut.error() != null)
                 sesFut.get();

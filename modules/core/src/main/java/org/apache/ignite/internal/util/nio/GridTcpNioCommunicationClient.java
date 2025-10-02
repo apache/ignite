@@ -100,7 +100,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
         if (closed())
             throw new IgniteCheckedException("Client was closed: " + this);
 
-        GridNioFuture<?> fut = ses.send(data);
+        IgniteInternalFuture<?> fut = ses.send(data);
 
         if (fut.isDone())
             fut.get();
