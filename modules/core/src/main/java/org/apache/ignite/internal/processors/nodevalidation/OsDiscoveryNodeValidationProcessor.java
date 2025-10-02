@@ -62,7 +62,6 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
 
                 dispatcher.registerProperty(rollUpVerCheck);
             });
-
     }
 
     /** {@inheritDoc} */
