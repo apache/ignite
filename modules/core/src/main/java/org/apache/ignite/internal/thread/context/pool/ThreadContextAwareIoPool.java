@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.thread.context.pool;
 
 import java.util.concurrent.Executor;
+import org.apache.ignite.internal.thread.context.concurrent.ThreadContextAwareExecutor;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
-import org.apache.ignite.thread.context.concurrent.ThreadContextAwareExecutor;
 
 /** */
 public class ThreadContextAwareIoPool implements IoPool {

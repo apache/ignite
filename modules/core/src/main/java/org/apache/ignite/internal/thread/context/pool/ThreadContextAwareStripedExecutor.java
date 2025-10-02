@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.thread.context.pool;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.thread.context.function.ThreadContextAwareRunnable;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.thread.context.function.ThreadContextAwareRunnable;
 import org.jetbrains.annotations.NotNull;
 
 /** */

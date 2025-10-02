@@ -15,38 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread.context;
+package org.apache.ignite.internal.thread.context.function;
+
+import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.internal.thread.context.ThreadContext;
+import org.apache.ignite.internal.thread.context.ThreadContextAwareWrapper;
+import org.apache.ignite.internal.thread.context.ThreadContextSnapshot;
 
 /** */
-public class CloseActionAwareScope implements Scope {
+public class ThreadContextAwareRunnable extends ThreadContextAwareWrapper<Runnable> implements Runnable {
     /** */
-    private final Scope scope;
-
-    /** */
-    private final Runnable action;
-
-    /** */
-    CloseActionAwareScope(Scope scope, Runnable action) {
-        this.scope = scope;
-        this.action = action;
+    public ThreadContextAwareRunnable(Runnable delegate, ThreadContextSnapshot snapshot) {
+        super(delegate, snapshot);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> Scope withAttribute(ThreadContextAttribute<T> attr, T val) {
-        scope.withAttribute(attr, val);
-
-        return this;
+    @Override public void run() {
+        try (Scope ignored = ThreadContext.withSnapshot(snapshot)) {
+            delegate.run();
+        }
     }
 
-    /** {@inheritDoc} */
-    @Override public Scope defer(Runnable action) {
-        throw new UnsupportedOperationException("Multiple deferred action within a scope is not supported");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        action.run();
-
-        scope.close();
+    /** */
+    public static Runnable wrap(Runnable delegate) {
+        return wrap(delegate, ThreadContextAwareRunnable::new);
     }
 }

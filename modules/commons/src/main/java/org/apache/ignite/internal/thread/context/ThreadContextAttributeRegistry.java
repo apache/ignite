@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread.context;
+package org.apache.ignite.internal.thread.context;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/** */
 public class ThreadContextAttributeRegistry {
     /** */
     private static final ThreadContextAttributeRegistry INSTANCE = new ThreadContextAttributeRegistry();

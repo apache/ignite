@@ -17,95 +17,76 @@
 
 package org.apache.ignite.thread.context;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.internal.thread.context.ThreadContext;
+import org.apache.ignite.internal.thread.context.ThreadContextAttribute;
+import org.apache.ignite.internal.thread.context.ThreadContextAttributeRegistry;
+import org.apache.ignite.internal.thread.context.ThreadContextSnapshot;
 import org.apache.ignite.internal.thread.context.pool.ThreadContextAwareThreadPoolExecutor;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.thread.context.concurrent.ThreadContextAwareCompletableFuture;
 import org.junit.Test;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /** */
 public class ThreadContextAttributesTest extends GridCommonAbstractTest {
     /** */
-    private static final String DFLT_STIRNG_ATTR_VAL = "default";
+    private static final String DFLT_STR_VAL = null;
 
     /** */
-    private static final Integer DFLT_INTEGER_ATTR_VAL = 0;
+    private static final Integer DFLT_INT_VAL = 0;
 
     /** */
-    private static final ThreadContextAttribute<String> STRING_ATTR = ThreadContextAttributeRegistry.instance().register(DFLT_STIRNG_ATTR_VAL);
+    private static final ThreadContextAttribute<String> STRING_ATTR = ThreadContextAttributeRegistry.instance().register();
 
     /** */
-    private static final ThreadContextAttribute<Integer> INTEGER_ATTR = ThreadContextAttributeRegistry.instance().register(DFLT_INTEGER_ATTR_VAL);
+    private static final ThreadContextAttribute<Integer> INTEGER_ATTR = ThreadContextAttributeRegistry.instance().register(DFLT_INT_VAL);
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
+    }
 
     /** */
     @Test
-    public void testBasic() {
-        assertEquals(DFLT_STIRNG_ATTR_VAL, ThreadContext.get(STRING_ATTR));
-        assertEquals(DFLT_INTEGER_ATTR_VAL, ThreadContext.get(INTEGER_ATTR));
+    public void testThreadScopeAttributes() {
+        try (Scope ignored0 = ThreadContext.withAttribute(STRING_ATTR, DFLT_STR_VAL).withAttribute(INTEGER_ATTR, DFLT_INT_VAL)) {
+            checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
 
-        try (Scope ignored0 = ThreadContext.withAttribute(STRING_ATTR, DFLT_STIRNG_ATTR_VAL).withAttribute(INTEGER_ATTR, DFLT_INTEGER_ATTR_VAL)) {
-            assertEquals(DFLT_STIRNG_ATTR_VAL, ThreadContext.get(STRING_ATTR));
-            assertEquals(DFLT_INTEGER_ATTR_VAL, ThreadContext.get(INTEGER_ATTR));
-
-            try (Scope ignored1 = ThreadContext.withAttribute(STRING_ATTR, "hello")) {
-                assertEquals("hello", ThreadContext.get(STRING_ATTR));
-                assertEquals(DFLT_INTEGER_ATTR_VAL, ThreadContext.get(INTEGER_ATTR));
+            try (Scope ignored1 = ThreadContext.withAttribute(STRING_ATTR, "test")) {
+                checkAttributeValues("test", DFLT_INT_VAL);
 
                 try (Scope ignored2 = ThreadContext.withAttribute(INTEGER_ATTR, 1)) {
-                    assertEquals("hello", ThreadContext.get(STRING_ATTR));
-                    assertEquals((Integer)1, ThreadContext.get(INTEGER_ATTR));
+                    checkAttributeValues("test", 1);
                 }
 
-                assertEquals("hello", ThreadContext.get(STRING_ATTR));
-                assertEquals(DFLT_INTEGER_ATTR_VAL, ThreadContext.get(INTEGER_ATTR));
+                checkAttributeValues("test", DFLT_INT_VAL);
             }
         }
-
-        assertEquals(DFLT_STIRNG_ATTR_VAL, ThreadContext.get(STRING_ATTR));
-        assertEquals(DFLT_INTEGER_ATTR_VAL, ThreadContext.get(INTEGER_ATTR));
     }
 
     /** */
     @Test
-    public void testDuplication() {
+    public void testScopeAttributeDuplication() {
         GridTestUtils.assertThrowsWithCause(() -> {
-            try (Scope ignored = ThreadContext.withAttribute(STRING_ATTR, "hello0").withAttribute(STRING_ATTR, "hello1")) {
-                // No-op.
-            }
-        }, UnsupportedOperationException.class);
-
-    }
-
-    /** */
-    @Test
-    public void testDefer() {
-        AtomicInteger cntr = new AtomicInteger();
-
-        try (Scope ignored0 = ThreadContext.withAttribute(STRING_ATTR, "hello").defer(cntr::incrementAndGet).withAttribute(INTEGER_ATTR, 1)) {
-            assertEquals("hello", ThreadContext.get(STRING_ATTR));
-            assertEquals((Integer)1, ThreadContext.get(INTEGER_ATTR));
-        }
-
-        assertEquals(1, cntr.get());
-    }
-
-    /** */
-    @Test
-    public void testDeferDuplication() {
-        AtomicInteger cntr = new AtomicInteger();
-
-        GridTestUtils.assertThrowsWithCause(() -> {
-            try (Scope ignored = ThreadContext.withAttribute(STRING_ATTR, "hello0").defer(cntr::incrementAndGet).defer(cntr::incrementAndGet)) {
+            try (Scope ignored = ThreadContext.withAttribute(STRING_ATTR, "0").withAttribute(STRING_ATTR, "1")) {
                 // No-op.
             }
         }, UnsupportedOperationException.class);
@@ -113,178 +94,35 @@ public class ThreadContextAttributesTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testSnapshot() {
-        ThreadContextSnapshot snapshot0 = ThreadContext.createSnapshot();
-        ThreadContextSnapshot snapshot1;
-        ThreadContextSnapshot snapshot2;
-        ThreadContextSnapshot snapshot3;
-        ThreadContextSnapshot snapshot4;
-        ThreadContextSnapshot snapshot5;
-        ThreadContextSnapshot snapshot6;
+    public void testThreadContextSnapshot() {
+        List<ThreadContextSnapshotChecker> checkers = new ArrayList<>();
 
-        try (Scope ignored0 = ThreadContext.withAttribute(STRING_ATTR, DFLT_STIRNG_ATTR_VAL).withAttribute(INTEGER_ATTR, DFLT_INTEGER_ATTR_VAL)) {
-            snapshot1 = ThreadContext.createSnapshot();
+        checkers.add(ThreadContextSnapshotChecker.create());
 
-            try (Scope ignored1 = ThreadContext.withAttribute(STRING_ATTR, "hello")) {
-                snapshot2 = ThreadContext.createSnapshot();
+        try (Scope ignored0 = ThreadContext.withAttribute(STRING_ATTR, DFLT_STR_VAL).withAttribute(INTEGER_ATTR, DFLT_INT_VAL)) {
+            checkers.add(ThreadContextSnapshotChecker.create());
+
+            try (Scope ignored1 = ThreadContext.withAttribute(STRING_ATTR, "test")) {
+                checkers.add(ThreadContextSnapshotChecker.create());
 
                 try (Scope ignored2 = ThreadContext.withAttribute(INTEGER_ATTR, 1)) {
-                    snapshot3 = ThreadContext.createSnapshot();
+                    checkers.add(ThreadContextSnapshotChecker.create());
                 }
 
-                snapshot4 = ThreadContext.createSnapshot();
+                checkers.add(ThreadContextSnapshotChecker.create());
             }
 
-            snapshot5 = ThreadContext.createSnapshot();
+            checkers.add(ThreadContextSnapshotChecker.create());
         }
 
-        snapshot6 = ThreadContext.createSnapshot();
+        checkers.add(ThreadContextSnapshotChecker.create());
 
-        try (Scope ignored0 = ThreadContext.withSnapshot(snapshot0)) {
-            assertEquals(DFLT_STIRNG_ATTR_VAL, ThreadContext.get(STRING_ATTR));
-            assertEquals(DFLT_INTEGER_ATTR_VAL, ThreadContext.get(INTEGER_ATTR));
-        }
-
-        try (Scope ignored1 = ThreadContext.withSnapshot(snapshot1)) {
-            assertEquals(DFLT_STIRNG_ATTR_VAL, ThreadContext.get(STRING_ATTR));
-            assertEquals(DFLT_INTEGER_ATTR_VAL, ThreadContext.get(INTEGER_ATTR));
-        }
-
-        try (Scope ignored2 = ThreadContext.withSnapshot(snapshot2)) {
-            assertEquals("hello", ThreadContext.get(STRING_ATTR));
-            assertEquals(DFLT_INTEGER_ATTR_VAL, ThreadContext.get(INTEGER_ATTR));
-        }
-
-        try (Scope ignored3 = ThreadContext.withSnapshot(snapshot3)) {
-            assertEquals("hello", ThreadContext.get(STRING_ATTR));
-            assertEquals((Integer)1, ThreadContext.get(INTEGER_ATTR));
-        }
-
-        try (Scope ignored4 = ThreadContext.withSnapshot(snapshot4)) {
-            assertEquals("hello", ThreadContext.get(STRING_ATTR));
-            assertEquals(DFLT_INTEGER_ATTR_VAL, ThreadContext.get(INTEGER_ATTR));
-        }
-
-        try (Scope ignored5 = ThreadContext.withSnapshot(snapshot5)) {
-            assertEquals(DFLT_STIRNG_ATTR_VAL, ThreadContext.get(STRING_ATTR));
-            assertEquals(DFLT_INTEGER_ATTR_VAL, ThreadContext.get(INTEGER_ATTR));
-        }
-
-        try (Scope ignored6 = ThreadContext.withSnapshot(snapshot6)) {
-            assertEquals(DFLT_STIRNG_ATTR_VAL, ThreadContext.get(STRING_ATTR));
-            assertEquals(DFLT_INTEGER_ATTR_VAL, ThreadContext.get(INTEGER_ATTR));
-        }
+        checkers.forEach(ThreadContextSnapshotChecker::check);
     }
 
     /** */
     @Test
-    public void testIgniteFutureContextPropagation() throws Exception {
-        AtomicReference<Exception> ex = new AtomicReference<>();
-
-        GridFutureAdapter<String> fut = new GridFutureAdapter<>();
-        IgniteInternalFuture<String> chainFut;
-
-        try (Scope ignored0 = ThreadContext.withAttribute(STRING_ATTR, "hello").withAttribute(INTEGER_ATTR, 1)) {
-            fut.listen(() -> {
-                assertEquals("hello", ThreadContext.get(STRING_ATTR));
-                assertEquals((Integer)1, ThreadContext.get(INTEGER_ATTR));
-            });
-        }
-
-        try (Scope ignored0 = ThreadContext.withAttribute(STRING_ATTR, "bob").withAttribute(INTEGER_ATTR, 2)) {
-            chainFut = fut.chain(() -> {
-                assertEquals("bob", ThreadContext.get(STRING_ATTR));
-                assertEquals((Integer)2, ThreadContext.get(INTEGER_ATTR));
-
-                return "2";
-            }).chain(() -> {
-                assertEquals("bob", ThreadContext.get(STRING_ATTR));
-                assertEquals((Integer)2, ThreadContext.get(INTEGER_ATTR));
-
-                return "2";
-            });
-        }
-
-        new Thread(() -> {
-            try {
-                assertEquals(DFLT_STIRNG_ATTR_VAL, ThreadContext.get(STRING_ATTR));
-                assertEquals(DFLT_INTEGER_ATTR_VAL, ThreadContext.get(INTEGER_ATTR));
-
-                fut.onDone("1");
-
-                assertEquals(DFLT_STIRNG_ATTR_VAL, ThreadContext.get(STRING_ATTR));
-                assertEquals(DFLT_INTEGER_ATTR_VAL, ThreadContext.get(INTEGER_ATTR));
-            }
-            catch (Exception e) {
-                ex.set(e);
-            }
-        }).start();
-
-        assertEquals("1", fut.get(getTestTimeout()));
-        assertEquals("2", chainFut.get(getTestTimeout()));
-
-        assertNull(ex.get());
-    }
-
-    /** */
-    @Test
-    public void testCopmpletableFutureContextPropagation() throws Exception {
-        AtomicReference<Exception> ex = new AtomicReference<>();
-
-        CompletableFuture<String> fut = new ThreadContextAwareCompletableFuture<>();
-        CompletableFuture<Void> runFut;
-        CompletableFuture<String> chainFut;
-
-        try (Scope ignored0 = ThreadContext.withAttribute(STRING_ATTR, "hello").withAttribute(INTEGER_ATTR, 1)) {
-            runFut = fut.thenRun(() -> {
-                assertEquals("hello", ThreadContext.get(STRING_ATTR));
-                assertEquals((Integer)1, ThreadContext.get(INTEGER_ATTR));
-            }).thenRun(() -> {
-                assertEquals("hello", ThreadContext.get(STRING_ATTR));
-                assertEquals((Integer)1, ThreadContext.get(INTEGER_ATTR));
-            });
-        }
-
-        try (Scope ignored0 = ThreadContext.withAttribute(STRING_ATTR, "bob").withAttribute(INTEGER_ATTR, 2)) {
-            chainFut = fut.thenCompose(v -> {
-                assertEquals("bob", ThreadContext.get(STRING_ATTR));
-                assertEquals((Integer)2, ThreadContext.get(INTEGER_ATTR));
-
-                return CompletableFuture.completedFuture("2") ;
-            }).thenCompose(v -> {
-                assertEquals("bob", ThreadContext.get(STRING_ATTR));
-                assertEquals((Integer)2, ThreadContext.get(INTEGER_ATTR));
-
-                return CompletableFuture.completedFuture("2") ;
-            });
-        }
-
-        new Thread(() -> {
-            try {
-                assertEquals(DFLT_STIRNG_ATTR_VAL, ThreadContext.get(STRING_ATTR));
-                assertEquals(DFLT_INTEGER_ATTR_VAL, ThreadContext.get(INTEGER_ATTR));
-
-                fut.complete("1");
-
-                assertEquals(DFLT_STIRNG_ATTR_VAL, ThreadContext.get(STRING_ATTR));
-                assertEquals(DFLT_INTEGER_ATTR_VAL, ThreadContext.get(INTEGER_ATTR));
-            }
-            catch (Exception e) {
-                ex.set(e);
-            }
-        }).start();
-
-        runFut.get();
-
-        assertEquals("1", fut.get(getTestTimeout(), TimeUnit.MILLISECONDS));
-        assertEquals("2", chainFut.get(getTestTimeout(), TimeUnit.MILLISECONDS));
-
-        assertNull(ex.get());
-    }
-
-    /** */
-    @Test
-    public void testTreadPool() throws Exception {
+    public void testThreadContextAwareThreadPool() throws Exception {
         ThreadContextAwareThreadPoolExecutor pool = new ThreadContextAwareThreadPoolExecutor(
             "test",
             null,
@@ -295,7 +133,7 @@ public class ThreadContextAttributesTest extends GridCommonAbstractTest {
             GridIoPolicy.UNDEFINED,
             null);
 
-        CountDownLatch latch = new CountDownLatch(2);
+        CountDownLatch latch = new CountDownLatch(1);
 
         pool.submit(() -> {
             try {
@@ -306,26 +144,92 @@ public class ThreadContextAttributesTest extends GridCommonAbstractTest {
             }
         });
 
-        Future<?> fut0;
+        List<Future<?>> futs = new ArrayList<>();
 
-        try (Scope ignored0 = ThreadContext.withAttribute(STRING_ATTR, "hello").withAttribute(INTEGER_ATTR, 1)) {
-            fut0 = pool.submit(() -> {
-                assertEquals("hello", ThreadContext.get(STRING_ATTR));
-                assertEquals((Integer)1, ThreadContext.get(INTEGER_ATTR));
-            });
-
-            latch.countDown();
+        try (Scope ignored0 = ThreadContext.withAttribute(STRING_ATTR, "test").withAttribute(INTEGER_ATTR, 1)) {
+            futs.add(pool.submit(() -> checkAttributeValues("test", 1)));
+            futs.add(pool.submit(() -> checkAttributeValues("test", 1), 0));
+            futs.add(pool.submit(() -> checkAttributeValuesCallable("test", 1)));
         }
 
-        Future<?>  fut1 = pool.submit(() -> {
-            assertEquals(DFLT_STIRNG_ATTR_VAL, ThreadContext.get(STRING_ATTR));
-            assertEquals(DFLT_INTEGER_ATTR_VAL, ThreadContext.get(INTEGER_ATTR));
-        });
+        futs.add(pool.submit(() -> checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL)));
+        futs.add(pool.submit(() -> checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL), 0));
+        futs.add(pool.submit(() -> checkAttributeValuesCallable(DFLT_STR_VAL, DFLT_INT_VAL)));
 
         latch.countDown();
 
-        fut0.get(getTestTimeout(), TimeUnit.MILLISECONDS);
-        fut1.get(getTestTimeout(), TimeUnit.MILLISECONDS);
+        for (Future<?> fut : futs)
+            fut.get();
+
+        try (Scope ignored0 = ThreadContext.withAttribute(STRING_ATTR, "test").withAttribute(INTEGER_ATTR, 1)) {
+            pool.invokeAny(Arrays.asList(() -> checkAttributeValuesCallable("test", 1)));
+            pool.invokeAny(Arrays.asList(() -> checkAttributeValuesCallable("test", 1)), getTestTimeout(), MILLISECONDS);
+            pool.invokeAll(Arrays.asList(() -> checkAttributeValuesCallable("test", 1)));
+            pool.invokeAll(Arrays.asList(() -> checkAttributeValuesCallable("test", 1)), getTestTimeout(), MILLISECONDS);
+        }
+
+        pool.invokeAny(Arrays.asList(() -> checkAttributeValuesCallable(DFLT_STR_VAL, DFLT_INT_VAL)));
+        pool.invokeAny(Arrays.asList(
+            () -> checkAttributeValuesCallable(DFLT_STR_VAL, DFLT_INT_VAL)),
+            getTestTimeout(),
+            MILLISECONDS);
+        pool.invokeAll(Arrays.asList(() -> checkAttributeValuesCallable(DFLT_STR_VAL, DFLT_INT_VAL)));
+        pool.invokeAll(
+            Arrays.asList(() -> checkAttributeValuesCallable(DFLT_STR_VAL, DFLT_INT_VAL)),
+            getTestTimeout(),
+            MILLISECONDS);
+    }
+
+    /** */
+    private static class ThreadContextSnapshotChecker {
+        /** */
+        private final ThreadContextSnapshot snapshot;
+
+        /** */
+        private final Object strAttrVal;
+
+        /** */
+        private final Object intAttrVal;
+
+        /** */
+        private ThreadContextSnapshotChecker(ThreadContextSnapshot snapshot, Object strAttrVal, Object intAttrVal) {
+            this.snapshot = snapshot;
+            this.strAttrVal = strAttrVal;
+            this.intAttrVal = intAttrVal;
+        }
+
+        /** */
+        public void check() {
+            checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
+
+            try (Scope ignored3 = ThreadContext.withSnapshot(snapshot)) {
+                assertEquals(strAttrVal, ThreadContext.get(STRING_ATTR));
+                assertEquals(intAttrVal, ThreadContext.get(INTEGER_ATTR));
+            }
+
+            checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
+        }
+
+        /** */
+        public static ThreadContextSnapshotChecker create() {
+            return new ThreadContextSnapshotChecker(
+                ThreadContext.createSnapshot(),
+                ThreadContext.get(STRING_ATTR),
+                ThreadContext.get(INTEGER_ATTR)
+            );
+        }
+    }
+
+    /** */
+    private static Integer checkAttributeValuesCallable(Object strAttrVal, Object intAttrVal) {
+        checkAttributeValues(strAttrVal, intAttrVal);
+
+        return 0;
+    }
+
+    /** */
+    private static void checkAttributeValues(Object strAttrVal, Object intAttrVal) {
+        assertEquals(intAttrVal, ThreadContext.get(INTEGER_ATTR));
+        assertEquals(strAttrVal, ThreadContext.get(STRING_ATTR));
     }
 }
-

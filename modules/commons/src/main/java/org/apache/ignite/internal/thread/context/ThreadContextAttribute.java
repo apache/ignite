@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread.context;
+package org.apache.ignite.internal.thread.context;
 
+/** */
 public class ThreadContextAttribute<T> {
     /** */
     private final int id;

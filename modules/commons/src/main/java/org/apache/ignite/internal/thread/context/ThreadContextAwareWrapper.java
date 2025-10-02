@@ -15,29 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread.context.function;
+package org.apache.ignite.internal.thread.context;
 
-import org.apache.ignite.thread.context.Scope;
-import org.apache.ignite.thread.context.ThreadContext;
-import org.apache.ignite.thread.context.ThreadContextAwareWrapper;
-import org.apache.ignite.thread.context.ThreadContextSnapshot;
+import java.util.function.BiFunction;
+import org.apache.ignite.internal.IgniteInternalWrapper;
 
 /** */
-public class ThreadContextAwareRunnable extends ThreadContextAwareWrapper<Runnable> implements Runnable {
+public abstract class ThreadContextAwareWrapper<T> implements IgniteInternalWrapper<T> {
     /** */
-    public ThreadContextAwareRunnable(Runnable delegate, ThreadContextSnapshot snapshot) {
-        super(delegate, snapshot);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void run() {
-        try (Scope ignored = ThreadContext.withSnapshot(snapshot)){
-            delegate.run();
-        }
-    }
+    protected final T delegate;
 
     /** */
-    public static Runnable wrap(Runnable delegate) {
-        return wrap(delegate, ThreadContextAwareRunnable::new);
+    protected final ThreadContextSnapshot snapshot;
+
+    /** */
+    @Override public T delegate() {
+        return delegate;
+    }
+
+    /** */
+    protected ThreadContextAwareWrapper(T delegate, ThreadContextSnapshot snapshot) {
+        this.delegate = delegate;
+        this.snapshot = snapshot;
+    }
+
+    /** */
+    protected static <T, R extends T> R wrap(T delegate, BiFunction<T, ThreadContextSnapshot, R> wrapper) {
+        return delegate == null || delegate instanceof ThreadContextAwareWrapper
+            ? (R)delegate
+            : wrapper.apply(delegate, ThreadContext.createSnapshot());
     }
 }

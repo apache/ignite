@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.thread.context.pool;
 
+import org.apache.ignite.internal.thread.context.function.ThreadContextAwareRunnable;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
-import org.apache.ignite.thread.context.function.ThreadContextAwareRunnable;
 
 /** */
 public class ThreadContextAwareStripedThreadPoolExecutor extends IgniteStripedThreadPoolExecutor {

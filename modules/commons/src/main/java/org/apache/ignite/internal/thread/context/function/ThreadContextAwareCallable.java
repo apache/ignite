@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread.context.function;
+package org.apache.ignite.internal.thread.context.function;
 
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
-import org.apache.ignite.thread.context.Scope;
-import org.apache.ignite.thread.context.ThreadContext;
-import org.apache.ignite.thread.context.ThreadContextAwareWrapper;
-import org.apache.ignite.thread.context.ThreadContextSnapshot;
+import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.internal.thread.context.ThreadContext;
+import org.apache.ignite.internal.thread.context.ThreadContextAwareWrapper;
+import org.apache.ignite.internal.thread.context.ThreadContextSnapshot;
 
 /** */
 public class ThreadContextAwareCallable<T> extends ThreadContextAwareWrapper<Callable<T>> implements Callable<T> {

@@ -15,32 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security;
+package org.apache.ignite.internal.thread.context.concurrent;
 
-/**
- *
- */
-public class OperationSecurityContext implements AutoCloseable {
-    /** Ignite Security. */
-    private final IgniteSecurity proc;
+import java.util.concurrent.Executor;
+import org.apache.ignite.internal.thread.context.function.ThreadContextAwareRunnable;
+import org.jetbrains.annotations.NotNull;
 
-    /** Security context. */
-    private final SecurityContext secCtx;
+/** */
+public class ThreadContextAwareExecutor implements Executor {
+    /** */
+    private final Executor delegate;
 
-    /**
-     * @param proc Ignite Security.
-     * @param secCtx Security context.
-     */
-    OperationSecurityContext(IgniteSecurity proc, SecurityContext secCtx) {
-        this.proc = proc;
-        this.secCtx = secCtx;
+    /** */
+    private ThreadContextAwareExecutor(Executor delegate) {
+        this.delegate = delegate;
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
-        if (secCtx == null)
-            ((IgniteSecurityProcessor)proc).restoreDefaultContext();
-        else
-            proc.withContext(secCtx);
+    @Override public void execute(@NotNull Runnable command) {
+        delegate.execute(ThreadContextAwareRunnable.wrap(command));
+    }
+
+    /** */
+    public static Executor wrap(Executor delegate) {
+        return delegate == null ? null : new ThreadContextAwareExecutor(delegate);
     }
 }

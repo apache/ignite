@@ -15,14 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread.context;
+package org.apache.ignite.internal.thread.context;
 
+/** */
 public interface Scope extends AutoCloseable {
     /** */
     public <T> Scope withAttribute(ThreadContextAttribute<T> attr, T val);
-
-    /** */
-    public Scope defer(Runnable action);
 
     /** {@inheritDoc} */
     @Override public void close();

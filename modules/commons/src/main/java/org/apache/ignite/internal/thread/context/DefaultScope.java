@@ -15,28 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread.context.concurrent;
+package org.apache.ignite.internal.thread.context;
 
-import java.util.concurrent.Executor;
-import org.apache.ignite.thread.context.function.ThreadContextAwareRunnable;
-import org.jetbrains.annotations.NotNull;
-
-public class ThreadContextAwareExecutor implements Executor {
+/** */
+public class DefaultScope implements Scope {
     /** */
-    private final Executor delegate;
+    private static final Scope INSTANCE = new DefaultScope();
 
     /** */
-    private ThreadContextAwareExecutor(Executor delegate) {
-        this.delegate = delegate;
+    private DefaultScope() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void execute(@NotNull Runnable command) {
-        delegate.execute(ThreadContextAwareRunnable.wrap(command));
+    @Override public <T> Scope withAttribute(ThreadContextAttribute<T> attr, T val) {
+        ThreadContext.data().put(attr, val);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        ThreadContext.data().onScopeClosed();
     }
 
     /** */
-    public static Executor wrap(Executor delegate) {
-        return delegate == null ? null : new ThreadContextAwareExecutor(delegate);
+    public static Scope create() {
+        ThreadContext.data().onScopeCreated();
+
+        return INSTANCE;
     }
 }
