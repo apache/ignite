@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -212,16 +211,5 @@ public class SimpleDistributedProperty<T extends Serializable> implements Distri
         set.addAll(Arrays.asList(vals));
 
         return set;
-    }
-
-    /**
-     * @param val Ignite product version value.
-     * @return Ignite product version value.
-     */
-    public static IgniteProductVersion parseIgniteProductVersion(String val) {
-        if (val == null)
-            return null;
-
-        return IgniteProductVersion.fromString(val);
     }
 }
