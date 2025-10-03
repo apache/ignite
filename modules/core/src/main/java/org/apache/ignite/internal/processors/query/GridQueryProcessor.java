@@ -1528,10 +1528,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         BinaryMetadata meta = platformCtx.getBinaryType(clsName);
 
         if (meta != null)
-            binProc.binaryContext().registerClassLocally(
-                    meta.wrap(binProc.binaryContext()),
-                    false,
-                    platformCtx.getMarshallerPlatformId());
+            binProc.binaryContext().registerClassLocally(meta, false, platformCtx.getMarshallerPlatformId());
     }
 
     /**

@@ -1991,11 +1991,9 @@ class BinaryReaderExImpl implements BinaryReaderEx {
 
         if (schema == null) {
             if (fieldIdLen != BinaryUtils.FIELD_ID_LEN) {
-                BinaryTypeImpl type = (BinaryTypeImpl)ctx.metadata(typeId, schemaId);
+                BinaryMetadata meta = ctx.metadata0(typeId, schemaId);
 
-                BinaryMetadata meta = type != null ? type.metadata() : null;
-
-                if (type == null || meta == null)
+                if (meta == null)
                     throw new BinaryObjectException("Cannot find metadata for object with compact footer " +
                         "(Ignite work directory might have been cleared after restart. Make sure that IGNITE_HOME " +
                         "does not point to a temp folder or any other folder that is destroyed/cleared on restarts) [" +
@@ -2018,7 +2016,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                         existingSchemaIds.add(existingSchema.schemaId());
 
                     throw new BinaryObjectException("Cannot find schema for object with compact footer" +
-                        " [typeName=" + type.typeName() +
+                        " [typeName=" + meta.typeName() +
                         ", typeId=" + typeId +
                         ", missingSchemaId=" + schemaId +
                         ", existingSchemaIds=" + existingSchemaIds + ']'
