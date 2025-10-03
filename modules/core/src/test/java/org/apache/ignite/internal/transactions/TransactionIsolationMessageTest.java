@@ -74,5 +74,13 @@ public class TransactionIsolationMessageTest {
 
             assertEquals(msg.value(), newMsg.value());
         }
+
+        TransactionIsolationMessage msg = new TransactionIsolationMessage(null);
+        assertNull(msg.value());
+
+        TransactionIsolationMessage newMsg = new TransactionIsolationMessage();
+        newMsg.code(msg.code());
+
+        assertNull(newMsg.value());
     }
 }
