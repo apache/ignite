@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -34,17 +35,21 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class GridDistributedTxFinishResponse extends GridCacheMessage {
     /** */
-    private GridCacheVersion txId;
+    @GridToStringExclude
+    @Order(3)
+    private byte flags;
 
     /** Future ID. */
+    @Order(value = 4, method = "futureId")
     private IgniteUuid futId;
 
     /** */
-    @GridToStringExclude
-    private byte flags;
+    @Order(value = 5, method = "partition")
+    private int part;
 
     /** */
-    private int part;
+    @Order(6)
+    private GridCacheVersion txId;
 
     /**
      * Empty constructor required by {@link GridIoMessageFactory}.
@@ -77,9 +82,34 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
         return false;
     }
 
+    /** */
+    public GridCacheVersion txId() {
+        return txId;
+    }
+
+    /** */
+    public void txId(GridCacheVersion txId) {
+        this.txId = txId;
+    }
+
+    /** */
+    public void partition(int part) {
+        this.part = part;
+    }
+
     /** {@inheritDoc} */
     @Override public final int partition() {
         return part;
+    }
+
+    /** */
+    public void flags(byte flags) {
+        this.flags = flags;
+    }
+
+    /** */
+    public byte flags() {
+        return flags;
     }
 
     /**
@@ -110,6 +140,11 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
         return txId;
     }
 
+    /** */
+    public void futureId(IgniteUuid futId) {
+        this.futId = futId;
+    }
+
     /**
      * @return Future ID.
      */
@@ -127,6 +162,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
         return ctx.txFinishMessageLogger();
     }
 
+    // TODO: remove after IGNITE-26589
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -171,6 +207,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
         return true;
     }
 
+    // TODO: remove after IGNITE-26589
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);

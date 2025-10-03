@@ -27,6 +27,7 @@ import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.codegen.AtomicApplicationAttributesAwareRequestSerializer;
 import org.apache.ignite.internal.codegen.CacheContinuousQueryBatchAckSerializer;
+import org.apache.ignite.internal.codegen.CacheEntryInfoCollectionSerializer;
 import org.apache.ignite.internal.codegen.CacheEvictionEntrySerializer;
 import org.apache.ignite.internal.codegen.CacheGroupAffinityMessageSerializer;
 import org.apache.ignite.internal.codegen.CacheVersionedValueSerializer;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.codegen.GridDhtPartitionSupplyMessageSerialize
 import org.apache.ignite.internal.codegen.GridDhtPartitionsSingleRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtTxOnePhaseCommitAckRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtTxPrepareRequestSerializer;
+import org.apache.ignite.internal.codegen.GridDistributedTxFinishResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDistributedTxPrepareRequestSerializer;
 import org.apache.ignite.internal.codegen.GridIntListSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
@@ -54,6 +56,7 @@ import org.apache.ignite.internal.codegen.GridJobSiblingsRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearAtomicCheckUpdateRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearAtomicUpdateResponseSerializer;
 import org.apache.ignite.internal.codegen.GridNearGetRequestSerializer;
+import org.apache.ignite.internal.codegen.GridNearSingleGetRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearTxPrepareRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryFailResponseSerializer;
@@ -269,7 +272,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)21, GridDistributedLockRequest::new);
         factory.register((short)22, GridDistributedLockResponse::new);
         factory.register((short)23, GridDistributedTxFinishRequest::new);
-        factory.register((short)24, GridDistributedTxFinishResponse::new);
+        factory.register((short)24, GridDistributedTxFinishResponse::new, new GridDistributedTxFinishResponseSerializer());
         factory.register((short)25, GridDistributedTxPrepareRequest::new, new GridDistributedTxPrepareRequestSerializer());
         factory.register((short)26, GridDistributedTxPrepareResponse::new);
         factory.register((short)27, GridDistributedUnlockRequest::new);
@@ -319,7 +322,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)87, GridDhtPartitionExchangeId::new, new GridDhtPartitionExchangeIdSerializer());
         factory.register((short)88, GridCacheReturn::new);
         factory.register((short)91, GridCacheEntryInfo::new, new GridCacheEntryInfoSerializer());
-        factory.register((short)92, CacheEntryInfoCollection::new);
+        factory.register((short)92, CacheEntryInfoCollection::new, new CacheEntryInfoCollectionSerializer());
         factory.register((short)93, CacheInvokeDirectResult::new);
         factory.register((short)94, IgniteTxKey::new, new IgniteTxKeySerializer());
         factory.register((short)95, DataStreamerEntry::new);
@@ -340,7 +343,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         // 113 - BinaryObjectImpl
         factory.register((short)114, GridDhtPartitionSupplyMessage::new, new GridDhtPartitionSupplyMessageSerializer());
         factory.register((short)115, UUIDCollectionMessage::new);
-        factory.register((short)116, GridNearSingleGetRequest::new);
+        factory.register((short)116, GridNearSingleGetRequest::new, new GridNearSingleGetRequestSerializer());
         factory.register((short)117, GridNearSingleGetResponse::new);
         factory.register((short)118, CacheContinuousQueryBatchAck::new, new CacheContinuousQueryBatchAckSerializer());
 

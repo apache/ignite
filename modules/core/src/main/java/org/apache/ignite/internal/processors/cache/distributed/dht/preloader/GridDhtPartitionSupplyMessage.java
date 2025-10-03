@@ -178,13 +178,8 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
             msgSize += 12;
 
             // If partition is empty, we need to add it.
-            if (!getInfosSafe().containsKey(p)) {
-                CacheEntryInfoCollection infoCol = new CacheEntryInfoCollection();
-
-                infoCol.init();
-
-                getInfosSafe().put(p, infoCol);
-            }
+            if (!getInfosSafe().containsKey(p))
+                getInfosSafe().put(p, new CacheEntryInfoCollection());
         }
     }
 
@@ -295,8 +290,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
             msgSize += 4;
 
             getInfosSafe().put(p, infoCol = new CacheEntryInfoCollection());
-
-            infoCol.init();
         }
 
         infoCol.add(info);
