@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
@@ -51,6 +52,7 @@ import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.managers.discovery.ConsistentIdMapper.ALL_NODES;
 
@@ -90,8 +92,11 @@ public class IncrementalSnapshotVerificationTask {
     }
 
     /** */
-    public IncrementalSnapshotVerificationTaskResult execute() {
-        return job.execute0();
+    public IncrementalSnapshotVerificationTaskResult execute(
+        @Nullable Consumer<Integer> totalCnsmr,
+        @Nullable Consumer<Integer> checkedCnsmr
+    ) {
+        return job.execute0(totalCnsmr, checkedCnsmr);
     }
 
     /** */
@@ -132,7 +137,10 @@ public class IncrementalSnapshotVerificationTask {
         /**
          * @return Map containing calculated transactions hash for every remote node in the cluster.
          */
-        public IncrementalSnapshotVerificationTaskResult execute0() throws IgniteException {
+        public IncrementalSnapshotVerificationTaskResult execute0(
+            @Nullable Consumer<Integer> totalCnsmr,
+            @Nullable Consumer<Integer> checkedCnsmr
+        ) throws IgniteException {
             try {
                 if (log.isInfoEnabled()) {
                     log.info("Verify incremental snapshot procedure has been initiated " +
@@ -157,10 +165,14 @@ public class IncrementalSnapshotVerificationTask {
                     ignite.context().cache().context(), sft, incIdx, txCaches.keySet()
                 ) {
                     @Override void totalWalSegments(int segCnt) {
-                        // No-op.
+                        if (totalCnsmr != null)
+                            totalCnsmr.accept(segCnt);
                     }
 
                     @Override void processedWalSegments(int segCnt) {
+                        if (checkedCnsmr != null)
+                            checkedCnsmr.accept(segCnt);
+
                         procSegCnt.set(segCnt);
                     }
 
