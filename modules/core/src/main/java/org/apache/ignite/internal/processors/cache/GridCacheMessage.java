@@ -85,16 +85,6 @@ public abstract class GridCacheMessage implements Message {
     private boolean skipPrepare;
 
     /**
-     * @return ID to distinguish message handlers for the same messages but for different caches/cache groups.
-     */
-    public abstract int handlerId();
-
-    /**
-     * @return {@code True} if cache group message.
-     */
-    public abstract boolean cacheGroupMessage();
-
-    /**
      * @return Error, if any.
      */
     @Nullable public Throwable error() {

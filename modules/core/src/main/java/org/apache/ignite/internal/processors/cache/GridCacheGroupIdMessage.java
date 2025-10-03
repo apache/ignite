@@ -48,16 +48,6 @@ public abstract class GridCacheGroupIdMessage extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cacheGroupMessage() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public final int handlerId() {
-        return grpId;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         // TODO: Safe to remove only after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
         writer.setBuffer(buf);

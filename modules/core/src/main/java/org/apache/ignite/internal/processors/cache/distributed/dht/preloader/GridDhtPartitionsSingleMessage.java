@@ -157,11 +157,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         return grpsAffRequest;
     }
 
-    /** {@inheritDoc} */
-    @Override public int handlerId() {
-        return 0;
-    }
-
     /**
      * @return {@code True} if sent from client node.
      */

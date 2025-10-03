@@ -75,11 +75,6 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean cacheGroupMessage() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public int partition() {
         return GridIoMessage.STRIPE_DISABLED_PART;
     }

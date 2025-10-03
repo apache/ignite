@@ -40,16 +40,6 @@ public class GridDhtTxOnePhaseCommitAckRequest extends GridCacheMessage {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public int handlerId() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean cacheGroupMessage() {
-        return false;
-    }
-
     /**
      *
      * @param vers Near Tx xid Versions.

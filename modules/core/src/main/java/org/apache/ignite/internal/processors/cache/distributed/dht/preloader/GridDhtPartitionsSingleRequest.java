@@ -73,11 +73,6 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
     }
 
     /** {@inheritDoc} */
-    @Override public int handlerId() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 48;
     }
