@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util.nio;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.lang.IgniteInClosure;
 
@@ -183,7 +184,7 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
      * @return Send future.
      * @throws IgniteCheckedException If IgniteCheckedException occurred while handling event.
      */
-    @Override public GridNioFuture<?> onSessionWrite(
+    @Override public IgniteInternalFuture<?> onSessionWrite(
         GridNioSession ses,
         Object msg,
         boolean fut,
@@ -199,7 +200,7 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
      * @return Close future.
      * @throws IgniteCheckedException If IgniteCheckedException occurred while handling event.
      */
-    @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
         return tail.onSessionClose(ses);
     }
 
@@ -220,7 +221,7 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
      * @return Future.
      * @throws IgniteCheckedException If IgniteCheckedException occurred while handling event.
      */
-    @Override public GridNioFuture<?> onPauseReads(GridNioSession ses) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<?> onPauseReads(GridNioSession ses) throws IgniteCheckedException {
         return tail.onPauseReads(ses);
     }
 
@@ -231,7 +232,7 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
      * @return Future.
      * @throws IgniteCheckedException If IgniteCheckedException occurred while handling event.
      */
-    @Override public GridNioFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException {
         return tail.onResumeReads(ses);
     }
 
@@ -262,7 +263,7 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses,
+        @Override public IgniteInternalFuture<?> onSessionWrite(GridNioSession ses,
             Object msg,
             boolean fut,
             IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
@@ -270,7 +271,7 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
+        @Override public IgniteInternalFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
             return proceedSessionClose(ses);
         }
 
@@ -290,12 +291,12 @@ public class GridNioFilterChain<T> extends GridNioFilterAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onPauseReads(GridNioSession ses) throws IgniteCheckedException {
+        @Override public IgniteInternalFuture<?> onPauseReads(GridNioSession ses) throws IgniteCheckedException {
             return proceedPauseReads(ses);
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException {
+        @Override public IgniteInternalFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException {
             return proceedResumeReads(ses);
         }
     }

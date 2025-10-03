@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -100,7 +101,7 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
         if (closed())
             throw new IgniteCheckedException("Client was closed: " + this);
 
-        GridNioFuture<?> fut = ses.send(data);
+        IgniteInternalFuture<?> fut = ses.send(data);
 
         if (fut.isDone())
             fut.get();
