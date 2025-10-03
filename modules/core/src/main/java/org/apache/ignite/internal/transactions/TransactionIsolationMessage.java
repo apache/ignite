@@ -32,7 +32,7 @@ public class TransactionIsolationMessage implements Message {
 
     /** Code. */
     @Order(0)
-    private short code = -1;
+    private byte code = -1;
 
     /** Constructor. */
     public TransactionIsolationMessage() {
@@ -46,12 +46,12 @@ public class TransactionIsolationMessage implements Message {
     }
 
     /** @return Code. */
-    public short code() {
+    public byte code() {
         return code;
     }
 
     /** @param code Code. */
-    public void code(short code) {
+    public void code(byte code) {
         this.code = code;
         val = isolation(code);
     }
@@ -70,7 +70,7 @@ public class TransactionIsolationMessage implements Message {
      * @param val Transaction isolation.
      * @return Code.
      */
-    private short code(@Nullable TransactionIsolation val) {
+    private byte code(@Nullable TransactionIsolation val) {
         if (val == null)
             return -1;
 
@@ -93,7 +93,7 @@ public class TransactionIsolationMessage implements Message {
      * @param code Code.
      * @return Transaction isolation or null.
      */
-    @Nullable private TransactionIsolation isolation(short code) {
+    @Nullable private TransactionIsolation isolation(byte code) {
         switch (code) {
             case -1:
                 return null;

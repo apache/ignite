@@ -24,6 +24,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 /** */
 public class TransactionIsolationMessageTest {
@@ -34,6 +35,9 @@ public class TransactionIsolationMessageTest {
         assertEquals(0, new TransactionIsolationMessage(TransactionIsolation.READ_COMMITTED).code());
         assertEquals(1, new TransactionIsolationMessage(TransactionIsolation.REPEATABLE_READ).code());
         assertEquals(2, new TransactionIsolationMessage(TransactionIsolation.SERIALIZABLE).code());
+
+        for (TransactionIsolation isolation : TransactionIsolation.values())
+            assertTrue(new TransactionIsolationMessage(isolation).code() != -1);
     }
 
     /** */
@@ -41,19 +45,34 @@ public class TransactionIsolationMessageTest {
     public void testTransactionIsolationFromCode() {
         TransactionIsolationMessage msg = new TransactionIsolationMessage(null);
 
-        msg.code((short)-1);
+        msg.code((byte)-1);
         assertNull(msg.value());
 
-        msg.code((short)0);
+        msg.code((byte)0);
         assertSame(TransactionIsolation.READ_COMMITTED, msg.value());
 
-        msg.code((short)1);
+        msg.code((byte)1);
         assertSame(TransactionIsolation.REPEATABLE_READ, msg.value());
 
-        msg.code((short)2);
+        msg.code((byte)2);
         assertSame(TransactionIsolation.SERIALIZABLE, msg.value());
 
-        Throwable t = assertThrowsWithCause(() -> msg.code((short)3), IllegalArgumentException.class);
+        Throwable t = assertThrowsWithCause(() -> msg.code((byte)3), IllegalArgumentException.class);
         assertEquals("Unknown transaction isolation code: 3", t.getMessage());
+    }
+
+    /** */
+    @Test
+    public void testConversion() {
+        for (TransactionIsolation isolation : TransactionIsolation.values()) {
+            TransactionIsolationMessage msg = new TransactionIsolationMessage(isolation);
+
+            assertEquals(isolation, msg.value());
+
+            TransactionIsolationMessage newMsg = new TransactionIsolationMessage();
+            newMsg.code(msg.code());
+
+            assertEquals(msg.value(), newMsg.value());
+        }
     }
 }
