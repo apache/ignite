@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.affinity;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -187,8 +188,21 @@ public interface Affinity<K> {
      * @return Collection of primary and backup nodes for the key with primary node
      *      always first.
      * @throws IgniteException If there are no alive nodes for this cache.
+     * @deprecated Should return List because of order of nodes matters. Use {@link Affinity#mapKeyToPrimaryAndBackupsList(Object)} instead.
      */
+    @Deprecated
     public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key);
+
+    /**
+     * Gets primary and backup nodes for the key. Note that primary node is always
+     * first in the returned list.
+     *
+     * @param key Key to get affinity nodes for.
+     * @return List of primary and backup nodes for the key with primary node
+     *      always first.
+     * @throws IgniteException If there are no alive nodes for this cache.
+     */
+    public List<ClusterNode> mapKeyToPrimaryAndBackupsList(K key);
 
     /**
      * Gets primary node for the given partition.
@@ -222,6 +236,19 @@ public interface Affinity<K> {
      * @return Collection of primary and backup nodes for partition with primary node
      *      always first.
      * @throws IgniteException If there are no alive nodes for this cache.
+     * @deprecated Should return List because of order of nodes matters. Use {@link Affinity#mapPartitionToPrimaryAndBackupsList(int)} instead.
      */
+    @Deprecated
     public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part);
+
+    /**
+     * Gets primary and backup nodes for partition. Note that primary node is always
+     * first in the returned list.
+     *
+     * @param part Partition to get affinity nodes for.
+     * @return List of primary and backup nodes for partition with primary node
+     *      always first.
+     * @throws IgniteException If there are no alive nodes for this cache.
+     */
+    public List<ClusterNode> mapPartitionToPrimaryAndBackupsList(int part);
 }
