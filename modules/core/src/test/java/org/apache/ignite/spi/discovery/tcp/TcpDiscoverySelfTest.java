@@ -1771,8 +1771,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     timeoutErr,
                     null,
                     failureSpi -> {
-                        nodeFailed.countDown();
-
                         for (TcpDiscoverySpi spi : discoMap.values()) {
                             if (spi == failureSpi)
                                 continue;
@@ -1781,6 +1779,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                             spi0.pause = false;
                         }
+
+                        nodeFailed.countDown();
                     },
                     msgsBeforeFail
                 ));
