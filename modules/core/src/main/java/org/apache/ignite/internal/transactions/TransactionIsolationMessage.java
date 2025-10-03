@@ -85,7 +85,7 @@ public class TransactionIsolationMessage implements Message {
                 return 2;
 
             default:
-                return -1;
+                throw new IllegalArgumentException("Unknown transaction isolation value: " + val);
         }
     }
 
@@ -95,6 +95,9 @@ public class TransactionIsolationMessage implements Message {
      */
     @Nullable private TransactionIsolation isolation(short code) {
         switch (code) {
+            case -1:
+                return null;
+
             case 0:
                 return TransactionIsolation.READ_COMMITTED;
 
@@ -105,7 +108,7 @@ public class TransactionIsolationMessage implements Message {
                 return TransactionIsolation.SERIALIZABLE;
 
             default:
-                return null;
+                throw new IllegalArgumentException("Unknown transaction isolation code: " + code);
         }
     }
 }

@@ -308,7 +308,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /**
      * @param keepBinary Keep binary flag.
      */
-    public void keepBinary(boolean keepBinary) {
+    private void keepBinary(boolean keepBinary) {
         flags = keepBinary ? (byte)(flags | KEEP_BINARY_FLAG_MASK) : (byte)(flags & ~KEEP_BINARY_FLAG_MASK);
     }
 

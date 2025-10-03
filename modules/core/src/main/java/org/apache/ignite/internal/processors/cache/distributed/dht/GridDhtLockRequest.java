@@ -170,13 +170,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * @return Near node ID.
-     */
-    public UUID nearNodeId() {
-        return nodeId();
-    }
-
-    /**
      * @return Task name hash.
      */
     public int taskNameHash() {
@@ -303,14 +296,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             owned = new GridLeanMap<>(3);
 
         owned.put(key, ownerMapped);
-    }
-
-    /**
-     * @param key Key.
-     * @return Owner and its mapped versions.
-     */
-    @Nullable public GridCacheVersion owned(KeyCacheObject key) {
-        return owned == null ? null : owned.get(key);
     }
 
     /**
