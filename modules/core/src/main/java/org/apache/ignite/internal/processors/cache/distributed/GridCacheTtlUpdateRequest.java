@@ -103,7 +103,7 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     }
 
     /**
-     * @param ttl New new TTL.
+     * @param ttl New TTL.
      */
     public void ttl(long ttl) {
         this.ttl = ttl;
@@ -163,6 +163,13 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     }
 
     /**
+     * @param vers New entries versions.
+     */
+    public void versions(List<GridCacheVersion> vers) {
+        this.vers = vers;
+    }
+
+    /**
      * @param idx Entry index.
      * @return Version.
      */
@@ -170,13 +177,6 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
         assert idx >= 0 && idx < vers.size() : idx;
 
         return vers.get(idx);
-    }
-
-    /**
-     * @param vers New entries versions.
-     */
-    public void versions(List<GridCacheVersion> vers) {
-        this.vers = vers;
     }
 
     /**
