@@ -566,7 +566,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      */
     public abstract KeyCacheObject key(int idx);
 
-    // TODO: remove after IGNITE-26577
+    // TODO: remove after IGNITE-26599, IGNITE-26577
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -623,7 +623,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         return true;
     }
 
-    // TODO: remove after IGNITE-26577
+    // TODO: remove after IGNITE-26599, IGNITE-26577
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);

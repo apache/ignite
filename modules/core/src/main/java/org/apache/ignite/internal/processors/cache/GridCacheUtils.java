@@ -235,28 +235,16 @@ public class GridCacheUtils {
     public static final long EXPIRE_TIME_CALCULATE = -1L;
 
     /** Empty predicate array. */
-    private static final IgnitePredicate[] EMPTY = new IgnitePredicate[0];
+    private static final IgnitePredicate<?>[] EMPTY = new IgnitePredicate[0];
 
     /** Default transaction config. */
     private static final TransactionConfiguration DEFAULT_TX_CFG = new TransactionConfiguration();
 
     /** Empty predicate array. */
-    private static final IgnitePredicate[] EMPTY_FILTER = new IgnitePredicate[0];
-
-    /** Empty predicate array. */
     private static final CacheEntryPredicate[] EMPTY_FILTER0 = new CacheEntryPredicate[0];
 
     /** */
-    private static final CacheEntryPredicate ALWAYS_FALSE0 = new CacheEntrySerializablePredicate(
-        new CacheEntryPredicateAdapter() {
-            @Override public boolean apply(GridCacheEntryEx e) {
-                return false;
-            }
-        }
-    );
-
-    /** */
-    private static final CacheEntryPredicate[] ALWAYS_FALSE0_ARR = new CacheEntryPredicate[] {ALWAYS_FALSE0};
+    private static final CacheEntryPredicate[] ALWAYS_FALSE_ARR = new CacheEntryPredicate[] {CacheEntryPredicateAdapter.ALWAYS_FALSE};
 
     /** Read filter. */
     public static final IgnitePredicate<IgniteTxEntry> READ_FILTER = new P1<IgniteTxEntry>() {
@@ -487,7 +475,7 @@ public class GridCacheUtils {
      * @return Empty filter.
      */
     public static <K, V> IgnitePredicate<Cache.Entry<K, V>>[] empty() {
-        return (IgnitePredicate<Cache.Entry<K, V>>[])EMPTY_FILTER;
+        return (IgnitePredicate<Cache.Entry<K, V>>[])EMPTY;
     }
 
     /**
@@ -501,7 +489,7 @@ public class GridCacheUtils {
      * @return Always false filter.
      */
     public static CacheEntryPredicate[] alwaysFalse0Arr() {
-        return ALWAYS_FALSE0_ARR;
+        return ALWAYS_FALSE_ARR;
     }
 
     /**
