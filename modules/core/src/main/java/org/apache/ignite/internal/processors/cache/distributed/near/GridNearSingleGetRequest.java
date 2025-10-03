@@ -151,7 +151,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     }
 
     /**
-     * Sets key.
+     * Sets the key.
      */
     public void key(KeyCacheObject key) {
         this.key = key;
@@ -164,14 +164,14 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         return key;
     }
 
-    /** @return Flags. */
-    public byte flags() {
-        return flags;
-    }
-
     /** Sets the flags. */
     public void flags(byte flags) {
         this.flags = flags;
+    }
+
+    /** @return Flags. */
+    public byte flags() {
+        return flags;
     }
 
     /**
@@ -254,7 +254,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     }
 
     /**
-     * Sets transaction label;
+     * Sets the transaction label;
      */
     public void txLabel(String txLbl) {
         this.txLbl = txLbl;
