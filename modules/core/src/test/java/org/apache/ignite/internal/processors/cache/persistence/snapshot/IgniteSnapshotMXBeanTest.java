@@ -17,7 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.file.OpenOption;
 import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
@@ -29,6 +35,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -90,6 +99,60 @@ public class IgniteSnapshotMXBeanTest extends AbstractSnapshotSelfTest {
         IgniteEx snp = startGridsFromSnapshot(2, SNAPSHOT_NAME);
 
         assertSnapshotCacheKeys(snp.cache(dfltCacheCfg.getName()));
+    }
+
+    /** @throws Exception If fails. */
+    @Test
+    public void testCreateDump() throws Exception {
+        IgniteEx ign = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
+
+        DynamicMBean snpMBean = metricRegistry(ign.name(), null, SNAPSHOT_METRICS);
+
+        assertEquals("Snapshot end time must be undefined on first snapshot operation starts.",
+            0, (long)getMetric("LastSnapshotEndTime", snpMBean));
+
+        IgniteSnapshotManager mgr = ign.context().cache().context().snapshotMgr();
+
+        AtomicInteger cntr = new AtomicInteger();
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        mgr.ioFactory(new RandomAccessFileIOFactory(){
+            @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+                return new RandomAccessFileIO(file, modes) {
+                    @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
+                        if (cntr.incrementAndGet() >= 10) {
+                            try {
+                                latch.await();
+                            }
+                            catch (InterruptedException e) {
+                                throw new IOException(e);
+                            }
+                        }
+
+                        return super.write(srcBuf, position);
+                    }
+                };
+            }
+        });
+
+        IgniteFuture<Void> fut = mgr.createDump("dump", null);
+
+        assertTrue("Dump total partitions should be defined.",
+            GridTestUtils.waitForCondition(() -> (long)getMetric("CurrentDumpTotalPartitions", snpMBean) > 0, TIMEOUT));
+
+        assertTrue("Dump processed partitions should be defined.", (long)getMetric("CurrentDumpProcessedPartitions", snpMBean) > 0);
+
+        assertTrue("Dump processed entries should be defined.", (long)getMetric("CurrentDumpProcessedEntries", snpMBean) > 0);
+
+        latch.countDown();
+
+        fut.get();
+
+        assertTrue("Waiting for snapshot operation failed.",
+            GridTestUtils.waitForCondition(() -> (long)getMetric("LastSnapshotEndTime", snpMBean) > 0, TIMEOUT));
+
+        stopAllGrids();
     }
 
     /** @throws Exception If fails. */
