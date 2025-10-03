@@ -30,6 +30,7 @@ import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 /** */
@@ -70,13 +71,13 @@ public class SnapshotChecker {
         assert incIdx > 0;
 
         return CompletableFuture.supplyAsync(
-            () -> new IncrementalSnapshotVerificationTask(kctx.grid(), log, sft, incIdx).execute(),
+            new IncrementalSnapshotVerificationTask(kctx.grid(), log, sft, incIdx),
             executor
         );
     }
 
     /** */
-    public IdleVerifyResult reduceIncrementalResults(
+    public IdleVerifyResult reduceIncrementalResults (
         SnapshotFileTree sft,
         int incIdx,
         Map<ClusterNode, IncrementalSnapshotVerificationTaskResult> results,
@@ -85,7 +86,23 @@ public class SnapshotChecker {
         if (!operationErrors.isEmpty())
             return IdleVerifyResult.builder().exceptions(operationErrors).build();
 
-        return new IncrementalSnapshotVerificationTask(kctx.grid(), log, sft, incIdx).reduce(results);
+        IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
+
+        for (Map.Entry<ClusterNode, IncrementalSnapshotVerificationTaskResult> nodeRes: results.entrySet()) {
+            IncrementalSnapshotVerificationTaskResult res = nodeRes.getValue();
+
+            if (!F.isEmpty(res.partiallyCommittedTxs()))
+                bldr.addPartiallyCommited(nodeRes.getKey(), res.partiallyCommittedTxs());
+
+            bldr.addPartitionHashes(res.partHashRes());
+
+            if (log.isDebugEnabled())
+                log.debug("Handle VerifyIncrementalSnapshotJob result [node=" + nodeRes.getKey() + ", taskRes=" + res + ']');
+
+            bldr.addIncrementalHashRecords(nodeRes.getKey(), res.txHashRes());
+        }
+
+        return bldr.build();
     }
 
     /** */
