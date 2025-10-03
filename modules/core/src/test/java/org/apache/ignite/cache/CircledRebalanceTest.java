@@ -169,7 +169,7 @@ public class CircledRebalanceTest extends GridCommonAbstractTest {
             if (msg instanceof GridDhtPartitionDemandMessage) {
                 GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage)msg;
 
-                hasFullRebalance.compareAndSet(false, !F.isEmpty(demandMsg.partitions().fullSet()));
+                hasFullRebalance.compareAndSet(false, !F.isEmpty(demandMsg.partitions().full()));
 
                 return true;
             }

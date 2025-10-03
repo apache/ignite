@@ -246,7 +246,7 @@ public class FullHistRebalanceOnClientStopTest extends GridCommonAbstractTest {
                     }
                 }
 
-                if (!map.fullSet().isEmpty()) {
+                if (!map.full().isEmpty()) {
                     synchronized (mux) {
                         topVersForFull = true;
                     }

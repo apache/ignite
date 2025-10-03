@@ -194,7 +194,7 @@ public class HistoricalReservationTest extends GridCommonAbstractTest {
             if (msg instanceof GridDhtPartitionDemandMessage) {
                 GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage)msg;
 
-                if (!F.isEmpty(demandMsg.partitions().fullSet()))
+                if (!F.isEmpty(demandMsg.partitions().full()))
                     hasFullRebalance.compareAndSet(false, true);
             }
 
