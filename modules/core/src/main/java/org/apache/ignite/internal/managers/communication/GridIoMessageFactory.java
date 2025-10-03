@@ -208,7 +208,6 @@ import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRe
 import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId;
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult;
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResultBatch;
-import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
@@ -314,7 +313,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)80, MetadataRequestMessage::new, new MetadataRequestMessageSerializer());
         factory.register((short)81, MetadataResponseMessage::new);
         factory.register((short)82, JobStealingRequest::new, new JobStealingRequestSerializer());
-        factory.register((short)84, GridByteArrayList::new);
         factory.register((short)86, GridCacheVersion::new, new GridCacheVersionSerializer());
         factory.register((short)87, GridDhtPartitionExchangeId::new, new GridDhtPartitionExchangeIdSerializer());
         factory.register((short)88, GridCacheReturn::new);
