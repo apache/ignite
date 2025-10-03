@@ -20,11 +20,13 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -43,7 +45,10 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 /**
  *
  */
-public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSingleUpdateRequest {
+public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
+    /** */
+    private static final CacheEntryPredicate[] NO_FILTER = new CacheEntryPredicate[0];
+
     /** Key to update. */
     @GridToStringInclude
     @Order(10)
@@ -179,6 +184,21 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         assert idx == 0 : idx;
 
         return val;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheEntryPredicate[] filter() {
+        return NO_FILTER;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExpiryPolicy expiry() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override @Nullable public Object[] invokeArguments() {
+        return null;
     }
 
     /** {@inheritDoc} */
