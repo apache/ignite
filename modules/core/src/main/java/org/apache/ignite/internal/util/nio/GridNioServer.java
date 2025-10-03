@@ -3752,7 +3752,6 @@ public class GridNioServer<T> {
                     return null;
                 }
                 else
-                    // TODO: cast short.
                     return send(ses, (Message)msg, fut, ackC);
             }
             else
