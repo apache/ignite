@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.transactions;
 
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
@@ -63,8 +64,8 @@ public class TransactionIsolationMessageTest {
 
     /** */
     @Test
-    public void testConversion() {
-        for (TransactionIsolation isolation : TransactionIsolation.values()) {
+    public void testConversionConsistency() {
+        for (TransactionIsolation isolation : F.concat(TransactionIsolation.values(), (TransactionIsolation)null)) {
             TransactionIsolationMessage msg = new TransactionIsolationMessage(isolation);
 
             assertEquals(isolation, msg.value());
@@ -74,13 +75,5 @@ public class TransactionIsolationMessageTest {
 
             assertEquals(msg.value(), newMsg.value());
         }
-
-        TransactionIsolationMessage msg = new TransactionIsolationMessage(null);
-        assertNull(msg.value());
-
-        TransactionIsolationMessage newMsg = new TransactionIsolationMessage();
-        newMsg.code(msg.code());
-
-        assertNull(newMsg.value());
     }
 }

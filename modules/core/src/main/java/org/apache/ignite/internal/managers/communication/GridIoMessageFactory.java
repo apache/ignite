@@ -397,7 +397,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(TransactionIsolationMessage.TYPE_CODE, TransactionIsolationMessage::new,
             new TransactionIsolationMessageSerializer());
 
-        // [-3..119] [124..129] [-23..-28] [-36..-55] [183..188] - this
+        // [-3..119] [124..129] [-23..-28] [-36..-55] [183..189] - this
         // [120..123] - DR
         // [-44, 0..2, 42, 200..204, 210, 302] - Use in tests.
         // [300..307, 350..352] - CalciteMessageFactory.

@@ -22,7 +22,10 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
-/** Message for {@link TransactionIsolation}. */
+/**
+ * Message for {@link TransactionIsolation}.
+ * Consistency between code-to-value and value-to-code conversions must be provided.
+ */
 public class TransactionIsolationMessage implements Message {
     /** Type code. */
     public static final short TYPE_CODE = 189;
