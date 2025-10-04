@@ -110,6 +110,8 @@ public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommu
         ClusterNode to = nodes.get(1);
 
         for (int i = 0; i < TEST_ITERATION_CNT; i++) {
+            System.out.println("Iteration: " + i);
+
             // Force connection to be established.
             sendMessage(from, to, createMessage());
 
@@ -119,8 +121,11 @@ public class TcpCommunicationSpiSslVolatilePayloadTest extends GridAbstractCommu
             // Stores multiple dummy messages in a recovery descriptor. When the connection is restored, they will be
             // written to the network buffer along with the last handshake message.
             // See TcpHandshakeExecutor#receiveAcknowledge
-            for (int j = 0; j < RECOVERY_DESCRIPTOR_QUEUE_MESSAGE_CNT; j++)
+            for (int j = 0; j < RECOVERY_DESCRIPTOR_QUEUE_MESSAGE_CNT; j++) {
+                System.out.println("Queue: " + j);
+
                 toDesc.add(new GridNioServer.WriteRequestImpl(toDesc.session(), createMessage(), false, null));
+            }
 
             // Close connection to re-initiate handshake between nodes.
             fromDesc.session().close().get(5000);

@@ -172,6 +172,7 @@ public class TcpHandshakeExecutor {
             NodeIdMessage nodeIdMsg = new NodeIdMessage();
 
             msgFactory.serializer(nodeIdMsg.directType()).readFrom(nodeIdMsg, buf, reader);
+            reader.reset();
 
             return nodeIdMsg.nodeId();
         }
@@ -209,8 +210,6 @@ public class TcpHandshakeExecutor {
             RecoveryLastReceivedMessageSerializer msgSer =
                 (RecoveryLastReceivedMessageSerializer)msgFactory.serializer(msg.directType());
 
-            reader.reset();
-
             short msgType = 0;
             int readPos = 0;
 
@@ -238,6 +237,8 @@ public class TcpHandshakeExecutor {
 
                 readPos = buf.position();
             }
+
+            reader.reset();
 
             return msg.received();
         }

@@ -175,8 +175,8 @@ class MessageSerializerGenerator {
 
         indent--;
 
-        finish(write);
-        finish(read);
+        finish(write, true);
+        finish(read, false);
     }
 
     /**
@@ -641,13 +641,17 @@ class MessageSerializerGenerator {
     }
 
     /** */
-    private void finish(List<String> code) {
+    private void finish(List<String> code, boolean write) {
         String lastLine = code.get(code.size() - 1);
 
         if (EMPTY.equals(lastLine))
             code.remove(code.size() - 1);
 
         code.add(line("}"));
+        code.add(EMPTY);
+
+        code.add(line("System.out.println(\"%s:\" + m + \" \" + buf.position() + \" \" + Thread.currentThread().getName());",
+            write ? "writeTo" : "readFrom"));
         code.add(EMPTY);
 
         code.add(line("return true;"));
