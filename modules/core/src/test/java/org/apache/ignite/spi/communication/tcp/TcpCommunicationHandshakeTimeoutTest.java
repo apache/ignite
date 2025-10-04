@@ -30,6 +30,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.resource.DependencyResolver;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.communication.tcp.internal.TcpHandshakeExecutor;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -136,7 +137,7 @@ public class TcpCommunicationHandshakeTimeoutTest extends GridCommonAbstractTest
 
         /** {@inheritDoc} */
         @Override public long tcpHandshake(SocketChannel ch, UUID rmtNodeId, GridSslMeta sslMeta,
-            HandshakeMessage msg) throws IgniteCheckedException {
+            HandshakeMessage msg, MessageFactory msgFactory) throws IgniteCheckedException {
             if (needToDelayd.get()) {
                 needToDelayd.set(false);
 
@@ -144,7 +145,7 @@ public class TcpCommunicationHandshakeTimeoutTest extends GridCommonAbstractTest
                     LockSupport.parkNanos(10_000_000);
             }
 
-            return delegate.tcpHandshake(ch, rmtNodeId, sslMeta, msg);
+            return delegate.tcpHandshake(ch, rmtNodeId, sslMeta, msg, msgFactory);
         }
     }
 }

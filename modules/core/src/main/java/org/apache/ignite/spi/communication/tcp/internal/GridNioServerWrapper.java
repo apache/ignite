@@ -848,9 +848,7 @@ public class GridNioServerWrapper {
 
                         assert formatter != null;
 
-                        ConnectionKey key = ses.meta(CONN_IDX_META);
-
-                        return key != null ? formatter.reader(key.nodeId(), msgFactory) : null;
+                        return formatter.reader(msgFactory);
                     }
                 };
 
@@ -870,9 +868,7 @@ public class GridNioServerWrapper {
 
                         assert formatter != null;
 
-                        ConnectionKey key = ses.meta(CONN_IDX_META);
-
-                        return key != null ? formatter.writer(key.nodeId(), msgFactory) : null;
+                        return formatter.writer(msgFactory);
                     }
                 };
 
@@ -933,7 +929,8 @@ public class GridNioServerWrapper {
                     .skipRecoveryPredicate(skipRecoveryPred)
                     .messageQueueSizeListener(queueSizeMonitor)
                     .tracing(tracing)
-                    .readWriteSelectorsAssign(cfg.usePairedConnections());
+                    .readWriteSelectorsAssign(cfg.usePairedConnections())
+                    .messageFactory(msgFactory);
 
                 if (metricMgr != null) {
                     builder.workerListener(workersRegistry)
@@ -1199,7 +1196,7 @@ public class GridNioServerWrapper {
         handshakeTimeoutExecutorService.schedule(timeoutObj, timeout, TimeUnit.MILLISECONDS);
 
         try {
-            return tcpHandshakeExecutor.tcpHandshake(ch, rmtNodeId, sslMeta, msg);
+            return tcpHandshakeExecutor.tcpHandshake(ch, rmtNodeId, sslMeta, msg, nio().messageFactory());
         }
         finally {
             if (!timeoutObj.cancel())
