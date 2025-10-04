@@ -112,6 +112,7 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.lang.gridfunc.NoOpClosure;
+import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -122,6 +123,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.internal.GridNioServerWrapper;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -2643,5 +2646,18 @@ public final class GridTestUtils {
      */
     public static void suppressException(RunnableX runnableX) {
         runnableX.run();
+    }
+
+    /**
+     * @param ignite Ignite instance.
+     * @param skip Skip.
+     */
+    @SuppressWarnings("deprecation")
+    public static void skipCommNioServerRead(IgniteEx ignite, boolean skip) {
+        TcpCommunicationSpi commSpi = (TcpCommunicationSpi)(ignite.context().config().getCommunicationSpi());
+
+        GridNioServer<?> nioSrvr = ((GridNioServerWrapper)U.field(commSpi, "nioSrvWrapper")).nio();
+
+        setFieldValue(nioSrvr, "skipRead", skip);
     }
 }
