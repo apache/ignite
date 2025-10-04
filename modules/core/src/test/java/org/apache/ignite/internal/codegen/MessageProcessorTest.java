@@ -162,6 +162,14 @@ public class MessageProcessorTest {
     }
 
     /** */
+    @Test
+    public void testEnumFieldFailed() {
+        Compilation compilation = compile("EnumFieldMessage.java");
+
+        assertThat(compilation).failed();
+    }
+
+    /** */
     private Compilation compile(String... srcFiles) {
         List<JavaFileObject> input = new ArrayList<>();
 

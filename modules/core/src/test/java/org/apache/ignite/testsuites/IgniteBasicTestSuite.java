@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSel
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtilsTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
+import org.apache.ignite.internal.transactions.TransactionIsolationMessageTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
@@ -143,7 +144,8 @@ import org.junit.runners.Suite;
     JavaVersionCommandParserTest.class,
     ClientSessionOutboundQueueLimitTest.class,
 
-    MessageProcessorTest.class
+    MessageProcessorTest.class,
+    TransactionIsolationMessageTest.class
 })
 public class IgniteBasicTestSuite {
 }

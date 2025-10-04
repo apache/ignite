@@ -36,6 +36,7 @@ import java.util.UUID;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -339,6 +340,9 @@ class MessageSerializerGenerator {
         }
 
         if (type.getKind() == TypeKind.DECLARED) {
+            if (enumType(erasedType(type)))
+                throw new IllegalArgumentException("Unsupported enum type: " + type);
+
             if (sameType(type, String.class))
                 returnFalseIfWriteFailed(write, "writer.writeString", getExpr);
 
@@ -481,6 +485,9 @@ class MessageSerializerGenerator {
         }
 
         if (type.getKind() == TypeKind.DECLARED) {
+            if (enumType(erasedType(type)))
+                throw new IllegalArgumentException("Unsupported enum type: " + type);
+
             if (sameType(type, String.class))
                 returnFalseIfReadFailed(name, "reader.readString");
 
@@ -712,6 +719,13 @@ class MessageSerializerGenerator {
     /** */
     private boolean assignableFrom(TypeMirror type, TypeMirror superType) {
         return env.getTypeUtils().isAssignable(type, superType);
+    }
+
+    /** */
+    private boolean enumType(TypeMirror type) {
+        Element element = env.getTypeUtils().asElement(type);
+
+        return element != null && element.getKind() == ElementKind.ENUM;
     }
 
     /** */
