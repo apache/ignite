@@ -142,7 +142,7 @@ public class IndexQueryRebuildIndexTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(null,
             () -> {
                 cache.query(qry).getAll();
-            }, IgniteException.class, "Failed to run IndexQuery: index " + IDX + " isn't completed yet.");
+            }, IgniteException.class, "Failed to run IndexQuery due to index rebuild is in progress");
 
         rebuild.blockIdxRebuildLatch.countDown();
 

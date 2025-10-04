@@ -348,10 +348,8 @@ public class IndexProcessor extends GridProcessorAdapter {
 
             Collection<Index> idxs = cacheToIdx.get(cctx.name()).values();
 
-            for (Index idx: idxs) {
-                if (idx instanceof AbstractIndex)
-                    idx.markIndexRebuild(val);
-            }
+            for (Index idx: idxs)
+                idx.markIndexRebuild(val);
         }
         finally {
             ddlLock.readLock().unlock();
