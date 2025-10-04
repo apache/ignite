@@ -2216,7 +2216,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+    @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut, @Nullable Throwable err) {
         if (clusterSnpReq == null || cctx.kernalContext().clientNode() || !isSnapshotOperation(fut.firstEvent()))
             return;
 
@@ -2229,6 +2229,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         if (task == null)
             return;
+        else if (err != null) {
+            task.onDone(err);
+
+            return;
+        }
 
         if (task.start()) {
             cctx.database().forceNewCheckpoint(String.format("Start snapshot operation: %s", snpReq.snapshotName()), lsnr -> {});
