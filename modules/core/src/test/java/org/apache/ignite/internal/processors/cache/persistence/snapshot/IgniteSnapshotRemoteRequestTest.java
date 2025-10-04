@@ -268,8 +268,9 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
         latch.countDown();
 
-        assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), ClusterTopologyCheckedException.class,
-            "he node from which a snapshot has been requested left the grid");
+        assertThrowsAnyCause(log, () -> fut.get(TIMEOUT), IgniteCheckedException.class,
+            "Request cancelled. The snapshot operation stopped on the remote node with an error: " +
+                "The operation is cancelled due to the local node is stopping");
     }
 
     /** @throws Exception If fails. */
