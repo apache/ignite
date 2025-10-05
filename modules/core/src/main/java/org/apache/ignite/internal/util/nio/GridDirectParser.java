@@ -79,13 +79,7 @@ public class GridDirectParser implements GridNioParser {
                 byte b0 = buf.get();
                 byte b1 = buf.get();
 
-                try {
-                    msg = msgFactory.create(makeMessageType(b0, b1));
-                }
-                catch (Throwable e) {
-                    throw e;
-                }
-
+                msg = msgFactory.create(makeMessageType(b0, b1));
             }
 
             boolean finished = false;

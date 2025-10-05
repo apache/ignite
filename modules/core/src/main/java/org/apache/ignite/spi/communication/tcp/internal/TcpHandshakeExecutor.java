@@ -172,6 +172,7 @@ public class TcpHandshakeExecutor {
             NodeIdMessage nodeIdMsg = new NodeIdMessage();
 
             msgFactory.serializer(nodeIdMsg.directType()).readFrom(nodeIdMsg, buf, reader);
+            reader.reset();
 
             return nodeIdMsg.nodeId();
         }
@@ -209,14 +210,17 @@ public class TcpHandshakeExecutor {
             RecoveryLastReceivedMessageSerializer msgSer =
                 (RecoveryLastReceivedMessageSerializer)msgFactory.serializer(msg.directType());
 
-            reader.reset();
-
             short msgType = 0;
             int readPos = 0;
+            int readBytes = 0;
 
-            // Might read less bytes than MESSAGE_FULL_SIZE, due to optimizaton for writing long values.
+            // Might read less than MESSAGE_FULL_SIZE, due to optimizaton for writing long values.
+            // For this reason read byte by byte while not finished. To avoid case when we read more than needed.
             while (!fininshed) {
-                int readBytes = read(buf);
+                // Read byte by byte.
+                buf.limit(buf.position() + 1);
+
+                readBytes += read(buf);
 
                 if (readBytes == -1)
                     throw new HandshakeException("Failed to read remote node recovery handshake (connection closed).");
@@ -238,6 +242,8 @@ public class TcpHandshakeExecutor {
 
                 readPos = buf.position();
             }
+
+            reader.reset();
 
             return msg.received();
         }
@@ -349,8 +355,11 @@ public class TcpHandshakeExecutor {
 
             int read = copy(appBuff, buf);
 
-            if (read > 0)
+            if (read > 0) {
+                System.out.println("SslTransport0 read=" + read + ", appBuffPos=" + appBuff.position() + " appBufLimit=" + appBuff.limit());
+
                 return read;
+            }
 
             try {
                 while (read == 0) {
@@ -392,6 +401,12 @@ public class TcpHandshakeExecutor {
         /** {@inheritDoc} */
         @Override void onHandshakeFinished(GridSslMeta sslMeta) {
             ByteBuffer appBuff = handler.applicationBuffer();
+
+            System.out.println("onHandshakeFinished appBufPos=" + appBuff.position() + " " + appBuff.limit());
+
+            if (appBuff.limit() > 0)
+                System.out.println();
+
             if (appBuff.hasRemaining())
                 sslMeta.decodedBuffer(appBuff);
 
