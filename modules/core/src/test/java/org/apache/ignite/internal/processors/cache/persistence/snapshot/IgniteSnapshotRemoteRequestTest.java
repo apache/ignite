@@ -271,7 +271,8 @@ public class IgniteSnapshotRemoteRequestTest extends IgniteClusterSnapshotRestor
 
         try {
             fut.get(TIMEOUT);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             boolean expErr = X.hasCause(e, "The node from which a snapshot has been requested left the grid",
                 ClusterTopologyCheckedException.class)
                 || X.hasCause(e, "Request cancelled. The snapshot operation stopped on the remote node with an error: " +
