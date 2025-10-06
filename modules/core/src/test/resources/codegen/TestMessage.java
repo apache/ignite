@@ -197,16 +197,15 @@ public class TestMessage implements Message {
         this.gridLongList = gridLongList;
     }
 
-
-    public short directType() {
-        return 0;
-    }
-
     public Exception exception() {
         return exception;
     }
 
     public void exception(Exception exception) {
         this.exception = exception;
+    }
+
+    public short directType() {
+        return 0;
     }
 }

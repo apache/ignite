@@ -50,8 +50,8 @@ import org.apache.ignite.internal.codegen.GridDhtPartitionSupplyMessageSerialize
 import org.apache.ignite.internal.codegen.GridDhtPartitionsSingleRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtTxOnePhaseCommitAckRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtTxPrepareRequestSerializer;
-import org.apache.ignite.internal.codegen.GridDistributedLockResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDhtUnlockRequestSerializer;
+import org.apache.ignite.internal.codegen.GridDistributedLockResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDistributedTxPrepareRequestSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridJobSiblingsRequestSerializer;

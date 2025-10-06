@@ -275,7 +275,7 @@ public class TestMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 15:
-                msg.exception(ErrorMessage.toThrowable(reader.readMessage()))
+                msg.exception(ErrorMessage.toThrowable(reader.readMessage()));
 
                 if (!reader.isLastRead())
                     return false;
