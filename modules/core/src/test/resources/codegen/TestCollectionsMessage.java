@@ -27,7 +27,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 public class TestCollectionsMessage implements Message {
-    @Order(0)
+    @Order(value = 0)
     private List<boolean[]> booleanArrayList;
 
     @Order(1)

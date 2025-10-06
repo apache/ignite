@@ -38,11 +38,8 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
 
     /** */
     @GridToStringInclude
+    @Order(value = 0, method = "typeEncoded", asType = "short")
     private PredicateType type;
-
-    /** Type value serialization holder. */
-    @Order(0)
-    protected transient short typeVal;
 
     /** */
     @GridToStringInclude
@@ -153,7 +150,7 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     }
 
     /** */
-    public short typeVal() {
+    public short typeEncoded() {
         switch (type) {
             case OTHER: return 1;
             case VALUE: return 2;
@@ -166,7 +163,7 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     }
 
     /** */
-    public void typeVal(short typeVal) {
+    public void typeEncoded(short typeVal) {
         switch (typeVal) {
             case 1: type = PredicateType.OTHER; break;
             case 2: type = PredicateType.VALUE; break;

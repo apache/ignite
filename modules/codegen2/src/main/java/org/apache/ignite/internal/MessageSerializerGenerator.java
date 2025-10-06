@@ -304,11 +304,13 @@ class MessageSerializerGenerator {
      * @param field Field to generate write code.
      */
     private void returnFalseIfWriteFailed(VariableElement field) throws Exception {
-        String methodName = field.getAnnotation(Order.class).method();
+        Order orderAnnotation = field.getAnnotation(Order.class);
+
+        TypeMirror type = F.isEmpty(orderAnnotation.asType()) ? field.asType() : type(orderAnnotation.asType());
+
+        String methodName = orderAnnotation.method();
 
         String getExpr = (F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName) + "()";
-
-        TypeMirror type = field.asType();
 
         if (type.getKind().isPrimitive()) {
             String typeName = capitalizeOnlyFirst(type.getKind().name());
@@ -423,9 +425,11 @@ class MessageSerializerGenerator {
      * @param field Field.
      */
     private void returnFalseIfReadFailed(VariableElement field) throws Exception {
-        TypeMirror type = field.asType();
+        Order orderAnnotation = field.getAnnotation(Order.class);
 
-        String methodName = field.getAnnotation(Order.class).method();
+        TypeMirror type = F.isEmpty(orderAnnotation.asType()) ? field.asType() : type(orderAnnotation.asType());
+
+        String methodName = orderAnnotation.method();
 
         String name = F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName;
 
@@ -719,6 +723,18 @@ class MessageSerializerGenerator {
         Elements elementUtils = env.getElementUtils();
 
         TypeElement typeElement = elementUtils.getTypeElement(clazz);
+
+        // Allows to read/write as primitives. As instance, for enums.
+        if (typeElement == null) {
+            switch (clazz){
+                case "byte": return env.getTypeUtils().getPrimitiveType(TypeKind.BYTE);
+                case "short": return env.getTypeUtils().getPrimitiveType(TypeKind.SHORT);
+                case "int": return env.getTypeUtils().getPrimitiveType(TypeKind.INT);
+                case "long": return env.getTypeUtils().getPrimitiveType(TypeKind.LONG);
+                case "float": return env.getTypeUtils().getPrimitiveType(TypeKind.FLOAT);
+                case "double": return env.getTypeUtils().getPrimitiveType(TypeKind.DOUBLE);
+            }
+        }
 
         return typeElement != null ? typeElement.asType() : null;
     }

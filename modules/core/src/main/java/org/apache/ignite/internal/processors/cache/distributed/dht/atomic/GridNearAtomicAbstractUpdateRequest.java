@@ -23,12 +23,12 @@ import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheWriteSynchronizationModeMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
@@ -40,6 +40,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -94,8 +95,8 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     protected GridCacheOperationMessage cacheOperationMsg;
 
     /** Write synchronization mode. */
-    @Order(7)
-    protected CacheWriteSynchronizationModeMessage writeSyncModeMsg;
+    @Order(value = 7, method = "writeSyncModeEncoded", asType = "short")
+    protected CacheWriteSynchronizationMode writeSyncMode;
 
     /** Task name hash. */
     @Order(8)
@@ -140,7 +141,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         this.nodeId = nodeId;
         this.futId = futId;
         this.topVer = topVer;
-        this.writeSyncModeMsg = new CacheWriteSynchronizationModeMessage(syncMode);
+        this.writeSyncMode = syncMode;
         this.cacheOperationMsg = new GridCacheOperationMessage(op);
         this.taskNameHash = taskNameHash;
         this.flags = flags;
@@ -298,7 +299,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
     /** @return Cache operatrion. */
     public CacheWriteSynchronizationMode writeSynchronizationMode() {
-        return writeSyncModeMsg.cacheWriteSyncMode();
+        return writeSyncMode;
     }
 
     /**
@@ -332,16 +333,20 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         this.cacheOperationMsg = cacheOpMsg;
     }
 
-    /**
-     * @return Write mode serialization message.
-     */
-    public final CacheWriteSynchronizationModeMessage writeSyncModeMsg() {
-        return writeSyncModeMsg;
+    /** */
+    public short writeSyncModeEncoded() {
+        switch (writeSyncMode) {
+            case FULL_SYNC: return 1,
+            case FULL_ASYNC: return 2,
+            case PRIMARY_SYNC
+                ;
+                return 3;
+        }
     }
 
-    /** Sets write mode serialization message */
-    public void writeSyncModeMsg(CacheWriteSynchronizationModeMessage writeSyncModeMsg) {
-        this.writeSyncModeMsg = writeSyncModeMsg;
+    /** */
+    public void writeSyncModeEncoded(short writeSyncMode) {
+
     }
 
     /**
@@ -601,7 +606,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMessage(writeSyncModeMsg))
+                if (!writer.writeMessage(writeSyncMode))
                     return false;
 
                 writer.incrementState();
@@ -657,7 +662,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                 reader.incrementState();
 
             case 7:
-                writeSyncModeMsg = reader.readMessage();
+                writeSyncMode = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;

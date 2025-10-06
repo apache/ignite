@@ -21,6 +21,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import javax.lang.model.type.TypeMirror;
 
 /**
  * The annotation specifies the position of a field in the serialized and deserialized byte sequence of a {@code Message} class.
@@ -42,4 +43,7 @@ public @interface Order {
 
     /** @return Getter and setter name. */
     String method() default "";
+
+    /** */
+    String asType() default "";
 }
