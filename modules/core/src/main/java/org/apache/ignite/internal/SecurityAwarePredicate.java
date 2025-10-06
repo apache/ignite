@@ -21,8 +21,8 @@ import java.security.AccessControlException;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.security.AbstractSecurityAwareExternalizable;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.lang.IgnitePredicate;
 
 /**
@@ -52,7 +52,7 @@ public class SecurityAwarePredicate<E> extends AbstractSecurityAwareExternalizab
     @Override public boolean apply(E evt) {
         IgniteSecurity security = ignite.context().security();
 
-        try (OperationSecurityContext c = security.withContext(subjectId)) {
+        try (Scope ignored = security.withContext(subjectId)) {
             IgniteSandbox sandbox = security.sandbox();
 
             return sandbox.enabled() ? sandbox.execute(() -> original.apply(evt)) : original.apply(evt);

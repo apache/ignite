@@ -15,32 +15,43 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security;
+package org.apache.ignite.internal.thread.context;
 
-/**
- *
- */
-public class OperationSecurityContext implements AutoCloseable {
-    /** Ignite Security. */
-    private final IgniteSecurity proc;
+/** */
+class ThreadContextScope implements Scope {
+    /** */
+    private static final Scope INSTANCE = new ThreadContextScope();
 
-    /** Security context. */
-    private final SecurityContext secCtx;
+    /** */
+    private ThreadContextScope() {
+        // No-op.
+    }
 
-    /**
-     * @param proc Ignite Security.
-     * @param secCtx Security context.
-     */
-    OperationSecurityContext(IgniteSecurity proc, SecurityContext secCtx) {
-        this.proc = proc;
-        this.secCtx = secCtx;
+    /** {@inheritDoc} */
+    @Override public <T> Scope withAttribute(ThreadContextAttribute<T> attr, T val) {
+        ThreadContext.data().put(attr, val);
+
+        return this;
     }
 
     /** {@inheritDoc} */
     @Override public void close() {
-        if (secCtx == null)
-            ((IgniteSecurityProcessor)proc).restoreDefaultContext();
-        else
-            proc.withContext(secCtx);
+        ThreadContext.data().onScopeClosed();
+    }
+
+    /** */
+    static Scope create() {
+        ThreadContext.data().onScopeCreated();
+
+        return INSTANCE;
+    }
+
+    /** */
+    static Scope createWith(ThreadContextSnapshot snapshot) {
+        ThreadContext.data().onScopeCreated();
+
+        ThreadContext.data().restoreSnapshot(snapshot);
+
+        return INSTANCE;
     }
 }
