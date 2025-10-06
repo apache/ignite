@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.query.reducer.UnsortedCacheQu
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
@@ -144,8 +145,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         cctx.queries().onQueryFutureCanceled(reqId);
 
         clear();
-
-        onDone(err);
     }
 
     /** {@inheritDoc} */
@@ -326,8 +325,11 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(Collection<R> res, Throwable err) {
-        boolean done = super.onDone(res, err);
+    @Override protected boolean onDone(@Nullable Collection<R> res, @Nullable Throwable err, boolean cancel) {
+        boolean done = super.onDone(res, err, cancel);
+
+        if (!done)
+            return false;
 
         if (cctx.kernalContext().performanceStatistics().enabled() && startTimeNanos > 0) {
             GridCacheQueryType type = qry.query().type();
@@ -348,6 +350,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
                 err == null || QueryUtils.wasCancelled(err));
         }
 
-        return done;
+        return true;
     }
 }
