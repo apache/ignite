@@ -15,32 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security;
+package org.apache.ignite.internal.thread.context;
 
-/**
- *
- */
-public class OperationSecurityContext implements AutoCloseable {
-    /** Ignite Security. */
-    private final IgniteSecurity proc;
+/** */
+public abstract class ContextDataChain<T> {
+    /** */
+    private final int storedAttrBits;
 
-    /** Security context. */
-    private final SecurityContext secCtx;
+    /** */
+    private final T prev;
 
-    /**
-     * @param proc Ignite Security.
-     * @param secCtx Security context.
-     */
-    OperationSecurityContext(IgniteSecurity proc, SecurityContext secCtx) {
-        this.proc = proc;
-        this.secCtx = secCtx;
+    /** */
+    protected ContextDataChain() {
+        storedAttrBits = 0;
+        prev = null;
     }
 
-    /** {@inheritDoc} */
-    @Override public void close() {
-        if (secCtx == null)
-            ((IgniteSecurityProcessor)proc).restoreDefaultContext();
-        else
-            proc.withContext(secCtx);
+    /** */
+    protected ContextDataChain(int storedAttrBits, T prev) {
+        this.storedAttrBits = storedAttrBits;
+        this.prev = prev;
+    }
+
+    /** */
+    abstract boolean isEmpty();
+
+    /** */
+    int storedAttributeBits() {
+        return storedAttrBits;
+    }
+
+    /** */
+    boolean containsValueFor(ContextAttribute<?> attr) {
+        return (storedAttrBits & attr.bitmask()) != 0;
+    }
+
+    /** */
+    T previous() {
+        assert !isEmpty();
+
+        return prev;
     }
 }
