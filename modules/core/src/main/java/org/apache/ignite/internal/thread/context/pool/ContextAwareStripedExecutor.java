@@ -15,42 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security.thread;
+package org.apache.ignite.internal.thread.context.pool;
 
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
+import org.apache.ignite.internal.thread.context.function.ContextAwareRunnable;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.NotNull;
 
-/**
- * Extends {@link StripedExecutor} with the ability to execute tasks in security context that was actual when task was
- * added to executor's queue.
- */
-public class SecurityAwareStripedExecutor extends StripedExecutor {
+/** */
+public class ContextAwareStripedExecutor extends StripedExecutor {
     /** */
-    private final IgniteSecurity security;
-
-    /** */
-    public SecurityAwareStripedExecutor(
-        IgniteSecurity security,
-        int cnt,
-        String igniteInstanceName,
-        String poolName,
-        IgniteLogger log,
-        IgniteInClosure<Throwable> errHnd,
-        GridWorkerListener gridWorkerLsnr,
-        long failureDetectionTimeout
-    ) {
-        super(cnt, igniteInstanceName, poolName, log, errHnd, gridWorkerLsnr, failureDetectionTimeout);
-
-        this.security = security;
-    }
-
-    /** */
-    public SecurityAwareStripedExecutor(
-        IgniteSecurity security,
+    public ContextAwareStripedExecutor(
         int cnt,
         String igniteInstanceName,
         String poolName,
@@ -61,17 +38,15 @@ public class SecurityAwareStripedExecutor extends StripedExecutor {
         long failureDetectionTimeout
     ) {
         super(cnt, igniteInstanceName, poolName, log, errHnd, stealTasks, gridWorkerLsnr, failureDetectionTimeout);
-
-        this.security = security;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void execute(int idx, Runnable cmd) {
-        super.execute(idx, SecurityAwareRunnable.of(security, cmd));
     }
 
     /** {@inheritDoc} */
     @Override public void execute(@NotNull Runnable cmd) {
-        super.execute(SecurityAwareRunnable.of(security, cmd));
+        super.execute(ContextAwareRunnable.wrapIfContextNotEmpty(cmd));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void execute(int idx, Runnable cmd) {
+        super.execute(idx, ContextAwareRunnable.wrapIfContextNotEmpty(cmd));
     }
 }
