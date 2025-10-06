@@ -22,7 +22,6 @@ import org.apache.ignite.internal.util.future.GridEmbeddedFutureSelfTest;
 import org.apache.ignite.internal.util.future.GridFutureAdapterSelfTest;
 import org.apache.ignite.internal.util.future.IgniteCacheFutureImplTest;
 import org.apache.ignite.internal.util.future.IgniteFutureImplTest;
-import org.apache.ignite.internal.util.future.nio.GridNioEmbeddedFutureSelfTest;
 import org.apache.ignite.lang.GridByteArrayListSelfTest;
 import org.apache.ignite.lang.GridMetadataAwareAdapterSelfTest;
 import org.apache.ignite.lang.GridSetWrapperSelfTest;
@@ -75,7 +74,6 @@ import org.junit.runners.Suite;
     GridFutureAdapterSelfTest.class,
     GridCompoundFutureSelfTest.class,
     GridEmbeddedFutureSelfTest.class,
-    GridNioEmbeddedFutureSelfTest.class,
 
     IgniteFutureImplTest.class,
     IgniteCacheFutureImplTest.class,
