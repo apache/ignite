@@ -170,12 +170,6 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        if (!fetchAll)
-            assumeTrue(pageSize < ENTRY_COUNT);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
