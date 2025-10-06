@@ -57,4 +57,34 @@ public enum GridCacheOperation {
     @Nullable public static GridCacheOperation fromOrdinal(int ord) {
         return ord < 0 || ord >= VALS.length ? null : VALS[ord];
     }
+
+    /** */
+    public static short encode(GridCacheOperation operation) {
+        switch (operation) {
+            case READ: return 1;
+            case CREATE: return 2;
+            case UPDATE: return 3;
+            case DELETE: return 4;
+            case TRANSFORM: return 5;
+            case RELOAD: return 6;
+            case NOOP: return 7;
+        }
+
+        throw new UnsupportedOperationException("Unsupported cache operation: " + operation);
+    }
+
+    /** */
+    public static GridCacheOperation decode(short operationCode) {
+        switch (operationCode) {
+            case 1: return READ;
+            case 2: return CREATE;
+            case 3: return UPDATE;
+            case 4: return DELETE;
+            case 5: return TRANSFORM;
+            case 6: return RELOAD;
+            case 7: return NOOP;
+        }
+
+        throw new UnsupportedOperationException("Unsupported cache operation code: " + operationCode);
+    }
 }

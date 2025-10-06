@@ -726,7 +726,7 @@ class MessageSerializerGenerator {
 
         // Allows to read/write as primitives. As instance, for enums.
         if (typeElement == null) {
-            switch (clazz){
+            switch (clazz) {
                 case "byte": return env.getTypeUtils().getPrimitiveType(TypeKind.BYTE);
                 case "short": return env.getTypeUtils().getPrimitiveType(TypeKind.SHORT);
                 case "int": return env.getTypeUtils().getPrimitiveType(TypeKind.INT);

@@ -23,7 +23,6 @@ import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -32,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.GridCacheOperationMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -40,7 +38,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -91,8 +88,8 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     protected long futId;
 
     /** Update operation. */
-    @Order(value = 6, method = "cacheOpMsg")
-    protected GridCacheOperationMessage cacheOperationMsg;
+    @Order(value = 6, method = "cacheOpEncoded", asType = "short")
+    protected GridCacheOperation cacheOperation;
 
     /** Write synchronization mode. */
     @Order(value = 7, method = "writeSyncModeEncoded", asType = "short")
@@ -142,7 +139,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         this.futId = futId;
         this.topVer = topVer;
         this.writeSyncMode = syncMode;
-        this.cacheOperationMsg = new GridCacheOperationMessage(op);
         this.taskNameHash = taskNameHash;
         this.flags = flags;
         this.addDepInfo = addDepInfo;
@@ -294,7 +290,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @return Update opreation.
      */
     public GridCacheOperation operation() {
-        return cacheOperationMsg.cacheOperation();
+        return cacheOperation;
     }
 
     /** @return Cache operatrion. */
@@ -324,29 +320,23 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     }
 
     /** @return cache operation serialization message. */
-    public GridCacheOperationMessage cacheOpMsg() {
-        return cacheOperationMsg;
+    public short cacheOpEncoded() {
+        return GridCacheOperation.encode(cacheOperation);
     }
 
     /** Sets cache operation serialization message. */
-    public void cacheOpMsg(GridCacheOperationMessage cacheOpMsg) {
-        this.cacheOperationMsg = cacheOpMsg;
+    public void cacheOpEncoded(short operationCode) {
+        cacheOperation = GridCacheOperation.decode(operationCode);
     }
 
     /** */
     public short writeSyncModeEncoded() {
-        switch (writeSyncMode) {
-            case FULL_SYNC: return 1,
-            case FULL_ASYNC: return 2,
-            case PRIMARY_SYNC
-                ;
-                return 3;
-        }
+        return CacheWriteSynchronizationMode.encode(writeSyncMode);
     }
 
     /** */
-    public void writeSyncModeEncoded(short writeSyncMode) {
-
+    public void writeSyncModeEncoded(short writeSyncModeCode) {
+        writeSyncMode = CacheWriteSynchronizationMode.decode(writeSyncModeCode);
     }
 
     /**
@@ -600,13 +590,13 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMessage(cacheOperationMsg))
+                if (!writer.writeShort(cacheOpEncoded()))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMessage(writeSyncMode))
+                if (!writer.writeShort(writeSyncModeEncoded()))
                     return false;
 
                 writer.incrementState();
@@ -654,7 +644,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                 reader.incrementState();
 
             case 6:
-                cacheOperationMsg = reader.readMessage();
+                cacheOpEncoded(reader.readShort());
 
                 if (!reader.isLastRead())
                     return false;
@@ -662,7 +652,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                 reader.incrementState();
 
             case 7:
-                writeSyncMode = reader.readMessage();
+                writeSyncModeEncoded(reader.readShort());
 
                 if (!reader.isLastRead())
                     return false;
