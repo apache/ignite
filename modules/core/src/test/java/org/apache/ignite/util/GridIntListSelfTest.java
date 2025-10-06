@@ -20,54 +20,12 @@ package org.apache.ignite.util;
 import org.apache.ignite.internal.util.GridIntList;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.util.GridIntList.asList;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 /**
  *
  */
 public class GridIntListSelfTest {
-    /**
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("ZeroLengthArrayAllocation")
-    @Test
-    public void testCopyWithout() throws Exception {
-        assertCopy(
-            new GridIntList(new int[] {}),
-            new GridIntList(new int[] {}));
-
-        assertCopy(
-            new GridIntList(new int[] {}),
-            new GridIntList(new int[] {1}));
-
-        assertCopy(
-            new GridIntList(new int[] {1}),
-            new GridIntList(new int[] {}));
-
-        assertCopy(
-            new GridIntList(new int[] {1, 2, 3}),
-            new GridIntList(new int[] {4, 5, 6}));
-
-        assertCopy(
-            new GridIntList(new int[] {1, 2, 3}),
-            new GridIntList(new int[] {1, 2, 3}));
-
-        assertCopy(
-            new GridIntList(new int[] {1, 2, 3, 4, 5, 1}),
-            new GridIntList(new int[] {1, 1}));
-
-        assertCopy(
-            new GridIntList(new int[] {1, 1, 1, 2, 3, 4, 5, 1, 1, 1}),
-            new GridIntList(new int[] {1, 1}));
-
-        assertCopy(
-            new GridIntList(new int[] {1, 2, 3}),
-            new GridIntList(new int[] {1, 1, 2, 2, 3, 3}));
-    }
-
     /**
      *
      */
@@ -89,25 +47,6 @@ public class GridIntListSelfTest {
         list.truncate(0, true);
 
         assertEquals(new GridIntList(), list);
-    }
-
-    /**
-     * Assert {@link GridIntList#copyWithout(GridIntList)} on given lists.
-     *
-     * @param lst Source lists.
-     * @param rmv Exclude list.
-     */
-    private void assertCopy(GridIntList lst, GridIntList rmv) {
-        GridIntList res = lst.copyWithout(rmv);
-
-        for (int i = 0; i < lst.size(); i++) {
-            int v = lst.get(i);
-
-            if (rmv.contains(v))
-                assertFalse(res.contains(v));
-            else
-                assertTrue(res.contains(v));
-        }
     }
 
     /**
@@ -156,5 +95,10 @@ public class GridIntListSelfTest {
 
         assertEquals(asList(1, 3, 4, 5, 0), list);
         assertEquals(asList(0, 1, 3, 4, 5), list.sort());
+    }
+
+    /** */
+    private GridIntList asList(int... vals) {
+        return new GridIntList(vals);
     }
 }
