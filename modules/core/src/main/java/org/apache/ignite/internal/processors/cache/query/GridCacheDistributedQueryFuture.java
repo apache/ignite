@@ -144,6 +144,8 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         cctx.queries().onQueryFutureCanceled(reqId);
 
         clear();
+
+        onDone(err);
     }
 
     /** {@inheritDoc} */
@@ -325,6 +327,8 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** {@inheritDoc} */
     @Override public boolean onDone(Collection<R> res, Throwable err) {
+        boolean done = super.onDone(res, err);
+
         if (cctx.kernalContext().performanceStatistics().enabled() && startTimeNanos > 0) {
             GridCacheQueryType type = qry.query().type();
 
@@ -344,6 +348,6 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
                 err == null || QueryUtils.wasCancelled(err));
         }
 
-        return super.onDone(res, err);
+        return done;
     }
 }

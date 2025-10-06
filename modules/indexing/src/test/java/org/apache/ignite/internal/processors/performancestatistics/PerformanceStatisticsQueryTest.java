@@ -68,6 +68,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Perfor
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 /** Tests query performance statistics. */
 @RunWith(Parameterized.class)
@@ -169,6 +170,12 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        if (!fetchAll)
+            assumeTrue(pageSize < ENTRY_COUNT);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
@@ -188,6 +195,8 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     /** @throws Exception If failed. */
     @Test
     public void testScanQuery() throws Exception {
+        assumeTrue(fetchAll);
+
         ScanQuery<Object, Object> qry = new ScanQuery<>().setPageSize(pageSize);
 
         checkQuery(SCAN, qry, DEFAULT_CACHE_NAME, false);
