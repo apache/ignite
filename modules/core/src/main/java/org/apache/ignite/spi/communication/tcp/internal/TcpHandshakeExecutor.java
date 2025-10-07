@@ -355,11 +355,8 @@ public class TcpHandshakeExecutor {
 
             int read = copy(appBuff, buf);
 
-            if (read > 0) {
-                System.out.println("SslTransport0 read=" + read + ", appBuffPos=" + appBuff.position() + " appBufLimit=" + appBuff.limit());
-
+            if (read > 0)
                 return read;
-            }
 
             try {
                 while (read == 0) {
@@ -401,11 +398,6 @@ public class TcpHandshakeExecutor {
         /** {@inheritDoc} */
         @Override void onHandshakeFinished(GridSslMeta sslMeta) {
             ByteBuffer appBuff = handler.applicationBuffer();
-
-            System.out.println("onHandshakeFinished appBufPos=" + appBuff.position() + " " + appBuff.limit());
-
-            if (appBuff.limit() > 0)
-                System.out.println();
 
             if (appBuff.hasRemaining())
                 sslMeta.decodedBuffer(appBuff);

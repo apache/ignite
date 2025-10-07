@@ -24,6 +24,8 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 
+import java.util.UUID;
+
 import static org.apache.ignite.internal.util.IgniteUtils.toBytes;
 
 /** */
@@ -35,11 +37,8 @@ public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommu
 
     /** {@inheritDoc} */
     @Override protected Message initializeMessage(Message msg) throws Exception {
-        if (msg instanceof NodeIdMessage) {
-            int msgSize = U.field(NodeIdMessage.class, "MESSAGE_SIZE");
-
-            FieldUtils.writeField(msg, "nodeId", new byte[msgSize], true);
-        }
+        if (msg instanceof NodeIdMessage)
+            FieldUtils.writeField(msg, "nodeId", UUID.randomUUID(), true);
 
         return msg;
     }
