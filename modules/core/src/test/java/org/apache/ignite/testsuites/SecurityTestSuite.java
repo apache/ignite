@@ -72,8 +72,8 @@ import org.apache.ignite.internal.processors.security.scheduler.SchedulerRemoteS
 import org.apache.ignite.internal.processors.security.service.ServiceAuthorizationTest;
 import org.apache.ignite.internal.processors.security.service.ServiceStaticConfigTest;
 import org.apache.ignite.internal.processors.security.snapshot.SnapshotPermissionCheckTest;
+import org.apache.ignite.internal.thread.context.ThreadContextAttributesTest;
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
-import org.apache.ignite.thread.context.ThreadContextAttributesTest;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;

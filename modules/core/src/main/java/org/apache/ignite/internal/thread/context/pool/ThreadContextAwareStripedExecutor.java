@@ -33,19 +33,6 @@ public class ThreadContextAwareStripedExecutor extends StripedExecutor {
         String poolName,
         IgniteLogger log,
         IgniteInClosure<Throwable> errHnd,
-        GridWorkerListener gridWorkerLsnr,
-        long failureDetectionTimeout
-    ) {
-        super(cnt, igniteInstanceName, poolName, log, errHnd, gridWorkerLsnr, failureDetectionTimeout);
-    }
-
-    /** */
-    public ThreadContextAwareStripedExecutor(
-        int cnt,
-        String igniteInstanceName,
-        String poolName,
-        IgniteLogger log,
-        IgniteInClosure<Throwable> errHnd,
         boolean stealTasks,
         GridWorkerListener gridWorkerLsnr,
         long failureDetectionTimeout
