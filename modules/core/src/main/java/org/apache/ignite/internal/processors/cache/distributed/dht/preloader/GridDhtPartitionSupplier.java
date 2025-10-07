@@ -53,7 +53,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_SUPPLIED;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage.REBALANCE_TOPIC;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.REBALANCE_TOPIC;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**

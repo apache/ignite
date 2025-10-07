@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -29,12 +28,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  *
  */
-public class CachePartitionPartialCountersMap implements Serializable, Message {
+public class CachePartitionPartialCountersMap implements Message {
     /** */
     public static final short TYPE_CODE = 190;
-
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** */
     public static final CachePartitionPartialCountersMap EMPTY = new CachePartitionPartialCountersMap();

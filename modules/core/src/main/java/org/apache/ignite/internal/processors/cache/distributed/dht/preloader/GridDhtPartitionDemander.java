@@ -96,7 +96,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage.REBALANCE_TOPIC;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.REBALANCE_TOPIC;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.PAGE_SNAPSHOT_TAKEN;

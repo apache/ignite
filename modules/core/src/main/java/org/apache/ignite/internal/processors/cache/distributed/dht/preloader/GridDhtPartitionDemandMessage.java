@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,9 +27,6 @@ import org.jetbrains.annotations.NotNull;
  * Partition demand request.
  */
 public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
-    /** Cache rebalance topic. */
-    public static final Object REBALANCE_TOPIC = GridCachePartitionExchangeManager.rebalanceTopic(0);
-
     /** Rebalance id. */
     @Order(4)
     private long rebalanceId;
