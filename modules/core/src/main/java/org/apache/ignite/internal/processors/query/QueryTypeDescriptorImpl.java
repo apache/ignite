@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -130,6 +131,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** */
     private List<GridQueryProperty> validateProps;
+
+    /** */
+    private volatile List<GridQueryProperty> validateIdxProps;
 
     /** */
     private List<GridQueryProperty> propsWithDefaultValue;
@@ -267,7 +271,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @Override public Map<String, GridQueryIndexDescriptor> indexes() {
         synchronized (idxMux) {
-            return Collections.<String, GridQueryIndexDescriptor>unmodifiableMap(idxs);
+            return Map.copyOf(idxs);
         }
     }
 
@@ -331,6 +335,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         synchronized (idxMux) {
             if (idxs.put(idx.name(), idx) != null)
                 throw new IgniteCheckedException("Index with name '" + idx.name() + "' already exists.");
+
+            if (validateIdxProps != null) // Do not rebuild for each index on initialization.
+                updateIdxProps();
         }
     }
 
@@ -342,7 +349,56 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     public void dropIndex(String idxName) {
         synchronized (idxMux) {
             idxs.remove(idxName);
+
+            updateIdxProps();
         }
+    }
+
+    /** */
+    public void onInitialized() {
+        synchronized (idxMux) {
+            updateIdxProps();
+        }
+    }
+
+    /** */
+    private void updateIdxProps() {
+        List<GridQueryProperty> idxProps = new ArrayList<>();
+        Set<String> usedProps = new HashSet<>();
+
+        // idxs iterator must be guarded by idxMux.
+        for (GridQueryIndexDescriptor idx : idxs.values()) {
+            for (String fld : idx.fields()) {
+                if (usedProps.add(fld)) {
+                    GridQueryProperty prop = props.get(fld);
+
+                    if (prop != null)
+                        idxProps.add(prop);
+                }
+            }
+        }
+
+        if (affKey != null && usedProps.add(affKey)) {
+            GridQueryProperty prop = props.get(affKey);
+
+            if (prop != null)
+                idxProps.add(prop);
+        }
+
+        if (!F.isEmpty(primaryKeyFields())) {
+            for (String fld : primaryKeyFields()) {
+                if (usedProps.add(fld)) {
+                    GridQueryProperty prop = props.get(fld);
+
+                    if (prop != null)
+                        idxProps.add(prop);
+                }
+            }
+        }
+        else if (F.isEmpty(keyFieldAlias()) || !usedProps.contains(keyFieldAlias()))
+            idxProps.add(new QueryUtils.KeyOrValProperty(true, KEY_FIELD_NAME, keyClass()));
+
+        validateIdxProps = idxProps;
     }
 
     /**
@@ -609,9 +665,6 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException {
-        if (F.isEmpty(validateProps) && F.isEmpty(idxs))
-            return;
-
         validateProps(key, val);
 
         validateIndexes(key, val);
@@ -683,41 +736,41 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** Validate indexed values. */
     private void validateIndexes(Object key, Object val) throws IgniteCheckedException {
-        if (F.isEmpty(idxs))
+        if (F.isEmpty(validateIdxProps))
             return;
 
-        for (QueryIndexDescriptorImpl idx : idxs.values()) {
-            for (String idxField : idx.fields()) {
-                GridQueryProperty prop = props.get(idxField);
+        for (GridQueryProperty prop : validateIdxProps) {
+            Object propVal;
+            Class<?> propType = prop.type();
 
-                Object propVal;
-                Class<?> propType;
+            if (propType == Object.class)
+                continue;
 
-                if (Objects.equals(idxField, keyFieldAlias()) || Objects.equals(idxField, KEY_FIELD_NAME)) {
-                    propVal = key instanceof KeyCacheObject ? ((CacheObject)key).value(coCtx, true) : key;
+            if (Objects.equals(prop.name(), keyFieldAlias()) || Objects.equals(prop.name(), KEY_FIELD_NAME))
+                propVal = unwrap(key);
+            else if (Objects.equals(prop.name(), valueFieldAlias()) || Objects.equals(prop.name(), VAL_FIELD_NAME))
+                propVal = unwrap(val);
+            else
+                propVal = prop.value(key, val);
 
-                    propType = propVal == null ? null : propVal.getClass();
-                }
-                else if (Objects.equals(idxField, valueFieldAlias()) || Objects.equals(idxField, VAL_FIELD_NAME)) {
-                    propVal = val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;
+            if (propVal == null)
+                continue;
 
-                    propType = propVal == null ? null : propVal.getClass();
-                }
-                else {
-                    propVal = prop.value(key, val);
-
-                    propType = prop.type();
-                }
-
-                if (propVal == null)
-                    continue;
-
-                if (!isCompatibleWithPropertyType(propVal, propType)) {
-                    throw new IgniteSQLException("Type for a column '" + idxField + "' is not compatible with index definition." +
-                        " Expected '" + prop.type().getSimpleName() + "', actual type '" + typeName(propVal) + "'");
-                }
+            if (!isCompatibleWithPropertyType(propVal, propType)) {
+                throw new IgniteSQLException("Type for a column '" + prop.name() + "' is not compatible with index definition." +
+                    " Expected '" + propType.getSimpleName() + "', actual type '" + typeName(propVal) + "'");
             }
         }
+    }
+
+    /** */
+    private Object unwrap(Object val) {
+        if (val instanceof BinaryObject)
+            return val;
+        else if (val instanceof CacheObject)
+            return ((CacheObject)val).value(coCtx, false);
+        else
+            return val;
     }
 
     /**

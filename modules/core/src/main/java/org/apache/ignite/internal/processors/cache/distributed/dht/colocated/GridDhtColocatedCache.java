@@ -44,7 +44,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtEmbeddedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFinishedFuture;
@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.GridNearReadRepairCheckOnlyFuture;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -764,7 +763,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();
 
-                GridDistributedUnlockRequest req = mapping.getValue();
+                GridNearUnlockRequest req = mapping.getValue();
 
                 assert !n.isLocal();
 
@@ -868,7 +867,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
             ClusterNode n = mapping.getKey();
 
-            GridDistributedUnlockRequest req = mapping.getValue();
+            GridNearUnlockRequest req = mapping.getValue();
 
             if (!F.isEmpty(req.keys())) {
                 req.completedVersions(committed, rolledback);
