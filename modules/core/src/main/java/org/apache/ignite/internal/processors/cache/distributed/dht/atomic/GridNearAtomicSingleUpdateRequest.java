@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -49,9 +50,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  *
  */
 public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
-    /** */
-    private static final CacheEntryPredicate[] NO_FILTER = new CacheEntryPredicate[0];
-
     /** Key to update. */
     @GridToStringInclude
     @Order(10)
@@ -191,7 +189,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
 
     /** {@inheritDoc} */
     @Nullable @Override public CacheEntryPredicate[] filter() {
-        return NO_FILTER;
+        return GridCacheUtils.empty0();
     }
 
     /** {@inheritDoc} */
