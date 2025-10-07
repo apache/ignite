@@ -241,7 +241,7 @@ public class GridCacheUtils {
     private static final TransactionConfiguration DEFAULT_TX_CFG = new TransactionConfiguration();
 
     /** Empty predicate array. */
-    private static final CacheEntryPredicate[] EMPTY_FILTER0 = new CacheEntryPredicate[0];
+    private static final CacheEntryPredicate[] EMPTY_FILTER = new CacheEntryPredicate[0];
 
     /** */
     private static final CacheEntryPredicate[] ALWAYS_FALSE_ARR = new CacheEntryPredicate[] {CacheEntryPredicateAdapter.ALWAYS_FALSE};
@@ -482,7 +482,7 @@ public class GridCacheUtils {
      * @return Empty filter.
      */
     public static CacheEntryPredicate[] empty0() {
-        return EMPTY_FILTER0;
+        return EMPTY_FILTER;
     }
 
     /**
