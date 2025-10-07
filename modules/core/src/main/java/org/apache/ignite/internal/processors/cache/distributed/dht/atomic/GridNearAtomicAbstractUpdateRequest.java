@@ -138,6 +138,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         this.nodeId = nodeId;
         this.futId = futId;
         this.topVer = topVer;
+        this.cacheOperation = op;
         this.writeSyncMode = syncMode;
         this.taskNameHash = taskNameHash;
         this.flags = flags;
@@ -319,24 +320,66 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         this.futId = futId;
     }
 
-    /** @return cache operation serialization message. */
+    /** @return The cache operation code. */
     public short cacheOpEncoded() {
-        return GridCacheOperation.encode(cacheOperation);
+        switch (cacheOperation) {
+            case READ: return 1;
+            case CREATE: return 2;
+            case UPDATE: return 3;
+            case DELETE: return 4;
+            case TRANSFORM: return 5;
+            case RELOAD: return 6;
+            case NOOP: return 7;
+        }
+
+        throw new UnsupportedOperationException("Unsupported cache operation: " + cacheOperation);
     }
 
-    /** Sets cache operation serialization message. */
-    public void cacheOpEncoded(short operationCode) {
-        cacheOperation = GridCacheOperation.decode(operationCode);
+    /** Sets the cache operation by a code. */
+    public void cacheOpEncoded(short opCode) {
+        switch (opCode) {
+            case 1: cacheOperation = GridCacheOperation.READ; return;
+            case 2: cacheOperation = GridCacheOperation.CREATE; return;
+            case 3: cacheOperation = GridCacheOperation.UPDATE; return;
+            case 4: cacheOperation = GridCacheOperation.DELETE; return;
+            case 5: cacheOperation = GridCacheOperation.TRANSFORM; return;
+            case 6: cacheOperation = GridCacheOperation.RELOAD; return;
+            case 7: cacheOperation = GridCacheOperation.NOOP; return;
+        }
+
+        throw new UnsupportedOperationException("Unsupported cache operation code: " + opCode);
     }
 
-    /** */
+    /**
+     * Provides the cache write synchronization mode code. Keeps predictable enum value read and write. Avoids changes by
+     * renamings, reorderings and so on.
+     *
+     * @return Code of the cache write synchronization mode.
+     */
     public short writeSyncModeEncoded() {
-        return CacheWriteSynchronizationMode.encode(writeSyncMode);
+        switch (writeSyncMode) {
+            case FULL_SYNC: return 1;
+            case FULL_ASYNC: return 2;
+            case PRIMARY_SYNC: return 3;
+        }
+
+        throw new UnsupportedOperationException("Unsupported cache write synchronization mode: " + writeSyncMode);
     }
 
-    /** */
+    /**
+     * Sets the cache write synchronization mode by the code. Keeps predictable enum value read and write. Avoids changes
+     * by renamings, reorderings and so on.
+     *
+     * @param writeSyncModeCode The synchronization mode code.
+     */
     public void writeSyncModeEncoded(short writeSyncModeCode) {
-        writeSyncMode = CacheWriteSynchronizationMode.decode(writeSyncModeCode);
+        switch (writeSyncModeCode) {
+            case 1: writeSyncMode = CacheWriteSynchronizationMode.FULL_SYNC; return;
+            case 2: writeSyncMode = CacheWriteSynchronizationMode.FULL_ASYNC; return;
+            case 3: writeSyncMode = CacheWriteSynchronizationMode.PRIMARY_SYNC; return;
+        }
+
+        throw new UnsupportedOperationException("Unsupported cache write synchronization mode code: " + writeSyncModeCode);
     }
 
     /**

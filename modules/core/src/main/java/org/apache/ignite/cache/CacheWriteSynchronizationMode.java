@@ -65,36 +65,4 @@ public enum CacheWriteSynchronizationMode {
     @Nullable public static CacheWriteSynchronizationMode fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
-
-    /**
-     * For serialization and rolling upgade purposes. Keeps predictable enum value read and write.
-     *
-     * @param mode The sync. mode
-     * @return Serialization code of {@code mode}.
-     */
-    public static short encode(CacheWriteSynchronizationMode mode) {
-        switch (mode) {
-            case FULL_SYNC: return 1;
-            case FULL_ASYNC: return 2;
-            case PRIMARY_SYNC: return 3;
-        }
-
-        throw new UnsupportedOperationException("Unsupported write sync mode: " + mode);
-    }
-
-    /**
-     * For serialization and rolling upgade purposes. Keeps predictable enum value read and write.
-     *
-     * @param code The sync. mode code.
-     * @return Write sync. mode read from {@code code}.
-     */
-    public static CacheWriteSynchronizationMode decode(short code) {
-        switch (code) {
-            case 1: return FULL_SYNC;
-            case 2: return FULL_ASYNC;
-            case 3: return PRIMARY_SYNC;
-        }
-
-        throw new UnsupportedOperationException("Unsupported write sync mode code: " + code);
-    }
 }

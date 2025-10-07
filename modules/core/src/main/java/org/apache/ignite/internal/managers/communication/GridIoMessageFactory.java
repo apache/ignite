@@ -328,7 +328,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)96, CacheContinuousQueryEntry::new);
         factory.register((short)97, CacheEvictionEntry::new, new CacheEvictionEntrySerializer());
         factory.register((short)98, CacheEntryPredicateAdapter::new, new CacheEntryPredicateAdapterSerializer());
-        // Type 98 is former CacheEntrySerializablePredicate
         factory.register((short)100, IgniteTxEntry::new);
         factory.register((short)101, TxEntryValueHolder::new);
         factory.register((short)102, CacheVersionedValue::new, new CacheVersionedValueSerializer());
