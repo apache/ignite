@@ -49,6 +49,7 @@ import static org.apache.ignite.internal.processors.localtask.DurableBackgroundT
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Class for testing the {@link DurableBackgroundTasksProcessor}.
@@ -535,7 +536,9 @@ public class DurableBackgroundTasksProcessorSelfTest extends GridCommonAbstractT
         if (expState == null)
             assertNull(taskState);
         else {
-            assertEquals(expState, taskState.state());
+            assertTrue("Failed to await expected task state", waitForCondition(() -> expState == taskState.state(),
+                getTestTimeout() / 2));
+
             assertEquals(expSaved, taskState.saved());
             assertEquals(expDone, taskState.outFuture().isDone());
 
