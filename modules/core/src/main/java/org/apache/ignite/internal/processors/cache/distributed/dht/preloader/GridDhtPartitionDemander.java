@@ -664,7 +664,7 @@ public class GridDhtPartitionDemander {
                     }
                 }
 
-                Collection<Integer> missed = F.emptyIfNull(supplyMsg.missed());
+                Collection<Integer> missed = F.view(supplyMsg.missed());
 
                 // Only request partitions based on latest topology version.
                 for (Integer miss : missed) {
