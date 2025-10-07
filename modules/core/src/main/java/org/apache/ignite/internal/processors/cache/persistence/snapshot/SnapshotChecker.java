@@ -77,7 +77,7 @@ public class SnapshotChecker {
     }
 
     /** */
-    public IdleVerifyResult reduceIncrementalResults (
+    public IdleVerifyResult reduceIncrementalResults(
         SnapshotFileTree sft,
         int incIdx,
         Map<ClusterNode, IncrementalSnapshotVerificationTaskResult> results,
