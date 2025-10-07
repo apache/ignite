@@ -17,16 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -34,34 +30,33 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * DHT transaction prepare response.
  */
+@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /** Evicted readers. */
     @GridToStringInclude
-    @GridDirectCollection(IgniteTxKey.class)
+    @Order(9)
     private Collection<IgniteTxKey> nearEvicted;
 
     /** Future ID.  */
+    @Order(value = 10, method = "futureId")
     private IgniteUuid futId;
 
     /** Mini future ID. */
+    @Order(11)
     private int miniId;
 
     /** Invalid partitions by cache ID. */
-    @GridDirectMap(keyType = Integer.class, valueType = int[].class)
+    @Order(value = 12, method = "invalidPartitions")
     private Map<Integer, int[]> invalidParts;
 
-    /** Preload entries. */
-    @GridDirectCollection(GridCacheEntryInfo.class)
+    /** Preload entries found on backup node. */
+    @Order(13)
     private List<GridCacheEntryInfo> preloadEntries;
 
     /**
@@ -125,7 +120,7 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     }
 
     /**
-     * @param nearEvicted Evicted readers.
+     * @param nearEvicted New evicted readers.
      */
     public void nearEvicted(Collection<IgniteTxKey> nearEvicted) {
         this.nearEvicted = nearEvicted;
@@ -139,6 +134,13 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     }
 
     /**
+     * @param futId New future ID.
+     */
+    public void futureId(IgniteUuid futId) {
+        this.futId = futId;
+    }
+
+    /**
      * @return Mini future ID.
      */
     public int miniId() {
@@ -146,26 +148,38 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     }
 
     /**
-     * @return Map from cacheId to an array of invalid partitions.
+     * @param miniId New mini future ID.
      */
-    Map<Integer, int[]> invalidPartitionsByCacheId() {
+    public void miniId(int miniId) {
+        this.miniId = miniId;
+    }
+
+    /**
+     * @return Invalid partitions by cache ID.
+     */
+    public Map<Integer, int[]> invalidPartitions() {
         return invalidParts;
     }
 
     /**
-     * @param invalidPartsByCacheId Map from cache ID to an array of invalid partitions.
+     * @param invalidParts New invalid partitions by cache ID.
      */
-    public void invalidPartitionsByCacheId(Map<Integer, Set<Integer>> invalidPartsByCacheId) {
-        invalidParts = CU.convertInvalidPartitions(invalidPartsByCacheId);
+    public void invalidPartitions(Map<Integer, int[]> invalidParts) {
+        this.invalidParts = invalidParts;
     }
 
     /**
-     * Gets preload entries found on backup node.
-     *
-     * @return Collection of entry infos need to be preloaded.
+     * @return Preload entries found on backup node.
      */
-    Collection<GridCacheEntryInfo> preloadEntries() {
-        return preloadEntries == null ? Collections.emptyList() : preloadEntries;
+    public Collection<GridCacheEntryInfo> preloadEntries() {
+        return preloadEntries;
+    }
+
+    /**
+     * @param preloadEntries New preload entries found on backup node.
+     */
+    public void preloadEntries(List<GridCacheEntryInfo> preloadEntries) {
+        this.preloadEntries = preloadEntries;
     }
 
     /**
@@ -224,109 +238,6 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
                 info.unmarshal(cctx, ldr);
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 10:
-                if (!writer.writeIgniteUuid(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeMap(invalidParts, MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeInt(miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeCollection(nearEvicted, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeCollection(preloadEntries, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 10:
-                futId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                invalidParts = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.INT_ARR, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                miniId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                nearEvicted = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                preloadEntries = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

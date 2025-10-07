@@ -17,41 +17,31 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Response to prepare request.
  */
 public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage implements IgniteTxStateAware {
-    /** Error. */
+    /** Error message. */
     @GridToStringExclude
-    @GridDirectTransient
-    private Throwable err;
-
-    /** Serialized error. */
-    private byte[] errBytes;
+    @Order(value = 7, method = "errorMessage")
+    private ErrorMessage errMsg;
 
     /** Transient TX state. */
-    @GridDirectTransient
     private IgniteTxState txState;
 
-    /** */
+    /** Partition ID this message is targeted to. */
+    @Order(value = 8, method = "partition")
     private int part;
-
-    /** */
-    protected byte flags;
 
     /**
      * Empty constructor.
@@ -81,27 +71,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         super(xid, 0, addDepInfo);
 
         this.part = part;
-        this.err = err;
-    }
-
-    /**
-     * Sets flag mask.
-     *
-     * @param flag Set or clear.
-     * @param mask Mask.
-     */
-    protected final void setFlag(boolean flag, int mask) {
-        flags = flag ? (byte)(flags | mask) : (byte)(flags & ~mask);
-    }
-
-    /**
-     * Reags flag mask.
-     *
-     * @param mask Mask to read.
-     * @return Flag value.
-     */
-    protected final boolean isFlag(int mask) {
-        return (flags & mask) != 0;
+        errMsg = new ErrorMessage(err);
     }
 
     /** {@inheritDoc} */
@@ -109,23 +79,16 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         return part;
     }
 
+    /**
+     * @param part New Partition ID this message is targeted to.
+     */
+    public void partition(int part) {
+        this.part = part;
+    }
+
     /** {@inheritDoc} */
     @Override public Throwable error() {
-        return err;
-    }
-
-    /**
-     * @param err Error to set.
-     */
-    public void error(Throwable err) {
-        this.err = err;
-    }
-
-    /**
-     * @return Rollback flag.
-     */
-    public boolean isRollback() {
-        return err != null;
+        return ErrorMessage.error(errMsg);
     }
 
     /** {@inheritDoc} */
@@ -144,104 +107,27 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (err != null && errBytes == null)
-            errBytes = U.marshal(ctx, err);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (errBytes != null && err == null)
-            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 7:
-                if (!writer.writeByteArray(errBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeByte(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeInt(part))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 7:
-                errBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                flags = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                part = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 26;
+    }
+
+    /**
+     * @return Error message.
+     */
+    public ErrorMessage errorMessage() {
+        return errMsg;
+    }
+
+    /**
+     * @param errMsg New error message.
+     */
+    public void errorMessage(ErrorMessage errMsg) {
+        this.errMsg = errMsg;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDistributedTxPrepareResponse.class, this, "err",
-            err == null ? "null" : err.toString(), "super", super.toString());
+            error() == null ? "null" : error().toString(), "super", super.toString());
     }
 }

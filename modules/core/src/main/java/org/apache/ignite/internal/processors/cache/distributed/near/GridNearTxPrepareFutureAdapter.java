@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteReducer;
@@ -247,7 +248,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
 
         tx.implicitSingleResult(res.returnValue());
 
-        for (IgniteTxKey key : res.filterFailedKeys()) {
+        for (IgniteTxKey key : F.emptyIfNull(res.filterFailedKeys())) {
             IgniteTxEntry txEntry = tx.entry(key);
 
             assert txEntry != null : "Missing tx entry for write key: " + key;
@@ -280,7 +281,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
                 if (map != null)
                     map.dhtVersion(res.dhtVersion(), writeVer);
 
-                tx.readyNearLocks(m, res.pending(), res.committedVersions(), res.rolledbackVersions());
+                tx.readyNearLocks(m, F.emptyIfNull(res.pending()), res.committedVersions(), res.rolledbackVersions());
             }
         }
     }
