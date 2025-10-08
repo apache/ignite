@@ -72,11 +72,6 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
         this.futId = futId;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean cacheGroupMessage() {
-        return false;
-    }
-
     /** */
     public GridCacheVersion txId() {
         return txId;
