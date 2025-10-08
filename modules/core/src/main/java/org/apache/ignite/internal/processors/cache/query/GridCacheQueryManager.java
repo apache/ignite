@@ -687,7 +687,18 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (res != null && res.addRecipient(rcpt))
             return res; // Cached result found.
 
-        return new FieldsResult(rcpt);
+        res = new FieldsResult(rcpt);
+
+        if (qryResCache.putIfAbsent(resKey, res) != null)
+            resKey = null; // Failed to cache result.
+
+        try {
+            return res;
+        }
+        finally {
+            if (resKey != null)
+                qryResCache.remove(resKey, res);
+        }
     }
 
     /**
