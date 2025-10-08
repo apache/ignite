@@ -63,7 +63,6 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTopologyRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestWarmUpRequest;
-import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
@@ -304,7 +303,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                             res.errorMessage("Failed to process client request: " + e.getMessage());
                         }
 
-                        GridNioFuture<?> sf = ses.send(res);
+                        IgniteInternalFuture<?> sf = ses.send(res);
 
                         // Check if send failed.
                         sf.listen(new CI1<IgniteInternalFuture<?>>() {
