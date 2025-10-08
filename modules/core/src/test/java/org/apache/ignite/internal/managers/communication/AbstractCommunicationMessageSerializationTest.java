@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.GridLongList;
@@ -56,20 +55,7 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         AbstractTestMessageReader unboundedReader = createMessageReader(MAX_VALUE);
         AbstractTestMessageWriter unboundedWriter = createMessageWriter(MAX_VALUE);
 
-        IgniteMessageFactoryImpl msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{messageFactory()}) {
-            @Override public @Nullable Message create(short directType) {
-                if (directType == CacheEntryPredicateAdapter.TYPE_CODE) {
-                    return new CacheEntryPredicateAdapter() {
-                        /** Avoids exception on unknown typeValue. */
-                        @Override public void typeVal(short typeVal) {
-                            // No-op.
-                        }
-                    };
-                }
-
-                return super.create(directType);
-            }
-        };
+        IgniteMessageFactoryImpl msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{messageFactory()});
 
         for (short msgType : msgFactory.registeredDirectTypes()) {
             checkSerializationAndDeserializationConsistency(msgFactory, msgType, oneFieldWriter, unboundedReader);

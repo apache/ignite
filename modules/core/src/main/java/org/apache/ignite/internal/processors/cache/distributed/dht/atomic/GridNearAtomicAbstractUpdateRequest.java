@@ -90,12 +90,12 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     protected long futId;
 
     /** Update operation. */
-    @Order(value = 6, method = "cacheOpMsg")
-    protected GridCacheOperationMessage cacheOperationMsg;
+    @Order(value = 6, method = "cacheOperationMessage")
+    protected GridCacheOperationMessage opMsg;
 
     /** Write synchronization mode. */
-    @Order(7)
-    protected CacheWriteSynchronizationModeMessage writeSyncModeMsg;
+    @Order(value = 7, method = "writeSynchronizationModeMessage")
+    protected CacheWriteSynchronizationModeMessage syncModeMsg;
 
     /** Task name hash. */
     @Order(8)
@@ -108,7 +108,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /**
      *
      */
-    public GridNearAtomicAbstractUpdateRequest() {
+    protected GridNearAtomicAbstractUpdateRequest() {
         // No-op.
     }
 
@@ -140,8 +140,8 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         this.nodeId = nodeId;
         this.futId = futId;
         this.topVer = topVer;
-        this.writeSyncModeMsg = new CacheWriteSynchronizationModeMessage(syncMode);
-        this.cacheOperationMsg = new GridCacheOperationMessage(op);
+        this.opMsg = new GridCacheOperationMessage(op);
+        this.syncModeMsg = new CacheWriteSynchronizationModeMessage(syncMode);
         this.taskNameHash = taskNameHash;
         this.flags = flags;
         this.addDepInfo = addDepInfo;
@@ -262,7 +262,9 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @return {@code True} if update is processed in {@link CacheWriteSynchronizationMode#FULL_SYNC} mode.
      */
     boolean fullSync() {
-        return CacheWriteSynchronizationMode.FULL_SYNC == writeSynchronizationMode();
+        assert syncModeMsg != null && writeSynchronizationMode() != null;
+
+        return writeSynchronizationMode() == CacheWriteSynchronizationMode.FULL_SYNC;
     }
 
     /**
@@ -292,13 +294,13 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /**
      * @return Update opreation.
      */
-    public GridCacheOperation operation() {
-        return cacheOperationMsg.cacheOperation();
+    @Nullable public GridCacheOperation operation() {
+        return opMsg.cacheOperation();
     }
 
     /** @return Cache operatrion. */
-    public CacheWriteSynchronizationMode writeSynchronizationMode() {
-        return writeSyncModeMsg.cacheWriteSyncMode();
+    @Nullable public CacheWriteSynchronizationMode writeSynchronizationMode() {
+        return syncModeMsg.cacheWriteSyncMode();
     }
 
     /**
@@ -322,26 +324,26 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         this.futId = futId;
     }
 
-    /** @return cache operation serialization message. */
-    public GridCacheOperationMessage cacheOpMsg() {
-        return cacheOperationMsg;
+    /** @return The cache operation serialization message. */
+    public GridCacheOperationMessage cacheOperationMessage() {
+        return opMsg;
     }
 
-    /** Sets cache operation serialization message. */
-    public void cacheOpMsg(GridCacheOperationMessage cacheOpMsg) {
-        this.cacheOperationMsg = cacheOpMsg;
+    /** Sets the cache operation serialization message. */
+    public void cacheOperationMessage(GridCacheOperationMessage cacheOpMsg) {
+        this.opMsg = cacheOpMsg;
     }
 
     /**
-     * @return Write mode serialization message.
+     * @return The write mode serialization message.
      */
-    public final CacheWriteSynchronizationModeMessage writeSyncModeMsg() {
-        return writeSyncModeMsg;
+    public final CacheWriteSynchronizationModeMessage writeSynchronizationModeMessage() {
+        return syncModeMsg;
     }
 
-    /** Sets write mode serialization message */
-    public void writeSyncModeMsg(CacheWriteSynchronizationModeMessage writeSyncModeMsg) {
-        this.writeSyncModeMsg = writeSyncModeMsg;
+    /** Sets the write mode serialization message */
+    public void writeSynchronizationModeMessage(CacheWriteSynchronizationModeMessage writeSyncModeMsg) {
+        this.syncModeMsg = writeSyncModeMsg;
     }
 
     /**
@@ -595,13 +597,13 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMessage(cacheOperationMsg))
+                if (!writer.writeMessage(opMsg))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMessage(writeSyncModeMsg))
+                if (!writer.writeMessage(syncModeMsg))
                     return false;
 
                 writer.incrementState();
@@ -649,7 +651,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                 reader.incrementState();
 
             case 6:
-                cacheOperationMsg = reader.readMessage();
+                opMsg = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -657,7 +659,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                 reader.incrementState();
 
             case 7:
-                writeSyncModeMsg = reader.readMessage();
+                syncModeMsg = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;

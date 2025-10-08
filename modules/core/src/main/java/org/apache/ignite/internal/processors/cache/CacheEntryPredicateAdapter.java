@@ -25,13 +25,10 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
-/** A unified container for common cache entry predicates.  */
+/** A unified container for common, typical cache entry predicates. */
 public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     /** */
     private static final long serialVersionUID = 4647110502545358709L;
-
-    /** */
-    public static final int TYPE_CODE = 98;
 
     /** */
     public static final CacheEntryPredicateAdapter ALWAYS_FALSE = new CacheEntryPredicateAdapter(PredicateType.ALWAYS_FALSE);
@@ -44,7 +41,7 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     private PredicateType type;
 
     /** Type value serialization holder. */
-    @Order(0)
+    @Order(value = 0, method = "typeEncoded")
     protected transient short typeVal;
 
     /** */
@@ -59,8 +56,6 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
 
     /** */
     public CacheEntryPredicateAdapter(PredicateType type) {
-        assert type != PredicateType.VALUE;
-
         this.type = type;
     }
 
@@ -78,7 +73,7 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return TYPE_CODE;
+        return 98;
     }
 
     /** */
@@ -156,7 +151,7 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     }
 
     /** */
-    public short typeVal() {
+    public short typeEncoded() {
         switch (type) {
             case OTHER: return 1;
             case VALUE: return 2;
@@ -169,9 +164,12 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     }
 
     /** */
-    public void typeVal(short typeVal) {
+    public void typeEncoded(short typeVal) {
         switch (typeVal) {
-            case 1: type = PredicateType.OTHER; break;
+            case 0:
+            case 1:
+                type = PredicateType.OTHER;
+                break;
             case 2: type = PredicateType.VALUE; break;
             case 3: type = PredicateType.HAS_VALUE; break;
             case 4: type = PredicateType.HAS_NO_VALUE; break;
