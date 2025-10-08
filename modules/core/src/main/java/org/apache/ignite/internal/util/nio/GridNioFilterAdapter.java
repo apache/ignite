@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 
 /**
@@ -110,7 +111,7 @@ public abstract class GridNioFilterAdapter implements GridNioFilter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> proceedSessionWrite(
+    @Override public IgniteInternalFuture<?> proceedSessionWrite(
         GridNioSession ses,
         Object msg,
         boolean fut,
@@ -122,7 +123,7 @@ public abstract class GridNioFilterAdapter implements GridNioFilter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<Boolean> proceedSessionClose(GridNioSession ses) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<Boolean> proceedSessionClose(GridNioSession ses) throws IgniteCheckedException {
         checkNext();
 
         return nextFilter.onSessionClose(ses);
@@ -143,26 +144,26 @@ public abstract class GridNioFilterAdapter implements GridNioFilter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> proceedPauseReads(GridNioSession ses) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<?> proceedPauseReads(GridNioSession ses) throws IgniteCheckedException {
         checkNext();
 
         return nextFilter.onPauseReads(ses);
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> proceedResumeReads(GridNioSession ses) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<?> proceedResumeReads(GridNioSession ses) throws IgniteCheckedException {
         checkNext();
 
         return nextFilter.onResumeReads(ses);
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> onPauseReads(GridNioSession ses) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<?> onPauseReads(GridNioSession ses) throws IgniteCheckedException {
         return proceedPauseReads(ses);
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException {
         return proceedResumeReads(ses);
     }
 
