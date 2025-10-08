@@ -40,8 +40,17 @@ public class DefaultScope implements Scope {
     }
 
     /** */
-    public static Scope create() {
+    static <T> Scope createWith(ThreadContextAttribute<T> attr, T val) {
         ThreadContext.data().onScopeCreated();
+
+        return INSTANCE.withAttribute(attr, val);
+    }
+
+    /** */
+    static Scope createWith(ThreadContextSnapshot snapshot) {
+        ThreadContext.data().onScopeCreated();
+
+        ThreadContext.data().restoreSnapshot(snapshot);
 
         return INSTANCE;
     }

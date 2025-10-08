@@ -28,13 +28,16 @@ class ThreadContextData {
     private static final int DFLT_SCOPE_ATTR_VAL_CAPACITY = 2;
 
     /** */
+    private final ThreadContextAttributeRegistry attrReg = ThreadContextAttributeRegistry.instance();
+
+    /** */
     private int activeScopeDepth;
 
     /** */
     private int activeAttrsCnt;
 
     /** */
-    private Deque<ScopedAttributeValue>[] attrs = new Deque[ThreadContextAttributeRegistry.instance().size()];
+    private Deque<ScopedAttributeValue>[] attrs = new Deque[attrReg.size()];
 
     /** */
     <T> T get(ThreadContextAttribute<T> attr) {
@@ -56,7 +59,7 @@ class ThreadContextData {
         Deque<ScopedAttributeValue> attrScopedVals = attributeScopedValues(attr.id());
 
         if (attrScopedVals == null)
-            attrScopedVals = createAttributeValuesHolder(attr);
+            attrScopedVals = createAttributeValuesHolder(attr.id());
 
         if (attrScopedVals.isEmpty())
             ++activeAttrsCnt;
@@ -67,7 +70,7 @@ class ThreadContextData {
     }
 
     /** */
-    public ThreadContextSnapshot createSnapshot() {
+    ThreadContextSnapshot createSnapshot() {
         if (activeAttrsCnt == 0)
             return ThreadContextSnapshot.emptySnapshot();
 
@@ -83,6 +86,26 @@ class ThreadContextData {
         }
 
         return snapshot;
+    }
+
+    /** */
+    void restoreSnapshot(ThreadContextSnapshot snapshot) {
+        if (snapshot.isEmpty() && activeAttrsCnt == 0)
+            return;
+
+        for (ThreadContextAttribute<?> attr : attrReg.attributes()) {
+            Object val;
+
+            if (!snapshot.isEmpty() && snapshot.attributeId() == attr.id()) {
+                val = snapshot.attributeValue();
+
+                snapshot = snapshot.next();
+            }
+            else
+                val = attr.initialValue();
+
+            put((ThreadContextAttribute<Object>)attr, val);
+        }
     }
 
     /** */
@@ -112,12 +135,12 @@ class ThreadContextData {
     }
 
     /** */
-    private Deque<ScopedAttributeValue> createAttributeValuesHolder(ThreadContextAttribute<?> attr) {
+    private Deque<ScopedAttributeValue> createAttributeValuesHolder(int id) {
         Deque<ScopedAttributeValue> res = new ArrayDeque<>(DFLT_SCOPE_ATTR_VAL_CAPACITY);
 
-        ensureCapacityFor(attr.id());
+        ensureCapacityFor(id);
 
-        attrs[attr.id()] = res;
+        attrs[id] = res;
 
         return res;
     }
@@ -128,11 +151,11 @@ class ThreadContextData {
     }
 
     /** */
-    public void ensureCapacityFor(int idx) {
-        if (attrs.length > idx)
+    public void ensureCapacityFor(int id) {
+        if (attrs.length > id)
             return;
 
-        attrs = Arrays.copyOf(attrs, idx + 1);
+        attrs = Arrays.copyOf(attrs, id + 1);
     }
 
     /** */

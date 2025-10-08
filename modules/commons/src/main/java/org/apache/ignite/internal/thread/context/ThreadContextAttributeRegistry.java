@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.thread.context;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -46,7 +45,7 @@ public class ThreadContextAttributeRegistry {
 
     /** */
     Collection<ThreadContextAttribute<?>> attributes() {
-        return Collections.unmodifiableCollection(attrs);
+        return attrs;
     }
 
     /** */

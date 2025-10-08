@@ -29,28 +29,12 @@ public class ThreadContext {
 
     /** */
     public static <T> Scope withAttribute(ThreadContextAttribute<T> attr, T val) {
-        return DefaultScope.create().withAttribute(attr, val);
+        return DefaultScope.createWith(attr, val);
     }
 
     /** */
     public static Scope withSnapshot(ThreadContextSnapshot snapshot) {
-        Scope scope = DefaultScope.create();
-
-        for (ThreadContextAttribute<?> attr : ThreadContextAttributeRegistry.instance().attributes()) {
-            Object val;
-
-            if (!snapshot.isEmpty() && snapshot.attributeId() == attr.id()) {
-                val = snapshot.attributeValue();
-
-                snapshot = snapshot.next();
-            }
-            else
-                val = attr.initialValue();
-
-            scope = scope.withAttribute((ThreadContextAttribute<Object>)attr, val);
-        }
-
-        return scope;
+        return DefaultScope.createWith(snapshot);
     }
 
     /** */
