@@ -48,7 +48,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
     private int part;
 
     /** */
-    @Order(6)
+    @Order(value = 6, method = "xid")
     private GridCacheVersion txId;
 
     /**
@@ -70,16 +70,6 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
         this.part = part;
         this.txId = txId;
         this.futId = futId;
-    }
-
-    /** */
-    public GridCacheVersion txId() {
-        return txId;
-    }
-
-    /** */
-    public void txId(GridCacheVersion txId) {
-        this.txId = txId;
     }
 
     /** */
@@ -128,6 +118,11 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
      */
     public GridCacheVersion xid() {
         return txId;
+    }
+
+    /** */
+    public void xid(GridCacheVersion txId) {
+        this.txId = txId;
     }
 
     /** */
