@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheCon
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryReplicatedAtomicOneNodeTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.GridCacheContinuousQueryReplicatedAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.IgniteCacheContinuousQueryClientTest;
+import org.apache.ignite.internal.processors.cache.store.CacheStoreSqlFieldsQueryH2Test;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsQueryTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsSystemViewTablesTest;
 import org.apache.ignite.internal.processors.query.DropTableAfterCteSqlQueryTest;
@@ -86,6 +87,7 @@ import org.junit.runners.Suite;
     QueryEntityAliasesTest.class,
     CacheContinuousQueryEntriesExpireTest.class,
     DropTableAfterCteSqlQueryTest.class,
+    CacheStoreSqlFieldsQueryH2Test.class
 })
 public class IgniteCacheQuerySelfTestSuite6 {
 }

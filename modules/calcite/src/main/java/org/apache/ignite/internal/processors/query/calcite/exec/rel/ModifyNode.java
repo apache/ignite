@@ -217,6 +217,19 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         List<ModifyTuple> tuples,
         GridCacheProxyImpl<Object, Object> cache
     ) throws IgniteCheckedException {
+        if (tuples.size() == 1) {
+            ModifyTuple e = tuples.iterator().next();
+
+            if (e.getOp() == TableModify.Operation.INSERT) {
+                if (cache.putIfAbsent(e.getKey(), e.getValue()))
+                    updatedRows++;
+                else
+                    throw conflictKeysException(Collections.singletonList(e.getKey()));
+
+                return;
+            }
+        }
+
         Map<Object, EntryProcessor<Object, Object, Long>> map = invokeMap(tuples);
         Map<Object, EntryProcessorResult<Long>> res = cache.invokeAll(map);
 
