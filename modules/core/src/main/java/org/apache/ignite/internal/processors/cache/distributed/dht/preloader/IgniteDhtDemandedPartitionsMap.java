@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
     /** */
-    public static final short TYPE_CODE = 189;
+    public static final short TYPE_CODE = 501;
 
     /** */
     private static final long serialVersionUID = 0L;

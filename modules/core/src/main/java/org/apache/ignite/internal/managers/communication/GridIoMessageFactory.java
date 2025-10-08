@@ -391,10 +391,10 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(StatisticsRequest.TYPE_CODE, StatisticsRequest::new);
         factory.register(StatisticsResponse.TYPE_CODE, StatisticsResponse::new);
 
-        factory.register(IgniteDhtDemandedPartitionsMap.TYPE_CODE, IgniteDhtDemandedPartitionsMap::new,
-            new IgniteDhtDemandedPartitionsMapSerializer());
         factory.register(CachePartitionPartialCountersMap.TYPE_CODE, CachePartitionPartialCountersMap::new,
             new CachePartitionPartialCountersMapSerializer());
+        factory.register(IgniteDhtDemandedPartitionsMap.TYPE_CODE, IgniteDhtDemandedPartitionsMap::new,
+                new IgniteDhtDemandedPartitionsMapSerializer());
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] [183..188] - this
         // [120..123] - DR
