@@ -75,33 +75,33 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /** Target node ID. */
     protected UUID nodeId;
 
-    /** */
-    private GridNearAtomicUpdateResponse res;
-
-    /** Compressed boolean flags. Make sure 'toString' is updated when add new flag. */
-    @GridToStringExclude
-    @Order(4)
-    protected byte flags;
-
     /** Future version. */
-    @Order(value = 5, method = "futureId")
+    @Order(value = 4, method = "futureId")
     protected long futId;
 
-    /** Update operation. */
-    @Order(value = 6, method = "cacheOpEncoded", asType = "short")
-    @Nullable protected GridCacheOperation op;
+    /** Topology version. */
+    @Order(value = 5, method = "topologyVersion")
+    protected AffinityTopologyVersion topVer;
 
     /** Write synchronization mode. */
-    @Order(value = 7, method = "writeSyncModeEncoded", asType = "short")
+    @Order(value = 6, method = "writeSyncModeEncoded", asType = "short")
     @Nullable protected CacheWriteSynchronizationMode syncMode;
+
+    /** Update operation. */
+    @Order(value = 7, method = "cacheOpEncoded", asType = "short")
+    @Nullable protected GridCacheOperation op;
 
     /** Task name hash. */
     @Order(8)
     protected int taskNameHash;
 
-    /** Topology version. */
-    @Order(value = 9, method = "topologyVersion")
-    protected AffinityTopologyVersion topVer;
+    /** Compressed boolean flags. Make sure 'toString' is updated when add new flag. */
+    @GridToStringExclude
+    @Order(9)
+    protected byte flags;
+
+    /** */
+    private GridNearAtomicUpdateResponse res;
 
     /**
      *
