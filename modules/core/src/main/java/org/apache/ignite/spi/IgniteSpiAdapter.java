@@ -771,6 +771,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
                         throw new IgniteException("Failed to read message, node is not started.");
                     }
 
+                    /** Enable sending wait message for a communication peer while context isn't initialized. */
                     @Override public MessageSerializer serializer(short type) {
                         assert type == HANDSHAKE_WAIT_MSG_TYPE;
 
@@ -781,6 +782,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
 
             if (msgFormatter0 == null) {
                 msgFormatter0 = new MessageFormatter() {
+                    /** Enable sending wait message for a communication peer while context isn't initialized. */
                     @Override public MessageWriter writer(MessageFactory msgFactory) {
                         return new DirectMessageWriter(msgFactory);
                     }

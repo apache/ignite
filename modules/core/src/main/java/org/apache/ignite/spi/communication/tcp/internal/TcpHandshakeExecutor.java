@@ -26,14 +26,13 @@ import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.codegen.RecoveryLastReceivedMessageSerializer;
-import org.apache.ignite.internal.direct.DirectMessageReader;
-import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
@@ -77,7 +76,7 @@ public class TcpHandshakeExecutor {
      * @param rmtNodeId Expected remote node.
      * @param sslMeta Required data for ssl.
      * @param msg Handshake message which should be sent during handshake.
-     * @param msgFactory Message factory to prepare handshake messages.
+     * @param spiCtx Spi context.
      * @return Handshake response from predefined variants from {@link RecoveryLastReceivedMessage}.
      * @throws IgniteCheckedException If handshake failed.
      */
@@ -86,10 +85,10 @@ public class TcpHandshakeExecutor {
         UUID rmtNodeId,
         GridSslMeta sslMeta,
         HandshakeMessage msg,
-        MessageFactory msgFactory
+        IgniteSpiContext spiCtx
     ) throws IgniteCheckedException {
         BlockingTransport transport = stateProvider.isSslEnabled() ?
-            new SslTransport(sslMeta, ch, directBuffer, log, msgFactory) : new TcpTransport(ch, msgFactory);
+            new SslTransport(sslMeta, ch, directBuffer, log, spiCtx) : new TcpTransport(ch, spiCtx);
 
         UUID rmtNodeId0 = transport.receiveNodeId();
 
@@ -126,17 +125,19 @@ public class TcpHandshakeExecutor {
      */
     private abstract static class BlockingTransport {
         /** Message reader. */
-        private final MessageReader reader = new DirectMessageReader(null, null);
+        private final MessageReader reader;
 
         /** Message writer. */
-        private final MessageWriter writer = new DirectMessageWriter(null);
+        private final MessageWriter writer;
 
-        /** */
+        /** Message factory. */
         private final MessageFactory msgFactory;
 
         /** */
-        BlockingTransport(MessageFactory msgFactory) {
-            this.msgFactory = msgFactory;
+        BlockingTransport(IgniteSpiContext spiCtx) throws IgniteCheckedException {
+            msgFactory = spiCtx.messageFactory();
+            reader = spiCtx.messageFormatter().reader(msgFactory);
+            writer = spiCtx.messageFormatter().writer(msgFactory);
         }
 
         /**
@@ -282,8 +283,8 @@ public class TcpHandshakeExecutor {
         private final SocketChannel ch;
 
         /** */
-        TcpTransport(SocketChannel ch, MessageFactory msgFactory) {
-            super(msgFactory);
+        TcpTransport(SocketChannel ch, IgniteSpiContext spiCtx) throws IgniteCheckedException {
+            super(spiCtx);
 
             this.ch = ch;
         }
@@ -329,9 +330,9 @@ public class TcpHandshakeExecutor {
             SocketChannel ch,
             boolean directBuf,
             IgniteLogger log,
-            MessageFactory msgFactory
+            IgniteSpiContext spiCtx
         ) throws IgniteCheckedException {
-            super(msgFactory);
+            super(spiCtx);
 
             try {
                 this.ch = ch;
@@ -398,7 +399,6 @@ public class TcpHandshakeExecutor {
         /** {@inheritDoc} */
         @Override void onHandshakeFinished(GridSslMeta sslMeta) {
             ByteBuffer appBuff = handler.applicationBuffer();
-
             if (appBuff.hasRemaining())
                 sslMeta.decodedBuffer(appBuff);
 

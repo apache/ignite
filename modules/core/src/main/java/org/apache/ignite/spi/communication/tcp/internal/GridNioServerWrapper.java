@@ -822,7 +822,7 @@ public class GridNioServerWrapper {
 
                     private MessageFactory get() {
                         if (impl == null) {
-                            impl = stateProvider.getSpiContext().messageFactory();
+                            impl = stateProvider.getSpiContextWithoutInitialLatch().messageFactory();
 
                             assert impl != null;
                         }
@@ -1196,7 +1196,7 @@ public class GridNioServerWrapper {
         handshakeTimeoutExecutorService.schedule(timeoutObj, timeout, TimeUnit.MILLISECONDS);
 
         try {
-            return tcpHandshakeExecutor.tcpHandshake(ch, rmtNodeId, sslMeta, msg, nio().messageFactory());
+            return tcpHandshakeExecutor.tcpHandshake(ch, rmtNodeId, sslMeta, msg, stateProvider.getSpiContext());
         }
         finally {
             if (!timeoutObj.cancel())
