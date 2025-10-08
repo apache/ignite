@@ -89,11 +89,11 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
     /** Update operation. */
     @Order(value = 6, method = "cacheOpEncoded", asType = "short")
-    protected GridCacheOperation cacheOperation;
+    @Nullable protected GridCacheOperation op;
 
     /** Write synchronization mode. */
     @Order(value = 7, method = "writeSyncModeEncoded", asType = "short")
-    protected CacheWriteSynchronizationMode writeSyncMode;
+    @Nullable protected CacheWriteSynchronizationMode syncMode;
 
     /** Task name hash. */
     @Order(8)
@@ -106,7 +106,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /**
      *
      */
-    public GridNearAtomicAbstractUpdateRequest() {
+    protected GridNearAtomicAbstractUpdateRequest() {
         // No-op.
     }
 
@@ -138,8 +138,8 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         this.nodeId = nodeId;
         this.futId = futId;
         this.topVer = topVer;
-        this.cacheOperation = op;
-        this.writeSyncMode = syncMode;
+        this.syncMode = syncMode;
+        this.op = op;
         this.taskNameHash = taskNameHash;
         this.flags = flags;
         this.addDepInfo = addDepInfo;
@@ -260,7 +260,9 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @return {@code True} if update is processed in {@link CacheWriteSynchronizationMode#FULL_SYNC} mode.
      */
     boolean fullSync() {
-        return CacheWriteSynchronizationMode.FULL_SYNC == writeSynchronizationMode();
+        assert syncMode != null;
+
+        return syncMode == CacheWriteSynchronizationMode.FULL_SYNC;
     }
 
     /**
@@ -291,12 +293,12 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @return Update opreation.
      */
     public GridCacheOperation operation() {
-        return cacheOperation;
+        return op;
     }
 
     /** @return Cache operatrion. */
     public CacheWriteSynchronizationMode writeSynchronizationMode() {
-        return writeSyncMode;
+        return syncMode;
     }
 
     /**
@@ -322,7 +324,10 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
     /** @return The cache operation code. */
     public short cacheOpEncoded() {
-        switch (cacheOperation) {
+        if (op == null)
+            return 0;
+
+        switch (op) {
             case READ: return 1;
             case CREATE: return 2;
             case UPDATE: return 3;
@@ -332,19 +337,20 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
             case NOOP: return 7;
         }
 
-        throw new UnsupportedOperationException("Unsupported cache operation: " + cacheOperation);
+        throw new UnsupportedOperationException("Unsupported cache operation: " + op);
     }
 
     /** Sets the cache operation by a code. */
     public void cacheOpEncoded(short opCode) {
         switch (opCode) {
-            case 1: cacheOperation = GridCacheOperation.READ; return;
-            case 2: cacheOperation = GridCacheOperation.CREATE; return;
-            case 3: cacheOperation = GridCacheOperation.UPDATE; return;
-            case 4: cacheOperation = GridCacheOperation.DELETE; return;
-            case 5: cacheOperation = GridCacheOperation.TRANSFORM; return;
-            case 6: cacheOperation = GridCacheOperation.RELOAD; return;
-            case 7: cacheOperation = GridCacheOperation.NOOP; return;
+            case 0: op = null; return;
+            case 1: op = GridCacheOperation.READ; return;
+            case 2: op = GridCacheOperation.CREATE; return;
+            case 3: op = GridCacheOperation.UPDATE; return;
+            case 4: op = GridCacheOperation.DELETE; return;
+            case 5: op = GridCacheOperation.TRANSFORM; return;
+            case 6: op = GridCacheOperation.RELOAD; return;
+            case 7: op = GridCacheOperation.NOOP; return;
         }
 
         throw new UnsupportedOperationException("Unsupported cache operation code: " + opCode);
@@ -357,13 +363,16 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @return Code of the cache write synchronization mode.
      */
     public short writeSyncModeEncoded() {
-        switch (writeSyncMode) {
+        if (syncMode == null)
+            return 0;
+
+        switch (syncMode) {
             case FULL_SYNC: return 1;
             case FULL_ASYNC: return 2;
             case PRIMARY_SYNC: return 3;
         }
 
-        throw new UnsupportedOperationException("Unsupported cache write synchronization mode: " + writeSyncMode);
+        throw new UnsupportedOperationException("Unsupported cache write synchronization mode: " + syncMode);
     }
 
     /**
@@ -374,9 +383,10 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      */
     public void writeSyncModeEncoded(short writeSyncModeCode) {
         switch (writeSyncModeCode) {
-            case 1: writeSyncMode = CacheWriteSynchronizationMode.FULL_SYNC; return;
-            case 2: writeSyncMode = CacheWriteSynchronizationMode.FULL_ASYNC; return;
-            case 3: writeSyncMode = CacheWriteSynchronizationMode.PRIMARY_SYNC; return;
+            case 0: syncMode = null; return;
+            case 1: syncMode = CacheWriteSynchronizationMode.FULL_SYNC; return;
+            case 2: syncMode = CacheWriteSynchronizationMode.FULL_ASYNC; return;
+            case 3: syncMode = CacheWriteSynchronizationMode.PRIMARY_SYNC; return;
         }
 
         throw new UnsupportedOperationException("Unsupported cache write synchronization mode code: " + writeSyncModeCode);

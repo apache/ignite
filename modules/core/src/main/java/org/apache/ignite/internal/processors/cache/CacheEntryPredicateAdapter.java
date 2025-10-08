@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
-/** A unified container for common, typical cache entry predicates. */
+/** A unified container for common cache entry predicates. */
 public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     /** */
     private static final long serialVersionUID = 4647110502545358709L;
@@ -163,7 +163,10 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     /** */
     public void typeEncoded(short typeVal) {
         switch (typeVal) {
-            case 1: type = PredicateType.OTHER; break;
+            case 0:
+            case 1:
+                type = PredicateType.OTHER;
+                break;
             case 2: type = PredicateType.VALUE; break;
             case 3: type = PredicateType.HAS_VALUE; break;
             case 4: type = PredicateType.HAS_NO_VALUE; break;
