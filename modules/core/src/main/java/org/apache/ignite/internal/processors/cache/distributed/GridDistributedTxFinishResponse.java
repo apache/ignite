@@ -35,21 +35,21 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class GridDistributedTxFinishResponse extends GridCacheMessage {
     /** */
-    @GridToStringExclude
-    @Order(3)
-    private byte flags;
+    @Order(value = 3, method = "xid")
+    private GridCacheVersion txId;
 
     /** Future ID. */
     @Order(value = 4, method = "futureId")
     private IgniteUuid futId;
 
     /** */
-    @Order(value = 5, method = "partition")
-    private int part;
+    @GridToStringExclude
+    @Order(5)
+    private byte flags;
 
     /** */
-    @Order(value = 6, method = "xid")
-    private GridCacheVersion txId;
+    @Order(value = 6, method = "partition")
+    private int part;
 
     /**
      * Empty constructor required by {@link GridIoMessageFactory}.

@@ -51,33 +51,33 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     /** */
     public static final int RECOVERY_FLAG_MASK = 0x20;
 
-    /** TTL for read operation. */
-    @Order(4)
-    private long accessTtl;
+    /** Future ID. */
+    @Order(value = 4, method = "futureId")
+    private long futId;
 
-    /** TTL for read operation. */
+    /** */
     @Order(5)
-    private long createTtl;
+    private KeyCacheObject key;
 
     /** Flags. */
     @Order(6)
     private byte flags;
 
-    /** Future ID. */
-    @Order(value = 7, method = "futureId")
-    private long futId;
-
-    /** */
-    @Order(8)
-    private KeyCacheObject key;
+    /** Topology version. */
+    @Order(value = 7, method = "topologyVersion")
+    private AffinityTopologyVersion topVer;
 
     /** Task name hash. */
-    @Order(9)
+    @Order(8)
     private int taskNameHash;
 
-    /** Topology version. */
-    @Order(value = 10, method = "topologyVersion")
-    private AffinityTopologyVersion topVer;
+    /** TTL for read operation. */
+    @Order(9)
+    private long createTtl;
+
+    /** TTL for read operation. */
+    @Order(10)
+    private long accessTtl;
 
     /** Transaction label. */
     @Order(value = 11, method = "txLabel")
