@@ -31,6 +31,9 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     private static final long serialVersionUID = 4647110502545358709L;
 
     /** */
+    public static final int TYPE_CODE = 98;
+
+    /** */
     public static final CacheEntryPredicateAdapter ALWAYS_FALSE = new CacheEntryPredicateAdapter(PredicateType.ALWAYS_FALSE);
 
     /** */
@@ -75,7 +78,7 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 98;
+        return TYPE_CODE;
     }
 
     /** */
