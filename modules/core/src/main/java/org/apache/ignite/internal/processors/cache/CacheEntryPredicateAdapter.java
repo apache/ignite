@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
-/** A unified container for common cache entry predicates. */
+/** A unified container for common, typical cache entry predicates. */
 public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     /** */
     private static final long serialVersionUID = 4647110502545358709L;

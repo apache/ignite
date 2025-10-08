@@ -292,12 +292,12 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /**
      * @return Update opreation.
      */
-    public GridCacheOperation operation() {
+    @Nullable public GridCacheOperation operation() {
         return op;
     }
 
     /** @return Cache operatrion. */
-    public CacheWriteSynchronizationMode writeSynchronizationMode() {
+    @Nullable public CacheWriteSynchronizationMode writeSynchronizationMode() {
         return syncMode;
     }
 
