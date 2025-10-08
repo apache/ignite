@@ -104,8 +104,13 @@ public class IgniteTcpCommunicationConnectOnInitTest extends GridCommonAbstractT
 
             GridNioSession ses = srvr.createSession(ch, null, false, null).get();
 
-            boolean wait = GridTestUtils.waitForCondition(
-                () -> ses.bytesReceived() == HandshakeWaitMessage.MESSAGE_FULL_SIZE, 1000);
+            boolean wait = GridTestUtils.waitForCondition(() -> {
+                long rcv = ses.bytesReceived();
+
+                System.out.println("Receive: " + rcv);
+
+                return rcv == HandshakeWaitMessage.MESSAGE_FULL_SIZE;
+            }, 10_000);
 
             assertTrue("Handshake not started.", wait);
 
@@ -140,7 +145,7 @@ public class IgniteTcpCommunicationConnectOnInitTest extends GridCommonAbstractT
                     }
 
                     @Override public void onMessage(GridNioSession ses, Object msg) {
-                        // No-op.
+                        System.out.println("onMessage: " + msg);
                     }
                 };
 

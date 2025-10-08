@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.managers.communication;
 
+import java.util.UUID;
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
-
-import java.util.UUID;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toBytes;
 
