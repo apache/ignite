@@ -40,11 +40,6 @@ public abstract class GridCacheIdMessage extends GridCacheMessage {
         return cacheId;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean cacheGroupMessage() {
-        return false;
-    }
-
     /**
      * @param cacheId Cache ID.
      */
@@ -99,11 +94,6 @@ public abstract class GridCacheIdMessage extends GridCacheMessage {
         }
 
         return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int handlerId() {
-        return cacheId;
     }
 
     /** {@inheritDoc} */
