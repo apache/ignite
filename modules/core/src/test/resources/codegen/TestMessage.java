@@ -65,17 +65,14 @@ public class TestMessage implements Message {
     @Order(value = 11, method = "overridenFieldMethod")
     private String field;
 
-    @Order(12)
+    @Order(value = 12)
     private KeyCacheObject keyCacheObject;
 
-    @Order(13)
+    @Order(value = 13)
     private CacheObject cacheObject;
 
-    @Order(14)
+    @Order(value = 14)
     private GridLongList gridLongList;
-
-    @Order(15)
-    private Exception exception;
 
     public int id() {
         return id;
@@ -197,13 +194,6 @@ public class TestMessage implements Message {
         this.gridLongList = gridLongList;
     }
 
-    public Exception exception() {
-        return exception;
-    }
-
-    public void exception(Exception exception) {
-        this.exception = exception;
-    }
 
     public short directType() {
         return 0;

@@ -19,59 +19,85 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.MessageProcessor;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  * Message used to transfer {@link Throwable} objects.
- * Currently, marshalling and unmarshalling is performed by {@link JdkMarshaller}.
+ * <p>Because raw serialization of throwables is prohibited, you should use this message when it is necessary
+ * to transfer some error as part of some message. See {@link MessageProcessor} for details.
+ * <p>Currently, under the hood marshalling and unmarshalling is performed by {@link JdkMarshaller}.
  */
 @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class ErrorMessage implements Message {
     /** Serialized form of throwable. */
-    @Order(0)
+    @Order(value = 0, method = "errorBytes")
     private byte[] errBytes;
+
+    /** Original error. It is transient and necessary only to avoid duplicated serialization and deserializtion. */
+    private Throwable err;
+
+    /**
+     * Default constructor.
+     */
+    public ErrorMessage() {
+        // No-op.
+    }
+
+    /**
+     * @param err Original error. Will be lazily serialized.
+     */
+    public ErrorMessage(Throwable err) {
+        this.err = err;
+    }
 
     /**
      * @return Serialized form of throwable.
      */
-    public byte[] errBytes() {
-        return errBytes;
+    public byte[] errorBytes() {
+        return bytesFromThrowable();
     }
 
     /**
      * @param errBytes New serialized form of throwable.
      */
-    public void errBytes(byte[] errBytes) {
+    public void errorBytes(byte[] errBytes) {
         this.errBytes = errBytes;
     }
 
-    /** Factory method to marshal {@link Throwable} objects to send them over the network.  */
-    public static ErrorMessage fromThrowable(@Nullable Throwable err) {
-        if (err == null)
-            return null;
-
+    /**
+     * Gets serialized error.
+     */
+    private byte[] bytesFromThrowable() {
         try {
-            ErrorMessage msg = new ErrorMessage();
+            if (errBytes == null)
+                errBytes = U.marshal(jdk(), err);
 
-            msg.errBytes(U.marshal(jdk(), err));
-
-            return msg;
+            return errBytes;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
     }
 
-    /** Factory method to unmarshal serialized {@link Throwable} back to java object. */
-    public static <T extends Throwable> T toThrowable(@Nullable ErrorMessage msg) {
+    /**
+     * @return Original {@link Throwable}.
+     */
+    public Throwable toThrowable() {
         try {
-            return msg == null ? null : U.unmarshal(jdk(), msg.errBytes(), U.gridClassLoader());
+            if (err == null) {
+                err = U.unmarshal(jdk(), errBytes, U.gridClassLoader());
+
+                // It is not necessary now.
+                errBytes = null;
+            }
+
+            return err;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

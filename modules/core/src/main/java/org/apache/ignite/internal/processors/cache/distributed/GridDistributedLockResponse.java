@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -41,8 +42,8 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
     private IgniteUuid futId;
 
     /** Error. */
-    @Order(value = 8, method = "error")
-    private Throwable err;
+    @Order(value = 8, method = "errorMessage")
+    private ErrorMessage errMsg;
 
     /** Values. */
     @GridToStringInclude
@@ -68,14 +69,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         IgniteUuid futId,
         int cnt,
         boolean addDepInfo) {
-        super(lockVer, cnt, addDepInfo);
-
-        assert futId != null;
-
-        this.cacheId = cacheId;
-        this.futId = futId;
-
-        vals = new ArrayList<>(cnt);
+        this(cacheId, lockVer, futId, cnt, null, addDepInfo);
     }
 
     /**
@@ -90,13 +84,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         IgniteUuid futId,
         Throwable err,
         boolean addDepInfo) {
-        super(lockVer, 0, addDepInfo);
-
-        assert futId != null;
-
-        this.cacheId = cacheId;
-        this.futId = futId;
-        this.err = err;
+        this(cacheId, lockVer, futId, 0, err, addDepInfo);
     }
 
     /**
@@ -119,9 +107,12 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
 
         this.cacheId = cacheId;
         this.futId = futId;
-        this.err = err;
+        
+        if (err != null)
+            errMsg = new ErrorMessage(err);
 
-        vals = new ArrayList<>(cnt);
+        if (cnt > 0)
+            vals = new ArrayList<>(cnt);
     }
 
     /**
@@ -141,14 +132,21 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public Throwable error() {
-        return err;
+        return errMsg != null ? errMsg.toThrowable() : null;
     }
 
     /**
-     * @param err New error.
+     * @return Error message.
      */
-    public void error(Throwable err) {
-        this.err = err;
+    public ErrorMessage errorMessage() {
+        return errMsg;
+    }
+
+    /**
+     * @param errMsg New error message.
+     */
+    public void errorMessage(ErrorMessage errMsg) {
+        this.errMsg = errMsg;
     }
 
     /**

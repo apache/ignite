@@ -19,7 +19,6 @@ package org.apache.ignite.internal.codegen;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.TestMessage;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -133,12 +132,6 @@ public class TestMessageSerializer implements MessageSerializer {
 
             case 14:
                 if (!writer.writeGridLongList(msg.gridLongList()))
-                    return false;
-
-                writer.incrementState();
-
-            case 15:
-                if (!writer.writeMessage(ErrorMessage.fromThrowable(msg.exception())))
                     return false;
 
                 writer.incrementState();
@@ -268,14 +261,6 @@ public class TestMessageSerializer implements MessageSerializer {
 
             case 14:
                 msg.gridLongList(reader.readGridLongList());
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 15:
-                msg.exception(ErrorMessage.toThrowable(reader.readMessage()));
 
                 if (!reader.isLastRead())
                     return false;
