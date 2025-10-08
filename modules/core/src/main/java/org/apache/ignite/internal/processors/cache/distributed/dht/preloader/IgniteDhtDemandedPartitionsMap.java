@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -32,9 +33,12 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Map of partitions demanded during rebalancing.
  */
-public class IgniteDhtDemandedPartitionsMap implements Message {
+public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
     /** */
     public static final short TYPE_CODE = 189;
+
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /** Map of partitions that will be preloaded from history. (partId -> (fromCntr, toCntr)). */
     @Order(value = 0, method = "historicalMap")
