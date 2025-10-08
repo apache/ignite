@@ -99,7 +99,7 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
     private ClusterMetrics createMetrics() {
         ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
 
-        metrics.setAvailableProcessors(1);
+        metrics.setTotalCpus(1);
         metrics.setAverageActiveJobs(2);
         metrics.setAverageCancelledJobs(3);
         metrics.setAverageJobExecuteTime(4);

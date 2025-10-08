@@ -304,11 +304,16 @@ class MessageSerializerGenerator {
      * @param field Field to generate write code.
      */
     private void returnFalseIfWriteFailed(VariableElement field) throws Exception {
-        String methodName = field.getAnnotation(Order.class).method();
+        Order ordAnnot = field.getAnnotation(Order.class);
+
+        String methodName = ordAnnot.method();
 
         String getExpr = (F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName) + "()";
 
         TypeMirror type = field.asType();
+
+        if (ordAnnot.getAndSet())
+            getExpr = (type.getKind() == TypeKind.BOOLEAN ? "is" : "get") + capitalizeFirst(getExpr);
 
         if (type.getKind().isPrimitive()) {
             String typeName = capitalizeOnlyFirst(type.getKind().name());
@@ -423,11 +428,16 @@ class MessageSerializerGenerator {
      * @param field Field.
      */
     private void returnFalseIfReadFailed(VariableElement field) throws Exception {
-        TypeMirror type = field.asType();
+        Order ordAnnot = field.getAnnotation(Order.class);
 
-        String methodName = field.getAnnotation(Order.class).method();
+        String methodName = ordAnnot.method();
 
         String name = F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName;
+
+        if (ordAnnot.getAndSet())
+            name = "set" + capitalizeFirst(name);
+
+        TypeMirror type = field.asType();
 
         if (type.getKind().isPrimitive()) {
             String typeName = capitalizeOnlyFirst(type.getKind().name());
@@ -731,6 +741,11 @@ class MessageSerializerGenerator {
     /** Converts string "BYTE" to string "Byte", with first capital latter. */
     private String capitalizeOnlyFirst(String input) {
         return input.substring(0, 1).toUpperCase() + input.substring(1).toLowerCase();
+    }
+
+    /** Capitalizes first char. */
+    private String capitalizeFirst(String input) {
+        return input.substring(0, 1).toUpperCase() + input.substring(1);
     }
 
     /** @return {@code true} if trying to generate file with the same content. */

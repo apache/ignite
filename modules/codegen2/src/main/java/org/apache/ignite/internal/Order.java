@@ -42,4 +42,7 @@ public @interface Order {
 
     /** @return Getter and setter name. */
     String method() default "";
+
+    /** If {@code true}, uses 'get' and 'set' as method names prefixes. */
+    boolean getAndSet() default false;
 }

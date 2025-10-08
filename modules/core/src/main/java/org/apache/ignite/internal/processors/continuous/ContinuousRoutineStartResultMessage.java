@@ -180,7 +180,7 @@ public class ContinuousRoutineStartResultMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 134;
+        return 136;
     }
 
     /** {@inheritDoc} */
