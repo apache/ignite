@@ -494,7 +494,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                 return;
             }
 
-            Collection<KeyCacheObject> missedKeys = res.missedKeys();
+            Collection<KeyCacheObject> missedKeys = F.view(res.missedKeys());
 
             boolean remapMissed = false;
 
@@ -510,7 +510,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                 Collection<KeyCacheObject> retryKeys = F.view(
                     keys,
                     F0.notIn(missedKeys),
-                    F0.notIn(F.viewReadOnly(res.forcedInfos(), CU.<KeyCacheObject, V>info2Key())));
+                    F0.notIn(F.viewReadOnly(F.view(res.forcedInfos()), CU.<KeyCacheObject, V>info2Key())));
 
                 if (!retryKeys.isEmpty())
                     map(retryKeys, F.concat(false, node, exc));
@@ -520,7 +520,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
             boolean replicate = cctx.isDrEnabled();
 
-            for (GridCacheEntryInfo info : res.forcedInfos()) {
+            for (GridCacheEntryInfo info : F.view(res.forcedInfos())) {
                 int p = cctx.affinity().partition(info.key());
 
                 GridDhtLocalPartition locPart = top.localPartition(p, AffinityTopologyVersion.NONE, false);
