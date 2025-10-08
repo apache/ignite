@@ -17,37 +17,34 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Partition update counters message.
  */
-@IgniteCodeGeneratingFail
 public class PartitionUpdateCountersMessage implements Message {
     /** */
     private static final int ITEM_SIZE = 4 /* partition */ + 8 /* initial counter */ + 8 /* updates count */;
 
     /** */
-    private byte data[];
+    @Order(0)
+    private byte[] data;
 
     /** */
+    @Order(1)
     private int cacheId;
 
     /** */
-    @GridDirectTransient
+    @Order(2)
     private int size;
 
     /** Used for assigning counters to cache entries during tx finish. */
-    @GridDirectTransient
+    @Order(3)
     private Map<Integer, Long> counters;
 
     /** */
@@ -67,6 +64,20 @@ public class PartitionUpdateCountersMessage implements Message {
     }
 
     /**
+     * @return Data.
+     */
+    public byte[] data() {
+        return data;
+    }
+
+    /**
+     * @param data New data.
+     */
+    public void data(byte[] data) {
+        this.data = data;
+    }
+
+    /**
      * @return Cache id.
      */
     public int cacheId() {
@@ -74,10 +85,38 @@ public class PartitionUpdateCountersMessage implements Message {
     }
 
     /**
+     * @param cacheId New cache id.
+     */
+    public void cacheId(int cacheId) {
+        this.cacheId = cacheId;
+    }
+
+    /**
      * @return Size.
      */
     public int size() {
         return size;
+    }
+
+    /**
+     * @param size New size.
+     */
+    public void size(int size) {
+        this.size = size;
+    }
+
+    /**
+     * @return Counters.
+     */
+    public Map<Integer, Long> counters() {
+        return counters;
+    }
+
+    /**
+     * @param counters New counters.
+     */
+    public void counters(Map<Integer, Long> counters) {
+        this.counters = counters;
     }
 
     /**
@@ -169,63 +208,6 @@ public class PartitionUpdateCountersMessage implements Message {
 
         if (data.length < req)
             data = Arrays.copyOf(data, data.length << 1);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt(cacheId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByteArray(data, 0, size * ITEM_SIZE))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                cacheId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                data = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                size = data.length / ITEM_SIZE;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
