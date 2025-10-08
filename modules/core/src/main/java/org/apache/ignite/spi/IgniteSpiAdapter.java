@@ -38,6 +38,8 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.codegen.HandshakeWaitMessageSerializer;
+import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
@@ -62,6 +64,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_FAILURE_DETECTION_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE;
 
 /**
  * This class provides convenient adapter for SPI implementations.
@@ -768,19 +771,23 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
                         throw new IgniteException("Failed to read message, node is not started.");
                     }
 
+                    /** Enable sending wait message for a communication peer while context isn't initialized. */
                     @Override public MessageSerializer serializer(short type) {
-                        throw new IgniteException("Failed to register message, node is not started.");
+                        assert type == HANDSHAKE_WAIT_MSG_TYPE;
+
+                        return new HandshakeWaitMessageSerializer();
                     }
                 };
             }
 
             if (msgFormatter0 == null) {
                 msgFormatter0 = new MessageFormatter() {
-                    @Override public MessageWriter writer(UUID rmtNodeId, MessageFactory msgFactory) {
-                        throw new IgniteException("Failed to write message, node is not started.");
+                    /** Enable sending wait message for a communication peer while context isn't initialized. */
+                    @Override public MessageWriter writer(MessageFactory msgFactory) {
+                        return new DirectMessageWriter(msgFactory);
                     }
 
-                    @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
+                    @Override public MessageReader reader(MessageFactory msgFactory) {
                         throw new IgniteException("Failed to read message, node is not started.");
                     }
                 };

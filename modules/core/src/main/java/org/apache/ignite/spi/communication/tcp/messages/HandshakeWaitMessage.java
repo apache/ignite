@@ -17,17 +17,13 @@
 
 package org.apache.ignite.spi.communication.tcp.messages;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE;
 
 /**
- * Message requesting to wait until node's SPI context initialize.
+ * Message requesting to wait until node's SPI context initialize.
  */
 public class HandshakeWaitMessage implements Message {
     /** Full message size (with message type) in bytes. */
@@ -38,21 +34,6 @@ public class HandshakeWaitMessage implements Message {
      */
     public HandshakeWaitMessage() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        if (buf.remaining() < MESSAGE_FULL_SIZE)
-            return false;
-
-        TcpCommunicationSpi.writeMessageType(buf, directType());
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        return true;
     }
 
     /** {@inheritDoc} */

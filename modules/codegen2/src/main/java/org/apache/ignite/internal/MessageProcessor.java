@@ -68,11 +68,15 @@ public class MessageProcessor extends AbstractProcessor {
     /** Base interface that every message must implement. */
     static final String MESSAGE_INTERFACE = "org.apache.ignite.plugin.extensions.communication.Message";
 
+    /** This is the only message with zero fields. A serializer must be generated due to restrictions in our communication process. */
+    static final String HANDSHAKE_WAIT_MESSAGE = "org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage";
+
     /**
      * Processes all classes implementing the {@code Message} interface and generates corresponding serializer code.
      */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         TypeMirror msgType = processingEnv.getElementUtils().getTypeElement(MESSAGE_INTERFACE).asType();
+        TypeMirror handshakeWaitMsgType = processingEnv.getElementUtils().getTypeElement(HANDSHAKE_WAIT_MESSAGE).asType();
 
         Map<TypeElement, List<VariableElement>> msgFields = new HashMap<>();
 
@@ -90,7 +94,7 @@ public class MessageProcessor extends AbstractProcessor {
 
             List<VariableElement> fields = orderedFields(clazz);
 
-            if (!fields.isEmpty())
+            if (!fields.isEmpty() || processingEnv.getTypeUtils().isAssignable(clazz.asType(), handshakeWaitMsgType))
                 msgFields.put(clazz, fields);
         }
 
