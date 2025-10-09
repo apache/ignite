@@ -22,6 +22,9 @@ import org.apache.ignite.cluster.NetworkEnvironment;
 
 /** Implementation of {@link NetworkEnvironment}. */
 public class NetworkEnvironmentImpl implements NetworkEnvironment, Serializable {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
     /** */
     private final String dcId;
 
