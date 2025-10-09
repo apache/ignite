@@ -43,6 +43,6 @@ public @interface Order {
     /** @return Getter and setter name. */
     String method() default "";
 
-    /** If {@code true}, uses 'get' and 'set' as method names prefixes. */
-    boolean getAndSet() default false;
+    /** If {@code true}, uses 'get' as prefix of the get-method. Useful if a container implements an interface. */
+    boolean getter() default false;
 }
