@@ -56,7 +56,7 @@ public class TransactionIsolationMessage implements Message {
     /** @param code Code. */
     public void code(byte code) {
         this.code = code;
-        val = isolation(code);
+        val = value(code);
     }
 
     /** @return Transaction isolation. */
@@ -96,7 +96,7 @@ public class TransactionIsolationMessage implements Message {
      * @param code Code.
      * @return Transaction isolation or null.
      */
-    @Nullable private TransactionIsolation isolation(byte code) {
+    @Nullable private TransactionIsolation value(byte code) {
         switch (code) {
             case -1:
                 return null;

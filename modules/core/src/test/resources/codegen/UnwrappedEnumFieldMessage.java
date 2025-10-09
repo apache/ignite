@@ -20,7 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionIsolation;
 
-public class EnumFieldMessage implements Message {
+public class UnwrappedEnumFieldMessage implements Message {
     @Order(0)
     private TransactionIsolation isolation;
 
