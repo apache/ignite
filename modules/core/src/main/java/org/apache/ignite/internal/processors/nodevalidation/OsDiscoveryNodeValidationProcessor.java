@@ -19,11 +19,14 @@ package org.apache.ignite.internal.processors.nodevalidation;
 
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -36,15 +39,14 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
  * Node validation.
  */
 public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter implements DiscoveryNodeValidationProcessor {
-    /** Key for the distributed property that holds the rolling upgrade minor version check value. */
-    public static final String ROLL_UP_VERSION_CHECK = "rolling.upgrade.version.check";
+    /** Key for the distributed property that holds the current version. */
+    public static final String ROLL_UP_CURRENT_VERSION = "rolling.upgrade.current.version";
 
-    /**
-     * Distributed property that holds version for rolling upgrade validation.
-     * If value is null {@code null}, rolling upgrade is considered disabled,
-     * and nodes must have the exact same version to join the cluster.
-     */
-    private final AtomicReference<IgniteProductVersion> rollUpVerCheck = new AtomicReference<>();
+    /** Key for the distributed property that holds the target version. */
+    public static final String ROLL_UP_TARGET_VERSION = "rolling.upgrade.target.version";
+
+    /** Distributed property that holds current and target version. */
+    private final AtomicReference<IgnitePair<IgniteProductVersion>> verPair = new AtomicReference<>();
 
     /**
      * @param ctx Kernal context.
@@ -52,22 +54,54 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
     public OsDiscoveryNodeValidationProcessor(GridKernalContext ctx) {
         super(ctx);
 
+        String locBuildVer = ctx.discovery().localNode().attribute(ATTR_BUILD_VER);
+        IgniteProductVersion locVer = IgniteProductVersion.fromString(locBuildVer);
+
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(new DistributedMetastorageLifecycleListener() {
-            @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
+            @Override
+            public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
+                IgniteProductVersion current = null;
+                IgniteProductVersion target = null;
+
                 try {
-                    rollUpVerCheck.getAndSet(metastorage.read(ROLL_UP_VERSION_CHECK));
-                }
-                catch (IgniteCheckedException e) {
+                    current = metastorage.read(ROLL_UP_CURRENT_VERSION);
+                } catch (IgniteCheckedException e) {
                     if (log.isDebugEnabled())
-                        log.debug("Could not read " + ROLL_UP_VERSION_CHECK + " from metastorage. " + e.getMessage());
+                        log.debug("Could not read current version: " + e.getMessage());
+
+                    current = locVer;
                 }
 
-                metastorage.listen(ROLL_UP_VERSION_CHECK::equals, (key, oldVal, newVal) -> {
-                    rollUpVerCheck.getAndSet((IgniteProductVersion)newVal);
+                try {
+                    target = metastorage.read(ROLL_UP_TARGET_VERSION);
+                } catch (IgniteCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Could not read target version: " + e.getMessage());
+                }
 
-                    if (newVal == null)
-                        log.warning("Rolling upgrade version check was disabled.");
-                });
+                verPair.set(new IgnitePair<>(current, target));
+
+                metastorage.listen(ROLL_UP_CURRENT_VERSION::equals, (key, oldVal, newVal) ->
+                    verPair.getAndUpdate(pair -> new IgnitePair<>((IgniteProductVersion)newVal, pair.get2()))
+                );
+
+                metastorage.listen(ROLL_UP_TARGET_VERSION::equals, (key, oldVal, newVal) ->
+                    verPair.getAndUpdate(pair -> new IgnitePair<>(pair.get1(), (IgniteProductVersion)newVal))
+                );
+            }
+
+            @Override
+            public void onReadyForWrite(DistributedMetaStorage metastorage) {
+                IgnitePair<IgniteProductVersion> pair = verPair.get();
+                if (pair == null || pair.get2() == null) {
+                    try {
+                        metastorage.write(ROLL_UP_CURRENT_VERSION, locVer);
+                        metastorage.write(ROLL_UP_TARGET_VERSION, locVer);
+                        verPair.set(new IgnitePair<>(locVer, locVer));
+                    } catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
             }
         });
     }
@@ -75,18 +109,16 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
     /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
         ClusterNode locNode = ctx.discovery().localNode();
-
         String locBuildVer = locNode.attribute(ATTR_BUILD_VER);
         String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
 
-        IgniteProductVersion locVer = IgniteProductVersion.fromString(locBuildVer);
         IgniteProductVersion rmtVer = IgniteProductVersion.fromString(rmtBuildVer);
 
-        IgniteProductVersion rollUpVerCheck = this.rollUpVerCheck.get();
+        IgnitePair<IgniteProductVersion> pair = verPair.get();
+        IgniteProductVersion currentVer = pair != null ? pair.get1() : null;
+        IgniteProductVersion targetVer = pair != null ? pair.get2() : null;
 
-        IgniteProductVersion allowedVersion = rollUpVerCheck != null ? rollUpVerCheck : locVer;
-
-        if (versionsMatch(rmtVer, allowedVersion))
+        if (versionsMatch(rmtVer, currentVer) || versionsMatch(rmtVer, targetVer))
             return null;
 
         String errMsg = "Remote node rejected due to incompatible version for cluster join.\n"
@@ -98,7 +130,10 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
             + "  - Version     : " + locBuildVer + "\n"
             + "  - Addresses   : " + U.addressesAsString(locNode) + "\n"
             + "  - Node ID     : " + locNode.id() + "\n"
-            + "Allowed version for joining: " + allowedVersion.major() + "." + allowedVersion.minor() + "." + allowedVersion.maintenance();
+            + "Allowed versions for joining: \n"
+            + " - " + currentVer.major() + "." + currentVer.minor() + "." + currentVer.maintenance()
+            + (targetVer == null || targetVer.equals(currentVer) ? "" :
+            "\n - " + targetVer.major() + "." + targetVer.minor() + "." + targetVer.maintenance());
 
         LT.warn(log, errMsg);
 
