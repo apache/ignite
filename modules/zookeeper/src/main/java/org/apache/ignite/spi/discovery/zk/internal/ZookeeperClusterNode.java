@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.cluster.NetworkEnvironment;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.SecurityCredentialsAttrFilterPredicate;
@@ -71,6 +72,9 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     /** Node attributes. */
     private Map<String, Object> attrs;
 
+    /** Network environment. */
+    private NetworkEnvironment netEnv;
+
     /** Internal discovery addresses as strings. */
     private Collection<String> addrs;
 
@@ -103,6 +107,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
 
     /**
      * @param id Node ID.
+     * @param netEnv Network environment.
      * @param addrs Node addresses.
      * @param hostNames Node host names.
      * @param ver Node version.
@@ -114,6 +119,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
      */
     public ZookeeperClusterNode(
         UUID id,
+        NetworkEnvironment netEnv,
         Collection<String> addrs,
         Collection<String> hostNames,
         IgniteProductVersion ver,
@@ -128,6 +134,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
 
         this.id = id;
         this.ver = ver;
+        this.netEnv = netEnv;
         this.attrs = Collections.unmodifiableMap(attrs);
         this.addrs = addrs;
         this.hostNames = hostNames;
@@ -233,6 +240,11 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
         return F.view(attrs, new SecurityCredentialsAttrFilterPredicate());
     }
 
+    /** {{@inheritDoc} */
+    @Override public @Nullable NetworkEnvironment networkEnvironment() {
+        return netEnv;
+    }
+
     /** {@inheritDoc} */
     @Override public Collection<String> addresses() {
         return addrs;
@@ -329,6 +341,8 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
             mtr = ClusterMetricsSnapshot.serialize(metrics);
 
         U.writeByteArray(out, mtr);
+
+        out.writeObject(netEnv);
     }
 
     /** {@inheritDoc} */
@@ -349,6 +363,8 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
 
         if (mtr != null)
             metrics = ClusterMetricsSnapshot.deserialize(mtr, 0);
+
+        netEnv = (NetworkEnvironment)in.readObject();
     }
 
     /** {@inheritDoc} */
@@ -380,6 +396,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     /** {@inheritDoc} */
     @Override public String toString() {
         return "ZookeeperClusterNode [id=" + id +
+            ", networkEnvironment=" + netEnv +
             ", addrs=" + addrs +
             ", order=" + order +
             ", loc=" + loc +
