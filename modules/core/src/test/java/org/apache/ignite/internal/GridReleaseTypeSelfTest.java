@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.function.ThrowableSupplier;
 import org.apache.ignite.internal.util.typedef.X;
@@ -79,6 +81,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+        cleanPersistenceDir();
     }
 
     /** */
@@ -190,6 +193,38 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         assertRemoteRejected(() -> startGrid(2, "2.21.0", isClient));
 
         assertClusterSize(2);
+    }
+
+    /** */
+    @Test
+    public void testNodeRestart() throws Exception {
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+        storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
+        UnaryOperator<IgniteConfiguration> cfgOp = cfg -> cfg.setDataStorageConfiguration(storageCfg);
+
+        for (int i = 0; i < 3; i++)
+            startGrid(i, "2.18.0", false, cfgOp);
+
+        grid(0).cluster().state(ClusterState.ACTIVE);
+
+        assertClusterSize(3);
+
+        allowRollingUpgradeVersionCheck(grid(0), "2.18.1");
+
+        for (int i = 0; i < 3; i++)
+            grid(i).close();
+
+        assertClusterSize(0);
+
+        for (int i = 0; i < 3; i++)
+            startGrid(i, "2.18.0", false, cfgOp);
+
+        grid(0).cluster().state(ClusterState.ACTIVE);
+
+        assertClusterSize(3);
+
+        for (int i = 0; i < 3; i++)
+            assertEquals(grid(i).context().distributedMetastorage().read(ROLL_UP_VERSION_CHECK), IgniteProductVersion.fromString("2.18.1"));
     }
 
     /** Tests that starting a node with rejected version fails with remote rejection. */
