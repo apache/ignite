@@ -341,7 +341,8 @@ class MessageSerializerGenerator {
 
         if (type.getKind() == TypeKind.DECLARED) {
             if (enumType(erasedType(type)))
-                throw new IllegalArgumentException("Unsupported enum type: " + type);
+                throw new IllegalArgumentException("Unsupported enum type: " + type +
+                    ". The enum must be wrapped into a Message (see, for example, TransactionIsolationMessage).");
 
             if (sameType(type, String.class))
                 returnFalseIfWriteFailed(write, "writer.writeString", getExpr);
@@ -486,7 +487,8 @@ class MessageSerializerGenerator {
 
         if (type.getKind() == TypeKind.DECLARED) {
             if (enumType(erasedType(type)))
-                throw new IllegalArgumentException("Unsupported enum type: " + type);
+                throw new IllegalArgumentException("Unsupported enum type: " + type +
+                        ". The enum must be wrapped into a Message (see, for example, TransactionIsolationMessage).");
 
             if (sameType(type, String.class))
                 returnFalseIfReadFailed(name, "reader.readString");
