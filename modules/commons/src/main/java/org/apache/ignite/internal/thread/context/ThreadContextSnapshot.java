@@ -29,13 +29,13 @@ public class ThreadContextSnapshot {
     private final Object attrVal;
 
     /** */
-    private final ThreadContextSnapshot next;
+    private final ThreadContextSnapshot prev;
 
     /** */
-    private ThreadContextSnapshot(int attrId, Object attrVal, ThreadContextSnapshot next) {
+    private ThreadContextSnapshot(int attrId, Object attrVal, ThreadContextSnapshot prev) {
         this.attrId = attrId;
         this.attrVal = attrVal;
-        this.next = next;
+        this.prev = prev;
     }
 
     /** */
@@ -53,10 +53,10 @@ public class ThreadContextSnapshot {
     }
 
     /** */
-    ThreadContextSnapshot next() {
+    ThreadContextSnapshot previous() {
         assert !isEmpty();
 
-        return next;
+        return prev;
     }
 
     /** */
@@ -65,8 +65,8 @@ public class ThreadContextSnapshot {
     }
 
     /** */
-    ThreadContextSnapshot addAttribute(int attrId, Object attrVal) {
-        return new ThreadContextSnapshot(attrId, attrVal, this);
+    <T> ThreadContextSnapshot withAttribute(int attrId, Object val) {
+        return new ThreadContextSnapshot(attrId, val, this);
     }
 
     /** */

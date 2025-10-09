@@ -27,7 +27,6 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.thread.context.pool.ThreadContextAwareStripedExecutor;
 import org.apache.ignite.internal.thread.context.pool.ThreadContextAwareStripedThreadPoolExecutor;
 import org.apache.ignite.internal.thread.context.pool.ThreadContextAwareThreadPoolExecutor;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -47,25 +46,13 @@ public class ThreadContextAttributesTest extends GridCommonAbstractTest {
     /** */
     private static final ThreadContextAttribute<Integer> INT_ATTR = ThreadContextAttributeRegistry.instance().register(DFLT_INT_VAL);
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
-    }
-
     /** */
     @Test
     public void testThreadScopeAttributes() {
         String strAttrVal = "test";
         int intAttrVal = 1;
+
+        checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
 
         try (Scope ignored0 = ThreadContext.withAttribute(STR_ATTR, DFLT_STR_VAL).withAttribute(INT_ATTR, DFLT_INT_VAL)) {
             checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
@@ -86,16 +73,20 @@ public class ThreadContextAttributesTest extends GridCommonAbstractTest {
                 checkAttributeValues(strAttrVal, DFLT_INT_VAL);
             }
         }
+
+        checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
     }
 
     /** */
     @Test
     public void testScopeAttributeDuplication() {
-        GridTestUtils.assertThrowsWithCause(() -> {
-            try (Scope ignored = ThreadContext.withAttribute(INT_ATTR, 1).withAttribute(INT_ATTR, 2)) {
-                // No-op.
-            }
-        }, UnsupportedOperationException.class);
+        checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
+
+        try (Scope ignored = ThreadContext.withAttribute(INT_ATTR, 1).withAttribute(INT_ATTR, 2)) {
+            checkAttributeValues(DFLT_STR_VAL, 2);
+        }
+
+        checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
     }
 
     /** */
@@ -327,8 +318,14 @@ public class ThreadContextAttributesTest extends GridCommonAbstractTest {
         public void check() {
             checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
 
-            try (Scope ignored3 = ThreadContext.withSnapshot(snapshot)) {
-                checkAttributeValues(strAttrVal, intAttrVal);
+            try (Scope ignored0 = ThreadContext.withAttribute(STR_ATTR, "test")) {
+                checkAttributeValues("test", DFLT_INT_VAL);
+
+                try (Scope ignored1 = ThreadContext.withSnapshot(snapshot)) {
+                    checkAttributeValues(strAttrVal, intAttrVal);
+                }
+
+                checkAttributeValues("test", DFLT_INT_VAL);
             }
 
             checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);

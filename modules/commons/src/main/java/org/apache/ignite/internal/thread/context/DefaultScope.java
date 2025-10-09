@@ -29,7 +29,7 @@ public class DefaultScope implements Scope {
 
     /** {@inheritDoc} */
     @Override public <T> Scope withAttribute(ThreadContextAttribute<T> attr, T val) {
-        ThreadContext.data().put(attr, val);
+        ThreadContext.data().put(attr.id(), val);
 
         return this;
     }
