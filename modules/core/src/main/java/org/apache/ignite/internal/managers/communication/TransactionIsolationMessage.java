@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.transactions;
+package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TransactionIsolationMessage implements Message {
     /** Type code. */
-    public static final short TYPE_CODE = 500;
+    public static final short TYPE_CODE = 502;
 
     /** Transaction isolation. */
     private TransactionIsolation val;

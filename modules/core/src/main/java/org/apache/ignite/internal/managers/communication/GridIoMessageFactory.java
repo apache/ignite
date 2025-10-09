@@ -218,7 +218,6 @@ import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskResultRe
 import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId;
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult;
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResultBatch;
-import org.apache.ignite.internal.transactions.TransactionIsolationMessage;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
@@ -399,13 +398,11 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(CachePartitionPartialCountersMap.TYPE_CODE, CachePartitionPartialCountersMap::new,
             new CachePartitionPartialCountersMapSerializer());
         factory.register(IgniteDhtDemandedPartitionsMap.TYPE_CODE, IgniteDhtDemandedPartitionsMap::new,
-                new IgniteDhtDemandedPartitionsMapSerializer());
-
-        // [-3..119] [124..129] [-23..-28] [-36..-55] [183..188] - this
+            new IgniteDhtDemandedPartitionsMapSerializer());
         factory.register(TransactionIsolationMessage.TYPE_CODE, TransactionIsolationMessage::new,
             new TransactionIsolationMessageSerializer());
 
-        // [-3..119] [124..129] [-23..-28] [-36..-55] [183..189] - this
+        // [-3..119] [124..129] [-23..-28] [-36..-55] [183..188] - this
         // [120..123] - DR
         // [-44, 0..2, 42, 200..204, 210, 302] - Use in tests.
         // [300..307, 350..352] - CalciteMessageFactory.

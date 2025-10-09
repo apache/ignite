@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.transactions;
+package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.transactions.TransactionIsolation;

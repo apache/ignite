@@ -240,6 +240,10 @@ class MessageSerializerGenerator {
      * @param opt Case option.
      */
     private void processField(VariableElement field, int opt) throws Exception {
+        if (enumType(erasedType(field.asType())))
+            throw new IllegalArgumentException("Unsupported enum type: " + field.asType() +
+                    ". The enum must be wrapped into a Message (see, for example, TransactionIsolationMessage).");
+
         writeField(field, opt);
         readField(field, opt);
     }
@@ -340,10 +344,6 @@ class MessageSerializerGenerator {
         }
 
         if (type.getKind() == TypeKind.DECLARED) {
-            if (enumType(erasedType(type)))
-                throw new IllegalArgumentException("Unsupported enum type: " + type +
-                    ". The enum must be wrapped into a Message (see, for example, TransactionIsolationMessage).");
-
             if (sameType(type, String.class))
                 returnFalseIfWriteFailed(write, "writer.writeString", getExpr);
 
@@ -486,10 +486,6 @@ class MessageSerializerGenerator {
         }
 
         if (type.getKind() == TypeKind.DECLARED) {
-            if (enumType(erasedType(type)))
-                throw new IllegalArgumentException("Unsupported enum type: " + type +
-                        ". The enum must be wrapped into a Message (see, for example, TransactionIsolationMessage).");
-
             if (sameType(type, String.class))
                 returnFalseIfReadFailed(name, "reader.readString");
 
@@ -725,9 +721,13 @@ class MessageSerializerGenerator {
 
     /** */
     private boolean enumType(TypeMirror type) {
-        Element element = env.getTypeUtils().asElement(type);
+        if (type.getKind() == TypeKind.DECLARED) {
+            Element element = env.getTypeUtils().asElement(type);
 
-        return element != null && element.getKind() == ElementKind.ENUM;
+            return element != null && element.getKind() == ElementKind.ENUM;
+        }
+
+        return false;
     }
 
     /** */
