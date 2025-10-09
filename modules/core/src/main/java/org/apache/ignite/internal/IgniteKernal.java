@@ -236,7 +236,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_DATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_CENTER_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
@@ -1564,16 +1563,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         if (cfg.getConsistentId() != null)
             add(ATTR_NODE_CONSISTENT_ID, cfg.getConsistentId());
-
-        if (cfg.getDataCenterResolver() != null) {
-            String dcId = cfg.getDataCenterResolver().resolveDataCenterId();
-
-            // Enforcing correct configuration of DataCenterResolver.
-            if (F.isEmpty(dcId))
-                throw new IgniteCheckedException("Data center ID should not be empty if a DataCenterResolver is provided.");
-
-            add(ATTR_DATA_CENTER_ID, dcId);
-        }
 
         // Build a string from JVM arguments, because parameters with spaces are split.
         SB jvmArgs = new SB(512);

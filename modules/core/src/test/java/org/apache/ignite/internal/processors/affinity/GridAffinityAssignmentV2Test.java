@@ -237,6 +237,7 @@ public class GridAffinityAssignmentV2Test {
     protected TcpDiscoveryNode node(DiscoveryMetricsProvider metrics, IgniteProductVersion v, String consistentId) {
         TcpDiscoveryNode node = new TcpDiscoveryNode(
             UUID.randomUUID(),
+            null,
             Collections.singletonList("127.0.0.1"),
             Collections.singletonList("127.0.0.1"),
             0,

@@ -19,49 +19,51 @@ package org.apache.ignite.spi.discovery.datacenter;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.NetworkEnvironment;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.discovery.NetworkEnvironmentImpl;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
- * Tests for {@link DataCenterResolver} feature.
+ * Tests for {@link NetworkEnvironmentResolver} feature.
  */
-public class DataCenterResolverTest extends GridCommonAbstractTest {
+public class NetworkEnvironmentResolverTest extends GridCommonAbstractTest {
     /** */
     private static final String DC_ID = "DC0";
 
     /** */
-    private static final DataCenterResolver NULL_DC_RESOLVER = new DataCenterResolver() {
+    private static final NetworkEnvironmentResolver NULL_DC_NET_ENV_RESOLVER = new NetworkEnvironmentResolver() {
         /** {@inheritDoc} */
-        @Override public String resolveDataCenterId() {
-            return null;
+        @Override public NetworkEnvironment resolveNetworkEnvironment() {
+            return new NetworkEnvironmentImpl(null);
         }
     };
 
     /** */
-    private static final DataCenterResolver EMPTY_DC_RESOLVER = new DataCenterResolver() {
+    private static final NetworkEnvironmentResolver EMPTY_DC_NET_ENV_RESOLVER = new NetworkEnvironmentResolver() {
         /** {@inheritDoc} */
-        @Override public String resolveDataCenterId() {
-            return "";
+        @Override public NetworkEnvironment resolveNetworkEnvironment() {
+            return new NetworkEnvironmentImpl("");
         }
     };
 
     /** */
-    private DataCenterResolver dcResolver;
+    private NetworkEnvironmentResolver netEnvResolver;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (dcResolver != null)
-            cfg.setDataCenterResolver(dcResolver);
+        if (netEnvResolver != null)
+            cfg.setNetworkEnvironmentResolver(netEnvResolver);
 
         // To speed up tests involving nodes shutting down.
         TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
@@ -76,7 +78,7 @@ public class DataCenterResolverTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        dcResolver = null;
+        netEnvResolver = null;
     }
 
     /**
@@ -101,13 +103,15 @@ public class DataCenterResolverTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DATA_CENTER_ID, value = DC_ID)
     public void testAttributeSetLocallyFromSysProp() throws Exception {
-        dcResolver = new SystemPropertyDataCenterResolver();
+        netEnvResolver = new SystemPropertyNetworkEnvironmentResolver();
 
         IgniteEx testGrid = startGrid();
 
-        Object dcId = testGrid.localNode().attribute(IgniteNodeAttributes.ATTR_DATA_CENTER_ID);
+        NetworkEnvironment netEnv = testGrid.localNode().networkEnvironment();
 
-        assertEquals(DC_ID, dcId);
+        assertNotNull("NetworkEnvironment of the node should not be null", netEnv);
+
+        assertEquals(DC_ID, netEnv.dataCenterId());
     }
 
     /**
@@ -117,13 +121,27 @@ public class DataCenterResolverTest extends GridCommonAbstractTest {
      */
     @Test
     public void testEmptyDcIdIsNotAllowed() throws Exception {
-        dcResolver = NULL_DC_RESOLVER;
+        netEnvResolver = NULL_DC_NET_ENV_RESOLVER;
 
-        assertThrows(log, () -> startGrid(), IgniteCheckedException.class, "Data center ID should not be empty");
+        try {
+            startGrid();
+        } catch (Throwable t) {
+            IgniteSpiException cause = X.cause(t, IgniteSpiException.class);
+            assertNotNull(cause);
+            assertNotNull(cause.getMessage());
+            assertTrue(cause.getMessage().contains("Data center ID should not be empty"));
+        }
 
-        dcResolver = EMPTY_DC_RESOLVER;
+        netEnvResolver = EMPTY_DC_NET_ENV_RESOLVER;
 
-        assertThrows(log, () -> startGrid(), IgniteCheckedException.class, "Data center ID should not be empty");
+        try {
+            startGrid();
+        } catch (Throwable t) {
+            IgniteSpiException cause = X.cause(t, IgniteSpiException.class);
+            assertNotNull(cause);
+            assertNotNull(cause.getMessage());
+            assertTrue(cause.getMessage().contains("Data center ID should not be empty"));
+        }
     }
 
     /**
@@ -134,13 +152,15 @@ public class DataCenterResolverTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DATA_CENTER_ID, value = DC_ID)
     public void testServerWithWrongDcIdConfigIsProhibitedToJoin() throws Exception {
-        dcResolver = new SystemPropertyDataCenterResolver();
+        netEnvResolver = new SystemPropertyNetworkEnvironmentResolver();
         startGrid(0);
 
-        dcResolver = null;
+        netEnvResolver = null;
 
         try {
             startGrid(1);
+
+            assertFalse("Expected exception hasn't been thrown", true);
         }
         catch (IgniteCheckedException e) {
             Throwable cause = e.getCause();
@@ -153,18 +173,20 @@ public class DataCenterResolverTest extends GridCommonAbstractTest {
 
             String errMsg = cause.getMessage();
             assertNotNull(errMsg);
-            assertTrue(errMsg.contains("Remote node declares DataCenter ID but local node doesn't"));
+            assertTrue(errMsg.contains("Remote node has NetworkEnvironment configuration but local node doesn't"));
         }
 
         stopAllGrids();
 
-        dcResolver = null;
+        netEnvResolver = null;
         startGrid(0);
 
-        dcResolver = new SystemPropertyDataCenterResolver();
+        netEnvResolver = new SystemPropertyNetworkEnvironmentResolver();
 
         try {
             startGrid(1);
+
+            assertFalse("Expected exception hasn't been thrown", true);
         }
         catch (IgniteCheckedException e) {
             Throwable cause = e.getCause();
@@ -177,7 +199,7 @@ public class DataCenterResolverTest extends GridCommonAbstractTest {
 
             String errMsg = cause.getMessage();
             assertNotNull(errMsg);
-            assertTrue(errMsg.contains("Local node declares DataCenter ID but remote node doesn't"));
+            assertTrue(errMsg.contains("Local node has NetworkEnvironment configuration but remote node doesn't"));
         }
     }
 
@@ -189,7 +211,7 @@ public class DataCenterResolverTest extends GridCommonAbstractTest {
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DATA_CENTER_ID, value = DC_ID)
     public void testClientWithoutDcIdIsAllowedToJoin() throws Exception {
-        dcResolver = new SystemPropertyDataCenterResolver();
+        netEnvResolver = new SystemPropertyNetworkEnvironmentResolver();
         startGrid(0);
 
         try {
@@ -199,7 +221,7 @@ public class DataCenterResolverTest extends GridCommonAbstractTest {
             assertFalse("Unexpected exception was thrown: " + e, true);
         }
 
-        dcResolver = null;
+        netEnvResolver = null;
 
         try {
             startClientGrid(2);

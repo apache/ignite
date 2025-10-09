@@ -15,20 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.datacenter;
+package org.apache.ignite.cache.affinity.rendezvous;
 
-import org.apache.ignite.IgniteSystemProperties;
+import java.util.List;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
-import static org.apache.ignite.IgniteCommonsSystemProperties.getString;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_CENTER_ID;
+/** */
 
-/**
- * Implementation of {@link DataCenterResolver} interface that uses an {@link IgniteSystemProperties#IGNITE_DATA_CENTER_ID}
- * system property to obtain Data Center ID value.
- */
-public class SystemPropertyDataCenterResolver implements DataCenterResolver {
-    /** {@inheritDoc} */
-    @Override public String resolveDataCenterId() {
-        return getString(IGNITE_DATA_CENTER_ID);
+public class ClusterNodeAttributeColocatedMDCBackupFilter implements IgniteBiPredicate<ClusterNode, List<ClusterNode>> {
+    @Override public boolean apply(ClusterNode node, List<ClusterNode> nodes) {
+        return false;
     }
 }
