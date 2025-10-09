@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client.streamer;
 
 import java.util.Collection;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -25,6 +26,7 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
 
 import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.CLOSE;
 import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.FLUSH;
@@ -64,8 +66,11 @@ public class ClientDataStreamerAddDataRequest extends ClientDataStreamerRequest 
                 (DataStreamerImpl<KeyCacheObject, CacheObject>)handle.getStreamer();
 
         try {
-            if (entries != null)
-                dataStreamer.addData(entries);
+            if (entries != null) {
+                dataStreamer.addData(entries.stream()
+                        .map(e -> new GridMapEntry<>(e.entryKey(), e.value()))
+                        .collect(Collectors.toList()));
+            }
 
             if ((flags & FLUSH) != 0)
                 dataStreamer.flush();
