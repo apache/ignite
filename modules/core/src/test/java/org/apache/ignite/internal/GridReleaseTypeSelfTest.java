@@ -294,6 +294,9 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         grid.context().distributedMetastorage().write(ROLL_UP_VERSION_CHECK, IgniteProductVersion.fromString(ver));
     }
 
+    /**
+     * @param size Expected cluster size.
+     */
     private void assertClusterSize(int size) throws IgniteInterruptedCheckedException {
         assertTrue(waitForCondition(() -> Ignition.allGrids().size() == size, getTestTimeout()));
     }
