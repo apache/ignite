@@ -31,7 +31,6 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-
 /**
  * Tests for {@link NetworkEnvironmentResolver} feature.
  */
@@ -125,7 +124,8 @@ public class NetworkEnvironmentResolverTest extends GridCommonAbstractTest {
 
         try {
             startGrid();
-        } catch (Throwable t) {
+        }
+        catch (Throwable t) {
             IgniteSpiException cause = X.cause(t, IgniteSpiException.class);
             assertNotNull(cause);
             assertNotNull(cause.getMessage());
@@ -136,7 +136,8 @@ public class NetworkEnvironmentResolverTest extends GridCommonAbstractTest {
 
         try {
             startGrid();
-        } catch (Throwable t) {
+        }
+        catch (Throwable t) {
             IgniteSpiException cause = X.cause(t, IgniteSpiException.class);
             assertNotNull(cause);
             assertNotNull(cause.getMessage());

@@ -166,10 +166,27 @@ public interface ClusterNode extends BaselineNode {
      */
     @Override public Map<String, Object> attributes();
 
-    /** */
+    /**
+     * Gets the network environment information associated with this node.
+     * <p>
+     * This method returns a {@link NetworkEnvironment} object containing metadata such as the Data Center ID,
+     * which is used by Ignite to make topology-aware decisions. If the node or the cluster does not have any
+     * network environment resolver configured, this method may return {@code null}.
+     * <p>
+     * The network environment information is typically resolved at node startup via a
+     * {@code NetworkEnvironmentResolver} and is used for optimizing operations like:
+     * <ul>
+     *     <li>Minimizing cross-data center communication;</li>
+     *     <li>Improving fault tolerance and redundancy strategies;</li>
+     *     <li>Supporting affinity-based task execution within the same data center;</li>
+     *     <li>Providing input to discovery SPIs for topology-aware node grouping.</li>
+     * </ul>
+     *
+     * @return The network environment of the node, or {@code null} if not available.
+     */
     @Nullable public default NetworkEnvironment networkEnvironment() {
         return null;
-    };
+    }
 
     /**
      * Gets collection of addresses this node is known by.
