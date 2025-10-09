@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.nodevalidation;
 
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -53,6 +54,14 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
 
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(new DistributedMetastorageLifecycleListener() {
             @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
+                try {
+                    rollUpVerCheck.getAndSet(metastorage.read(ROLL_UP_VERSION_CHECK));
+                }
+                catch (IgniteCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Could not read " + ROLL_UP_VERSION_CHECK + " from metastorage. " + e.getMessage());
+                }
+
                 metastorage.listen(ROLL_UP_VERSION_CHECK::equals, (key, oldVal, newVal) -> {
                     rollUpVerCheck.getAndSet((IgniteProductVersion)newVal);
 
