@@ -53,6 +53,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_MISSED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_SUPPLIED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.REBALANCE_TOPIC;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 
 /**
@@ -267,7 +268,7 @@ public class GridDhtPartitionSupplier {
             if (sctx == null) {
                 if (log.isDebugEnabled())
                     log.debug("Starting supplying rebalancing [" + supplyRoutineInfo(topicId, nodeId, demandMsg) +
-                        ", fullPartitions=" + S.toStringSortedDistinct(demandMsg.partitions().fullSet()) +
+                        ", fullPartitions=" + S.toStringSortedDistinct(demandMsg.partitions().full()) +
                         ", histPartitions=" + S.toStringSortedDistinct(demandMsg.partitions().historicalSet()) + "]");
             }
             else
@@ -275,7 +276,7 @@ public class GridDhtPartitionSupplier {
 
             if (sctx == null || sctx.iterator == null) {
 
-                remainingParts = new HashSet<>(demandMsg.partitions().fullSet());
+                remainingParts = new HashSet<>(demandMsg.partitions().full());
 
                 CachePartitionPartialCountersMap histMap = demandMsg.partitions().historicalMap();
 
@@ -456,7 +457,7 @@ public class GridDhtPartitionSupplier {
 
                     // Mark all remaining partitions as missed to trigger full rebalance.
                     if (iter == null && F.isEmpty(remainingParts)) {
-                        remainingParts = new HashSet<>(demandMsg.partitions().fullSet());
+                        remainingParts = new HashSet<>(demandMsg.partitions().full());
                         remainingParts.addAll(demandMsg.partitions().historicalSet());
                     }
 
@@ -518,7 +519,7 @@ public class GridDhtPartitionSupplier {
             if (log.isDebugEnabled())
                 log.debug("Send next supply message [" + supplyRoutineInfo(topicId, demander.id(), demandMsg) + "]");
 
-            grp.shared().io().sendOrderedMessage(demander, demandMsg.topic(), supplyMsg, grp.ioPolicy(), demandMsg.timeout());
+            grp.shared().io().sendOrderedMessage(demander, REBALANCE_TOPIC, supplyMsg, grp.ioPolicy(), demandMsg.timeout());
 
             // Throttle preloading.
             if (rebalanceThrottleOverride > 0)
