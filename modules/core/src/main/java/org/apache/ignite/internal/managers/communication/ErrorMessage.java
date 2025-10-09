@@ -24,6 +24,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.marshaller.Marshallers.jdk;
 
@@ -37,10 +38,10 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
 public class ErrorMessage implements Message {
     /** Serialized form of throwable. */
     @Order(value = 0, method = "errorBytes")
-    private byte[] errBytes;
+    private byte @Nullable [] errBytes;
 
     /** Original error. It is transient and necessary only to avoid duplicated serialization and deserializtion. */
-    private Throwable err;
+    private @Nullable Throwable err;
 
     /**
      * Default constructor.
@@ -52,30 +53,16 @@ public class ErrorMessage implements Message {
     /**
      * @param err Original error. Will be lazily serialized.
      */
-    public ErrorMessage(Throwable err) {
+    public ErrorMessage(@Nullable Throwable err) {
         this.err = err;
     }
 
     /**
      * @return Serialized form of throwable.
      */
-    public byte[] errorBytes() {
-        return bytesFromThrowable();
-    }
-
-    /**
-     * @param errBytes New serialized form of throwable.
-     */
-    public void errorBytes(byte[] errBytes) {
-        this.errBytes = errBytes;
-    }
-
-    /**
-     * Gets serialized error.
-     */
-    private byte[] bytesFromThrowable() {
+    public byte @Nullable [] errorBytes() {
         try {
-            if (errBytes == null)
+            if (errBytes == null && err != null)
                 errBytes = U.marshal(jdk(), err);
 
             return errBytes;
@@ -86,11 +73,18 @@ public class ErrorMessage implements Message {
     }
 
     /**
+     * @param errBytes New serialized form of throwable.
+     */
+    public void errorBytes(byte @Nullable [] errBytes) {
+        this.errBytes = errBytes;
+    }
+
+    /**
      * @return Original {@link Throwable}.
      */
-    public Throwable toThrowable() {
+    public @Nullable Throwable toThrowable() {
         try {
-            if (err == null) {
+            if (err == null && errBytes != null) {
                 err = U.unmarshal(jdk(), errBytes, U.gridClassLoader());
 
                 // It is not necessary now.

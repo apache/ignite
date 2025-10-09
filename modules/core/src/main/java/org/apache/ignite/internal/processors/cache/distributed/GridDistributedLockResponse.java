@@ -69,7 +69,14 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         IgniteUuid futId,
         int cnt,
         boolean addDepInfo) {
-        this(cacheId, lockVer, futId, cnt, null, addDepInfo);
+        super(lockVer, cnt, addDepInfo);
+
+        assert futId != null;
+
+        this.cacheId = cacheId;
+        this.futId = futId;
+
+        vals = new ArrayList<>(cnt);
     }
 
     /**
@@ -84,7 +91,13 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
         IgniteUuid futId,
         Throwable err,
         boolean addDepInfo) {
-        this(cacheId, lockVer, futId, 0, err, addDepInfo);
+        super(lockVer, 0, addDepInfo);
+
+        assert futId != null;
+
+        this.cacheId = cacheId;
+        this.futId = futId;
+        errMsg = new ErrorMessage(err);
     }
 
     /**
@@ -107,12 +120,9 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
 
         this.cacheId = cacheId;
         this.futId = futId;
-        
-        if (err != null)
-            errMsg = new ErrorMessage(err);
+        errMsg = new ErrorMessage(err);
 
-        if (cnt > 0)
-            vals = new ArrayList<>(cnt);
+        vals = new ArrayList<>(cnt);
     }
 
     /**
