@@ -37,36 +37,32 @@ class ThreadContextData {
     private int activeAttrsCnt;
 
     /** */
-    private Deque<ScopedAttributeValue>[] attrs = new Deque[attrReg.size()];
+    private AttributeValueStack[] attrs;
+
+    /** */
+    ThreadContextData() {
+        synchronizeAttributes();
+    }
 
     /** */
     <T> T get(ThreadContextAttribute<T> attr) {
         if (activeAttrsCnt == 0)
             return attr.initialValue();
 
-        Deque<ScopedAttributeValue> attrScopedVals = attributeScopedValues(attr.id());
-
-        return F.isEmpty(attrScopedVals)
-            ? attr.initialValue()
-            : attrScopedVals.peek().value();
+        return attributeValues(attr.id()).peek();
     }
 
     /** */
     <T> void put(ThreadContextAttribute<T> attr, T val) {
-        if (get(attr) == val)
-            return;
+        put(attr.id(), val);
+    }
 
-        Deque<ScopedAttributeValue> attrScopedVals = attributeScopedValues(attr.id());
+    /** */
+    private <T> void put(int id, T val) {
+        AttributeValueStack attrVals = attributeValues(id);
 
-        if (attrScopedVals == null)
-            attrScopedVals = createAttributeValuesHolder(attr.id());
-
-        if (attrScopedVals.isEmpty())
+        if (attrVals.isEmpty() & attrVals.push(activeScopeDepth, val))
             ++activeAttrsCnt;
-        else if (attrScopedVals.peek().scopeDepth() == activeScopeDepth)
-            throw new UnsupportedOperationException("Overriding an existing attribute value within a scope is not supported");
-
-        attrScopedVals.push(new ScopedAttributeValue(activeScopeDepth, val));
     }
 
     /** */
@@ -76,13 +72,11 @@ class ThreadContextData {
 
         ThreadContextSnapshot snapshot = ThreadContextSnapshot.emptySnapshot();
 
-        for (int attrId = attrs.length - 1; attrId >= 0; attrId--) {
-            Deque<ScopedAttributeValue> attrScopedVals = attrs[attrId];
+        for (int attrId = 0; attrId < attrs.length; attrId++) {
+            AttributeValueStack attrVals = attrs[attrId];
 
-            if (F.isEmpty(attrScopedVals))
-                continue;
-
-            snapshot = snapshot.addAttribute(attrId, attrScopedVals.peek().value());
+            if (!attrVals.isEmpty())
+                snapshot = snapshot.addAttribute(attrId, attrVals.peek());
         }
 
         return snapshot;
@@ -93,19 +87,32 @@ class ThreadContextData {
         if (snapshot.isEmpty() && activeAttrsCnt == 0)
             return;
 
-        for (ThreadContextAttribute<?> attr : attrReg.attributes()) {
-            Object val;
+        int maxId = Math.max(snapshot.attributeId(), attrs.length - 1);
 
-            if (!snapshot.isEmpty() && snapshot.attributeId() == attr.id()) {
-                val = snapshot.attributeValue();
+        for (int id = maxId; id >= 0; id--) {
+            if (!snapshot.isEmpty() && snapshot.attributeId() == id) {
+                put(id, snapshot.attributeValue());
 
-                snapshot = snapshot.next();
+                snapshot = snapshot.previous();
             }
             else
-                val = attr.initialValue();
-
-            put((ThreadContextAttribute<Object>)attr, val);
+                attrs[id].restoreInitial(activeScopeDepth);
         }
+    }
+
+    /** */
+    private void synchronizeAttributes() {
+        AttributeValueStack[] res = new AttributeValueStack[attrReg.size()];
+
+        int size = attrs == null ? 0 : attrs.length;
+
+        if (size != 0)
+            System.arraycopy(attrs, 0, res, 0, size);
+
+        for (int id = size; id < res.length; id++)
+            res[id] = new AttributeValueStack(attrReg.attribute(id).initialValue());
+
+        attrs = res;
     }
 
     /** */
@@ -123,31 +130,20 @@ class ThreadContextData {
 
     /** */
     private void clearActiveScopeData() {
-        for (Deque<ScopedAttributeValue> attrScopedVals : attrs) {
-            if (F.isEmpty(attrScopedVals) || attrScopedVals.peek().scopeDepth() != activeScopeDepth)
-                continue;
-
-            attrScopedVals.pop();
-
-            if (attrScopedVals.isEmpty())
+        for (AttributeValueStack attrVals : attrs) {
+            if (attrVals.pop(activeScopeDepth) && attrVals.isEmpty())
                 --activeAttrsCnt;
         }
     }
 
     /** */
-    private Deque<ScopedAttributeValue> createAttributeValuesHolder(int id) {
-        Deque<ScopedAttributeValue> res = new ArrayDeque<>(DFLT_SCOPE_ATTR_VAL_CAPACITY);
+    private AttributeValueStack attributeValues(int id) {
+        if (id < attrs.length)
+            return attrs[id];
 
-        ensureCapacityFor(id);
+        synchronizeAttributes();
 
-        attrs[id] = res;
-
-        return res;
-    }
-
-    /** */
-    private Deque<ScopedAttributeValue> attributeScopedValues(int id) {
-        return id < attrs.length ? attrs[id] : null;
+        return attrs[id];
     }
 
     /** */
@@ -156,6 +152,60 @@ class ThreadContextData {
             return;
 
         attrs = Arrays.copyOf(attrs, id + 1);
+    }
+
+    /** */
+    private static class AttributeValueStack {
+        /** */
+        private Deque<ScopedAttributeValue> vals;
+
+        /** */
+        private final Object initialVal;
+
+        /** */
+        public AttributeValueStack(Object initialVal) {
+            this.initialVal = initialVal;
+        }
+
+        /** */
+        public boolean pop(int scopeDepth) {
+            if (F.isEmpty(vals) || vals.peek().scopeDepth() != scopeDepth)
+                return false;
+
+            vals.pop();
+
+            return true;
+        }
+
+        /** */
+        public void restoreInitial(int scopeDepth) {
+            push(scopeDepth, initialVal);
+        }
+
+        /** */
+        public boolean push(int scopeDepth, Object val) {
+            if (peek() == val)
+                return false;
+
+            if (vals == null)
+                vals = new ArrayDeque<>(DFLT_SCOPE_ATTR_VAL_CAPACITY);
+            else if (!vals.isEmpty() && vals.peek().scopeDepth() == scopeDepth)
+                throw new UnsupportedOperationException();
+
+            vals.push(new ScopedAttributeValue(scopeDepth, val));
+
+            return true;
+        }
+
+        /** */
+        public <T> T peek() {
+            return F.isEmpty(vals) ? (T)initialVal : vals.peek().value();
+        }
+
+        /** */
+        public boolean isEmpty() {
+            return F.isEmpty(vals);
+        }
     }
 
     /** */
