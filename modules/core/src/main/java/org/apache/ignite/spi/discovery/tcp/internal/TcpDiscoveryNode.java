@@ -362,7 +362,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public NetworkEnvironment networkEnvironment() {
+    @Override public @Nullable NetworkEnvironment networkEnvironment() {
         return netEnv;
     }
 
