@@ -75,7 +75,9 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
 
         IgniteProductVersion rollUpVerCheck = this.rollUpVerCheck.get();
 
-        if (versionsMatch(rmtVer, locVer) || versionsMatch(rmtVer, rollUpVerCheck))
+        IgniteProductVersion allowedVersion = rollUpVerCheck != null ? rollUpVerCheck : locVer;
+
+        if (versionsMatch(rmtVer, allowedVersion))
             return null;
 
         String errMsg = "Remote node rejected due to incompatible version for cluster join.\n"
@@ -87,10 +89,8 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
             + "  - Version     : " + locBuildVer + "\n"
             + "  - Addresses   : " + U.addressesAsString(locNode) + "\n"
             + "  - Node ID     : " + locNode.id() + "\n"
-            + "Allowed versions for joining:\n"
-            + "  - " + locVer.major() + "." + locVer.minor() + "." + locVer.maintenance()
-            + (rollUpVerCheck != null ?
-            "\n  - " + rollUpVerCheck.major() + "." + rollUpVerCheck.minor() + "." + rollUpVerCheck.maintenance() : "");
+            + "Allowed version for joining:\n"
+            + "  - " + allowedVersion.major() + "." + allowedVersion.minor() + "." + allowedVersion.maintenance();
 
         LT.warn(log, errMsg);
 
