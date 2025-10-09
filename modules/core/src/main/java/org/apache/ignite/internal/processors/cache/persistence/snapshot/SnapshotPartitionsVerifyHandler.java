@@ -172,12 +172,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         return meta.dump()
             ? checkDumpFiles(opCtx, partFiles)
-            : checkSnapshotFiles(opCtx, grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()));
+            : checkSnapshotFiles(opCtx.snapshotFileTree(), grpDirs, meta, partFiles, isPunchHoleEnabled(opCtx, grpDirs.keySet()));
     }
 
     /** */
     private Map<PartitionKey, PartitionHashRecord> checkSnapshotFiles(
-        SnapshotHandlerContext opCtx,
+        SnapshotFileTree sft,
         Map<Integer, List<File>> grpDirs,
         SnapshotMetadata meta,
         Set<File> partFiles,
@@ -192,7 +192,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         GridKernalContext snpCtx = new StandaloneGridKernalContext(
             log,
             cctx.kernalContext().compress(),
-            new NodeFileTree(opCtx.snapshotFileTree().root(), meta.folderName())
+            new NodeFileTree(sft.root(), meta.folderName())
         );
 
         FilePageStoreManager storeMgr = (FilePageStoreManager)cctx.pageStore();

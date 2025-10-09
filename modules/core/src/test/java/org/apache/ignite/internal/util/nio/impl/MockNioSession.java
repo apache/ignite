@@ -21,9 +21,9 @@ import java.net.InetSocketAddress;
 import java.security.cert.Certificate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
-import org.apache.ignite.internal.util.nio.GridNioFinishedFuture;
-import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -110,13 +110,13 @@ public class MockNioSession extends GridMetadataAwareAdapter implements GridNioS
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<Boolean> close() {
-        return new GridNioFinishedFuture<>(true);
+    @Override public IgniteInternalFuture<Boolean> close() {
+        return new GridFinishedFuture<>(true);
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> send(Object msg) {
-        return new GridNioFinishedFuture<>(true);
+    @Override public IgniteInternalFuture<?> send(Object msg) {
+        return new GridFinishedFuture<>(true);
     }
 
     /** {@inheritDoc} */
@@ -126,12 +126,12 @@ public class MockNioSession extends GridMetadataAwareAdapter implements GridNioS
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<Object> resumeReads() {
+    @Override public IgniteInternalFuture<Object> resumeReads() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<Object> pauseReads() {
+    @Override public IgniteInternalFuture<Object> pauseReads() {
         return null;
     }
 

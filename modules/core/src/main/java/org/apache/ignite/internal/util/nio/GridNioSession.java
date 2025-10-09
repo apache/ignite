@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import java.security.cert.Certificate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
@@ -104,7 +105,7 @@ public interface GridNioSession {
      *
      * @return Future representing result.
      */
-    public GridNioFuture<Boolean> close();
+    public IgniteInternalFuture<Boolean> close();
 
     /**
      * Performs a request for asynchronous data send.
@@ -113,7 +114,7 @@ public interface GridNioSession {
      *            to the nio server.
      * @return Future representing result.
      */
-    public GridNioFuture<?> send(Object msg);
+    public IgniteInternalFuture<?> send(Object msg);
 
     /**
      * @param msg Message to be sent.
@@ -163,14 +164,14 @@ public interface GridNioSession {
      *
      * @return Future representing result.
      */
-    public GridNioFuture<?> resumeReads();
+    public IgniteInternalFuture<?> resumeReads();
 
     /**
      * Pauses reads.
      *
      * @return Future representing result.
      */
-    public GridNioFuture<?> pauseReads();
+    public IgniteInternalFuture<?> pauseReads();
 
     /**
      * Checks whether reads are paused.

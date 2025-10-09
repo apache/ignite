@@ -48,13 +48,6 @@ public interface IgniteDiscoverySpi extends DiscoverySpi {
     public void simulateNodeFailure();
 
     /**
-     * For TESTING only.
-     *
-     * @param lsnr Listener.
-     */
-    public void setInternalListener(IgniteDiscoverySpiInternalListener lsnr);
-
-    /**
      * @return {@code True} if supports communication error resolve.
      */
     public boolean supportsCommunicationFailureResolve();

@@ -174,19 +174,19 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         }
 
         switch (writer.state()) {
-            case 8:
+            case 7:
                 if (!writer.writeByteArray(errBytes))
                     return false;
 
                 writer.incrementState();
 
-            case 9:
+            case 8:
                 if (!writer.writeByte(flags))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 9:
                 if (!writer.writeInt(part))
                     return false;
 
@@ -205,7 +205,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
             return false;
 
         switch (reader.state()) {
-            case 8:
+            case 7:
                 errBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
@@ -213,7 +213,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
 
                 reader.incrementState();
 
-            case 9:
+            case 8:
                 flags = reader.readByte();
 
                 if (!reader.isLastRead())
@@ -221,7 +221,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
 
                 reader.incrementState();
 
-            case 10:
+            case 9:
                 part = reader.readInt();
 
                 if (!reader.isLastRead())

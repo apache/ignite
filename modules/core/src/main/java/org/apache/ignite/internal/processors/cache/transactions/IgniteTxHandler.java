@@ -271,11 +271,11 @@ public class IgniteTxHandler {
      * @param msg Finish message signed with incremental snapshot ID.
      */
     private void setIncrementalSnapshotIdIfRequired(IncrementalSnapshotAwareMessage msg) {
-        if (msg.txInrementalSnapshotId() != null) {
+        if (msg.txIncrementalSnapshotId() != null) {
             IgniteInternalTx tx = findTransactionByMessage(msg.payload());
 
             if (tx != null)
-                tx.incrementalSnapshotId(msg.txInrementalSnapshotId());
+                tx.incrementalSnapshotId(msg.txIncrementalSnapshotId());
         }
     }
 

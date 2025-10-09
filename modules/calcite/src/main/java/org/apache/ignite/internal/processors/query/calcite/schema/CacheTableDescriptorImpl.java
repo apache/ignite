@@ -45,7 +45,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -405,7 +404,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         GridCacheContext<?, ?> cctx = cacheContext();
 
         BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
-        BinaryObjectBuilders.prepareAffinityField(builder, cctx.cacheObjectContext());
+        U.prepareAffinityField(builder, cctx.cacheObjectContext());
 
         return builder;
     }
@@ -476,7 +475,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         BinaryObjectBuilder builder = cctx.grid().binary().builder(
             cctx.grid().binary().<BinaryObject>toBinary(val));
 
-        BinaryObjectBuilders.prepareAffinityField(builder, cctx.cacheObjectContext());
+        U.prepareAffinityField(builder, cctx.cacheObjectContext());
 
         return builder;
     }

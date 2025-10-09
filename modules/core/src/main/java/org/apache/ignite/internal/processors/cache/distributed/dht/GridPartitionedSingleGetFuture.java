@@ -629,7 +629,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 setResult(verVal.value(), verVal.version());
             }
             else
-                setResult((CacheObject)res0, null);
+                setResult(res0 == null ? null : ((CacheVersionedValue)res0).value(), null);
         }
     }
 

@@ -1677,12 +1677,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Override public void onExchangeFinishedOnCoordinator(IgniteInternalFuture exchangeFuture,
-        boolean hasMovingPartitions) {
-        // no-op
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean evictionsAllowed() {
         return true;
     }

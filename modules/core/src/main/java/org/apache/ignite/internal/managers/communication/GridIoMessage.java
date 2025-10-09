@@ -175,11 +175,6 @@ public class GridIoMessage implements Message, SpanTransport {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        msg.onAckReceived();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
         throw new AssertionError();
     }

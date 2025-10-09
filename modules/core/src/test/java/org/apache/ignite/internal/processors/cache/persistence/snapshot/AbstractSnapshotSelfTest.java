@@ -937,14 +937,28 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             blockPred = pred;
         }
 
-        /** Unblock and send previously saved discovery custom messages */
+        /** Reassigns blocking predicate and releases current blocked queue. */
+        public synchronized void blockNextAndRelease(IgnitePredicate<DiscoveryCustomMessage> pred) {
+            blockPred = pred;
+
+            releaseBlocked();
+        }
+
+        /** Unblock and send previously saved discovery custom messages. */
         public synchronized void unblock() {
             blockPred = null;
 
+            releaseBlocked();
+        }
+
+        /** Releases the blocked messages. */
+        private void releaseBlocked() {
+            List<DiscoverySpiCustomMessage> blocked = new CopyOnWriteArrayList<>(this.blocked);
+
+            this.blocked.clear();
+
             for (DiscoverySpiCustomMessage msg : blocked)
                 sendCustomEvent(msg);
-
-            blocked.clear();
         }
 
         /**
@@ -953,6 +967,14 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
          */
         public void waitBlocked(long timeout) throws IgniteInterruptedCheckedException {
             GridTestUtils.waitForCondition(() -> !blocked.isEmpty(), timeout);
+        }
+
+        /**
+         * @param timeout Timeout to wait blocking messages.
+         * @throws IgniteInterruptedCheckedException If interrupted.
+         */
+        public void waitBlockedSize(int size, long timeout) throws IgniteInterruptedCheckedException {
+            GridTestUtils.waitForCondition(() -> blocked.size() == size, timeout);
         }
     }
 

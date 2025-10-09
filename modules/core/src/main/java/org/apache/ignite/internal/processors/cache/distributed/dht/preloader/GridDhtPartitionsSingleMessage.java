@@ -157,11 +157,6 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         return grpsAffRequest;
     }
 
-    /** {@inheritDoc} */
-    @Override public int handlerId() {
-        return 0;
-    }
-
     /**
      * @return {@code True} if sent from client node.
      */
@@ -201,6 +196,11 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             partCntrs = new HashMap<>();
 
         partCntrs.put(grpId, cntrMap);
+    }
+
+    /** @return Partition update counters per cache group. */
+    public Map<Integer, CachePartitionPartialCountersMap> partitionUpdateCounters() {
+        return partCntrs == null ? Collections.emptyMap() : Collections.unmodifiableMap(partCntrs);
     }
 
     /**

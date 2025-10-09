@@ -440,7 +440,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 }
 
                 @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
-                    return new DirectMessageReader(msgFactory);
+                    return new DirectMessageReader(msgFactory, ctx.cacheObjects());
                 }
             };
         }
