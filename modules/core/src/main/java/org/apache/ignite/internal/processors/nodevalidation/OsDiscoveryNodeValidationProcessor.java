@@ -89,8 +89,7 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
             + "  - Version     : " + locBuildVer + "\n"
             + "  - Addresses   : " + U.addressesAsString(locNode) + "\n"
             + "  - Node ID     : " + locNode.id() + "\n"
-            + "Allowed version for joining:\n"
-            + "  - " + allowedVersion.major() + "." + allowedVersion.minor() + "." + allowedVersion.maintenance();
+            + "Allowed version for joining: " + allowedVersion.major() + "." + allowedVersion.minor() + "." + allowedVersion.maintenance();
 
         LT.warn(log, errMsg);
 
