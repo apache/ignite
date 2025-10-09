@@ -254,7 +254,7 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     }
 
     /**
-     * Sets the transaction label;
+     * Sets the transaction label.
      */
     public void txLabel(String txLbl) {
         this.txLbl = txLbl;

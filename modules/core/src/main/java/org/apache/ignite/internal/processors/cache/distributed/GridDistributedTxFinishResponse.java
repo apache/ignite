@@ -42,12 +42,12 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
     @Order(value = 4, method = "futureId")
     private IgniteUuid futId;
 
-    /** */
+    /** TODO: revise this field in IGNITE-26589. Looks like a boolean and is required only in GridDhtTxFinishResponse. */
     @GridToStringExclude
     @Order(5)
     private byte flags;
 
-    /** */
+    /** Partition ID this message is targeted to. */
     @Order(value = 6, method = "partition")
     private int part;
 
@@ -72,7 +72,7 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
         this.futId = futId;
     }
 
-    /** */
+    /** Partition ID this message is targeted to. */
     public void partition(int part) {
         this.part = part;
     }
