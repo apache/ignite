@@ -27,6 +27,7 @@ import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.codegen.AtomicApplicationAttributesAwareRequestSerializer;
 import org.apache.ignite.internal.codegen.CacheContinuousQueryBatchAckSerializer;
+import org.apache.ignite.internal.codegen.CacheEntryPredicateAdapterSerializer;
 import org.apache.ignite.internal.codegen.CacheEvictionEntrySerializer;
 import org.apache.ignite.internal.codegen.CacheGroupAffinityMessageSerializer;
 import org.apache.ignite.internal.codegen.CachePartitionPartialCountersMapSerializer;
@@ -55,6 +56,8 @@ import org.apache.ignite.internal.codegen.GridDistributedTxPrepareRequestSeriali
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridJobSiblingsRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearAtomicCheckUpdateRequestSerializer;
+import org.apache.ignite.internal.codegen.GridNearAtomicSingleUpdateFilterRequestSerializer;
+import org.apache.ignite.internal.codegen.GridNearAtomicSingleUpdateRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearAtomicUpdateResponseSerializer;
 import org.apache.ignite.internal.codegen.GridNearGetRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearTxPrepareRequestSerializer;
@@ -101,8 +104,7 @@ import org.apache.ignite.internal.processors.authentication.UserAuthenticateRequ
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateResponseMessage;
 import org.apache.ignite.internal.processors.authentication.UserManagementOperationFinishedMessage;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicateContainsValue;
-import org.apache.ignite.internal.processors.cache.CacheEntrySerializablePredicate;
+import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
 import org.apache.ignite.internal.processors.cache.CacheEvictionEntry;
 import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -329,8 +331,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)95, DataStreamerEntry::new);
         factory.register((short)96, CacheContinuousQueryEntry::new);
         factory.register((short)97, CacheEvictionEntry::new, new CacheEvictionEntrySerializer());
-        factory.register((short)98, CacheEntryPredicateContainsValue::new);
-        factory.register((short)99, CacheEntrySerializablePredicate::new);
+        factory.register((short)98, CacheEntryPredicateAdapter::new, new CacheEntryPredicateAdapterSerializer());
         factory.register((short)100, IgniteTxEntry::new);
         factory.register((short)101, TxEntryValueHolder::new);
         factory.register((short)102, CacheVersionedValue::new, new CacheVersionedValueSerializer());
@@ -349,9 +350,9 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)118, CacheContinuousQueryBatchAck::new, new CacheContinuousQueryBatchAckSerializer());
 
         // [120..123] - DR
-        factory.register((short)125, GridNearAtomicSingleUpdateRequest::new);
+        factory.register((short)125, GridNearAtomicSingleUpdateRequest::new, new GridNearAtomicSingleUpdateRequestSerializer());
         factory.register((short)126, GridNearAtomicSingleUpdateInvokeRequest::new);
-        factory.register((short)127, GridNearAtomicSingleUpdateFilterRequest::new);
+        factory.register((short)127, GridNearAtomicSingleUpdateFilterRequest::new, new GridNearAtomicSingleUpdateFilterRequestSerializer());
         factory.register((short)128, CacheGroupAffinityMessage::new, new CacheGroupAffinityMessageSerializer());
         factory.register((short)129, WalStateAckMessage::new, new WalStateAckMessageSerializer());
         factory.register((short)130, UserManagementOperationFinishedMessage::new, new UserManagementOperationFinishedMessageSerializer());

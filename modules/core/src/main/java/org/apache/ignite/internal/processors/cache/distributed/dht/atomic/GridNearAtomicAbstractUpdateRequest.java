@@ -24,7 +24,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -73,36 +73,40 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     private static final int AFFINITY_MAPPING_FLAG_MASK = 0x80;
 
     /** Target node ID. */
-    @GridDirectTransient
     protected UUID nodeId;
 
     /** Future version. */
+    @Order(value = 4, method = "futureId")
     protected long futId;
 
     /** Topology version. */
+    @Order(value = 5, method = "topologyVersion")
     protected AffinityTopologyVersion topVer;
 
     /** Write synchronization mode. */
-    protected CacheWriteSynchronizationMode syncMode;
+    @Order(value = 6, method = "writeSyncModeEncoded", asType = "short")
+    @Nullable protected CacheWriteSynchronizationMode syncMode;
 
     /** Update operation. */
-    protected GridCacheOperation op;
+    @Order(value = 7, method = "cacheOpEncoded", asType = "short")
+    @Nullable protected GridCacheOperation op;
 
     /** Task name hash. */
+    @Order(8)
     protected int taskNameHash;
 
     /** Compressed boolean flags. Make sure 'toString' is updated when add new flag. */
     @GridToStringExclude
+    @Order(9)
     protected byte flags;
 
     /** */
-    @GridDirectTransient
     private GridNearAtomicUpdateResponse res;
 
     /**
      *
      */
-    public GridNearAtomicAbstractUpdateRequest() {
+    protected GridNearAtomicAbstractUpdateRequest() {
         // No-op.
     }
 
@@ -206,6 +210,11 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         return isFlag(NEAR_CACHE_FLAG_MASK);
     }
 
+    /** */
+    public void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
+    }
+
     /** {@inheritDoc} */
     @Override public final AffinityTopologyVersion topologyVersion() {
         return topVer;
@@ -264,10 +273,32 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     }
 
     /**
+     * Sets task name hash code.
+     */
+    public void taskNameHash(int taskNameHash) {
+        this.taskNameHash = taskNameHash;
+    }
+
+    /** */
+    public byte flags() {
+        return flags;
+    }
+
+    /** */
+    public void flags(byte flags) {
+        this.flags = flags;
+    }
+
+    /**
      * @return Update opreation.
      */
-    public GridCacheOperation operation() {
+    @Nullable public GridCacheOperation operation() {
         return op;
+    }
+
+    /** @return Cache operatrion. */
+    @Nullable public CacheWriteSynchronizationMode writeSynchronizationMode() {
+        return syncMode;
     }
 
     /**
@@ -285,10 +316,80 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     }
 
     /**
-     * @return Write synchronization mode.
+     * Sets near node future ID.
      */
-    public final CacheWriteSynchronizationMode writeSynchronizationMode() {
-        return syncMode;
+    public void futureId(long futId) {
+        this.futId = futId;
+    }
+
+    /** @return The cache operation code. */
+    public short cacheOpEncoded() {
+        if (op == null)
+            return 0;
+
+        switch (op) {
+            case READ: return 1;
+            case CREATE: return 2;
+            case UPDATE: return 3;
+            case DELETE: return 4;
+            case TRANSFORM: return 5;
+            case RELOAD: return 6;
+            case NOOP: return 7;
+        }
+
+        throw new UnsupportedOperationException("Unsupported cache operation: " + op);
+    }
+
+    /** Sets the cache operation by a code. */
+    public void cacheOpEncoded(short opCode) {
+        switch (opCode) {
+            case 0: op = null; return;
+            case 1: op = GridCacheOperation.READ; return;
+            case 2: op = GridCacheOperation.CREATE; return;
+            case 3: op = GridCacheOperation.UPDATE; return;
+            case 4: op = GridCacheOperation.DELETE; return;
+            case 5: op = GridCacheOperation.TRANSFORM; return;
+            case 6: op = GridCacheOperation.RELOAD; return;
+            case 7: op = GridCacheOperation.NOOP; return;
+        }
+
+        throw new UnsupportedOperationException("Unsupported cache operation code: " + opCode);
+    }
+
+    /**
+     * Provides the cache write synchronization mode code. Keeps predictable enum value read and write. Avoids changes by
+     * renamings, reorderings and so on.
+     *
+     * @return Code of the cache write synchronization mode.
+     */
+    public short writeSyncModeEncoded() {
+        if (syncMode == null)
+            return 0;
+
+        switch (syncMode) {
+            case FULL_SYNC: return 1;
+            case FULL_ASYNC: return 2;
+            case PRIMARY_SYNC: return 3;
+        }
+
+        throw new UnsupportedOperationException("Unsupported cache write synchronization mode: " + syncMode);
+    }
+
+    /**
+     * Sets the cache write synchronization mode by the code. Keeps predictable enum value read and write. Avoids changes
+     * by renamings, reorderings and so on.
+     *
+     * @param writeSyncModeCode The synchronization mode code.
+     */
+    public void writeSyncModeEncoded(short writeSyncModeCode) {
+        switch (writeSyncModeCode) {
+            case 0: syncMode = null; return;
+            case 1: syncMode = CacheWriteSynchronizationMode.FULL_SYNC; return;
+            case 2: syncMode = CacheWriteSynchronizationMode.FULL_ASYNC; return;
+            case 3: syncMode = CacheWriteSynchronizationMode.PRIMARY_SYNC; return;
+        }
+
+        throw new UnsupportedOperationException("Unsupported cache write synchronization mode code: " + writeSyncModeCode);
     }
 
     /**
@@ -513,6 +614,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      */
     public abstract KeyCacheObject key(int idx);
 
+    // TODO: remove after IGNITE-26599, IGNITE-26577
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -541,13 +643,13 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeByte(op != null ? (byte)op.ordinal() : -1))
+                if (!writer.writeShort(cacheOpEncoded()))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeByte(syncMode != null ? (byte)syncMode.ordinal() : -1))
+                if (!writer.writeShort(writeSyncModeEncoded()))
                     return false;
 
                 writer.incrementState();
@@ -569,6 +671,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         return true;
     }
 
+    // TODO: remove after IGNITE-26599, IGNITE-26577
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
@@ -594,26 +697,18 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                 reader.incrementState();
 
             case 6:
-                byte opOrd;
-
-                opOrd = reader.readByte();
+                cacheOpEncoded(reader.readShort());
 
                 if (!reader.isLastRead())
                     return false;
-
-                op = GridCacheOperation.fromOrdinal(opOrd);
 
                 reader.incrementState();
 
             case 7:
-                byte syncModeOrd;
-
-                syncModeOrd = reader.readByte();
+                writeSyncModeEncoded(reader.readShort());
 
                 if (!reader.isLastRead())
                     return false;
-
-                syncMode = CacheWriteSynchronizationMode.fromOrdinal(syncModeOrd);
 
                 reader.incrementState();
 

@@ -42,4 +42,7 @@ public @interface Order {
 
     /** @return Getter and setter name. */
     String method() default "";
+
+    /** Overrides the serialization type name. For primitives, 'int', 'short', etc. might be used. If empty, ignored. */
+    String asType() default "";
 }
