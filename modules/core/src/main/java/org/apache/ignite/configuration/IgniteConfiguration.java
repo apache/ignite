@@ -72,7 +72,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.datacenter.DataCenterResolver;
+import org.apache.ignite.spi.discovery.datacenter.NetworkEnvironmentResolver;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
@@ -372,7 +372,7 @@ public class IgniteConfiguration {
     private DiscoverySpi discoSpi;
 
     /** Data center resolver. */
-    private DataCenterResolver dcResolver;
+    private NetworkEnvironmentResolver netEnvResolver;
 
     /** Segmentation policy. */
     private SegmentationPolicy segPlc = DFLT_SEG_PLC;
@@ -668,7 +668,7 @@ public class IgniteConfiguration {
         connectorCfg = cfg.getConnectorConfiguration();
         consistentId = cfg.getConsistentId();
         dataStreamerPoolSize = cfg.getDataStreamerThreadPoolSize();
-        dcResolver = cfg.getDataCenterResolver();
+        netEnvResolver = cfg.getNetworkEnvironmentResolver();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         execCfgs = cfg.getExecutorConfiguration();
@@ -1959,21 +1959,22 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Returns {@link DataCenterResolver} configured for this node or {@code null} if none is configured.
+     * Returns {@link NetworkEnvironmentResolver} configured for this node or {@code null} if none is configured.
      *
-     * @return {@link DataCenterResolver} instance.
+     * @return {@link NetworkEnvironmentResolver} instance.
      */
-    public @Nullable DataCenterResolver getDataCenterResolver() {
-        return dcResolver;
+    public @Nullable NetworkEnvironmentResolver getNetworkEnvironmentResolver() {
+        return netEnvResolver;
     }
 
     /**
-     * @param dcResolver Instance of {@link DataCenterResolver} to obtain local node's Data Center ID.
+     * @param netEnvResolver Instance of {@link NetworkEnvironmentResolver} to obtain
+     *                       metainformation about local node's network environment.
      *
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setDataCenterResolver(DataCenterResolver dcResolver) {
-        this.dcResolver = dcResolver;
+    public IgniteConfiguration setNetworkEnvironmentResolver(NetworkEnvironmentResolver netEnvResolver) {
+        this.netEnvResolver = netEnvResolver;
 
         return this;
     }

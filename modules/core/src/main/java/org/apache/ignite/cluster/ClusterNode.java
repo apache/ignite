@@ -166,6 +166,11 @@ public interface ClusterNode extends BaselineNode {
      */
     @Override public Map<String, Object> attributes();
 
+    /** */
+    @Nullable public default NetworkEnvironment networkEnvironment() {
+        return null;
+    };
+
     /**
      * Gets collection of addresses this node is known by.
      * <p>

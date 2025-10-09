@@ -95,6 +95,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiMutableCustomMessageSupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.spi.discovery.datacenter.NetworkEnvironmentResolver;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
@@ -1166,8 +1167,17 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         // Init local node.
         initAddresses();
 
+        NetworkEnvironmentResolver netEnvRslvr = ignite.configuration().getNetworkEnvironmentResolver();
+
+        if (netEnvRslvr != null && netEnvRslvr.resolveNetworkEnvironment() != null) {
+            // Enforcing correct configuration of NetworkEnvironment.
+            if (F.isEmpty(netEnvRslvr.resolveNetworkEnvironment().dataCenterId()))
+                throw new IgniteSpiException("Data center ID should not be empty if a NetworkEnvironmentResolver is provided.");
+        }
+
         locNode = new TcpDiscoveryNode(
             ignite.configuration().getNodeId(),
+            netEnvRslvr == null ? null : netEnvRslvr.resolveNetworkEnvironment(),
             addrs.get1(),
             addrs.get2(),
             srvPort,
