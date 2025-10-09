@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.NetworkEnvironment;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.NetworkEnvironmentImpl;
@@ -81,21 +80,7 @@ public class NetworkEnvironmentResolverTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that node's attribute is not set if no resolver is configured.
-     *
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testAttributeNotSetIfNoResolverConfigured() throws Exception {
-        IgniteEx testGrid = startGrid();
-
-        Object dcId = testGrid.localNode().attribute(IgniteNodeAttributes.ATTR_DATA_CENTER_ID);
-
-        assertNull(dcId);
-    }
-
-    /**
-     * Verifies that node's attribute for DC ID is set from system property.
+     * Verifies that NetworkEnvironmentResolver picks up the data center ID from the system property.
      *
      * @throws Exception If failed.
      */
@@ -114,7 +99,8 @@ public class NetworkEnvironmentResolverTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that node with configured DataCenterResolver fails to start if the resolver returns {@code null} or empty DC_ID.
+     * Verifies that node with configured NetworkEnvironmentResolver fails to start
+     * if the resolver returns {@code null} or empty string for data center ID.
      *
      * @throws Exception If failed.
      */
@@ -146,7 +132,7 @@ public class NetworkEnvironmentResolverTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that cluster with configured DataCenterResolver rejects server nodes without DataCenterResolver and vise versa.
+     * Verifies that cluster with configured NetworkEnvironmentResolver rejects server nodes without one and vise versa.
      *
      * @throws Exception If failed.
      */
@@ -205,7 +191,7 @@ public class NetworkEnvironmentResolverTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that clients with or without DataCenterResolver are allowed to join a cluster with a configured one.
+     * Verifies that clients with or without NetworkEnvironmentResolver are allowed to join a cluster with a configured one.
      *
      * @throws Exception If failed.
      */

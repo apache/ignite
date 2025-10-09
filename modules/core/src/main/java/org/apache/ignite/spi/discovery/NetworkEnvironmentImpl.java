@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery;
 
 import java.io.Serializable;
 import org.apache.ignite.cluster.NetworkEnvironment;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** Implementation of {@link NetworkEnvironment}. */
 public class NetworkEnvironmentImpl implements NetworkEnvironment, Serializable {
@@ -40,5 +41,10 @@ public class NetworkEnvironmentImpl implements NetworkEnvironment, Serializable 
      */
     @Override public String dataCenterId() {
         return dcId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(NetworkEnvironmentImpl.class, this);
     }
 }
