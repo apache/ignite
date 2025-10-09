@@ -371,7 +371,10 @@ public class IgniteConfiguration {
     /** Discovery SPI. */
     private DiscoverySpi discoSpi;
 
-    /** Data center resolver. */
+    /**
+     * Network environment resolver responsible for providing information about high-level network architecture
+     * - data centers, racks and so on.
+     */
     private NetworkEnvironmentResolver netEnvResolver;
 
     /** Segmentation policy. */
