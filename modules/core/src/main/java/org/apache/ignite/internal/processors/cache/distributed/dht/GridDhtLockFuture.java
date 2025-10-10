@@ -1339,7 +1339,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                     if (checkDone())
                         return;
 
-                    for (GridCacheEntryInfo info : res.preloadEntries()) {
+                    for (GridCacheEntryInfo info : F.emptyIfNull(res.preloadEntries())) {
                         try {
                             GridCacheEntryEx entry = cache0.entryEx(info.key(), topVer);
 

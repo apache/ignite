@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 
 /**
@@ -112,7 +113,7 @@ public interface GridNioFilter {
      * @return Write future or {@code null}.
      * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public GridNioFuture<?> proceedSessionWrite(
+    public IgniteInternalFuture<?> proceedSessionWrite(
         GridNioSession ses,
         Object msg,
         boolean fut,
@@ -126,7 +127,7 @@ public interface GridNioFilter {
      * @return Close future.
      * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public GridNioFuture<Boolean> proceedSessionClose(GridNioSession ses) throws IgniteCheckedException;
+    public IgniteInternalFuture<Boolean> proceedSessionClose(GridNioSession ses) throws IgniteCheckedException;
 
     /**
      * Invoked when a new session was created.
@@ -163,7 +164,7 @@ public interface GridNioFilter {
      * @return Write future or {@code null}.
      * @throws GridNioException If GridNioException occurred while handling event.
      */
-    public GridNioFuture<?> onSessionWrite(GridNioSession ses,
+    public IgniteInternalFuture<?> onSessionWrite(GridNioSession ses,
         Object msg,
         boolean fut,
         IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException;
@@ -184,7 +185,7 @@ public interface GridNioFilter {
      * @return Close future.
      * @throws IgniteCheckedException If IgniteCheckedException occurred while handling event.
      */
-    public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException;
+    public IgniteInternalFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException;
 
     /**
      * Called when session is idle for longer time that is
@@ -227,7 +228,7 @@ public interface GridNioFilter {
      * @return Future for operation.
      * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public GridNioFuture<?> proceedPauseReads(GridNioSession ses) throws IgniteCheckedException;
+    public IgniteInternalFuture<?> proceedPauseReads(GridNioSession ses) throws IgniteCheckedException;
 
     /**
      * Pauses reads for session.
@@ -236,7 +237,7 @@ public interface GridNioFilter {
      * @return Future for operation.
      * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public GridNioFuture<?> onPauseReads(GridNioSession ses) throws IgniteCheckedException;
+    public IgniteInternalFuture<?> onPauseReads(GridNioSession ses) throws IgniteCheckedException;
 
     /**
      * Resumes reads for session.
@@ -245,7 +246,7 @@ public interface GridNioFilter {
      * @return Future for operation.
      * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public GridNioFuture<?> proceedResumeReads(GridNioSession ses) throws IgniteCheckedException;
+    public IgniteInternalFuture<?> proceedResumeReads(GridNioSession ses) throws IgniteCheckedException;
 
     /**
      * Resumes reads for session.
@@ -254,5 +255,5 @@ public interface GridNioFilter {
      * @return Future for operation.
      * @throws IgniteCheckedException If filter is not in chain or GridNioException occurred in the underlying filter.
      */
-    public GridNioFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException;
+    public IgniteInternalFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException;
 }

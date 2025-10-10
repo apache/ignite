@@ -688,7 +688,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         try {
             SocketChannel ch = SocketChannel.open(new InetSocketAddress(U.getLocalHost(), srvr2.port()));
 
-            GridNioFuture<GridNioSession> fut = srvr1.createSession(ch, null, false, null);
+            IgniteInternalFuture<GridNioSession> fut = srvr1.createSession(ch, null, false, null);
 
             ses = fut.get();
 

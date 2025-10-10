@@ -357,12 +357,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     public abstract int nearSize();
 
     /**
-     * @param key Key to check.
-     * @return {@code true} if request keys contain key.
-     */
-    public abstract boolean hasKey(KeyCacheObject key);
-
-    /**
      * @param idx Key index.
      * @return Key.
      */

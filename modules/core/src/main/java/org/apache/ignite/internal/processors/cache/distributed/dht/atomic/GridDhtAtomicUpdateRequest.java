@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -92,7 +91,8 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
 
     /** Obsolete near values. */
     @GridToStringInclude
-    private GridIntList obsoleteIndexes;
+    @GridDirectCollection(Integer.class)
+    private List<Integer> obsoleteIndexes;
 
     /** Force transform backups flag. */
     private boolean forceTransformBackups;
@@ -270,11 +270,13 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         long expireTime) {
         assert key.partition() >= 0 : key;
 
-        if (hasKey(key)) {
-            if (obsoleteIndexes == null)
-                obsoleteIndexes = new GridIntList();
+        int idx = keys == null ? -1 : keys.indexOf(key);
 
-            obsoleteIndexes.add(keys.indexOf(key));
+        if (idx > -1) {
+            if (obsoleteIndexes == null)
+                obsoleteIndexes = new ArrayList<>();
+
+            obsoleteIndexes.add(idx);
 
             return;
         }
@@ -348,11 +350,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     /** {@inheritDoc} */
     @Override public KeyCacheObject obsoleteNearKey(int idx) {
         return keys.get(obsoleteIndexes.get(idx));
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasKey(KeyCacheObject key) {
-        return F.contains(keys, key);
     }
 
     /** {@inheritDoc} */
@@ -620,7 +617,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeMessage(obsoleteIndexes))
+                if (!writer.writeCollection(obsoleteIndexes, MessageCollectionItemType.INT))
                     return false;
 
                 writer.incrementState();
@@ -751,7 +748,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 reader.incrementState();
 
             case 23:
-                obsoleteIndexes = reader.readMessage();
+                obsoleteIndexes = reader.readCollection(MessageCollectionItemType.INT);
 
                 if (!reader.isLastRead())
                     return false;
