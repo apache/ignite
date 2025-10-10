@@ -148,7 +148,7 @@ class PostgresService(DucktestsService, PathAware):
         match = re.compile("Success").search(output)
 
         if match:
-            return int(match.group(1)), output
+            return 0, output
 
         return exit_code, output
 
