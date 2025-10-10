@@ -111,7 +111,7 @@ class PostgresService(DucktestsService, PathAware):
 
         node.account.create_file(self.config_file, config_file)
 
-        self.logger.info(f"Created PostgreSQL configuration: {config_file}")
+        # self.logger.info(f"Created PostgreSQL configuration: {config_file}")
 
         self.logger.info(f"Starting PostgreSQL node {self.idx(node)} on {node.account.hostname}")
 
@@ -127,7 +127,9 @@ class PostgresService(DucktestsService, PathAware):
     def __init_db_dir(self, node):
         self.init_persistent(node)
 
-        # node.account.ssh(f"{envs_to_exports(self.envs())}") TODO: check the param on start
+        node.account.ssh(f"{envs_to_exports(self.envs())}")
+
+        self.__check_db_binaries(node)
 
         init_db_cmd = f"{os.path.join(self.home_dir, 'bin', 'initdb')} -D {self.work_dir}"
 
@@ -139,6 +141,20 @@ class PostgresService(DucktestsService, PathAware):
 
         if code != 0:
             raise RemoteCommandError(node.account, init_db_cmd, code, output)
+
+    def __check_db_binaries(self, node):
+        self.__print_cmd(f"ls -l {self.home_dir}", node)
+
+        self.__print_cmd(f"ls -l {os.path.join(self.home_dir, 'bin')}", node)
+
+        self.__print_cmd(f"echo $LD_LIBRARY_PATH", node)
+
+    def __print_cmd(self, cmd, node):
+        raw_output = (node.account.ssh_capture(cmd, allow_fail=True))
+
+        output = "".join(raw_output)
+
+        self.logger.debug(f"Output of command [{cmd}] on node {node.name} is {output}")
 
     @staticmethod
     def __parse_init_db_output(raw_output):
