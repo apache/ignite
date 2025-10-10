@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.thread.context;
 
 /** */
-public class DefaultScope implements Scope {
+class DefaultScope implements Scope {
     /** */
     private static final Scope INSTANCE = new DefaultScope();
 
@@ -29,7 +29,7 @@ public class DefaultScope implements Scope {
 
     /** {@inheritDoc} */
     @Override public <T> Scope withAttribute(ThreadContextAttribute<T> attr, T val) {
-        ThreadContext.data().put(attr.id(), val);
+        ThreadContext.data().put(attr, val);
 
         return this;
     }

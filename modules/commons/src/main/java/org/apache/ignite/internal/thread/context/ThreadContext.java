@@ -24,7 +24,7 @@ public class ThreadContext {
 
     /** */
     public static <T> T get(ThreadContextAttribute<T> attr) {
-        return data().get(attr.id());
+        return data().get(attr);
     }
 
     /** */

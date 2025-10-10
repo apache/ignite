@@ -40,9 +40,9 @@ public abstract class ThreadContextAwareWrapper<T> implements IgniteInternalWrap
     }
 
     /** */
-    protected static <T, R extends T> R wrap(T delegate, BiFunction<T, ThreadContextSnapshot, R> wrapper) {
+    protected static <T> T wrap(T delegate, BiFunction<T, ThreadContextSnapshot, T> wrapper) {
         return delegate == null || delegate instanceof ThreadContextAwareWrapper
-            ? (R)delegate
+            ? delegate
             : wrapper.apply(delegate, ThreadContext.createSnapshot());
     }
 }
