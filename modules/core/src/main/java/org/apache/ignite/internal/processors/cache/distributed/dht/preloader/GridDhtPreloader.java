@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
@@ -61,6 +62,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** Default preload resend timeout. */
     public static final long DFLT_PRELOAD_RESEND_TIMEOUT = 1500;
+
+    /** Cache rebalance topic. */
+    static final Object REBALANCE_TOPIC = GridCachePartitionExchangeManager.rebalanceTopic(0);
 
     /** Disable rebalancing cancellation optimization. */
     private final boolean disableRebalancingCancellationOptimization = IgniteSystemProperties.getBoolean(

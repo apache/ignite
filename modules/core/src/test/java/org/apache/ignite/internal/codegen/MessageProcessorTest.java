@@ -162,6 +162,15 @@ public class MessageProcessorTest {
     }
 
     /** */
+    @Test
+    public void testExceptionFailed() {
+        Compilation compilation = compile("ExceptionMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("You should use ErrorMessage for serialization of throwables.");
+    }
+
+    /** */
     private Compilation compile(String... srcFiles) {
         List<JavaFileObject> input = new ArrayList<>();
 
