@@ -20,12 +20,12 @@ package org.apache.ignite.internal;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
-import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Math.max;
@@ -37,228 +37,286 @@ import static java.lang.Math.min;
  * Note that whenever adding or removing metric parameters, care
  * must be taken to update serialize/deserialize logic as well.
  */
-public class ClusterMetricsSnapshot implements ClusterMetrics {
+public class ClusterMetricsSnapshot implements ClusterMetrics, Message {
+    /** */
+    public static final short TYPE_CODE = 134;
+
     /** Size of serialized node metrics. */
     public static final int METRICS_SIZE =
         4/*max active jobs*/ +
-        4/*current active jobs*/ +
-        4/*average active jobs*/ +
-        4/*max waiting jobs*/ +
-        4/*current waiting jobs*/ +
-        4/*average waiting jobs*/ +
-        4/*max cancelled jobs*/ +
-        4/*current cancelled jobs*/ +
-        4/*average cancelled jobs*/ +
-        4/*max rejected jobs*/ +
-        4/*current rejected jobs*/ +
-        4/*average rejected jobs*/ +
-        4/*total executed jobs*/ +
-        4/*total rejected jobs*/ +
-        4/*total cancelled jobs*/ +
-        8/*max job wait time*/ +
-        8/*current job wait time*/ +
-        8/*average job wait time*/ +
-        8/*max job execute time*/ +
-        8/*current job execute time*/ +
-        8/*average job execute time*/ +
-        4/*total executed tasks*/ +
-        8/*current idle time*/ +
-        8/*total idle time*/ +
-        4/*available processors*/ +
-        8/*current CPU load*/ +
-        8/*average CPU load*/ +
-        8/*current GC CPU load*/ +
-        8/*heap memory init*/ +
-        8/*heap memory used*/ +
-        8/*heap memory committed*/ +
-        8/*heap memory max*/ +
-        8/*heap memory total*/ +
-        8/*non-heap memory init*/ +
-        8/*non-heap memory used*/ +
-        8/*non-heap memory committed*/ +
-        8/*non-heap memory max*/ +
-        8/*non-heap memory total*/ +
-        8/*uptime*/ +
-        8/*start time*/ +
-        8/*node start time*/ +
-        4/*thread count*/ +
-        4/*peak thread count*/ +
-        8/*total started thread count*/ +
-        4/*daemon thread count*/ +
-        8/*last data version.*/ +
-        4/*sent messages count*/ +
-        8/*sent bytes count*/ +
-        4/*received messages count*/ +
-        8/*received bytes count*/ +
-        4/*outbound messages queue size*/ +
-        4/*total nodes*/ +
-        8/*total jobs execution time*/ +
-        8/*current PME time*/;
+            4/*current active jobs*/ +
+            4/*average active jobs*/ +
+            4/*max waiting jobs*/ +
+            4/*current waiting jobs*/ +
+            4/*average waiting jobs*/ +
+            4/*max cancelled jobs*/ +
+            4/*current cancelled jobs*/ +
+            4/*average cancelled jobs*/ +
+            4/*max rejected jobs*/ +
+            4/*current rejected jobs*/ +
+            4/*average rejected jobs*/ +
+            4/*total executed jobs*/ +
+            4/*total rejected jobs*/ +
+            4/*total cancelled jobs*/ +
+            8/*max job wait time*/ +
+            8/*current job wait time*/ +
+            8/*average job wait time*/ +
+            8/*max job execute time*/ +
+            8/*current job execute time*/ +
+            8/*average job execute time*/ +
+            4/*total executed tasks*/ +
+            8/*current idle time*/ +
+            8/*total idle time*/ +
+            4/*available processors*/ +
+            8/*current CPU load*/ +
+            8/*average CPU load*/ +
+            8/*current GC CPU load*/ +
+            8/*heap memory init*/ +
+            8/*heap memory used*/ +
+            8/*heap memory committed*/ +
+            8/*heap memory max*/ +
+            8/*heap memory total*/ +
+            8/*non-heap memory init*/ +
+            8/*non-heap memory used*/ +
+            8/*non-heap memory committed*/ +
+            8/*non-heap memory max*/ +
+            8/*non-heap memory total*/ +
+            8/*uptime*/ +
+            8/*start time*/ +
+            8/*node start time*/ +
+            4/*thread count*/ +
+            4/*peak thread count*/ +
+            8/*total started thread count*/ +
+            4/*daemon thread count*/ +
+            8/*last data version.*/ +
+            4/*sent messages count*/ +
+            8/*sent bytes count*/ +
+            4/*received messages count*/ +
+            8/*received bytes count*/ +
+            4/*outbound messages queue size*/ +
+            4/*total nodes*/ +
+            8/*total jobs execution time*/ +
+            8/*current PME time*/;
 
     /** */
-    private long lastUpdateTime = -1;
+    @Order(value = 0, method = "lastUpdateTime", getter = true)
+    private long lastUpdateTime;
 
     /** */
-    private int maxActiveJobs = -1;
+    @Order(value = 1, method = "maximumActiveJobs", getter = true)
+    private int maxActiveJobs;
 
     /** */
-    private int curActiveJobs = -1;
+    @Order(value = 2, method = "currentActiveJobs", getter = true)
+    private int curActiveJobs;
 
     /** */
-    private float avgActiveJobs = -1;
+    @Order(value = 3, method = "averageActiveJobs", getter = true)
+    private float avgActiveJobs;
 
     /** */
-    private int maxWaitingJobs = -1;
+    @Order(value = 4, method = "maximumWaitingJobs", getter = true)
+    private int maxWaitingJobs;
 
     /** */
-    private int curWaitingJobs = -1;
+    @Order(value = 5, method = "currentWaitingJobs", getter = true)
+    private int curWaitingJobs;
 
     /** */
-    private float avgWaitingJobs = -1;
+    @Order(value = 6, method = "averageWaitingJobs", getter = true)
+    private float avgWaitingJobs;
 
     /** */
-    private int maxRejectedJobs = -1;
+    @Order(value = 7, method = "maximumRejectedJobs", getter = true)
+    private int maxRejectedJobs;
 
     /** */
-    private int curRejectedJobs = -1;
+    @Order(value = 8, method = "currentRejectedJobs", getter = true)
+    private int curRejectedJobs;
 
     /** */
-    private float avgRejectedJobs = -1;
+    @Order(value = 9, method = "averageRejectedJobs", getter = true)
+    private float avgRejectedJobs;
 
     /** */
-    private int maxCancelledJobs = -1;
+    @Order(value = 10, method = "maximumCancelledJobs", getter = true)
+    private int maxCancelledJobs;
 
     /** */
-    private int curCancelledJobs = -1;
+    @Order(value = 11, method = "currentCancelledJobs", getter = true)
+    private int curCancelledJobs;
 
     /** */
-    private float avgCancelledJobs = -1;
+    @Order(value = 12, method = "averageCancelledJobs", getter = true)
+    private float avgCancelledJobs;
 
     /** */
-    private int totalRejectedJobs = -1;
+    @Order(value = 13, getter = true)
+    private int totalRejectedJobs;
 
     /** */
-    private int totalCancelledJobs = -1;
+    @Order(value = 14, getter = true)
+    private int totalCancelledJobs;
 
     /** */
-    private int totalExecutedJobs = -1;
+    @Order(value = 15, getter = true)
+    private int totalExecutedJobs;
 
     /** */
-    private long maxJobWaitTime = -1;
+    @Order(value = 16, method = "maximumJobWaitTime", getter = true)
+    private long maxJobWaitTime;
 
     /** */
-    private long curJobWaitTime = -1;
+    @Order(value = 17, method = "currentJobWaitTime", getter = true)
+    private long curJobWaitTime = Long.MAX_VALUE;
 
     /** */
-    private double avgJobWaitTime = -1;
+    @Order(value = 18, method = "averageJobWaitTime", getter = true)
+    private double avgJobWaitTime;
 
     /** */
-    private long maxJobExecTime = -1;
+    @Order(value = 19, method = "maximumJobExecuteTime", getter = true)
+    private long maxJobExecTime;
 
     /** */
-    private long curJobExecTime = -1;
+    @Order(value = 20, method = "currentJobExecuteTime", getter = true)
+    private long curJobExecTime;
 
     /** */
-    private double avgJobExecTime = -1;
+    @Order(value = 21, method = "averageJobExecuteTime", getter = true)
+    private double avgJobExecTime;
 
     /** */
-    private int totalExecTasks = -1;
+    @Order(value = 22, method = "totalExecutedTasks", getter = true)
+    private int totalExecTasks;
 
     /** */
-    private long totalIdleTime = -1;
+    @Order(value = 23, getter = true)
+    private long totalIdleTime;
 
     /** */
-    private long curIdleTime = -1;
+    @Order(value = 24, method = "currentIdleTime", getter = true)
+    private long curIdleTime;
 
     /** */
-    private int availProcs = -1;
+    @Order(value = 25, method = "totalCpus", getter = true)
+    private int availProcs;
 
     /** */
-    private double load = -1;
+    @Order(value = 26, method = "currentCpuLoad", getter = true)
+    private double load;
 
     /** */
-    private double avgLoad = -1;
+    @Order(value = 27, method = "averageCpuLoad", getter = true)
+    private double avgLoad;
 
     /** */
-    private double gcLoad = -1;
+    @Order(value = 28, method = "currentGcCpuLoad", getter = true)
+    private double gcLoad;
 
     /** */
-    private long heapInit = -1;
+    @Order(value = 29, method = "heapMemoryInitialized", getter = true)
+    private long heapInit;
 
     /** */
-    private long heapUsed = -1;
+    @Order(value = 30, method = "heapMemoryUsed", getter = true)
+    private long heapUsed;
 
     /** */
-    private long heapCommitted = -1;
+    @Order(value = 31, method = "heapMemoryCommitted", getter = true)
+    private long heapCommitted;
 
     /** */
-    private long heapMax = -1;
+    @Order(value = 32, method = "heapMemoryMaximum", getter = true)
+    private long heapMax;
 
     /** */
-    private long heapTotal = -1;
+    @Order(value = 33, method = "heapMemoryTotal", getter = true)
+    private long heapTotal;
 
     /** */
-    private long nonHeapInit = -1;
+    @Order(value = 34, method = "heapMemoryInitialized", getter = true)
+    private long nonHeapInit;
 
     /** */
-    private long nonHeapUsed = -1;
+    @Order(value = 35, method = "heapMemoryUsed", getter = true)
+    private long nonHeapUsed;
 
     /** */
-    private long nonHeapCommitted = -1;
+    @Order(value = 36, method = "heapMemoryCommitted", getter = true)
+    private long nonHeapCommitted;
 
     /** */
-    private long nonHeapMax = -1;
+    @Order(value = 37, method = "nonHeapMemoryMaximum", getter = true)
+    private long nonHeapMax;
 
     /** */
-    private long nonHeapTotal = -1;
+    @Order(value = 38, method = "nonHeapMemoryTotal", getter = true)
+    private long nonHeapTotal;
 
     /** */
-    private long upTime = -1;
+    @Order(value = 39, getter = true)
+    private long upTime;
 
     /** */
-    private long startTime = -1;
+    @Order(value = 40, getter = true)
+    private long startTime;
 
     /** */
-    private long nodeStartTime = -1;
+    @Order(value = 41, getter = true)
+    private long nodeStartTime;
 
     /** */
-    private int threadCnt = -1;
+    @Order(value = 42, method = "currentThreadCount", getter = true)
+    private int threadCnt;
 
     /** */
-    private int peakThreadCnt = -1;
+    @Order(value = 43, method = "maximumThreadCount", getter = true)
+    private int peakThreadCnt;
 
     /** */
-    private long startedThreadCnt = -1;
+    @Order(value = 44, method = "totalStartedThreadCount", getter = true)
+    private long startedThreadCnt;
 
     /** */
-    private int daemonThreadCnt = -1;
+    @Order(value = 45, method = "currentDaemonThreadCount", getter = true)
+    private int daemonThreadCnt;
 
     /** */
-    private long lastDataVer = -1;
+    @Order(value = 46, method = "lastDataVersion", getter = true)
+    private long lastDataVer;
 
     /** */
-    private int sentMsgsCnt = -1;
+    @Order(value = 47, method = "sentMessagesCount", getter = true)
+    private int sentMsgsCnt;
 
     /** */
-    private long sentBytesCnt = -1;
+    @Order(value = 48, method = "sentBytesCount", getter = true)
+    private long sentBytesCnt;
 
     /** */
-    private int rcvdMsgsCnt = -1;
+    @Order(value = 49, method = "receivedMessagesCount", getter = true)
+    private int rcvdMsgsCnt;
 
     /** */
-    private long rcvdBytesCnt = -1;
+    @Order(value = 50, method = "receivedBytesCount", getter = true)
+    private long rcvdBytesCnt;
 
     /** */
-    private int outMesQueueSize = -1;
+    @Order(value = 51, method = "outboundMessagesQueueSize", getter = true)
+    private int outMesQueueSize;
 
     /** */
-    private int totalNodes = -1;
+    @Order(value = 52, getter = true)
+    private int totalNodes;
 
     /** */
-    private long totalJobsExecTime = -1;
+    @Order(value = 53, method = "totalJobsExecutionTime", getter = true)
+    private long totalJobsExecTime;
 
     /** */
-    private long currentPmeDuration = -1;
+    @Order(value = 54, method = "currentPmeDuration", getter = true)
+    private long curPmeDuration;
 
     /**
      * Create empty snapshot.
@@ -268,72 +326,12 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     }
 
     /**
-     * Create metrics for given cluster group.
+     * Create metrics for given nodes.
      *
-     * @param p Projection to get metrics for.
+     * @param nodes Nodes.
      */
-    public ClusterMetricsSnapshot(ClusterGroup p) {
-        assert p != null;
-
-        Collection<ClusterNode> nodes = p.nodes();
-
+    public ClusterMetricsSnapshot(Collection<ClusterNode> nodes) {
         int size = nodes.size();
-
-        curJobWaitTime = Long.MAX_VALUE;
-        lastUpdateTime = 0;
-        maxActiveJobs = 0;
-        curActiveJobs = 0;
-        avgActiveJobs = 0;
-        maxWaitingJobs = 0;
-        curWaitingJobs = 0;
-        avgWaitingJobs = 0;
-        maxRejectedJobs = 0;
-        curRejectedJobs = 0;
-        avgRejectedJobs = 0;
-        maxCancelledJobs = 0;
-        curCancelledJobs = 0;
-        avgCancelledJobs = 0;
-        totalRejectedJobs = 0;
-        totalCancelledJobs = 0;
-        totalExecutedJobs = 0;
-        totalJobsExecTime = 0;
-        maxJobWaitTime = 0;
-        avgJobWaitTime = 0;
-        maxJobExecTime = 0;
-        curJobExecTime = 0;
-        avgJobExecTime = 0;
-        totalExecTasks = 0;
-        totalIdleTime = 0;
-        curIdleTime = 0;
-        availProcs = 0;
-        load = 0;
-        avgLoad = 0;
-        gcLoad = 0;
-        heapInit = 0;
-        heapUsed = 0;
-        heapCommitted = 0;
-        heapMax = 0;
-        nonHeapInit = 0;
-        nonHeapUsed = 0;
-        nonHeapCommitted = 0;
-        nonHeapMax = 0;
-        nonHeapTotal = 0;
-        upTime = 0;
-        startTime = 0;
-        nodeStartTime = 0;
-        threadCnt = 0;
-        peakThreadCnt = 0;
-        startedThreadCnt = 0;
-        daemonThreadCnt = 0;
-        lastDataVer = 0;
-        sentMsgsCnt = 0;
-        sentBytesCnt = 0;
-        rcvdMsgsCnt = 0;
-        rcvdBytesCnt = 0;
-        outMesQueueSize = 0;
-        heapTotal = 0;
-        totalNodes = nodes.size();
-        currentPmeDuration = 0;
 
         for (ClusterNode node : nodes) {
             ClusterMetrics m = node.metrics();
@@ -411,7 +409,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
             avgLoad += m.getCurrentCpuLoad();
 
-            currentPmeDuration = max(currentPmeDuration, m.getCurrentPmeDuration());
+            curPmeDuration = max(curPmeDuration, m.getCurrentPmeDuration());
         }
 
         curJobExecTime /= size;
@@ -438,6 +436,76 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         availProcs = cpuCnt(neighborhood);
     }
 
+    /** */
+    public ClusterMetricsSnapshot(ClusterMetrics metrics) {
+        maxActiveJobs = metrics.getMaximumActiveJobs();
+        curActiveJobs = metrics.getCurrentActiveJobs();
+        avgActiveJobs = metrics.getAverageActiveJobs();
+        maxWaitingJobs = metrics.getMaximumWaitingJobs();
+        curWaitingJobs = metrics.getCurrentWaitingJobs();
+        avgWaitingJobs = metrics.getAverageWaitingJobs();
+        maxRejectedJobs = metrics.getMaximumRejectedJobs();
+        curRejectedJobs = metrics.getCurrentRejectedJobs();
+        avgRejectedJobs = metrics.getAverageRejectedJobs();
+        maxCancelledJobs = metrics.getMaximumCancelledJobs();
+        curCancelledJobs = metrics.getCurrentCancelledJobs();
+        avgCancelledJobs = metrics.getAverageCancelledJobs();
+        totalRejectedJobs = metrics.getTotalRejectedJobs();
+        totalCancelledJobs = metrics.getTotalCancelledJobs();
+        totalExecutedJobs = metrics.getTotalExecutedJobs();
+        maxJobWaitTime = metrics.getMaximumJobWaitTime();
+        curJobWaitTime = metrics.getCurrentJobWaitTime();
+        avgJobWaitTime = metrics.getAverageJobWaitTime();
+        maxJobExecTime = metrics.getMaximumJobExecuteTime();
+        curJobExecTime = metrics.getCurrentJobExecuteTime();
+        avgJobExecTime = metrics.getAverageJobExecuteTime();
+        totalJobsExecTime = metrics.getTotalJobsExecutionTime();
+
+        totalExecTasks = metrics.getTotalExecutedTasks();
+
+        curIdleTime = metrics.getCurrentIdleTime();
+        totalIdleTime = metrics.getTotalIdleTime();
+
+        availProcs = metrics.getTotalCpus();
+        load = metrics.getCurrentCpuLoad();
+        avgLoad = metrics.getAverageCpuLoad();
+        gcLoad = metrics.getCurrentGcCpuLoad();
+
+        heapInit = metrics.getHeapMemoryInitialized();
+        heapUsed = metrics.getHeapMemoryUsed();
+        heapCommitted = metrics.getHeapMemoryCommitted();
+        heapMax = metrics.getHeapMemoryMaximum();
+        heapTotal = metrics.getHeapMemoryTotal();
+
+        nonHeapInit = metrics.getNonHeapMemoryInitialized();
+        nonHeapUsed = metrics.getNonHeapMemoryUsed();
+        nonHeapCommitted = metrics.getNonHeapMemoryCommitted();
+        nonHeapMax = metrics.getNonHeapMemoryMaximum();
+        nonHeapTotal = metrics.getNonHeapMemoryTotal();
+
+        startTime = metrics.getStartTime();
+        nodeStartTime = metrics.getNodeStartTime();
+        upTime = metrics.getUpTime();
+
+        lastDataVer = metrics.getLastDataVersion();
+
+        curPmeDuration = metrics.getCurrentPmeDuration();
+
+        totalNodes = metrics.getTotalNodes();
+
+        threadCnt = metrics.getCurrentThreadCount();
+        peakThreadCnt = metrics.getMaximumThreadCount();
+        startedThreadCnt = metrics.getTotalStartedThreadCount();
+        daemonThreadCnt = metrics.getCurrentDaemonThreadCount();
+
+        sentMsgsCnt = metrics.getSentMessagesCount();
+        rcvdMsgsCnt = metrics.getReceivedMessagesCount();
+        outMesQueueSize = metrics.getOutboundMessagesQueueSize();
+
+        sentBytesCnt = metrics.getSentBytesCount();
+        rcvdBytesCnt = metrics.getReceivedBytesCount();
+    }
+
     /** {@inheritDoc} */
     @Override public long getHeapMemoryTotal() {
         return heapTotal;
@@ -448,7 +516,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param heapTotal Total heap.
      */
-    public void setHeapMemoryTotal(long heapTotal) {
+    public void heapMemoryTotal(long heapTotal) {
         this.heapTotal = heapTotal;
     }
 
@@ -457,7 +525,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param nonHeapTotal Total heap.
      */
-    public void setNonHeapMemoryTotal(long nonHeapTotal) {
+    public void nonHeapMemoryTotal(long nonHeapTotal) {
         this.nonHeapTotal = nonHeapTotal;
     }
 
@@ -471,7 +539,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param lastUpdateTime Last update time.
      */
-    public void setLastUpdateTime(long lastUpdateTime) {
+    public void lastUpdateTime(long lastUpdateTime) {
         this.lastUpdateTime = lastUpdateTime;
     }
 
@@ -485,7 +553,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param maxActiveJobs Max active jobs.
      */
-    public void setMaximumActiveJobs(int maxActiveJobs) {
+    public void maximumActiveJobs(int maxActiveJobs) {
         this.maxActiveJobs = maxActiveJobs;
     }
 
@@ -499,7 +567,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param curActiveJobs Current active jobs.
      */
-    public void setCurrentActiveJobs(int curActiveJobs) {
+    public void currentActiveJobs(int curActiveJobs) {
         this.curActiveJobs = curActiveJobs;
     }
 
@@ -513,7 +581,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param avgActiveJobs Average active jobs.
      */
-    public void setAverageActiveJobs(float avgActiveJobs) {
+    public void averageActiveJobs(float avgActiveJobs) {
         this.avgActiveJobs = avgActiveJobs;
     }
 
@@ -527,7 +595,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param maxWaitingJobs Maximum waiting jobs.
      */
-    public void setMaximumWaitingJobs(int maxWaitingJobs) {
+    public void maximumWaitingJobs(int maxWaitingJobs) {
         this.maxWaitingJobs = maxWaitingJobs;
     }
 
@@ -541,7 +609,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param curWaitingJobs Current waiting jobs.
      */
-    public void setCurrentWaitingJobs(int curWaitingJobs) {
+    public void currentWaitingJobs(int curWaitingJobs) {
         this.curWaitingJobs = curWaitingJobs;
     }
 
@@ -555,7 +623,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param avgWaitingJobs Average waiting jobs.
      */
-    public void setAverageWaitingJobs(float avgWaitingJobs) {
+    public void averageWaitingJobs(float avgWaitingJobs) {
         this.avgWaitingJobs = avgWaitingJobs;
     }
 
@@ -567,7 +635,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     /**
      * @param maxRejectedJobs Maximum number of jobs rejected during a single collision resolution event.
      */
-    public void setMaximumRejectedJobs(int maxRejectedJobs) {
+    public void maximumRejectedJobs(int maxRejectedJobs) {
         this.maxRejectedJobs = maxRejectedJobs;
     }
 
@@ -579,7 +647,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     /**
      * @param curRejectedJobs Number of jobs rejected during most recent collision resolution.
      */
-    public void setCurrentRejectedJobs(int curRejectedJobs) {
+    public void currentRejectedJobs(int curRejectedJobs) {
         this.curRejectedJobs = curRejectedJobs;
     }
 
@@ -591,7 +659,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     /**
      * @param avgRejectedJobs Average number of jobs this node rejects.
      */
-    public void setAverageRejectedJobs(float avgRejectedJobs) {
+    public void averageRejectedJobs(float avgRejectedJobs) {
         this.avgRejectedJobs = avgRejectedJobs;
     }
 
@@ -603,7 +671,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     /**
      * @param totalRejectedJobs Total number of jobs this node ever rejected.
      */
-    public void setTotalRejectedJobs(int totalRejectedJobs) {
+    public void totalRejectedJobs(int totalRejectedJobs) {
         this.totalRejectedJobs = totalRejectedJobs;
     }
 
@@ -617,7 +685,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param maxCancelledJobs Maximum cancelled jobs.
      */
-    public void setMaximumCancelledJobs(int maxCancelledJobs) {
+    public void maximumCancelledJobs(int maxCancelledJobs) {
         this.maxCancelledJobs = maxCancelledJobs;
     }
 
@@ -631,7 +699,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param curCancelledJobs Current cancelled jobs.
      */
-    public void setCurrentCancelledJobs(int curCancelledJobs) {
+    public void currentCancelledJobs(int curCancelledJobs) {
         this.curCancelledJobs = curCancelledJobs;
     }
 
@@ -645,7 +713,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param avgCancelledJobs Average cancelled jobs.
      */
-    public void setAverageCancelledJobs(float avgCancelledJobs) {
+    public void averageCancelledJobs(float avgCancelledJobs) {
         this.avgCancelledJobs = avgCancelledJobs;
     }
 
@@ -659,7 +727,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param totalExecutedJobs Total active jobs.
      */
-    public void setTotalExecutedJobs(int totalExecutedJobs) {
+    public void totalExecutedJobs(int totalExecutedJobs) {
         this.totalExecutedJobs = totalExecutedJobs;
     }
 
@@ -673,7 +741,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param totalJobsExecTime Total jobs execution time.
      */
-    public void setTotalJobsExecutionTime(long totalJobsExecTime) {
+    public void totalJobsExecutionTime(long totalJobsExecTime) {
         this.totalJobsExecTime = totalJobsExecTime;
     }
 
@@ -687,7 +755,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param totalCancelledJobs Total cancelled jobs.
      */
-    public void setTotalCancelledJobs(int totalCancelledJobs) {
+    public void totalCancelledJobs(int totalCancelledJobs) {
         this.totalCancelledJobs = totalCancelledJobs;
     }
 
@@ -701,7 +769,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param maxJobWaitTime Max job wait time.
      */
-    public void setMaximumJobWaitTime(long maxJobWaitTime) {
+    public void maximumJobWaitTime(long maxJobWaitTime) {
         this.maxJobWaitTime = maxJobWaitTime;
     }
 
@@ -715,7 +783,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param curJobWaitTime Current job wait time.
      */
-    public void setCurrentJobWaitTime(long curJobWaitTime) {
+    public void currentJobWaitTime(long curJobWaitTime) {
         this.curJobWaitTime = curJobWaitTime;
     }
 
@@ -729,7 +797,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param avgJobWaitTime Average job wait time.
      */
-    public void setAverageJobWaitTime(double avgJobWaitTime) {
+    public void averageJobWaitTime(double avgJobWaitTime) {
         this.avgJobWaitTime = avgJobWaitTime;
     }
 
@@ -743,7 +811,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param maxJobExecTime Maximum job execution time.
      */
-    public void setMaximumJobExecuteTime(long maxJobExecTime) {
+    public void maximumJobExecuteTime(long maxJobExecTime) {
         this.maxJobExecTime = maxJobExecTime;
     }
 
@@ -757,7 +825,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param curJobExecTime Current job execute time.
      */
-    public void setCurrentJobExecuteTime(long curJobExecTime) {
+    public void currentJobExecuteTime(long curJobExecTime) {
         this.curJobExecTime = curJobExecTime;
     }
 
@@ -771,7 +839,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param avgJobExecTime Average job execution time.
      */
-    public void setAverageJobExecuteTime(double avgJobExecTime) {
+    public void averageJobExecuteTime(double avgJobExecTime) {
         this.avgJobExecTime = avgJobExecTime;
     }
 
@@ -785,7 +853,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param totalExecTasks total executed tasks count.
      */
-    public void setTotalExecutedTasks(int totalExecTasks) {
+    public void totalExecutedTasks(int totalExecTasks) {
         this.totalExecTasks = totalExecTasks;
     }
 
@@ -804,7 +872,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param totalIdleTime Total node idle time.
      */
-    public void setTotalIdleTime(long totalIdleTime) {
+    public void totalIdleTime(long totalIdleTime) {
         this.totalIdleTime = totalIdleTime;
     }
 
@@ -818,7 +886,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param curIdleTime Time elapsed since execution of last job.
      */
-    public void setCurrentIdleTime(long curIdleTime) {
+    public void currentIdleTime(long curIdleTime) {
         this.curIdleTime = curIdleTime;
     }
 
@@ -969,7 +1037,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public long getCurrentPmeDuration() {
-        return currentPmeDuration;
+        return curPmeDuration;
     }
 
     /**
@@ -977,7 +1045,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param availProcs Available processors.
      */
-    public void setAvailableProcessors(int availProcs) {
+    public void totalCpus(int availProcs) {
         this.availProcs = availProcs;
     }
 
@@ -986,7 +1054,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param load Current CPU load.
      */
-    public void setCurrentCpuLoad(double load) {
+    public void currentCpuLoad(double load) {
         this.load = load;
     }
 
@@ -995,7 +1063,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param avgLoad CPU load average.
      */
-    public void setAverageCpuLoad(double avgLoad) {
+    public void averageCpuLoad(double avgLoad) {
         this.avgLoad = avgLoad;
     }
 
@@ -1004,7 +1072,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param gcLoad Current GC load.
      */
-    public void setCurrentGcCpuLoad(double gcLoad) {
+    public void currentGcCpuLoad(double gcLoad) {
         this.gcLoad = gcLoad;
     }
 
@@ -1013,7 +1081,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param heapInit Heap initial memory.
      */
-    public void setHeapMemoryInitialized(long heapInit) {
+    public void heapMemoryInitialized(long heapInit) {
         this.heapInit = heapInit;
     }
 
@@ -1022,7 +1090,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param heapUsed Used heap memory.
      */
-    public void setHeapMemoryUsed(long heapUsed) {
+    public void heapMemoryUsed(long heapUsed) {
         this.heapUsed = heapUsed;
     }
 
@@ -1031,7 +1099,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param heapCommitted Committed heap memory.
      */
-    public void setHeapMemoryCommitted(long heapCommitted) {
+    public void heapMemoryCommitted(long heapCommitted) {
         this.heapCommitted = heapCommitted;
     }
 
@@ -1040,7 +1108,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param heapMax Maximum possible heap memory.
      */
-    public void setHeapMemoryMaximum(long heapMax) {
+    public void heapMemoryMaximum(long heapMax) {
         this.heapMax = heapMax;
     }
 
@@ -1049,7 +1117,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param nonHeapInit Initial non-heap memory.
      */
-    public void setNonHeapMemoryInitialized(long nonHeapInit) {
+    public void nonHeapMemoryInitialized(long nonHeapInit) {
         this.nonHeapInit = nonHeapInit;
     }
 
@@ -1058,7 +1126,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param nonHeapUsed Used non-heap memory.
      */
-    public void setNonHeapMemoryUsed(long nonHeapUsed) {
+    public void nonHeapMemoryUsed(long nonHeapUsed) {
         this.nonHeapUsed = nonHeapUsed;
     }
 
@@ -1067,7 +1135,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param nonHeapCommitted Committed non-heap memory.
      */
-    public void setNonHeapMemoryCommitted(long nonHeapCommitted) {
+    public void nonHeapMemoryCommitted(long nonHeapCommitted) {
         this.nonHeapCommitted = nonHeapCommitted;
     }
 
@@ -1076,7 +1144,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param nonHeapMax Maximum possible non-heap memory.
      */
-    public void setNonHeapMemoryMaximum(long nonHeapMax) {
+    public void nonHeapMemoryMaximum(long nonHeapMax) {
         this.nonHeapMax = nonHeapMax;
     }
 
@@ -1085,7 +1153,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param upTime VM up time.
      */
-    public void setUpTime(long upTime) {
+    public void upTime(long upTime) {
         this.upTime = upTime;
     }
 
@@ -1094,7 +1162,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param startTime VM start time.
      */
-    public void setStartTime(long startTime) {
+    public void startTime(long startTime) {
         this.startTime = startTime;
     }
 
@@ -1103,7 +1171,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param nodeStartTime node start time.
      */
-    public void setNodeStartTime(long nodeStartTime) {
+    public void nodeStartTime(long nodeStartTime) {
         this.nodeStartTime = nodeStartTime;
     }
 
@@ -1112,7 +1180,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param threadCnt Thread count.
      */
-    public void setCurrentThreadCount(int threadCnt) {
+    public void currentThreadCount(int threadCnt) {
         this.threadCnt = threadCnt;
     }
 
@@ -1121,7 +1189,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param peakThreadCnt Peak thread count.
      */
-    public void setMaximumThreadCount(int peakThreadCnt) {
+    public void maximumThreadCount(int peakThreadCnt) {
         this.peakThreadCnt = peakThreadCnt;
     }
 
@@ -1130,7 +1198,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param startedThreadCnt Started thread count.
      */
-    public void setTotalStartedThreadCount(long startedThreadCnt) {
+    public void totalStartedThreadCount(long startedThreadCnt) {
         this.startedThreadCnt = startedThreadCnt;
     }
 
@@ -1139,7 +1207,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param daemonThreadCnt Daemon thread count.
      */
-    public void setCurrentDaemonThreadCount(int daemonThreadCnt) {
+    public void currentDaemonThreadCount(int daemonThreadCnt) {
         this.daemonThreadCnt = daemonThreadCnt;
     }
 
@@ -1148,7 +1216,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param lastDataVer Last data version.
      */
-    public void setLastDataVersion(long lastDataVer) {
+    public void lastDataVersion(long lastDataVer) {
         this.lastDataVer = lastDataVer;
     }
 
@@ -1157,7 +1225,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param sentMsgsCnt Sent messages count.
      */
-    public void setSentMessagesCount(int sentMsgsCnt) {
+    public void sentMessagesCount(int sentMsgsCnt) {
         this.sentMsgsCnt = sentMsgsCnt;
     }
 
@@ -1166,7 +1234,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param sentBytesCnt Sent bytes count.
      */
-    public void setSentBytesCount(long sentBytesCnt) {
+    public void sentBytesCount(long sentBytesCnt) {
         this.sentBytesCnt = sentBytesCnt;
     }
 
@@ -1175,7 +1243,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param rcvdMsgsCnt Received messages count.
      */
-    public void setReceivedMessagesCount(int rcvdMsgsCnt) {
+    public void receivedMessagesCount(int rcvdMsgsCnt) {
         this.rcvdMsgsCnt = rcvdMsgsCnt;
     }
 
@@ -1184,7 +1252,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param rcvdBytesCnt Received bytes count.
      */
-    public void setReceivedBytesCount(long rcvdBytesCnt) {
+    public void receivedBytesCount(long rcvdBytesCnt) {
         this.rcvdBytesCnt = rcvdBytesCnt;
     }
 
@@ -1193,7 +1261,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param outMesQueueSize Outbound messages queue size.
      */
-    public void setOutboundMessagesQueueSize(int outMesQueueSize) {
+    public void outboundMessagesQueueSize(int outMesQueueSize) {
         this.outMesQueueSize = outMesQueueSize;
     }
 
@@ -1202,7 +1270,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param totalNodes Total number of nodes.
      */
-    public void setTotalNodes(int totalNodes) {
+    public void totalNodes(int totalNodes) {
         this.totalNodes = totalNodes;
     }
 
@@ -1211,8 +1279,8 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param currentPmeDuration Execution duration for current partition map exchange.
      */
-    public void setCurrentPmeDuration(long currentPmeDuration) {
-        this.currentPmeDuration = currentPmeDuration;
+    public void currentPmeDuration(long currentPmeDuration) {
+        this.curPmeDuration = currentPmeDuration;
     }
 
     /**
@@ -1389,73 +1457,78 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
         ByteBuffer buf = ByteBuffer.wrap(data, off, bufSize);
 
-        metrics.setLastUpdateTime(U.currentTimeMillis());
+        metrics.lastUpdateTime(U.currentTimeMillis());
 
-        metrics.setMaximumActiveJobs(buf.getInt());
-        metrics.setCurrentActiveJobs(buf.getInt());
-        metrics.setAverageActiveJobs(buf.getFloat());
-        metrics.setMaximumWaitingJobs(buf.getInt());
-        metrics.setCurrentWaitingJobs(buf.getInt());
-        metrics.setAverageWaitingJobs(buf.getFloat());
-        metrics.setMaximumRejectedJobs(buf.getInt());
-        metrics.setCurrentRejectedJobs(buf.getInt());
-        metrics.setAverageRejectedJobs(buf.getFloat());
-        metrics.setMaximumCancelledJobs(buf.getInt());
-        metrics.setCurrentCancelledJobs(buf.getInt());
-        metrics.setAverageCancelledJobs(buf.getFloat());
-        metrics.setTotalRejectedJobs(buf.getInt());
-        metrics.setTotalCancelledJobs(buf.getInt());
-        metrics.setTotalExecutedJobs(buf.getInt());
-        metrics.setMaximumJobWaitTime(buf.getLong());
-        metrics.setCurrentJobWaitTime(buf.getLong());
-        metrics.setAverageJobWaitTime(buf.getDouble());
-        metrics.setMaximumJobExecuteTime(buf.getLong());
-        metrics.setCurrentJobExecuteTime(buf.getLong());
-        metrics.setAverageJobExecuteTime(buf.getDouble());
-        metrics.setTotalExecutedTasks(buf.getInt());
-        metrics.setCurrentIdleTime(buf.getLong());
-        metrics.setTotalIdleTime(buf.getLong());
-        metrics.setAvailableProcessors(buf.getInt());
-        metrics.setCurrentCpuLoad(buf.getDouble());
-        metrics.setAverageCpuLoad(buf.getDouble());
-        metrics.setCurrentGcCpuLoad(buf.getDouble());
-        metrics.setHeapMemoryInitialized(buf.getLong());
-        metrics.setHeapMemoryUsed(buf.getLong());
-        metrics.setHeapMemoryCommitted(buf.getLong());
-        metrics.setHeapMemoryMaximum(buf.getLong());
-        metrics.setHeapMemoryTotal(buf.getLong());
-        metrics.setNonHeapMemoryInitialized(buf.getLong());
-        metrics.setNonHeapMemoryUsed(buf.getLong());
-        metrics.setNonHeapMemoryCommitted(buf.getLong());
-        metrics.setNonHeapMemoryMaximum(buf.getLong());
-        metrics.setNonHeapMemoryTotal(buf.getLong());
-        metrics.setStartTime(buf.getLong());
-        metrics.setNodeStartTime(buf.getLong());
-        metrics.setUpTime(buf.getLong());
-        metrics.setCurrentThreadCount(buf.getInt());
-        metrics.setMaximumThreadCount(buf.getInt());
-        metrics.setTotalStartedThreadCount(buf.getLong());
-        metrics.setCurrentDaemonThreadCount(buf.getInt());
-        metrics.setLastDataVersion(buf.getLong());
-        metrics.setSentMessagesCount(buf.getInt());
-        metrics.setSentBytesCount(buf.getLong());
-        metrics.setReceivedMessagesCount(buf.getInt());
-        metrics.setReceivedBytesCount(buf.getLong());
-        metrics.setOutboundMessagesQueueSize(buf.getInt());
-        metrics.setTotalNodes(buf.getInt());
+        metrics.maximumActiveJobs(buf.getInt());
+        metrics.currentActiveJobs(buf.getInt());
+        metrics.averageActiveJobs(buf.getFloat());
+        metrics.maximumWaitingJobs(buf.getInt());
+        metrics.currentWaitingJobs(buf.getInt());
+        metrics.averageWaitingJobs(buf.getFloat());
+        metrics.maximumRejectedJobs(buf.getInt());
+        metrics.currentRejectedJobs(buf.getInt());
+        metrics.averageRejectedJobs(buf.getFloat());
+        metrics.maximumCancelledJobs(buf.getInt());
+        metrics.currentCancelledJobs(buf.getInt());
+        metrics.averageCancelledJobs(buf.getFloat());
+        metrics.totalRejectedJobs(buf.getInt());
+        metrics.totalCancelledJobs(buf.getInt());
+        metrics.totalExecutedJobs(buf.getInt());
+        metrics.maximumJobWaitTime(buf.getLong());
+        metrics.currentJobWaitTime(buf.getLong());
+        metrics.averageJobWaitTime(buf.getDouble());
+        metrics.maximumJobExecuteTime(buf.getLong());
+        metrics.currentJobExecuteTime(buf.getLong());
+        metrics.averageJobExecuteTime(buf.getDouble());
+        metrics.totalExecutedTasks(buf.getInt());
+        metrics.currentIdleTime(buf.getLong());
+        metrics.totalIdleTime(buf.getLong());
+        metrics.totalCpus(buf.getInt());
+        metrics.currentCpuLoad(buf.getDouble());
+        metrics.averageCpuLoad(buf.getDouble());
+        metrics.currentGcCpuLoad(buf.getDouble());
+        metrics.heapMemoryInitialized(buf.getLong());
+        metrics.heapMemoryUsed(buf.getLong());
+        metrics.heapMemoryCommitted(buf.getLong());
+        metrics.heapMemoryMaximum(buf.getLong());
+        metrics.heapMemoryTotal(buf.getLong());
+        metrics.nonHeapMemoryInitialized(buf.getLong());
+        metrics.nonHeapMemoryUsed(buf.getLong());
+        metrics.nonHeapMemoryCommitted(buf.getLong());
+        metrics.nonHeapMemoryMaximum(buf.getLong());
+        metrics.nonHeapMemoryTotal(buf.getLong());
+        metrics.startTime(buf.getLong());
+        metrics.nodeStartTime(buf.getLong());
+        metrics.upTime(buf.getLong());
+        metrics.currentThreadCount(buf.getInt());
+        metrics.maximumThreadCount(buf.getInt());
+        metrics.totalStartedThreadCount(buf.getLong());
+        metrics.currentDaemonThreadCount(buf.getInt());
+        metrics.lastDataVersion(buf.getLong());
+        metrics.sentMessagesCount(buf.getInt());
+        metrics.sentBytesCount(buf.getLong());
+        metrics.receivedMessagesCount(buf.getInt());
+        metrics.receivedBytesCount(buf.getLong());
+        metrics.outboundMessagesQueueSize(buf.getInt());
+        metrics.totalNodes(buf.getInt());
 
         // For compatibility with metrics serialized by old ignite versions.
         if (buf.remaining() >= 8)
-            metrics.setTotalJobsExecutionTime(buf.getLong());
+            metrics.totalJobsExecutionTime(buf.getLong());
         else
-            metrics.setTotalJobsExecutionTime(0);
+            metrics.totalJobsExecutionTime(0);
 
         if (buf.remaining() >= 8)
-            metrics.setCurrentPmeDuration(buf.getLong());
+            metrics.currentPmeDuration(buf.getLong());
         else
-            metrics.setCurrentPmeDuration(0);
+            metrics.currentPmeDuration(0);
 
         return metrics;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return TYPE_CODE;
     }
 
     /** {@inheritDoc} */
