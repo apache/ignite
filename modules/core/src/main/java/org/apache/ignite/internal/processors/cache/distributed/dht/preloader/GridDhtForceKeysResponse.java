@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
@@ -38,8 +39,8 @@ import org.apache.ignite.lang.IgniteUuid;
  */
 public class GridDhtForceKeysResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** Error. */
-    @Order(value = 4, method = "error")
-    private volatile IgniteCheckedException err;
+    @Order(value = 4, method = "errorMessage")
+    private volatile ErrorMessage err;
 
     /** Future ID. */
     @Order(value = 5, method = "futureId")
@@ -83,17 +84,29 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
     }
 
     /**
-     * Sets error.
+     * Sets the error serialization message.
      *
-     * @param err Error.
+     * @param err Error message.
      */
-    public void error(IgniteCheckedException err) {
+    public void errorMessage(ErrorMessage err) {
         this.err = err;
+    }
+
+    /**
+     * @return The error serialization message.
+     */
+    public ErrorMessage errorMessage() {
+        return err;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteCheckedException error() {
-        return err;
+        return err == null ? null : (IgniteCheckedException)err.toThrowable();
+    }
+
+    /** Sets the error. */
+    public IgniteCheckedException error() {
+        return err == null ? null : error();
     }
 
     /**
