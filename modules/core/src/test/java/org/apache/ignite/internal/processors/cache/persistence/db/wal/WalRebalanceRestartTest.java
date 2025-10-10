@@ -268,7 +268,7 @@ public class WalRebalanceRestartTest extends GridCommonAbstractTest {
                     if (rebTopVer == null || rebTopVer.before(demandMsg.topologyVersion()))
                         rebTopVer = demandMsg.topologyVersion();
 
-                    if (!F.isEmpty(demandMsg.partitions().fullSet()))
+                    if (!F.isEmpty(demandMsg.partitions().full()))
                         hasFullRebalance.compareAndSet(false, true);
                 }
 
