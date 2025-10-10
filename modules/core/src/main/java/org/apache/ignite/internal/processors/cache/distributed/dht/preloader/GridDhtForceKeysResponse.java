@@ -33,32 +33,33 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Force keys response. Contains absent keys.
  */
 public class GridDhtForceKeysResponse extends GridCacheIdMessage implements GridCacheDeployable {
-    /** Error. */
-    @Order(value = 4, method = "errorMessage")
-    private volatile ErrorMessage err;
-
     /** Future ID. */
-    @Order(value = 5, method = "futureId")
+    @Order(value = 4, method = "futureId")
     private IgniteUuid futId;
 
-    /** Cache entries. */
-    @GridToStringInclude
-    @Order(6)
-    private List<GridCacheEntryInfo> infos;
-
     /** Mini-future ID. */
-    @Order(7)
+    @Order(5)
     private IgniteUuid miniId;
+
+    /** Error. */
+    @Order(value = 6, method = "errorMessage")
+    @Nullable private volatile ErrorMessage err;
 
     /** Missed (not found) keys. */
     @GridToStringInclude
-    @Order(8)
+    @Order(7)
     private List<KeyCacheObject> missedKeys;
+
+    /** Cache entries. */
+    @GridToStringInclude
+    @Order(8)
+    private List<GridCacheEntryInfo> infos;
 
     /**
      * Empty constructor.
@@ -84,29 +85,19 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
     }
 
     /**
-     * Sets the error serialization message.
+     * Sets error.
      *
-     * @param err Error message.
+     * @param err Error.
      */
-    public void errorMessage(ErrorMessage err) {
-        this.err = err;
-    }
-
-    /**
-     * @return The error serialization message.
-     */
-    public ErrorMessage errorMessage() {
-        return err;
+    public void error(@Nullable Throwable err) {
+        this.err = err == null ? null : new ErrorMessage(err);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCheckedException error() {
-        return err == null ? null : (IgniteCheckedException)err.toThrowable();
-    }
+    @Override public @Nullable Throwable error() {
+        ErrorMessage err = this.err;
 
-    /** Sets the error. */
-    public IgniteCheckedException error() {
-        return err == null ? null : error();
+        return err == null ? null : err.toThrowable();
     }
 
     /**
@@ -182,6 +173,22 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
     /** */
     public void infos(List<GridCacheEntryInfo> infos) {
         this.infos = infos;
+    }
+
+    /**
+     * @return The error serialization message.
+     */
+    public ErrorMessage errorMessage() {
+        return err;
+    }
+
+    /**
+     * Sets the error serialization message.
+     *
+     * @param err Error message.
+     */
+    public void errorMessage(ErrorMessage err) {
+        this.err = err;
     }
 
     /** {@inheritDoc} */
