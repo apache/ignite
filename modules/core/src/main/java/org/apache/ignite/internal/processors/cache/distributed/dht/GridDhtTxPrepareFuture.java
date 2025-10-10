@@ -44,6 +44,7 @@ import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
@@ -776,7 +777,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
                             @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
                                 if (res.error() == null && fut.error() != null)
-                                    res.error(fut.error());
+                                    res.errorMessage(new ErrorMessage(fut.error()));
 
                                 if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1))
                                     sendPrepareResponse(res);
@@ -789,7 +790,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 tx.commitAsync().listen(resClo);
                             }
                             catch (Throwable e) {
-                                res.error(e);
+                                res.errorMessage(new ErrorMessage(e));
 
                                 tx.systemInvalidate(true);
 
@@ -1040,7 +1041,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             catch (IgniteException e) {
                 tx.setRollbackOnly();
 
-                res.error(e);
+                res.errorMessage(new ErrorMessage(e));
             }
 
         if (super.onDone(res, res == null ? err : null)) {
@@ -1062,7 +1063,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     public void complete() {
         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse();
 
-        res.error(err != null ? err : new IgniteCheckedException("Failed to prepare transaction."));
+        res.errorMessage(new ErrorMessage(err != null ? err :
+            new IgniteCheckedException("Failed to prepare transaction.")));
 
         onComplete(res);
     }
@@ -1921,8 +1923,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
 
                 // Process invalid partitions (no need to remap).
-                if (!F.isEmpty(res.invalidPartitionsByCacheId())) {
-                    Map<Integer, int[]> invalidPartsMap = res.invalidPartitionsByCacheId();
+                if (!F.isEmpty(res.invalidPartitions())) {
+                    Map<Integer, int[]> invalidPartsMap = res.invalidPartitions();
 
                     for (Iterator<IgniteTxEntry> it = dhtMapping.entries().iterator(); it.hasNext();) {
                         IgniteTxEntry entry = it.next();
@@ -1951,7 +1953,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                 boolean rec = cctx.gridEvents().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED);
 
-                for (GridCacheEntryInfo info : res.preloadEntries()) {
+                for (GridCacheEntryInfo info : F.emptyIfNull(res.preloadEntries())) {
                     GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(info.cacheId());
 
                     GridCacheAdapter<?, ?> cache0 = cacheCtx.cache();
