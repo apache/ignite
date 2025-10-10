@@ -1953,7 +1953,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                 boolean rec = cctx.gridEvents().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED);
 
-                for (GridCacheEntryInfo info : F.view(res.preloadEntries())) {
+                for (GridCacheEntryInfo info : F.emptyIfNull(res.preloadEntries())) {
                     GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(info.cacheId());
 
                     GridCacheAdapter<?, ?> cache0 = cacheCtx.cache();

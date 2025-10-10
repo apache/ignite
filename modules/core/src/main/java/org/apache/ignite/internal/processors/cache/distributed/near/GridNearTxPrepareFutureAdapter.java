@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -209,7 +210,10 @@ public abstract class GridNearTxPrepareFutureAdapter extends
 
         UUID nodeId = m.primary().id();
 
-        for (Map.Entry<IgniteTxKey, CacheVersionedValue> entry : F.viewReadOnly(res.ownedValues(), v -> v).entrySet()) {
+        Map<IgniteTxKey, CacheVersionedValue> ownedVals = res.ownedValues() == null ? Collections.emptyMap() :
+            Collections.unmodifiableMap(res.ownedValues());
+
+        for (Map.Entry<IgniteTxKey, CacheVersionedValue> entry : ownedVals.entrySet()) {
             IgniteTxEntry txEntry = tx.entry(entry.getKey());
 
             assert txEntry != null;
@@ -248,7 +252,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
 
         tx.implicitSingleResult(res.returnValue());
 
-        for (IgniteTxKey key : F.view(res.filterFailedKeys())) {
+        for (IgniteTxKey key : F.emptyIfNull(res.filterFailedKeys())) {
             IgniteTxEntry txEntry = tx.entry(key);
 
             assert txEntry != null : "Missing tx entry for write key: " + key;
@@ -281,7 +285,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
                 if (map != null)
                     map.dhtVersion(res.dhtVersion(), writeVer);
 
-                tx.readyNearLocks(m, F.view(res.pending()), res.committedVersions(), res.rolledbackVersions());
+                tx.readyNearLocks(m, F.emptyIfNull(res.pending()), res.committedVersions(), res.rolledbackVersions());
             }
         }
     }
