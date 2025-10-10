@@ -304,10 +304,11 @@ docker_run() {
         done
     fi
 
-    # Mount the ignite-extensions sources directory as well if it exists.
+    # Mount the ignite-extensions sources directory if it exists.
     local mount_ignite_ext=""
     if [[ -d "${ignite_dir}/../ignite-extensions" ]]; then
-        mount_ignite_ext="--mount type=bind,source="${ignite_dir}/../ignite-extensions",target=/opt/ignite-extensions,consistency=delegated"
+        local ignite_ext_dir="$( cd "${ignite_dir}/../ignite-extensions" && pwd )"
+        mount_ignite_ext="--mount type=bind,source="${ignite_ext_dir}",target=/opt/ignite-extensions,consistency=delegated"
     fi
 
     # Invoke docker-run. We need privileged mode to be able to run iptables
