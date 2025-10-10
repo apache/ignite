@@ -821,8 +821,6 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @throws IgniteCheckedException In case of error.
      */
     void waitTopologyFuture(GridKernalContext ctx) throws IgniteCheckedException {
-        GridCacheContext<K, V> cctx = cacheContext(ctx);
-
         AffinityTopologyVersion topVer = initTopVer;
 
         cacheContext(ctx).shared().exchange().affinityReadyFuture(topVer).get();
