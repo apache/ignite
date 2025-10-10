@@ -472,7 +472,7 @@ public class GridDhtPartitionDemander {
         if (fut.isActual(supplyMsg.rebalanceId())) {
             boolean historical = false;
 
-            for (Integer p : supplyMsg.infos().keySet()) {
+            for (Integer p : supplyMsg.getInfosSafe().keySet()) {
                 fut.queued.get(p).increment();
 
                 if (fut.historical.contains(p))
@@ -546,7 +546,7 @@ public class GridDhtPartitionDemander {
             if (msgExc != null) {
                 GridDhtPartitionMap partMap = top.localPartitionMap();
 
-                Set<Integer> unstableParts = supplyMsg.infos().keySet().stream()
+                Set<Integer> unstableParts = supplyMsg.getInfosSafe().keySet().stream()
                     .filter(p -> partMap.get(p) == MOVING)
                     .collect(Collectors.toSet());
 
@@ -563,12 +563,6 @@ public class GridDhtPartitionDemander {
 
             for (GridCacheContext cctx : grp.caches()) {
                 if (cctx.statisticsEnabled()) {
-                    long keysCnt = grp.sharedGroup() ? supplyMsg.keysForCache(cctx.cacheId()) :
-                        supplyMsg.estimatedKeysCount();
-
-                    if (keysCnt != -1)
-                        cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(keysCnt);
-
                     // Can not be calculated per cache.
                     cctx.cache().metrics0().onRebalanceBatchReceived(supplyMsg.messageSize());
                 }
@@ -578,7 +572,7 @@ public class GridDhtPartitionDemander {
                 AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
                 // Preload.
-                for (Map.Entry<Integer, CacheEntryInfoCollection> e : supplyMsg.infos().entrySet()) {
+                for (Map.Entry<Integer, CacheEntryInfoCollection> e : supplyMsg.getInfosSafe().entrySet()) {
                     int p = e.getKey();
 
                     if (aff.get(p).contains(ctx.localNode())) {
@@ -604,7 +598,7 @@ public class GridDhtPartitionDemander {
 
                         assert part != null;
 
-                        boolean last = supplyMsg.last().containsKey(p);
+                        boolean last = supplyMsg.last() != null && supplyMsg.last().containsKey(p);
 
                         if (part.state() == MOVING) {
                             boolean reserved = part.reserve();
@@ -670,13 +664,15 @@ public class GridDhtPartitionDemander {
                     }
                 }
 
+                Collection<Integer> missed = supplyMsg.missed() == null ? Collections.emptyList() : supplyMsg.missed();
+
                 // Only request partitions based on latest topology version.
-                for (Integer miss : supplyMsg.missed()) {
+                for (Integer miss : missed) {
                     if (aff.get(miss).contains(ctx.localNode()))
                         fut.partitionMissed(nodeId, miss);
                 }
 
-                for (Integer miss : supplyMsg.missed())
+                for (Integer miss : missed)
                     fut.partitionDone(nodeId, miss, false);
 
                 GridDhtPartitionDemandMessage d = new GridDhtPartitionDemandMessage(
@@ -1672,7 +1668,7 @@ public class GridDhtPartitionDemander {
 
             // Not compatible if a supplier has left.
             for (UUID nodeId : rebalancingParts.keySet()) {
-                if (!grp.cacheObjectContext().kernalContext().discovery().alive(nodeId))
+                if (!grp.shared().kernalContext().discovery().alive(nodeId))
                     return false;
             }
 

@@ -24,10 +24,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class CacheObjectContext implements CacheObjectValueContext {
-    /** */
-    private final GridKernalContext kernalCtx;
-
+public class CacheObjectContext extends AbstractCacheObjectContext {
     /** */
     private final String cacheName;
 
@@ -67,7 +64,7 @@ public class CacheObjectContext implements CacheObjectValueContext {
         boolean storeVal,
         boolean addDepInfo,
         boolean binaryEnabled) {
-        this.kernalCtx = kernalCtx;
+        super(kernalCtx);
         this.cacheName = cacheName;
         this.dfltAffMapper = dfltAffMapper;
         this.customAffMapper = customAffMapper;
@@ -112,11 +109,6 @@ public class CacheObjectContext implements CacheObjectValueContext {
      */
     public boolean customAffinityMapper() {
         return customAffMapper;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridKernalContext kernalContext() {
-        return kernalCtx;
     }
 
     /** {@inheritDoc} */

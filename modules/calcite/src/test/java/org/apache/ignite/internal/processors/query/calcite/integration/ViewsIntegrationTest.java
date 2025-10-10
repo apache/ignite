@@ -16,60 +16,38 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.util.Arrays;
-import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.SqlConfiguration;
-import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 /** */
-@RunWith(Parameterized.class)
-public class ViewsIntegrationTest extends AbstractBasicIntegrationTest {
+public class ViewsIntegrationTest extends AbstractMultiEngineIntegrationTest {
     /** */
     private boolean persistenceEnabled;
 
     /** */
     private String[] predefinedSchemas;
 
-    /** */
-    @Parameterized.Parameter
-    public String engine;
-
-    /** */
-    @Parameterized.Parameters(name = "Query engine={0}")
-    public static Iterable<Object> params() {
-        return Arrays.asList(CalciteQueryEngineConfiguration.ENGINE_NAME, IndexingQueryEngineConfiguration.ENGINE_NAME);
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setSqlConfiguration(new SqlConfiguration()
-                .setSqlSchemas(predefinedSchemas)
-                .setQueryEnginesConfiguration(engine.equals(CalciteQueryEngineConfiguration.ENGINE_NAME) ?
-                    new CalciteQueryEngineConfiguration() : new IndexingQueryEngineConfiguration()))
-            .setDataStorageConfiguration(new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                    .setPersistenceEnabled(persistenceEnabled)));
-    }
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        // No-op.
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setPersistenceEnabled(persistenceEnabled)));
+
+        cfg.getSqlConfiguration().setSqlSchemas(predefinedSchemas);
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -404,12 +382,6 @@ public class ViewsIntegrationTest extends AbstractBasicIntegrationTest {
 
         for (int i = 0; i < rows; i++)
             sql("insert into my_table values (?, ?, ?)", i, i, Integer.toString(i));
-    }
-
-    /** */
-    @Override protected List<List<?>> sql(IgniteEx ignite, String sql, Object... params) {
-        return ignite.context().query().querySqlFields(new SqlFieldsQuery(sql).setArgs(params), true)
-            .getAll();
     }
 
     /** */
