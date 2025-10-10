@@ -73,6 +73,7 @@ import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cluster.NetworkEnvironment;
 import org.apache.ignite.events.NodeValidationFailedEvent;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteEx;
@@ -4728,6 +4729,49 @@ class ServerImpl extends TcpDiscoveryImpl {
                         .end();
 
                     return;
+                }
+
+                if (!node.isClient()) {
+                    NetworkEnvironment locNodeNetEnv = locNode.networkEnvironment();
+                    NetworkEnvironment rmtNodeNetEnv = node.networkEnvironment();
+
+                    if (locNodeNetEnv == null && rmtNodeNetEnv != null
+                        || locNodeNetEnv != null && rmtNodeNetEnv == null) {
+                        utilityPool.execute(
+                            new Runnable() {
+                                @Override public void run() {
+                                    String locNodeHasNetEnv = "Local node has NetworkEnvironment configuration but remote node doesn't";
+                                    String rmtNodeHasNetEnv = "Remote node has NetworkEnvironment configuration but local node doesn't";
+
+                                    String errMsg = locNodeNetEnv == null ? locNodeHasNetEnv : rmtNodeHasNetEnv +
+                                        "[locNodeNetworkEnv=" + locNodeNetEnv +
+                                        ", rmtNodeNetworkEnv=" + rmtNodeNetEnv +
+                                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+                                    String sndMsg = rmtNodeNetEnv == null ? rmtNodeHasNetEnv : locNodeHasNetEnv +
+                                        "[locNodeNetworkEnv=" + rmtNodeNetEnv +
+                                        ", rmtNodeNetworkEnv=" + locNodeNetEnv +
+                                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                        ", rmtNodeId=" + locNode.id() + ']';
+
+                                    nodeCheckError(
+                                        node,
+                                        errMsg,
+                                        sndMsg);
+                                }
+                            });
+
+                        // Ignore join request.
+                        msg.spanContainer().span()
+                            .addLog(() -> "Ignored")
+                            .setStatus(SpanStatus.ABORTED)
+                            .end();
+
+                        return;
+                    }
                 }
 
                 // Handle join.
