@@ -17,12 +17,20 @@
 
 package org.apache.ignite.internal.processors.nodevalidation;
 
-import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
+import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
+import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,42 +40,100 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
  * Node validation.
  */
 public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter implements DiscoveryNodeValidationProcessor {
+    /** Key for the distributed property that holds current and target versions. */
+    public static final String ROLL_UP_VERSIONS = "rolling.upgrade.versions";
+
+    /** Distributed property that holds current and target version. */
+    private final AtomicReference<IgnitePair<IgniteProductVersion>> verPairHolder = new AtomicReference<>();
+
     /**
      * @param ctx Kernal context.
      */
     public OsDiscoveryNodeValidationProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(new DistributedMetastorageLifecycleListener() {
+            @Override
+            public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
+                try {
+                    verPairHolder.set(metastorage.read(ROLL_UP_VERSIONS));
+                } catch (IgniteCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Could not read current version: " + e.getMessage());
+                }
+
+                metastorage.listen(ROLL_UP_VERSIONS::equals, (key, oldVal, newVal) ->
+                    verPairHolder.set((IgnitePair<IgniteProductVersion>)newVal)
+                );
+            }
+
+            @Override
+            public void onReadyForWrite(DistributedMetaStorage metastorage) {
+                try {
+                    IgnitePair<IgniteProductVersion> pair = verPairHolder.get();
+                    if (pair == null) {
+                        String locBuildVer = ctx.discovery().localNode().attribute(ATTR_BUILD_VER);
+                        IgniteProductVersion locVer = IgniteProductVersion.fromString(locBuildVer);
+
+                        IgnitePair<IgniteProductVersion> newPair = F.pair(locVer, locVer);
+
+                        if (verPairHolder.compareAndSet(null, newPair)) {
+                            metastorage.writeAsync(ROLL_UP_VERSIONS, newPair);
+                        }
+                    }
+                } catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+        });
     }
+
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
         ClusterNode locNode = ctx.discovery().localNode();
 
-        // Check version.
         String locBuildVer = locNode.attribute(ATTR_BUILD_VER);
         String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
 
-        if (!Objects.equals(rmtBuildVer, locBuildVer)) {
-            // OS nodes don't support rolling updates.
-            if (!locBuildVer.equals(rmtBuildVer)) {
-                String errMsg = "Local node and remote node have different version numbers " +
-                    "(node will not join, Ignite does not support rolling updates, " +
-                    "so versions must be exactly the same) " +
-                    "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
-                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                    ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + node.id() + ']';
+        IgniteProductVersion locVer = IgniteProductVersion.fromString(locBuildVer);
+        IgniteProductVersion rmtVer = IgniteProductVersion.fromString(rmtBuildVer);
 
-                LT.warn(log, errMsg);
+        IgnitePair<IgniteProductVersion> pair = verPairHolder.get() == null ? F.pair(locVer, locVer) : verPairHolder.get();
 
-                // Always output in debug.
-                if (log.isDebugEnabled())
-                    log.debug(errMsg);
+        IgniteProductVersion currentVer = pair.get1();
+        IgniteProductVersion targetVer = pair.get2();
 
-                return new IgniteNodeValidationResult(node.id(), errMsg);
-            }
-        }
+        if (versionsMatch(rmtVer, currentVer) || versionsMatch(rmtVer, targetVer))
+            return null;
 
-        return null;
+        String errMsg = "Remote node rejected due to incompatible version for cluster join.\n"
+            + "Remote node info:\n"
+            + "  - Version     : " + rmtBuildVer + "\n"
+            + "  - Addresses   : " + U.addressesAsString(node) + "\n"
+            + "  - Node ID     : " + node.id() + "\n"
+            + "Local node info:\n"
+            + "  - Version     : " + locBuildVer + "\n"
+            + "  - Addresses   : " + U.addressesAsString(locNode) + "\n"
+            + "  - Node ID     : " + locNode.id() + "\n"
+            + "Allowed versions for joining: \n"
+            + " - " + currentVer.major() + "." + currentVer.minor() + "." + currentVer.maintenance()
+            + (targetVer == null || targetVer.equals(currentVer) ? "" :
+            "\n - " + targetVer.major() + "." + targetVer.minor() + "." + targetVer.maintenance());
+
+        LT.warn(log, errMsg);
+
+        if (log.isDebugEnabled())
+            log.debug(errMsg);
+
+        return new IgniteNodeValidationResult(node.id(), errMsg);
+    }
+
+    /** Checks if versions has same major, minor and maintenance versions. */
+    private boolean versionsMatch(IgniteProductVersion locVer, IgniteProductVersion rmtVer) {
+        if (locVer == null || rmtVer == null)
+            return false;
+
+        return locVer.major() == rmtVer.major() && locVer.minor() == rmtVer.minor() && locVer.maintenance() == rmtVer.maintenance();
     }
 }
