@@ -90,6 +90,9 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
      * @param err Error.
      */
     public void error(@Nullable Throwable err) {
+        if (err != null)
+            throw new IllegalArgumentException("Test exception. Unexpected error: " + err);
+
         this.err = err == null ? null : new ErrorMessage(err);
     }
 
