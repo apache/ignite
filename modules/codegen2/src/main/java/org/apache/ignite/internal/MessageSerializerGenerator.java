@@ -239,6 +239,9 @@ class MessageSerializerGenerator {
      * @param opt Case option.
      */
     private void processField(VariableElement field, int opt) throws Exception {
+        if (assignableFrom(field.asType(), type(Throwable.class.getName())))
+            throw new UnsupportedOperationException("You should use ErrorMessage for serialization of throwables.");
+
         writeField(field, opt);
         readField(field, opt);
     }
