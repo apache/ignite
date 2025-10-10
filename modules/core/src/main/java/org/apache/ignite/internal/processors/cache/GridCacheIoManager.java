@@ -838,7 +838,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     false
                 );
 
-                res.error(req.classError());
+                if (req.classError() != null)
+                    res.error(req.classError());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
             }
