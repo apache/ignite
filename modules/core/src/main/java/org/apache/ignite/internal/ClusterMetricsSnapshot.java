@@ -506,6 +506,13 @@ public class ClusterMetricsSnapshot implements ClusterMetrics, Message {
         rcvdBytesCnt = metrics.getReceivedBytesCount();
     }
 
+    /** */
+    public static @Nullable ClusterMetricsSnapshot of(ClusterMetrics metrics) {
+        return metrics instanceof ClusterMetricsSnapshot
+            ? (ClusterMetricsSnapshot)metrics
+            : new ClusterMetricsSnapshot(metrics);
+    }
+
     /** {@inheritDoc} */
     @Override public long getHeapMemoryTotal() {
         return heapTotal;

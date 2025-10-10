@@ -157,7 +157,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     private final AtomicLong diagFutId = new AtomicLong();
 
     /** */
-    private final Map<UUID, ClusterMetrics> allNodesMetrics = new ConcurrentHashMap<>();
+    private final Map<UUID, ClusterNodeMetrics> allNodesMetrics = new ConcurrentHashMap<>();
 
     /** */
     private final JdkMarshaller marsh;
@@ -704,17 +704,18 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      * @param msg Message.
      */
     private void processMetricsUpdateMessage(UUID sndNodeId, ClusterMetricsUpdateMessage msg) {
-        ClusterMetricsSnapshot nodeMetrics = msg.nodeMetrics();
-        Map<Integer, CacheMetrics> cacheMetrics = msg.cacheMetrics();
+        if (msg.allNodesMetrics() == null) {
+            assert msg.nodeMetrics() != null;
+            assert msg.cacheMetrics() != null;
 
-        if (nodeMetrics != null) {
-            assert msg.allNodesMetrics() == null;
+            allNodesMetrics.put(sndNodeId, new ClusterNodeMetrics(msg.nodeMetrics(), msg.cacheMetrics()));
 
-            allNodesMetrics.put(sndNodeId, nodeMetrics);
-
-            updateNodeMetrics(ctx.discovery().discoCache(), sndNodeId, nodeMetrics, cacheMetrics);
+            updateNodeMetrics(ctx.discovery().discoCache(), sndNodeId, msg.nodeMetrics(), msg.cacheMetrics());
         }
         else {
+            assert msg.nodeMetrics() == null;
+            assert msg.cacheMetrics() == null;
+
             Map<UUID, ClusterMetricsSnapshot> allNodesMetrics = msg.allNodesMetrics();
 
             assert allNodesMetrics != null;
@@ -731,7 +732,8 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     /**
      * @param discoCache Discovery data cache.
      * @param nodeId Node ID.
-     * @param nodeMetrics Cluster metrics.
+     * @param nodeMetrics Node metrics.
+     * @param cacheMetrics Cache metrics.
      */
     private void updateNodeMetrics(
         DiscoCache discoCache,
@@ -770,7 +772,10 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             IgniteClusterNode locNode = (IgniteClusterNode)ctx.discovery().localNode();
 
             locNode.setMetrics(metricsProvider.metrics());
-            locNode.setCacheMetrics(metricsProvider.cacheMetrics());
+
+
+            ClusterNodeMetrics metrics = new ClusterNodeMetrics(locNode.metrics(), locNode.cacheMetrics());
+
 
             allNodesMetrics.put(ctx.localNodeId(), locNode.metrics());
 

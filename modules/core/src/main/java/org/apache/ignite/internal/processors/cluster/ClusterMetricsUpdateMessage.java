@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
-import java.util.AbstractMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -35,14 +34,20 @@ public final class ClusterMetricsUpdateMessage implements Message {
     public static final short TYPE_CODE = 133;
 
     /** */
+    @Order(0)
     @Nullable private ClusterMetricsSnapshot nodeMetrics;
 
     /** */
-    @Order(0)
+    @Order(1)
+    @Nullable private CacheMetricsSnapshot cacheMetrics;
+
+    /** */
+    @Order(2)
     @Nullable private Map<UUID, ClusterMetricsSnapshot> allNodesMetrics;
 
     /** */
-    private Map<Integer, CacheMetrics> cacheMetrics;
+    @Order(3)
+    @Nullable private Map<UUID, CacheMetricsSnapshot> allCachesMetrics;
 
     /** */
     public ClusterMetricsUpdateMessage() {
@@ -50,29 +55,18 @@ public final class ClusterMetricsUpdateMessage implements Message {
     }
 
     /** */
-    public ClusterMetricsUpdateMessage(ClusterMetrics nodeMetrics, Map<Integer, CacheMetrics> cacheMetrics) {
-        this.nodeMetrics = metricsSnapshot(nodeMetrics);
-
-        this.cacheMetrics = cacheMetrics;
+    public ClusterMetricsUpdateMessage(ClusterMetrics nodeMetrics, CacheMetrics cacheMetrics) {
+        this.nodeMetrics = ClusterMetricsSnapshot.of(nodeMetrics);
+        this.cacheMetrics = CacheMetricsSnapshot.of(cacheMetrics);
     }
 
     /** */
-    private ClusterMetricsUpdateMessage(Map<UUID, ClusterMetricsSnapshot> allNodesMetrics) {
+    private ClusterMetricsUpdateMessage(
+        Map<UUID, ClusterMetricsSnapshot> allNodesMetrics,
+        Map<UUID, CacheMetricsSnapshot> allCachesMetrics
+    ) {
         this.allNodesMetrics = allNodesMetrics;
-    }
-
-    /** */
-    public static ClusterMetricsUpdateMessage of(Map<UUID, ? extends ClusterMetrics> allNodesMetrics) {
-        Map<UUID, ClusterMetricsSnapshot> allNodesMetrics0 = allNodesMetrics.entrySet().stream()
-            .map(e -> new AbstractMap.SimpleEntry<>(e.getKey(), metricsSnapshot(e.getValue())))
-            .collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
-
-        return new ClusterMetricsUpdateMessage(allNodesMetrics0);
-    }
-
-    /** */
-    private static ClusterMetricsSnapshot metricsSnapshot(ClusterMetrics metrics) {
-        return metrics instanceof ClusterMetricsSnapshot ? (ClusterMetricsSnapshot)metrics : new ClusterMetricsSnapshot(metrics);
+        this.allCachesMetrics = allCachesMetrics;
     }
 
     /**
@@ -80,6 +74,21 @@ public final class ClusterMetricsUpdateMessage implements Message {
      */
     public @Nullable ClusterMetricsSnapshot nodeMetrics() {
         return nodeMetrics;
+    }
+
+    /** */
+    public void nodeMetrics(@Nullable ClusterMetricsSnapshot nodeMetrics) {
+        this.nodeMetrics = nodeMetrics;
+    }
+
+    /** */
+    public @Nullable CacheMetricsSnapshot cacheMetrics() {
+        return cacheMetrics;
+    }
+
+    /** */
+    public void cacheMetrics(CacheMetricsSnapshot cacheMetrics) {
+        this.cacheMetrics = cacheMetrics;
     }
 
     /**
@@ -90,13 +99,18 @@ public final class ClusterMetricsUpdateMessage implements Message {
     }
 
     /** */
-    public @Nullable Map<Integer, CacheMetrics> cacheMetrics() {
-        return cacheMetrics;
+    public void allNodesMetrics(@Nullable Map<UUID, ClusterMetricsSnapshot> allNodesMetrics) {
+        this.allNodesMetrics = allNodesMetrics;
     }
 
     /** */
-    public void allNodesMetrics(@Nullable Map<UUID, ClusterMetricsSnapshot> allNodesMetrics) {
-        this.allNodesMetrics = allNodesMetrics;
+    public @Nullable Map<UUID, CacheMetricsSnapshot> allCachesMetrics() {
+        return allCachesMetrics;
+    }
+
+    /** */
+    public void allCachesMetrics(@Nullable Map<UUID, CacheMetricsSnapshot> allCachesMetrics) {
+        this.allCachesMetrics = allCachesMetrics;
     }
 
     /** {@inheritDoc} */
