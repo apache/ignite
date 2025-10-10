@@ -23,21 +23,25 @@ import java.util.Map;
 import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.function.ThrowableSupplier;
+import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor.ROLL_UP_VERSIONS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Test Rolling Upgrade release types.
@@ -51,10 +55,14 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     @Parameterized.Parameter
     public boolean isClient;
 
+    /** Persistence. */
+    @Parameterized.Parameter(1)
+    public boolean persistence;
+
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "isClient={0}")
+    @Parameterized.Parameters(name = "isClient={0}, persistence={1}")
     public static Collection<?> parameters() {
-        return List.of(false, true);
+        return GridTestUtils.cartesianProduct(List.of(false, true), List.of(false, true));
     }
 
     /** {@inheritDoc} */
@@ -73,6 +81,12 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         discoSpi.setIpFinder(sharedStaticIpFinder);
 
         cfg.setDiscoverySpi(discoSpi);
+
+        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+
+        storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(persistence);
+
+        cfg.setDataStorageConfiguration(storageCfg);
 
         return cfg;
     }
@@ -168,43 +182,35 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     @Test
     public void testCoordinatorChange() throws Exception {
         IgniteEx ign0 = startGrid(0, "2.18.0", false);
+        startGrid(1, "2.18.0", false);
 
         allowRollingUpgradeVersionCheck(ign0, "2.19.0");
 
-        assertRemoteRejected(() -> startGrid(1, "2.18.0", isClient));
+        startGrid(2, "2.19.0", false);
 
-        IgniteEx ign1 = startGrid(1, "2.19.0", false);
-
-        assertClusterSize(2);
+        assertClusterSize(3);
 
         ign0.close();
 
-        assertClusterSize(1);
-
-        assertRemoteRejected(() -> startGrid(0, "2.18.0", isClient));
-
-        allowRollingUpgradeVersionCheck(ign1, "2.20.0");
-
-        startGrid(0, "2.20.0", isClient);
-
         assertClusterSize(2);
 
-        assertRemoteRejected(() -> startGrid(2, "2.21.0", isClient));
+        startGrid(0, "2.18.0", isClient);
+        startGrid(3, "2.19.0", isClient);
 
-        assertClusterSize(2);
+        assertClusterSize(4);
+
+        assertRemoteRejected(() -> startGrid(4, "2.20.0", isClient));
+
+        assertClusterSize(4);
     }
 
     /** */
     @Test
     public void testNodeRestart() throws Exception {
-        DataStorageConfiguration storageCfg = new DataStorageConfiguration();
-        storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
-        UnaryOperator<IgniteConfiguration> cfgOp = cfg -> cfg.setDataStorageConfiguration(storageCfg);
+        assumeTrue(persistence);
 
         for (int i = 0; i < 3; i++)
-            startGrid(i, "2.18.0", false, cfgOp);
-
-        grid(0).cluster().state(ClusterState.ACTIVE);
+            startGrid(i, "2.18.0", false);
 
         assertClusterSize(3);
 
@@ -216,14 +222,17 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         assertClusterSize(0);
 
         for (int i = 0; i < 3; i++)
-            startGrid(i, "2.18.0", false, cfgOp);
-
-        grid(0).cluster().state(ClusterState.ACTIVE);
+            startGrid(i, "2.18.0", false);
 
         assertClusterSize(3);
 
-        for (int i = 0; i < 3; i++)
-            assertEquals(grid(i).context().distributedMetastorage().read(ROLL_UP_VERSION_CHECK), IgniteProductVersion.fromString("2.18.1"));
+        for (int i = 0; i < 3; i++) {
+            IgnitePair<IgniteProductVersion> stored = grid(i).context().distributedMetastorage().read(ROLL_UP_VERSIONS);
+
+            assertNotNull("rolling.upgrade.versions should be set", stored);
+
+            assertEquals(F.pair(IgniteProductVersion.fromString("2.18.0"), IgniteProductVersion.fromString("2.18.1")), stored);
+        }
     }
 
     /** Tests that starting a node with rejected version fails with remote rejection. */
@@ -321,11 +330,16 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
      */
     private void allowRollingUpgradeVersionCheck(IgniteEx grid, String ver) throws IgniteCheckedException {
         if (ver == null) {
-            grid.context().distributedMetastorage().remove(ROLL_UP_VERSION_CHECK);
+            grid.context().distributedMetastorage().remove(ROLL_UP_VERSIONS);
             return;
         }
 
-        grid.context().distributedMetastorage().write(ROLL_UP_VERSION_CHECK, IgniteProductVersion.fromString(ver));
+        String locBuildVer = grid.context().discovery().localNode().attribute(IgniteNodeAttributes.ATTR_BUILD_VER);
+        IgniteProductVersion current = IgniteProductVersion.fromString(locBuildVer);
+
+        IgnitePair<IgniteProductVersion> pair = new IgnitePair<>(current, IgniteProductVersion.fromString(ver));
+
+        grid.context().distributedMetastorage().write(ROLL_UP_VERSIONS, pair);
     }
 
     /**
