@@ -240,6 +240,9 @@ class MessageSerializerGenerator {
      * @param opt Case option.
      */
     private void processField(VariableElement field, int opt) throws Exception {
+        if (assignableFrom(field.asType(), type(Throwable.class.getName())))
+            throw new UnsupportedOperationException("You should use ErrorMessage for serialization of throwables.");
+
         if (enumType(erasedType(field.asType())))
             throw new IllegalArgumentException("Unsupported enum type: " + field.asType() +
                     ". The enum must be wrapped into a Message (see, for example, TransactionIsolationMessage).");

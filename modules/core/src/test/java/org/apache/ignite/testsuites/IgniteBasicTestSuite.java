@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteLocalNodeMapBeforeStartTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.codegen.MessageProcessorTest;
+import org.apache.ignite.internal.managers.communication.ErrorMessageSelfTest;
 import org.apache.ignite.internal.managers.communication.TransactionIsolationMessageTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
@@ -145,6 +146,7 @@ import org.junit.runners.Suite;
     ClientSessionOutboundQueueLimitTest.class,
 
     MessageProcessorTest.class,
+    ErrorMessageSelfTest.class,
     TransactionIsolationMessageTest.class
 })
 public class IgniteBasicTestSuite {
