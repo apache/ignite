@@ -203,9 +203,9 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         UpdateErrors errors = res.errors();
 
         if (errors != null) {
-            assert errors.error() != null;
+            assert errors.errorMessage() != null;
 
-            completeFuture(null, errors.error(), res.futureId());
+            completeFuture(null, errors.errorMessage().toThrowable(), res.futureId());
 
             return;
         }

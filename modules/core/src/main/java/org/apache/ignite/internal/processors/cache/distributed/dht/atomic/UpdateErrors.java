@@ -17,40 +17,32 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
+@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class UpdateErrors implements Message {
     /** Failed keys. */
     @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
+    @Order(0)
     private List<KeyCacheObject> failedKeys;
 
-    /** Update error. */
-    @GridDirectTransient
-    @GridToStringInclude
-    private IgniteCheckedException err;
-
-    /** Serialized update error. */
-    private byte[] errBytes;
+    /** Error message. */
+    @Order(value = 1, method = "errorMessage")
+    private ErrorMessage errMsg;
 
     /**
      *
@@ -62,24 +54,24 @@ public class UpdateErrors implements Message {
     /**
      * @param err Error.
      */
-    public UpdateErrors(IgniteCheckedException err) {
+    public UpdateErrors(Throwable err) {
         assert err != null;
 
-        this.err = err;
+        errMsg = new ErrorMessage(err);
     }
 
     /**
-     * @param err Error.
+     * @param errMsg New error message.
      */
-    public void onError(IgniteCheckedException err) {
-        this.err = err;
+    public void errorMessage(ErrorMessage errMsg) {
+        this.errMsg = errMsg;
     }
 
     /**
-     * @return Error.
+     * @return Error message.
      */
-    public IgniteCheckedException error() {
-        return err;
+    public ErrorMessage errorMessage() {
+        return errMsg;
     }
 
     /**
@@ -87,6 +79,13 @@ public class UpdateErrors implements Message {
      */
     public Collection<KeyCacheObject> failedKeys() {
         return failedKeys;
+    }
+
+    /**
+     * @param failedKeys New failed keys.
+     */
+    public void failedKeys(List<KeyCacheObject> failedKeys) {
+        this.failedKeys = failedKeys;
     }
 
     /**
@@ -101,10 +100,10 @@ public class UpdateErrors implements Message {
 
         failedKeys.add(key);
 
-        if (err == null)
-            err = new IgniteCheckedException("Failed to update keys.");
+        if (errMsg == null)
+            errMsg = new ErrorMessage(new IgniteCheckedException("Failed to update keys."));
 
-        err.addSuppressed(e);
+        errMsg.toThrowable().addSuppressed(e);
     }
 
     /**
@@ -117,81 +116,20 @@ public class UpdateErrors implements Message {
 
         failedKeys.addAll(keys);
 
-        if (err == null)
-            err = new IgniteCheckedException("Failed to update keys on primary node.");
+        if (errMsg == null)
+            errMsg = new ErrorMessage(new IgniteCheckedException("Failed to update keys on primary node."));
 
-        err.addSuppressed(e);
+        errMsg.toThrowable().addSuppressed(e);
     }
 
     /** */
-    void prepareMarshal(GridCacheMessage msg, GridCacheContext cctx) throws IgniteCheckedException {
+    void prepareMarshal(GridCacheMessage msg, GridCacheContext<?, ?> cctx) throws IgniteCheckedException {
         msg.prepareMarshalCacheObjects(failedKeys, cctx);
-
-        if (errBytes == null)
-            errBytes = U.marshal(cctx.marshaller(), err);
     }
 
     /** */
-    void finishUnmarshal(GridCacheMessage msg, GridCacheContext cctx, ClassLoader ldr) throws IgniteCheckedException {
+    void finishUnmarshal(GridCacheMessage msg, GridCacheContext<?, ?> cctx, ClassLoader ldr) throws IgniteCheckedException {
         msg.finishUnmarshalCacheObjects(failedKeys, cctx, ldr);
-
-        if (errBytes != null && err == null)
-            err = U.unmarshal(cctx.marshaller(), errBytes, U.resolveClassLoader(ldr, cctx.gridConfig()));
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByteArray(errBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeCollection(failedKeys, MessageCollectionItemType.KEY_CACHE_OBJECT))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                errBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                failedKeys = reader.readCollection(MessageCollectionItemType.KEY_CACHE_OBJECT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
