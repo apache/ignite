@@ -36,6 +36,7 @@ import org.junit.runners.Suite;
     IndexQuerySqlIndexTest.class,
     IndexQueryRangeTest.class,
     IndexQueryPartitionTest.class,
+    IndexQueryRebuildIndexTest.class,
     IndexQueryCacheKeyValueFieldsTest.class,
     IndexQueryCacheKeyValueEscapedFieldsTest.class,
     IndexQueryCacheKeyValueTransformedFieldsTest.class,
