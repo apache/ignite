@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
 public final class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
     /** Heuristic error. */
     @Order(value = 6, method = "errorMessage")
-    @Nullable private ErrorMessage errMsg;
+    private @Nullable ErrorMessage errMsg;
 
     /** Mini future ID. */
     @Order(7)

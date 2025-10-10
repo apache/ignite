@@ -87,7 +87,7 @@ public final class GridDhtTxFinishResponse extends GridDistributedTxFinishRespon
     /**
      * @return Error for check committed backup requests.
      */
-    @Nullable public Throwable checkCommittedError() {
+    public @Nullable Throwable checkCommittedError() {
         ErrorMessage checkCommittedErrMsg = this.checkCommittedErrMsg;
 
         return checkCommittedErrMsg == null ? null : checkCommittedErrMsg.toThrowable();
@@ -101,12 +101,12 @@ public final class GridDhtTxFinishResponse extends GridDistributedTxFinishRespon
     }
 
     /** @return The check committed error serialization message. */
-    public ErrorMessage checkCommittedErrorMessage() {
+    public @Nullable ErrorMessage checkCommittedErrorMessage() {
         return checkCommittedErrMsg;
     }
 
     /** Sets the check committed error serialization message. */
-    public void checkCommittedErrorMessage(ErrorMessage checkCommittedErrMsg) {
+    public void checkCommittedErrorMessage(@Nullable ErrorMessage checkCommittedErrMsg) {
         this.checkCommittedErrMsg = checkCommittedErrMsg;
     }
 
