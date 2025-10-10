@@ -72,6 +72,8 @@ public class ThreadContextAttributesTest extends GridCommonAbstractTest {
 
                 checkAttributeValues(strAttrVal, DFLT_INT_VAL);
             }
+
+            checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
         }
 
         checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
@@ -79,14 +81,16 @@ public class ThreadContextAttributesTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testScopeAttributeDuplication() {
-        checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
+    public void testScopeAttributeValueOverwrite() {
+        try (Scope ignored0 = ThreadContext.withAttribute(STR_ATTR, "test").withAttribute(INT_ATTR, 3)) {
+            checkAttributeValues("test", 3);
 
-        try (Scope ignored = ThreadContext.withAttribute(INT_ATTR, 1).withAttribute(INT_ATTR, 2)) {
-            checkAttributeValues(DFLT_STR_VAL, 2);
+            try (Scope ignored1 = ThreadContext.withAttribute(INT_ATTR, 1).withAttribute(INT_ATTR, 2)) {
+                checkAttributeValues("test", 2);
+            }
+
+            checkAttributeValues("test", 3);
         }
-
-        checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
     }
 
     /** */
@@ -318,6 +322,7 @@ public class ThreadContextAttributesTest extends GridCommonAbstractTest {
         public void check() {
             checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
 
+            // Checks that snapshot are restored correctly for attributes with both initialized and initial values.
             try (Scope ignored0 = ThreadContext.withAttribute(STR_ATTR, "test")) {
                 checkAttributeValues("test", DFLT_INT_VAL);
 
