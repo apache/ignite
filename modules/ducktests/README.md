@@ -17,7 +17,7 @@ separate [ignite-extensions](https://github.com/apache/ignite-extensions) reposi
 To run these tests the `ignite-extensions` working directory should be checked out
 to the same filesystem level next to the `ignite` one.  So it should be the below structure
 of directories:
-- `./ignite` working directory checked out from the ignite repository (AKA `${IGNITE_HOME}`) 
+- `./ignite` working directory checked out from the ignite repository (mentioned as `${IGNITE_HOME}` below) 
 - `./ignite-extensions` working directory checked out from the ignite-extensions repository
 
 The needed extension module should be built before tests run. 
