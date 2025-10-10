@@ -15,8 +15,12 @@ Some tests (like the CDC replication ones) require modules maintained in the
 separate [ignite-extensions](https://github.com/apache/ignite-extensions) repository.
 
 To run these tests the `ignite-extensions` working directory should be checked out
-to the same directory as the `${IGNITE_HOME}` one. The needed extension module should
-be built before tests run. 
+to the same filesystem level next to the `ignite` one.  So it should be the below structure
+of directories:
+- `./ignite` working directory checked out from the ignite repository (AKA `${IGNITE_HOME}`) 
+- `./ignite-extensions` working directory checked out from the ignite-extensions repository
+
+The needed extension module should be built before tests run. 
 
 For example for the CDC replication tests the `cdc-ext` module should be built as:  
 ```
