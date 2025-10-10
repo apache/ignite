@@ -412,12 +412,8 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
         return rmv;
     }
 
-    /**
-     * Gets number of write requests in a queue that have not been processed yet.
-     *
-     * @return Number of write requests.
-     */
-    int writeQueueSize() {
+    /** {@inheritDoc} */
+    @Override public int messagesQueueSize() {
         return queue.sizex();
     }
 
