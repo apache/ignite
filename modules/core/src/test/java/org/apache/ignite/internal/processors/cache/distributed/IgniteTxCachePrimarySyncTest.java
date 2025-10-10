@@ -491,7 +491,7 @@ public class IgniteTxCachePrimarySyncTest extends GridCommonAbstractTest {
 
         GridNearTxFinishRequest req = (GridNearTxFinishRequest)msgs.get(0);
 
-        assertEquals(PRIMARY_SYNC, req.syncMode());
+        assertEquals(PRIMARY_SYNC, req.syncMode().value());
 
         msgs = commSpi0.recordedMessages(true);
 
