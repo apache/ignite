@@ -33,7 +33,6 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.apache.ignite.cache.query.SpiQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
@@ -551,19 +550,6 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         cache.query(new TextQuery<Integer, Integer>(Integer.class, "clause"), transformer);
-
-                        return null;
-                    }
-                },
-                UnsupportedOperationException.class,
-                "Transformers are supported only for SCAN queries."
-            );
-
-            GridTestUtils.assertThrows(
-                log,
-                new Callable<Object>() {
-                    @Override public Object call() throws Exception {
-                        cache.query(new SpiQuery<Integer, Integer>(), transformer);
 
                         return null;
                     }
