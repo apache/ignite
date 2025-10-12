@@ -53,11 +53,11 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
         super(ctx);
 
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(new DistributedMetastorageLifecycleListener() {
-            @Override
-            public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
+            @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
                 try {
                     verPairHolder.set(metastorage.read(ROLL_UP_VERSIONS));
-                } catch (IgniteCheckedException e) {
+                }
+                catch (IgniteCheckedException e) {
                     if (log.isDebugEnabled())
                         log.debug("Could not read current version: " + e.getMessage());
                 }
@@ -67,8 +67,7 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
                 );
             }
 
-            @Override
-            public void onReadyForWrite(DistributedMetaStorage metastorage) {
+            @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
                 try {
                     IgnitePair<IgniteProductVersion> pair = verPairHolder.get();
                     if (pair == null) {
@@ -80,7 +79,8 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
                         if (verPairHolder.compareAndSet(null, newPair))
                             metastorage.writeAsync(ROLL_UP_VERSIONS, newPair);
                     }
-                } catch (IgniteCheckedException e) {
+                }
+                catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
                 }
             }
@@ -99,10 +99,10 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
 
         IgnitePair<IgniteProductVersion> pair = verPairHolder.get() == null ? F.pair(locVer, locVer) : verPairHolder.get();
 
-        IgniteProductVersion currentVer = pair.get1();
+        IgniteProductVersion curVer = pair.get1();
         IgniteProductVersion targetVer = pair.get2();
 
-        if (versionsMatch(rmtVer, currentVer) || versionsMatch(rmtVer, targetVer))
+        if (versionsMatch(rmtVer, curVer) || versionsMatch(rmtVer, targetVer))
             return null;
 
         String errMsg = "Remote node rejected due to incompatible version for cluster join.\n"
@@ -115,8 +115,8 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
             + "  - Addresses   : " + U.addressesAsString(locNode) + "\n"
             + "  - Node ID     : " + locNode.id() + "\n"
             + "Allowed versions for joining: \n"
-            + " - " + currentVer.major() + "." + currentVer.minor() + "." + currentVer.maintenance()
-            + (targetVer == null || targetVer.equals(currentVer) ? "" :
+            + " - " + curVer.major() + "." + curVer.minor() + "." + curVer.maintenance()
+            + (targetVer == null || targetVer.equals(curVer) ? "" :
             "\n - " + targetVer.major() + "." + targetVer.minor() + "." + targetVer.maintenance());
 
         LT.warn(log, errMsg);
