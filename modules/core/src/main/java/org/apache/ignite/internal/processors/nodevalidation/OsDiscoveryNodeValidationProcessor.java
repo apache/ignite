@@ -88,7 +88,6 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
         });
     }
 
-
     /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
         ClusterNode locNode = ctx.discovery().localNode();
