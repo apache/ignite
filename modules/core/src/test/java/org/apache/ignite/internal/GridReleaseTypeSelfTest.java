@@ -290,6 +290,9 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         assertClusterSize(2);
 
         stopAllGrids();
+
+        if (persistence)
+            cleanPersistenceDir();
     }
 
     /** Tests three compatible grids. */
@@ -310,6 +313,9 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         assertClusterSize(3);
 
         stopAllGrids();
+
+        if (persistence)
+            cleanPersistenceDir();
     }
 
     /** Starts grid with required version. */
