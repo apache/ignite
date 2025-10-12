@@ -339,9 +339,11 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         }
 
         String locBuildVer = grid.context().discovery().localNode().attribute(IgniteNodeAttributes.ATTR_BUILD_VER);
-        IgniteProductVersion current = IgniteProductVersion.fromString(locBuildVer);
 
-        IgnitePair<IgniteProductVersion> pair = new IgnitePair<>(current, IgniteProductVersion.fromString(ver));
+        IgniteProductVersion cur = IgniteProductVersion.fromString(locBuildVer);
+        IgniteProductVersion target = IgniteProductVersion.fromString(ver);
+
+        IgnitePair<IgniteProductVersion> pair = new IgnitePair<>(cur, target);
 
         grid.context().distributedMetastorage().write(ROLL_UP_VERSIONS, pair);
     }
