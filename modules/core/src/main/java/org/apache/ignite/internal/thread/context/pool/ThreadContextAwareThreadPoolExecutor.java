@@ -48,22 +48,22 @@ public class ThreadContextAwareThreadPoolExecutor extends IgniteThreadPoolExecut
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> Future<T> submit(@NotNull Callable<T> task) {
-        return super.submit(ThreadContextAwareCallable.wrap(task));
+        return super.submit(ThreadContextAwareCallable.wrapIfActiveAttributesPresent(task));
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> Future<T> submit(@NotNull Runnable task, T res) {
-        return super.submit(ThreadContextAwareRunnable.wrap(task), res);
+        return super.submit(ThreadContextAwareRunnable.wrapIfActiveAttributesPresent(task), res);
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public Future<?> submit(@NotNull Runnable task) {
-        return super.submit(ThreadContextAwareRunnable.wrap(task));
+        return super.submit(ThreadContextAwareRunnable.wrapIfActiveAttributesPresent(task));
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> List<Future<T>> invokeAll(@NotNull Collection<? extends Callable<T>> tasks) throws InterruptedException {
-        return super.invokeAll(ThreadContextAwareCallable.wrap(tasks));
+        return super.invokeAll(ThreadContextAwareCallable.wrapIfActiveAttributesPresent(tasks));
     }
 
     /** {@inheritDoc} */
@@ -72,23 +72,23 @@ public class ThreadContextAwareThreadPoolExecutor extends IgniteThreadPoolExecut
         long timeout,
         @NotNull TimeUnit unit
     ) throws InterruptedException {
-        return super.invokeAll(ThreadContextAwareCallable.wrap(tasks), timeout, unit);
+        return super.invokeAll(ThreadContextAwareCallable.wrapIfActiveAttributesPresent(tasks), timeout, unit);
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public <T> T invokeAny(@NotNull Collection<? extends Callable<T>> tasks)
         throws InterruptedException, ExecutionException {
-        return super.invokeAny(ThreadContextAwareCallable.wrap(tasks));
+        return super.invokeAny(ThreadContextAwareCallable.wrapIfActiveAttributesPresent(tasks));
     }
 
     /** {@inheritDoc} */
     @Override public <T> T invokeAny(@NotNull Collection<? extends Callable<T>> tasks,
         long timeout, @NotNull TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-        return super.invokeAny(ThreadContextAwareCallable.wrap(tasks), timeout, unit);
+        return super.invokeAny(ThreadContextAwareCallable.wrapIfActiveAttributesPresent(tasks), timeout, unit);
     }
 
     /** {@inheritDoc} */
     @Override public void execute(@NotNull Runnable cmd) {
-        super.execute(ThreadContextAwareRunnable.wrap(cmd));
+        super.execute(ThreadContextAwareRunnable.wrapIfActiveAttributesPresent(cmd));
     }
 }

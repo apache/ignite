@@ -36,6 +36,6 @@ public class ThreadContextAwareStripedThreadPoolExecutor extends IgniteStripedTh
 
     /** {@inheritDoc} */
     @Override public void execute(Runnable task, int idx) {
-        super.execute(ThreadContextAwareRunnable.wrap(task), idx);
+        super.execute(ThreadContextAwareRunnable.wrapIfActiveAttributesPresent(task), idx);
     }
 }

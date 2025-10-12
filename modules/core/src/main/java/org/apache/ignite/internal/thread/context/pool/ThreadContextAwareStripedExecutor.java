@@ -47,6 +47,6 @@ public class ThreadContextAwareStripedExecutor extends StripedExecutor {
 
     /** {@inheritDoc} */
     @Override public void execute(int idx, Runnable cmd) {
-        super.execute(idx, ThreadContextAwareRunnable.wrap(cmd));
+        super.execute(idx, ThreadContextAwareRunnable.wrapIfActiveAttributesPresent(cmd));
     }
 }

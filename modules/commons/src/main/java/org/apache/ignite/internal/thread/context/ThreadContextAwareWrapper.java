@@ -41,8 +41,19 @@ public abstract class ThreadContextAwareWrapper<T> implements IgniteInternalWrap
 
     /** */
     protected static <T> T wrap(T delegate, BiFunction<T, ThreadContextSnapshot, T> wrapper) {
-        return delegate == null || delegate instanceof ThreadContextAwareWrapper
-            ? delegate
-            : wrapper.apply(delegate, ThreadContext.createSnapshot());
+        return wrap(delegate, wrapper, false);
+    }
+
+    /** */
+    protected static <T> T wrap(T delegate, BiFunction<T, ThreadContextSnapshot, T> wrapper, boolean ignoreEmptyContext) {
+        if ( delegate == null || delegate instanceof ThreadContextAwareWrapper)
+            return delegate;
+
+        ThreadContextSnapshot snapshot = ThreadContext.createSnapshot();
+
+        if (ignoreEmptyContext && snapshot.isEmpty())
+            return delegate;
+
+        return wrapper.apply(delegate, ThreadContext.createSnapshot());
     }
 }

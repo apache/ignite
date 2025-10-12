@@ -40,4 +40,9 @@ public class ThreadContextAwareRunnable extends ThreadContextAwareWrapper<Runnab
     public static Runnable wrap(Runnable delegate) {
         return wrap(delegate, ThreadContextAwareRunnable::new);
     }
+
+    /** */
+    public static Runnable wrapIfActiveAttributesPresent(Runnable delegate) {
+        return wrap(delegate, ThreadContextAwareRunnable::new, true);
+    }
 }
