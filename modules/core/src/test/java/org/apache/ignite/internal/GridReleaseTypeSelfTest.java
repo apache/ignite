@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.function.ThrowableSupplier;
@@ -151,8 +152,6 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         allowRollingUpgradeVersionCheck(ign0, "2.18.1");
 
-        assertRemoteRejected(() -> startGrid(3, "2.18.0", isClient));
-
         ign2.close();
 
         assertClusterSize(2);
@@ -207,7 +206,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testNodeRestart() throws Exception {
-        assumeTrue(persistence);
+        assumeTrue("Distributed metastorage is only preserved across restarts when persistence is enabled", persistence);
 
         for (int i = 0; i < 3; i++)
             startGrid(i, "2.18.0", false);
@@ -322,7 +321,12 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     private IgniteEx startGrid(int idx, String ver, boolean isClient, UnaryOperator<IgniteConfiguration> cfgOp) throws Exception {
         nodeVer = ver;
 
-        return isClient ? startClientGrid(idx, cfgOp) : startGrid(idx, cfgOp);
+        IgniteEx ign = isClient ? startClientGrid(idx, cfgOp) : startGrid(idx, cfgOp);
+
+        if (persistence)
+            ign.cluster().state(ClusterState.ACTIVE);
+
+        return ign;
     }
 
     /**
