@@ -77,9 +77,8 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
 
                         IgnitePair<IgniteProductVersion> newPair = F.pair(locVer, locVer);
 
-                        if (verPairHolder.compareAndSet(null, newPair)) {
+                        if (verPairHolder.compareAndSet(null, newPair))
                             metastorage.writeAsync(ROLL_UP_VERSIONS, newPair);
-                        }
                     }
                 } catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
