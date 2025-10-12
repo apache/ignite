@@ -141,7 +141,6 @@ public class QueryTxEntry implements CalciteMessage {
 
         if (val != null)
             val.finishUnmarshal(coctx, ldr);
-
     }
 
     /** {@inheritDoc} */
