@@ -117,7 +117,7 @@ public class QueryTxEntry implements CalciteMessage {
     }
 
     /**
-     * @param ver Version.
+     * @param ver New entry version.
      */
     public void version(GridCacheVersion ver) {
         this.ver = ver;
