@@ -19,11 +19,9 @@ package org.apache.ignite.internal.processors.nodevalidation;
 
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -55,34 +53,22 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(new DistributedMetastorageLifecycleListener() {
             @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
                 try {
-                    verPairHolder.set(metastorage.read(ROLL_UP_VERSIONS));
+                    IgnitePair<IgniteProductVersion> pair = metastorage.read(ROLL_UP_VERSIONS);
+
+                    if (verPairHolder.compareAndSet(null, pair) && log.isDebugEnabled())
+                        log.debug("Read current and target versions from metastore: " + pair);
                 }
                 catch (IgniteCheckedException e) {
                     if (log.isDebugEnabled())
-                        log.debug("Could not read current version: " + e.getMessage());
+                        log.debug("Could not read current and target versions: " + e.getMessage());
                 }
 
                 metastorage.listen(ROLL_UP_VERSIONS::equals, (key, oldVal, newVal) ->
-                    verPairHolder.set((IgnitePair<IgniteProductVersion>)newVal)
-                );
-            }
-
-            @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
-                try {
-                    IgnitePair<IgniteProductVersion> pair = verPairHolder.get();
-                    if (pair == null) {
-                        String locBuildVer = ctx.discovery().localNode().attribute(ATTR_BUILD_VER);
-                        IgniteProductVersion locVer = IgniteProductVersion.fromString(locBuildVer);
-
-                        IgnitePair<IgniteProductVersion> newPair = F.pair(locVer, locVer);
-
-                        if (verPairHolder.compareAndSet(null, newPair))
-                            metastorage.writeAsync(ROLL_UP_VERSIONS, newPair);
+                    {
+                        boolean b = verPairHolder.compareAndSet((IgnitePair<IgniteProductVersion>)oldVal, (IgnitePair<IgniteProductVersion>)newVal);
+                        assert b : "Could not update versions: " + oldVal + " -> " + newVal + "; current: " + verPairHolder.get();
                     }
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
+                );
             }
         });
     }
@@ -94,10 +80,14 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
         String locBuildVer = locNode.attribute(ATTR_BUILD_VER);
         String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
 
-        IgniteProductVersion locVer = IgniteProductVersion.fromString(locBuildVer);
         IgniteProductVersion rmtVer = IgniteProductVersion.fromString(rmtBuildVer);
 
-        IgnitePair<IgniteProductVersion> pair = verPairHolder.get() == null ? F.pair(locVer, locVer) : verPairHolder.get();
+        IgnitePair<IgniteProductVersion> pair = verPairHolder.get();
+
+        if (pair == null) {
+            IgniteProductVersion locVer = IgniteProductVersion.fromString(locBuildVer);
+            pair = F.pair(locVer, locVer);
+        }
 
         IgniteProductVersion curVer = pair.get1();
         IgniteProductVersion targetVer = pair.get2();
