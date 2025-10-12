@@ -181,7 +181,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     @Test
     public void testCoordinatorChange() throws Exception {
         IgniteEx ign0 = startGrid(0, "2.18.0", false);
-        startGrid(1, "2.18.0", false);
+        IgniteEx ign1 = startGrid(1, "2.18.0", false);
 
         allowRollingUpgradeVersionCheck(ign0, "2.19.0");
 
@@ -190,17 +190,18 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         assertClusterSize(3);
 
         ign0.close();
+        ign1.close();
 
         assertClusterSize(2);
 
         startGrid(0, "2.18.0", isClient);
-        startGrid(3, "2.19.0", isClient);
+        startGrid(1, "2.19.0", isClient);
 
-        assertClusterSize(4);
+        assertClusterSize(3);
 
         assertRemoteRejected(() -> startGrid(4, "2.20.0", isClient));
 
-        assertClusterSize(4);
+        assertClusterSize(3);
     }
 
     /** */
