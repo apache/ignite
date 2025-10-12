@@ -64,10 +64,7 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
                 }
 
                 metastorage.listen(ROLL_UP_VERSIONS::equals, (key, oldVal, newVal) ->
-                    {
-                        boolean b = verPairHolder.compareAndSet((IgnitePair<IgniteProductVersion>)oldVal, (IgnitePair<IgniteProductVersion>)newVal);
-                        assert b : "Could not update versions: " + oldVal + " -> " + newVal + "; current: " + verPairHolder.get();
-                    }
+                    verPairHolder.compareAndSet((IgnitePair<IgniteProductVersion>)oldVal, (IgnitePair<IgniteProductVersion>)newVal)
                 );
             }
         });
