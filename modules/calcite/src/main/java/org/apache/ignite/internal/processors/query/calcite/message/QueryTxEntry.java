@@ -93,7 +93,7 @@ public class QueryTxEntry implements CalciteMessage {
     }
 
     /**
-     * @param key Key.
+     * @param key New entry key.
      */
     public void key(KeyCacheObject key) {
         this.key = key;
