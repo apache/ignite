@@ -105,7 +105,7 @@ public class QueryTxEntry implements CalciteMessage {
     }
 
     /**
-     * @param val Value.
+     * @param val New entry value.
      */
     public void value(CacheObject val) {
         this.val = val;
