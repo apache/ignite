@@ -83,7 +83,7 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
 
         if (pair == null) {
             IgniteProductVersion locVer = IgniteProductVersion.fromString(locBuildVer);
-            pair = F.pair(locVer, locVer);
+            pair = F.pair(locVer, null);
         }
 
         IgniteProductVersion curVer = pair.get1();
