@@ -81,7 +81,7 @@ public class QueryTxEntry implements CalciteMessage {
     }
 
     /**
-     * @param cacheId Cache id.
+     * @param cacheId New cache id.
      */
     public void cacheId(int cacheId) {
         this.cacheId = cacheId;
