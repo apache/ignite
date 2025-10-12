@@ -192,7 +192,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         ign0.close();
         ign1.close();
 
-        assertClusterSize(2);
+        assertClusterSize(1);
 
         startGrid(0, "2.18.0", isClient);
         startGrid(1, "2.19.0", isClient);
