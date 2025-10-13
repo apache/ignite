@@ -18,7 +18,6 @@ This module contains classes and utilities to start PostgreSql cluster for testi
 """
 
 import os.path
-import re
 from distutils.version import LooseVersion
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
@@ -96,11 +95,13 @@ class PostgresService(DucktestsService, PathAware):
         self.logger.info("PostgreSQL cluster is up.")
 
     def start_node(self, node, **kwargs):
-        self.logger.info(f"Initializing PostgreSQL data directory {self.work_dir}")
+        self.logger.info(f"Initializing PostgreSQL data directory {self.work_dir} on node {node.name}")
 
-        self.__init_db_dir(node)
+        self.init_persistent(node)
 
-        self.logger.info(f"Creating PostgreSQL configuration")
+        self.__run_cmd(f"{os.path.join(self.home_dir, 'bin', 'initdb')} -D {self.work_dir}", node)
+
+        self.logger.info(f"Creating PostgreSQL configuration on node {node.name}")
 
         config_file = self.render(
             'postgresql.conf.j2',
@@ -111,9 +112,10 @@ class PostgresService(DucktestsService, PathAware):
 
         node.account.create_file(self.config_file, config_file)
 
-        # self.logger.info(f"Created PostgreSQL configuration: {config_file}")
+        self.logger.info(f"Created PostgreSQL configuration on node {node.name}")
+        self.logger.debug(f"{config_file}")
 
-        self.logger.info(f"Starting PostgreSQL node {self.idx(node)} on {node.account.hostname}")
+        self.logger.info(f"Starting PostgreSQL {self.idx(node)} on node {node.name} with host {node.account.hostname}")
 
         start_cmd = (
             f"nohup {os.path.join(self.home_dir, 'bin', 'postgres')} "
@@ -122,56 +124,26 @@ class PostgresService(DucktestsService, PathAware):
             f"> {self.log_file} 2>&1 &"
         )
 
-        node.account.ssh(start_cmd)
+        self.__run_cmd(start_cmd, node)
 
-    def __init_db_dir(self, node):
-        self.init_persistent(node)
+    def __run_cmd(self, cmd, node):
+        wrapped_cmd = self.__form_cmd(cmd)
 
-        node.account.ssh(f"{envs_to_exports(self.envs())}")
+        raw_output = node.account.ssh_capture(wrapped_cmd, allow_fail=True)
 
-        self.__check_db_binaries(node)
+        code = raw_output.channel_file.channel.recv_exit_status()
 
-        init_db_cmd = f"{os.path.join(self.home_dir, 'bin', 'initdb')} -D {self.work_dir}"
+        output = "".join(raw_output)
 
-        raw_output = (node.account.ssh_capture(init_db_cmd, allow_fail=True))
-
-        code, output = self.__parse_init_db_output(raw_output)
-
-        self.logger.debug(f"Output of command {init_db_cmd} on node {node.name}, exited with code {code}, is {output}")
+        self.logger.debug(f"Output of command {cmd} on node {node.name}, exited with code {code} and output:\n{output}")
 
         if code != 0:
-            raise RemoteCommandError(node.account, init_db_cmd, code, output)
+            raise RemoteCommandError(node.account, wrapped_cmd, code, output)
 
-    def __check_db_binaries(self, node):
-        self.__print_cmd(f"ls -l {self.home_dir}", node)
-
-        self.__print_cmd(f"ls -l {os.path.join(self.home_dir, 'bin')}", node)
-
-        self.__print_cmd(f"echo $LD_LIBRARY_PATH", node)
-
-    def __print_cmd(self, cmd, node):
-        raw_output = (node.account.ssh_capture(cmd, allow_fail=True))
-
-        output = "".join(raw_output)
-
-        self.logger.debug(f"Output of command [{cmd}] on node {node.name} is {output}")
-
-    @staticmethod
-    def __parse_init_db_output(raw_output):
-        exit_code = raw_output.channel_file.channel.recv_exit_status()
-        output = "".join(raw_output)
-
-        match = re.compile("Success").search(output)
-
-        if match:
-            return 0, output
-
-        return exit_code, output
+    def __form_cmd(self, cmd):
+        return "%s %s" % (envs_to_exports(self.envs()), cmd)
 
     def envs(self):
-        """
-        :return: environment set.
-        """
         return {
             'LD_LIBRARY_PATH': f"{os.path.join(self.home_dir)}/lib:$LD_LIBRARY_PATH"
         }
