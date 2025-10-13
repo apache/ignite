@@ -20,7 +20,7 @@ package org.apache.ignite.spi.discovery.datacenter;
 /**
  * <p>
  * The {@code DataCenterResolver} interface provides a mechanism for retrieving information about
- * the data center in which a node is running.
+ * data center in which a node is running.
  * <p>
  * This interface is intended for use in distributed systems where the Ignite cluster spans multiple data centers.
  * It allows Ignite to make topology-aware decisions regarding node communication, data placement,
@@ -49,12 +49,12 @@ package org.apache.ignite.spi.discovery.datacenter;
  */
 public interface DataCenterResolver {
     /**
-     * Returns the network environment information for the current node.
+     * Returns data center id for the current node.
      * <p>
      * This method is called during node initialization and should return consistent values
-     * for all nodes located in the same physical or logical location.
+     * for all nodes located in the same data center.
      *
-     * @return A {@link String} representing id of a Data Center.
+     * @return A {@link String} representing an id of a Data Center.
      */
     public String resolveDataCenterId();
 }

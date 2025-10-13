@@ -372,8 +372,7 @@ public class IgniteConfiguration {
     private DiscoverySpi discoSpi;
 
     /**
-     * Network environment resolver responsible for providing information about high-level network architecture
-     * - data centers, racks and so on.
+     * Data Center resolver responsible for providing information about Data Center where node is started.
      */
     private DataCenterResolver dcResolver;
 
@@ -1972,7 +1971,7 @@ public class IgniteConfiguration {
 
     /**
      * @param dcResolver Instance of {@link DataCenterResolver} to obtain
-     *                       metainformation about local node's network environment.
+     *                       information about local node's Data Center.
      *
      * @return {@code this} for chaining.
      */

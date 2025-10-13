@@ -73,7 +73,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     @GridToStringExclude
     private Map<String, Object> attrs;
 
-    /** */
+    /** Data center ID of the node. */
     private String dcId;
 
     /** Internal discovery addresses as strings. */
