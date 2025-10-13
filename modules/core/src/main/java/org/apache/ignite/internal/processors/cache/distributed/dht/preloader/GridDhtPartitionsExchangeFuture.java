@@ -2179,7 +2179,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             partsToReload);
 
         if (stateChangeExchange() && !F.isEmpty(exchangeGlobalExceptions))
-            m.setErrorsMap(exchangeGlobalExceptions);
+            m.errorsMap(exchangeGlobalExceptions);
 
         return m;
     }
@@ -2214,7 +2214,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         // Prepare full message for newly joined nodes with affinity request.
         final GridDhtPartitionsFullMessage fullMsgWithAff = singleMsgWithAffReq
             .filter(singleMessage -> affinityForJoinedNodes != null)
-            .map(singleMessage -> fullMsg.copy().joinedNodeAffinity(affinityForJoinedNodes))
+            .map(singleMessage -> {
+                GridDhtPartitionsFullMessage copy = fullMsg.copy();
+
+                copy.joinedNodeAffinity(affinityForJoinedNodes);
+
+                return copy;
+            })
             .orElse(null);
 
         // Prepare and send full messages for given nodes.
@@ -2461,7 +2467,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             // Create and destroy caches and cache proxies.
             cctx.cache().onExchangeDone(this, err);
 
-            Map<T2<Integer, Integer>, Long> locReserved = partHistSuppliers.getReservations(cctx.localNodeId());
+            Map<GroupPartitionIdMessage, Long> locReserved = partHistSuppliers.getReservations(cctx.localNodeId());
 
             if (locReserved != null) {
                 boolean success = cctx.database().reserveHistoryForPreloading(locReserved);
@@ -2954,7 +2960,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         GridDhtPartitionsFullMessage fullMsg = createPartitionsMessage(true);
 
-        fullMsg.setErrorsMap(exchangeGlobalExceptions);
+        fullMsg.errorsMap(exchangeGlobalExceptions);
 
         fullMsg.rebalanced(rebalanced());
 
@@ -3948,7 +3954,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (!F.isEmpty(exchangeGlobalExceptions)) {
                     stateChangeErr = true;
 
-                    cctx.kernalContext().state().onStateChangeError(exchangeGlobalExceptions, req);
+                    cctx.kernalContext().state().onStateChangeError(
+                        exchangeGlobalExceptions.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
+                        req
+                    );
                 }
 
                 if (!cctx.kernalContext().state().clusterState().localBaselineAutoAdjustment()) {
@@ -4250,7 +4259,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     nodeId,
                     node.isClient() ? new IgniteNeedReconnectException(node, e) : new IgniteCheckedException(e));
 
-                fullMsg.setErrorsMap(errs);
+                fullMsg.errorsMap(errs);
             }
         }
 
@@ -4510,8 +4519,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 return;
                             }
                             else {
-                                if (!F.isEmpty(msg.getErrorsMap())) {
-                                    Exception e = msg.getErrorsMap().get(cctx.localNodeId());
+                                if (!F.isEmpty(msg.errorsMap())) {
+                                    Throwable e = msg.errorsMap().get(cctx.localNodeId());
 
                                     if (e instanceof IgniteNeedReconnectException) {
                                         onDone(e);
@@ -4619,8 +4628,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (msg.rebalanced())
                 markRebalanced();
 
-            if (stateChangeExchange() && !F.isEmpty(msg.getErrorsMap()))
-                cctx.kernalContext().state().onStateChangeError(msg.getErrorsMap(), exchActions.stateChangeRequest());
+            if (stateChangeExchange() && !F.isEmpty(msg.errorsMap()))
+                cctx.kernalContext().state().onStateChangeError(msg.errorsMap(), exchActions.stateChangeRequest());
 
             if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 DiscoveryCustomMessage discoveryCustomMsg = ((DiscoveryCustomEvent)firstDiscoEvt).customMessage();
@@ -4654,7 +4663,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
 
         try {
-            Map<Integer, Map<Integer, Long>> partsSizes = msg.partitionSizes(cctx);
+            Map<Integer, GridDhtPartitionsSizeMessage> partsSizes = msg.partitionSizes();
 
             doInParallel(
                 parallelismLvl,
@@ -4665,11 +4674,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                     if (grp != null) {
+                        GridDhtPartitionsSizeMessage partsSizeMsg = partsSizes.get(grpId);
+
                         grp.topology().update(resTopVer,
                             msg.partitions().get(grpId),
                             cntrMap,
                             msg.partsToReload(cctx.localNodeId(), grpId),
-                            partsSizes.getOrDefault(grpId, Collections.emptyMap()),
+                            partsSizeMsg != null
+                                ? partsSizeMsg.partitionSizes() != null ? partsSizeMsg.partitionSizes() : Collections.emptyMap()
+                                : Collections.emptyMap(),
                             null,
                             this,
                             msg.lostPartitions(grpId));
@@ -4738,7 +4751,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             );
 
                             if (stateChangeExchange()) {
-                                cctx.kernalContext().state().onStateChangeError(msg.exchangeErrors(), actions.stateChangeRequest());
+                                cctx.kernalContext().state().onStateChangeError(
+                                    msg.exchangeErrors().entrySet().stream()
+                                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
+                                    actions.stateChangeRequest()
+                                );
                                 cctx.kernalContext().state().onStateFinishMessage(new ChangeGlobalStateFinishMessage(
                                     actions.stateChangeRequest().requestId(),
                                     INACTIVE,
@@ -4793,7 +4810,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         GridDhtPartitionsFullMessage partsMsg = msg.partitionsMessage();
 
-                        IgniteCheckedException err = !F.isEmpty(partsMsg.getErrorsMap()) ?
+                        IgniteCheckedException err = !F.isEmpty(partsMsg.errorsMap()) ?
                             new IgniteCheckedException("Cluster state change failed.") : null;
 
                         if (!crd.isLocal()) {
@@ -4804,7 +4821,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                             if (exchActions != null && exchActions.stateChangeRequest() != null && err != null) {
                                 cctx.kernalContext().state().onStateChangeError(
-                                    partsMsg.getErrorsMap(),
+                                    partsMsg.errorsMap(),
                                     exchActions.stateChangeRequest()
                                 );
                             }

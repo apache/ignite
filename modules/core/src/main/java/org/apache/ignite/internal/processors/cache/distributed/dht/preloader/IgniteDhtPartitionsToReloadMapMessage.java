@@ -19,71 +19,45 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- * Partition counters map.
- */
-public class IgniteDhtPartitionCountersMap implements Serializable, Message {
+/** TODO */
+public class IgniteDhtPartitionsToReloadMapMessage implements Message, Serializable {
     /** Type code. */
-    public static final short TYPE_CODE = 509;
+    public static final short TYPE_CODE = 513;
 
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Map. */
     @Order(0)
-    private Map<Integer, CachePartitionFullCountersMap> map;
+    private Map<Integer, IgniteDhtPartitionsToReloadMessage> map;
 
-    /**
-     * @return {@code True} if map is empty.
-     */
-    public synchronized boolean empty() {
-        return map == null || map.isEmpty();
+    /** Constructor. */
+    public IgniteDhtPartitionsToReloadMapMessage() {
+        // No-op.
     }
 
     /**
-     * @param cacheId Cache ID.
-     * @param cntrMap Counters map.
+     * @param map Map.
      */
-    public synchronized void putIfAbsent(int cacheId, CachePartitionFullCountersMap cntrMap) {
-        if (map == null)
-            map = new HashMap<>();
-
-        if (!map.containsKey(cacheId))
-            map.put(cacheId, cntrMap);
+    public IgniteDhtPartitionsToReloadMapMessage(Map<Integer, IgniteDhtPartitionsToReloadMessage> map) {
+        this.map = map;
     }
 
     /**
-     * @param cacheId Cache ID.
-     * @return Counters map.
+     * @return Map.
      */
-    public synchronized CachePartitionFullCountersMap get(int cacheId) {
-        if (map == null)
-            return null;
-
-        CachePartitionFullCountersMap cntrMap = map.get(cacheId);
-
-        if (cntrMap == null)
-            return null;
-
-        return cntrMap;
-    }
-
-    /**
-     * @return Partition counters map.
-     */
-    public Map<Integer, CachePartitionFullCountersMap> map() {
+    public Map<Integer, IgniteDhtPartitionsToReloadMessage> map() {
         return map;
     }
 
     /**
-     * @param map Partition counters map.
+     * @param map Map.
      */
-    public void map(Map<Integer, CachePartitionFullCountersMap> map) {
+    public void map(Map<Integer, IgniteDhtPartitionsToReloadMessage> map) {
         this.map = map;
     }
 

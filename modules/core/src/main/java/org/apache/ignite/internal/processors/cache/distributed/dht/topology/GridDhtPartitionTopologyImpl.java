@@ -722,7 +722,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 node2part = new GridDhtPartitionFullMap(oldest.id(),
                     oldest.order(),
                     updateSeq,
-                    node2part,
+                    node2part.map(),
                     false);
 
                 if (log.isDebugEnabled()) {
@@ -735,7 +735,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 node2part = new GridDhtPartitionFullMap(oldest.id(),
                     oldest.order(),
                     updateSeq,
-                    node2part,
+                    node2part.map(),
                     false);
 
                 if (log.isDebugEnabled()) {
@@ -1416,7 +1416,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             GridDhtPartitionFullMap m = node2part;
 
-            return new GridDhtPartitionFullMap(m.nodeId(), m.nodeOrder(), m.updateSequence(), m, onlyActive);
+            return new GridDhtPartitionFullMap(m.nodeId(), m.nodeOrder(), m.updateSequence(), m.map(), onlyActive);
         }
         finally {
             lock.readLock().unlock();
@@ -1440,7 +1440,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         @Nullable AffinityTopologyVersion exchangeVer,
         GridDhtPartitionFullMap partMap,
         @Nullable CachePartitionFullCountersMap incomeCntrMap,
-        Set<Integer> partsToReload,
+        Collection<Integer> partsToReload,
         @Nullable Map<Integer, Long> partSizes,
         @Nullable AffinityTopologyVersion msgTopVer,
         @Nullable GridDhtPartitionsExchangeFuture exchFut,
@@ -1950,7 +1950,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 long updateSeq = this.updateSeq.incrementAndGet();
 
-                node2part.newUpdateSequence(updateSeq);
+                node2part.updateSequence(updateSeq);
 
                 boolean changed = false;
 
@@ -2650,7 +2650,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         updateSeq = seq;
                 }
 
-                node2part.updateSequence(updateSeq);
+                node2part.checkAndUpdateSequence(updateSeq);
             }
         }
 
@@ -2708,7 +2708,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         if (node2part != null) {
             if (loc.equals(oldest) && !node2part.nodeId().equals(loc.id()))
                 node2part = new GridDhtPartitionFullMap(loc.id(), loc.order(), updateSeq.get(),
-                    node2part, false);
+                    node2part.map(), false);
             else
                 node2part = new GridDhtPartitionFullMap(node2part, node2part.updateSequence());
 

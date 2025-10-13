@@ -88,6 +88,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSizeMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
@@ -1440,7 +1441,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         if (!partsSizes.isEmpty())
-            m.partitionSizes(cctx, partsSizes);
+            m.partitionSizes(partsSizes.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> new GridDhtPartitionsSizeMessage(e.getValue()))));
 
         return m;
     }
@@ -1771,7 +1773,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 boolean updated = false;
 
-                Map<Integer, Map<Integer, Long>> partsSizes = msg.partitionSizes(cctx);
+                Map<Integer, GridDhtPartitionsSizeMessage> partsSizes = msg.partitionSizes();
 
                 for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
                     Integer grpId = entry.getKey();
@@ -1781,11 +1783,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     GridDhtPartitionTopology top = grp == null ? clientTops.get(grpId) : grp.topology();
 
                     if (top != null) {
+                        GridDhtPartitionsSizeMessage partsSizeMsg = partsSizes.get(grpId);
+
                         updated |= top.update(null,
                             entry.getValue(),
                             null,
                             msg.partsToReload(cctx.localNodeId(), grpId),
-                            partsSizes.getOrDefault(grpId, Collections.emptyMap()),
+                            partsSizeMsg != null
+                                ? partsSizeMsg.partitionSizes() != null ? partsSizeMsg.partitionSizes() : Collections.emptyMap()
+                                : Collections.emptyMap(),
                             msg.topologyVersion(),
                             null,
                             null);

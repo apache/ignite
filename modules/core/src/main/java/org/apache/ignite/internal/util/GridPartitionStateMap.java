@@ -24,16 +24,21 @@ import java.util.BitSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Grid partition state map. States are encoded using bits.
  * <p>
  * Null values are prohibited.
  */
-public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartitionState> implements Serializable {
+public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartitionState> implements Serializable, Message {
     /** Empty map. */
     public static final GridPartitionStateMap EMPTY = new GridPartitionStateMap(0);
+
+    /** Type code. */
+    public static final short TYPE_CODE = 508;
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -55,9 +60,11 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
      * The first element takes the first {@link GridPartitionStateMap#BITS} bits in reverse order,
      * the second element next {@link GridPartitionStateMap#BITS} bits in reverse order, etc.
      */
-    private final BitSet states;
+    @Order(0)
+    private BitSet states;
 
     /** */
+    @Order(1)
     private int size;
 
     /** {@inheritDoc} */
@@ -192,6 +199,13 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
         return size;
     }
 
+    /**
+     * @param size Size of map.
+     */
+    public void size(int size) {
+        this.size = size;
+    }
+
     /** */
     private GridDhtPartitionState setState(int part, GridDhtPartitionState st) {
         GridDhtPartitionState old = state(part);
@@ -226,6 +240,20 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
         return st == 0 ? null : GridDhtPartitionState.fromOrdinal(st - 1);
     }
 
+    /**
+     * @return Encoded states in bits.
+     */
+    public BitSet states() {
+        return states;
+    }
+
+    /**
+     * @param states Encoded states in bits.
+     */
+    public void states(BitSet states) {
+        this.states = states;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -242,5 +270,10 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return 31 * states.hashCode() + size;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return TYPE_CODE;
     }
 }

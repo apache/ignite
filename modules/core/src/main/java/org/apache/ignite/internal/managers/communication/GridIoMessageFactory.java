@@ -31,6 +31,7 @@ import org.apache.ignite.internal.codegen.CacheContinuousQueryBatchAckSerializer
 import org.apache.ignite.internal.codegen.CacheEntryInfoCollectionSerializer;
 import org.apache.ignite.internal.codegen.CacheEvictionEntrySerializer;
 import org.apache.ignite.internal.codegen.CacheGroupAffinityMessageSerializer;
+import org.apache.ignite.internal.codegen.CachePartitionFullCountersMapSerializer;
 import org.apache.ignite.internal.codegen.CachePartitionPartialCountersMapSerializer;
 import org.apache.ignite.internal.codegen.CacheVersionedValueSerializer;
 import org.apache.ignite.internal.codegen.CacheWriteSynchronizationModeMessageSerializer;
@@ -56,8 +57,12 @@ import org.apache.ignite.internal.codegen.GridDhtLockRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtLockResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDhtPartitionDemandMessageSerializer;
 import org.apache.ignite.internal.codegen.GridDhtPartitionExchangeIdSerializer;
+import org.apache.ignite.internal.codegen.GridDhtPartitionFullMapSerializer;
+import org.apache.ignite.internal.codegen.GridDhtPartitionMapSerializer;
 import org.apache.ignite.internal.codegen.GridDhtPartitionSupplyMessageSerializer;
+import org.apache.ignite.internal.codegen.GridDhtPartitionsFullMessageSerializer;
 import org.apache.ignite.internal.codegen.GridDhtPartitionsSingleRequestSerializer;
+import org.apache.ignite.internal.codegen.GridDhtPartitionsSizeMessageSerializer;
 import org.apache.ignite.internal.codegen.GridDhtTxFinishRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtTxFinishResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDhtTxOnePhaseCommitAckRequestSerializer;
@@ -87,6 +92,7 @@ import org.apache.ignite.internal.codegen.GridNearTxFinishResponseSerializer;
 import org.apache.ignite.internal.codegen.GridNearTxPrepareRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearTxPrepareResponseSerializer;
 import org.apache.ignite.internal.codegen.GridNearUnlockRequestSerializer;
+import org.apache.ignite.internal.codegen.GridPartitionStateMapSerializer;
 import org.apache.ignite.internal.codegen.GridQueryCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryFailResponseSerializer;
 import org.apache.ignite.internal.codegen.GridQueryKillRequestSerializer;
@@ -95,9 +101,16 @@ import org.apache.ignite.internal.codegen.GridQueryNextPageRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryNextPageResponseSerializer;
 import org.apache.ignite.internal.codegen.GridTaskCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridTaskResultRequestSerializer;
+import org.apache.ignite.internal.codegen.GroupPartitionIdMessageSerializer;
 import org.apache.ignite.internal.codegen.HandshakeMessageSerializer;
 import org.apache.ignite.internal.codegen.HandshakeWaitMessageSerializer;
 import org.apache.ignite.internal.codegen.IgniteDhtDemandedPartitionsMapSerializer;
+import org.apache.ignite.internal.codegen.IgniteDhtPartitionCountersMapSerializer;
+import org.apache.ignite.internal.codegen.IgniteDhtPartitionHistorySuppliersMapSerializer;
+import org.apache.ignite.internal.codegen.IgniteDhtPartitionHistorySuppliersMessageSerializer;
+import org.apache.ignite.internal.codegen.IgniteDhtPartitionsToReloadMapMessageSerializer;
+import org.apache.ignite.internal.codegen.IgniteDhtPartitionsToReloadMapSerializer;
+import org.apache.ignite.internal.codegen.IgniteDhtPartitionsToReloadMessageSerializer;
 import org.apache.ignite.internal.codegen.IgniteTxKeySerializer;
 import org.apache.ignite.internal.codegen.IncrementalSnapshotAwareMessageSerializer;
 import org.apache.ignite.internal.codegen.JobStealingRequestSerializer;
@@ -187,16 +200,27 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNe
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.NearCacheUpdates;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.UpdateErrors;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSizeMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionCountersMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMapMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.LatchAckMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
@@ -254,6 +278,7 @@ import org.apache.ignite.internal.processors.service.ServiceDeploymentProcessId;
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResult;
 import org.apache.ignite.internal.processors.service.ServiceSingleNodeDeploymentResultBatch;
 import org.apache.ignite.internal.util.GridByteArrayList;
+import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.distributed.SingleNodeMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -334,7 +359,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)42, GridDhtForceKeysRequest::new, new GridDhtForceKeysRequestSerializer());
         factory.register((short)43, GridDhtForceKeysResponse::new, new GridDhtForceKeysResponseSerializer());
         factory.register((short)45, GridDhtPartitionDemandMessage::new, new GridDhtPartitionDemandMessageSerializer());
-        factory.register((short)46, GridDhtPartitionsFullMessage::new);
+        factory.register((short)46, GridDhtPartitionsFullMessage::new, new GridDhtPartitionsFullMessageSerializer());
         factory.register((short)47, GridDhtPartitionsSingleMessage::new);
         factory.register((short)48, GridDhtPartitionsSingleRequest::new, new GridDhtPartitionsSingleRequestSerializer());
         factory.register((short)49, GridNearGetRequest::new, new GridNearGetRequestSerializer());
@@ -443,6 +468,27 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(GridCacheOperationMessage.TYPE_CODE, GridCacheOperationMessage::new, new GridCacheOperationMessageSerializer());
         factory.register(BinaryMetadataVersionInfo.TYPE_CODE, BinaryMetadataVersionInfo::new,
             new BinaryMetadataVersionInfoSerializer());
+        factory.register(GridDhtPartitionFullMap.TYPE_CODE, GridDhtPartitionFullMap::new,
+            new GridDhtPartitionFullMapSerializer());
+        factory.register(GridDhtPartitionMap.TYPE_CODE, GridDhtPartitionMap::new, new GridDhtPartitionMapSerializer());
+        factory.register(GridPartitionStateMap.TYPE_CODE, GridPartitionStateMap::new, new GridPartitionStateMapSerializer());
+        factory.register(IgniteDhtPartitionCountersMap.TYPE_CODE, IgniteDhtPartitionCountersMap::new,
+            new IgniteDhtPartitionCountersMapSerializer());
+        factory.register(CachePartitionFullCountersMap.TYPE_CODE, CachePartitionFullCountersMap::new,
+            new CachePartitionFullCountersMapSerializer());
+        factory.register(IgniteDhtPartitionHistorySuppliersMap.TYPE_CODE, IgniteDhtPartitionHistorySuppliersMap::new,
+            new IgniteDhtPartitionHistorySuppliersMapSerializer());
+        factory.register(IgniteDhtPartitionsToReloadMap.TYPE_CODE, IgniteDhtPartitionsToReloadMap::new,
+            new IgniteDhtPartitionsToReloadMapSerializer());
+        factory.register(IgniteDhtPartitionsToReloadMapMessage.TYPE_CODE, IgniteDhtPartitionsToReloadMapMessage::new,
+            new IgniteDhtPartitionsToReloadMapMessageSerializer());
+        factory.register(GroupPartitionIdMessage.TYPE_CODE, GroupPartitionIdMessage::new, new GroupPartitionIdMessageSerializer());
+        factory.register(IgniteDhtPartitionHistorySuppliersMessage.TYPE_CODE, IgniteDhtPartitionHistorySuppliersMessage::new,
+            new IgniteDhtPartitionHistorySuppliersMessageSerializer());
+        factory.register(IgniteDhtPartitionsToReloadMessage.TYPE_CODE, IgniteDhtPartitionsToReloadMessage::new,
+            new IgniteDhtPartitionsToReloadMessageSerializer());
+        factory.register(GridDhtPartitionsSizeMessage.TYPE_CODE, GridDhtPartitionsSizeMessage::new,
+            new GridDhtPartitionsSizeMessageSerializer());
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] [183..188] - this
         // [120..123] - DR

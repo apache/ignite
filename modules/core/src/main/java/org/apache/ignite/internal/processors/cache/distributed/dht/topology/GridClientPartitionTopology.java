@@ -397,14 +397,14 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                         exchId + ", fullMap=" + fullMapString() + ']');
             }
             else if (!node2part.valid()) {
-                node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq, node2part, false);
+                node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq, node2part.map(), false);
 
                 if (log.isDebugEnabled())
                     log.debug("Created new full topology map on oldest node [exchId=" + exchId + ", fullMap=" +
                         node2part + ']');
             }
             else if (!node2part.nodeId().equals(loc.id())) {
-                node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq, node2part, false);
+                node2part = new GridDhtPartitionFullMap(oldest.id(), oldest.order(), updateSeq, node2part.map(), false);
 
                 if (log.isDebugEnabled())
                     log.debug("Copied old map into new map on oldest node (previous oldest node left) [exchId=" +
@@ -723,7 +723,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
             GridDhtPartitionFullMap m = node2part;
 
-            return new GridDhtPartitionFullMap(m.nodeId(), m.nodeOrder(), m.updateSequence(), m, onlyActive);
+            return new GridDhtPartitionFullMap(m.nodeId(), m.nodeOrder(), m.updateSequence(), m.map(), onlyActive);
         }
         finally {
             lock.readLock().unlock();
@@ -747,7 +747,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         @Nullable AffinityTopologyVersion exchangeVer,
         GridDhtPartitionFullMap partMap,
         @Nullable CachePartitionFullCountersMap cntrMap,
-        Set<Integer> partsToReload,
+        Collection<Integer> partsToReload,
         @Nullable Map<Integer, Long> partSizes,
         @Nullable AffinityTopologyVersion msgTopVer,
         @Nullable GridDhtPartitionsExchangeFuture exchFut,
@@ -1167,7 +1167,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                         updateSeq = seq;
                 }
 
-                node2part.updateSequence(updateSeq);
+                node2part.checkAndUpdateSequence(updateSeq);
             }
         }
 
@@ -1203,7 +1203,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                 updateSeq.setIfGreater(node2part.updateSequence());
 
                 node2part = new GridDhtPartitionFullMap(loc.id(), loc.order(), updateSeq.incrementAndGet(),
-                    node2part, false);
+                    node2part.map(), false);
             }
             else
                 node2part = new GridDhtPartitionFullMap(node2part, node2part.updateSequence());
