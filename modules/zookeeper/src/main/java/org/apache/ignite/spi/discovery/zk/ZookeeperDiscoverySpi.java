@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.NetworkEnvironment;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
@@ -526,7 +525,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
 
         ZookeeperClusterNode locNode = new ZookeeperClusterNode(
             cfg.getNodeId(),
-            cfg.getNetworkEnvironmentResolver() != null ? cfg.getNetworkEnvironmentResolver().resolveNetworkEnvironment() : null,
+            cfg.getDataCenterResolver() != null ? cfg.getDataCenterResolver().resolveDataCenterId() : null,
             addrs.get1(),
             addrs.get2(),
             locNodeVer,

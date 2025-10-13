@@ -18,19 +18,17 @@
 package org.apache.ignite.spi.discovery.datacenter;
 
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cluster.NetworkEnvironment;
-import org.apache.ignite.spi.discovery.NetworkEnvironmentImpl;
 
 import static org.apache.ignite.IgniteCommonsSystemProperties.getString;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_CENTER_ID;
 
 /**
- * Implementation of {@link NetworkEnvironmentResolver} interface that uses an {@link IgniteSystemProperties#IGNITE_DATA_CENTER_ID}
+ * Implementation of {@link DataCenterResolver} interface that uses an {@link IgniteSystemProperties#IGNITE_DATA_CENTER_ID}
  * system property to obtain Data Center ID value.
  */
-public class SystemPropertyNetworkEnvironmentResolver implements NetworkEnvironmentResolver {
+public class SystemPropertyDataCenterResolver implements DataCenterResolver {
     /** {@inheritDoc} */
-    @Override public NetworkEnvironment resolveNetworkEnvironment() {
-        return new NetworkEnvironmentImpl(getString(IGNITE_DATA_CENTER_ID));
+    @Override public String resolveDataCenterId() {
+        return getString(IGNITE_DATA_CENTER_ID);
     }
 }

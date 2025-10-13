@@ -33,7 +33,6 @@ import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.cluster.NetworkEnvironment;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
@@ -75,8 +74,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     private Map<String, Object> attrs;
 
     /** */
-    @GridToStringInclude
-    private NetworkEnvironment netEnv;
+    private String dcId;
 
     /** Internal discovery addresses as strings. */
     @GridToStringInclude
@@ -160,7 +158,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * Constructor.
      *
      * @param id Node Id.
-     * @param netEnv {@link NetworkEnvironment} object with network environment information of local node.
+     * @param dcId ID of a data center where this node is started ({@code null} if there is only one data center).
      * @param addrs Addresses.
      * @param hostNames Host names.
      * @param discPort Port.
@@ -169,7 +167,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * @param consistentId Node consistent ID.
      */
     public TcpDiscoveryNode(UUID id,
-        NetworkEnvironment netEnv,
+        String dcId,
         Collection<String> addrs,
         Collection<String> hostNames,
         int discPort,
@@ -182,7 +180,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         assert ver != null;
 
         this.id = id;
-        this.netEnv = netEnv;
+        this.dcId = dcId;
 
         List<String> sortedAddrs = new ArrayList<>(addrs);
 
@@ -362,8 +360,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable NetworkEnvironment networkEnvironment() {
-        return netEnv;
+    @Override public @Nullable String dataCenterId() {
+        return dcId;
     }
 
     /** {@inheritDoc} */
@@ -542,7 +540,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      */
     public TcpDiscoveryNode clientReconnectNode(Map<String, Object> nodeAttrs) {
         TcpDiscoveryNode node = new TcpDiscoveryNode(
-            id, netEnv, addrs, hostNames, discPort, metricsProvider, ver, null
+            id, dcId, addrs, hostNames, discPort, metricsProvider, ver, null
         );
 
         node.attrs = Collections.unmodifiableMap(new HashMap<>(nodeAttrs));
@@ -592,7 +590,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         out.writeLong(intOrder);
         out.writeObject(ver);
         U.writeUuid(out, clientRouterNodeId);
-        out.writeObject(netEnv);
+        out.writeObject(dcId);
     }
 
     /** {@inheritDoc} */
@@ -630,7 +628,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         else
             consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
 
-        netEnv = (NetworkEnvironment)in.readObject();
+        dcId = (String)in.readObject();
     }
 
     /** {@inheritDoc} */

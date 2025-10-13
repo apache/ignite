@@ -17,17 +17,13 @@
 
 package org.apache.ignite.spi.discovery.datacenter;
 
-import org.apache.ignite.cluster.NetworkEnvironment;
-
 /**
  * <p>
- * The {@code NetworkEnvironmentResolver} interface provides a mechanism for retrieving detailed
- * network-related information about the environment in which a node is running. This includes, but is not limited to,
- * the <b>Data Center ID</b>, and potentially other metadata such as rack ID or availability zone.
- *
+ * The {@code DataCenterResolver} interface provides a mechanism for retrieving information about
+ * the data center in which a node is running.
  * <p>
  * This interface is intended for use in distributed systems where the Ignite cluster spans multiple data centers.
- * It allows Ignite to make intelligent, topology-aware decisions regarding node communication, data placement,
+ * It allows Ignite to make topology-aware decisions regarding node communication, data placement,
  * failover strategies, and resource allocation. Implementations can be tailored to extract this information from
  * various sources, including:
  * <ul>
@@ -49,16 +45,16 @@ import org.apache.ignite.cluster.NetworkEnvironment;
  *
  * <p>
  * This resolver should be configured via Ignite configuration using:
- * {@link org.apache.ignite.configuration.IgniteConfiguration#setNetworkEnvironmentResolver(NetworkEnvironmentResolver)}.
+ * {@link org.apache.ignite.configuration.IgniteConfiguration#setDataCenterResolver(DataCenterResolver)}.
  */
-public interface NetworkEnvironmentResolver {
+public interface DataCenterResolver {
     /**
      * Returns the network environment information for the current node.
      * <p>
      * This method is called during node initialization and should return consistent values
      * for all nodes located in the same physical or logical location.
      *
-     * @return A {@link NetworkEnvironment} object containing at least the Data Center ID.
+     * @return A {@link String} representing id of a Data Center.
      */
-    public NetworkEnvironment resolveNetworkEnvironment();
+    public String resolveDataCenterId();
 }

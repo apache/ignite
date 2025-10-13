@@ -167,14 +167,11 @@ public interface ClusterNode extends BaselineNode {
     @Override public Map<String, Object> attributes();
 
     /**
-     * Gets the network environment information associated with this node.
+     * Gets the Data Center ID where the node is located. In a cluster deployed in only one data center, this method
+     * returns {@code null}.
      * <p>
-     * This method returns a {@link NetworkEnvironment} object containing metadata such as the Data Center ID,
-     * which is used by Ignite to make topology-aware decisions. If the node or the cluster does not have any
-     * network environment resolver configured, this method may return {@code null}.
-     * <p>
-     * The network environment information is typically resolved at node startup via a
-     * {@code NetworkEnvironmentResolver} and is used for optimizing operations like:
+     * The data center ID is typically resolved at node startup via a
+     * {@code DataCenterResolver} and is used for optimizing operations like:
      * <ul>
      *     <li>Minimizing cross-data center communication;</li>
      *     <li>Improving fault tolerance and redundancy strategies;</li>
@@ -182,9 +179,9 @@ public interface ClusterNode extends BaselineNode {
      *     <li>Providing input to discovery SPIs for topology-aware node grouping.</li>
      * </ul>
      *
-     * @return The network environment of the node, or {@code null} if not available.
+     * @return The Data Center ID of the node, or {@code null} if the cluster is deployed in a single DC.
      */
-    @Nullable public default NetworkEnvironment networkEnvironment() {
+    @Nullable public default String dataCenterId() {
         return null;
     }
 
