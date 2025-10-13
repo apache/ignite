@@ -65,7 +65,7 @@ public class CacheListCommand implements NativeCommand<CacheListCommandArg, View
 
         if (arg.nodeId() == null) {
             node = nodes(client, ignite).stream().filter(n -> !n.isClient())
-                .findFirst().orElseThrow(() -> new IllegalStateException("There are no server nodes."));
+                .findFirst().orElseThrow(() -> new IllegalStateException("No server nodes in topology."));
         }
         else {
             node = nodes(client, ignite).stream().filter(n -> arg.nodeId().equals(n.id()))
