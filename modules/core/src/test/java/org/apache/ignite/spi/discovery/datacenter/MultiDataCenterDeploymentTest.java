@@ -62,7 +62,7 @@ public class MultiDataCenterDeploymentTest extends GridCommonAbstractTest {
      */
     @Test
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_DATA_CENTER_ID, value = DC_ID_0)
-    public void testAttributeSetLocallyFromSysProp() throws Exception {
+    public void testAttributeSetLocallyFromSystemProperty() throws Exception {
         IgniteEx testGrid = startGrid();
 
         String dcId = testGrid.localNode().dataCenterId();
@@ -138,12 +138,15 @@ public class MultiDataCenterDeploymentTest extends GridCommonAbstractTest {
     @Test
     public void testServersFromDifferentDcsFormACluster() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
-        startGrid(0);
+        IgniteEx srv0 = startGrid(0);
 
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
-        startGrid(1);
+        IgniteEx srv1 = startGrid(1);
 
         waitForTopology(2);
+
+        assertEquals(srv0.localNode().dataCenterId(), DC_ID_0);
+        assertEquals(srv1.localNode().dataCenterId(), DC_ID_1);
     }
 
     /**
@@ -154,12 +157,14 @@ public class MultiDataCenterDeploymentTest extends GridCommonAbstractTest {
     @Test
     public void testClientWithoutDcIdIsAllowedToJoin() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
-        startGrid(0);
+        IgniteEx srv0 = startGrid(0);
 
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
 
+        IgniteEx client0 = null;
+
         try {
-            startClientGrid(1);
+            client0 = startClientGrid(1);
         }
         catch (IgniteCheckedException e) {
             assertFalse("Unexpected exception was thrown: " + e, true);
@@ -167,11 +172,21 @@ public class MultiDataCenterDeploymentTest extends GridCommonAbstractTest {
 
         System.clearProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
 
+        IgniteEx client1 = null;
+
         try {
-            startClientGrid(2);
+            client1 = startClientGrid(2);
         }
         catch (IgniteCheckedException e) {
             assertFalse("Unexpected exception was thrown: " + e, true);
         }
+
+        assertEquals(srv0.localNode().dataCenterId(), DC_ID_0);
+
+        assertNotNull(client0);
+        assertEquals(client0.localNode().dataCenterId(), DC_ID_1);
+
+        assertNotNull(client1);
+        assertNull(client1.localNode().dataCenterId(), null);
     }
 }
