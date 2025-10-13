@@ -754,6 +754,7 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     public static final String IGNITE_DISCOVERY_HISTORY_SIZE = "IGNITE_DISCOVERY_HISTORY_SIZE";
 
     /** Human-readable ID of a data center where the node is running. */
+    @IgniteExperimental
     @SystemProperty(value = "Data Center ID where local node is running. Not required for a single Data Center deployments",
         type = String.class)
     public static final String IGNITE_DATA_CENTER_ID = "IGNITE_DATA_CENTER_ID";
