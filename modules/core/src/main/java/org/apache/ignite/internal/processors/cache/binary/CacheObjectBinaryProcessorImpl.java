@@ -59,7 +59,6 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
-import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
@@ -202,19 +201,16 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         }
 
         BinaryMetadataHandler metaHnd = new BinaryMetadataHandler() {
-            @Override public void addMeta(
-                int typeId,
-                BinaryType newMeta,
-                boolean failIfUnregistered) throws BinaryObjectException {
+            @Override public void addMeta(int typeId, BinaryMetadata newMeta, boolean failIfUnregistered)
+                throws BinaryObjectException {
                 assert newMeta != null;
-                assert newMeta instanceof BinaryTypeImpl;
 
                 if (!discoveryStarted) {
                     BinaryMetadataHolder holder = metadataLocCache.get(typeId);
 
                     BinaryMetadata oldMeta = holder != null ? holder.metadata() : null;
 
-                    BinaryMetadata mergedMeta = mergeMetadata(oldMeta, ((BinaryTypeImpl)newMeta).metadata());
+                    BinaryMetadata mergedMeta = mergeMetadata(oldMeta, newMeta);
 
                     if (oldMeta != mergedMeta)
                         metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
@@ -222,34 +218,24 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     return;
                 }
 
-                BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
-
-                CacheObjectBinaryProcessorImpl.this.addMeta(
-                    typeId,
-                    newMeta0.wrap(binaryCtx),
-                    failIfUnregistered
-                );
+                CacheObjectBinaryProcessorImpl.this.addMeta(typeId, newMeta, failIfUnregistered);
             }
 
-            @Override public void addMetaLocally(int typeId, BinaryType meta, boolean failIfUnregistered)
+            @Override public void addMetaLocally(int typeId, BinaryMetadata meta, boolean failIfUnregistered)
                 throws BinaryObjectException {
                 CacheObjectBinaryProcessorImpl.this.addMetaLocally(typeId, meta);
-            }
-
-            @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
-                return CacheObjectBinaryProcessorImpl.this.metadata(typeId);
             }
 
             @Override public BinaryMetadata metadata0(int typeId) throws BinaryObjectException {
                 return CacheObjectBinaryProcessorImpl.this.metadata0(typeId);
             }
 
-            @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
-                return CacheObjectBinaryProcessorImpl.this.metadata(typeId, schemaId);
+            @Override public BinaryMetadata metadata0(int typeId, int schemaId) throws BinaryObjectException {
+                return CacheObjectBinaryProcessorImpl.this.metadata0(typeId, schemaId);
             }
 
-            @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
-                return CacheObjectBinaryProcessorImpl.this.metadata();
+            @Override public Collection<BinaryMetadata> metadata0() throws BinaryObjectException {
+                return CacheObjectBinaryProcessorImpl.this.binaryMetadata();
             }
         };
 
@@ -524,21 +510,18 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void addMeta(final int typeId, final BinaryType newMeta, boolean failIfUnregistered)
+    @Override public void addMeta(final int typeId, final BinaryMetadata newMeta, boolean failIfUnregistered)
         throws BinaryObjectException {
         assert newMeta != null;
-        assert newMeta instanceof BinaryTypeImpl;
-
-        BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
 
         if (failIfUnregistered) {
-            failIfUnregistered(typeId, newMeta0);
+            failIfUnregistered(typeId, newMeta);
 
             return;
         }
 
         try {
-            GridFutureAdapter<MetadataUpdateResult> fut = transport.requestMetadataUpdate(newMeta0);
+            GridFutureAdapter<MetadataUpdateResult> fut = transport.requestMetadataUpdate(newMeta);
 
             if (fut == null) {
                 if (log.isDebugEnabled()) {
@@ -611,23 +594,20 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void addMetaLocally(int typeId, BinaryType newMeta) throws BinaryObjectException {
+    @Override public void addMetaLocally(int typeId, BinaryMetadata newMeta) throws BinaryObjectException {
         addMetaLocally(typeId, newMeta, true);
     }
 
     /** */
-    private void addMetaLocally(int typeId, BinaryType newMeta, boolean writeToFile) {
+    private void addMetaLocally(int typeId, BinaryMetadata newMeta, boolean writeToFile) {
         assert newMeta != null;
-        assert newMeta instanceof BinaryTypeImpl;
-
-        BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
 
         BinaryMetadataHolder metaHolder = metadataLocCache.get(typeId);
 
         BinaryMetadata oldMeta = metaHolder != null ? metaHolder.metadata() : null;
 
         try {
-            BinaryMetadata mergedMeta = mergeMetadata(oldMeta, newMeta0);
+            BinaryMetadata mergedMeta = mergeMetadata(oldMeta, newMeta);
 
             if (!ctx.clientNode() && writeToFile)
                 metadataFileStore.mergeAndWriteMetadata(mergedMeta);
@@ -671,7 +651,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
      * @return Metadata.
      * @throws IgniteException In case of error.
      */
-    @Nullable public BinaryMetadata metadata0(final int typeId) {
+    @Nullable @Override public BinaryMetadata metadata0(final int typeId) {
         BinaryMetadataHolder holder = metadataLocCache.get(typeId);
 
         IgniteThread curThread = IgniteThread.current();
@@ -741,7 +721,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryType metadata(final int typeId, final int schemaId) {
+    @Nullable @Override public BinaryMetadata metadata0(final int typeId, final int schemaId) {
         BinaryMetadataHolder holder = metadataLocCache.get(typeId);
 
         if (ctx.clientNode()) {
@@ -777,7 +757,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         }
         else {
             if (holder != null && IgniteThread.current() instanceof IgniteDiscoveryThread)
-                return holder.metadata().wrap(binaryCtx);
+                return holder.metadata();
             else if (holder != null && (holder.pendingVersion() - holder.acceptedVersion() > 0)) {
                 if (log.isDebugEnabled())
                     log.debug("Waiting for metadata update" +
@@ -859,7 +839,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             }
         }
 
-        return holder != null ? holder.metadata().wrap(binaryCtx) : null;
+        return holder != null ? holder.metadata() : null;
     }
 
     /** {@inheritDoc} */
@@ -891,7 +871,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
      * @return Cluster binary metadata.
      * @throws BinaryObjectException on error.
      */
-    public Collection<BinaryMetadata> binaryMetadata() throws BinaryObjectException {
+    @Override public Collection<BinaryMetadata> binaryMetadata() throws BinaryObjectException {
         return F.viewReadOnly(metadataLocCache.values(), new IgniteClosure<BinaryMetadataHolder, BinaryMetadata>() {
             @Override public BinaryMetadata apply(BinaryMetadataHolder metaHolder) {
                 return metaHolder.metadata();
@@ -900,7 +880,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /**
-     * @return Binary metadata for specified type.
+     * @return Local binary metadata for specified type.
      * @throws BinaryObjectException on error.
      */
     public BinaryMetadata binaryMetadata(int typeId) throws BinaryObjectException {
@@ -910,12 +890,12 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void saveMetadata(Collection<BinaryType> types, NodeFileTree ft) {
+    @Override public void saveMetadata(Collection<BinaryMetadata> meta, NodeFileTree ft) {
         try {
             BinaryMetadataFileStore writer = new BinaryMetadataFileStore(new ConcurrentHashMap<>(), ctx, log, ft.mkdirBinaryMeta(), true);
 
-            for (BinaryType type : types)
-                writer.mergeAndWriteMetadata(((BinaryTypeImpl)type).metadata());
+            for (BinaryMetadata m : meta)
+                writer.mergeAndWriteMetadata(m);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -951,7 +931,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 if (Thread.interrupted())
                     throw new IgniteInterruptedCheckedException("Thread has been interrupted.");
 
-                addMeta(newMeta.typeId(), newMeta.wrap(binaryContext()), false);
+                addMeta(newMeta.typeId(), newMeta, false);
             }
         }
         catch (BinaryObjectException e) {
@@ -968,7 +948,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         new BinaryMetadataFileStore(metaCache, ctx, log, ft.binaryMeta(), false).restoreMetadata(typeId);
 
-        addMetaLocally(typeId, metaCache.get(typeId).metadata().wrap(binaryContext()), false);
+        addMetaLocally(typeId, metaCache.get(typeId).metadata(), false);
     }
 
     /** {@inheritDoc} */

@@ -28,7 +28,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
@@ -309,7 +308,7 @@ class BinaryMetadataFileStore {
 
     /**
      * {@code typeVer} parameter is always non-negative except one special case
-     * (see {@link CacheObjectBinaryProcessorImpl#addMeta(int, BinaryType, boolean)} for context):
+     * (see {@link CacheObjectBinaryProcessorImpl#addMeta(int, BinaryMetadata, boolean)} for context):
      * if request for bin meta update arrives right at the moment when node is stopping
      * {@link MetadataUpdateResult} of special type is generated: UPDATE_DISABLED.
      *

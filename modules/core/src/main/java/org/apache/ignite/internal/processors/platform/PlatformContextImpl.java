@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheEvent;
@@ -44,7 +43,6 @@ import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
-import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -345,22 +343,22 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
 
     /** {@inheritDoc} */
     @Override public void writeMetadata(BinaryWriterEx writer, int typeId, boolean includeSchemas) {
-        writeMetadata0(writer, cacheObjProc.metadata(typeId), includeSchemas);
+        writeMetadata0(writer, cacheObjProc.metadata0(typeId), includeSchemas);
     }
 
     /** {@inheritDoc} */
     @Override public void writeAllMetadata(BinaryWriterEx writer) {
-        Collection<BinaryType> metas = cacheObjProc.metadata();
+        Collection<BinaryMetadata> metas = cacheObjProc.binaryMetadata();
 
         writer.writeInt(metas.size());
 
-        for (BinaryType m : metas)
+        for (BinaryMetadata m : metas)
             writeMetadata0(writer, m, false);
     }
 
     /** {@inheritDoc} */
     @Override public void writeSchema(BinaryWriterEx writer, int typeId, int schemaId) {
-        writer.writeIntArray(BinaryUtils.getSchema(cacheObjProc.binaryContext(), cacheObjProc::metadata, typeId, schemaId));
+        writer.writeIntArray(BinaryUtils.getSchema(cacheObjProc.binaryContext(), cacheObjProc::metadata0, typeId, schemaId));
     }
 
     /**
@@ -369,15 +367,13 @@ public class PlatformContextImpl implements PlatformContext, PartitionsExchangeA
      * @param writer Writer.
      * @param meta Metadata.
      */
-    private void writeMetadata0(BinaryWriterEx writer, BinaryType meta, boolean includeSchemas) {
+    private void writeMetadata0(BinaryWriterEx writer, BinaryMetadata meta, boolean includeSchemas) {
         if (meta == null)
             writer.writeBoolean(false);
         else {
             writer.writeBoolean(true);
 
-            BinaryMetadata meta0 = ((BinaryTypeImpl)meta).metadata();
-
-            PlatformUtils.writeBinaryMetadata(writer, meta0, includeSchemas);
+            PlatformUtils.writeBinaryMetadata(writer, meta, includeSchemas);
         }
     }
 

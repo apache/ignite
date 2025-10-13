@@ -25,8 +25,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
 import org.jetbrains.annotations.Nullable;
@@ -84,9 +84,9 @@ public abstract class SnapshotSender {
     }
 
     /**
-     * @param types Collection of known binary types.
+     * @param meta Collection of known binary metadata.
      */
-    public final void sendBinaryMeta(Collection<BinaryType> types) {
+    public final void sendBinaryMeta(Collection<BinaryMetadata> meta) {
         if (!lock.readLock().tryLock())
             return;
 
@@ -94,10 +94,10 @@ public abstract class SnapshotSender {
             if (closed)
                 return;
 
-            if (types == null)
+            if (meta == null)
                 return;
 
-            sendBinaryMeta0(types);
+            sendBinaryMeta0(meta);
         }
         finally {
             lock.readLock().unlock();
@@ -217,9 +217,9 @@ public abstract class SnapshotSender {
     }
 
     /**
-     * @param types Collection of known binary types.
+     * @param meta Collection of known binary metadata.
      */
-    protected void sendBinaryMeta0(Collection<BinaryType> types) {
+    protected void sendBinaryMeta0(Collection<BinaryMetadata> meta) {
         // No-op by default.
     }
 

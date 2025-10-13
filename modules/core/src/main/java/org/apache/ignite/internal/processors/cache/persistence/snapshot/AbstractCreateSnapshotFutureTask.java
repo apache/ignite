@@ -29,8 +29,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -182,16 +182,16 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
             // Submit all tasks for partitions and deltas processing.
             List<CompletableFuture<Void>> futs = new ArrayList<>();
 
-            Collection<BinaryType> binTypesCopy = cctx.kernalContext()
+            Collection<BinaryMetadata> binMetadataCopy = cctx.kernalContext()
                 .cacheObjects()
-                .metadata();
+                .binaryMetadata();
 
             List<Map<Integer, MappedName>> mappingsCopy = cctx.kernalContext()
                 .marshallerContext()
                 .getCachedMappings();
 
             // Process binary meta.
-            futs.add(runAsync(() -> snpSndr.sendBinaryMeta(binTypesCopy)));
+            futs.add(runAsync(() -> snpSndr.sendBinaryMeta(binMetadataCopy)));
             // Process marshaller meta.
             futs.add(runAsync(() -> snpSndr.sendMarshallerMeta(mappingsCopy)));
             futs.addAll(saveCacheConfigs());

@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /**
  * Binary type implementation.
  */
-public class BinaryTypeImpl implements BinaryType {
+class BinaryTypeImpl implements BinaryType {
     /** Binary context. */
     @GridToStringExclude
     private final BinaryContext ctx;
@@ -99,13 +99,6 @@ public class BinaryTypeImpl implements BinaryType {
      */
     public BinaryContext context() {
         return ctx;
-    }
-
-    /**
-     * @return Metadata.
-     */
-    public BinaryMetadata metadata() {
-        return meta;
     }
 
     /** {@inheritDoc} */
