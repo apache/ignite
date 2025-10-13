@@ -42,7 +42,7 @@ public class ThreadContextAwareStripedExecutor extends StripedExecutor {
 
     /** {@inheritDoc} */
     @Override public void execute(@NotNull Runnable cmd) {
-        super.execute(ThreadContextAwareRunnable.wrap(cmd));
+        super.execute(ThreadContextAwareRunnable.wrapIfActiveAttributesPresent(cmd));
     }
 
     /** {@inheritDoc} */

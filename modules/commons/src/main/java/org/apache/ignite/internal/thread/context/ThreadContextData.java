@@ -20,6 +20,9 @@ package org.apache.ignite.internal.thread.context;
 /** */
 class ThreadContextData {
     /** */
+    private static final ScopedAttributeValueStack<?>[] EMPTY = new ScopedAttributeValueStack[0];
+
+    /** */
     private final ThreadContextAttributeRegistry attrReg = ThreadContextAttributeRegistry.instance();
 
     /** */
@@ -29,12 +32,7 @@ class ThreadContextData {
     private int activeAttrsCnt;
 
     /** */
-    private ScopedAttributeValueStack<?>[] attrs;
-
-    /** */
-    ThreadContextData() {
-        fetchRegisteredAttibutes();
-    }
+    private ScopedAttributeValueStack<?>[] attrs = EMPTY;
 
     /** */
     <T> T get(ThreadContextAttribute<T> attr) {
@@ -118,11 +116,11 @@ class ThreadContextData {
     private void fetchRegisteredAttibutes() {
         ScopedAttributeValueStack<?>[] upd = new ScopedAttributeValueStack[attrReg.size()];
 
-        for (int id = 0; id < attrReg.size(); id++) {
-            upd[id] = attrs != null && id < attrs.length
-                ? attrs[id]
-                : new ScopedAttributeValueStack<>(attrReg.attribute(id));
-        }
+        if (attrs.length != 0)
+            System.arraycopy(attrs, 0, upd, 0, attrs.length);
+
+        for (int id = attrs.length; id < attrReg.size(); id++)
+            upd[id] = new ScopedAttributeValueStack<>(attrReg.attribute(id));
 
         attrs = upd;
     }
