@@ -106,7 +106,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
 
     /**
      * @param id Node ID.
-     * @param dcId Network environment.
+     * @param dcId Data Center ID.
      * @param addrs Node addresses.
      * @param hostNames Node host names.
      * @param ver Node version.

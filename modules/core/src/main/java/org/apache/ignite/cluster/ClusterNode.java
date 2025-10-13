@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
@@ -170,8 +171,7 @@ public interface ClusterNode extends BaselineNode {
      * Gets the Data Center ID where the node is located. In a cluster deployed in only one data center, this method
      * returns {@code null}.
      * <p>
-     * The data center ID is typically resolved at node startup via a
-     * {@code DataCenterResolver} and is used for optimizing operations like:
+     * The data center ID is resolved at node startup and is used for optimizing operations like:
      * <ul>
      *     <li>Minimizing cross-data center communication;</li>
      *     <li>Improving fault tolerance and redundancy strategies;</li>
@@ -181,6 +181,7 @@ public interface ClusterNode extends BaselineNode {
      *
      * @return The Data Center ID of the node, or {@code null} if the cluster is deployed in a single DC.
      */
+    @IgniteExperimental
     @Nullable public default String dataCenterId() {
         return null;
     }

@@ -147,7 +147,7 @@ public class MultiDataCenterDeploymentTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Verifies that clients with or without DataCenterResolver are allowed to join a cluster with a configured one.
+     * Verifies that client nodes with or without Data Center ID specified are allowed to join a cluster with a configured Data Center ID.
      *
      * @throws Exception If failed.
      */
