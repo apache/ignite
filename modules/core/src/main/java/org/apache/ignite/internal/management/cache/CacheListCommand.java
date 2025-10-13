@@ -61,10 +61,16 @@ public class CacheListCommand implements NativeCommand<CacheListCommandArg, View
             ? GROUPS
             : (arg.seq() ? SEQ : CACHES);
 
-        ClusterNode node = nodes(client, ignite).stream()
-            .filter(arg.nodeId() == null ? n -> !n.isClient() : n -> arg.nodeId().equals(n.id()))
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("Node not found: id=" + arg.nodeId()));
+        ClusterNode node;
+
+        if (arg.nodeId() == null) {
+            node = nodes(client, ignite).stream().filter(n -> !n.isClient())
+                .findFirst().orElseThrow(() -> new IllegalStateException("There are no server nodes."));
+        }
+        else {
+            node = nodes(client, ignite).stream().filter(n -> arg.nodeId().equals(n.id()))
+                .findFirst().orElseThrow(() -> new IllegalArgumentException("Node not found: id=" + arg.nodeId()));
+        }
 
         ViewCacheTaskResult res = CommandUtils.execute(client, ignite,
             ViewCacheTask.class, arg, singletonList(node));
