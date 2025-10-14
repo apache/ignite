@@ -41,8 +41,8 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     private PredicateType type;
 
     /** Type value serialization holder. */
-    @Order(value = 0, method = "typeEncoded")
-    protected transient short typeVal;
+    @Order(0)
+    protected transient byte code;
 
     /** */
     @GridToStringInclude
@@ -56,6 +56,8 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
 
     /** */
     public CacheEntryPredicateAdapter(PredicateType type) {
+        assert type != null;
+
         this.type = type;
     }
 
@@ -151,31 +153,30 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     }
 
     /** */
-    public short typeEncoded() {
+    public byte code() {
+        assert type != null;
+
         switch (type) {
-            case OTHER: return 1;
-            case VALUE: return 2;
-            case HAS_VALUE: return 3;
-            case HAS_NO_VALUE: return 4;
-            case ALWAYS_FALSE: return 5;
+            case OTHER: return 0;
+            case VALUE: return 1;
+            case HAS_VALUE: return 2;
+            case HAS_NO_VALUE: return 3;
+            case ALWAYS_FALSE: return 4;
         }
 
-        throw new IllegalStateException("Unknown cache entry predicate type: " + type);
+        throw new IllegalArgumentException("Unknown cache entry predicate type: " + type);
     }
 
     /** */
-    public void typeEncoded(short typeVal) {
-        switch (typeVal) {
-            case 0:
-            case 1:
-                type = PredicateType.OTHER;
-                break;
-            case 2: type = PredicateType.VALUE; break;
-            case 3: type = PredicateType.HAS_VALUE; break;
-            case 4: type = PredicateType.HAS_NO_VALUE; break;
-            case 5: type = PredicateType.ALWAYS_FALSE; break;
+    public void code(byte code) {
+        switch (code) {
+            case 0: type = PredicateType.OTHER; break;
+            case 1: type = PredicateType.VALUE; break;
+            case 2: type = PredicateType.HAS_VALUE; break;
+            case 3: type = PredicateType.HAS_NO_VALUE; break;
+            case 4: type = PredicateType.ALWAYS_FALSE; break;
             default:
-                throw new IllegalStateException("Unknown cache entry predicate type value: " + typeVal);
+                throw new IllegalArgumentException("Unknown cache entry predicate type code: " + code);
         }
     }
 
