@@ -768,7 +768,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
             Collection<ClusterNode> allNodes = ctx.discovery().allNodes();
 
-            ClusterMetricsUpdateMessage msg = new ClusterMetricsUpdateMessage(locNode.metrics(), locNode.cacheMetrics());
+            ClusterMetricsUpdateMessage msg = new ClusterMetricsUpdateMessage(allNodesMetrics);
 
             for (ClusterNode node : allNodes) {
                 if (ctx.localNodeId().equals(node.id()) || !ctx.discovery().alive(node.id()))

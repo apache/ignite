@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
+import java.util.AbstractMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
@@ -60,12 +62,14 @@ public final class ClusterMetricsUpdateMessage implements Message {
     }
 
     /** */
-    private ClusterMetricsUpdateMessage(
-        Map<UUID, ClusterMetricsSnapshot> allNodesMetrics,
-        Map<UUID, CacheMetricsMessage> allCachesMetrics
-    ) {
-        this.allNodesMetrics = allNodesMetrics;
-        this.allCachesMetrics = allCachesMetrics;
+    public ClusterMetricsUpdateMessage(Map<UUID, ClusterNodeMetrics> allNodesMetrics) {
+        this.allNodesMetrics = allNodesMetrics.entrySet().stream()
+            .map(e -> new AbstractMap.SimpleEntry<>(e.getKey(), ClusterMetricsSnapshot.of(e.getValue().nodeMetrics())))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        this.allCachesMetrics = allNodesMetrics.entrySet().stream()
+            .map(e -> new AbstractMap.SimpleEntry<>(e.getKey(), new CacheMetricsMessage(e.getValue().cacheMetrics())))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));;
     }
 
     /**
