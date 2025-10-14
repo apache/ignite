@@ -138,7 +138,7 @@ public class SnapshotMetadataVerificationTask implements Supplier<List<SnapshotM
     }
 
     /** Checks that all incremental snapshots are present, contain correct metafile and WAL segments. */
-    public void checkIncrementalSnapshots(SnapshotMetadata fullMeta, SnapshotFileTree sft, int incIdx) {
+    private void checkIncrementalSnapshots(SnapshotMetadata fullMeta, SnapshotFileTree sft, int incIdx) {
         try {
             GridCacheSharedContext<Object, Object> ctx = ignite.context().cache().context();
 
