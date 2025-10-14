@@ -17,18 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Collection;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Metrics snapshot.
  */
-public class CacheMetricsSnapshot implements CacheMetrics, Message {
+public class CacheMetricsSnapshot extends IgniteDataTransferObject implements CacheMetrics, Message {
     /** */
-    public static final short TYPE_CODE = 135;
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    public static final short TYPE_CODE = 136;
 
     /** Number of reads. */
     @Order(value = 0, method = "cacheGets", getter = true)
@@ -1603,5 +1611,165 @@ public class CacheMetricsSnapshot implements CacheMetrics, Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheMetricsSnapshot.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeLong(reads);
+        out.writeLong(puts);
+        out.writeLong(hits);
+        out.writeLong(misses);
+        out.writeLong(txCommits);
+        out.writeLong(txRollbacks);
+        out.writeLong(evicts);
+        out.writeLong(removes);
+
+        out.writeFloat(putAvgTimeNanos);
+        out.writeFloat(getAvgTimeNanos);
+        out.writeFloat(rmvAvgTimeNanos);
+        out.writeFloat(commitAvgTimeNanos);
+        out.writeFloat(rollbackAvgTimeNanos);
+
+        out.writeLong(offHeapGets);
+        out.writeLong(offHeapPuts);
+        out.writeLong(offHeapRemoves);
+        out.writeLong(offHeapEvicts);
+        out.writeLong(offHeapHits);
+        out.writeLong(offHeapMisses);
+        out.writeLong(offHeapEntriesCnt);
+        out.writeLong(heapEntriesCnt);
+        out.writeLong(offHeapPrimaryEntriesCnt);
+        out.writeLong(offHeapBackupEntriesCnt);
+        out.writeLong(offHeapAllocatedSize);
+
+        out.writeInt(dhtEvictQueueCurrSize);
+        out.writeInt(txThreadMapSize);
+        out.writeInt(txXidMapSize);
+        out.writeInt(txCommitQueueSize);
+        out.writeInt(txPrepareQueueSize);
+        out.writeInt(txStartVerCountsSize);
+        out.writeInt(txCommittedVersionsSize);
+        out.writeInt(txRolledbackVersionsSize);
+        out.writeInt(txDhtThreadMapSize);
+        out.writeInt(txDhtXidMapSize);
+        out.writeInt(txDhtCommitQueueSize);
+        out.writeInt(txDhtPrepareQueueSize);
+        out.writeInt(txDhtStartVerCountsSize);
+        out.writeInt(txDhtCommittedVersionsSize);
+        out.writeInt(txDhtRolledbackVersionsSize);
+        out.writeInt(writeBehindTotalCriticalOverflowCnt);
+        out.writeInt(writeBehindCriticalOverflowCnt);
+        out.writeInt(writeBehindErrorRetryCnt);
+
+        out.writeInt(totalPartitionsCnt);
+        out.writeInt(rebalancingPartitionsCnt);
+        out.writeLong(keysToRebalanceLeft);
+        out.writeLong(rebalancingBytesRate);
+        out.writeLong(rebalancingKeysRate);
+
+        out.writeLong(rebalancedKeys);
+        out.writeLong(estimatedRebalancingKeys);
+        out.writeLong(rebalanceStartTime);
+        out.writeLong(rebalanceFinishTime);
+        out.writeLong(rebalanceClearingPartitionsLeft);
+
+        out.writeLong(entryProcessorPuts);
+        out.writeFloat(entryProcessorAverageInvocationTime);
+        out.writeLong(entryProcessorInvocations);
+        out.writeFloat(entryProcessorMaxInvocationTime);
+        out.writeFloat(entryProcessorMinInvocationTime);
+        out.writeLong(entryProcessorReadOnlyInvocations);
+        out.writeFloat(entryProcessorHitPercentage);
+        out.writeLong(entryProcessorHits);
+        out.writeLong(entryProcessorMisses);
+        out.writeFloat(entryProcessorMissPercentage);
+        out.writeLong(entryProcessorRemovals);
+
+        out.writeLong(cacheSize);
+        out.writeBoolean(isEmpty);
+        out.writeInt(size);
+        out.writeInt(keySize);
+        U.writeLongString(out, txKeyCollisions);
+        out.writeInt(idxBuildPartitionsLeftCount);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
+        reads = in.readLong();
+        puts = in.readLong();
+        hits = in.readLong();
+        misses = in.readLong();
+        txCommits = in.readLong();
+        txRollbacks = in.readLong();
+        evicts = in.readLong();
+        removes = in.readLong();
+
+        putAvgTimeNanos = in.readFloat();
+        getAvgTimeNanos = in.readFloat();
+        rmvAvgTimeNanos = in.readFloat();
+        commitAvgTimeNanos = in.readFloat();
+        rollbackAvgTimeNanos = in.readFloat();
+
+        offHeapGets = in.readLong();
+        offHeapPuts = in.readLong();
+        offHeapRemoves = in.readLong();
+        offHeapEvicts = in.readLong();
+        offHeapHits = in.readLong();
+        offHeapMisses = in.readLong();
+        offHeapEntriesCnt = in.readLong();
+        heapEntriesCnt = in.readLong();
+        offHeapPrimaryEntriesCnt = in.readLong();
+        offHeapBackupEntriesCnt = in.readLong();
+        offHeapAllocatedSize = in.readLong();
+
+        dhtEvictQueueCurrSize = in.readInt();
+        txThreadMapSize = in.readInt();
+        txXidMapSize = in.readInt();
+        txCommitQueueSize = in.readInt();
+        txPrepareQueueSize = in.readInt();
+        txStartVerCountsSize = in.readInt();
+        txCommittedVersionsSize = in.readInt();
+        txRolledbackVersionsSize = in.readInt();
+        txDhtThreadMapSize = in.readInt();
+        txDhtXidMapSize = in.readInt();
+        txDhtCommitQueueSize = in.readInt();
+        txDhtPrepareQueueSize = in.readInt();
+        txDhtStartVerCountsSize = in.readInt();
+        txDhtCommittedVersionsSize = in.readInt();
+        txDhtRolledbackVersionsSize = in.readInt();
+        writeBehindTotalCriticalOverflowCnt = in.readInt();
+        writeBehindCriticalOverflowCnt = in.readInt();
+        writeBehindErrorRetryCnt = in.readInt();
+
+        totalPartitionsCnt = in.readInt();
+        rebalancingPartitionsCnt = in.readInt();
+        keysToRebalanceLeft = in.readLong();
+        rebalancingBytesRate = in.readLong();
+        rebalancingKeysRate = in.readLong();
+
+        rebalancedKeys = in.readLong();
+        estimatedRebalancingKeys = in.readLong();
+        rebalanceStartTime = in.readLong();
+        rebalanceFinishTime = in.readLong();
+        rebalanceClearingPartitionsLeft = in.readLong();
+
+        entryProcessorPuts = in.readLong();
+        entryProcessorAverageInvocationTime = in.readFloat();
+        entryProcessorInvocations = in.readLong();
+        entryProcessorMaxInvocationTime = in.readFloat();
+        entryProcessorMinInvocationTime = in.readFloat();
+        entryProcessorReadOnlyInvocations = in.readLong();
+        entryProcessorHitPercentage = in.readFloat();
+        entryProcessorHits = in.readLong();
+        entryProcessorMisses = in.readLong();
+        entryProcessorMissPercentage = in.readFloat();
+        entryProcessorRemovals = in.readLong();
+
+        cacheSize = in.readLong();
+        isEmpty = in.readBoolean();
+        size = in.readInt();
+        keySize = in.readInt();
+        txKeyCollisions = U.readLongString(in);
+        idxBuildPartitionsLeftCount = in.readInt();
     }
 }

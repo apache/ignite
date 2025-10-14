@@ -31,6 +31,7 @@ import org.apache.ignite.internal.codegen.CacheContinuousQueryBatchAckSerializer
 import org.apache.ignite.internal.codegen.CacheEntryInfoCollectionSerializer;
 import org.apache.ignite.internal.codegen.CacheEvictionEntrySerializer;
 import org.apache.ignite.internal.codegen.CacheGroupAffinityMessageSerializer;
+import org.apache.ignite.internal.codegen.CacheMetricsMessageSerializer;
 import org.apache.ignite.internal.codegen.CacheMetricsSnapshotSerializer;
 import org.apache.ignite.internal.codegen.CachePartitionPartialCountersMapSerializer;
 import org.apache.ignite.internal.codegen.CacheVersionedValueSerializer;
@@ -204,6 +205,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxLocksResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
+import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage;
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
@@ -375,10 +377,11 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)132, UserAuthenticateResponseMessage::new, new UserAuthenticateResponseMessageSerializer());
         factory.register(ClusterMetricsUpdateMessage.TYPE_CODE, ClusterMetricsUpdateMessage::new,
             new ClusterMetricsUpdateMessageSerializer());
+        factory.register(CacheMetricsMessage.TYPE_CODE, CacheMetricsMessage::new, new CacheMetricsMessageSerializer());
         factory.register(ClusterMetricsSnapshot.TYPE_CODE, ClusterMetricsSnapshot::new, new ClusterMetricsSnapshotSerializer());
-        factory.register(CacheMetricsSnapshot.TYPE_CODE, ClusterMetricsSnapshot::new, new CacheMetricsSnapshotSerializer());
-        factory.register((short)136, ContinuousRoutineStartResultMessage::new);
-        factory.register((short)137, LatchAckMessage::new, new LatchAckMessageSerializer());
+        factory.register(CacheMetricsSnapshot.TYPE_CODE, CacheMetricsSnapshot::new, new CacheMetricsSnapshotSerializer());
+        factory.register((short)137, ContinuousRoutineStartResultMessage::new);
+        factory.register((short)138, LatchAckMessage::new, new LatchAckMessageSerializer());
         factory.register((short)157, PartitionUpdateCountersMessage::new);
         factory.register((short)162, GenerateEncryptionKeyRequest::new, new GenerateEncryptionKeyRequestSerializer());
         factory.register((short)163, GenerateEncryptionKeyResponse::new);

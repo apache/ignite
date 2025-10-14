@@ -39,7 +39,7 @@ import static java.lang.Math.min;
  */
 public class ClusterMetricsSnapshot implements ClusterMetrics, Message {
     /** */
-    public static final short TYPE_CODE = 134;
+    public static final short TYPE_CODE = 135;
 
     /** Size of serialized node metrics. */
     public static final int METRICS_SIZE =
@@ -332,6 +332,8 @@ public class ClusterMetricsSnapshot implements ClusterMetrics, Message {
      */
     public ClusterMetricsSnapshot(Collection<ClusterNode> nodes) {
         int size = nodes.size();
+
+        totalNodes = size;
 
         for (ClusterNode node : nodes) {
             ClusterMetrics m = node.metrics();

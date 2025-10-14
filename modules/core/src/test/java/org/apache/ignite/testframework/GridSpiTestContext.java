@@ -279,14 +279,6 @@ public class GridSpiTestContext implements IgniteSpiContext {
             notifyListener(new DiscoveryEvent(locNode, "Metrics updated.", EVT_NODE_METRICS_UPDATED, node));
     }
 
-    /** */
-    public void updateAllMetrics() {
-        notifyListener(new DiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, locNode));
-
-        for (ClusterNode node : rmtNodes)
-            notifyListener(new DiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, node));
-    }
-
     /**
      * @param evt Event node.
      */

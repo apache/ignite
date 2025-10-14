@@ -99,7 +99,7 @@ public class LatchAckMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 137;
+        return 138;
     }
 
 }
