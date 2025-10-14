@@ -64,7 +64,9 @@ public class SnapshotChecker {
         @Nullable Collection<Integer> grpIds
     ) {
         return CompletableFuture.supplyAsync(
-            new SnapshotMetadataVerificationTask(kctx.grid(), log, sft, incIdx, grpIds));
+            new SnapshotMetadataVerificationTask(kctx.grid(), log, sft, incIdx, grpIds),
+            executor
+        );
     }
 
     /** */
