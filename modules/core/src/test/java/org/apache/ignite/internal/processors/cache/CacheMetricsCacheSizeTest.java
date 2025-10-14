@@ -20,6 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMetrics;
@@ -27,15 +30,16 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
+import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
  * This test checks metrics cacheSize.
  * <ul>
- * <li>Check TcpDiscoveryMetricsUpdateMessage serialization.</li>
+ * <li>Check {@link ClusterMetricsUpdateMessage} serialization.</li>
  * <li>Check {@code cache.metrics().getCacheSize()} on each node.</li>
  * <li>Check sum {@code cache.localMetrics().getCacheSize()} of all nodes.</li>
  * </ul>
@@ -82,7 +86,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         GridCacheContext cacheCtx = ((GatewayProtectedCacheProxy)cacheNode0).context();
 
-        CacheMetrics cacheMetric = CacheMetricsSnapshot.of(new CacheMetricsImpl(cacheCtx));
+        CacheMetrics cacheMetric = new CacheMetricsImpl(cacheCtx);
 
         long size = cacheMetric.getCacheSize();
 
@@ -90,25 +94,28 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         cacheMetrics.put(1, cacheMetric);
 
-        TcpDiscoveryMetricsUpdateMessage msg = new TcpDiscoveryMetricsUpdateMessage(UUID.randomUUID());
+        AtomicReference<ClusterMetricsUpdateMessage> msg1 = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
 
-        msg.setCacheMetrics(UUID.randomUUID(), cacheMetrics);
+        grid(0).context().io().addMessageListener(GridTopic.TOPIC_METRICS, new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+                if (msg1.get() == null && msg instanceof ClusterMetricsUpdateMessage) {
+                    msg1.compareAndSet(null, (ClusterMetricsUpdateMessage)msg);
 
-        Marshaller marshaller = marshaller(grid(0));
+                    latch.countDown();
+                }
+            }
+        });
 
-        byte[] buf = marshaller.marshal(msg);
+        assertTrue(latch.await(30, TimeUnit.SECONDS));
 
-        Object readObj = marshaller.unmarshal(buf, getClass().getClassLoader());
+        ClusterMetricsUpdateMessage msg2 = msg1.get();
 
-        assertTrue(readObj instanceof TcpDiscoveryMetricsUpdateMessage);
-
-        TcpDiscoveryMetricsUpdateMessage msg2 = (TcpDiscoveryMetricsUpdateMessage)readObj;
-
-        Map<Integer, CacheMetrics> cacheMetrics2 = msg2.cacheMetrics().values().iterator().next();
+        Map<Integer, CacheMetrics> cacheMetrics2 = msg2.cacheMetricsMsg().cacheMetrics();
 
         CacheMetrics cacheMetric2 = cacheMetrics2.values().iterator().next();
 
-        assertEquals("TcpDiscoveryMetricsUpdateMessage serialization error, cacheSize is different", size, cacheMetric2.getCacheSize());
+        assertEquals("ClusterMetricsUpdateMessage serialization error, cacheSize is different", size, cacheMetric2.getCacheSize());
 
         IgniteCache cacheNode1 = grid(1).cache(DEFAULT_CACHE_NAME);
 

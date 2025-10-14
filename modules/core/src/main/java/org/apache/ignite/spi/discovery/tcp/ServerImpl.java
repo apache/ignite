@@ -70,7 +70,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.ShutdownPolicy;
-import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.NodeValidationFailedEvent;
@@ -147,7 +146,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
@@ -2015,29 +2013,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             spi.getSocketTimeout() + spi.getAckTimeout();
     }
 
-    /** {@inheritDoc} */
-    @Override public void updateMetrics(UUID nodeId,
-        ClusterMetrics metrics,
-        Map<Integer, CacheMetrics> cacheMetrics,
-        long tsNanos
-    ) {
-        assert nodeId != null;
-        assert metrics != null;
-
-        TcpDiscoveryNode node = ring.node(nodeId);
-
-        if (node != null) {
-            node.setMetrics(metrics);
-            node.setCacheMetrics(cacheMetrics);
-
-            node.lastUpdateTimeNanos(tsNanos);
-
-            notifyDiscovery(EVT_NODE_METRICS_UPDATED, ring.topologyVersion(), node);
-        }
-        else if (log.isDebugEnabled())
-            log.debug("Received metrics from unknown node: " + nodeId);
-    }
-
     /**
      * @throws IgniteSpiException If failed.
      */
@@ -2196,19 +2171,9 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @return {@code True} if recordable in debug mode.
      */
     private boolean recordable(TcpDiscoveryAbstractMessage msg) {
-        return !(msg instanceof TcpDiscoveryMetricsUpdateMessage) &&
-            !(msg instanceof TcpDiscoveryStatusCheckMessage) &&
+        return !(msg instanceof TcpDiscoveryStatusCheckMessage) &&
             !(msg instanceof TcpDiscoveryDiscardMessage) &&
             !(msg instanceof TcpDiscoveryConnectionCheckMessage);
-    }
-
-    /**
-     * @param msg Message.
-     * @param nodeId Node ID.
-     */
-    private static void removeMetrics(TcpDiscoveryMetricsUpdateMessage msg, UUID nodeId) {
-        msg.removeMetrics(nodeId);
-        msg.removeCacheMetrics(nodeId);
     }
 
     /** {@inheritDoc} */
@@ -2963,12 +2928,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Last time status message has been sent. */
         private long lastTimeStatusMsgSentNanos;
 
-        /** Incoming metrics check frequency. */
-        private long metricsCheckFreq = 3 * spi.metricsUpdateFreq + 50;
-
-        /** Last time metrics update message has been sent. */
-        private long lastTimeMetricsUpdateMsgSentNanos = System.nanoTime() - U.millisToNanos(spi.metricsUpdateFreq);
-
         /** */
         private long lastRingMsgTimeNanos;
 
@@ -2977,9 +2936,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** */
         private DiscoveryDataPacket gridDiscoveryData;
-
-        /** Filter for {@link TcpDiscoveryMetricsUpdateMessage}s. */
-        private final MetricsUpdateMessageFilter metricsMsgFilter = new MetricsUpdateMessageFilter();
 
         /** Thread local variable indicates that discovery manager was notified after message processing. */
         private final ThreadLocal<Boolean> notifiedDiscovery = ThreadLocal.withInitial(() -> false);
@@ -3071,16 +3027,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             boolean addFirst = msg.highPriority() && !ignoreHighPriority;
 
-            if (msg instanceof TcpDiscoveryMetricsUpdateMessage) {
-                if (metricsMsgFilter.addMessage((TcpDiscoveryMetricsUpdateMessage)msg))
-                    addToQueue(msg, addFirst);
-                else {
-                    if (log.isDebugEnabled())
-                        log.debug("Metric update message has been replaced in the worker's queue: " + msg);
-                }
-            }
-            else
-                addToQueue(msg, addFirst);
+            addToQueue(msg, addFirst);
         }
 
         /**
@@ -3193,8 +3140,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             spi.startMessageProcess(msg);
 
-            sendMetricsUpdateMessage();
-
             synchronized (mux) {
                 if (spiState == RING_FAILED) {
                     if (log.isDebugEnabled()) {
@@ -3271,9 +3216,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             else if (msg instanceof TcpDiscoveryNodeFailedMessage)
                 processNodeFailedMessage((TcpDiscoveryNodeFailedMessage)msg);
 
-            else if (msg instanceof TcpDiscoveryMetricsUpdateMessage)
-                processMetricsUpdateMessage((TcpDiscoveryMetricsUpdateMessage)msg);
-
             else if (msg instanceof TcpDiscoveryStatusCheckMessage)
                 processStatusCheckMessage((TcpDiscoveryStatusCheckMessage)msg);
 
@@ -3342,11 +3284,11 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (locNode == null)
                 return;
 
-            checkConnection();
+            if (ring.hasRemoteServerNodes()) {
+                checkConnection();
 
-            sendMetricsUpdateMessage();
-
-            checkMetricsReceiving();
+                checkStatusReceiving();
+            }
 
             checkPendingCustomMessages();
 
@@ -5890,7 +5832,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 if (locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null &&
-                    U.millisSinceNanos(locNode.lastUpdateTimeNanos()) < spi.metricsUpdateFreq) {
+                    U.millisSinceNanos(locNode.lastUpdateTimeNanos()) < spi.connRecoveryTimeout) {
                     if (log.isDebugEnabled())
                         log.debug("Status check message discarded (local node receives updates).");
 
@@ -5930,125 +5872,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (sendMessageToRemotes(msg))
                 sendMessageAcrossRing(msg);
-        }
-
-        /**
-         * Processes regular metrics update message. If a more recent message of the same kind has been received,
-         * then it will be processed instead of the one taken from the queue.
-         *
-         * @param msg Metrics update message.
-         */
-        private void processMetricsUpdateMessage(TcpDiscoveryMetricsUpdateMessage msg) {
-            assert msg != null;
-
-            assert !msg.client();
-
-            int laps = metricsMsgFilter.passedLaps(msg);
-
-            msg = metricsMsgFilter.pollActualMessage(laps, msg);
-
-            UUID locNodeId = getLocalNodeId();
-
-            if (ring.node(msg.creatorNodeId()) == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Discarding metrics update message issued by unknown node [msg=" + msg +
-                        ", ring=" + ring + ']');
-
-                return;
-            }
-
-            if (isLocalNodeCoordinator() && !locNodeId.equals(msg.creatorNodeId())) {
-                if (log.isDebugEnabled())
-                    log.debug("Discarding metrics update message issued by non-coordinator node: " + msg);
-
-                return;
-            }
-
-            if (!isLocalNodeCoordinator() && locNodeId.equals(msg.creatorNodeId())) {
-                if (log.isDebugEnabled())
-                    log.debug("Discarding metrics update message issued by local node (node is no more coordinator): " +
-                        msg);
-
-                return;
-            }
-
-            if (laps == 2) {
-                if (log.isTraceEnabled())
-                    log.trace("Discarding metrics update message that has made two passes: " + msg);
-
-                return;
-            }
-
-            long tsNanos = System.nanoTime();
-
-            if (spiStateCopy() == CONNECTED && msg.hasMetrics())
-                processMsgCacheMetrics(msg, tsNanos);
-
-            if (sendMessageToRemotes(msg)) {
-                if (laps == 0 && spiStateCopy() == CONNECTED) {
-                    // Message is on its first ring or just created on coordinator.
-                    msg.setMetrics(locNodeId, spi.metricsProvider.metrics());
-                    msg.setCacheMetrics(locNodeId, spi.metricsProvider.cacheMetrics());
-
-                    for (Map.Entry<UUID, ClientMessageWorker> e : clientMsgWorkers.entrySet()) {
-                        UUID nodeId = e.getKey();
-                        ClusterMetrics metrics = e.getValue().metrics();
-
-                        if (metrics != null)
-                            msg.setClientMetrics(locNodeId, nodeId, metrics);
-
-                        msg.addClientNodeId(nodeId);
-                    }
-                }
-                else {
-                    // Message is on its second ring.
-                    removeMetrics(msg, locNodeId);
-
-                    Collection<UUID> clientNodeIds = msg.clientNodeIds();
-
-                    for (TcpDiscoveryNode clientNode : ring.clientNodes()) {
-                        if (clientNode.visible()) {
-                            if (clientNodeIds.contains(clientNode.id()))
-                                clientNode.clientAliveTime(spi.clientFailureDetectionTimeout());
-                            else {
-                                if (!clientNode.clientAliveTimeSet())
-                                    clientNode.clientAliveTime(spi.clientFailureDetectionTimeout());
-
-                                boolean aliveCheck = clientNode.isClientAlive();
-
-                                if (!aliveCheck && isLocalNodeCoordinator()) {
-                                    boolean failedNode;
-
-                                    synchronized (mux) {
-                                        failedNode = failedNodes.containsKey(clientNode);
-                                    }
-
-                                    if (!failedNode) {
-                                        U.warn(log, "Failing client node due to not receiving metrics updates " +
-                                            "from client node within " +
-                                            "'IgniteConfiguration.clientFailureDetectionTimeout' " +
-                                            "(consider increasing configuration property) " +
-                                            "[timeout=" + spi.clientFailureDetectionTimeout() + ", node=" + clientNode + ']');
-
-                                        TcpDiscoveryNodeFailedMessage nodeFailedMsg = new TcpDiscoveryNodeFailedMessage(
-                                            locNodeId, clientNode.id(), clientNode.internalOrder());
-
-                                        processNodeFailedMessage(nodeFailedMsg);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (sendMessageToRemotes(msg))
-                    sendMessageAcrossRing(msg);
-            }
-            else {
-                locNode.lastUpdateTimeNanos(tsNanos);
-
-                notifyDiscovery(EVT_NODE_METRICS_UPDATED, ring.topologyVersion(), locNode);
-            }
         }
 
         /**
@@ -6390,34 +6213,15 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Sends metrics update message if needed.
+         * Checks whether {@link TcpDiscoveryStatusCheckMessage} should be sent.
          */
-        private void sendMetricsUpdateMessage() {
-            long elapsed = spi.metricsUpdateFreq - U.millisSinceNanos(lastTimeMetricsUpdateMsgSentNanos);
-
-            if (elapsed > 0 || !isLocalNodeCoordinator())
-                return;
-
-            TcpDiscoveryMetricsUpdateMessage msg = new TcpDiscoveryMetricsUpdateMessage(getConfiguredNodeId());
-
-            msg.verify(getLocalNodeId());
-
-            msgWorker.addMessage(msg);
-
-            lastTimeMetricsUpdateMsgSentNanos = System.nanoTime();
-        }
-
-        /**
-         * Checks the last time a metrics update message received. If the time is bigger than {@code metricsCheckFreq}
-         * than {@link TcpDiscoveryStatusCheckMessage} is sent across the ring.
-         */
-        private void checkMetricsReceiving() {
+        private void checkStatusReceiving() {
             if (lastTimeStatusMsgSentNanos < locNode.lastUpdateTimeNanos())
                 lastTimeStatusMsgSentNanos = locNode.lastUpdateTimeNanos();
 
             long updateTimeNanos = Math.max(lastTimeStatusMsgSentNanos, lastRingMsgTimeNanos);
 
-            if (U.millisSinceNanos(updateTimeNanos) < metricsCheckFreq)
+            if (U.nanosToMillis(System.nanoTime() - updateTimeNanos) < effectiveExchangeTimeout())
                 return;
 
             msgWorker.addMessage(createTcpDiscoveryStatusCheckMessage(locNode, locNode.id(), null));
@@ -6434,8 +6238,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (elapsed > 0)
                 return;
 
-            if (ring.hasRemoteServerNodes())
-                sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));
+            sendMessageAcrossRing(new TcpDiscoveryConnectionCheckMessage(locNode));
         }
 
         /** {@inheritDoc} */
@@ -7693,7 +7496,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private ClientMessageWorker(Socket sock, UUID clientNodeId, IgniteLogger log) {
             super("tcp-disco-client-message-worker-[" + U.id8(clientNodeId)
                 + ' ' + sock.getInetAddress().getHostAddress()
-                + ":" + sock.getPort() + ']', log, Math.max(spi.metricsUpdateFreq, 10), null);
+                + ":" + sock.getPort() + ']', log, Math.max(connCheckInterval, 10), null);
 
             this.sock = sock;
             this.clientNodeId = clientNodeId;
@@ -8254,99 +8057,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(CrossRingMessageSendState.class, this);
-        }
-    }
-
-    /**
-     * Filter to keep track of the most recent {@link TcpDiscoveryMetricsUpdateMessage}s.
-     */
-    private class MetricsUpdateMessageFilter {
-        /** The most recent unprocessed metrics update message, which is on its first discovery round trip. */
-        private volatile TcpDiscoveryMetricsUpdateMessage actualFirstLapMetricsUpdate;
-
-        /** The most recent unprocessed metrics update message, which is on its second discovery round trip. */
-        private volatile TcpDiscoveryMetricsUpdateMessage actualSecondLapMetricsUpdate;
-
-        /**
-         * Adds the provided metrics update message to the worker's queue. If there is already a message in the queue,
-         * that has passed the same number of discovery ring laps, then it's replaced with the provided one.
-         *
-         * @param msg Metrics update message that needs to be added to the worker's queue.
-         * @return {@code True} if the message should be added to the worker's queue.
-         * {@code False} if another message of the same kind is already in the queue.
-         */
-        private boolean addMessage(TcpDiscoveryMetricsUpdateMessage msg) {
-            int laps = passedLaps(msg);
-
-            if (laps == 2)
-                return true;
-            else {
-                // The message should be added to the queue only if a similar message is not there already.
-                // Otherwise one of actualFirstLapMetricsUpdate or actualSecondLapMetricsUpdate will be updated only.
-                boolean addToQueue;
-
-                if (laps == 0) {
-                    addToQueue = actualFirstLapMetricsUpdate == null;
-
-                    actualFirstLapMetricsUpdate = msg;
-                }
-                else {
-                    assert laps == 1 : "Unexpected number of laps passed by a metric update message: " + laps;
-
-                    addToQueue = actualSecondLapMetricsUpdate == null;
-
-                    actualSecondLapMetricsUpdate = msg;
-                }
-
-                return addToQueue;
-            }
-        }
-
-        /**
-         * @param laps Number of discovery ring laps passed by the message.
-         * @param msg Message taken from the queue.
-         * @return The most recent message of the same kind received by the local node.
-         */
-        private TcpDiscoveryMetricsUpdateMessage pollActualMessage(int laps, TcpDiscoveryMetricsUpdateMessage msg) {
-            if (laps == 0) {
-                msg = actualFirstLapMetricsUpdate;
-
-                actualFirstLapMetricsUpdate = null;
-            }
-            else if (laps == 1) {
-                msg = actualSecondLapMetricsUpdate;
-
-                actualSecondLapMetricsUpdate = null;
-            }
-
-            return msg;
-        }
-
-        /**
-         * @param msg Metrics update message.
-         * @return Number of laps, that the provided message passed.
-         */
-        private int passedLaps(TcpDiscoveryMetricsUpdateMessage msg) {
-            UUID locNodeId = getLocalNodeId();
-
-            boolean hasLocMetrics = hasMetrics(msg, locNodeId);
-
-            if (locNodeId.equals(msg.creatorNodeId()) && !hasLocMetrics && msg.senderNodeId() != null)
-                return 2;
-            else if (msg.senderNodeId() == null || !hasLocMetrics)
-                return 0;
-            else
-                return 1;
-        }
-
-        /**
-         * @param msg Metrics update message to check.
-         * @param nodeId Node ID for which the check should be performed.
-         * @return {@code True} is the message contains metrics of the node with the provided ID.
-         * {@code False} otherwise.
-         */
-        private boolean hasMetrics(TcpDiscoveryMetricsUpdateMessage msg, UUID nodeId) {
-            return msg.hasMetrics(nodeId) || msg.hasCacheMetrics(nodeId);
         }
     }
 }
