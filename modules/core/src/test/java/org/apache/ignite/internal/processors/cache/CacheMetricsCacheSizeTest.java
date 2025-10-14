@@ -33,6 +33,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage;
+import org.apache.ignite.internal.processors.cluster.ClusterNodeMetrics;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -111,7 +113,15 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         ClusterMetricsUpdateMessage msg2 = msg1.get();
 
-        Map<Integer, CacheMetrics> cacheMetrics2 = msg2.cacheMetricsMsg().cacheMetrics();
+        Marshaller marshaller = marshaller(grid(0));
+
+        Object readObj = marshaller.unmarshal(msg2.nodeMetrics(), getClass().getClassLoader());
+
+        assertTrue(readObj instanceof ClusterNodeMetrics);
+
+        ClusterNodeMetrics metrics = (ClusterNodeMetrics)readObj;
+
+        Map<Integer, CacheMetrics> cacheMetrics2 = metrics.cacheMetrics();
 
         CacheMetrics cacheMetric2 = cacheMetrics2.values().iterator().next();
 

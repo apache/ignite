@@ -91,8 +91,8 @@ public class GridTopologyHeapSizeSelfTest extends GridCommonAbstractTest {
     private GridTestNode getNode(String mac, int pid) {
         ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
 
-        metrics.heapMemoryMaximum(1024L * 1024 * 1024);
-        metrics.heapMemoryInitialized(1024L * 1024 * 1024);
+        metrics.setHeapMemoryMaximum(1024L * 1024 * 1024);
+        metrics.setHeapMemoryInitialized(1024L * 1024 * 1024);
 
         GridTestNode node = new GridTestNode(UUID.randomUUID(), metrics);
 

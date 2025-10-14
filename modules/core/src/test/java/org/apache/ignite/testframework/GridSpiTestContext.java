@@ -192,8 +192,8 @@ public class GridSpiTestContext implements IgniteSpiContext {
     private ClusterMetricsSnapshot createMetrics(int waitingJobs, int activeJobs) {
         ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
 
-        metrics.currentWaitingJobs(waitingJobs);
-        metrics.currentActiveJobs(activeJobs);
+        metrics.setCurrentWaitingJobs(waitingJobs);
+        metrics.setCurrentActiveJobs(activeJobs);
 
         return metrics;
     }

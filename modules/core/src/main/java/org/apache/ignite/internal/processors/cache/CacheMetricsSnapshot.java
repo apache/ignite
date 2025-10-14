@@ -17,383 +17,299 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Collection;
 import org.apache.ignite.cache.CacheMetrics;
-import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Metrics snapshot.
  */
-public class CacheMetricsSnapshot implements CacheMetrics, Message {
+public class CacheMetricsSnapshot extends IgniteDataTransferObject implements CacheMetrics {
     /** */
-    public static final short TYPE_CODE = 136;
+    private static final long serialVersionUID = 0L;
 
     /** Number of reads. */
-    @Order(value = 0, method = "cacheGets", getter = true)
     private long reads;
 
     /** Number of puts. */
-    @Order(value = 1, method = "cachePuts", getter = true)
     private long puts;
 
     /** Number of invokes caused updates. */
-    @Order(value = 2, getter = true)
     private long entryProcessorPuts;
 
     /** Number of invokes caused no updates. */
-    @Order(value = 3, getter = true)
     private long entryProcessorReadOnlyInvocations;
 
     /**
      * The mean time to execute cache invokes
      */
-    @Order(value = 4, getter = true)
     private float entryProcessorAverageInvocationTime;
 
     /**
      * The total number of cache invocations.
      */
-    @Order(value = 5, getter = true)
     private long entryProcessorInvocations;
 
     /**
      * The total number of cache invocations, caused removal.
      */
-    @Order(value = 6, getter = true)
     private long entryProcessorRemovals;
 
     /**
      * The total number of invocations on keys, which don't exist in cache.
      */
-    @Order(value = 7, getter = true)
     private long entryProcessorMisses;
 
     /**
      * The total number of invocations on keys, which exist in cache.
      */
-    @Order(value = 8, getter = true)
     private long entryProcessorHits;
 
     /**
      * The percentage of invocations on keys, which don't exist in cache.
      */
-    @Order(value = 9, getter = true)
     private float entryProcessorMissPercentage;
 
     /**
      * The percentage of invocations on keys, which exist in cache.
      */
-    @Order(value = 10, getter = true)
     private float entryProcessorHitPercentage;
 
     /**
      * So far, the maximum time to execute cache invokes.
      */
-    @Order(value = 11, getter = true)
     private float entryProcessorMaxInvocationTime;
 
     /**
      * So far, the minimum time to execute cache invokes.
      */
-    @Order(value = 12, getter = true)
     private float entryProcessorMinInvocationTime;
 
     /** Number of hits. */
-    @Order(value = 13, method = "cacheHits", getter = true)
     private long hits;
 
     /** Number of misses. */
-    @Order(value = 14, method = "cacheMisses", getter = true)
     private long misses;
 
     /** Number of transaction commits. */
-    @Order(value = 15, method = "cacheTxCommits", getter = true)
     private long txCommits;
 
     /** Number of transaction rollbacks. */
-    @Order(value = 16, method = "cacheTxRollbacks", getter = true)
     private long txRollbacks;
 
     /** Number of evictions. */
-    @Order(value = 17, method = "cacheEvictions", getter = true)
     private long evicts;
 
     /** Number of removed entries. */
-    @Order(value = 18, method = "cacheRemovals", getter = true)
     private long removes;
 
     /** Put time taken nanos. */
-    @Order(value = 19, method = "averagePutTime", getter = true)
     private float putAvgTimeNanos;
 
     /** Get time taken nanos. */
-    @Order(value = 20, method = "averageGetTime", getter = true)
     private float getAvgTimeNanos;
 
     /** Remove time taken nanos. */
-    @Order(value = 21, method = "averageRemoveTime", getter = true)
     private float rmvAvgTimeNanos;
 
     /** Commit transaction time taken nanos. */
-    @Order(value = 22, method = "averageTxCommitTime", getter = true)
     private float commitAvgTimeNanos;
 
     /** Commit transaction time taken nanos. */
-    @Order(value = 23, method = "averageTxRollbackTime", getter = true)
     private float rollbackAvgTimeNanos;
 
     /** Cache name */
-    @Order(value = 24, method = "name")
     private String cacheName;
 
     /** Number of reads from off-heap. */
-    @Order(value = 25, getter = true)
     private long offHeapGets;
 
     /** Number of writes to off-heap. */
-    @Order(value = 26, getter = true)
     private long offHeapPuts;
 
     /** Number of removed entries from off-heap. */
-    @Order(value = 27, method = "offHeapRemovals", getter = true)
     private long offHeapRemoves;
 
     /** Number of evictions from off-heap. */
-    @Order(value = 28, method = "offHeapEvictions", getter = true)
     private long offHeapEvicts;
 
     /** Off-heap hits number. */
-    @Order(value = 29, method = "offHeapHits", getter = true)
     private long offHeapHits;
 
     /** Off-heap misses number. */
-    @Order(value = 30, getter = true)
     private long offHeapMisses;
 
     /** Number of entries stored in off-heap memory. */
-    @Order(value = 31, method = "offHeapEntriesCount", getter = true)
     private long offHeapEntriesCnt;
 
     /** Number of entries stored in heap. */
-    @Order(value = 32, method = "heapEntriesCount", getter = true)
     private long heapEntriesCnt;
 
     /** Number of primary entries stored in off-heap memory. */
-    @Order(value = 33, method = "offHeapPrimaryEntriesCount", getter = true)
     private long offHeapPrimaryEntriesCnt;
 
     /** Number of backup entries stored in off-heap memory. */
-    @Order(value = 34, method = "offHeapBackupEntriesCount", getter = true)
     private long offHeapBackupEntriesCnt;
 
     /** Memory size allocated in off-heap. */
-    @Order(value = 35, getter = true)
     private long offHeapAllocatedSize;
 
     /** Number of non-{@code null} values in the cache. */
-    @Order(value = 36, getter = true)
     private int size;
 
     /** Cache size. */
-    @Order(value = 37, getter = true)
     private long cacheSize;
 
     /** Number of keys in the cache, possibly with {@code null} values. */
-    @Order(value = 38, getter = true)
     private int keySize;
 
     /** Cache is empty. */
-    @Order(value = 39, method = "empty", getter = true)
     private boolean isEmpty;
 
     /** Gets current size of evict queue used to batch up evictions. */
-    @Order(value = 40, method = "dhtEvictQueueCurrentSize", getter = true)
     private int dhtEvictQueueCurrSize;
 
     /** Transaction per-thread map size. */
-    @Order(value = 41, getter = true)
     private int txThreadMapSize;
 
     /** Transaction per-Xid map size. */
-    @Order(value = 42, getter = true)
     private int txXidMapSize;
 
     /** Committed transaction queue size. */
-    @Order(value = 43, getter = true)
     private int txCommitQueueSize;
 
     /** Prepared transaction queue size. */
-    @Order(value = 44, getter = true)
     private int txPrepareQueueSize;
 
     /** Start version counts map size. */
-    @Order(value = 45, method = "txStartVersionCountsSize", getter = true)
     private int txStartVerCountsSize;
 
     /** Number of cached committed transaction IDs. */
-    @Order(value = 46, getter = true)
     private int txCommittedVersionsSize;
 
     /** Number of cached rolled back transaction IDs. */
-    @Order(value = 47, getter = true)
     private int txRolledbackVersionsSize;
 
     /** DHT thread map size. */
-    @Order(value = 48, method = "txDhtThreadMapSize", getter = true)
     private int txDhtThreadMapSize;
 
     /** Transaction DHT per-Xid map size. */
-    @Order(value = 49, method = "txDhtXidMapSize", getter = true)
     private int txDhtXidMapSize;
 
     /** Committed DHT transaction queue size. */
-    @Order(value = 50, getter = true)
     private int txDhtCommitQueueSize;
 
     /** Prepared DHT transaction queue size. */
-    @Order(value = 51, getter = true)
     private int txDhtPrepareQueueSize;
 
     /** DHT start version counts map size. */
-    @Order(value = 52, method = "txDhtStartVersionCountsSize", getter = true)
     private int txDhtStartVerCountsSize;
 
     /** Number of cached committed DHT transaction IDs. */
-    @Order(value = 53, getter = true)
     private int txDhtCommittedVersionsSize;
 
     /** Number of cached rolled back DHT transaction IDs. */
-    @Order(value = 54, getter = true)
     private int txDhtRolledbackVersionsSize;
 
     /** Write-behind is enabled. */
-    @Order(value = 55, method = "writeBehindEnabled", getter = true)
     private boolean isWriteBehindEnabled;
 
     /** Buffer size that triggers flush procedure. */
-    @Order(value = 56, getter = true)
     private int writeBehindFlushSize;
 
     /** Count of worker threads. */
-    @Order(value = 57, method = "writeBehindFlushThreadCount", getter = true)
     private int writeBehindFlushThreadCnt;
 
     /** Flush frequency in milliseconds. */
-    @Order(value = 58, method = "writeBehindFlushFrequency", getter = true)
     private long writeBehindFlushFreq;
 
     /** Maximum size of batch. */
-    @Order(value = 59, getter = true)
     private int writeBehindStoreBatchSize;
 
     /** Count of cache overflow events since start. */
-    @Order(value = 60, method = "writeBehindTotalCriticalOverflowCount", getter = true)
     private int writeBehindTotalCriticalOverflowCnt;
 
     /** Count of cache overflow events since start. */
-    @Order(value = 61, method = "writeBehindCriticalOverflowCount", getter = true)
     private int writeBehindCriticalOverflowCnt;
 
     /** Count of entries in store-retry state. */
-    @Order(value = 62, method = "writeBehindErrorRetryCount", getter = true)
     private int writeBehindErrorRetryCnt;
 
     /** Total count of entries in cache store internal buffer. */
-    @Order(value = 63, method = "writeBehindBufferSize", getter = true)
     private int writeBehindBufSize;
 
     /** Total partitions count. */
-    @Order(value = 64, method = "totalPartitionsCount", getter = true)
     private int totalPartitionsCnt;
 
     /** Rebalancing partitions count. */
-    @Order(value = 65, method = "rebalancingPartitionsCount", getter = true)
     private int rebalancingPartitionsCnt;
 
     /** Number of already rebalanced keys. */
-    @Order(value = 66, getter = true)
     private long rebalancedKeys;
 
     /** Number estimated to rebalance keys. */
-    @Order(value = 67, getter = true)
     private long estimatedRebalancingKeys;
 
     /** Keys to rebalance left. */
-    @Order(value = 68, getter = true)
     private long keysToRebalanceLeft;
 
     /** Rebalancing keys rate. */
-    @Order(value = 69, getter = true)
     private long rebalancingKeysRate;
 
     /** Get rebalancing bytes rate. */
-    @Order(value = 70, getter = true)
     private long rebalancingBytesRate;
 
     /** Start rebalance time. */
-    @Order(value = 71, method = "rebalancingStartTime", getter = true)
     private long rebalanceStartTime;
 
     /** Estimate rebalance finish time. */
-    @Order(value = 72, method = "estimatedRebalancingFinishTime", getter = true)
     private long rebalanceFinishTime;
 
     /** The number of clearing partitions need to await before rebalance. */
-    @Order(value = 73, getter = true)
     private long rebalanceClearingPartitionsLeft;
 
     /** */
-    @Order(value = 74, getter = true)
     private String keyType;
 
     /** */
-    @Order(value = 75, method = "valueType", getter = true)
     private String valType;
 
     /** */
-    @Order(value = 76, method = "storeByValue", getter = true)
     private boolean isStoreByVal;
 
     /** */
-    @Order(value = 77, method = "statisticsEnabled", getter = true)
     private boolean isStatisticsEnabled;
 
     /** */
-    @Order(value = 78, method = "managementEnabled", getter = true)
     private boolean isManagementEnabled;
 
     /** */
-    @Order(value = 79, method = "readThrough", getter = true)
     private boolean isReadThrough;
 
     /** */
-    @Order(value = 80, method = "writeThrough", getter = true)
     private boolean isWriteThrough;
 
     /** */
-    @Order(value = 81, method = "validForReading", getter = true)
     private boolean isValidForReading;
 
     /** */
-    @Order(value = 82, method = "validForWriting", getter = true)
     private boolean isValidForWriting;
 
     /** Tx key collisions with appropriate queue size string representation. */
-    @Order(value = 83, method = "txKeyCollisions", getter = true)
     private String txKeyCollisions;
 
     /** Index rebuilding in progress. */
-    @Order(value = 84, method = "indexRebuildInProgress", getter = true)
     private boolean idxRebuildInProgress;
 
     /** Number of keys processed during index rebuilding. */
-    @Order(value = 85, method = "indexRebuildKeysProcessed", getter = true)
     private long idxRebuildKeyProcessed;
 
     /** The number of local node partitions that remain to be processed to complete indexing. */
-    @Order(value = 86, method = "indexBuildPartitionsLeftCount", getter = true)
     private int idxBuildPartitionsLeftCount;
 
     /**
@@ -403,17 +319,12 @@ public class CacheMetricsSnapshot implements CacheMetrics, Message {
         // No-op.
     }
 
-    /** */
-    public static CacheMetricsSnapshot of(CacheMetrics metrics) {
-        return metrics instanceof CacheMetricsSnapshot ? (CacheMetricsSnapshot)metrics : new CacheMetricsSnapshot(metrics);
-    }
-
     /**
      * Create snapshot for given metrics.
      *
      * @param m Cache metrics.
      */
-    private CacheMetricsSnapshot(CacheMetrics m) {
+    public CacheMetricsSnapshot(CacheMetricsImpl m) {
         reads = m.getCacheGets();
         puts = m.getCachePuts();
         hits = m.getCacheHits();
@@ -450,17 +361,19 @@ public class CacheMetricsSnapshot implements CacheMetrics, Message {
         offHeapHits = m.getOffHeapHits();
         offHeapMisses = m.getOffHeapMisses();
 
-        offHeapEntriesCnt = m.getHeapEntriesCount();
-        heapEntriesCnt = m.getHeapEntriesCount();
-        offHeapPrimaryEntriesCnt = m.getOffHeapPrimaryEntriesCount();
-        offHeapBackupEntriesCnt = m.getOffHeapBackupEntriesCount();
+        CacheMetricsImpl.EntriesStatMetrics entriesStat = m.getEntriesStat();
+
+        offHeapEntriesCnt = entriesStat.offHeapEntriesCount();
+        heapEntriesCnt = entriesStat.heapEntriesCount();
+        offHeapPrimaryEntriesCnt = entriesStat.offHeapPrimaryEntriesCount();
+        offHeapBackupEntriesCnt = entriesStat.offHeapBackupEntriesCount();
 
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
 
-        cacheSize = m.getCacheSize();
-        keySize = m.getKeySize();
-        size = m.getSize();
-        isEmpty = m.isEmpty();
+        cacheSize = entriesStat.cacheSize();
+        keySize = entriesStat.keySize();
+        size = entriesStat.size();
+        isEmpty = entriesStat.isEmpty();
 
         dhtEvictQueueCurrSize = m.getDhtEvictQueueCurrentSize();
         txThreadMapSize = m.getTxThreadMapSize();
@@ -497,8 +410,8 @@ public class CacheMetricsSnapshot implements CacheMetrics, Message {
         isValidForReading = m.isValidForReading();
         isValidForWriting = m.isValidForWriting();
 
-        totalPartitionsCnt = m.getTotalPartitionsCount();
-        rebalancingPartitionsCnt = m.getRebalancingPartitionsCount();
+        totalPartitionsCnt = entriesStat.totalPartitionsCount();
+        rebalancingPartitionsCnt = entriesStat.rebalancingPartitionsCount();
 
         rebalancedKeys = m.getRebalancedKeys();
         estimatedRebalancingKeys = m.getEstimatedRebalancingKeys();
@@ -1150,458 +1063,168 @@ public class CacheMetricsSnapshot implements CacheMetrics, Message {
         return idxBuildPartitionsLeftCount;
     }
 
-    /** */
-    public void cachePuts(long puts) {
-        this.puts = puts;
-    }
-
-    /** */
-    public void entryProcessorPuts(long entryProcPuts) {
-        this.entryProcessorPuts = entryProcPuts;
-    }
-
-    /** */
-    public void cacheGets(long reads) {
-        this.reads = reads;
-    }
-
-    /** */
-    public void name(String cacheName) {
-        this.cacheName = cacheName;
-    }
-
-    /** */
-    public void cacheSize(long cacheSize) {
-        this.cacheSize = cacheSize;
-    }
-
-    /** */
-    public void averageTxCommitTime(float commitAvgTimeNanos) {
-        this.commitAvgTimeNanos = commitAvgTimeNanos;
-    }
-
-    /** */
-    public void dhtEvictQueueCurrentSize(int dhtEvictQueueCurrSize) {
-        this.dhtEvictQueueCurrSize = dhtEvictQueueCurrSize;
-    }
-
-    /** */
-    public void entryProcessorAverageInvocationTime(float entryProcessorAverageInvocationTime) {
-        this.entryProcessorAverageInvocationTime = entryProcessorAverageInvocationTime;
-    }
-
-    /** */
-    public void entryProcessorHitPercentage(float entryProcessorHitPercentage) {
-        this.entryProcessorHitPercentage = entryProcessorHitPercentage;
-    }
-
-    /** */
-    public void entryProcessorHits(long entryProcessorHits) {
-        this.entryProcessorHits = entryProcessorHits;
-    }
-
-    /** */
-    public void entryProcessorInvocations(long entryProcessorInvocations) {
-        this.entryProcessorInvocations = entryProcessorInvocations;
-    }
-
-    /** */
-    public void entryProcessorMaxInvocationTime(float entryProcessorMaxInvocationTime) {
-        this.entryProcessorMaxInvocationTime = entryProcessorMaxInvocationTime;
-    }
-
-    /** */
-    public void entryProcessorMinInvocationTime(float entryProcessorMinInvocationTime) {
-        this.entryProcessorMinInvocationTime = entryProcessorMinInvocationTime;
-    }
-
-    /** */
-    public void entryProcessorMisses(long entryProcessorMisses) {
-        this.entryProcessorMisses = entryProcessorMisses;
-    }
-
-    /** */
-    public void entryProcessorMissPercentage(float entryProcessorMissPercentage) {
-        this.entryProcessorMissPercentage = entryProcessorMissPercentage;
-    }
-
-    /** */
-    public void entryProcessorReadOnlyInvocations(long entryProcessorReadOnlyInvocations) {
-        this.entryProcessorReadOnlyInvocations = entryProcessorReadOnlyInvocations;
-    }
-
-    /** */
-    public void entryProcessorRemovals(long entryProcessorRemovals) {
-        this.entryProcessorRemovals = entryProcessorRemovals;
-    }
-
-    /** */
-    public void estimatedRebalancingKeys(long estimatedRebalancingKeys) {
-        this.estimatedRebalancingKeys = estimatedRebalancingKeys;
-    }
-
-    /** */
-    public void cacheEvictions(long evicts) {
-        this.evicts = evicts;
-    }
-
-    /** */
-    public void averageGetTime(float getAvgTimeNanos) {
-        this.getAvgTimeNanos = getAvgTimeNanos;
-    }
-
-    /** */
-    public void heapEntriesCount(long heapEntriesCnt) {
-        this.heapEntriesCnt = heapEntriesCnt;
-    }
-
-    /** */
-    public void cacheHits(long hits) {
-        this.hits = hits;
-    }
-
-    /** */
-    public void indexBuildPartitionsLeftCount(int idxBuildPartitionsLeftCount) {
-        this.idxBuildPartitionsLeftCount = idxBuildPartitionsLeftCount;
-    }
-
-    /** */
-    public void indexRebuildInProgress(boolean idxRebuildInProgress) {
-        this.idxRebuildInProgress = idxRebuildInProgress;
-    }
-
-    /** */
-    public void indexRebuildKeysProcessed(long idxRebuildKeyProcessed) {
-        this.idxRebuildKeyProcessed = idxRebuildKeyProcessed;
-    }
-
-    /** */
-    public void empty(boolean empty) {
-        isEmpty = empty;
-    }
-
-    /** */
-    public void managementEnabled(boolean managementEnabled) {
-        isManagementEnabled = managementEnabled;
-    }
-
-    /** */
-    public void readThrough(boolean readThrough) {
-        isReadThrough = readThrough;
-    }
-
-    /** */
-    public void statisticsEnabled(boolean statisticsEnabled) {
-        isStatisticsEnabled = statisticsEnabled;
-    }
-
-    /** */
-    public void storeByValue(boolean storeByVal) {
-        isStoreByVal = storeByVal;
-    }
-
-    /** */
-    public void validForReading(boolean validForReading) {
-        isValidForReading = validForReading;
-    }
-
-    /** */
-    public void validForWriting(boolean validForWriting) {
-        isValidForWriting = validForWriting;
-    }
-
-    /** */
-    public void writeBehindEnabled(boolean writeBehindEnabled) {
-        isWriteBehindEnabled = writeBehindEnabled;
-    }
-
-    /** */
-    public void writeThrough(boolean writeThrough) {
-        isWriteThrough = writeThrough;
-    }
-
-    /** */
-    public void keySize(int keySize) {
-        this.keySize = keySize;
-    }
-
-    /** */
-    public void keysToRebalanceLeft(long keysToRebalanceLeft) {
-        this.keysToRebalanceLeft = keysToRebalanceLeft;
-    }
-
-    /** */
-    public void keyType(String keyType) {
-        this.keyType = keyType;
-    }
-
-    /** */
-    public void cacheMisses(long misses) {
-        this.misses = misses;
-    }
-
-    /** */
-    public void offHeapAllocatedSize(long offHeapAllocatedSize) {
-        this.offHeapAllocatedSize = offHeapAllocatedSize;
-    }
-
-    /** */
-    public void offHeapBackupEntriesCount(long offHeapBackupEntriesCnt) {
-        this.offHeapBackupEntriesCnt = offHeapBackupEntriesCnt;
-    }
-
-    /** */
-    public void offHeapEntriesCount(long offHeapEntriesCnt) {
-        this.offHeapEntriesCnt = offHeapEntriesCnt;
-    }
-
-    /** */
-    public void offHeapEvictions(long offHeapEvicts) {
-        this.offHeapEvicts = offHeapEvicts;
-    }
-
-    /** */
-    public void offHeapGets(long offHeapGets) {
-        this.offHeapGets = offHeapGets;
-    }
-
-    /** */
-    public void offHeapHits(long offHeapHits) {
-        this.offHeapHits = offHeapHits;
-    }
-
-    /** */
-    public void offHeapMisses(long offHeapMisses) {
-        this.offHeapMisses = offHeapMisses;
-    }
-
-    /** */
-    public void offHeapPrimaryEntriesCount(long offHeapPrimaryEntriesCnt) {
-        this.offHeapPrimaryEntriesCnt = offHeapPrimaryEntriesCnt;
-    }
-
-    /** */
-    public void offHeapPuts(long offHeapPuts) {
-        this.offHeapPuts = offHeapPuts;
-    }
-
-    /** */
-    public void offHeapRemovals(long offHeapRemoves) {
-        this.offHeapRemoves = offHeapRemoves;
-    }
-
-    /** */
-    public void averagePutTime(float putAvgTimeNanos) {
-        this.putAvgTimeNanos = putAvgTimeNanos;
-    }
-
-    /** */
-    public void puts(long puts) {
-        this.puts = puts;
-    }
-
-    /** */
-    public void reads(long reads) {
-        this.reads = reads;
-    }
-
-    /** */
-    public void rebalanceClearingPartitionsLeft(long rebalanceClearingPartitionsLeft) {
-        this.rebalanceClearingPartitionsLeft = rebalanceClearingPartitionsLeft;
-    }
-
-    /** */
-    public void rebalancedKeys(long rebalancedKeys) {
-        this.rebalancedKeys = rebalancedKeys;
-    }
-
-    /** */
-    public void estimatedRebalancingFinishTime(long rebalanceFinishTime) {
-        this.rebalanceFinishTime = rebalanceFinishTime;
-    }
-
-    /** */
-    public void rebalancingStartTime(long rebalanceStartTime) {
-        this.rebalanceStartTime = rebalanceStartTime;
-    }
-
-    /** */
-    public void rebalancingBytesRate(long rebalancingBytesRate) {
-        this.rebalancingBytesRate = rebalancingBytesRate;
-    }
-
-    /** */
-    public void rebalancingKeysRate(long rebalancingKeysRate) {
-        this.rebalancingKeysRate = rebalancingKeysRate;
-    }
-
-    /** */
-    public void rebalancingPartitionsCount(int rebalancingPartitionsCnt) {
-        this.rebalancingPartitionsCnt = rebalancingPartitionsCnt;
-    }
-
-    /** */
-    public void cacheRemovals(long removes) {
-        this.removes = removes;
-    }
-
-    /** */
-    public void averageRemoveTime(float rmvAvgTimeNanos) {
-        this.rmvAvgTimeNanos = rmvAvgTimeNanos;
-    }
-
-    /** */
-    public void averageTxRollbackTime(float rollbackAvgTimeNanos) {
-        this.rollbackAvgTimeNanos = rollbackAvgTimeNanos;
-    }
-
-    /** */
-    public void size(int size) {
-        this.size = size;
-    }
-
-    /** */
-    public void totalPartitionsCount(int totalPartitionsCnt) {
-        this.totalPartitionsCnt = totalPartitionsCnt;
-    }
-
-    /** */
-    public void txCommitQueueSize(int txCommitQueueSize) {
-        this.txCommitQueueSize = txCommitQueueSize;
-    }
-
-    /** */
-    public void cacheTxCommits(long txCommits) {
-        this.txCommits = txCommits;
-    }
-
-    /** */
-    public void txCommittedVersionsSize(int txCommittedVersionsSize) {
-        this.txCommittedVersionsSize = txCommittedVersionsSize;
-    }
-
-    /** */
-    public void txDhtCommitQueueSize(int txDhtCommitQueueSize) {
-        this.txDhtCommitQueueSize = txDhtCommitQueueSize;
-    }
-
-    /** */
-    public void txDhtCommittedVersionsSize(int txDhtCommittedVersionsSize) {
-        this.txDhtCommittedVersionsSize = txDhtCommittedVersionsSize;
-    }
-
-    /** */
-    public void txDhtPrepareQueueSize(int txDhtPrepareQueueSize) {
-        this.txDhtPrepareQueueSize = txDhtPrepareQueueSize;
-    }
-
-    /** */
-    public void txDhtRolledbackVersionsSize(int txDhtRolledbackVersionsSize) {
-        this.txDhtRolledbackVersionsSize = txDhtRolledbackVersionsSize;
-    }
-
-    /** */
-    public void txDhtStartVersionCountsSize(int txDhtStartVerCountsSize) {
-        this.txDhtStartVerCountsSize = txDhtStartVerCountsSize;
-    }
-
-    /** */
-    public void txDhtThreadMapSize(int txDhtThreadMapSize) {
-        this.txDhtThreadMapSize = txDhtThreadMapSize;
-    }
-
-    /** */
-    public void txDhtXidMapSize(int txDhtXidMapSize) {
-        this.txDhtXidMapSize = txDhtXidMapSize;
-    }
-
-    /** */
-    public void txKeyCollisions(String txKeyCollisions) {
-        this.txKeyCollisions = txKeyCollisions;
-    }
-
-    /** */
-    public void txPrepareQueueSize(int txPrepareQueueSize) {
-        this.txPrepareQueueSize = txPrepareQueueSize;
-    }
-
-    /** */
-    public void cacheTxRollbacks(long txRollbacks) {
-        this.txRollbacks = txRollbacks;
-    }
-
-    /** */
-    public void txRolledbackVersionsSize(int txRolledbackVersionsSize) {
-        this.txRolledbackVersionsSize = txRolledbackVersionsSize;
-    }
-
-    /** */
-    public void txStartVersionCountsSize(int txStartVerCountsSize) {
-        this.txStartVerCountsSize = txStartVerCountsSize;
-    }
-
-    /** */
-    public void txThreadMapSize(int txThreadMapSize) {
-        this.txThreadMapSize = txThreadMapSize;
-    }
-
-    /** */
-    public void txXidMapSize(int txXidMapSize) {
-        this.txXidMapSize = txXidMapSize;
-    }
-
-    /** */
-    public void valueType(String valType) {
-        this.valType = valType;
-    }
-
-    /** */
-    public void writeBehindBufferSize(int writeBehindBufSize) {
-        this.writeBehindBufSize = writeBehindBufSize;
-    }
-
-    /** */
-    public void writeBehindCriticalOverflowCount(int writeBehindCriticalOverflowCnt) {
-        this.writeBehindCriticalOverflowCnt = writeBehindCriticalOverflowCnt;
-    }
-
-    /** */
-    public void writeBehindErrorRetryCount(int writeBehindErrorRetryCnt) {
-        this.writeBehindErrorRetryCnt = writeBehindErrorRetryCnt;
-    }
-
-    /** */
-    public void writeBehindFlushFrequency(long writeBehindFlushFreq) {
-        this.writeBehindFlushFreq = writeBehindFlushFreq;
-    }
-
-    /** */
-    public void writeBehindFlushSize(int writeBehindFlushSize) {
-        this.writeBehindFlushSize = writeBehindFlushSize;
-    }
-
-    /** */
-    public void writeBehindFlushThreadCount(int writeBehindFlushThreadCnt) {
-        this.writeBehindFlushThreadCnt = writeBehindFlushThreadCnt;
-    }
-
-    /** */
-    public void writeBehindStoreBatchSize(int writeBehindStoreBatchSize) {
-        this.writeBehindStoreBatchSize = writeBehindStoreBatchSize;
-    }
-
-    /** */
-    public void writeBehindTotalCriticalOverflowCount(int writeBehindTotalCriticalOverflowCnt) {
-        this.writeBehindTotalCriticalOverflowCnt = writeBehindTotalCriticalOverflowCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return TYPE_CODE;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheMetricsSnapshot.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeLong(reads);
+        out.writeLong(puts);
+        out.writeLong(hits);
+        out.writeLong(misses);
+        out.writeLong(txCommits);
+        out.writeLong(txRollbacks);
+        out.writeLong(evicts);
+        out.writeLong(removes);
+
+        out.writeFloat(putAvgTimeNanos);
+        out.writeFloat(getAvgTimeNanos);
+        out.writeFloat(rmvAvgTimeNanos);
+        out.writeFloat(commitAvgTimeNanos);
+        out.writeFloat(rollbackAvgTimeNanos);
+
+        out.writeLong(offHeapGets);
+        out.writeLong(offHeapPuts);
+        out.writeLong(offHeapRemoves);
+        out.writeLong(offHeapEvicts);
+        out.writeLong(offHeapHits);
+        out.writeLong(offHeapMisses);
+        out.writeLong(offHeapEntriesCnt);
+        out.writeLong(heapEntriesCnt);
+        out.writeLong(offHeapPrimaryEntriesCnt);
+        out.writeLong(offHeapBackupEntriesCnt);
+        out.writeLong(offHeapAllocatedSize);
+
+        out.writeInt(dhtEvictQueueCurrSize);
+        out.writeInt(txThreadMapSize);
+        out.writeInt(txXidMapSize);
+        out.writeInt(txCommitQueueSize);
+        out.writeInt(txPrepareQueueSize);
+        out.writeInt(txStartVerCountsSize);
+        out.writeInt(txCommittedVersionsSize);
+        out.writeInt(txRolledbackVersionsSize);
+        out.writeInt(txDhtThreadMapSize);
+        out.writeInt(txDhtXidMapSize);
+        out.writeInt(txDhtCommitQueueSize);
+        out.writeInt(txDhtPrepareQueueSize);
+        out.writeInt(txDhtStartVerCountsSize);
+        out.writeInt(txDhtCommittedVersionsSize);
+        out.writeInt(txDhtRolledbackVersionsSize);
+        out.writeInt(writeBehindTotalCriticalOverflowCnt);
+        out.writeInt(writeBehindCriticalOverflowCnt);
+        out.writeInt(writeBehindErrorRetryCnt);
+
+        out.writeInt(totalPartitionsCnt);
+        out.writeInt(rebalancingPartitionsCnt);
+        out.writeLong(keysToRebalanceLeft);
+        out.writeLong(rebalancingBytesRate);
+        out.writeLong(rebalancingKeysRate);
+
+        out.writeLong(rebalancedKeys);
+        out.writeLong(estimatedRebalancingKeys);
+        out.writeLong(rebalanceStartTime);
+        out.writeLong(rebalanceFinishTime);
+        out.writeLong(rebalanceClearingPartitionsLeft);
+
+        out.writeLong(entryProcessorPuts);
+        out.writeFloat(entryProcessorAverageInvocationTime);
+        out.writeLong(entryProcessorInvocations);
+        out.writeFloat(entryProcessorMaxInvocationTime);
+        out.writeFloat(entryProcessorMinInvocationTime);
+        out.writeLong(entryProcessorReadOnlyInvocations);
+        out.writeFloat(entryProcessorHitPercentage);
+        out.writeLong(entryProcessorHits);
+        out.writeLong(entryProcessorMisses);
+        out.writeFloat(entryProcessorMissPercentage);
+        out.writeLong(entryProcessorRemovals);
+
+        out.writeLong(cacheSize);
+        out.writeBoolean(isEmpty);
+        out.writeInt(size);
+        out.writeInt(keySize);
+        U.writeLongString(out, txKeyCollisions);
+        out.writeInt(idxBuildPartitionsLeftCount);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
+        reads = in.readLong();
+        puts = in.readLong();
+        hits = in.readLong();
+        misses = in.readLong();
+        txCommits = in.readLong();
+        txRollbacks = in.readLong();
+        evicts = in.readLong();
+        removes = in.readLong();
+
+        putAvgTimeNanos = in.readFloat();
+        getAvgTimeNanos = in.readFloat();
+        rmvAvgTimeNanos = in.readFloat();
+        commitAvgTimeNanos = in.readFloat();
+        rollbackAvgTimeNanos = in.readFloat();
+
+        offHeapGets = in.readLong();
+        offHeapPuts = in.readLong();
+        offHeapRemoves = in.readLong();
+        offHeapEvicts = in.readLong();
+        offHeapHits = in.readLong();
+        offHeapMisses = in.readLong();
+        offHeapEntriesCnt = in.readLong();
+        heapEntriesCnt = in.readLong();
+        offHeapPrimaryEntriesCnt = in.readLong();
+        offHeapBackupEntriesCnt = in.readLong();
+        offHeapAllocatedSize = in.readLong();
+
+        dhtEvictQueueCurrSize = in.readInt();
+        txThreadMapSize = in.readInt();
+        txXidMapSize = in.readInt();
+        txCommitQueueSize = in.readInt();
+        txPrepareQueueSize = in.readInt();
+        txStartVerCountsSize = in.readInt();
+        txCommittedVersionsSize = in.readInt();
+        txRolledbackVersionsSize = in.readInt();
+        txDhtThreadMapSize = in.readInt();
+        txDhtXidMapSize = in.readInt();
+        txDhtCommitQueueSize = in.readInt();
+        txDhtPrepareQueueSize = in.readInt();
+        txDhtStartVerCountsSize = in.readInt();
+        txDhtCommittedVersionsSize = in.readInt();
+        txDhtRolledbackVersionsSize = in.readInt();
+        writeBehindTotalCriticalOverflowCnt = in.readInt();
+        writeBehindCriticalOverflowCnt = in.readInt();
+        writeBehindErrorRetryCnt = in.readInt();
+
+        totalPartitionsCnt = in.readInt();
+        rebalancingPartitionsCnt = in.readInt();
+        keysToRebalanceLeft = in.readLong();
+        rebalancingBytesRate = in.readLong();
+        rebalancingKeysRate = in.readLong();
+
+        rebalancedKeys = in.readLong();
+        estimatedRebalancingKeys = in.readLong();
+        rebalanceStartTime = in.readLong();
+        rebalanceFinishTime = in.readLong();
+        rebalanceClearingPartitionsLeft = in.readLong();
+
+        entryProcessorPuts = in.readLong();
+        entryProcessorAverageInvocationTime = in.readFloat();
+        entryProcessorInvocations = in.readLong();
+        entryProcessorMaxInvocationTime = in.readFloat();
+        entryProcessorMinInvocationTime = in.readFloat();
+        entryProcessorReadOnlyInvocations = in.readLong();
+        entryProcessorHitPercentage = in.readFloat();
+        entryProcessorHits = in.readLong();
+        entryProcessorMisses = in.readLong();
+        entryProcessorMissPercentage = in.readFloat();
+        entryProcessorRemovals = in.readLong();
+
+        cacheSize = in.readLong();
+        isEmpty = in.readBoolean();
+        size = in.readInt();
+        keySize = in.readInt();
+        txKeyCollisions = U.readLongString(in);
+        idxBuildPartitionsLeftCount = in.readInt();
     }
 }

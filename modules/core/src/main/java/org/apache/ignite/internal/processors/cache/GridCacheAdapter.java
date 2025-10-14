@@ -2942,7 +2942,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public CacheMetrics localMetrics() {
-        return metrics;
+        return new CacheMetricsSnapshot(metrics);
     }
 
     /**

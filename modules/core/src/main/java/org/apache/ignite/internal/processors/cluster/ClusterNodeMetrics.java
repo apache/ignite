@@ -17,41 +17,46 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
 
 /**
  *
  */
-class ClusterNodeMetrics {
+public class ClusterNodeMetrics implements Serializable {
     /** */
-    private final ClusterMetrics nodeMetrics;
+    private static final long serialVersionUID = 0L;
+
+    /** */
+    private final byte[] metrics;
 
     /** */
     private final Map<Integer, CacheMetrics> cacheMetrics;
 
     /**
-     * @param nodeMetrics Node metrics.
+     * @param metrics Metrics.
      * @param cacheMetrics Cache metrics.
      */
-    ClusterNodeMetrics(ClusterMetrics nodeMetrics, Map<Integer, CacheMetrics> cacheMetrics) {
-        this.nodeMetrics = nodeMetrics;
+    ClusterNodeMetrics(ClusterMetrics metrics, Map<Integer, CacheMetrics> cacheMetrics) {
+        this.metrics = ClusterMetricsSnapshot.serialize(metrics);
         this.cacheMetrics = cacheMetrics;
     }
 
     /**
-     * @return Node metrics.
+     * @return Metrics.
      */
-    ClusterMetrics nodeMetrics() {
-        return nodeMetrics;
+    byte[] metrics() {
+        return metrics;
     }
 
     /**
      * @return Cache metrics.
      */
-    Map<Integer, CacheMetrics> cacheMetrics() {
-        return cacheMetrics != null ? cacheMetrics : Collections.emptyMap();
+    public Map<Integer, CacheMetrics> cacheMetrics() {
+        return cacheMetrics != null ? cacheMetrics : Collections.<Integer, CacheMetrics>emptyMap();
     }
 }

@@ -245,7 +245,7 @@ class MessageSerializerGenerator {
 
         if (enumType(erasedType(field.asType())))
             throw new IllegalArgumentException("Unsupported enum type: " + field.asType() +
-                    ". The enum must be wrapped into a Message (see, for example, TransactionIsolationMessage).");
+                ". The enum must be wrapped into a Message (see, for example, TransactionIsolationMessage).");
 
         writeField(field, opt);
         readField(field, opt);
@@ -312,16 +312,11 @@ class MessageSerializerGenerator {
      * @param field Field to generate write code.
      */
     private void returnFalseIfWriteFailed(VariableElement field) throws Exception {
-        Order ordAnnot = field.getAnnotation(Order.class);
-
-        String methodName = ordAnnot.method();
+        String methodName = field.getAnnotation(Order.class).method();
 
         String getExpr = (F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName) + "()";
 
         TypeMirror type = field.asType();
-
-        if (ordAnnot.getter())
-            getExpr = (type.getKind() == TypeKind.BOOLEAN ? "is" : "get") + capitalizeFirst(getExpr);
 
         if (type.getKind().isPrimitive()) {
             String typeName = capitalizeOnlyFirst(type.getKind().name());
@@ -755,11 +750,6 @@ class MessageSerializerGenerator {
     /** Converts string "BYTE" to string "Byte", with first capital latter. */
     private String capitalizeOnlyFirst(String input) {
         return input.substring(0, 1).toUpperCase() + input.substring(1).toLowerCase();
-    }
-
-    /** Capitalizes first character. */
-    private String capitalizeFirst(String input) {
-        return input.substring(0, 1).toUpperCase() + input.substring(1);
     }
 
     /** @return {@code true} if trying to generate file with the same content. */

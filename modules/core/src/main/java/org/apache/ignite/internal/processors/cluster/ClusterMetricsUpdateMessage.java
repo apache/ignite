@@ -17,108 +17,124 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
-import java.util.AbstractMap;
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import org.apache.ignite.cache.CacheMetrics;
-import org.apache.ignite.cluster.ClusterMetrics;
-import org.apache.ignite.internal.ClusterMetricsSnapshot;
-import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
-/** */
-public final class ClusterMetricsUpdateMessage implements Message {
+import static org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType.BYTE_ARR;
+
+/**
+ *
+ */
+public class ClusterMetricsUpdateMessage implements Message {
     /** */
-    public static final short TYPE_CODE = 133;
+    private byte[] nodeMetrics;
 
     /** */
-    @Order(0)
-    @Nullable private ClusterMetricsSnapshot nodeMetrics;
+    @GridDirectMap(keyType = UUID.class, valueType = byte[].class)
+    private Map<UUID, byte[]> allNodesMetrics;
 
-    /** */
-    @Order(1)
-    @Nullable private CacheMetricsMessage cacheMetricsMsg;
-
-    /** */
-    @Order(2)
-    @Nullable private Map<UUID, ClusterMetricsSnapshot> allNodesMetrics;
-
-    /** */
-    @Order(3)
-    @Nullable private Map<UUID, CacheMetricsMessage> allCachesMetrics;
-
-    /** */
+    /**
+     * Required by {@link GridIoMessageFactory}.
+     */
     public ClusterMetricsUpdateMessage() {
         // No-op.
     }
 
-    /** */
-    public ClusterMetricsUpdateMessage(ClusterMetrics nodeMetrics, Map<Integer, ? extends CacheMetrics> cacheMetrics) {
-        this.nodeMetrics = ClusterMetricsSnapshot.of(nodeMetrics);
-        this.cacheMetricsMsg = new CacheMetricsMessage(cacheMetrics);
+    /**
+     * @param nodeMetrics Node metrics.
+     */
+    public ClusterMetricsUpdateMessage(byte[] nodeMetrics) {
+        this.nodeMetrics = nodeMetrics;
     }
 
-    /** */
-    public ClusterMetricsUpdateMessage(Map<UUID, ClusterNodeMetrics> allNodesMetrics) {
-        this.allNodesMetrics = allNodesMetrics.entrySet().stream()
-            .map(e -> new AbstractMap.SimpleEntry<>(e.getKey(), ClusterMetricsSnapshot.of(e.getValue().nodeMetrics())))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-        this.allCachesMetrics = allNodesMetrics.entrySet().stream()
-            .map(e -> new AbstractMap.SimpleEntry<>(e.getKey(), new CacheMetricsMessage(e.getValue().cacheMetrics())))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));;
+    /**
+     * @param allNodesMetrics All nodes metrcis.
+     */
+    ClusterMetricsUpdateMessage(Map<UUID, byte[]> allNodesMetrics) {
+        this.allNodesMetrics = allNodesMetrics;
     }
 
     /**
      * @return Node metrics.
      */
-    public @Nullable ClusterMetricsSnapshot nodeMetrics() {
+    public @Nullable byte[] nodeMetrics() {
         return nodeMetrics;
-    }
-
-    /** */
-    public void nodeMetrics(@Nullable ClusterMetricsSnapshot nodeMetrics) {
-        this.nodeMetrics = nodeMetrics;
-    }
-
-    /** */
-    public @Nullable CacheMetricsMessage cacheMetricsMsg() {
-        return cacheMetricsMsg;
-    }
-
-    /** */
-    public void cacheMetricsMsg(CacheMetricsMessage cacheMetricsMsg) {
-        this.cacheMetricsMsg = cacheMetricsMsg;
     }
 
     /**
      * @return All nodes metrics.
      */
-    public @Nullable Map<UUID, ClusterMetricsSnapshot> allNodesMetrics() {
+    @Nullable Map<UUID, byte[]> allNodesMetrics() {
         return allNodesMetrics;
     }
 
-    /** */
-    public void allNodesMetrics(@Nullable Map<UUID, ClusterMetricsSnapshot> allNodesMetrics) {
-        this.allNodesMetrics = allNodesMetrics;
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeMap(allNodesMetrics, MessageCollectionItemType.UUID, BYTE_ARR))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeByteArray(nodeMetrics))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
     }
 
-    /** */
-    public @Nullable Map<UUID, CacheMetricsMessage> allCachesMetrics() {
-        return allCachesMetrics;
-    }
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
 
-    /** */
-    public void allCachesMetrics(@Nullable Map<UUID, CacheMetricsMessage> allCachesMetrics) {
-        this.allCachesMetrics = allCachesMetrics;
+        switch (reader.state()) {
+            case 0:
+                allNodesMetrics = reader.readMap(MessageCollectionItemType.UUID, BYTE_ARR, false);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                nodeMetrics = reader.readByteArray();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return TYPE_CODE;
+        return 133;
     }
 
     /** {@inheritDoc} */
