@@ -133,7 +133,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientAckResponse;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
@@ -7001,15 +7000,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                             ((TcpDiscoveryRingLatencyCheckMessage)msg).onRead();
                         }
 
-                        TcpDiscoveryClientMetricsUpdateMessage metricsUpdateMsg = null;
+                        ringMessageReceived();
 
-                        if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
-                            metricsUpdateMsg = (TcpDiscoveryClientMetricsUpdateMessage)msg;
-                        else {
-                            ringMessageReceived();
-
-                            msgWorker.addMessage(msg, false, true);
-                        }
+                        msgWorker.addMessage(msg, false, true);
 
                         // Send receipt back.
                         if (clientMsgWrk != null) {
@@ -7021,9 +7014,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                         else
                             spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
-
-                        if (metricsUpdateMsg != null)
-                            processClientMetricsUpdateMessage(metricsUpdateMsg);
                     }
                     catch (IgniteCheckedException e) {
                         if (log.isDebugEnabled())
@@ -7288,22 +7278,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 else if (ring.hasRemoteNodes() && !isLocalNodeCoordinator())
                     msgWorker.addMessage(msg);
             }
-        }
-
-        /**
-         * Processes client metrics update message.
-         *
-         * @param msg Client metrics update message.
-         */
-        private void processClientMetricsUpdateMessage(TcpDiscoveryClientMetricsUpdateMessage msg) {
-            assert msg.client();
-
-            ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
-
-            if (wrk != null)
-                wrk.metrics(msg.metrics());
-            else if (log.isDebugEnabled())
-                log.debug("Received client metrics update message from unknown client node: " + msg);
         }
 
         /**
