@@ -210,9 +210,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                 assert newMeta instanceof BinaryTypeImpl;
 
                 if (!discoveryStarted) {
-                    BinaryMetadataVersionInfo holder = metadataLocCache.get(typeId);
+                    BinaryMetadataVersionInfo metaVerInfo = metadataLocCache.get(typeId);
 
-                    BinaryMetadata oldMeta = holder != null ? holder.metadata() : null;
+                    BinaryMetadata oldMeta = metaVerInfo != null ? metaVerInfo.metadata() : null;
 
                     BinaryMetadata mergedMeta = mergeMetadata(oldMeta, ((BinaryTypeImpl)newMeta).metadata());
 
@@ -591,20 +591,20 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
      * @param newMeta0 Expected binary metadata.
      */
     private void failIfUnregistered(int typeId, BinaryMetadata newMeta0) {
-        BinaryMetadataVersionInfo metaHolder = metadataLocCache.get(typeId);
+        BinaryMetadataVersionInfo metaVerInfo = metadataLocCache.get(typeId);
 
-        BinaryMetadata oldMeta = metaHolder != null ? metaHolder.metadata() : null;
+        BinaryMetadata oldMeta = metaVerInfo != null ? metaVerInfo.metadata() : null;
 
         BinaryMetadata mergedMeta = mergeMetadata(oldMeta, newMeta0);
 
         if (mergedMeta != oldMeta)
             throw new UnregisteredBinaryTypeException(typeId, mergedMeta);
 
-        if (metaHolder.pendingVersion() == metaHolder.acceptedVersion())
+        if (metaVerInfo.pendingVersion() == metaVerInfo.acceptedVersion())
             return;
 
         // Metadata locally is up-to-date. Waiting for updating metadata in an entire cluster, if necessary.
-        GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(typeId, metaHolder.pendingVersion());
+        GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(typeId, metaVerInfo.pendingVersion());
 
         if (!fut.isDone())
             throw new UnregisteredBinaryTypeException(typeId, fut);
@@ -622,9 +622,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         BinaryMetadata newMeta0 = ((BinaryTypeImpl)newMeta).metadata();
 
-        BinaryMetadataVersionInfo metaHolder = metadataLocCache.get(typeId);
+        BinaryMetadataVersionInfo metaVerInfo = metadataLocCache.get(typeId);
 
-        BinaryMetadata oldMeta = metaHolder != null ? metaHolder.metadata() : null;
+        BinaryMetadata oldMeta = metaVerInfo != null ? metaVerInfo.metadata() : null;
 
         try {
             BinaryMetadata mergedMeta = mergeMetadata(oldMeta, newMeta0);
@@ -653,15 +653,15 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (metadataFileStore == null)
             return;
 
-        BinaryMetadataVersionInfo hldr = metadataLocCache.get(typeId);
+        BinaryMetadataVersionInfo metaVerInfo = metadataLocCache.get(typeId);
 
-        if (hldr != null) {
+        if (metaVerInfo != null) {
             try {
-                metadataFileStore.waitForWriteCompletion(typeId, hldr.pendingVersion());
+                metadataFileStore.waitForWriteCompletion(typeId, metaVerInfo.pendingVersion());
             }
             catch (IgniteCheckedException e) {
                 log.warning("Failed to wait for metadata write operation for [typeId=" + typeId +
-                    ", typeVer=" + hldr.acceptedVersion() + ']', e);
+                    ", typeVer=" + metaVerInfo.acceptedVersion() + ']', e);
             }
         }
     }
@@ -672,16 +672,16 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
      * @throws IgniteException In case of error.
      */
     @Nullable public BinaryMetadata metadata0(final int typeId) {
-        BinaryMetadataVersionInfo holder = metadataLocCache.get(typeId);
+        BinaryMetadataVersionInfo metaVerInfo = metadataLocCache.get(typeId);
 
         IgniteThread curThread = IgniteThread.current();
 
-        if (holder == null && (curThread == null || !curThread.isForbiddenToRequestBinaryMetadata())) {
+        if (metaVerInfo == null && (curThread == null || !curThread.isForbiddenToRequestBinaryMetadata())) {
             if (ctx.clientNode()) {
                 try {
                     transport.requestUpToDateMetadata(typeId).get();
 
-                    holder = metadataLocCache.get(typeId);
+                    metaVerInfo = metadataLocCache.get(typeId);
                 }
                 catch (IgniteCheckedException ignored) {
                     // No-op.
@@ -689,8 +689,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             }
         }
 
-        if (holder != null) {
-            if (holder.removing()) {
+        if (metaVerInfo != null) {
+            if (metaVerInfo.removing()) {
                 GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataRemove(typeId);
 
                 try {
@@ -704,16 +704,16 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             }
 
             if (curThread instanceof IgniteDiscoveryThread || (curThread != null && curThread.isForbiddenToRequestBinaryMetadata()))
-                return holder.metadata();
+                return metaVerInfo.metadata();
 
-            if (holder.pendingVersion() - holder.acceptedVersion() > 0) {
-                GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(typeId, holder.pendingVersion());
+            if (metaVerInfo.pendingVersion() - metaVerInfo.acceptedVersion() > 0) {
+                GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(typeId, metaVerInfo.pendingVersion());
 
                 if (log.isDebugEnabled() && !fut.isDone())
                     log.debug("Waiting for update for" +
                         " [typeId=" + typeId +
-                        ", pendingVer=" + holder.pendingVersion() +
-                        ", acceptedVer=" + holder.acceptedVersion() + "]");
+                        ", pendingVer=" + metaVerInfo.pendingVersion() +
+                        ", acceptedVer=" + metaVerInfo.acceptedVersion() + "]");
 
                 try {
                     fut.get();
@@ -724,17 +724,17 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             }
             else if (metadataFileStore != null) {
                 try {
-                    metadataFileStore.waitForWriteCompletion(typeId, holder.pendingVersion());
+                    metadataFileStore.waitForWriteCompletion(typeId, metaVerInfo.pendingVersion());
                 }
                 catch (IgniteCheckedException e) {
                     log.warning("Failed to wait for metadata write operation for [typeId=" + typeId +
-                        ", typeVer=" + holder.acceptedVersion() + ']', e);
+                        ", typeVer=" + metaVerInfo.acceptedVersion() + ']', e);
 
                     return null;
                 }
             }
 
-            return holder.metadata();
+            return metaVerInfo.metadata();
         }
         else
             return null;
@@ -742,16 +742,16 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Nullable @Override public BinaryType metadata(final int typeId, final int schemaId) {
-        BinaryMetadataVersionInfo holder = metadataLocCache.get(typeId);
+        BinaryMetadataVersionInfo metaVerInfo = metadataLocCache.get(typeId);
 
         if (ctx.clientNode()) {
-            if (holder == null || !holder.metadata().hasSchema(schemaId)) {
+            if (metaVerInfo == null || !metaVerInfo.metadata().hasSchema(schemaId)) {
                 if (log.isDebugEnabled())
                     log.debug("Waiting for client metadata update" +
                         " [typeId=" + typeId
                         + ", schemaId=" + schemaId
-                        + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
-                        + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion()) + ']');
+                        + ", pendingVer=" + (metaVerInfo == null ? "NA" : metaVerInfo.pendingVersion())
+                        + ", acceptedVer=" + (metaVerInfo == null ? "NA" : metaVerInfo.acceptedVersion()) + ']');
 
                 try {
                     transport.requestUpToDateMetadata(typeId).get();
@@ -760,37 +760,37 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     // No-op.
                 }
 
-                holder = metadataLocCache.get(typeId);
+                metaVerInfo = metadataLocCache.get(typeId);
 
                 IgniteFuture<?> reconnectFut0 = reconnectFut;
 
-                if (holder == null && reconnectFut0 != null)
+                if (metaVerInfo == null && reconnectFut0 != null)
                     throw new IgniteClientDisconnectedException(reconnectFut0, "Client node disconnected.");
 
                 if (log.isDebugEnabled())
                     log.debug("Finished waiting for client metadata update" +
                         " [typeId=" + typeId
                         + ", schemaId=" + schemaId
-                        + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
-                        + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion()) + ']');
+                        + ", pendingVer=" + (metaVerInfo == null ? "NA" : metaVerInfo.pendingVersion())
+                        + ", acceptedVer=" + (metaVerInfo == null ? "NA" : metaVerInfo.acceptedVersion()) + ']');
             }
         }
         else {
-            if (holder != null && IgniteThread.current() instanceof IgniteDiscoveryThread)
-                return holder.metadata().wrap(binaryCtx);
-            else if (holder != null && (holder.pendingVersion() - holder.acceptedVersion() > 0)) {
+            if (metaVerInfo != null && IgniteThread.current() instanceof IgniteDiscoveryThread)
+                return metaVerInfo.metadata().wrap(binaryCtx);
+            else if (metaVerInfo != null && (metaVerInfo.pendingVersion() - metaVerInfo.acceptedVersion() > 0)) {
                 if (log.isDebugEnabled())
                     log.debug("Waiting for metadata update" +
                         " [typeId=" + typeId
                         + ", schemaId=" + schemaId
-                        + ", pendingVer=" + holder.pendingVersion()
-                        + ", acceptedVer=" + holder.acceptedVersion() + ']');
+                        + ", pendingVer=" + metaVerInfo.pendingVersion()
+                        + ", acceptedVer=" + metaVerInfo.acceptedVersion() + ']');
 
                 long t0 = System.nanoTime();
 
                 GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(
                     typeId,
-                    holder.pendingVersion());
+                    metaVerInfo.pendingVersion());
 
                 try {
                     fut.get();
@@ -804,20 +804,20 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                         " [typeId=" + typeId
                         + ", waitTime=" + NANOSECONDS.convert(System.nanoTime() - t0, MILLISECONDS) + "ms"
                         + ", schemaId=" + schemaId
-                        + ", pendingVer=" + holder.pendingVersion()
-                        + ", acceptedVer=" + holder.acceptedVersion() + ']');
+                        + ", pendingVer=" + metaVerInfo.pendingVersion()
+                        + ", acceptedVer=" + metaVerInfo.acceptedVersion() + ']');
 
-                holder = metadataLocCache.get(typeId);
+                metaVerInfo = metadataLocCache.get(typeId);
             }
-            else if (holder == null || !holder.metadata().hasSchema(schemaId)) {
+            else if (metaVerInfo == null || !metaVerInfo.metadata().hasSchema(schemaId)) {
                 // Last resort waiting.
                 U.warn(log,
                     "Schema is missing while no metadata updates are in progress " +
                         "(will wait for schema update within timeout defined by " + IGNITE_WAIT_SCHEMA_UPDATE + " system property)" +
                         " [typeId=" + typeId
                         + ", missingSchemaId=" + schemaId
-                        + ", pendingVer=" + (holder == null ? "NA" : holder.pendingVersion())
-                        + ", acceptedVer=" + (holder == null ? "NA" : holder.acceptedVersion())
+                        + ", pendingVer=" + (metaVerInfo == null ? "NA" : metaVerInfo.pendingVersion())
+                        + ", acceptedVer=" + (metaVerInfo == null ? "NA" : metaVerInfo.acceptedVersion())
                         + ", binMetaUpdateTimeout=" + waitSchemaTimeout + ']');
 
                 long t0 = System.nanoTime();
@@ -835,31 +835,31 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     // No-op.
                 }
 
-                holder = metadataLocCache.get(typeId);
+                metaVerInfo = metadataLocCache.get(typeId);
 
-                if (log.isDebugEnabled() && holder != null && holder.metadata().hasSchema(schemaId))
+                if (log.isDebugEnabled() && metaVerInfo != null && metaVerInfo.metadata().hasSchema(schemaId))
                     log.debug("Found the schema after wait" +
                         " [typeId=" + typeId
                         + ", waitTime=" + NANOSECONDS.convert(System.nanoTime() - t0, MILLISECONDS) + "ms"
                         + ", schemaId=" + schemaId
-                        + ", pendingVer=" + holder.pendingVersion()
-                        + ", acceptedVer=" + holder.acceptedVersion() + ']');
+                        + ", pendingVer=" + metaVerInfo.pendingVersion()
+                        + ", acceptedVer=" + metaVerInfo.acceptedVersion() + ']');
             }
         }
 
-        if (holder != null && metadataFileStore != null) {
+        if (metaVerInfo != null && metadataFileStore != null) {
             try {
-                metadataFileStore.waitForWriteCompletion(typeId, holder.pendingVersion());
+                metadataFileStore.waitForWriteCompletion(typeId, metaVerInfo.pendingVersion());
             }
             catch (IgniteCheckedException e) {
                 log.warning("Failed to wait for metadata write operation for [typeId=" + typeId +
-                    ", typeVer=" + holder.acceptedVersion() + ']', e);
+                    ", typeVer=" + metaVerInfo.acceptedVersion() + ']', e);
 
                 return null;
             }
         }
 
-        return holder != null ? holder.metadata().wrap(binaryCtx) : null;
+        return metaVerInfo != null ? metaVerInfo.metadata().wrap(binaryCtx) : null;
     }
 
     /** {@inheritDoc} */
@@ -881,8 +881,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
     /** {@inheritDoc} */
     @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
         return F.viewReadOnly(metadataLocCache.values(), new IgniteClosure<BinaryMetadataVersionInfo, BinaryType>() {
-            @Override public BinaryType apply(BinaryMetadataVersionInfo metaHolder) {
-                return metaHolder.metadata().wrap(binaryCtx);
+            @Override public BinaryType apply(BinaryMetadataVersionInfo metaVerInfo) {
+                return metaVerInfo.metadata().wrap(binaryCtx);
             }
         });
     }
@@ -893,8 +893,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
      */
     public Collection<BinaryMetadata> binaryMetadata() throws BinaryObjectException {
         return F.viewReadOnly(metadataLocCache.values(), new IgniteClosure<BinaryMetadataVersionInfo, BinaryMetadata>() {
-            @Override public BinaryMetadata apply(BinaryMetadataVersionInfo metaHolder) {
-                return metaHolder.metadata();
+            @Override public BinaryMetadata apply(BinaryMetadataVersionInfo metaVerInfo) {
+                return metaVerInfo.metadata();
             }
         });
     }
@@ -904,9 +904,9 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
      * @throws BinaryObjectException on error.
      */
     public BinaryMetadata binaryMetadata(int typeId) throws BinaryObjectException {
-        BinaryMetadataVersionInfo hld = metadataLocCache.get(typeId);
+        BinaryMetadataVersionInfo metaVerInfo = metadataLocCache.get(typeId);
 
-        return hld != null ? hld.metadata() : null;
+        return metaVerInfo != null ? metaVerInfo.metadata() : null;
     }
 
     /** {@inheritDoc} */
@@ -1490,10 +1490,10 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         for (Map.Entry<Integer, BinaryMetadataVersionInfo> metaEntry : newNodeMeta.entrySet()) {
             if (metadataLocCache.containsKey(metaEntry.getKey())) {
-                BinaryMetadataVersionInfo locMetaHolder = metadataLocCache.get(metaEntry.getKey());
+                BinaryMetadataVersionInfo locMetaVerInfo = metadataLocCache.get(metaEntry.getKey());
 
                 BinaryMetadata newMeta = metaEntry.getValue().metadata();
-                BinaryMetadata locMeta = locMetaHolder.metadata();
+                BinaryMetadata locMeta = locMetaVerInfo.metadata();
 
                 BinaryMetadata mergedMeta = mergeMetadata(locMeta, newMeta);
 
@@ -1508,16 +1508,16 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
                     metadataLocCache.put(metaEntry.getKey(),
                         new BinaryMetadataVersionInfo(mergedMeta,
-                            locMetaHolder.pendingVersion(),
-                            locMetaHolder.acceptedVersion()));
+                            locMetaVerInfo.pendingVersion(),
+                            locMetaVerInfo.acceptedVersion()));
 
                     if (!ctx.clientNode())
                         metadataFileStore.writeMetadata(mergedMeta);
                 }
             }
             else {
-                BinaryMetadataVersionInfo newMetaHolder = metaEntry.getValue();
-                BinaryMetadata newMeta = newMetaHolder.metadata();
+                BinaryMetadataVersionInfo newMetaVerInfo = metaEntry.getValue();
+                BinaryMetadata newMeta = newMetaVerInfo.metadata();
 
                 U.log(log,
                     String.format("New BinaryMetadata[typeId=%d, typeName=%s] " +
@@ -1526,7 +1526,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                         newMeta.typeName(),
                         joiningNode));
 
-                metadataLocCache.put(metaEntry.getKey(), newMetaHolder);
+                metadataLocCache.put(metaEntry.getKey(), newMetaVerInfo);
 
                 if (!ctx.clientNode())
                     metadataFileStore.writeMetadata(newMeta);
@@ -1540,19 +1540,19 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         if (receivedData != null) {
             for (Map.Entry<Integer, BinaryMetadataVersionInfo> e : receivedData.entrySet()) {
-                BinaryMetadataVersionInfo holder = e.getValue();
+                BinaryMetadataVersionInfo metaVerInfo = e.getValue();
 
-                BinaryMetadataVersionInfo locHolder = new BinaryMetadataVersionInfo(holder.metadata(),
-                        holder.pendingVersion(),
-                        holder.pendingVersion());
+                BinaryMetadataVersionInfo locMetaVerInfo = new BinaryMetadataVersionInfo(metaVerInfo.metadata(),
+                        metaVerInfo.pendingVersion(),
+                        metaVerInfo.pendingVersion());
 
                 if (log.isDebugEnabled())
-                    log.debug("Received metadata on join: " + locHolder);
+                    log.debug("Received metadata on join: " + locMetaVerInfo);
 
-                metadataLocCache.put(e.getKey(), locHolder);
+                metadataLocCache.put(e.getKey(), locMetaVerInfo);
 
                 if (!ctx.clientNode())
-                    metadataFileStore.writeMetadata(holder.metadata());
+                    metadataFileStore.writeMetadata(metaVerInfo.metadata());
             }
         }
     }
@@ -1567,12 +1567,12 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public void removeType(int typeId) {
-        BinaryMetadataVersionInfo oldHld = metadataLocCache.get(typeId);
+        BinaryMetadataVersionInfo oldMetaVerInfo = metadataLocCache.get(typeId);
 
-        if (oldHld == null)
+        if (oldMetaVerInfo == null)
             throw new IgniteException("Failed to remove metadata, type not found: " + typeId);
 
-        if (oldHld.removing())
+        if (oldMetaVerInfo.removing())
             throw new IgniteException("Failed to remove metadata, type is being removed: " + typeId);
 
         try {

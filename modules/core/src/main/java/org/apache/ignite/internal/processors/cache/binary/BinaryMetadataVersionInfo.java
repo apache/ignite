@@ -33,8 +33,8 @@ final class BinaryMetadataVersionInfo implements Serializable {
     private final BinaryMetadata metadata;
 
     /**
-     * The version of metadata that has been proposed for update. This represents how many updates have been issued for
-     * this type. When a metadata update is proposed, this version is incremented.
+     * The version of metadata that has been proposed for update. This represents how many unique updates have been issued
+     * for this type. When a metadata update is proposed, this version is incremented.
      */
     private final int pendingVer;
 
@@ -79,7 +79,7 @@ final class BinaryMetadataVersionInfo implements Serializable {
     }
 
     /**
-     * @return Holder metadata with remove state where remove pending message has been handled.
+     * @return Metadata version info with remove state where remove pending message has been handled.
      */
     BinaryMetadataVersionInfo createRemoving() {
         return new BinaryMetadataVersionInfo(metadata, pendingVer, acceptedVer, true);
