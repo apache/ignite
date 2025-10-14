@@ -23,7 +23,6 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -39,7 +38,7 @@ public final class ClusterMetricsUpdateMessage implements Message {
 
     /** */
     @Order(1)
-    @Nullable private CacheMetricsSnapshot cacheMetrics;
+    @Nullable private CacheMetricsMessage cacheMetricsMsg;
 
     /** */
     @Order(2)
@@ -47,7 +46,7 @@ public final class ClusterMetricsUpdateMessage implements Message {
 
     /** */
     @Order(3)
-    @Nullable private Map<UUID, CacheMetricsSnapshot> allCachesMetrics;
+    @Nullable private Map<UUID, CacheMetricsMessage> allCachesMetrics;
 
     /** */
     public ClusterMetricsUpdateMessage() {
@@ -55,15 +54,15 @@ public final class ClusterMetricsUpdateMessage implements Message {
     }
 
     /** */
-    public ClusterMetricsUpdateMessage(ClusterMetrics nodeMetrics, CacheMetrics cacheMetrics) {
+    public ClusterMetricsUpdateMessage(ClusterMetrics nodeMetrics, Map<Integer, ? extends CacheMetrics> cacheMetrics) {
         this.nodeMetrics = ClusterMetricsSnapshot.of(nodeMetrics);
-        this.cacheMetrics = CacheMetricsSnapshot.of(cacheMetrics);
+        this.cacheMetricsMsg = new CacheMetricsMessage(cacheMetrics);
     }
 
     /** */
     private ClusterMetricsUpdateMessage(
         Map<UUID, ClusterMetricsSnapshot> allNodesMetrics,
-        Map<UUID, CacheMetricsSnapshot> allCachesMetrics
+        Map<UUID, CacheMetricsMessage> allCachesMetrics
     ) {
         this.allNodesMetrics = allNodesMetrics;
         this.allCachesMetrics = allCachesMetrics;
@@ -82,13 +81,13 @@ public final class ClusterMetricsUpdateMessage implements Message {
     }
 
     /** */
-    public @Nullable CacheMetricsSnapshot cacheMetrics() {
-        return cacheMetrics;
+    public @Nullable CacheMetricsMessage cacheMetricsMsg() {
+        return cacheMetricsMsg;
     }
 
     /** */
-    public void cacheMetrics(CacheMetricsSnapshot cacheMetrics) {
-        this.cacheMetrics = cacheMetrics;
+    public void cacheMetricsMsg(CacheMetricsMessage cacheMetricsMsg) {
+        this.cacheMetricsMsg = cacheMetricsMsg;
     }
 
     /**
@@ -104,12 +103,12 @@ public final class ClusterMetricsUpdateMessage implements Message {
     }
 
     /** */
-    public @Nullable Map<UUID, CacheMetricsSnapshot> allCachesMetrics() {
+    public @Nullable Map<UUID, CacheMetricsMessage> allCachesMetrics() {
         return allCachesMetrics;
     }
 
     /** */
-    public void allCachesMetrics(@Nullable Map<UUID, CacheMetricsSnapshot> allCachesMetrics) {
+    public void allCachesMetrics(@Nullable Map<UUID, CacheMetricsMessage> allCachesMetrics) {
         this.allCachesMetrics = allCachesMetrics;
     }
 

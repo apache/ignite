@@ -704,17 +704,18 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      * @param msg Message.
      */
     private void processMetricsUpdateMessage(UUID sndNodeId, ClusterMetricsUpdateMessage msg) {
-        if (msg.allNodesMetrics() == null) {
+        if (msg.allNodesMetrics() == null && msg.allCachesMetrics() == null) {
             assert msg.nodeMetrics() != null;
-            assert msg.cacheMetrics() != null;
+            assert msg.cacheMetricsMsg() != null && msg.cacheMetricsMsg().cacheMetrics() != null;
 
-            allNodesMetrics.put(sndNodeId, new ClusterNodeMetrics(msg.nodeMetrics(), msg.cacheMetrics()));
+            allNodesMetrics.put(sndNodeId, new ClusterNodeMetrics(msg.nodeMetrics(), msg.cacheMetricsMsg().cacheMetrics()));
 
-            updateNodeMetrics(ctx.discovery().discoCache(), sndNodeId, msg.nodeMetrics(), msg.cacheMetrics());
+            updateNodeMetrics(ctx.discovery().discoCache(), sndNodeId, msg.nodeMetrics(), msg.cacheMetricsMsg().cacheMetrics());
         }
         else {
             assert msg.nodeMetrics() == null;
-            assert msg.cacheMetrics() == null;
+            assert msg.cacheMetricsMsg() == null;
+            assert msg.allNodesMetrics() != null && msg.allCachesMetrics() != null;
 
             Map<UUID, ClusterMetricsSnapshot> allNodesMetrics = msg.allNodesMetrics();
 
@@ -724,7 +725,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
             for (Map.Entry<UUID, ClusterMetricsSnapshot> e : allNodesMetrics.entrySet()) {
                 if (!ctx.localNodeId().equals(e.getKey()))
-                    updateNodeMetrics(discoCache, e.getKey(), nodeMetrics, cacheMetrics);
+                    updateNodeMetrics(discoCache, e.getKey(), msg.nodeMetrics(), msg.cacheMetricsMsg().cacheMetrics());
             }
         }
     }
@@ -772,18 +773,15 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             IgniteClusterNode locNode = (IgniteClusterNode)ctx.discovery().localNode();
 
             locNode.setMetrics(metricsProvider.metrics());
+            locNode.setCacheMetrics(metricsProvider.cacheMetrics());
 
-
-            ClusterNodeMetrics metrics = new ClusterNodeMetrics(locNode.metrics(), locNode.cacheMetrics());
-
-
-            allNodesMetrics.put(ctx.localNodeId(), locNode.metrics());
+            allNodesMetrics.put(ctx.localNodeId(), new ClusterNodeMetrics(locNode.metrics(), locNode.cacheMetrics()));
 
             ctx.discovery().metricsUpdateEvent(ctx.discovery().discoCache(), locNode);
 
             Collection<ClusterNode> allNodes = ctx.discovery().allNodes();
 
-            ClusterMetricsUpdateMessage msg = ClusterMetricsUpdateMessage.of(allNodesMetrics);
+            ClusterMetricsUpdateMessage msg = new ClusterMetricsUpdateMessage(locNode.metrics(), locNode.cacheMetrics());
 
             for (ClusterNode node : allNodes) {
                 if (ctx.localNodeId().equals(node.id()) || !ctx.discovery().alive(node.id()))
