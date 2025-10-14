@@ -333,6 +333,8 @@ public class ClusterMetricsSnapshot implements ClusterMetrics, Message {
     public ClusterMetricsSnapshot(Collection<ClusterNode> nodes) {
         int size = nodes.size();
 
+        totalNodes = size;
+
         for (ClusterNode node : nodes) {
             ClusterMetrics m = node.metrics();
 

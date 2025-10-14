@@ -379,7 +379,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
             new ClusterMetricsUpdateMessageSerializer());
         factory.register(CacheMetricsMessage.TYPE_CODE, CacheMetricsMessage::new, new CacheMetricsMessageSerializer());
         factory.register(ClusterMetricsSnapshot.TYPE_CODE, ClusterMetricsSnapshot::new, new ClusterMetricsSnapshotSerializer());
-        factory.register(CacheMetricsSnapshot.TYPE_CODE, ClusterMetricsSnapshot::new, new CacheMetricsSnapshotSerializer());
+        factory.register(CacheMetricsSnapshot.TYPE_CODE, CacheMetricsSnapshot::new, new CacheMetricsSnapshotSerializer());
         factory.register((short)137, ContinuousRoutineStartResultMessage::new);
         factory.register((short)138, LatchAckMessage::new, new LatchAckMessageSerializer());
         factory.register((short)157, PartitionUpdateCountersMessage::new);
