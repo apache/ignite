@@ -49,7 +49,6 @@ import org.apache.ignite.internal.util.tostring.IncludeSensitiveTransactionalTes
 import org.apache.ignite.internal.util.tostring.TransactionSensitiveDataTest;
 import org.apache.ignite.lang.GridByteArrayListSelfTest;
 import org.apache.ignite.spi.discovery.ClusterMetricsSelfTest;
-import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeCompatibilityTest;
 import org.apache.ignite.spi.discovery.ClusterMetricsSnapshotSerializeSelfTest;
 import org.apache.ignite.spi.discovery.ClusterRebalancedMetricTest;
 import org.apache.ignite.thread.GridThreadPoolExecutorServiceSelfTest;
@@ -118,7 +117,6 @@ import org.junit.runners.Suite;
 
     // Metrics.
     ClusterMetricsSnapshotSerializeSelfTest.class,
-    ClusterMetricsSnapshotSerializeCompatibilityTest.class,
     ClusterMetricsSelfTest.class,
     ClusterRebalancedMetricTest.class,
     ThreadPoolMetricsTest.class,
