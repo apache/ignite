@@ -32,7 +32,7 @@ public class CacheWriteSynchronizationModeMessage implements Message {
 
     /** */
     @Order(0)
-    private short code = -1;
+    private byte code = -1;
 
     /** */
     public CacheWriteSynchronizationModeMessage() {
@@ -40,46 +40,50 @@ public class CacheWriteSynchronizationModeMessage implements Message {
     }
 
     /** */
-    public CacheWriteSynchronizationModeMessage(CacheWriteSynchronizationMode cacheWriteSyncMode) {
-        this.cacheWriteSyncMode = cacheWriteSyncMode;
-        this.code = encode(cacheWriteSyncMode);
+    public CacheWriteSynchronizationModeMessage(CacheWriteSynchronizationMode mode) {
+        this.cacheWriteSyncMode = mode;
+        this.code = encode(mode);
     }
 
     /** */
-    private static short encode(CacheWriteSynchronizationMode cacheWriteSyncMode) {
-        switch (cacheWriteSyncMode) {
+    private static byte encode(@Nullable CacheWriteSynchronizationMode mode) {
+        if (mode == null)
+            return -1;
+
+        switch (mode) {
             case FULL_SYNC: return 0;
             case FULL_ASYNC: return 1;
             case PRIMARY_SYNC: return 2;
         }
 
-        return -1;
+        throw new IllegalArgumentException("Unknown cache write synchronization mode: " + mode);
     }
 
     /** */
     @Nullable private static CacheWriteSynchronizationMode decode(short code) {
         switch (code) {
+            case -1: return null;
             case 0: return CacheWriteSynchronizationMode.FULL_SYNC;
             case 1: return CacheWriteSynchronizationMode.FULL_ASYNC;
             case 2: return CacheWriteSynchronizationMode.PRIMARY_SYNC;
         }
 
-        return null;
+        throw new IllegalArgumentException("Unknown cache write synchronization mode code: " + code);
     }
 
     /** */
-    public void code(short code) {
+    public void code(byte code) {
         this.code = code;
         this.cacheWriteSyncMode = decode(code);
     }
 
     /** */
-    public short code() {
+    public byte code() {
         return code;
     }
 
     /** */
-    public CacheWriteSynchronizationMode cacheWriteSyncMode() {
+    public CacheWriteSynchronizationMode value() {
         return cacheWriteSyncMode;
     }
 

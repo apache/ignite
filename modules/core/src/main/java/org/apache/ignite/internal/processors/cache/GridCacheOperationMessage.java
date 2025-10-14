@@ -30,7 +30,7 @@ public class GridCacheOperationMessage implements Message {
 
     /** */
     @Order(0)
-    private short code = -1;
+    private byte code = -1;
 
     /** */
     public GridCacheOperationMessage() {
@@ -44,7 +44,10 @@ public class GridCacheOperationMessage implements Message {
     }
 
     /** */
-    private static short encode(GridCacheOperation operation) {
+    private static byte encode(@Nullable GridCacheOperation operation) {
+        if (operation == null)
+            return -1;
+
         switch (operation) {
             case READ: return 0;
             case CREATE: return 1;
@@ -55,12 +58,13 @@ public class GridCacheOperationMessage implements Message {
             case NOOP: return 6;
         }
 
-        return -1;
+        throw new IllegalArgumentException("Unknown cache operation: " + operation);
     }
 
     /** */
-    @Nullable private static GridCacheOperation decode(short code) {
+    @Nullable private static GridCacheOperation decode(byte code) {
         switch (code) {
+            case -1: return null;
             case 0: return GridCacheOperation.READ;
             case 1: return GridCacheOperation.CREATE;
             case 2: return GridCacheOperation.UPDATE;
@@ -70,22 +74,22 @@ public class GridCacheOperationMessage implements Message {
             case 6: return GridCacheOperation.NOOP;
         }
 
-        return null;
+        throw new IllegalArgumentException("Unknown cache operation code: " + code);
     }
 
     /** */
-    public void code(short code) {
+    public void code(byte code) {
         this.code = code;
         this.cacheOperation = decode(code);
     }
 
     /** */
-    public short code() {
+    public byte code() {
         return code;
     }
 
     /** */
-    @Nullable public GridCacheOperation cacheOperation() {
+    @Nullable public GridCacheOperation value() {
         return cacheOperation;
     }
 
