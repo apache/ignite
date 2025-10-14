@@ -30,6 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Metrics snapshot.
+ * TODO: {@link IgniteDataTransferObject} and its serialization might be removed with IGNITE-26708.
  */
 public class CacheMetricsSnapshot extends IgniteDataTransferObject implements CacheMetrics, Message {
     /** */
