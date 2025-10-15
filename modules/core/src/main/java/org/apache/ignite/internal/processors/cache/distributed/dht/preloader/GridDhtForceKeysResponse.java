@@ -90,7 +90,7 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
      * @param err Error.
      */
     public void error(@Nullable Throwable err) {
-        this.err = err == null ? null : new ErrorMessage(err);
+        this.err = new ErrorMessage(err);
     }
 
     /** {@inheritDoc} */
