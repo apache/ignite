@@ -164,7 +164,7 @@ public class ConnectionClientPool {
         .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
 
     /** */
-    @Nullable private final GridMetricManager metricsMgr;
+    private final GridMetricManager metricsMgr;
 
     /** */
     private volatile AtomicBoolean asyncMetric;
@@ -197,7 +197,7 @@ public class ConnectionClientPool {
         ClusterStateProvider clusterStateProvider,
         GridNioServerWrapper nioSrvWrapper,
         String igniteInstanceName,
-        @Nullable GridMetricManager metricsMgr
+        GridMetricManager metricsMgr
     ) {
         this.cfg = cfg;
         this.attrs = attrs;
@@ -244,11 +244,9 @@ public class ConnectionClientPool {
     public void stop() {
         this.stopping = true;
 
-        if (metricsMgr != null) {
-            metricsMgr.remove(SHARED_METRICS_REGISTRY_NAME);
+        metricsMgr.remove(SHARED_METRICS_REGISTRY_NAME);
 
-            clients.keySet().forEach(this::removeNodeMetrics);
-        }
+        clients.keySet().forEach(this::removeNodeMetrics);
 
         for (GridFutureAdapter<GridCommunicationClient> fut : clientFuts.values()) {
             if (fut instanceof ConnectionRequestFuture) {
@@ -419,8 +417,7 @@ public class ConnectionClientPool {
                 assert connIdx == client.connectionIndex() : client;
 
                 if (client.reserve()) {
-                    if (metricsMgr != null)
-                        updateClientAcquiredMetric(client);
+                    updateClientAcquiredMetric(client);
 
                     return client;
                 }
@@ -661,8 +658,6 @@ public class ConnectionClientPool {
 
     /** */
     private void createNodeMetrics(ClusterNode node) {
-        assert metricsMgr != null;
-
         MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(node.id()));
 
         assert !mreg.iterator().hasNext() : "Node connection pools metrics aren't empty.";
@@ -776,7 +771,7 @@ public class ConnectionClientPool {
             newClients[rmvClient.connectionIndex()] = null;
 
             if (clients.replace(nodeId, curClients, newClients)) {
-                NodeMetrics nodeMetrics = metricsMgr != null ? metrics.get(nodeId) : null;
+                NodeMetrics nodeMetrics = metrics.get(nodeId);
 
                 if (nodeMetrics != null && nodeMetrics != NodeMetrics.EMPTY)
                     nodeMetrics.removedConnectionsCnt.addAndGet(1);
@@ -842,11 +837,9 @@ public class ConnectionClientPool {
 
     /** */
     private void removeNodeMetrics(UUID nodeId) {
-        if (metricsMgr != null) {
-            metricsMgr.remove(nodeMetricsRegName(nodeId));
+        metricsMgr.remove(nodeMetricsRegName(nodeId));
 
-            metrics.remove(nodeId);
-        }
+        metrics.remove(nodeId);
     }
 
     /**
