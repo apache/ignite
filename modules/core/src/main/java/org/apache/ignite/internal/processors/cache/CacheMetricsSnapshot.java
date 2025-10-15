@@ -422,7 +422,7 @@ public class CacheMetricsSnapshot extends IgniteDataTransferObject implements Ca
      *
      * @param m Cache metrics.
      */
-    private CacheMetricsSnapshot(CacheMetrics m) {
+    public CacheMetricsSnapshot(CacheMetrics m) {
         reads = m.getCacheGets();
         puts = m.getCachePuts();
         hits = m.getCacheHits();
