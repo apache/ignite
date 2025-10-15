@@ -15,30 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store;
+package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.math.BigDecimal;
 import javax.cache.Cache;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.QueryEngineConfiguration;
-import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /** */
-public abstract class AbstractCacheStoreSqlFieldsQueryTest extends GridCommonAbstractTest {
+public class CacheStoreLoadTest extends AbstractMultiEngineIntegrationTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setSqlConfiguration(new SqlConfiguration()
-            .setQueryEnginesConfiguration(queryEngineConfiguration()));
 
         cfg.setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setCacheStoreFactory(TestCacheStore::new)
@@ -54,6 +48,11 @@ public abstract class AbstractCacheStoreSqlFieldsQueryTest extends GridCommonAbs
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
     /** */
     @Test
     public void testSingleInsertSkipCacheStoreLoad() throws Exception {
@@ -61,13 +60,10 @@ public abstract class AbstractCacheStoreSqlFieldsQueryTest extends GridCommonAbs
 
         SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO tbl(id, val) VALUES(?, ?)");
 
-        qry.setArgs(BigDecimal.valueOf(1), "val1");
+        qry.setArgs(1, "val1");
 
         srv.cache(DEFAULT_CACHE_NAME).query(qry);
     }
-
-    /** */
-    protected abstract QueryEngineConfiguration queryEngineConfiguration();
 
     /** Test cache store. */
     private static class TestCacheStore<K, V> extends CacheStoreAdapter<K, V> {
