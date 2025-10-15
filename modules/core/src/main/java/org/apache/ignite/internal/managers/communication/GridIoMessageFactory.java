@@ -32,7 +32,6 @@ import org.apache.ignite.internal.codegen.CacheEntryInfoCollectionSerializer;
 import org.apache.ignite.internal.codegen.CacheEvictionEntrySerializer;
 import org.apache.ignite.internal.codegen.CacheGroupAffinityMessageSerializer;
 import org.apache.ignite.internal.codegen.CacheMetricsMessageSerializer;
-import org.apache.ignite.internal.codegen.CacheMetricsSnapshotSerializer;
 import org.apache.ignite.internal.codegen.CachePartitionPartialCountersMapSerializer;
 import org.apache.ignite.internal.codegen.CacheVersionedValueSerializer;
 import org.apache.ignite.internal.codegen.ClusterMetricsSnapshotSerializer;
@@ -122,7 +121,6 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicateContainsVa
 import org.apache.ignite.internal.processors.cache.CacheEntrySerializablePredicate;
 import org.apache.ignite.internal.processors.cache.CacheEvictionEntry;
 import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
-import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
@@ -382,8 +380,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)135, LatchAckMessage::new, new LatchAckMessageSerializer());
         factory.register(CacheMetricsMessage.TYPE_CODE, CacheMetricsMessage::new, new CacheMetricsMessageSerializer());
         factory.register(ClusterMetricsSnapshot.TYPE_CODE, ClusterMetricsSnapshot::new, new ClusterMetricsSnapshotSerializer());
-        factory.register(CacheMetricsSnapshot.TYPE_CODE, CacheMetricsSnapshot::new, new CacheMetricsSnapshotSerializer());
-
         factory.register((short)157, PartitionUpdateCountersMessage::new);
         factory.register((short)162, GenerateEncryptionKeyRequest::new, new GenerateEncryptionKeyRequestSerializer());
         factory.register((short)163, GenerateEncryptionKeyResponse::new);

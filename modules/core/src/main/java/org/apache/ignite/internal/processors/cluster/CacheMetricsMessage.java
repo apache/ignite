@@ -47,9 +47,13 @@ public final class CacheMetricsMessage implements Message {
     public CacheMetricsMessage(Map<Integer, ? extends CacheMetrics> cacheMetrics) {
         assert cacheMetrics != null;
 
-        cacheMetricsSnapshots = new HashMap<>(cacheMetrics.size(), 1.0f);
+        if (F.isEmpty(cacheMetrics))
+            cacheMetricsSnapshots = Collections.emptyMap();
+        else {
+            cacheMetricsSnapshots = new HashMap<>(cacheMetrics.size(), 1.0f);
 
-        cacheMetrics.forEach((id, m) -> cacheMetricsSnapshots.put(id, CacheMetricsSnapshot.of(m)));
+            cacheMetrics.forEach((id, m) -> cacheMetricsSnapshots.put(id, CacheMetricsSnapshot.of(m)));
+        }
     }
 
     /** @return Map of cache metrics snapshots. */

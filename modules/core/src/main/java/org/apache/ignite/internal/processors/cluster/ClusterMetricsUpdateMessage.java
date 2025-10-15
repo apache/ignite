@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
-import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
@@ -32,22 +30,22 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 public final class ClusterMetricsUpdateMessage implements Message {
-    /** Mesage type code. */
+    /** */
     public static final short TYPE_CODE = 133;
 
-    /** Node metrics snapshot. */
+    /** Single node metrics wrapper message. */
     @Order(0)
     @Nullable private ClusterMetricsSnapshot nodeMetrics;
 
-    /** Caches metrics wrapper mesage. */
+    /** Single node cache metrics wrapper message. */
     @Order(1)
     @Nullable private CacheMetricsMessage cacheMetricsMsg;
 
-    /** All-nodes metrics snapshots. */
+    /** All-nodes metrics wrapper messages. */
     @Order(2)
     @Nullable private Map<UUID, ClusterMetricsSnapshot> allNodesMetrics;
 
-    /** All-nodes caches metrics snapshot wrapper messages. */
+    /** All-nodes cache metrics wrapper messages. */
     @Order(3)
     @Nullable private Map<UUID, CacheMetricsMessage> allCachesMetrics;
 
@@ -56,67 +54,59 @@ public final class ClusterMetricsUpdateMessage implements Message {
         // No-op.
     }
 
-    /** Constructor. */
-    public ClusterMetricsUpdateMessage(ClusterMetrics nodeMetrics, Map<Integer, CacheMetrics> cacheMetrics) {
+    /** Single node metrics constructor. */
+    public ClusterMetricsUpdateMessage(ClusterMetrics nodeMetrics, Map<Integer, ? extends CacheMetrics> cacheMetrics) {
         this.nodeMetrics = ClusterMetricsSnapshot.of(nodeMetrics);
         this.cacheMetricsMsg = new CacheMetricsMessage(cacheMetrics);
     }
 
-    /** Constructor. */
-    public ClusterMetricsUpdateMessage(Map<UUID, ClusterNodeMetricsMessage> allNodesMetrics) {
+    /** All-nodes metrics constructor. */
+    public ClusterMetricsUpdateMessage(Map<UUID, ClusterNodeMetrics> allNodesMetrics) {
         this.allNodesMetrics = new HashMap<>(allNodesMetrics.size(), 1.0f);
         allCachesMetrics = new HashMap<>(allNodesMetrics.size(), 1.0f);
 
-        allNodesMetrics.forEach((id, metrics)->{
-            this.allNodesMetrics.put(id, ClusterMetricsSnapshot.of());
+        allNodesMetrics.forEach((id, metrics) -> {
+            this.allNodesMetrics.put(id, ClusterMetricsSnapshot.of(metrics.nodeMetrics()));
+            allCachesMetrics.put(id, new CacheMetricsMessage(metrics.cacheMetrics()));
         });
-
-
-            this.allNodesMetrics = allNodesMetrics.entrySet().stream()
-            .map(e -> new AbstractMap.SimpleEntry<>(e.getKey(), ClusterMetricsSnapshot.of(e.getValue().nodeMetrics())))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-        this.allCachesMetrics = allNodesMetrics.entrySet().stream()
-            .map(e -> new AbstractMap.SimpleEntry<>(e.getKey(), new CacheMetricsMessage(e.getValue().cacheMetrics())))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));;
     }
 
-    /** @return Node metrics snapshot. */
+    /** @return Single node cache metrics wrapper message. */
     public @Nullable ClusterMetricsSnapshot nodeMetrics() {
         return nodeMetrics;
     }
 
-    /** @param nodeMetrics Node metrics snapshot. */
+    /** @param nodeMetrics Single node cache metrics wrapper message. */
     public void nodeMetrics(@Nullable ClusterMetricsSnapshot nodeMetrics) {
         this.nodeMetrics = nodeMetrics;
     }
 
-    /** @return Caches metrics wrapper mesage. */
+    /** @return Single node cache metrics wrapper message. */
     public @Nullable CacheMetricsMessage cacheMetricsMsg() {
         return cacheMetricsMsg;
     }
 
-    /** @param cacheMetricsMsg Caches metrics wrapper mesage. */
+    /** @param cacheMetricsMsg Single node cache metrics wrapper message. */
     public void cacheMetricsMsg(CacheMetricsMessage cacheMetricsMsg) {
         this.cacheMetricsMsg = cacheMetricsMsg;
     }
 
-    /** @return All-nodes metrics snapshots. */
+    /** @return All-nodes metrics wrapper messages. */
     public @Nullable Map<UUID, ClusterMetricsSnapshot> allNodesMetrics() {
         return allNodesMetrics;
     }
 
-    /** @param allNodesMetrics All-nodes metrics snapshots. */
+    /** @param allNodesMetrics All-nodes metrics wrapper messages. */
     public void allNodesMetrics(@Nullable Map<UUID, ClusterMetricsSnapshot> allNodesMetrics) {
         this.allNodesMetrics = allNodesMetrics;
     }
 
-    /** @return All-nodes caches metrics snapshot wrapper messages. */
+    /** @return All-nodes cache metrics wrapper messages. */
     public @Nullable Map<UUID, CacheMetricsMessage> allCachesMetrics() {
         return allCachesMetrics;
     }
 
-    /** @param allCachesMetrics All-nodes caches metrics snapshot wrapper messages. */
+    /** @param allCachesMetrics All-nodes cache metrics wrapper messages. */
     public void allCachesMetrics(@Nullable Map<UUID, CacheMetricsMessage> allCachesMetrics) {
         this.allCachesMetrics = allCachesMetrics;
     }
