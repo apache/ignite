@@ -410,16 +410,15 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(StatisticsResponse.TYPE_CODE, StatisticsResponse::new);
 
         // Enums
-        factory.register(CacheWriteSynchronizationModeMessage.TYPE_CODE, CacheWriteSynchronizationModeMessage::new,
-            new CacheWriteSynchronizationModeMessageSerializer());
-        factory.register(GridCacheOperationMessage.TYPE_CODE, GridCacheOperationMessage::new, new GridCacheOperationMessageSerializer());
-
         factory.register(CachePartitionPartialCountersMap.TYPE_CODE, CachePartitionPartialCountersMap::new,
             new CachePartitionPartialCountersMapSerializer());
         factory.register(IgniteDhtDemandedPartitionsMap.TYPE_CODE, IgniteDhtDemandedPartitionsMap::new,
             new IgniteDhtDemandedPartitionsMapSerializer());
         factory.register(TransactionIsolationMessage.TYPE_CODE, TransactionIsolationMessage::new,
             new TransactionIsolationMessageSerializer());
+        factory.register(CacheWriteSynchronizationModeMessage.TYPE_CODE, CacheWriteSynchronizationModeMessage::new,
+            new CacheWriteSynchronizationModeMessageSerializer());
+        factory.register(GridCacheOperationMessage.TYPE_CODE, GridCacheOperationMessage::new, new GridCacheOperationMessageSerializer());
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] [183..188] - this
         // [120..123] - DR

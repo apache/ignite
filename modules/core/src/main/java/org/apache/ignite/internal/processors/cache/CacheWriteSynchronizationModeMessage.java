@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public class CacheWriteSynchronizationModeMessage implements Message {
     /** */
-    public static final short TYPE_CODE = 189;
+    public static final short TYPE_CODE = 503;
 
     /** */
     private CacheWriteSynchronizationMode cacheWriteSyncMode;
