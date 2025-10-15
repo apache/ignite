@@ -254,19 +254,15 @@ public class SnapshotCheckProcess {
                 }
             }
 
-            try {
-                kctx.cache().context().snapshotMgr().handlers().completeAll(
-                    SnapshotHandlerType.RESTORE, ctx.req.snapshotName(), clusterResults, execNodes, wrns -> {});
-            }
-            catch (Exception e) {
-                log.warning("The snapshot operation will be aborted due to a handler error [snapshot=" + ctx.req.snapshotName() + "].", e);
-
-                throw new IgniteException(e);
-            }
+            kctx.cache().context().snapshotMgr().handlers().completeAll(
+                SnapshotHandlerType.RESTORE, ctx.req.snapshotName(), clusterResults, execNodes, wrns -> {});
 
             fut.onDone(new SnapshotPartitionsVerifyTaskResult(ctx.clusterMetas, null));
         }
         catch (Throwable err) {
+            if (err instanceof Exception)
+                log.warning("The snapshot operation will be aborted due to a handler error [snapshot=" + ctx.req.snapshotName() + "].", err);
+
             fut.onDone(err);
         }
     }
