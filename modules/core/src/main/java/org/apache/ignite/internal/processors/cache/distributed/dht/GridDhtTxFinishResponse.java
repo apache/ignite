@@ -84,22 +84,6 @@ public final class GridDhtTxFinishResponse extends GridDistributedTxFinishRespon
         this.miniId = miniId;
     }
 
-    /**
-     * @return Error for check committed backup requests.
-     */
-    public @Nullable Throwable checkCommittedError() {
-        ErrorMessage checkCommittedErrMsg = this.checkCommittedErrMsg;
-
-        return checkCommittedErrMsg == null ? null : checkCommittedErrMsg.toThrowable();
-    }
-
-    /**
-     * @param checkCommittedErr Error for check committed backup requests.
-     */
-    public void checkCommittedError(Throwable checkCommittedErr) {
-        this.checkCommittedErrMsg = new ErrorMessage(checkCommittedErr);
-    }
-
     /** @return The check committed error serialization message. */
     public @Nullable ErrorMessage checkCommittedErrorMessage() {
         return checkCommittedErrMsg;

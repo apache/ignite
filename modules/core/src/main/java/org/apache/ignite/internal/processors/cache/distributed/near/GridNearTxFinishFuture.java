@@ -31,6 +31,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -1099,7 +1100,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         void onDhtFinishResponse(GridDhtTxFinishResponse res) {
             readyNearMappingFromBackup(m);
 
-            Throwable err = res.checkCommittedError();
+            Throwable err = ErrorMessage.error(res.checkCommittedErrorMessage());
 
             if (err != null) {
                 if (err instanceof IgniteCheckedException) {

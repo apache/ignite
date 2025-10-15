@@ -70,13 +70,12 @@ public final class GridNearTxFinishResponse extends GridDistributedTxFinishRespo
         this.nearThreadId = nearThreadId;
         this.miniId = miniId;
 
-        if (err != null)
-            this.errMsg = new ErrorMessage(err);
+        this.errMsg = new ErrorMessage(err);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Throwable error() {
-        return errMsg == null ? null : errMsg.toThrowable();
+        return ErrorMessage.error(errMsg);
     }
 
     /**
