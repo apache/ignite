@@ -148,12 +148,16 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         return Collections.singletonList(key);
     }
 
-    /** */
+    /**
+     * @param key Key to update.
+     */
     public void key(KeyCacheObject key) {
         this.key = key;
     }
 
-    /** */
+    /**
+     * @return Key to update.
+     */
     public KeyCacheObject key() {
         return key;
     }
@@ -170,12 +174,16 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         return Collections.singletonList(val);
     }
 
-    /** */
+    /**
+     * @return Cache object value to update.
+     */
     public CacheObject value() {
         return val;
     }
 
-    /** */
+    /**
+     * @param val Cache object value to update.
+     */
     public void value(CacheObject val) {
         this.val = val;
     }

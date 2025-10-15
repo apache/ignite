@@ -28,7 +28,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 /** */
-public class CacheOperationModeMessageTest {
+public class GridCacheOperationModeMessageTest {
     /** */
     @Test
     public void testCacheOperationModeCode() {
@@ -42,7 +42,6 @@ public class CacheOperationModeMessageTest {
         assertEquals(6, new GridCacheOperationMessage(GridCacheOperation.NOOP).code());
 
         for (GridCacheOperation op : GridCacheOperation.values()) {
-            assertTrue(new GridCacheOperationMessage(op).code() != -1);
             assertTrue(new GridCacheOperationMessage(op).code() >= 0);
             assertTrue(new GridCacheOperationMessage(op).code() < 7);
         }

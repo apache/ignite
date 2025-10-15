@@ -23,28 +23,28 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 public class GridCacheOperationMessage implements Message {
-    /** */
+    /** Type code. */
     public static final short TYPE_CODE = 504;
 
-    /** */
+    /** Cache oparation. */
     @Nullable private GridCacheOperation cacheOperation;
 
-    /** */
+    /** Cache oparation code. */
     @Order(0)
     private byte code = -1;
 
-    /** */
+    /** Constructor. */
     public GridCacheOperationMessage() {
         // No-op.
     }
 
-    /** */
-    public GridCacheOperationMessage(GridCacheOperation cacheOperation) {
+    /** Constructor. */
+    public GridCacheOperationMessage(@Nullable GridCacheOperation cacheOperation) {
         this.cacheOperation = cacheOperation;
-        this.code = encode(cacheOperation);
+        code = encode(cacheOperation);
     }
 
-    /** */
+    /** @param operation Cache operation to encode. */
     private static byte encode(@Nullable GridCacheOperation operation) {
         if (operation == null)
             return -1;
@@ -62,7 +62,7 @@ public class GridCacheOperationMessage implements Message {
         throw new IllegalArgumentException("Unknown cache operation: " + operation);
     }
 
-    /** */
+    /** @param code Cache operation code to dencode to a cache operation value. */
     @Nullable private static GridCacheOperation decode(byte code) {
         switch (code) {
             case -1: return null;
@@ -78,18 +78,18 @@ public class GridCacheOperationMessage implements Message {
         throw new IllegalArgumentException("Unknown cache operation code: " + code);
     }
 
-    /** */
+    /** @code Cache operation code. */
     public void code(byte code) {
         this.code = code;
-        this.cacheOperation = decode(code);
+        cacheOperation = decode(code);
     }
 
-    /** */
+    /** @return Cache operation code. */
     public byte code() {
         return code;
     }
 
-    /** */
+    /** @return Cache operation value. */
     @Nullable public GridCacheOperation value() {
         return cacheOperation;
     }

@@ -85,11 +85,11 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     @Order(value = 5, method = "topologyVersion")
     protected AffinityTopologyVersion topVer;
 
-    /** Update operation. */
+    /** Cache operation wrapper message. */
     @Order(value = 6, method = "cacheOperationMessage")
     protected GridCacheOperationMessage opMsg;
 
-    /** Write synchronization mode. */
+    /** Write synchronization mode wrapper message. */
     @Order(value = 7, method = "writeSynchronizationModeMessage")
     protected CacheWriteSynchronizationModeMessage syncModeMsg;
 
@@ -212,7 +212,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         return isFlag(NEAR_CACHE_FLAG_MASK);
     }
 
-    /** */
+    /** Sets new topology version. */
     public void topologyVersion(AffinityTopologyVersion topVer) {
         this.topVer = topVer;
     }
@@ -281,12 +281,16 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         this.taskNameHash = taskNameHash;
     }
 
-    /** */
+    /**
+     * @return Compressed boolean flags.
+     */
     public byte flags() {
         return flags;
     }
 
-    /** */
+    /**
+     * @param flags New compressed boolean flags.
+     */
     public void flags(byte flags) {
         this.flags = flags;
     }
@@ -324,24 +328,24 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         this.futId = futId;
     }
 
-    /** @return The cache operation serialization message. */
+    /** @return The cache operation wrapper message. */
     public GridCacheOperationMessage cacheOperationMessage() {
         return opMsg;
     }
 
-    /** Sets the cache operation serialization message. */
+    /** Sets the cache operation wrapper message. */
     public void cacheOperationMessage(GridCacheOperationMessage cacheOpMsg) {
         this.opMsg = cacheOpMsg;
     }
 
     /**
-     * @return The write mode serialization message.
+     * @return The write mode synchronization wrapper message.
      */
     public final CacheWriteSynchronizationModeMessage writeSynchronizationModeMessage() {
         return syncModeMsg;
     }
 
-    /** Sets the write mode serialization message */
+    /** Sets the write mode synchronization wrapper message */
     public void writeSynchronizationModeMessage(CacheWriteSynchronizationModeMessage writeSyncModeMsg) {
         this.syncModeMsg = writeSyncModeMsg;
     }

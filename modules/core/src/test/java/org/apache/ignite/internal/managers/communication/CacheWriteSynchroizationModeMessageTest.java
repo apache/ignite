@@ -38,7 +38,6 @@ public class CacheWriteSynchroizationModeMessageTest {
         assertEquals(2, new CacheWriteSynchronizationModeMessage(CacheWriteSynchronizationMode.PRIMARY_SYNC).code());
 
         for (CacheWriteSynchronizationMode op : CacheWriteSynchronizationMode.values()) {
-            assertTrue(new CacheWriteSynchronizationModeMessage(op).code() != -1);
             assertTrue(new CacheWriteSynchronizationModeMessage(op).code() >= 0);
             assertTrue(new CacheWriteSynchronizationModeMessage(op).code() < 3);
         }

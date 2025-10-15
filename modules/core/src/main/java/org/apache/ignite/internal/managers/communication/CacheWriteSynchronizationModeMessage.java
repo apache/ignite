@@ -24,28 +24,28 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 public class CacheWriteSynchronizationModeMessage implements Message {
-    /** */
+    /** Type code. */
     public static final short TYPE_CODE = 503;
 
-    /** */
-    private CacheWriteSynchronizationMode cacheWriteSyncMode;
+    /** Cache write synchronization mode value. */
+    @Nullable private CacheWriteSynchronizationMode cacheWriteSyncMode;
 
-    /** */
+    /** Code of cache write synchronization mode. */
     @Order(0)
     private byte code = -1;
 
-    /** */
+    /** Constructor. */
     public CacheWriteSynchronizationModeMessage() {
         // No-op.
     }
 
-    /** */
-    public CacheWriteSynchronizationModeMessage(CacheWriteSynchronizationMode mode) {
-        this.cacheWriteSyncMode = mode;
-        this.code = encode(mode);
+    /** Constructor. */
+    public CacheWriteSynchronizationModeMessage(@Nullable CacheWriteSynchronizationMode mode) {
+        cacheWriteSyncMode = mode;
+        code = encode(mode);
     }
 
-    /** */
+    /** @param mode Cache write synchronization mode to encode. */
     private static byte encode(@Nullable CacheWriteSynchronizationMode mode) {
         if (mode == null)
             return -1;
@@ -59,7 +59,7 @@ public class CacheWriteSynchronizationModeMessage implements Message {
         throw new IllegalArgumentException("Unknown cache write synchronization mode: " + mode);
     }
 
-    /** */
+    /** @param code Code of cache write synchronization mode to decode. */
     @Nullable private static CacheWriteSynchronizationMode decode(short code) {
         switch (code) {
             case -1: return null;
@@ -71,18 +71,18 @@ public class CacheWriteSynchronizationModeMessage implements Message {
         throw new IllegalArgumentException("Unknown cache write synchronization mode code: " + code);
     }
 
-    /** */
+    /** @param code Code of cache write synchronization mode. */
     public void code(byte code) {
         this.code = code;
-        this.cacheWriteSyncMode = decode(code);
+        cacheWriteSyncMode = decode(code);
     }
 
-    /** */
+    /** @return Code of cache write synchronization mode. */
     public byte code() {
         return code;
     }
 
-    /** */
+    /** @return Cache write synchronization mode value. */
     public CacheWriteSynchronizationMode value() {
         return cacheWriteSyncMode;
     }
