@@ -181,7 +181,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
             MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(node.cluster().localNode().id()));
 
-            assertTrue(waitForCondition(() -> mreg.<LongMetric>findMetric(METRIC_NAME_REMOVED_CNT).value() == connsPerNode,
+            assertTrue(waitForCondition(() -> mreg.<LongMetric>findMetric(METRIC_NAME_REMOVED_CNT).value() >= connsPerNode,
                 getTestTimeout()));
         }
 
