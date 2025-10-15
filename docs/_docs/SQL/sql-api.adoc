@@ -347,13 +347,6 @@ include::code-snippets/dotnet/UsingSqlApi.cs[tag=cursorDispose,indent=0]
 tab:C++[unsupported]
 --
 
-== Validating Data Against the SQL Schema
-
-Ignite can verify that cache entries conform to the SQL schema before they are written. Set `SqlConfiguration.setValidationEnabled(true)` to turn the validation on. When enabled, every SQL `INSERT`, `MERGE`, or `UPDATE` statement and corresponding cache API calls that modify SQL-managed tables checks that each column value is compatible with the column type and constraints (nullability, length, precision, scale).
-If a value violates the schema, the operation fails with an `IgniteSQLException` and the data is not stored. Validation is disabled by default, which avoids the extra checks but requires the application to guarantee schema compliance on its own.
-
-Enable the option when you need stronger guarantees that dynamic or user-provided data cannot break the table definition, and keep it disabled when the overhead of additional checks outweighs the risk of incorrect data.
-
 == Example
 
 The Ignite distribution package includes a ready-to-run `SqlDmlExample` as a part of its link:{githubUrl}/examples/src/main/java/org/apache/ignite/examples/sql/SqlDmlExample.java[source code, window=_blank]. This example demonstrates the usage of all the above-mentioned DML operations.

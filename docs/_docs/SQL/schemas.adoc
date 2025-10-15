@@ -92,3 +92,44 @@ If you do not use this parameter, the cache name is defined in the following for
 ....
 SQL_<SCHEMA_NAME>_<TABLE_NAME>
 ....
+
+
+== Validating Data Against the Schema
+
+Ignite can verify that values inserted into a table match the column types and constraints declared in its SQL schema. Validation is disabled by default; enable the server-side check on every node before startup:
+
+[tabs]
+--
+tab:Java[]
+[source,java]
+----
+SqlConfiguration sqlCfg = new SqlConfiguration()
+    .setValidationEnabled(true);
+
+IgniteConfiguration cfg = new IgniteConfiguration()
+    .setSqlConfiguration(sqlCfg);
+----
+
+tab:XML[]
+[source,xml]
+----
+<property name="sqlConfiguration">
+    <bean class="org.apache.ignite.configuration.SqlConfiguration">
+        <property name="validationEnabled" value="true"/>
+    </bean>
+</property>
+----
+--
+
+When validation is enabled, Ignite runs extra checks for each SQL `INSERT`, `MERGE`, and `UPDATE` statement as well as cache API calls that modify SQL-managed tables and rejects data that breaks the schema.
+Violations raise an `IgniteSQLException`, so the application can handle the error and the incorrect values are not stored.
+
+[source,sql]
+----
+CREATE TABLE Person (id INT PRIMARY KEY, age INT NOT NULL);
+
+INSERT INTO Person VALUES (1, 42);          -- succeeds
+INSERT INTO Person VALUES (2, 'forty-two'); -- throws IgniteSQLException when validation is on
+----
+
+Enable the option when you need stronger guarantees that dynamic or user-provided data cannot break the table definition, and keep it disabled when the overhead of additional checks outweighs the risk of incorrect data.
