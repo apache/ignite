@@ -98,6 +98,16 @@ public class ErrorMessage implements Message {
         }
     }
 
+    /**
+     * Safely gets original error from an error message.
+     *
+     * @param errorMsg Error message.
+     * @return Error containing in the message.
+     */
+    public static @Nullable Throwable error(@Nullable ErrorMessage errorMsg) {
+        return errorMsg == null ? null : errorMsg.err;
+    }
+
     /** {@inheritDoc} */
     @Override public short directType() {
         return -100;

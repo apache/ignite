@@ -47,9 +47,9 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
     @Order(5)
     private IgniteUuid miniId;
 
-    /** Error. */
+    /** Error message. */
     @Order(value = 6, method = "errorMessage")
-    @Nullable private volatile ErrorMessage err;
+    @Nullable private volatile ErrorMessage errMsg;
 
     /** Missed (not found) keys. */
     @GridToStringInclude
@@ -58,7 +58,7 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
 
     /** Cache entries. */
     @GridToStringInclude
-    @Order(8)
+    @Order(value = 8, method = "forcedInfos")
     private List<GridCacheEntryInfo> infos;
 
     /**
@@ -84,20 +84,9 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
         this.addDepInfo = addDepInfo;
     }
 
-    /**
-     * Sets error.
-     *
-     * @param err Error.
-     */
-    public void error(@Nullable Throwable err) {
-        this.err = new ErrorMessage(err);
-    }
-
     /** {@inheritDoc} */
     @Override public @Nullable Throwable error() {
-        ErrorMessage err = this.err;
-
-        return err == null ? null : err.toThrowable();
+        return ErrorMessage.error(errMsg);
     }
 
     /**
@@ -107,7 +96,7 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
         return missedKeys == null ? Collections.emptyList() : missedKeys;
     }
 
-    /** */
+    /** @param missedKeys Missed keys. */
     public void missedKeys(List<KeyCacheObject> missedKeys) {
         this.missedKeys = missedKeys;
     }
@@ -120,13 +109,22 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
     }
 
     /**
+     * @param infos Forced entries.
+     */
+    public void forcedInfos(List<GridCacheEntryInfo> infos) {
+        this.infos = infos;
+    }
+
+    /**
      * @return Future ID.
      */
     public IgniteUuid futureId() {
         return futId;
     }
 
-    /** */
+    /**
+     * @param futId Future ID.
+     */
     public void futureId(IgniteUuid futId) {
         this.futId = futId;
     }
@@ -138,7 +136,9 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
         return miniId;
     }
 
-    /** */
+    /**
+     * @param miniId Mini-future ID.
+     */
     public void miniId(IgniteUuid miniId) {
         this.miniId = miniId;
     }
@@ -165,30 +165,20 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
         infos.add(info);
     }
 
-    /** */
-    public List<GridCacheEntryInfo> infos() {
-        return infos;
-    }
-
-    /** */
-    public void infos(List<GridCacheEntryInfo> infos) {
-        this.infos = infos;
-    }
-
     /**
-     * @return The error serialization message.
+     * @return The error message.
      */
-    public ErrorMessage errorMessage() {
-        return err;
+    @Nullable public ErrorMessage errorMessage() {
+        return errMsg;
     }
 
     /**
-     * Sets the error serialization message.
+     * Sets the error message.
      *
-     * @param err Error message.
+     * @param errMsg Error message.
      */
-    public void errorMessage(ErrorMessage err) {
-        this.err = err;
+    public void errorMessage(@Nullable ErrorMessage errMsg) {
+        this.errMsg = errMsg;
     }
 
     /** {@inheritDoc} */
