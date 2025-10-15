@@ -54,7 +54,7 @@ import org.junit.runners.Suite;
 
     JdbcThinTransactionalSelfTest.class,
     JdbcSetClientInfoTest.class,
-    JdbcConnectionEnabledPropertyTest.class,
+    JdbcConnectionEnabledPropertyTest.class
 })
 public class IgniteCalciteTestSuite {
 }
