@@ -38,7 +38,7 @@ public final class GridDhtTxFinishResponse extends GridDistributedTxFinishRespon
     @Order(6)
     private int miniId;
 
-    /** Error. */
+    /** Error message. */
     @Order(value = 7, method = "checkCommittedErrorMessage")
     private @Nullable ErrorMessage checkCommittedErrMsg;
 
@@ -96,8 +96,8 @@ public final class GridDhtTxFinishResponse extends GridDistributedTxFinishRespon
     /**
      * @param checkCommittedErr Error for check committed backup requests.
      */
-    public void checkCommittedError(@Nullable Throwable checkCommittedErr) {
-        this.checkCommittedErrMsg = checkCommittedErr == null ? null : new ErrorMessage(checkCommittedErr);
+    public void checkCommittedError(Throwable checkCommittedErr) {
+        this.checkCommittedErrMsg = new ErrorMessage(checkCommittedErr);
     }
 
     /** @return The check committed error serialization message. */
@@ -110,13 +110,13 @@ public final class GridDhtTxFinishResponse extends GridDistributedTxFinishRespon
         this.checkCommittedErrMsg = checkCommittedErrMsg;
     }
 
-    /** Sets the lag indicating if this is a check-committed response. */
+    /** Sets the flag indicating if this is a check-committed response. */
     public void checkCommitted(boolean checkCommited) {
         this.checkCommitted = checkCommited;
     }
 
     /**
-     * @return The lag indicating if this is a check-committed response.
+     * @return The flag indicating if this is a check-committed response.
      */
     public boolean checkCommitted() {
         return checkCommitted;
@@ -171,7 +171,7 @@ public final class GridDhtTxFinishResponse extends GridDistributedTxFinishRespon
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtTxFinishResponse.class, this,
-            "chechCommited", checkCommitted,
+            "checkCommitted", checkCommitted,
             "super", super.toString());
     }
 }

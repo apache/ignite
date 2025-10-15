@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  * Reply for synchronous phase 2.
  */
 public final class GridNearTxFinishResponse extends GridDistributedTxFinishResponse {
-    /** Heuristic error. */
+    /** Error message. */
     @Order(value = 6, method = "errorMessage")
     private @Nullable ErrorMessage errMsg;
 
@@ -108,14 +108,14 @@ public final class GridNearTxFinishResponse extends GridDistributedTxFinishRespo
     }
 
     /**
-     * @return Error serialization message.
+     * @return Error message.
      */
     public @Nullable ErrorMessage errorMessage() {
         return errMsg;
     }
 
     /**
-     * Sets error serialization message.
+     * Sets error message.
      */
     public void errorMessage(@Nullable ErrorMessage errMsg) {
         this.errMsg = errMsg;
