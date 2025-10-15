@@ -157,7 +157,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     private final AtomicLong diagFutId = new AtomicLong();
 
     /** */
-    private final Map<UUID, ClusterNodeMetrics> allNodesMetrics = new ConcurrentHashMap<>();
+    private final Map<UUID, ClusterNodeMetricsMessage> allNodesMetrics = new ConcurrentHashMap<>();
 
     /** */
     private final JdkMarshaller marsh;
@@ -708,7 +708,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             assert msg.nodeMetrics() != null;
             assert msg.cacheMetricsMsg() != null && msg.cacheMetricsMsg().cacheMetrics() != null;
 
-            allNodesMetrics.put(sndNodeId, new ClusterNodeMetrics(msg.nodeMetrics(), msg.cacheMetricsMsg().cacheMetrics()));
+            allNodesMetrics.put(sndNodeId, new ClusterNodeMetricsMessage(msg.nodeMetrics(), msg.cacheMetricsMsg().cacheMetrics()));
 
             updateNodeMetrics(ctx.discovery().discoCache(), sndNodeId, msg.nodeMetrics(), msg.cacheMetricsMsg().cacheMetrics());
         }
@@ -775,7 +775,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             locNode.setMetrics(metricsProvider.metrics());
             locNode.setCacheMetrics(metricsProvider.cacheMetrics());
 
-            ClusterNodeMetrics metrics = new ClusterNodeMetrics(locNode.metrics(), locNode.cacheMetrics());
+            ClusterNodeMetricsMessage metrics = new ClusterNodeMetricsMessage(locNode.metrics(), locNode.cacheMetrics());
 
             allNodesMetrics.put(ctx.localNodeId(), metrics);
 
@@ -783,7 +783,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
             Collection<ClusterNode> allNodes = ctx.discovery().allNodes();
 
-            ClusterMetricsUpdateMessage msg = new ClusterMetricsUpdateMessage(allNodesMetrics);
+            ClusterMetricsUpdateMessage msg = new ClusterMetricsUpdateMessage(new HashMap<>(allNodesMetrics));
 
             for (ClusterNode node : allNodes) {
                 if (ctx.localNodeId().equals(node.id()) || !ctx.discovery().alive(node.id()))

@@ -37,7 +37,7 @@ public class CacheMetricsSnapshot extends IgniteDataTransferObject implements Ca
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final short TYPE_CODE = 136;
+    public static final short TYPE_CODE = 138;
 
     /** Number of reads. */
     @Order(value = 0, method = "cacheGets", getter = true)
@@ -412,7 +412,7 @@ public class CacheMetricsSnapshot extends IgniteDataTransferObject implements Ca
         // No-op.
     }
 
-    /** */
+    /** @param metrics Cache metrics to create a metrics snapshot based on them. */
     public static CacheMetricsSnapshot of(CacheMetrics metrics) {
         return metrics instanceof CacheMetricsSnapshot ? (CacheMetricsSnapshot)metrics : new CacheMetricsSnapshot(metrics);
     }

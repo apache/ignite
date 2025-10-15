@@ -21,37 +21,46 @@ import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- *
- */
-class ClusterNodeMetrics {
-    /** */
-    private final ClusterMetrics nodeMetrics;
+/** */
+class ClusterNodeMetricsMessage implements Message {
+    /** Message type code. */
+    public static final short TYPE_CODE = 138;
 
-    /** */
-    private final Map<Integer, CacheMetrics> cacheMetrics;
+    /** Node metrics wrapper message. */
+    private ClusterMetricsSnapshot nodeMetrics;
+
+    /** Map of cache metrics wrapper messages. */
+    private Map<Integer, CacheMetricsSnapshot> cacheMetrics;
 
     /**
      * @param nodeMetrics Node metrics.
      * @param cacheMetrics Cache metrics.
      */
-    ClusterNodeMetrics(ClusterMetrics nodeMetrics, Map<Integer, CacheMetrics> cacheMetrics) {
-        this.nodeMetrics = nodeMetrics;
+    ClusterNodeMetricsMessage(ClusterMetrics nodeMetrics, Map<Integer, CacheMetrics> cacheMetrics) {
+        this.nodeMetrics = ClusterMetricsSnapshot.of(nodeMetrics);
         this.cacheMetrics = cacheMetrics;
     }
 
     /**
      * @return Node metrics.
      */
-    ClusterMetrics nodeMetrics() {
+    ClusterMetricsSnapshot nodeMetrics() {
         return nodeMetrics;
     }
 
     /**
      * @return Cache metrics.
      */
-    Map<Integer, CacheMetrics> cacheMetrics() {
+    Map<Integer, CacheMetricsSnapshot> cacheMetrics() {
         return cacheMetrics != null ? cacheMetrics : Collections.emptyMap();
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return TYPE_CODE;
     }
 }
