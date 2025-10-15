@@ -26,6 +26,7 @@ import org.apache.ignite.internal.GridTaskCancelRequest;
 import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.codegen.AtomicApplicationAttributesAwareRequestSerializer;
+import org.apache.ignite.internal.codegen.BinaryMetadataVersionInfoSerializer;
 import org.apache.ignite.internal.codegen.CacheContinuousQueryBatchAckSerializer;
 import org.apache.ignite.internal.codegen.CacheEntryInfoCollectionSerializer;
 import org.apache.ignite.internal.codegen.CacheEvictionEntrySerializer;
@@ -83,6 +84,7 @@ import org.apache.ignite.internal.codegen.IncrementalSnapshotAwareMessageSeriali
 import org.apache.ignite.internal.codegen.JobStealingRequestSerializer;
 import org.apache.ignite.internal.codegen.LatchAckMessageSerializer;
 import org.apache.ignite.internal.codegen.MetadataRequestMessageSerializer;
+import org.apache.ignite.internal.codegen.MetadataResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.MissingMappingRequestMessageSerializer;
 import org.apache.ignite.internal.codegen.MissingMappingResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.NearCacheUpdatesSerializer;
@@ -121,6 +123,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.WalStateAckMessage;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataVersionInfo;
 import org.apache.ignite.internal.processors.cache.binary.MetadataRequestMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTtlUpdateRequest;
@@ -328,7 +331,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)78, MissingMappingRequestMessage::new, new MissingMappingRequestMessageSerializer());
         factory.register((short)79, MissingMappingResponseMessage::new, new MissingMappingResponseMessageSerializer());
         factory.register((short)80, MetadataRequestMessage::new, new MetadataRequestMessageSerializer());
-        factory.register((short)81, MetadataResponseMessage::new);
+        factory.register((short)81, MetadataResponseMessage::new, new MetadataResponseMessageSerializer());
         factory.register((short)82, JobStealingRequest::new, new JobStealingRequestSerializer());
         factory.register((short)84, GridByteArrayList::new);
         factory.register((short)86, GridCacheVersion::new, new GridCacheVersionSerializer());
@@ -409,6 +412,8 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
             new IgniteDhtDemandedPartitionsMapSerializer());
         factory.register(TransactionIsolationMessage.TYPE_CODE, TransactionIsolationMessage::new,
             new TransactionIsolationMessageSerializer());
+        factory.register(BinaryMetadataVersionInfo.TYPE_CODE, BinaryMetadataVersionInfo::new,
+            new BinaryMetadataVersionInfoSerializer());
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] [183..188] - this
         // [120..123] - DR
