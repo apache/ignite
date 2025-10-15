@@ -212,9 +212,12 @@ public class IndexProcessor extends GridProcessorAdapter {
      * @param definition Description of an index to create.
      * @param cacheVisitor Enable to cancel dynamic index populating.
      */
-    public Index createIndexDynamically(GridCacheContext cctx, IndexFactory factory, IndexDefinition definition,
-        SchemaIndexCacheVisitor cacheVisitor) {
-
+    public Index createIndexDynamically(
+        GridCacheContext<?, ?> cctx,
+        IndexFactory factory,
+        IndexDefinition definition,
+        SchemaIndexCacheVisitor cacheVisitor
+    ) {
         Index idx = createIndex(cctx, factory, definition);
 
         // Populate index with cache rows.
@@ -345,11 +348,8 @@ public class IndexProcessor extends GridProcessorAdapter {
 
             Collection<Index> idxs = cacheToIdx.get(cctx.name()).values();
 
-            for (Index idx: idxs) {
-                if (idx instanceof AbstractIndex)
-                    ((AbstractIndex)idx).markIndexRebuild(val);
-            }
-
+            for (Index idx: idxs)
+                idx.markIndexRebuild(val);
         }
         finally {
             ddlLock.readLock().unlock();
