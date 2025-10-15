@@ -21,18 +21,14 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -49,14 +45,12 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 /**
  *
  */
-public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
+public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSingleUpdateRequest {
     /** Key to update. */
     @GridToStringInclude
-    @Order(10)
     protected KeyCacheObject key;
 
     /** Value to update. */
-    @Order(value = 11, method = "value")
     protected CacheObject val;
 
     /**
@@ -121,8 +115,8 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         long conflictTtl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer) {
-        assert operation() != TRANSFORM;
-        assert val != null || operation() == DELETE;
+        assert op != TRANSFORM;
+        assert val != null || op == DELETE;
         assert conflictTtl < 0 : conflictTtl;
         assert conflictExpireTime < 0 : conflictExpireTime;
         assert conflictVer == null : conflictVer;
@@ -148,16 +142,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         return Collections.singletonList(key);
     }
 
-    /** */
-    public void key(KeyCacheObject key) {
-        this.key = key;
-    }
-
-    /** */
-    public KeyCacheObject key() {
-        return key;
-    }
-
     /** {@inheritDoc} */
     @Override public KeyCacheObject key(int idx) {
         assert idx == 0 : idx;
@@ -170,36 +154,11 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         return Collections.singletonList(val);
     }
 
-    /** */
-    public CacheObject value() {
-        return val;
-    }
-
-    /** */
-    public void value(CacheObject val) {
-        this.val = val;
-    }
-
     /** {@inheritDoc} */
     @Override public CacheObject value(int idx) {
         assert idx == 0 : idx;
 
         return val;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public CacheEntryPredicate[] filter() {
-        return GridCacheUtils.empty0();
-    }
-
-    /** {@inheritDoc} */
-    @Override public ExpiryPolicy expiry() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override @Nullable public Object[] invokeArguments() {
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -266,7 +225,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
             val.finishUnmarshal(cctx.cacheObjectContext(), ldr);
     }
 
-    // TODO: remove after IGNITE-26599
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -299,7 +257,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         return true;
     }
 
-    // TODO: remove after IGNITE-26599
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);

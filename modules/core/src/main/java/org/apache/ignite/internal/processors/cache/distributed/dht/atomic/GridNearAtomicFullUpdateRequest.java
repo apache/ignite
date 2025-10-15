@@ -175,13 +175,13 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         @Nullable GridCacheVersion conflictVer) {
         EntryProcessor<Object, Object, Object> entryProc = null;
 
-        if (operation() == TRANSFORM) {
+        if (op == TRANSFORM) {
             assert val instanceof EntryProcessor : val;
 
             entryProc = (EntryProcessor<Object, Object, Object>)val;
         }
 
-        assert val != null || operation() == DELETE;
+        assert val != null || op == DELETE;
 
         keys.add(key);
 
@@ -256,19 +256,19 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public List<?> values() {
-        return operation() == TRANSFORM ? entryProcessors : vals;
+        return op == TRANSFORM ? entryProcessors : vals;
     }
 
     /** {@inheritDoc} */
     @Override public CacheObject value(int idx) {
-        assert operation() == UPDATE : operation();
+        assert op == UPDATE : op;
 
         return vals.get(idx);
     }
 
     /** {@inheritDoc} */
     @Override public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
-        assert operation() == TRANSFORM : operation();
+        assert op == TRANSFORM : op;
 
         return entryProcessors.get(idx);
     }
@@ -360,7 +360,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 filter = null;
         }
 
-        if (operation() == TRANSFORM) {
+        if (op == TRANSFORM) {
             // force addition of deployment info for entry processors if P2P is enabled globally.
             if (!addDepInfo && ctx.deploymentEnabled())
                 addDepInfo = true;
@@ -393,7 +393,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             }
         }
 
-        if (operation() == TRANSFORM) {
+        if (op == TRANSFORM) {
             if (entryProcessors == null)
                 entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);
 
