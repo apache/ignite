@@ -2061,18 +2061,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 new HashSet<>(F.viewReadOnly(srvNodes, node2id(), (node) -> CU.baselineNode(node, clusterState)));
 
             SnapshotOperationRequest snpOpReq = new SnapshotOperationRequest(
-                snpFut0.rqId,
-                cctx.localNodeId(),
-                name,
-                snpPath,
-                grps,
-                bltNodeIds,
-                incremental,
-                incIdx,
-                onlyPrimary,
-                dump,
-                compress,
-                encrypt
+                    snpFut0.rqId,
+                    cctx.localNodeId(),
+                    name,
+                    snpPath,
+                    grps,
+                    bltNodeIds,
+                    incremental,
+                    incIdx,
+                    onlyPrimary,
+                    dump,
+                    compress,
+                    encrypt
             );
 
             startSnpProc.start(snpFut0.rqId, snpOpReq);
