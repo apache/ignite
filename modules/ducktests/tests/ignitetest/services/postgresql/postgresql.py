@@ -18,7 +18,7 @@ This module contains classes and utilities to start PostgreSql cluster for testi
 """
 
 import os.path
-from distutils.version import LooseVersion
+from looseversion import LooseVersion
 
 from ducktape.cluster.remoteaccount import RemoteCommandError
 from ducktape.utils.util import wait_until
@@ -72,12 +72,12 @@ class PostgresService(DucktestsService, PathAware):
 
     @property
     def config_file(self):
-        return os.path.join(self.work_dir, "postgresql.conf")
+        return os.path.join(self.config_dir, "postgresql.conf")
 
     def init_persistent(self, node):
         _PERMISSIONS = int('750', 8)
 
-        node.account.mkdirs(f"{self.persistent_root} {self.work_dir} {self.log_dir}", _PERMISSIONS)
+        node.account.mkdirs(f"{self.persistent_root} {self.work_dir} {self.log_dir} {self.config_dir}", _PERMISSIONS)
 
     def start(self, **kwargs):
         self.start_async(**kwargs)
@@ -120,7 +120,7 @@ class PostgresService(DucktestsService, PathAware):
         start_cmd = (
             f"nohup {os.path.join(self.home_dir, 'bin', 'postgres')} "
             f"-D {self.work_dir} "
-            f"-p {self.settings.port} "
+            f"-c config_file={self.config_dir}/postgresql.conf "
             f"> {self.log_file} 2>&1 &"
         )
 
