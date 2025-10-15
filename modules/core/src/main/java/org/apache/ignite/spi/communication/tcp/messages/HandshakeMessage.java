@@ -28,7 +28,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
  */
 public class HandshakeMessage implements Message {
     /** Message body size in bytes. */
-    private static final int MESSAGE_SIZE = 36 + 1;
+    private static final int MESSAGE_SIZE = 36 + 1; // additional byte for null flag of UUID value.
 
     /** Full message size (with message type) in bytes. */
     public static final int MESSAGE_FULL_SIZE = MESSAGE_SIZE + DIRECT_TYPE_SIZE;
