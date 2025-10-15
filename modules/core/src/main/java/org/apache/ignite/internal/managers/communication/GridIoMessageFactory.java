@@ -28,7 +28,6 @@ import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.codegen.AtomicApplicationAttributesAwareRequestSerializer;
 import org.apache.ignite.internal.codegen.CacheContinuousQueryBatchAckSerializer;
 import org.apache.ignite.internal.codegen.CacheEntryInfoCollectionSerializer;
-import org.apache.ignite.internal.codegen.CacheEntryPredicateAdapterSerializer;
 import org.apache.ignite.internal.codegen.CacheEvictionEntrySerializer;
 import org.apache.ignite.internal.codegen.CacheGroupAffinityMessageSerializer;
 import org.apache.ignite.internal.codegen.CachePartitionPartialCountersMapSerializer;
@@ -118,7 +117,8 @@ import org.apache.ignite.internal.processors.authentication.UserAuthenticateRequ
 import org.apache.ignite.internal.processors.authentication.UserAuthenticateResponseMessage;
 import org.apache.ignite.internal.processors.authentication.UserManagementOperationFinishedMessage;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
+import org.apache.ignite.internal.processors.cache.CacheEntryPredicateContainsValue;
+import org.apache.ignite.internal.processors.cache.CacheEntrySerializablePredicate;
 import org.apache.ignite.internal.processors.cache.CacheEvictionEntry;
 import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
 import org.apache.ignite.internal.processors.cache.CacheWriteSynchronizationModeMessage;
@@ -347,7 +347,8 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)95, DataStreamerEntry::new);
         factory.register((short)96, CacheContinuousQueryEntry::new);
         factory.register((short)97, CacheEvictionEntry::new, new CacheEvictionEntrySerializer());
-        factory.register((short)98, CacheEntryPredicateAdapter::new, new CacheEntryPredicateAdapterSerializer());
+        factory.register((short)98, CacheEntryPredicateContainsValue::new);
+        factory.register((short)99, CacheEntrySerializablePredicate::new);
         factory.register((short)100, IgniteTxEntry::new);
         factory.register((short)101, TxEntryValueHolder::new);
         factory.register((short)102, CacheVersionedValue::new, new CacheVersionedValueSerializer());
@@ -407,6 +408,8 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(StatisticsColumnData.TYPE_CODE, StatisticsColumnData::new);
         factory.register(StatisticsRequest.TYPE_CODE, StatisticsRequest::new);
         factory.register(StatisticsResponse.TYPE_CODE, StatisticsResponse::new);
+
+        // Enums
         factory.register(CacheWriteSynchronizationModeMessage.TYPE_CODE, CacheWriteSynchronizationModeMessage::new,
             new CacheWriteSynchronizationModeMessageSerializer());
         factory.register(GridCacheOperationMessage.TYPE_CODE, GridCacheOperationMessage::new, new GridCacheOperationMessageSerializer());

@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public class GridCacheOperationMessage implements Message {
     /** */
-    public static final short TYPE_CODE = 191;
+    public static final short TYPE_CODE = 190;
 
     /** */
     @Nullable private GridCacheOperation cacheOperation;
