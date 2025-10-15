@@ -99,6 +99,7 @@ import org.apache.ignite.internal.codegen.TransactionIsolationMessageSerializer;
 import org.apache.ignite.internal.codegen.TxLockSerializer;
 import org.apache.ignite.internal.codegen.TxLocksRequestSerializer;
 import org.apache.ignite.internal.codegen.TxLocksResponseSerializer;
+import org.apache.ignite.internal.codegen.UpdateErrorsSerializer;
 import org.apache.ignite.internal.codegen.UserAuthenticateRequestMessageSerializer;
 import org.apache.ignite.internal.codegen.UserAuthenticateResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.UserManagementOperationFinishedMessageSerializer;
@@ -252,7 +253,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)-53, SchemaOperationStatusMessage::new, new SchemaOperationStatusMessageSerializer());
         factory.register((short)-51, NearCacheUpdates::new, new NearCacheUpdatesSerializer());
         factory.register((short)-50, GridNearAtomicCheckUpdateRequest::new, new GridNearAtomicCheckUpdateRequestSerializer());
-        factory.register((short)-49, UpdateErrors::new);
+        factory.register((short)-49, UpdateErrors::new, new UpdateErrorsSerializer());
         factory.register((short)-48, GridDhtAtomicNearResponse::new, new GridDhtAtomicNearResponseSerializer());
         factory.register((short)-45, GridChangeGlobalStateMessageResponse::new);
         factory.register((short)-43, IgniteIoTestMessage::new);
