@@ -446,7 +446,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridCacheFuture
                 " (the binary objects will be used instead).");
         }
 
-        IgniteCheckedException error = res.error();
+        Throwable error = res.error();
 
         if (suppressedErr != null)
             error.addSuppressed(suppressedErr);
