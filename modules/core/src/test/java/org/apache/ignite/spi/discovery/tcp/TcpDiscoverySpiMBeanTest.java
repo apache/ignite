@@ -19,11 +19,12 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.metric.MetricRegistry;
@@ -36,6 +37,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -58,9 +60,6 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(tcpSpi);
 
         cfg.setGridLogger(strLog);
-
-        // Fastens the tests.
-        cfg.setFailureDetectionTimeout(3000);
 
         return cfg;
     }
@@ -204,50 +203,66 @@ public class TcpDiscoverySpiMBeanTest extends GridCommonAbstractTest {
             int srvCnt = 2;
 
             IgniteEx grid0 = startGrids(srvCnt);
-            IgniteEx client = startClientGrid("client");
 
-            TcpDiscoverySpiMBean bean0 = getMxBean(grid0.context().igniteInstanceName(), "SPIs",
+            IgniteEx client;
+
+            client = startClientGrid("client");
+
+            TcpDiscoverySpiMBean bean = getMxBean(grid0.context().igniteInstanceName(), "SPIs",
                 TcpDiscoverySpi.class, TcpDiscoverySpiMBean.class);
 
             assertEquals(grid0.cluster().forServers().nodes().size(), srvCnt);
+
             assertEquals(grid0.cluster().forClients().nodes().size(), 1);
 
             UUID clientId = client.localNode().id();
 
-            bean0.excludeNode(clientId.toString());
+            bean.excludeNode(clientId.toString());
 
-            assertTrue(GridTestUtils.waitForCondition(() -> strLog.toString().contains("Node excluded, node=" + clientId), 5_000));
-            assertTrue(GridTestUtils.waitForCondition(() -> grid0.cluster().forClients().node(clientId) == null, 5_000));
+            assertTrue(GridTestUtils.waitForCondition(() ->
+                grid0.cluster().forClients().nodes().size() == 1, 5_000));
 
-            // Client reconnects.
-            assertTrue(GridTestUtils.waitForCondition(
-                () -> strLog.toString().contains("Local node was dropped from cluster due to network problems, will try to reconnect"),
-                5_000)
-            );
-            assertTrue(GridTestUtils.waitForCondition(() -> !grid0.cluster().forClients().nodes().isEmpty(), 5_000));
+            assertTrue(GridTestUtils.waitForCondition(() ->
+                grid0.cluster().forClients().node(clientId) == null, 5_000));
 
-            bean0.excludeNode(new UUID(0, 0).toString());
-            bean0.excludeNode("fakeUUID");
+            assertTrue(GridTestUtils.waitForCondition(() ->
+                strLog.toString().contains("Node excluded, node="), 5_000));
 
-            U.sleep(3000);
+            bean.excludeNode(new UUID(0, 0).toString());
+
+            bean.excludeNode("fakeUUID");
 
             assertEquals(grid0.cluster().forServers().nodes().size(), srvCnt);
 
-            CountDownLatch segmentedLatch = new CountDownLatch(1);
+            ClusterNode node = grid0.cluster().forServers().nodes().stream().filter(n -> n.id() != grid0.localNode().id())
+                .findFirst().get();
 
-            grid0.events().localListen(new IgnitePredicate<>() {
+            assertNotNull(node);
+
+            final CountDownLatch cnt = new CountDownLatch(1);
+
+            Ignite segmentedNode = G.allGrids().stream().filter(id -> id.cluster().localNode().id().equals(node.id()))
+                .findAny().get();
+
+            assertNotNull(segmentedNode);
+
+            segmentedNode.events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
-                    segmentedLatch.countDown();
+                    cnt.countDown();
 
                     return false;
                 }
             }, EVT_NODE_SEGMENTED);
 
-            bean0.excludeNode(grid(1).localNode().id().toString());
+            bean.excludeNode(node.id().toString());
 
-            assertTrue(GridTestUtils.waitForCondition(() -> grid0.cluster().forServers().nodes().size() == srvCnt - 1, 15_000));
+            assertTrue(GridTestUtils.waitForCondition(() ->
+                grid0.cluster().forServers().nodes().size() == srvCnt - 1, 5_000));
 
-            assertTrue(segmentedLatch.await(15_000, TimeUnit.MILLISECONDS));
+            assertTrue("Next node have to be failed within failureDetectionTimeout",
+                cnt.await(grid0.configuration().getFailureDetectionTimeout() + 3000, MILLISECONDS));
+
+            bean.excludeNode(grid0.localNode().id().toString());
         }
         finally {
             stopAllGrids();

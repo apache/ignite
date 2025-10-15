@@ -46,7 +46,6 @@ import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.jetbrains.annotations.Nullable;
@@ -86,9 +85,6 @@ abstract class TcpDiscoveryImpl {
 
     /** */
     protected volatile TcpDiscoveryNode locNode;
-
-    /** Avoids the message creation at each hartbeat. */
-    protected volatile TcpDiscoveryConnectionCheckMessage connCheckMsg;
 
     /** Debug mode. */
     protected boolean debugMode;

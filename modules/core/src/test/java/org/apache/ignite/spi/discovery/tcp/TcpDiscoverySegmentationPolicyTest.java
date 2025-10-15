@@ -17,12 +17,8 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteState;
 import org.apache.ignite.IgnitionListener;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -31,10 +27,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -65,9 +58,6 @@ public class TcpDiscoverySegmentationPolicyTest extends GridCommonAbstractTest {
 
         // Disable recovery
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setConnectionRecoveryTimeout(0);
-
-        // Fastens the tests.
-        cfg.setFailureDetectionTimeout(3000);
 
         return cfg;
     }
@@ -116,43 +106,13 @@ public class TcpDiscoverySegmentationPolicyTest extends GridCommonAbstractTest {
             }
         });
 
-        startGrid(0);
-
-        AtomicBoolean netLost = new AtomicBoolean();
-
-        /** */
-        class TestDiscoverySpi extends TcpDiscoverySpi {
-            /** {@inheritDoc} */
-            @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
-                long timeout) throws IOException, IgniteCheckedException {
-                U.sleep(50);
-
-                if (netLost.get())
-                    throw new IOException("Text error");
-
-                super.writeToSocket(sock, out, msg, timeout);
-            }
-        }
-
-        for (int i = 1; i < NODES_CNT; i++) {
-            IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(i));
-
-            TcpDiscoveryIpFinder ipFinder = ((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder();
-
-            TcpDiscoverySpi discoverySpi = new TestDiscoverySpi();
-            discoverySpi.setIpFinder(ipFinder);
-
-            cfg.setDiscoverySpi(discoverySpi);
-
-            startGrid(cfg);
-        }
-
-        assert NODES_CNT > 2;
+        startGrids(NODES_CNT);
 
         IgniteEx ignite1 = grid(1);
         IgniteEx ignite2 = grid(2);
 
-        netLost.set(true);
+        assertFalse("Unexpected segmentation.", segmented.get());
+
         ((TcpDiscoverySpi)ignite1.configuration().getDiscoverySpi()).brakeConnection();
         ((TcpDiscoverySpi)ignite2.configuration().getDiscoverySpi()).brakeConnection();
 
