@@ -620,7 +620,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
         if (metricsRegistryProducer != null)
             return metricsRegistryProducer.apply(name);
 
-        return new MetricRegistryImpl(name, null, null, new NullLogger());
+        return new MetricRegistryImpl(name, null, null, null, new NullLogger());
     }
 
     /** {@inheritDoc} */

@@ -25,6 +25,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -62,9 +63,6 @@ class BinaryMetadataFileStore {
     private File metadataDir;
 
     /** */
-    private final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache;
-
-    /** */
     private final GridKernalContext ctx;
 
     /** */
@@ -80,7 +78,6 @@ class BinaryMetadataFileStore {
     private BinaryMetadataAsyncWriter writer;
 
     /**
-     * @param metadataLocCache Metadata locale cache.
      * @param ctx Context.
      * @param log Logger.
      * @param metadataDir Path to binary metadata store configured by user, should include binary_meta
@@ -88,13 +85,11 @@ class BinaryMetadataFileStore {
      * @param forceEnabled If {@code true} then will write files even if persistence and CDC disabled.
      */
     BinaryMetadataFileStore(
-        final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache,
         final GridKernalContext ctx,
         final IgniteLogger log,
         final File metadataDir,
         final boolean forceEnabled
     ) throws IgniteCheckedException {
-        this.metadataLocCache = metadataLocCache;
         this.ctx = ctx;
 
         enabled = forceEnabled || enabled(ctx.config());
@@ -205,30 +200,33 @@ class BinaryMetadataFileStore {
 
     /**
      * Restores metadata on startup of {@link CacheObjectBinaryProcessorImpl} but before starting discovery.
+     *
+     * @param consumer Callback invoked on restored binary metadata.
      */
-    void restoreMetadata() {
+    void restoreMetadata(Consumer<BinaryMetadata> consumer) {
         if (!enabled)
             return;
 
         for (File file : metadataDir.listFiles(NodeFileTree::notTmpFile))
-            restoreMetadata(file);
+            restoreMetadata(file, consumer);
     }
 
     /**
      * Restores single type metadata.
      *
      * @param typeId Type identifier.
+     * @param consumer Callback invoked on restored binary metadata.
      */
-    void restoreMetadata(int typeId) {
-        restoreMetadata(new File(metadataDir, NodeFileTree.binaryMetaFileName(typeId)));
+    void restoreMetadata(int typeId, Consumer<BinaryMetadata> consumer) {
+        restoreMetadata(new File(metadataDir, NodeFileTree.binaryMetaFileName(typeId)), consumer);
     }
 
     /** */
-    private void restoreMetadata(File file) {
+    private void restoreMetadata(File file, Consumer<BinaryMetadata> consumer) {
         try (FileInputStream in = new FileInputStream(file)) {
             BinaryMetadata meta = U.unmarshal(ctx.marshaller(), in, U.resolveClassLoader(ctx.config()));
 
-            metadataLocCache.put(meta.typeId(), new BinaryMetadataHolder(meta, 0, 0));
+            consumer.accept(meta);
         }
         catch (Exception e) {
             U.warn(log, "Failed to restore metadata from file: " + file.getName() +

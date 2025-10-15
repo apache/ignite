@@ -15,33 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.ipc;
+package org.apache.ignite.internal;
 
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.transactions.TransactionIsolation;
 
-/**
- * Represents exception occurred during IPC endpoint binding.
- */
-public class IpcEndpointBindException extends IgniteCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
+public class UnwrappedEnumFieldMessage implements Message {
+    @Order(0)
+    private TransactionIsolation isolation;
 
-    /**
-     * Constructor.
-     *
-     * @param msg Message.
-     */
-    public IpcEndpointBindException(String msg) {
-        super(msg);
+    public TransactionIsolation isolation() {
+        return isolation;
     }
 
-    /**
-     * Constructor.
-     *
-     * @param msg Message.
-     * @param cause Cause.
-     */
-    public IpcEndpointBindException(String msg, Throwable cause) {
-        super(msg, cause);
+    public void isolation(TransactionIsolation isolation) {
+        this.isolation = isolation;
+    }
+
+    public short directType() {
+        return 0;
     }
 }

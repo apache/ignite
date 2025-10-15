@@ -36,6 +36,7 @@ import java.util.UUID;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -239,6 +240,13 @@ class MessageSerializerGenerator {
      * @param opt Case option.
      */
     private void processField(VariableElement field, int opt) throws Exception {
+        if (assignableFrom(field.asType(), type(Throwable.class.getName())))
+            throw new UnsupportedOperationException("You should use ErrorMessage for serialization of throwables.");
+
+        if (enumType(erasedType(field.asType())))
+            throw new IllegalArgumentException("Unsupported enum type: " + field.asType() +
+                    ". The enum must be wrapped into a Message (see, for example, TransactionIsolationMessage).");
+
         writeField(field, opt);
         readField(field, opt);
     }
@@ -713,6 +721,17 @@ class MessageSerializerGenerator {
     /** */
     private boolean assignableFrom(TypeMirror type, TypeMirror superType) {
         return env.getTypeUtils().isAssignable(type, superType);
+    }
+
+    /** */
+    private boolean enumType(TypeMirror type) {
+        if (type.getKind() == TypeKind.DECLARED) {
+            Element element = env.getTypeUtils().asElement(type);
+
+            return element != null && element.getKind() == ElementKind.ENUM;
+        }
+
+        return false;
     }
 
     /** */

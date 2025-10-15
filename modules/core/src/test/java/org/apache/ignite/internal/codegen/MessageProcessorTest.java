@@ -30,6 +30,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
 import static com.google.testing.compile.CompilationSubject.assertThat;
@@ -159,6 +160,24 @@ public class MessageProcessorTest {
         Compilation compilation = compile("PojoFieldMessage.java");
 
         assertThat(compilation).failed();
+    }
+
+    /** */
+    @Test
+    public void testExceptionFailed() {
+        Compilation compilation = compile("ExceptionMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("You should use ErrorMessage for serialization of throwables.");
+    }
+
+    /** */
+    @Test
+    public void testEnumFieldFailed() {
+        Compilation compilation = compile("UnwrappedEnumFieldMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("Unsupported enum type: " + TransactionIsolation.class.getName());
     }
 
     /** */

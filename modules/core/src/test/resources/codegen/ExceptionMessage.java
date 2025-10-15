@@ -15,12 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.ipc;
+package org.apache.ignite.internal;
 
-/**
- * IPC endpoint type.
- */
-public enum IpcEndpointType {
-    /** TCP loopback socket. Supported on all platforms. */
-    TCP_LOOPBACK,
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.plugin.extensions.communication.Message;
+
+public class ExceptionMessage implements Message {
+    @Order(0)
+    private IgniteException error;
+
+    public IgniteException error() {
+        return error;
+    }
+
+    public void error(IgniteException error) {
+        this.error = error;
+    }
+
+    public short directType() {
+        return 0;
+    }
 }

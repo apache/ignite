@@ -69,6 +69,8 @@ import org.apache.ignite.internal.processors.tracing.Tracing;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -566,13 +568,13 @@ public class GridNioServer<T> {
      * @param ses Session to close.
      * @return Future for operation.
      */
-    public GridNioFuture<Boolean> close(GridNioSession ses) {
+    public IgniteInternalFuture<Boolean> close(GridNioSession ses) {
         assert ses instanceof GridSelectorNioSessionImpl : ses;
 
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
 
         if (impl.closed())
-            return new GridNioFinishedFuture<>(false);
+            return new GridFinishedFuture<>(false);
 
         NioOperationFuture<Boolean> fut = new NioOperationFuture<>(impl, NioOperation.CLOSE);
 
@@ -599,7 +601,7 @@ public class GridNioServer<T> {
      * @param ackC Closure invoked when message ACK is received.
      * @return Future for operation.
      */
-    GridNioFuture<?> send(GridNioSession ses,
+    IgniteInternalFuture<?> send(GridNioSession ses,
         ByteBuffer msg,
         boolean createFut,
         IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
@@ -630,7 +632,7 @@ public class GridNioServer<T> {
      * @param ackC Closure invoked when message ACK is received.
      * @return Future for operation.
      */
-    GridNioFuture<?> send(GridNioSession ses,
+    IgniteInternalFuture<?> send(GridNioSession ses,
         Message msg,
         boolean createFut,
         IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
@@ -673,7 +675,7 @@ public class GridNioServer<T> {
 
                 req.onError(err);
 
-                if (!(req instanceof GridNioFuture))
+                if (!(req instanceof IgniteInternalFuture))
                     throw new IgniteCheckedException(err);
             }
         }
@@ -804,14 +806,14 @@ public class GridNioServer<T> {
      * @param op Operation.
      * @return Future for operation.
      */
-    private GridNioFuture<?> pauseResumeReads(GridNioSession ses, NioOperation op) {
+    private IgniteInternalFuture<?> pauseResumeReads(GridNioSession ses, NioOperation op) {
         assert ses instanceof GridSelectorNioSessionImpl;
         assert op == NioOperation.PAUSE_READ || op == NioOperation.RESUME_READ;
 
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
 
         if (impl.closed())
-            return new GridNioFinishedFuture(new IOException("Failed to pause/resume reads " +
+            return new GridFinishedFuture(new IOException("Failed to pause/resume reads " +
                 "(connection was closed): " + ses));
 
         NioOperationFuture<?> fut = new NioOperationFuture<Void>(impl, op);
@@ -929,7 +931,7 @@ public class GridNioServer<T> {
      * @param lsnr Listener that should be invoked in NIO thread.
      * @return Future to get session.
      */
-    public GridNioFuture<GridNioSession> createSession(
+    public IgniteInternalFuture<GridNioSession> createSession(
         final SocketChannel ch,
         @Nullable Map<Integer, Object> meta,
         boolean async,
@@ -955,11 +957,11 @@ public class GridNioServer<T> {
                 return req;
             }
             else
-                return new GridNioFinishedFuture<>(
+                return new GridFinishedFuture<>(
                     new IgniteCheckedException("Failed to create session, server is stopped."));
         }
         catch (IOException e) {
-            return new GridNioFinishedFuture<>(e);
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -967,7 +969,7 @@ public class GridNioServer<T> {
      * @param ch Channel.
      * @param meta Session meta.
      */
-    public GridNioFuture<GridNioSession> cancelConnect(final SocketChannel ch, Map<Integer, ?> meta) {
+    public IgniteInternalFuture<GridNioSession> cancelConnect(final SocketChannel ch, Map<Integer, ?> meta) {
         if (!closed) {
             NioOperationFuture<GridNioSession> req = new NioOperationFuture<>(ch, false, meta);
 
@@ -982,7 +984,7 @@ public class GridNioServer<T> {
             return req;
         }
         else
-            return new GridNioFinishedFuture<>(
+            return new GridFinishedFuture<>(
                 new IgniteCheckedException("Failed to cancel connection, server is stopped."));
     }
 
@@ -3446,7 +3448,7 @@ public class GridNioServer<T> {
     /**
      * Class for requesting write and session close operations.
      */
-    private static class NioOperationFuture<R> extends GridNioFutureImpl<R> implements SessionWriteRequest,
+    private static class NioOperationFuture<R> extends GridFutureAdapter<R> implements SessionWriteRequest,
         SessionChangeRequest, GridNioKeyAttachment {
         /** Socket channel in register request. */
         @GridToStringExclude
@@ -3477,6 +3479,12 @@ public class GridNioServer<T> {
         /** */
         private Span span;
 
+        /** */
+        private boolean msgThread;
+
+        /** */
+        private IgniteInClosure<IgniteException> ackC;
+
         /**
          * @param sockCh Socket channel.
          * @param accepted {@code True} if socket has been accepted.
@@ -3487,8 +3495,6 @@ public class GridNioServer<T> {
             boolean accepted,
             @Nullable Map<Integer, ?> meta
         ) {
-            super(null);
-
             op = NioOperation.REGISTER;
 
             this.sockCh = sockCh;
@@ -3504,8 +3510,6 @@ public class GridNioServer<T> {
          * @param op Requested operation.
          */
         NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op) {
-            super(null);
-
             assert ses != null || op == NioOperation.DUMP_STATS : "Invalid params [ses=" + ses + ", op=" + op + ']';
             assert op != null;
             assert op != NioOperation.REGISTER;
@@ -3527,8 +3531,6 @@ public class GridNioServer<T> {
             NioOperation op,
             Object msg,
             IgniteInClosure<IgniteException> ackC) {
-            super(ackC);
-
             assert ses != null;
             assert op != null;
             assert op != NioOperation.REGISTER;
@@ -3538,6 +3540,7 @@ public class GridNioServer<T> {
             this.op = op;
             this.msg = msg;
             this.span = MTC.span();
+            this.ackC = ackC;
         }
 
         /**
@@ -3554,8 +3557,6 @@ public class GridNioServer<T> {
             Message commMsg,
             boolean skipRecovery,
             IgniteInClosure<IgniteException> ackC) {
-            super(ackC);
-
             assert ses != null;
             assert op != null;
             assert op != NioOperation.REGISTER;
@@ -3566,6 +3567,7 @@ public class GridNioServer<T> {
             this.msg = commMsg;
             this.skipRecovery = skipRecovery;
             this.span = MTC.span();
+            this.ackC = ackC;
         }
 
         /** {@inheritDoc} */
@@ -3629,6 +3631,21 @@ public class GridNioServer<T> {
         /** {@inheritDoc} */
         @Override public void onMessageWritten() {
             onDone();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void messageThread(boolean msgThread) {
+            this.msgThread = msgThread;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean messageThread() {
+            return msgThread;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInClosure<IgniteException> ackClosure() {
+            return ackC;
         }
 
         /** {@inheritDoc} */
@@ -3726,7 +3743,7 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses,
+        @Override public IgniteInternalFuture<?> onSessionWrite(GridNioSession ses,
             Object msg,
             boolean fut,
             IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
@@ -3764,7 +3781,7 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) {
+        @Override public IgniteInternalFuture<Boolean> onSessionClose(GridNioSession ses) {
             return close(ses);
         }
 
@@ -3779,12 +3796,12 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onPauseReads(GridNioSession ses) throws IgniteCheckedException {
+        @Override public IgniteInternalFuture<?> onPauseReads(GridNioSession ses) throws IgniteCheckedException {
             return pauseResumeReads(ses, NioOperation.PAUSE_READ);
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException {
+        @Override public IgniteInternalFuture<?> onResumeReads(GridNioSession ses) throws IgniteCheckedException {
             return pauseResumeReads(ses, NioOperation.RESUME_READ);
         }
     }
