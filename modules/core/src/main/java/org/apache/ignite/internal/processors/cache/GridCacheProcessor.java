@@ -650,12 +650,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param recoveryMode Value of {@link GridKernalContext#recoveryMode()}.
      * @param cfg Initializes cache configuration with proper defaults.
      * @param cacheObjCtx Cache object context.
      * @throws IgniteCheckedException If configuration is not valid.
      */
-    void initialize(CacheConfiguration<?, ?> cfg, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
-        CU.initializeConfigDefaults(log, cfg, cacheObjCtx);
+    void initialize(CacheConfiguration<?, ?> cfg, CacheObjectContext cacheObjCtx, boolean recoveryMode) throws IgniteCheckedException {
+        CU.initializeConfigDefaults(log, cfg, cacheObjCtx, recoveryMode);
     }
 
     /**
@@ -2455,7 +2456,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean needToStart = (dataRegion != null)
             && (cacheType != CacheType.USER
                 || (sharedCtx.isLazyMemoryAllocation(dataRegion)
-                    && !cacheObjCtx.kernalContext().clientNode()));
+                    && !sharedCtx.kernalContext().clientNode()));
 
         if (needToStart)
             dataRegion.pageMemory().start();
@@ -5149,7 +5150,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 CacheObjectContext cacheObjCtx = ctx.cacheObjects().contextForCache(cfg);
 
                 // Cache configuration must be initialized before splitting.
-                initialize(cfg, cacheObjCtx);
+                initialize(cfg, cacheObjCtx, ctx.recoveryMode());
 
                 req.deploymentId(IgniteUuid.randomUuid());
 
@@ -5163,7 +5164,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 if (restartId != null)
                     req.schema(new QuerySchema(qryEntities == null ? cfg.getQueryEntities() : qryEntities));
                 else
-                    req.schema(new QuerySchema(qryEntities != null ? QueryUtils.normalizeQueryEntities(ctx, qryEntities, cfg)
+                    req.schema(new QuerySchema(qryEntities != null ? QueryUtils.normalizeQueryEntities(ctx.recoveryMode(), qryEntities, cfg)
                             : cfg.getQueryEntities()));
             }
         }

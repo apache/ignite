@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.DdlTransactionCalciteSelfTest;
+import org.apache.ignite.internal.processors.cache.QueryEntityValueColumnAliasTest;
 import org.apache.ignite.internal.processors.cache.SessionContextSqlFunctionTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.CancelTest;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.query.calcite.integration.IndexSpoo
 import org.apache.ignite.internal.processors.query.calcite.integration.IntervalTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.JoinIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KeepBinaryIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.KeyClassChangeIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.KillQueryCommandDdlIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.integration.LimitOffsetIntegrationTest;
@@ -167,6 +169,8 @@ import org.junit.runners.Suite;
     TpchScale100Test.class,
     UnnestIntegrationTest.class,
     CalcitePlanningDumpTest.class,
+    KeyClassChangeIntegrationTest.class,
+    QueryEntityValueColumnAliasTest.class,
 })
 public class IntegrationTestSuite {
 }
