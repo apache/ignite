@@ -111,7 +111,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
 
         ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
 
-        metrics.setCurrentWaitingJobs(2);
+        metrics.currentWaitingJobs(2);
 
         rmtNode.setMetrics(metrics);
 

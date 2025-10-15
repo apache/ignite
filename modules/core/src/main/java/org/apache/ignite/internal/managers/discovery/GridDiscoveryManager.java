@@ -81,6 +81,7 @@ import org.apache.ignite.internal.managers.systemview.walker.NodeAttributeViewWa
 import org.apache.ignite.internal.managers.systemview.walker.NodeMetricsViewWalker;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
+import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
@@ -1181,7 +1182,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             if (cache.context().statisticsEnabled() &&
                                 cache.context().started() &&
                                 cache.context().affinity().affinityTopologyVersion().topologyVersion() > 0)
-                                metrics.put(cache.context().cacheId(), cache.localMetrics());
+                                metrics.put(cache.context().cacheId(), CacheMetricsSnapshot.of(cache.localMetrics()));
                         }
 
                         return metrics;

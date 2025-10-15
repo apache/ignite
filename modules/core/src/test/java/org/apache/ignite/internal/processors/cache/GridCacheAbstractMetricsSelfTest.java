@@ -279,16 +279,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     @Test
-    public void testGetMetricsSnapshot() throws Exception {
-        IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
-
-        assertNotSame("Method metrics() should return snapshot.", cache.localMetrics(), cache.localMetrics());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
     public void testGetAndRemoveAsyncAvgTime() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 

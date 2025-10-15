@@ -192,8 +192,8 @@ public class GridSpiTestContext implements IgniteSpiContext {
     private ClusterMetricsSnapshot createMetrics(int waitingJobs, int activeJobs) {
         ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
 
-        metrics.setCurrentWaitingJobs(waitingJobs);
-        metrics.setCurrentActiveJobs(activeJobs);
+        metrics.currentWaitingJobs(waitingJobs);
+        metrics.currentActiveJobs(activeJobs);
 
         return metrics;
     }
@@ -277,14 +277,6 @@ public class GridSpiTestContext implements IgniteSpiContext {
     public void updateMetrics(ClusterNode node) {
         if (locNode.equals(node) || rmtNodes.contains(node))
             notifyListener(new DiscoveryEvent(locNode, "Metrics updated.", EVT_NODE_METRICS_UPDATED, node));
-    }
-
-    /** */
-    public void updateAllMetrics() {
-        notifyListener(new DiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, locNode));
-
-        for (ClusterNode node : rmtNodes)
-            notifyListener(new DiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, node));
     }
 
     /**
