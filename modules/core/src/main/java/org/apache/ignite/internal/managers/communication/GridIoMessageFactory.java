@@ -121,9 +121,7 @@ import org.apache.ignite.internal.processors.cache.CacheEntryPredicateContainsVa
 import org.apache.ignite.internal.processors.cache.CacheEntrySerializablePredicate;
 import org.apache.ignite.internal.processors.cache.CacheEvictionEntry;
 import org.apache.ignite.internal.processors.cache.CacheInvokeDirectResult;
-import org.apache.ignite.internal.processors.cache.CacheWriteSynchronizationModeMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheOperationMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridChangeGlobalStateMessageResponse;
 import org.apache.ignite.internal.processors.cache.WalStateAckMessage;

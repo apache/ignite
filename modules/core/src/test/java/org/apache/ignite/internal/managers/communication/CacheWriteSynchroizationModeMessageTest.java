@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.processors.cache.CacheWriteSynchronizationModeMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 

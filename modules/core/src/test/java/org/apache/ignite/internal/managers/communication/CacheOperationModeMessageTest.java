@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.GridCacheOperationMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 

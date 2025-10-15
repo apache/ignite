@@ -14,9 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
