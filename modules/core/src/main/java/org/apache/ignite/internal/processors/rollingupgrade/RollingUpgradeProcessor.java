@@ -122,8 +122,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param current Current.
-     * @param target Target.
+     * @param current Current cluster version.
+     * @param target Target cluster version.
      */
     private boolean checkVersions(IgniteProductVersion current, IgniteProductVersion target) {
         assert current != null && target != null;
