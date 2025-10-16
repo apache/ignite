@@ -808,6 +808,11 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         ctxInitLatch.countDown();
     }
 
+    /** @return {@code true} if {@code IgniteSpiContext} is initialized. */
+    public boolean spiContextInitialized() {
+        return ctxInitLatch.getCount() == 0;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteSpiContext getSpiContext() {
         if (ctxInitLatch.getCount() > 0) {
