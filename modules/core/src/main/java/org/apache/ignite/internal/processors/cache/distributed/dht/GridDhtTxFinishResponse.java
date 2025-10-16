@@ -96,7 +96,7 @@ public final class GridDhtTxFinishResponse extends GridDistributedTxFinishRespon
 
     /** Sets the flag indicating if this is a check-committed response. */
     public void checkCommitted(boolean checkCommited) {
-        this.checkCommitted = checkCommited;
+        checkCommitted = checkCommited;
     }
 
     /**
