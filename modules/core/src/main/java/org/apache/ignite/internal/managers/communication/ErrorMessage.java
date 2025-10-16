@@ -34,7 +34,7 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
  * to transfer some error as part of some message. See {@link MessageProcessor} for details.
  * <p>Currently, under the hood marshalling and unmarshalling is performed by {@link JdkMarshaller}.
  */
-@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+@SuppressWarnings({"AssignmentOrReturnOfFieldWithMutableType", "NullableProblems"})
 public class ErrorMessage implements Message {
     /** Serialized form of throwable. */
     @Order(value = 0, method = "errorBytes")
