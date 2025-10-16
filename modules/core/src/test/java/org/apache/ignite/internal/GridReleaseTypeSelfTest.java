@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -112,10 +113,8 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         testConflictVersionsWithRollingUpgrade("2.18.0", "2.18.3", "2.20.0", isClient, "2.18.3");
 
         testConflictVersionsWithRollingUpgrade("2.18.0", "2.19.2", "2.17.0", isClient, "2.19.2");
-        testConflictVersionsWithRollingUpgrade("2.18.0", "2.17.3", "2.19.0", isClient, "2.17.3");
 
         testConflictVersionsWithRollingUpgrade("2.18.0", "2.19.2", "2.20.0", isClient, "2.19.2");
-        testConflictVersionsWithRollingUpgrade("2.18.0", "2.17.3", "2.16.0", isClient, "2.17.3");
     }
 
     /** */
@@ -234,6 +233,38 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
+    @Test
+    public void testRollingUpgradeProcessorVersionCheck() throws Exception {
+        IgniteEx grid0 = startGrid(0, "2.18.0", false);
+        startGrid(1, "2.18.0", isClient);
+
+        assertClusterSize(2);
+
+        assertEnablingFails(grid0, "3.0.0", "Major versions are different.");
+        assertEnablingFails(grid0, "2.18.2", "Minor version can only be incremented by 1.");
+        assertEnablingFails(grid0, "2.19.2", "Patch version can only be incremented by 1.");
+
+        IgnitePair<IgniteProductVersion> newPair = F.pair(IgniteProductVersion.fromString("2.18.0"), IgniteProductVersion.fromString("2.19.0"));
+
+        grid0.context().rollingUpgrade().enable(newPair.get2());
+
+        for (int i = 0; i < 2; i++) {
+            assertTrue(waitForCondition(grid(i).context().rollingUpgrade()::isRollingUpgradeEnabled, getTestTimeout()));
+
+            assertEquals(newPair, grid(i).context().rollingUpgrade().versions());
+        }
+    }
+
+    private void assertEnablingFails(IgniteEx ex, String ver, String errMsg) {
+        Throwable e = assertThrows(log,
+            () -> ex.context().rollingUpgrade().enable(IgniteProductVersion.fromString(ver)),
+            IgniteException.class,
+            null);
+
+        assertTrue(e.getMessage().contains(errMsg));
+    }
+
     /** Tests that starting a node with rejected version fails with remote rejection. */
     private void testConflictVersions(String acceptedVer, String rejVer, boolean isClient) {
         ThrowableSupplier<IgniteEx, Exception> sup = () -> {
@@ -339,16 +370,12 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
      * @param ver Version for rolling upgrade support.
      */
     private void allowRollingUpgradeVersionCheck(IgniteEx grid, String ver) throws IgniteCheckedException {
-        if (ver == null) {
-            return;
-        }
+        if (ver == null)
+            grid.context().rollingUpgrade().disable();
 
-        String locBuildVer = grid.context().discovery().localNode().attribute(IgniteNodeAttributes.ATTR_BUILD_VER);
-
-        IgniteProductVersion cur = IgniteProductVersion.fromString(locBuildVer);
         IgniteProductVersion target = IgniteProductVersion.fromString(ver);
 
-        grid.context().rollingUpgrade().versions(cur, target);
+        grid.context().rollingUpgrade().enable(target);
     }
 
     /**

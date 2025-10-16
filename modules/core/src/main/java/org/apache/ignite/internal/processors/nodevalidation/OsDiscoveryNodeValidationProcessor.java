@@ -21,6 +21,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -50,6 +51,10 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
         IgniteProductVersion rmtVer = IgniteProductVersion.fromString(rmtBuildVer);
 
         IgnitePair<IgniteProductVersion> pair = ctx.rollingUpgrade().versions();
+
+        if (pair == null) {
+            pair = F.pair(IgniteProductVersion.fromString(locBuildVer), null);
+        }
 
         IgniteProductVersion curVer = pair.get1();
         IgniteProductVersion targetVer = pair.get2();
