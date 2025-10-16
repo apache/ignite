@@ -51,7 +51,12 @@ public class SqlConfiguration {
     /** SQL plan history size. */
     private int sqlPlanHistSize = -1;
 
-    /** Enable validation of key & values against sql schema. */
+    /**
+     * Enables validation of cache keys and values against the SQL schema that describes the cache.
+     * When turned on, Ignite checks runtime types, nullability and length/precision constraints before
+     * accepting the data. A mismatch results in an IgniteSQLException instead of
+     * writing inconsistent data. Disabled by default.
+     * */
     private boolean validationEnabled;
 
     /** SQL query engines configuration. */
@@ -188,19 +193,23 @@ public class SqlConfiguration {
     }
 
     /**
-     * Is key &amp; value validation enabled.
+     * Returns whether Ignite validates cache keys and values against the declared SQL schema before
+     * applying DML operations such as {@code INSERT}, {@code MERGE}, {@code UPDATE} and cache API calls that
+     * modify data. When enabled, Ignite verifies that each property matches the column type and constraints
+     * defined in the schema or indexes and throws IgniteSQLException if a violation is detected.
      *
-     * @return {@code true} When key &amp; value shall be validated against SQL schema.
+     * @return {@code true} if key and value validation against the SQL schema is enabled; {@code false} otherwise.
      */
     public boolean isValidationEnabled() {
         return validationEnabled;
     }
 
     /**
-     * Enable/disable key &amp; value validation.
+     * Enables or disables validation of cache keys and values against the SQL schema.
      *
-     * @param validationEnabled {@code true} When key &amp; value shall be validated against SQL schema.
-     * Default value is {@code false}.
+     * @param validationEnabled {@code true} to validate key and value objects against the SQL schema and reject
+     * data that violates declared types or constraints; {@code false} to skip these checks. The default value
+     * is {@code false}.
      * @return {@code this} for chaining.
      */
     public SqlConfiguration setValidationEnabled(boolean validationEnabled) {
