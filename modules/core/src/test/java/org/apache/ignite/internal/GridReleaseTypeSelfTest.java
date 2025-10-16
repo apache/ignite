@@ -39,7 +39,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor.ROLL_UP_VERSIONS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.junit.Assume.assumeTrue;
@@ -227,9 +226,9 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         assertClusterSize(3);
 
         for (int i = 0; i < 3; i++) {
-            IgnitePair<IgniteProductVersion> stored = grid(i).context().distributedMetastorage().read(ROLL_UP_VERSIONS);
+            assertTrue(grid(i).context().rollingUpgrade().isRollingUpgradeEnabled());
 
-            assertNotNull("rolling.upgrade.versions should be set", stored);
+            IgnitePair<IgniteProductVersion> stored = grid(i).context().rollingUpgrade().versions();
 
             assertEquals(F.pair(IgniteProductVersion.fromString("2.18.0"), IgniteProductVersion.fromString("2.18.1")), stored);
         }
@@ -341,7 +340,6 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
      */
     private void allowRollingUpgradeVersionCheck(IgniteEx grid, String ver) throws IgniteCheckedException {
         if (ver == null) {
-            grid.context().distributedMetastorage().remove(ROLL_UP_VERSIONS);
             return;
         }
 
@@ -350,9 +348,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         IgniteProductVersion cur = IgniteProductVersion.fromString(locBuildVer);
         IgniteProductVersion target = IgniteProductVersion.fromString(ver);
 
-        IgnitePair<IgniteProductVersion> pair = new IgnitePair<>(cur, target);
-
-        grid.context().distributedMetastorage().write(ROLL_UP_VERSIONS, pair);
+        grid.context().rollingUpgrade().versions(cur, target);
     }
 
     /**

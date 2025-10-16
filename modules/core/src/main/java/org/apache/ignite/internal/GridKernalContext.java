@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.port.GridPortProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
@@ -639,6 +640,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Performance statistics processor.
      */
     public PerformanceStatisticsProcessor performanceStatistics();
+
+    /**
+     * Gets Rolling upgrade processor.
+     *
+     * @return Rolling upgrade processor.
+     */
+    public RollingUpgradeProcessor rollingUpgrade();
 
     /**
      * Executor that is in charge of processing user async continuations.
