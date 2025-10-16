@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 /** Rolling upgrade processor. Manages current and target versions of cluster. */
 public class RollingUpgradeProcessor extends GridProcessorAdapter {
     /** Key for the distributed property that holds current and target versions. */
-    private static final String ROLL_UP_VERSIONS = "rolling.upgrade.versions";
+    private static final String ROLL_UP_VERSIONS = IGNITE_INTERNAL_KEY_PREFIX + "rolling.upgrade.versions";
 
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
