@@ -26,6 +26,7 @@ import org.apache.ignite.spi.discovery.FilterDataForClientNodeDiscoveryTest;
 import org.apache.ignite.spi.discovery.IgniteClientReconnectEventHandlingTest;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryCacheReuseSelfTest;
 import org.apache.ignite.spi.discovery.LongClientConnectToClusterTest;
+import org.apache.ignite.spi.discovery.datacenter.MultiDataCenterDeploymentTest;
 import org.apache.ignite.spi.discovery.tcp.DiscoveryClientSocketTest;
 import org.apache.ignite.spi.discovery.tcp.DiscoveryUnmarshalVulnerabilityTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientConnectSslTest;
@@ -181,7 +182,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 
     TcpDiscoveryIpFinderFailureTest.class,
 
-    TcpDiscoveryDeadNodeAddressResolvingTest.class
+    TcpDiscoveryDeadNodeAddressResolvingTest.class,
+
+    MultiDataCenterDeploymentTest.class
 })
 public class IgniteSpiDiscoverySelfTestSuite {
     /** */
