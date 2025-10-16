@@ -33,7 +33,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     /** Mini future ID. */
-    @Order(20)
+    @Order(18)
     private int miniId;
 
     /**
@@ -49,7 +49,6 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param threadId Thread ID.
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
-     * @param sys System flag.
      * @param plc IO policy.
      * @param syncMode Write synchronization mode.
      * @param explicitLock Explicit lock flag.
@@ -58,7 +57,6 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
-     * @param txSize Expected transaction size.
      * @param taskNameHash Task name hash.
      * @param addDepInfo Deployment info flag.
      */
@@ -68,7 +66,6 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         long threadId,
         boolean commit,
         boolean invalidate,
-        boolean sys,
         byte plc,
         CacheWriteSynchronizationMode syncMode,
         boolean explicitLock,
@@ -77,7 +74,6 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        int txSize,
         int taskNameHash,
         boolean addDepInfo) {
         super(
@@ -88,14 +84,12 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
             threadId,
             commit,
             invalidate,
-            sys,
             plc,
             syncMode,
             baseVer,
             committedVers,
             rolledbackVers,
             taskNameHash,
-            txSize,
             addDepInfo
         );
 

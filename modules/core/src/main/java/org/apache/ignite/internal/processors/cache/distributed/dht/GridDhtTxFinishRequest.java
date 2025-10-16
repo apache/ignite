@@ -34,15 +34,15 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /** Near node ID. */
-    @Order(20)
+    @Order(18)
     private UUID nearNodeId;
 
     /** Mini future ID. */
-    @Order(21)
+    @Order(19)
     private int miniId;
 
     /** */
-    @Order(value = 22, method = "updateCounters")
+    @Order(value = 20, method = "updateCounters")
     private Collection<PartitionUpdateCountersMessage> updCntrs;
 
     /**
@@ -62,14 +62,12 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param commitVer Commit version.
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
-     * @param sys System flag.
      * @param plc IO policy.
      * @param sysInvalidate System invalidation flag.
      * @param syncMode Write synchronization mode.
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
-     * @param txSize Expected transaction size.
      * @param taskNameHash Task name hash.
      * @param addDepInfo Deployment info flag.
      * @param retVal Need return value
@@ -86,14 +84,12 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         long threadId,
         boolean commit,
         boolean invalidate,
-        boolean sys,
         byte plc,
         boolean sysInvalidate,
         CacheWriteSynchronizationMode syncMode,
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        int txSize,
         int taskNameHash,
         boolean addDepInfo,
         boolean retVal,
@@ -108,14 +104,12 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             threadId,
             commit,
             invalidate,
-            sys,
             plc,
             syncMode,
             baseVer,
             committedVers,
             rolledbackVers,
             taskNameHash,
-            txSize,
             addDepInfo);
 
         assert miniId != 0;

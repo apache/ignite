@@ -84,28 +84,20 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     @Order(value = 13, method = "baseVersion")
     private GridCacheVersion baseVer;
 
-    /** Expected txSize. */
-    @Order(14)
-    private int txSize;
-
-    /** System transaction flag. */
-    @Order(value = 15, method = "system")
-    private boolean sys;
-
     /** IO policy. */
-    @Order(value = 16, method = "policy")
+    @Order(value = 14, method = "policy")
     private byte plc;
 
     /** Task name hash. */
-    @Order(17)
+    @Order(15)
     private int taskNameHash;
 
     /** */
-    @Order(18)
+    @Order(16)
     private byte flags;
 
     /** Write synchronization mode wrapper message. */
-    @Order(value = 19, method = "writeSynchronizationModeMessage")
+    @Order(value = 17, method = "writeSynchronizationModeMessage")
     private CacheWriteSynchronizationModeMessage syncModeMsg;
 
     /** Transient TX state. */
@@ -125,13 +117,11 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
      * @param commitVer Commit version.
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
-     * @param sys System transaction flag.
      * @param plc IO policy.
      * @param syncMode Write synchronization mode.
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
-     * @param txSize Expected transaction size.
      * @param addDepInfo Deployment info flag.
      */
     public GridDistributedTxFinishRequest(
@@ -142,14 +132,12 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         long threadId,
         boolean commit,
         boolean invalidate,
-        boolean sys,
         byte plc,
         CacheWriteSynchronizationMode syncMode,
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
         int taskNameHash,
-        int txSize,
         boolean addDepInfo
     ) {
         super(xidVer, 0, addDepInfo);
@@ -163,12 +151,10 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         this.threadId = threadId;
         this.commit = commit;
         this.invalidate = invalidate;
-        this.sys = sys;
         this.plc = plc;
         syncModeMsg = new CacheWriteSynchronizationModeMessage(syncMode);
         this.baseVer = baseVer;
         this.taskNameHash = taskNameHash;
-        this.txSize = txSize;
 
         completedVersions(committedVers, rolledbackVers);
     }
@@ -240,20 +226,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
      */
     public void topologyVersion(AffinityTopologyVersion topVer) {
         this.topVer = topVer;
-    }
-
-    /**
-     * @return System transaction flag.
-     */
-    public boolean system() {
-        return sys;
-    }
-
-    /**
-     * @param sys System transaction flag.
-     */
-    public void system(boolean sys) {
-        this.sys = sys;
     }
 
     /**
@@ -353,20 +325,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
      */
     public void baseVersion(GridCacheVersion baseVer) {
         this.baseVer = baseVer;
-    }
-
-    /**
-     * @return Expected tx size.
-     */
-    public int txSize() {
-        return txSize;
-    }
-
-    /**
-     * @param txSize Expected tx size.
-     */
-    public void txSize(int txSize) {
-        this.txSize = txSize;
     }
 
     /**
