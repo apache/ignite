@@ -18,13 +18,12 @@
 package org.apache.ignite.internal.codegen;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.TestMapMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.internal.TestMapMessage;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  * This class is generated automatically.
@@ -178,6 +177,17 @@ public class TestMapMessageSerializer implements MessageSerializer {
 
                 writer.incrementState();
 
+            case 22:
+                if (!writer.writeMap(msg.integerGridLongListMap(), MessageCollectionItemType.INT, MessageCollectionItemType.GRID_LONG_LIST))
+                    return false;
+
+                writer.incrementState();
+
+            case 23:
+                if (!writer.writeMap(msg.gridLongListIntegerMap(), MessageCollectionItemType.GRID_LONG_LIST, MessageCollectionItemType.INT))
+                    return false;
+
+                writer.incrementState();
         }
 
         return true;
@@ -366,6 +376,21 @@ public class TestMapMessageSerializer implements MessageSerializer {
 
                 reader.incrementState();
 
+            case 22:
+                msg.integerGridLongListMap(reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.GRID_LONG_LIST, false));
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 23:
+                msg.gridLongListIntegerMap(reader.readMap(MessageCollectionItemType.GRID_LONG_LIST, MessageCollectionItemType.INT, false));
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return true;

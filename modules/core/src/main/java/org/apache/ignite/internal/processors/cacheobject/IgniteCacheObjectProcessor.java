@@ -30,6 +30,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -209,12 +210,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
         @Nullable IncompleteCacheObject incompleteObj) throws IgniteCheckedException;
 
     /**
-     * @param obj Value.
-     * @return {@code True} if object is of known immutable type.
-     */
-    public boolean immutable(Object obj);
-
-    /**
      * @return Ignite binary interface.
      * @throws IgniteException If failed.
      */
@@ -378,4 +373,18 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @param lsnr Listener.
      */
     public void addBinaryMetadataUpdateListener(BinaryMetadataUpdatedListener lsnr);
+
+    /**
+     * @return Binary context.
+     */
+    public BinaryContext binaryContext();
+
+    /**
+     * Forces caller thread to wait for binary metadata write operation for given type ID.
+     *
+     * In case of in-memory mode this method becomes a No-op as no binary metadata is written to disk in this mode.
+     *
+     * @param typeId ID of binary type to wait for metadata write operation.
+     */
+    public void waitMetadataWriteIfNeeded(final int typeId);
 }

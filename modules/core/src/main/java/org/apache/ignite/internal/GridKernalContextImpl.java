@@ -39,6 +39,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.cache.transform.CacheObjectTransformerProcessor;
 import org.apache.ignite.internal.maintenance.MaintenanceProcessor;
@@ -121,6 +122,10 @@ import static org.apache.ignite.internal.IgniteComponentType.SPRING;
  */
 @GridToStringExclude
 public class GridKernalContextImpl implements GridKernalContext, Externalizable {
+    static {
+        GridBinaryMarshaller.binaryContextSupplier(() -> IgnitionEx.localIgnite().context().cacheObjects().binaryContext());
+    }
+
     /** */
     private static final long serialVersionUID = 0L;
 

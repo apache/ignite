@@ -21,9 +21,9 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
 import org.apache.ignite.internal.util.nio.GridNioFilterChain;
-import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -114,7 +114,7 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
                 proceedExceptionCaught(ses, ex);
             }
 
-            @Override public GridNioFuture<?> onSessionWrite(
+            @Override public IgniteInternalFuture<?> onSessionWrite(
                 GridNioSession ses,
                 Object msg,
                 boolean fut,
@@ -131,7 +131,7 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
                 proceedMessageReceived(ses, msg);
             }
 
-            @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) {
+            @Override public IgniteInternalFuture<Boolean> onSessionClose(GridNioSession ses) {
                 closeEvt.compareAndSet(null, ses.<String>meta(CLOSE_META_NAME));
 
                 return null;
@@ -215,7 +215,7 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onSessionWrite(
+        @Override public IgniteInternalFuture<?> onSessionWrite(
             GridNioSession ses,
             Object msg,
             boolean fut,
@@ -234,7 +234,7 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
+        @Override public IgniteInternalFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
             chainMeta(ses, CLOSE_META_NAME);
 
             return proceedSessionClose(ses);

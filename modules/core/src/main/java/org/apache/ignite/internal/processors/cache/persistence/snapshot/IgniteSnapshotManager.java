@@ -650,42 +650,37 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override protected void stop0(boolean cancel) {
+    @Override protected void onKernalStop0(boolean cancel) {
         busyLock.block();
 
-        try {
-            snpRmtMgr.stop();
+        snpRmtMgr.stop();
 
-            IgniteCheckedException stopErr = new NodeStoppingException("Node is stopping.");
+        IgniteCheckedException stopErr = new NodeStoppingException("Node is stopping.");
 
-            restoreCacheGrpProc.interrupt(stopErr);
-            checkSnpProc.interrupt(stopErr);
+        restoreCacheGrpProc.interrupt(stopErr);
+        checkSnpProc.interrupt(stopErr);
 
-            // Try stop all snapshot processing if not yet.
-            for (AbstractSnapshotFutureTask<?> sctx : locSnpTasks.values())
-                sctx.acceptException(new NodeStoppingException(SNP_NODE_STOPPING_ERR_MSG));
+        // Try stop all snapshot processing if not yet.
+        for (AbstractSnapshotFutureTask<?> sctx : locSnpTasks.values())
+            sctx.acceptException(new NodeStoppingException(SNP_NODE_STOPPING_ERR_MSG));
 
-            locSnpTasks.clear();
+        locSnpTasks.clear();
 
-            synchronized (snpOpMux) {
-                if (clusterSnpFut != null) {
-                    clusterSnpFut.onDone(new NodeStoppingException(SNP_NODE_STOPPING_ERR_MSG));
+        synchronized (snpOpMux) {
+            if (clusterSnpFut != null) {
+                clusterSnpFut.onDone(new NodeStoppingException(SNP_NODE_STOPPING_ERR_MSG));
 
-                    clusterSnpFut = null;
-                }
+                clusterSnpFut = null;
             }
-
-            cctx.kernalContext().io().removeMessageListener(DFLT_INITIAL_SNAPSHOT_TOPIC);
-            cctx.kernalContext().io().removeTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC);
-
-            if (discoLsnr != null)
-                cctx.kernalContext().event().removeDiscoveryEventListener(discoLsnr);
-
-            cctx.exchange().unregisterExchangeAwareComponent(this);
         }
-        finally {
-            busyLock.unblock();
-        }
+
+        cctx.kernalContext().io().removeMessageListener(DFLT_INITIAL_SNAPSHOT_TOPIC);
+        cctx.kernalContext().io().removeTransmissionHandler(DFLT_INITIAL_SNAPSHOT_TOPIC);
+
+        if (discoLsnr != null)
+            cctx.kernalContext().event().removeDiscoveryEventListener(discoLsnr);
+
+        cctx.exchange().unregisterExchangeAwareComponent(this);
     }
 
     /** {@inheritDoc} */
@@ -2013,9 +2008,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             Set<String> cacheGrpNames0 = cacheGrpNames == null ? null : new HashSet<>(cacheGrpNames);
 
             List<String> grps = (dump ? cctx.cache().cacheGroupDescriptors().values() : cctx.cache().persistentGroups()).stream()
+                .filter(desc -> cctx.cache().cacheType(desc.config().getName()) == CacheType.USER)
                 .map(CacheGroupDescriptor::cacheOrGroupName)
                 .filter(n -> cacheGrpNames0 == null || cacheGrpNames0.remove(n))
-                .filter(cacheName -> cctx.cache().cacheType(cacheName) == CacheType.USER)
                 .collect(Collectors.toList());
 
             if (!F.isEmpty(cacheGrpNames0))
@@ -2221,7 +2216,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+    @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut, @Nullable Throwable err) {
         if (clusterSnpReq == null || cctx.kernalContext().clientNode() || !isSnapshotOperation(fut.firstEvent()))
             return;
 
@@ -2234,6 +2229,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
         if (task == null)
             return;
+        else if (err != null) {
+            task.onDone(err);
+
+            return;
+        }
 
         if (task.start()) {
             cctx.database().forceNewCheckpoint(String.format("Start snapshot operation: %s", snpReq.snapshotName()), lsnr -> {});

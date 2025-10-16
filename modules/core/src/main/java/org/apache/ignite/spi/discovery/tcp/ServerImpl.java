@@ -4730,6 +4730,49 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
+                if (!node.isClient()) {
+                    String locNodeDcId = locNode.dataCenterId();
+                    String rmtNodeDcId = node.dataCenterId();
+
+                    if (locNodeDcId == null && rmtNodeDcId != null
+                        || locNodeDcId != null && rmtNodeDcId == null) {
+                        utilityPool.execute(
+                            new Runnable() {
+                                @Override public void run() {
+                                    String locNodeHasDcId = "Data Center ID is specified for local node but not for remote node";
+                                    String rmtNodeHasDcId = "Data Center ID is specified for remote node but not for local node";
+
+                                    String errMsg = locNodeDcId == null ? locNodeHasDcId : rmtNodeHasDcId +
+                                        "[locNodeDcId=" + locNodeDcId +
+                                        ", rmtNodeDcId=" + rmtNodeDcId +
+                                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+                                    String sndMsg = rmtNodeDcId == null ? rmtNodeHasDcId : locNodeHasDcId +
+                                        "[locNodeDcId=" + rmtNodeDcId +
+                                        ", rmtNodeDcId=" + locNodeDcId +
+                                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                        ", rmtNodeId=" + locNode.id() + ']';
+
+                                    nodeCheckError(
+                                        node,
+                                        errMsg,
+                                        sndMsg);
+                                }
+                            });
+
+                        // Ignore join request.
+                        msg.spanContainer().span()
+                            .addLog(() -> "Ignored")
+                            .setStatus(SpanStatus.ABORTED)
+                            .end();
+
+                        return;
+                    }
+                }
+
                 // Handle join.
                 node.internalOrder(ring.nextNodeOrder());
 
