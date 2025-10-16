@@ -103,7 +103,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAuthFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientAckResponse;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
@@ -112,7 +111,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
@@ -314,8 +312,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                 msgWorker.run();
             }
         }.start();
-
-        executorSrvc.scheduleAtFixedRate(new MetricsSender(), spi.metricsUpdateFreq, spi.metricsUpdateFreq, MILLISECONDS);
 
         try {
             joinLatch.await();
@@ -1007,31 +1003,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         return res;
     }
 
-    /** {@inheritDoc} */
-    @Override public void updateMetrics(UUID nodeId,
-        ClusterMetrics metrics,
-        Map<Integer, CacheMetrics> cacheMetrics,
-        long tsNanos
-    ) {
-        assert nodeId != null;
-        assert metrics != null;
-        assert cacheMetrics != null;
-
-        TcpDiscoveryNode node = nodeId.equals(getLocalNodeId()) ? locNode : rmtNodes.get(nodeId);
-
-        if (node != null && node.visible()) {
-            node.setMetrics(metrics);
-
-            node.setCacheMetrics(cacheMetrics);
-
-            node.lastUpdateTimeNanos(tsNanos);
-
-            msgWorker.notifyDiscovery(EVT_NODE_METRICS_UPDATED, topVer, node, allVisibleNodes(), null);
-        }
-        else if (log.isDebugEnabled())
-            log.debug("Received metrics from unknown node: " + nodeId);
-    }
-
     /**
      * FOR TEST PURPOSE ONLY!
      */
@@ -1065,24 +1036,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         Ignite ignite = spi.ignite();
 
         return ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().workersRegistry() : null;
-    }
-
-    /**
-     * Metrics sender.
-     */
-    private class MetricsSender implements Runnable {
-        /** {@inheritDoc} */
-        @Override public void run() {
-            if (!spi.getSpiContext().isStopping() && sockWriter.isOnline()) {
-                TcpDiscoveryClientMetricsUpdateMessage msg = new TcpDiscoveryClientMetricsUpdateMessage(
-                    getLocalNodeId(),
-                    spi.metricsProvider.metrics());
-
-                msg.client(true);
-
-                sockWriter.sendMessage(msg);
-            }
-        }
     }
 
     /**
@@ -2165,8 +2118,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                 processNodeLeftMessage((TcpDiscoveryNodeLeftMessage)msg);
             else if (msg instanceof TcpDiscoveryNodeFailedMessage)
                 processNodeFailedMessage((TcpDiscoveryNodeFailedMessage)msg);
-            else if (msg instanceof TcpDiscoveryMetricsUpdateMessage)
-                processMetricsUpdateMessage((TcpDiscoveryMetricsUpdateMessage)msg);
             else if (msg instanceof TcpDiscoveryClientReconnectMessage)
                 processClientReconnectMessage((TcpDiscoveryClientReconnectMessage)msg);
             else if (msg instanceof TcpDiscoveryCustomEventMessage)
@@ -2505,25 +2456,6 @@ class ClientImpl extends TcpDiscoveryImpl {
             else {
                 if (log.isDebugEnabled())
                     log.debug("Ignore topology message, local node not added to topology: " + msg);
-            }
-        }
-
-        /**
-         * @param msg Message.
-         */
-        private void processMetricsUpdateMessage(TcpDiscoveryMetricsUpdateMessage msg) {
-            if (spi.getSpiContext().isStopping())
-                return;
-
-            if (getLocalNodeId().equals(msg.creatorNodeId())) {
-                assert msg.senderNodeId() != null;
-
-                if (log.isDebugEnabled())
-                    log.debug("Received metrics response: " + msg);
-            }
-            else {
-                if (msg.hasMetrics())
-                    processMsgCacheMetrics(msg, System.nanoTime());
             }
         }
 
