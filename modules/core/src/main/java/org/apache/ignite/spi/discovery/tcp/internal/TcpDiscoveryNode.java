@@ -73,6 +73,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     @GridToStringExclude
     private Map<String, Object> attrs;
 
+    /** Data center ID of the node. */
+    private String dcId;
+
     /** Internal discovery addresses as strings. */
     @GridToStringInclude
     private Collection<String> addrs;
@@ -155,6 +158,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * Constructor.
      *
      * @param id Node Id.
+     * @param dcId ID of a data center where this node is started ({@code null} if there is only one data center).
      * @param addrs Addresses.
      * @param hostNames Host names.
      * @param discPort Port.
@@ -163,6 +167,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      * @param consistentId Node consistent ID.
      */
     public TcpDiscoveryNode(UUID id,
+        String dcId,
         Collection<String> addrs,
         Collection<String> hostNames,
         int discPort,
@@ -175,6 +180,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         assert ver != null;
 
         this.id = id;
+        this.dcId = dcId;
 
         List<String> sortedAddrs = new ArrayList<>(addrs);
 
@@ -354,6 +360,11 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
     }
 
     /** {@inheritDoc} */
+    @Override public @Nullable String dataCenterId() {
+        return dcId;
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<String> addresses() {
         return addrs;
     }
@@ -529,7 +540,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
      */
     public TcpDiscoveryNode clientReconnectNode(Map<String, Object> nodeAttrs) {
         TcpDiscoveryNode node = new TcpDiscoveryNode(
-            id, addrs, hostNames, discPort, metricsProvider, ver, null
+            id, dcId, addrs, hostNames, discPort, metricsProvider, ver, null
         );
 
         node.attrs = Collections.unmodifiableMap(new HashMap<>(nodeAttrs));
@@ -579,6 +590,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         out.writeLong(intOrder);
         out.writeObject(ver);
         U.writeUuid(out, clientRouterNodeId);
+        out.writeObject(dcId);
     }
 
     /** {@inheritDoc} */
@@ -615,6 +627,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
             consistentId = consistentIdAttr != null ? consistentIdAttr : id;
         else
             consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
+
+        dcId = (String)in.readObject();
     }
 
     /** {@inheritDoc} */

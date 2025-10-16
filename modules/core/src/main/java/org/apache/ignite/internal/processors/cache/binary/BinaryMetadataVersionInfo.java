@@ -22,29 +22,44 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 /**
  * Wrapper for {@link BinaryMetadata} which is stored in metadata local cache on each node.
  * Used internally to track version counters (see javadoc for {@link MetadataUpdateProposedMessage} for more details).
+ * The version refers solely to the internal protocol for updating BinaryMetadata and is unknown externally.
+ * It can be updated dynamically from different nodes and threads on the same node.
  */
-final class BinaryMetadataHolder implements Serializable {
+final class BinaryMetadataVersionInfo implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** The actual binary metadata. */
     private final BinaryMetadata metadata;
 
-    /** */
+    /**
+     * The version of metadata that has been proposed for update. This represents how many unique updates have been issued
+     * for this type. When a metadata update is proposed, this version is incremented.
+     */
     private final int pendingVer;
 
-    /** */
+    /**
+     * The version of metadata that has been accepted by the entire cluster.
+     * This represents the number of updates that have been confirmed across all nodes.
+     */
     private final int acceptedVer;
 
-    /** */
+    /** A flag indicating whether the metadata is currently being removed. */
     private final transient boolean removing;
+
+    /**
+     * @param metadata Metadata.
+     */
+    BinaryMetadataVersionInfo(BinaryMetadata metadata) {
+        this(metadata, 0, 0, false);
+    }
 
     /**
      * @param metadata Metadata.
      * @param pendingVer Version of this metadata - how many updates were issued for this type.
      * @param acceptedVer Pending updates count.
      */
-    BinaryMetadataHolder(BinaryMetadata metadata, int pendingVer, int acceptedVer) {
+    BinaryMetadataVersionInfo(BinaryMetadata metadata, int pendingVer, int acceptedVer) {
         this(metadata, pendingVer, acceptedVer, false);
     }
 
@@ -54,7 +69,7 @@ final class BinaryMetadataHolder implements Serializable {
      * @param acceptedVer Version of this metadata - how many updates were issued for this type.
      * @param removing Flag means the metadata is removing now.
      */
-    private BinaryMetadataHolder(BinaryMetadata metadata, int pendingVer, int acceptedVer, boolean removing) {
+    private BinaryMetadataVersionInfo(BinaryMetadata metadata, int pendingVer, int acceptedVer, boolean removing) {
         assert metadata != null;
 
         this.metadata = metadata;
@@ -64,10 +79,10 @@ final class BinaryMetadataHolder implements Serializable {
     }
 
     /**
-     * @return Holder metadata with remove state where remove pending message has been handled.
+     * @return Metadata version info with remove state where remove pending message has been handled.
      */
-    BinaryMetadataHolder createRemoving() {
-        return new BinaryMetadataHolder(metadata, pendingVer, acceptedVer, true);
+    BinaryMetadataVersionInfo createRemoving() {
+        return new BinaryMetadataVersionInfo(metadata, pendingVer, acceptedVer, true);
     }
 
     /**
