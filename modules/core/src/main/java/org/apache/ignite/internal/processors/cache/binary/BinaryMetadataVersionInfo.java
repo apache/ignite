@@ -173,7 +173,8 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
      * @throws IgniteCheckedException If failed.
      */
     public void marshalMetadata(GridKernalContext ctx) throws IgniteCheckedException {
-        metadataBytes = U.marshal(ctx, metadata);
+        if (metadataBytes == null)
+            metadataBytes = U.marshal(ctx, metadata);
     }
 
     /**
@@ -181,7 +182,7 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
      * @throws IgniteCheckedException If failed.
      */
     public void unmarshalMetadata(GridKernalContext ctx) throws IgniteCheckedException {
-        if (metadataBytes != null) {
+        if (metadata == null && metadataBytes != null) {
             metadata = U.unmarshal(ctx, metadataBytes, U.resolveClassLoader(ctx.config()));
 
             metadataBytes = null;
