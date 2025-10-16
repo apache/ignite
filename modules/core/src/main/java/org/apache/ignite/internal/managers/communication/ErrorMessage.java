@@ -105,7 +105,7 @@ public class ErrorMessage implements Message {
      * @return Error containing in the message.
      */
     public static @Nullable Throwable error(@Nullable ErrorMessage errorMsg) {
-        return errorMsg == null ? null : errorMsg.err;
+        return errorMsg == null ? null : errorMsg.toThrowable();
     }
 
     /** {@inheritDoc} */
