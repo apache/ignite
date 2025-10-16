@@ -75,7 +75,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
             @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
                 RollingUpgradeProcessor.this.metastorage = metastorage;
             }
-
         });
     }
 
