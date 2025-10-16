@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
@@ -31,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -118,7 +118,7 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
      * @return Keys.
      */
     public Collection<KeyCacheObject> missedKeys() {
-        return missedKeys == null ? Collections.emptyList() : missedKeys;
+        return F.emptyIfNull(missedKeys);
     }
 
     /** @param missedKeys Missed keys. */
@@ -130,7 +130,7 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
      * @return Forced entries.
      */
     public Collection<GridCacheEntryInfo> forcedInfos() {
-        return infos == null ? Collections.emptyList() : infos;
+        return F.emptyIfNull(infos);
     }
 
     /**
