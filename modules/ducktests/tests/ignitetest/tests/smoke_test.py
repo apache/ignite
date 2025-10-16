@@ -94,12 +94,12 @@ class SmokeServicesTest(IgniteTest):
         kafka.stop()
         zookeeper.stop()
 
-    @cluster(num_nodes=3)
+    @cluster(num_nodes=1)
     def test_postgresql_start_stop(self):
         """
         Test that PostgresService correctly start and stop
         """
-        postgres = PostgresService(self.test_context, num_nodes=3)
+        postgres = PostgresService(self.test_context, num_nodes=1)
 
         postgres.start()
         postgres.stop()
