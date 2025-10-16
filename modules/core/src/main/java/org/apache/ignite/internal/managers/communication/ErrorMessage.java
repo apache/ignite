@@ -38,10 +38,10 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
 public class ErrorMessage implements Message {
     /** Serialized form of throwable. */
     @Order(value = 0, method = "errorBytes")
-    private byte @Nullable [] errBytes;
+    private @Nullable byte[] errBytes;
 
     /** Original error. It is transient and necessary only to avoid duplicated serialization and deserializtion. */
-    @Nullable private volatile Throwable err;
+    private volatile @Nullable Throwable err;
 
     /**
      * Default constructor.
@@ -60,7 +60,7 @@ public class ErrorMessage implements Message {
     /**
      * @return Serialized form of throwable.
      */
-    public byte @Nullable [] errorBytes() {
+    public @Nullable byte[] errorBytes() {
         try {
             if (errBytes == null && err != null)
                 errBytes = U.marshal(jdk(), err);
@@ -75,7 +75,7 @@ public class ErrorMessage implements Message {
     /**
      * @param errBytes New serialized form of throwable.
      */
-    public void errorBytes(byte @Nullable [] errBytes) {
+    public void errorBytes(@Nullable byte[] errBytes) {
         this.errBytes = errBytes;
     }
 
