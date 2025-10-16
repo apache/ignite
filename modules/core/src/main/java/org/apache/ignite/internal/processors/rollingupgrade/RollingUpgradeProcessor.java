@@ -112,8 +112,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
         return F.pair(locVer, locVer);
     }
 
-
-
     /** Сhecks whether the cluster is in the rolling upgrade mode. */
     public boolean isRollingUpgradeEnabled() {
         IgnitePair<IgniteProductVersion> pair = verPairHolder.get();
