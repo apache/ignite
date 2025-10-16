@@ -32,7 +32,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public final class BinaryMetadataVersionInfo implements Serializable, Message {
     /** Type code. */
-    public static final short TYPE_CODE = 503;
+    public static final short TYPE_CODE = 505;
 
     /** */
     private static final long serialVersionUID = 0L;
