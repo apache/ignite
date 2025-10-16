@@ -41,7 +41,7 @@ public class ErrorMessage implements Message {
     private byte @Nullable [] errBytes;
 
     /** Original error. It is transient and necessary only to avoid duplicated serialization and deserializtion. */
-    private @Nullable Throwable err;
+    @Nullable private volatile Throwable err;
 
     /**
      * Default constructor.
@@ -83,19 +83,24 @@ public class ErrorMessage implements Message {
      * @return Original {@link Throwable}.
      */
     public @Nullable Throwable toThrowable() {
-        try {
-            if (err == null && errBytes != null) {
-                err = U.unmarshal(jdk(), errBytes, U.gridClassLoader());
-
-                // It is not necessary now.
-                errBytes = null;
-            }
-
+        if (err != null)
             return err;
+
+        synchronized (this) {
+            if (err == null && errBytes != null) {
+                try {
+                    err = U.unmarshal(jdk(), errBytes, U.gridClassLoader());
+
+                    // It is not required anymore.
+                    errBytes = null;
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+
+        return err;
     }
 
     /**
