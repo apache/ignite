@@ -39,7 +39,6 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
@@ -839,7 +838,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     false
                 );
 
-                res.errorMessage(new ErrorMessage(req.classError()));
+                res.error(req.classError());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
             }

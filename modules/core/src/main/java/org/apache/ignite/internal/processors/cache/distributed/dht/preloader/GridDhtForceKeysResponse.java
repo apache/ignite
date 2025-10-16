@@ -84,9 +84,34 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
         this.addDepInfo = addDepInfo;
     }
 
+    /**
+     * Sets error.
+     *
+     * @param err Error.
+     */
+    public void error(IgniteCheckedException err) {
+        errorMessage(new ErrorMessage(err));
+    }
+
     /** {@inheritDoc} */
     @Override public @Nullable Throwable error() {
         return ErrorMessage.error(errMsg);
+    }
+
+    /**
+     * @return The error message.
+     */
+    @Nullable public ErrorMessage errorMessage() {
+        return errMsg;
+    }
+
+    /**
+     * Sets the error message.
+     *
+     * @param errMsg Error message.
+     */
+    public void errorMessage(@Nullable ErrorMessage errMsg) {
+        this.errMsg = errMsg;
     }
 
     /**
@@ -163,22 +188,6 @@ public class GridDhtForceKeysResponse extends GridCacheIdMessage implements Grid
             infos = new ArrayList<>();
 
         infos.add(info);
-    }
-
-    /**
-     * @return The error message.
-     */
-    @Nullable public ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * Sets the error message.
-     *
-     * @param errMsg Error message.
-     */
-    public void errorMessage(@Nullable ErrorMessage errMsg) {
-        this.errMsg = errMsg;
     }
 
     /** {@inheritDoc} */
