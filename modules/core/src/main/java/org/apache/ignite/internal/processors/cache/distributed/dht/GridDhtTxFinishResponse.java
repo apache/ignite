@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -47,7 +46,6 @@ public final class GridDhtTxFinishResponse extends GridDistributedTxFinishRespon
     private GridCacheReturn retVal;
 
     /** Flag indicating if this is a check-committed response. */
-    @GridToStringExclude
     @Order(9)
     private boolean checkCommitted;
 
@@ -154,8 +152,6 @@ public final class GridDhtTxFinishResponse extends GridDistributedTxFinishRespon
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtTxFinishResponse.class, this,
-            "checkCommitted", checkCommitted,
-            "super", super.toString());
+        return S.toString(GridDhtTxFinishResponse.class, this, "super", super.toString());
     }
 }
