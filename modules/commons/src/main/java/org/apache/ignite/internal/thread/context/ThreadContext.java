@@ -23,6 +23,11 @@ public class ThreadContext {
     private static final ThreadLocal<ThreadContextData> THREAD_CONTEXT_DATA_HOLDER = ThreadLocal.withInitial(ThreadContextData::new);
 
     /** */
+    private ThreadContext() {
+        // No-op.
+    }
+
+    /** */
     public static <T> T get(ThreadContextAttribute<T> attr) {
         return data().get(attr);
     }

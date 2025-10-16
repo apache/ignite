@@ -50,12 +50,12 @@ public class ThreadContextAwareCallable<T> extends ThreadContextAwareWrapper<Cal
     }
 
     /** */
-    public static <T> Collection<? extends Callable<T>> wrap(Collection<? extends Callable<T>> tasks) {
+    public static <T> Collection<Callable<T>> wrap(Collection<? extends Callable<T>> tasks) {
         return tasks == null ? null : tasks.stream().map(ThreadContextAwareCallable::wrap).collect(Collectors.toList());
     }
 
     /** */
-    public static <T> Collection<? extends Callable<T>> wrapIfActiveAttributesPresent(Collection<? extends Callable<T>> tasks) {
+    public static <T> Collection<Callable<T>> wrapIfActiveAttributesPresent(Collection<? extends Callable<T>> tasks) {
         return tasks == null
             ? null
             : tasks.stream().map(ThreadContextAwareCallable::wrapIfActiveAttributesPresent).collect(Collectors.toList());

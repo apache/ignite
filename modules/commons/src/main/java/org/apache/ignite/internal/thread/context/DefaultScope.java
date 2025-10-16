@@ -40,7 +40,7 @@ class DefaultScope implements Scope {
     }
 
     /** */
-    static <T> Scope create() {
+    static Scope create() {
         ThreadContext.data().onScopeCreated();
 
         return INSTANCE;
