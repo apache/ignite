@@ -91,6 +91,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
 import org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessorAdapter;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
@@ -362,6 +363,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringExclude
     private PerformanceStatisticsProcessor perfStatProc;
 
+    /** Performance statistics processor. */
+    @GridToStringExclude
+    private RollingUpgradeProcessor rollingUpgradeProc;
+
     /** */
     private Thread.UncaughtExceptionHandler hnd;
 
@@ -596,6 +601,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             transProc = (CacheObjectTransformerProcessor)comp;
         else if (comp instanceof PerformanceStatisticsProcessor)
             perfStatProc = (PerformanceStatisticsProcessor)comp;
+        else if (comp instanceof RollingUpgradeProcessor)
+            rollingUpgradeProc = (RollingUpgradeProcessor)comp;
         else if (comp instanceof IndexProcessor)
             indexProc = (IndexProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
@@ -1103,6 +1110,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public PerformanceStatisticsProcessor performanceStatistics() {
         return perfStatProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public RollingUpgradeProcessor rollingUpgrade() {
+        return rollingUpgradeProc;
     }
 
     /** {@inheritDoc} */

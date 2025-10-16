@@ -160,6 +160,7 @@ import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
@@ -1055,6 +1056,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             try {
                 startProcessor(COMPRESSION.createOptional(ctx));
                 startProcessor(new GridMarshallerMappingProcessor(ctx));
+                startProcessor(new RollingUpgradeProcessor(ctx));
                 startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
                 startProcessor(new GridAffinityProcessor(ctx));
                 startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
@@ -3223,6 +3225,9 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         if (cls.equals(IgniteCacheObjectProcessor.class))
             return (T)new CacheObjectBinaryProcessorImpl(ctx);
+
+        if (cls.equals(RollingUpgradeProcessor.class))
+            return (T)new RollingUpgradeProcessor(ctx);
 
         if (cls.equals(DiscoveryNodeValidationProcessor.class))
             return (T)new OsDiscoveryNodeValidationProcessor(ctx);
