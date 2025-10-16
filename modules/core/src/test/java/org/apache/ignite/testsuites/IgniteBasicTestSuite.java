@@ -37,6 +37,8 @@ import org.apache.ignite.internal.IgniteLocalNodeMapBeforeStartTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.codegen.MessageProcessorTest;
+import org.apache.ignite.internal.managers.communication.CacheEntryPredicateAdapterMessageTest;
+import org.apache.ignite.internal.managers.communication.CacheWriteSynchroizationModeMessageTest;
 import org.apache.ignite.internal.managers.communication.ErrorMessageSelfTest;
 import org.apache.ignite.internal.managers.communication.GridCacheOperationModeMessageTest;
 import org.apache.ignite.internal.managers.communication.TransactionIsolationMessageTest;
@@ -151,7 +153,7 @@ import org.junit.runners.Suite;
     TransactionIsolationMessageTest.class,
     GridCacheOperationModeMessageTest.class,
     CacheWriteSynchroizationModeMessageTest.class,
-    CacheEntryPredicateAdapterMessageTest.class,
+    CacheEntryPredicateAdapterMessageTest.class
 })
 public class IgniteBasicTestSuite {
 }

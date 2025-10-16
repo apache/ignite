@@ -38,10 +38,10 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
 public class ErrorMessage implements Message {
     /** Serialized form of throwable. */
     @Order(value = 0, method = "errorBytes")
-    private byte @Nullable [] errBytes;
+    private @Nullable byte[] errBytes;
 
     /** Original error. It is transient and necessary only to avoid duplicated serialization and deserializtion. */
-    private @Nullable Throwable err;
+    private volatile @Nullable Throwable err;
 
     /**
      * Default constructor.
@@ -60,7 +60,7 @@ public class ErrorMessage implements Message {
     /**
      * @return Serialized form of throwable.
      */
-    public byte @Nullable [] errorBytes() {
+    public @Nullable byte[] errorBytes() {
         try {
             if (errBytes == null && err != null)
                 errBytes = U.marshal(jdk(), err);
@@ -75,7 +75,7 @@ public class ErrorMessage implements Message {
     /**
      * @param errBytes New serialized form of throwable.
      */
-    public void errorBytes(byte @Nullable [] errBytes) {
+    public void errorBytes(@Nullable byte[] errBytes) {
         this.errBytes = errBytes;
     }
 
@@ -83,19 +83,34 @@ public class ErrorMessage implements Message {
      * @return Original {@link Throwable}.
      */
     public @Nullable Throwable toThrowable() {
-        try {
-            if (err == null && errBytes != null) {
-                err = U.unmarshal(jdk(), errBytes, U.gridClassLoader());
-
-                // It is not necessary now.
-                errBytes = null;
-            }
-
+        if (err != null)
             return err;
+
+        synchronized (this) {
+            if (err == null && errBytes != null) {
+                try {
+                    err = U.unmarshal(jdk(), errBytes, U.gridClassLoader());
+
+                    // It is not required anymore.
+                    errBytes = null;
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+
+        return err;
+    }
+
+    /**
+     * Safely gets original error from an error message.
+     *
+     * @param errorMsg Error message.
+     * @return Error containing in the message.
+     */
+    public static @Nullable Throwable error(@Nullable ErrorMessage errorMsg) {
+        return errorMsg == null ? null : errorMsg.toThrowable();
     }
 
     /** {@inheritDoc} */
