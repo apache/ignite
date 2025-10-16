@@ -28,8 +28,13 @@ public class ThreadContext {
     }
 
     /** */
+    public static Scope openNewScope() {
+        return DefaultScope.create();
+    }
+
+    /** */
     public static <T> Scope withAttribute(ThreadContextAttribute<T> attr, T val) {
-        return DefaultScope.createWith(attr, val);
+        return openNewScope().withAttribute(attr, val);
     }
 
     /** */

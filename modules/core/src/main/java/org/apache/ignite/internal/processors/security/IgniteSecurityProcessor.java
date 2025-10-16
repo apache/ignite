@@ -126,8 +126,8 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Scope withContext(SecurityContext secCtx) {
-        return ThreadContext.withAttribute(SEC_CTX, secCtx == dfltSecCtx ? null : secCtx);
+    @Override public Scope withContext(Scope scope, SecurityContext secCtx) {
+        return scope.withAttribute(SEC_CTX, secCtx == dfltSecCtx ? null : secCtx);
     }
 
     /** {@inheritDoc} */

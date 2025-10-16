@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.thread.context.Scope;
+import org.apache.ignite.internal.thread.context.ThreadContext;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
@@ -43,14 +44,27 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  */
 public interface IgniteSecurity {
     /**
-     * Creates {@link Scope}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
-     * #authorize(SecurityPermission)} will be processed into the context of passed {@link SecurityContext} until
-     * holder {@link Scope} will be closed.
+     * Creates new {@link Scope} with provided {@link SecurityContext}.
      *
      * @param secCtx Security Context.
-     * @return Security context holder.
+     * @return Thread Context Scope.
+     *
+     * @see #withContext(Scope, SecurityContext
      */
-    public Scope withContext(SecurityContext secCtx);
+    public default Scope withContext(SecurityContext secCtx) {
+        return withContext(ThreadContext.openNewScope(), secCtx);
+    }
+
+    /**
+     * Adds provided security context to {@link Scope}. All calls of methods {@link #authorize(String, SecurityPermission)}
+     * or {@link #authorize(SecurityPermission)} will be processed into the context of passed {@link SecurityContext} until
+     * {@link Scope} will be closed.
+     *
+     * @param scope Thread Context Scope.
+     * @param secCtx Security Context.
+     * @return Thread Context Scope.
+     */
+    public Scope withContext(Scope scope, SecurityContext secCtx);
 
     /**
      * Creates {@link Scope}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
