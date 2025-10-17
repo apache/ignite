@@ -117,4 +117,9 @@ public class ErrorMessage implements Message {
     @Override public short directType() {
         return -100;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return toThrowable().toString();
+    }
 }
