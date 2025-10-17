@@ -351,7 +351,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
         String notExpWrn = allowOverwrite ? null : SnapshotPartitionsQuickVerifyHandler.WRN_MSG;
 
         try {
-            SnapshotPartitionsVerifyTaskResult checkRes = createAndCheckSnapshot(snpHnd, true, expectedWrn,
+            SnapshotPartitionsVerifyResult checkRes = createAndCheckSnapshot(snpHnd, true, expectedWrn,
                 notExpWrn);
 
             if (expectedWrn != null) {
@@ -462,7 +462,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
     }
 
     /** */
-    private SnapshotPartitionsVerifyTaskResult createAndCheckSnapshot(IgniteEx snpHnd, boolean create,
+    private SnapshotPartitionsVerifyResult createAndCheckSnapshot(IgniteEx snpHnd, boolean create,
         String expWrn, String notExpWrn) throws Exception {
         assert notExpWrn == null || expWrn != null;
 
@@ -498,7 +498,7 @@ public class IgniteClusterSnapshotStreamerTest extends AbstractSnapshotSelfTest 
             }
         }
 
-        SnapshotPartitionsVerifyTaskResult checkRes = snp(snpHnd).checkSnapshot(SNAPSHOT_NAME, null).get();
+        SnapshotPartitionsVerifyResult checkRes = snp(snpHnd).checkSnapshot(SNAPSHOT_NAME, null).get();
 
         assertTrue(checkRes.exceptions().isEmpty());
 
