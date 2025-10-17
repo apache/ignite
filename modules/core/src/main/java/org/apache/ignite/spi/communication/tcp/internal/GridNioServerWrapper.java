@@ -829,7 +829,7 @@ public class GridNioServerWrapper {
 
                     private MessageFactory get() {
                         if (impl == null) {
-                            impl = stateProvider.getSpiContextWithoutInitialLatch().messageFactory();
+                            impl = stateProvider.getSpiContext().messageFactory();
 
                             assert impl != null;
                         }
