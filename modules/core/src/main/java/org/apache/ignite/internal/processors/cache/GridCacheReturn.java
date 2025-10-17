@@ -42,7 +42,7 @@ public final class GridCacheReturn implements Message {
     @GridToStringInclude(sensitive = true)
     private volatile Object v;
 
-    /** */
+    /** Cache object. */
     @Order(value = 0, method = "cacheObject")
     private @Nullable CacheObject cacheObj;
 
@@ -300,14 +300,14 @@ public final class GridCacheReturn implements Message {
     }
 
     /**
-     * @return Cache obbject.
+     * @return Cache object.
      */
     public @Nullable CacheObject cacheObject() {
         return cacheObj;
     }
 
     /**
-     * @param cacheObj Cache obbject.
+     * @param cacheObj Cache object.
      */
     public void cacheObject(@Nullable CacheObject cacheObj) {
         this.cacheObj = cacheObj;
