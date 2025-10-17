@@ -17,25 +17,26 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.CountDownLatch;
+
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.junit.Test;
 
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /** */
 public class SqlAffinityHistoryForDynamicallyCreatedCachesTest extends AbstractThinClientTest {
     /** */
     private static final String CACHE_NAME = "SQL_TABLE";
-
-    /** */
-    private final AtomicReference<Exception> err = new AtomicReference<>();
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -56,35 +57,47 @@ public class SqlAffinityHistoryForDynamicallyCreatedCachesTest extends AbstractT
     public void testConcurrentCacheCreateAndSqlQuery() throws Exception {
         startGrids(3);
 
-        IgniteInternalFuture<Object> selectFut = runAsync(() -> {
-            try (IgniteClient cli = startClient(0)) {
-                while (true) {
+        GridCachePartitionExchangeManager<Object, Object> exchangeMgr = ignite(1).context().cache().context().exchange();
+
+        CountDownLatch exchangeStarted = new CountDownLatch(1);
+        CountDownLatch proceedWithExchange = new CountDownLatch(1);
+
+        PartitionsExchangeAware listener = new PartitionsExchangeAware() {
+            @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
+                if (fut.hasCachesToStart()) {
+                    exchangeStarted.countDown();
+
                     try {
-                        cli.query(new SqlFieldsQuery("select * from " + CACHE_NAME)).getAll();
-
-                        break;
+                        proceedWithExchange.await();
                     }
-                    catch (ClientException e) {
-                        // Wait SQL table is visible.
-                        if (e.getMessage().contains("Table \"" + CACHE_NAME + "\" not found"))
-                            continue;
-
-                        err.set(e);
-
-                        break;
+                    catch (InterruptedException e) {
+                        // No-op.
                     }
                 }
             }
-        }, "select-thread");
+        };
+
+        exchangeMgr.registerExchangeAwareComponent(listener);
+
+        runAsync(() -> {
+            try (IgniteClient cli = startClient(0)) {
+                cli.createCache(getCacheConfiguration());
+            }
+        }, "create-cache-thread");
 
         try (IgniteClient cli = startClient(0)) {
-            cli.createCache(getCacheConfiguration());
+            exchangeStarted.await();
+
+            assertThrows(
+                null,
+                () -> cli.query(new SqlFieldsQuery("select * from " + CACHE_NAME)).getAll(),
+                ClientException.class,
+                "partitions exchange wasn't yet completed after cache creation");
         }
 
-        selectFut.get();
+        exchangeMgr.unregisterExchangeAwareComponent(listener);
 
-        if (err.get() != null && !err.get().getMessage().contains("partitions exchange wasn't yet completed after cache creation"))
-            fail("Unexpected error in executing the SQL query: " + err.get().getMessage());
+        proceedWithExchange.countDown();
     }
 
     /** */
