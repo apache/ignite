@@ -77,13 +77,10 @@ public class SqlAffinityHistoryForDynamicallyCreatedCachesTest extends AbstractT
             }
         }, "select-thread");
 
-        IgniteInternalFuture<Object> createFut = runAsync(() -> {
-            try (IgniteClient cli = startClient(0)) {
-                cli.createCache(getCacheConfiguration());
-            }
-        }, "create-thread");
+        try (IgniteClient cli = startClient(0)) {
+            cli.createCache(getCacheConfiguration());
+        }
 
-        createFut.get();
         selectFut.get();
 
         if (err.get() != null && !err.get().getMessage().contains("partitions exchange wasn't yet completed after cache creation"))
