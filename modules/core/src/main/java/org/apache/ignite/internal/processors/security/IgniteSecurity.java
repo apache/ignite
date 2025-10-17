@@ -49,7 +49,7 @@ public interface IgniteSecurity {
      * @param secCtx Security Context.
      * @return Thread Context Scope.
      *
-     * @see #withContext(Scope, SecurityContext
+     * @see #withContext(Scope, SecurityContext)
      */
     public default Scope withContext(SecurityContext secCtx) {
         return withContext(ThreadContext.createScope(), secCtx);
@@ -59,15 +59,17 @@ public interface IgniteSecurity {
      * Creates new {@link Scope} with Security Context Attribute set to the Security Context corresponding to the
      * specified Subject ID.
      *
-     * @param subjId Security Subject Id.
+     * @param subjId Security Subject ID.
      * @return Thread Context Scope.
+     *
+     * @see #withContext(Scope, SecurityContext)
      */
     public default Scope withContext(UUID subjId) {
         return withContext(ThreadContext.createScope(), securityContext(subjId));
     }
 
     /**
-     * Adds security context attribute with specified value to the {@link Scope}. All {@link #authorize(String, SecurityPermission)}
+     * Adds Security Context Attribute with specified value to the {@link Scope}. All {@link #authorize(String, SecurityPermission)}
      * or {@link #authorize(SecurityPermission)} method calls will use this value to determine operation initiator.
      *
      * @param scope Thread Context Scope.

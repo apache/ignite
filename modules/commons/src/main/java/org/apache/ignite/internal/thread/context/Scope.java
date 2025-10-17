@@ -20,7 +20,8 @@ package org.apache.ignite.internal.thread.context;
 /**
  * Represents a scope with {@link ThreadContextAttribute} values bound to it. A newly created scope inherits {@link ThreadContextAttribute}
  * values of the enclosing scope. Closing a scope restores the {@link ThreadContextAttribute} values bound to the
- * enclosing scope, if any, or restores their initial values. Each created scope MUST be closed.
+ * enclosing scope. If no enclosing scope is present, attributes are restored to their initial values.
+ * Note, each created scope MUST be closed.
  */
 public interface Scope extends AutoCloseable {
     /** Binds attribute with specified value to the current scope. */

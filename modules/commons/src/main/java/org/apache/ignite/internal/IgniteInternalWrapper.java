@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal;
 
-/** */
+/** Represents wrapper over arbitrary object. */
 public interface IgniteInternalWrapper<T> {
-    /** */
+    /** @return Wrapped object. */
     public T delegate();
 }

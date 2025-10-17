@@ -29,8 +29,7 @@ public class ThreadContextAttributeRegistry {
     private final List<ThreadContextAttribute<?>> attrs = new CopyOnWriteArrayList<>();
 
     /**
-     * Registers attribute with {@code null} initial value.
-     * @return Registered attribute instance.
+     * Registers attribute with initial value set to {@code null}.
      *
      * @see #register(Object)
      */

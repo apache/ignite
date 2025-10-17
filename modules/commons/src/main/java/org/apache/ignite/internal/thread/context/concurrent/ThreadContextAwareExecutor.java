@@ -36,7 +36,11 @@ public class ThreadContextAwareExecutor implements Executor {
         delegate.execute(ThreadContextAwareRunnable.wrap(command));
     }
 
-    /** */
+    /**
+     * Creates executor wrapper that automatically captures scoped thread context attributes for the thread that
+     * invokes task execution. Capturing attribute values will be restored before task execution, potentially in another
+     * thread.
+     */
     public static Executor wrap(Executor delegate) {
         return delegate == null ? null : new ThreadContextAwareExecutor(delegate);
     }

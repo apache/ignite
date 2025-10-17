@@ -35,31 +35,17 @@ public class ThreadContext {
         return data().get(attr);
     }
 
-    /**
-     * Creates {@link Scope} with no attribute values bound to it.
-     * @return Created {@link Scope} instance.
-     */
+    /** Creates {@link Scope} with no attribute values bound to it. */
     public static Scope createScope() {
         return ThreadContextScope.create();
     }
 
-    /**
-     * Creates {@link Scope} with specified attribute value bound to it.
-     *
-     * @param attr Attribute.
-     * @param val Attribute value.
-     * @return Created {@link Scope} instance.
-     */
+    /** Creates {@link Scope} with specified attribute value bound to it. */
     public static <T> Scope withAttribute(ThreadContextAttribute<T> attr, T val) {
         return createScope().withAttribute(attr, val);
     }
 
-    /**
-     * Creates {@link Scope} with attribute values restored from specified snapshot.
-     *
-     * @param snapshot Snapshot of thread Context attribute values.
-     * @return Created {@link Scope} instance.
-     */
+    /** Creates {@link Scope} with attribute values restored from specified snapshot. */
     public static Scope withSnapshot(ThreadContextSnapshot snapshot) {
         return ThreadContextScope.createWith(snapshot);
     }

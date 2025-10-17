@@ -89,7 +89,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
         return SANDBOXED_NODES_COUNTER.get() > 0;
     }
 
-    /** Thread context attribute for holding security context. */
+    /** Thread context attribute that holds Security Context. */
     private static final ThreadContextAttribute<SecurityContext> SEC_CTX = ThreadContextAttributeRegistry.instance().register();
 
     /** Security processor. */

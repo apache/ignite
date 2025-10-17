@@ -1574,8 +1574,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    public static class C1<T, R> implements ComputeJob, Binarylizable, GridNoImplicitInjection,
-        IgniteInternalWrapper<IgniteClosure> {
+    public static class C1<T, R> implements ComputeJob, Binarylizable, GridNoImplicitInjection, IgniteInternalWrapper<IgniteClosure> {
         /** */
         private static final long serialVersionUID = 0L;
 

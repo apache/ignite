@@ -39,22 +39,32 @@ public class ThreadContextAwareCallable<T> extends ThreadContextAwareWrapper<Cal
         }
     }
 
-    /** */
+    /**
+     * Creates a wrapper that stores a specified {@link Callable} along with the thread context attributes values bound
+     * to the thread when this method is called. Capturing attribute values will be restored before {@link Callable} execution,
+     * potentially in another thread.
+     */
     public static <T> Callable<T> wrap(Callable<T> delegate) {
         return wrap(delegate, ThreadContextAwareCallable::new);
     }
 
-    /** */
+    /**
+     * Creates a wrapper that stores a specified {@link Callable} along with the thread context attributes values bound
+     * to the thread when this method is called. Capturing attribute values will be restored before {@link Callable} execution,
+     * potentially in another thread.
+     * If all Thread Context attributes holds initial values when this method is calls, it does nothing and returns original
+     * {@link Callable}.
+     */
     public static <T> Callable<T> wrapIfActiveAttributesPresent(Callable<T> delegate) {
         return wrap(delegate, ThreadContextAwareCallable::new, true);
     }
 
-    /** */
+    /** The same as {@link #wrap(Collection)} but wraps each specified {@link Callable}. */
     public static <T> Collection<Callable<T>> wrap(Collection<? extends Callable<T>> tasks) {
         return tasks == null ? null : tasks.stream().map(ThreadContextAwareCallable::wrap).collect(Collectors.toList());
     }
 
-    /** */
+    /** The same as {@link #wrapIfActiveAttributesPresent(Collection)} but wraps each specified {@link Callable}. */
     public static <T> Collection<Callable<T>> wrapIfActiveAttributesPresent(Collection<? extends Callable<T>> tasks) {
         return tasks == null
             ? null
