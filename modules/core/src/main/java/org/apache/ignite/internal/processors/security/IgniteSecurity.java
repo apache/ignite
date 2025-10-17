@@ -44,7 +44,7 @@ import org.apache.ignite.plugin.security.SecuritySubject;
  */
 public interface IgniteSecurity {
     /**
-     * Creates new {@link Scope} with provided {@link SecurityContext}.
+     * Creates new {@link Scope} with Security Context Attribute set to the specified value.
      *
      * @param secCtx Security Context.
      * @return Thread Context Scope.
@@ -52,13 +52,23 @@ public interface IgniteSecurity {
      * @see #withContext(Scope, SecurityContext
      */
     public default Scope withContext(SecurityContext secCtx) {
-        return withContext(ThreadContext.openNewScope(), secCtx);
+        return withContext(ThreadContext.createScope(), secCtx);
     }
 
     /**
-     * Adds provided security context to {@link Scope}. All calls of methods {@link #authorize(String, SecurityPermission)}
-     * or {@link #authorize(SecurityPermission)} will be processed into the context of passed {@link SecurityContext} until
-     * {@link Scope} will be closed.
+     * Creates new {@link Scope} with Security Context Attribute set to the Security Context corresponding to the
+     * specified Subject ID.
+     *
+     * @param subjId Security Subject Id.
+     * @return Thread Context Scope.
+     */
+    public default Scope withContext(UUID subjId) {
+        return withContext(ThreadContext.createScope(), securityContext(subjId));
+    }
+
+    /**
+     * Adds security context attribute with specified value to the {@link Scope}. All {@link #authorize(String, SecurityPermission)}
+     * or {@link #authorize(SecurityPermission)} method calls will use this value to determine operation initiator.
      *
      * @param scope Thread Context Scope.
      * @param secCtx Security Context.
@@ -67,14 +77,12 @@ public interface IgniteSecurity {
     public Scope withContext(Scope scope, SecurityContext secCtx);
 
     /**
-     * Creates {@link Scope}. All calls of methods {@link #authorize(String, SecurityPermission)} or {@link
-     * #authorize(SecurityPermission)} will be processed into the context of {@link SecurityContext} that is owned by
-     * the node with given nodeId until holder {@link Scope} will be closed.
+     * Gets Security Context corresponding to the specified Subject ID.
      *
-     * @param nodeId Node id.
-     * @return Security context holder.
+     * @param subjId Security Subject ID.
+     * @return Security Context.
      */
-    public Scope withContext(UUID nodeId);
+    public SecurityContext securityContext(UUID subjId);
 
     /** @return {@code True} if current thread executed in default security context. */
     public boolean isDefaultContext();

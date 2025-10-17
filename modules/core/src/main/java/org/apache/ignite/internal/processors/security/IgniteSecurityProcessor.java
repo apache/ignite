@@ -131,7 +131,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Scope withContext(UUID subjId) {
+    @Override public SecurityContext securityContext(UUID subjId) {
         try {
             SecurityContext res = secPrc.securityContext(subjId);
 
@@ -142,7 +142,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
                     throw new IllegalStateException("Failed to find security context for subject with given ID : " + subjId);
             }
 
-            return withContext(res);
+            return res;
         }
         catch (Throwable e) {
             log.error(FAILED_OBTAIN_SEC_CTX_MSG, e);

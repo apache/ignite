@@ -61,7 +61,7 @@ public class NoOpIgniteSecurityProcessor extends IgniteSecurityAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Scope withContext(UUID nodeId) {
+    @Override public SecurityContext securityContext(UUID subjId) {
         return null;
     }
 

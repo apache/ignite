@@ -28,13 +28,26 @@ public class ThreadContextAttributeRegistry {
     /** */
     private final List<ThreadContextAttribute<?>> attrs = new CopyOnWriteArrayList<>();
 
-    /** */
+    /**
+     * Registers attribute with {@code null} initial value.
+     * @return Registered attribute instance.
+     *
+     * @see #register(Object)
+     */
     public <T> ThreadContextAttribute<T> register() {
         return register(null);
     }
 
-    /** */
-    public <T> ThreadContextAttribute<T> register(T initialVal) {
+    /**
+     * Registers attribute with specified initial value. Initial value is returned by
+     * {@link ThreadContext#get(ThreadContextAttribute)} method if attribute value is not set explicitly.
+     * Returned value represents a key used to access attribute value via {@link ThreadContext#get(ThreadContextAttribute)}
+     * or {@link ThreadContext#withAttribute(ThreadContextAttribute, Object)} methods.
+     *
+     * @param initialVal Attribute initial value.
+     * @return Registered attribute instance.
+     */
+    public synchronized <T> ThreadContextAttribute<T> register(T initialVal) {
         ThreadContextAttribute<T> attr = new ThreadContextAttribute<>(attrs.size(), initialVal);
 
         attrs.add(attr);

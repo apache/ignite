@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.thread.context;
 
 /** */
-class DefaultScope implements Scope {
+class ThreadContextScope implements Scope {
     /** */
-    private static final Scope INSTANCE = new DefaultScope();
+    private static final Scope INSTANCE = new ThreadContextScope();
 
     /** */
-    private DefaultScope() {
+    private ThreadContextScope() {
         // No-op.
     }
 
