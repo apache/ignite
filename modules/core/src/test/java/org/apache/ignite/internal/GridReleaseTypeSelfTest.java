@@ -245,7 +245,8 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         assertEnablingFails(grid0, "2.19.2", "Minor version can only be incremented by 1.");
         assertEnablingFails(grid0, "2.18.2", "Patch version can only be incremented by 1.");
 
-        IgnitePair<IgniteProductVersion> newPair = F.pair(IgniteProductVersion.fromString("2.18.0"), IgniteProductVersion.fromString("2.19.0"));
+        IgnitePair<IgniteProductVersion> newPair = F.pair(IgniteProductVersion.fromString("2.18.0"),
+            IgniteProductVersion.fromString("2.19.0"));
 
         grid0.context().rollingUpgrade().enable(newPair.get2());
 
@@ -256,6 +257,13 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Checks that enabling rolling upgrade fails with expected error message.
+     *
+     * @param ex Ex.
+     * @param ver New version.
+     * @param errMsg Expected error message.
+     */
     private void assertEnablingFails(IgniteEx ex, String ver, String errMsg) {
         Throwable e = assertThrows(log,
             () -> ex.context().rollingUpgrade().enable(IgniteProductVersion.fromString(ver)),

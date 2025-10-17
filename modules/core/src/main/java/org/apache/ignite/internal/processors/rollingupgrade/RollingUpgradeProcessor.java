@@ -87,11 +87,11 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     public void enable(IgniteProductVersion target) throws IgniteCheckedException {
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
 
-        String currentBuildVer = ctx.discovery().localNode().attribute(ATTR_BUILD_VER);
-        IgniteProductVersion currentVer = IgniteProductVersion.fromString(currentBuildVer);
+        String curBuildVer = ctx.discovery().localNode().attribute(ATTR_BUILD_VER);
+        IgniteProductVersion curtVer = IgniteProductVersion.fromString(curBuildVer);
 
-        if (checkVersions(currentVer, target))
-            metastorage.write(ROLL_UP_VERSIONS, F.pair(currentVer, target));
+        if (checkVersions(curtVer, target))
+            metastorage.write(ROLL_UP_VERSIONS, F.pair(curtVer, target));
     }
 
     /**
@@ -124,20 +124,20 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Checks current and target versions.
+     * Checks cur and target versions.
      *
-     * @param current Current cluster version.
+     * @param cur Current cluster version.
      * @param target Target cluster version.
      * @return {@code false} if there is no need to update versions {@code true} otherwise.
      * @throws IgniteCheckedException If versions are incorrect.
      */
-    private boolean checkVersions(IgniteProductVersion current, IgniteProductVersion target) throws IgniteCheckedException {
+    private boolean checkVersions(IgniteProductVersion cur, IgniteProductVersion target) throws IgniteCheckedException {
         IgnitePair<IgniteProductVersion> pair = verPairHolder.get();
 
         if (pair != null && pair.get2().equals(target))
             return false;
 
-        if (current.major() != target.major()) {
+        if (cur.major() != target.major()) {
             String errMsg = "Major versions are different.";
 
             LT.warn(log, errMsg);
@@ -145,8 +145,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException(errMsg);
         }
 
-        if (current.minor() != target.minor()) {
-            if (target.minor() == current.minor() + 1 && target.maintenance() == 0)
+        if (cur.minor() != target.minor()) {
+            if (target.minor() == cur.minor() + 1 && target.maintenance() == 0)
                 return true;
 
             String errMsg = "Minor version can only be incremented by 1.";
@@ -156,7 +156,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException(errMsg);
         }
 
-        if (current.maintenance() + 1 != target.maintenance()) {
+        if (cur.maintenance() + 1 != target.maintenance()) {
             String errMsg = "Patch version can only be incremented by 1.";
 
             LT.warn(log, errMsg);
