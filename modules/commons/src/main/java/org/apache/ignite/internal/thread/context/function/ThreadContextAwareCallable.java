@@ -41,7 +41,7 @@ public class ThreadContextAwareCallable<T> extends ThreadContextAwareWrapper<Cal
 
     /**
      * Creates a wrapper that stores a specified {@link Callable} along with the thread context attributes values bound
-     * to the thread when this method is called. Capturing attribute values will be restored before {@link Callable} execution,
+     * to the thread when this method is called. Captured attribute values will be restored before {@link Callable} execution,
      * potentially in another thread.
      */
     public static <T> Callable<T> wrap(Callable<T> delegate) {
@@ -50,9 +50,9 @@ public class ThreadContextAwareCallable<T> extends ThreadContextAwareWrapper<Cal
 
     /**
      * Creates a wrapper that stores a specified {@link Callable} along with the thread context attributes values bound
-     * to the thread when this method is called. Capturing attribute values will be restored before {@link Callable} execution,
+     * to the thread when this method is called. Captured attribute values will be restored before {@link Callable} execution,
      * potentially in another thread.
-     * If all Thread Context attributes holds initial values when this method is calls, it does nothing and returns original
+     * If all Thread Context attributes holds initial values when this method is called, it does nothing and returns original
      * {@link Callable}.
      */
     public static <T> Callable<T> wrapIfActiveAttributesPresent(Callable<T> delegate) {

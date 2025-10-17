@@ -38,7 +38,7 @@ public class ThreadContextAwareExecutor implements Executor {
 
     /**
      * Creates executor wrapper that automatically captures scoped thread context attributes for the thread that
-     * invokes task execution. Capturing attribute values will be restored before task execution, potentially in another
+     * invokes task execution. Captured attribute values will be restored before task execution, potentially in another
      * thread.
      */
     public static Executor wrap(Executor delegate) {

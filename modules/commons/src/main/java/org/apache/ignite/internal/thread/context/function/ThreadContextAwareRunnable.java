@@ -38,7 +38,7 @@ public class ThreadContextAwareRunnable extends ThreadContextAwareWrapper<Runnab
 
     /**
      * Creates a wrapper that stores a specified {@link Runnable} along with the thread context attributes values bound
-     * to the thread when this method is called. Capturing attribute values will be restored before {@link Runnable} execution,
+     * to the thread when this method is called. Captured attribute values will be restored before {@link Runnable} execution,
      * potentially in another thread.
      */
     public static Runnable wrap(Runnable delegate) {
@@ -47,9 +47,9 @@ public class ThreadContextAwareRunnable extends ThreadContextAwareWrapper<Runnab
 
     /**
      * Creates a wrapper that stores a specified {@link Runnable} along with the thread context attributes values bound
-     * to the thread when this method is called. Capturing attribute values will be restored before {@link Runnable} execution,
+     * to the thread when this method is called. Captured attribute values will be restored before {@link Runnable} execution,
      * potentially in another thread.
-     * If all Thread Context attributes holds initial values when this method is calls, it does nothing and returns original
+     * If all Thread Context attributes holds initial values when this method is called, it does nothing and returns original
      * {@link Runnable}.
      */
     public static Runnable wrapIfActiveAttributesPresent(Runnable delegate) {
