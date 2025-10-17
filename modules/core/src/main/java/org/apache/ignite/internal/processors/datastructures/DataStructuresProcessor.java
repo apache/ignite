@@ -134,6 +134,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     public static final String DEFAULT_VOLATILE_DS_GROUP_NAME = "default-volatile-ds-group";
 
     /** */
+    public static final String VOLATILE_GRP_NAME = DEFAULT_VOLATILE_DS_GROUP_NAME + "@" + VOLATILE_DATA_REGION_NAME;
+
+    /** */
     public static final String DEFAULT_DS_GROUP_NAME = "default-ds-group";
 
     /** */
@@ -687,13 +690,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final String grpName;
 
         if (type.isVolatile()) {
-            String volatileGrpName = DEFAULT_VOLATILE_DS_GROUP_NAME;
-
             dataRegionName = VOLATILE_DATA_REGION_NAME;
-
-            volatileGrpName += "@" + dataRegionName;
-
-            grpName = volatileGrpName;
+            grpName = VOLATILE_GRP_NAME;
         }
         else if (cfg.getGroupName() != null)
             grpName = cfg.getGroupName();

@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
@@ -115,12 +116,12 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
         if (errs == null)
             errs = new UpdateErrors();
 
-        errs.onError(err);
+        errs.errorMessage(new ErrorMessage(err));
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCheckedException error() {
-        return errs != null ? errs.error() : null;
+    @Override public Throwable error() {
+        return errs != null ? errs.errorMessage().toThrowable() : null;
     }
 
     /**
