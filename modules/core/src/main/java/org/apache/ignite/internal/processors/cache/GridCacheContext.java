@@ -260,6 +260,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Updates allowed flag. */
     private boolean updatesAllowed;
 
+    // TODO: IGNITE-26571, is always false.
     /** Deployment enabled flag for this specific cache */
     private boolean depEnabled;
 

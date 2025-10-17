@@ -55,6 +55,7 @@ import org.apache.ignite.internal.codegen.GridDhtPartitionDemandMessageSerialize
 import org.apache.ignite.internal.codegen.GridDhtPartitionExchangeIdSerializer;
 import org.apache.ignite.internal.codegen.GridDhtPartitionSupplyMessageSerializer;
 import org.apache.ignite.internal.codegen.GridDhtPartitionsSingleRequestSerializer;
+import org.apache.ignite.internal.codegen.GridDhtTxFinishResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDhtTxOnePhaseCommitAckRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtTxPrepareRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtUnlockRequestSerializer;
@@ -72,6 +73,7 @@ import org.apache.ignite.internal.codegen.GridNearGetRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearLockRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearLockResponseSerializer;
 import org.apache.ignite.internal.codegen.GridNearSingleGetRequestSerializer;
+import org.apache.ignite.internal.codegen.GridNearTxFinishResponseSerializer;
 import org.apache.ignite.internal.codegen.GridNearTxPrepareRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearUnlockRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryCancelRequestSerializer;
@@ -299,7 +301,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)30, GridDhtLockRequest::new, new GridDhtLockRequestSerializer());
         factory.register((short)31, GridDhtLockResponse::new, new GridDhtLockResponseSerializer());
         factory.register((short)32, GridDhtTxFinishRequest::new);
-        factory.register((short)33, GridDhtTxFinishResponse::new);
+        factory.register((short)33, GridDhtTxFinishResponse::new, new GridDhtTxFinishResponseSerializer());
         factory.register((short)34, GridDhtTxPrepareRequest::new, new GridDhtTxPrepareRequestSerializer());
         factory.register((short)35, GridDhtTxPrepareResponse::new);
         factory.register((short)36, GridDhtUnlockRequest::new, new GridDhtUnlockRequestSerializer());
@@ -319,7 +321,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)51, GridNearLockRequest::new, new GridNearLockRequestSerializer());
         factory.register((short)52, GridNearLockResponse::new, new GridNearLockResponseSerializer());
         factory.register((short)53, GridNearTxFinishRequest::new);
-        factory.register((short)54, GridNearTxFinishResponse::new);
+        factory.register((short)54, GridNearTxFinishResponse::new, new GridNearTxFinishResponseSerializer());
         factory.register((short)55, GridNearTxPrepareRequest::new, new GridNearTxPrepareRequestSerializer());
         factory.register((short)56, GridNearTxPrepareResponse::new);
         factory.register((short)57, GridNearUnlockRequest::new, new GridNearUnlockRequestSerializer());
