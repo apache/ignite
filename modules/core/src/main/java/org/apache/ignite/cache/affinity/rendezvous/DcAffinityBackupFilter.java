@@ -1,0 +1,63 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.cache.affinity.rendezvous;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.lang.IgniteBiPredicate;
+
+/** */
+public class DcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, List<ClusterNode>> {
+    /** */
+    private static final long serialVersionUID = 1L;
+
+    /** */
+    private final int dcsCount;
+
+    /** */
+    private final int primaryAndBackups;
+
+    /** */
+    private final Map<String, Integer> partsDistrMap;
+
+    /**
+     * @param dcsCount
+     * @param primaryAndBackups
+     */
+    public DcAffinityBackupFilter(int dcsCount, int primaryAndBackups) {
+        this.dcsCount = dcsCount;
+        partsDistrMap = new LinkedHashMap<>(4);
+        this.primaryAndBackups = primaryAndBackups;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean apply(ClusterNode node, List<ClusterNode> list) {
+        //я хочу переиспользовать метки DC_ID, чтобы не наполнять мапу снова и снова
+        //но как инициализировать метки?
+        //окей, в самом начале мапа пустая - как мне понять, как распределить остаток?
+        //у меня есть количество бэкапов и DC, мне нужна функция, которая для первых вызовов вернет
+        //частное от деления плюс единичку, а когда единички кончатся, то вернет просто частное
+//        if ()
+
+        return false;
+    }
+
+//    private int nextBucketVolume(int primaryAndBackups, int dcsCount, int ) {
+}
