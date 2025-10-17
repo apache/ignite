@@ -313,7 +313,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      */
     @Override protected void prepare0(boolean remap, boolean topLocked) {
         try {
-            boolean txStateCheck = remap ? tx.state() == PREPARING : tx.state(PREPARING);
+            boolean txStateCheck = remap ? tx.state() == PREPARING || tx.state() == PREPARED : tx.state(PREPARING);
 
             if (!txStateCheck) {
                 if (tx.isRollbackOnly() || tx.setRollbackOnly()) {
