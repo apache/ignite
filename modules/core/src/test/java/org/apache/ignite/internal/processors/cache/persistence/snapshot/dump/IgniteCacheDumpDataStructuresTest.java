@@ -376,6 +376,7 @@ public class IgniteCacheDumpDataStructuresTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
             super.onCacheConfigs(caches);
+
             caches.forEachRemaining(data -> {
                 if (DataStructuresProcessor.isDataStructureCache(data.config().getName())) {
                     CacheConfiguration<?, ?> ccfg = data.config();
