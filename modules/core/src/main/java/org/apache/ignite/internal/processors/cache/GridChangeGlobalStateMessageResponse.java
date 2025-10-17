@@ -47,7 +47,10 @@ public final class GridChangeGlobalStateMessageResponse extends GridCacheMessage
      */
     public GridChangeGlobalStateMessageResponse(UUID reqId, @Nullable Throwable err) {
         this.reqId = reqId;
-        errMsg = new ErrorMessage(err);
+
+        // Minor optimization.
+        if (err != null)
+            errMsg = new ErrorMessage(err);
     }
 
     /**
