@@ -87,10 +87,11 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     public void enable(IgniteProductVersion target) throws IgniteCheckedException {
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
 
-        IgniteProductVersion current = ctx.discovery().localNode().attribute(ATTR_BUILD_VER);
+        String currentBuildVer = ctx.discovery().localNode().attribute(ATTR_BUILD_VER);
+        IgniteProductVersion currentVer = IgniteProductVersion.fromString(currentBuildVer);
 
-        if (checkVersions(current, target))
-            metastorage.write(ROLL_UP_VERSIONS, F.pair(current, target));
+        if (checkVersions(currentVer, target))
+            metastorage.write(ROLL_UP_VERSIONS, F.pair(currentVer, target));
     }
 
     /**

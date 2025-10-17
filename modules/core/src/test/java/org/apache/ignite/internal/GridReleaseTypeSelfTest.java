@@ -242,8 +242,8 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         assertClusterSize(2);
 
         assertEnablingFails(grid0, "3.0.0", "Major versions are different.");
-        assertEnablingFails(grid0, "2.18.2", "Minor version can only be incremented by 1.");
-        assertEnablingFails(grid0, "2.19.2", "Patch version can only be incremented by 1.");
+        assertEnablingFails(grid0, "2.19.2", "Minor version can only be incremented by 1.");
+        assertEnablingFails(grid0, "2.18.2", "Patch version can only be incremented by 1.");
 
         IgnitePair<IgniteProductVersion> newPair = F.pair(IgniteProductVersion.fromString("2.18.0"), IgniteProductVersion.fromString("2.19.0"));
 
