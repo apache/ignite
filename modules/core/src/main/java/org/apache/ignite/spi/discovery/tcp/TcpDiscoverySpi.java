@@ -73,6 +73,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
@@ -450,6 +451,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** */
     protected IgniteSpiContext spiCtx;
+
+    /** */
+    private MessageFactory msgFactory;
 
     /** For test purposes. */
     private boolean skipAddrsRandomization = false;
@@ -1575,7 +1579,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param sock Socket bound to a local host address.
      * @param remAddr Remote address.
      * @param timeoutHelper Timeout helper.
-     * @return Connected socket.
+     * @return Session over opened socket.
      * @throws IOException If failed.
      * @throws IgniteSpiOperationTimeoutException In case of timeout.
      */
@@ -1671,25 +1675,25 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /**
      * Writes message to the socket.
      *
-     * @param sock Socket.
+     * @param ses Session.
      * @param msg Message.
      * @param data Raw data to write.
      * @param timeout Socket write timeout.
      * @throws IOException If IO failed or write timed out.
      */
-    protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data, long timeout) throws IOException {
-        assert sock != null;
+    protected void writeToSocket(DiscoveryIOSession ses, TcpDiscoveryAbstractMessage msg, byte[] data, long timeout) throws IOException {
+        assert ses != null;
         assert data != null;
 
-        try (SocketTimeoutObject ignored = startTimer(sock, timeout)) {
-            OutputStream out = sock.getOutputStream();
+        try (SocketTimeoutObject ignored = startTimer(ses.socket(), timeout)) {
+            OutputStream out = ses.socket().getOutputStream();
 
             out.write(data);
 
             out.flush();
         }
         catch (IOException e) {
-            SSLException sslEx = checkSslException(sock, e);
+            SSLException sslEx = checkSslException(ses.socket(), e);
 
             throw sslEx == null ? e : sslEx;
         }
@@ -1720,25 +1724,24 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /**
      * Writes message to the socket.
      *
-     * @param sock Socket.
+     * @param ses Session.
      * @param out Stream to write to.
      * @param msg Message.
      * @param timeout Timeout.
      * @throws IOException If IO failed or write timed out.
      * @throws IgniteCheckedException If marshalling failed.
      */
-    protected void writeToSocket(Socket sock,
+    protected void writeToSocket(DiscoveryIOSession ses,
         OutputStream out,
         TcpDiscoveryAbstractMessage msg,
         long timeout) throws IOException, IgniteCheckedException {
-        assert sock != null;
         assert msg != null;
 
-        try (SocketTimeoutObject ignored = startTimer(sock, timeout)) {
-            U.marshal(marshaller(), msg, out);
+        try (SocketTimeoutObject ignored = startTimer(ses.socket(), timeout)) {
+            ses.writeMessage(msg, out, marshaller());
         }
         catch (IgniteCheckedException e) {
-            SSLException sslEx = checkSslException(sock, e);
+            SSLException sslEx = checkSslException(ses.socket(), e);
 
             throw sslEx == null ? e : new IgniteCheckedException(sslEx);
         }
@@ -1774,15 +1777,17 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /**
      * Reads message from the socket limiting read time.
      *
-     * @param sock Socket.
+     * @param ses Discovery session.
      * @param in Input stream (in case socket stream was wrapped).
      * @param timeout Socket timeout for this operation.
      * @return Message.
      * @throws IOException If IO failed or read timed out.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
-    protected <T> T readMessage(Socket sock, @Nullable InputStream in, long timeout) throws IOException,
+    protected <T> T readMessage(DiscoveryIOSession ses, @Nullable InputStream in, long timeout) throws IOException,
         IgniteCheckedException {
+        Socket sock = ses.socket();
+
         assert sock != null;
 
         int oldTimeout = sock.getSoTimeout();
@@ -1790,10 +1795,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         try {
             sock.setSoTimeout((int)timeout);
 
-            T res = U.unmarshal(marshaller(), in == null ? sock.getInputStream() : in,
-                U.resolveClassLoader(ignite.configuration()));
-
-            return res;
+            return ses.readMessage(in == null ? sock.getInputStream() : in, marshaller(), ignite);
         }
         catch (IOException | IgniteCheckedException e) {
             if (X.hasCause(e, SocketTimeoutException.class))
@@ -1828,6 +1830,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
                 // No-op.
             }
         }
+    }
+
+    /** */
+    @Override public void setMessageFactory(MessageFactory msgFactory) {
+        this.msgFactory = msgFactory;
+    }
+
+    /** */
+    public MessageFactory messageFactory() {
+        return msgFactory;
     }
 
     /**
