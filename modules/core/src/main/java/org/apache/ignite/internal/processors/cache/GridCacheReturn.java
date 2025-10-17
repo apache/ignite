@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,8 +24,7 @@ import java.util.Map;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.UnregisteredBinaryTypeException;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -38,41 +32,37 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Return value for cases where both, value and success flag need to be returned.
  */
-public class GridCacheReturn implements Externalizable, Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public final class GridCacheReturn implements Message {
     /** Value. */
     @GridToStringInclude(sensitive = true)
-    @GridDirectTransient
     private volatile Object v;
 
     /** */
-    private CacheObject cacheObj;
+    @Order(value = 0, method = "cacheObject")
+    private @Nullable CacheObject cacheObj;
 
-    /** */
-    @GridDirectCollection(CacheInvokeDirectResult.class)
-    private Collection<CacheInvokeDirectResult> invokeResCol;
+    /** Invoke direct results. */
+    @Order(value = 1, method = "invokeDirectResults")
+    private @Nullable Collection<CacheInvokeDirectResult> invokeResCol;
 
     /** Success flag. */
+    @Order(2)
     private volatile boolean success;
 
-    /** */
+    /** Invoke result flag. */
+    @Order(value = 3, method = "invokeResult")
     private volatile boolean invokeRes;
 
     /** Local result flag, if non local then do not need unwrap cache objects. */
-    @GridDirectTransient
-    private transient boolean loc;
+    private boolean loc;
 
-    /** */
+    /** Cache Id. */
+    @Order(4)
     private int cacheId;
 
     /**
@@ -107,7 +97,7 @@ public class GridCacheReturn implements Externalizable, Message {
      * @param success Success flag.
      */
     public GridCacheReturn(
-        GridCacheContext cctx,
+        GridCacheContext<?, ?> cctx,
         boolean loc,
         boolean keepBinary,
         @Nullable ClassLoader ldr,
@@ -163,7 +153,7 @@ public class GridCacheReturn implements Externalizable, Message {
      * @param ldr Class loader, used for deserialization from binary representation.
      * @return This instance for chaining.
      */
-    public GridCacheReturn value(GridCacheContext cctx, CacheObject v, boolean keepBinary, @Nullable ClassLoader ldr) {
+    public GridCacheReturn value(GridCacheContext<?, ?> cctx, CacheObject v, boolean keepBinary, @Nullable ClassLoader ldr) {
         initValue(cctx, v, keepBinary, ldr);
 
         return this;
@@ -185,7 +175,7 @@ public class GridCacheReturn implements Externalizable, Message {
      * @return This instance for chaining.
      */
     public GridCacheReturn set(
-        GridCacheContext cctx,
+        GridCacheContext<?, ?> cctx,
         @Nullable CacheObject cacheObj,
         boolean success,
         boolean keepBinary,
@@ -205,7 +195,7 @@ public class GridCacheReturn implements Externalizable, Message {
      * @param ldr Class loader, used for deserialization from binary representation.
      */
     private void initValue(
-        GridCacheContext cctx,
+        GridCacheContext<?, ?> cctx,
         @Nullable CacheObject cacheObj,
         boolean keepBinary,
         @Nullable ClassLoader ldr
@@ -240,7 +230,7 @@ public class GridCacheReturn implements Externalizable, Message {
      * @param keepBinary Keep binary.
      */
     public synchronized void addEntryProcessResult(
-        GridCacheContext cctx,
+        GridCacheContext<?, ?> cctx,
         KeyCacheObject key,
         @Nullable Object key0,
         @Nullable Object res,
@@ -253,7 +243,7 @@ public class GridCacheReturn implements Externalizable, Message {
         invokeRes = true;
 
         if (loc) {
-            HashMap<Object, EntryProcessorResult> resMap = (HashMap<Object, EntryProcessorResult>)v;
+            HashMap<Object, EntryProcessorResult<?>> resMap = (HashMap<Object, EntryProcessorResult<?>>)v;
 
             if (resMap == null) {
                 resMap = new HashMap<>();
@@ -269,7 +259,7 @@ public class GridCacheReturn implements Externalizable, Message {
                     throw (UnregisteredBinaryTypeException)err;
             }
 
-            CacheInvokeResult res0 = err == null ? CacheInvokeResult.fromResult(res) : CacheInvokeResult.fromError(err);
+            CacheInvokeResult<?> res0 = err == null ? CacheInvokeResult.fromResult(res) : CacheInvokeResult.fromError(err);
 
             Object resKey = key0 != null ? key0 :
                 ((keepBinary && key instanceof BinaryObject) ? key : CU.value(key, cctx, true));
@@ -303,6 +293,41 @@ public class GridCacheReturn implements Externalizable, Message {
     }
 
     /**
+     * @param cacheId Cache ID.
+     */
+    public void cacheId(int cacheId) {
+        this.cacheId = cacheId;
+    }
+
+    /**
+     * @return Cache obbject.
+     */
+    public @Nullable CacheObject cacheObject() {
+        return cacheObj;
+    }
+
+    /**
+     * @param cacheObj Cache obbject.
+     */
+    public void cacheObject(@Nullable CacheObject cacheObj) {
+        this.cacheObj = cacheObj;
+    }
+
+    /**
+     * @return Invoke direct results.
+     */
+    public @Nullable Collection<CacheInvokeDirectResult> invokeDirectResults() {
+        return invokeResCol;
+    }
+
+    /**
+     * @param invokeResCol Invoke direct results.
+     */
+    public void invokeDirectResults(@Nullable Collection<CacheInvokeDirectResult> invokeResCol) {
+        this.invokeResCol = invokeResCol;
+    }
+
+    /**
      * @param other Other result to merge with.
      */
     public synchronized void mergeEntryProcessResults(GridCacheReturn other) {
@@ -315,7 +340,7 @@ public class GridCacheReturn implements Externalizable, Message {
 
         invokeRes = true;
 
-        HashMap<Object, EntryProcessorResult> resMap = (HashMap<Object, EntryProcessorResult>)v;
+        HashMap<Object, EntryProcessorResult<?>> resMap = (HashMap<Object, EntryProcessorResult<?>>)v;
 
         if (resMap == null) {
             resMap = new HashMap<>();
@@ -323,7 +348,7 @@ public class GridCacheReturn implements Externalizable, Message {
             v = resMap;
         }
 
-        resMap.putAll((Map<Object, EntryProcessorResult>)other.v);
+        resMap.putAll((Map<Object, EntryProcessorResult<?>>)other.v);
     }
 
     /**
@@ -331,7 +356,7 @@ public class GridCacheReturn implements Externalizable, Message {
      *
      * @param ctx Cache context.
      */
-    public void marshalResult(GridCacheContext ctx) {
+    public void marshalResult(GridCacheContext<?, ?> ctx) {
         if (invokeRes && invokeResCol != null) {
             for (CacheInvokeDirectResult directRes : invokeResCol)
                 directRes.marshalResult(ctx);
@@ -342,7 +367,7 @@ public class GridCacheReturn implements Externalizable, Message {
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
+    public void prepareMarshal(GridCacheContext<?, ?> ctx) throws IgniteCheckedException {
         assert !loc;
 
         if (cacheObj != null)
@@ -359,7 +384,7 @@ public class GridCacheReturn implements Externalizable, Message {
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */
-    public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    public void finishUnmarshal(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         loc = true;
 
         if (cacheObj != null) {
@@ -372,7 +397,7 @@ public class GridCacheReturn implements Externalizable, Message {
             for (CacheInvokeDirectResult res : invokeResCol)
                 res.finishUnmarshal(ctx, ldr);
 
-            Map<Object, CacheInvokeResult> map0 = U.newHashMap(invokeResCol.size());
+            Map<Object, CacheInvokeResult<?>> map0 = U.newHashMap(invokeResCol.size());
 
             for (CacheInvokeDirectResult res : invokeResCol) {
                 CacheInvokeResult<?> res0 = res.error() == null ?
@@ -389,113 +414,6 @@ public class GridCacheReturn implements Externalizable, Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 88;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt(cacheId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeCacheObject(cacheObj))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeBoolean(invokeRes))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeCollection(invokeResCol, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeBoolean(success))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                cacheId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                cacheObj = reader.readCacheObject();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                invokeRes = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                invokeResCol = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                success = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        assert false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        assert false;
     }
 
     /** {@inheritDoc} */
