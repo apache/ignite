@@ -44,6 +44,7 @@ import org.apache.ignite.internal.codegen.GridCacheTxRecoveryRequestSerializer;
 import org.apache.ignite.internal.codegen.GridCacheTxRecoveryResponseSerializer;
 import org.apache.ignite.internal.codegen.GridCacheVersionExSerializer;
 import org.apache.ignite.internal.codegen.GridCacheVersionSerializer;
+import org.apache.ignite.internal.codegen.GridChangeGlobalStateMessageResponseSerializer;
 import org.apache.ignite.internal.codegen.GridCheckpointRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDeploymentResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDhtAffinityAssignmentRequestSerializer;
@@ -261,7 +262,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)-50, GridNearAtomicCheckUpdateRequest::new, new GridNearAtomicCheckUpdateRequestSerializer());
         factory.register((short)-49, UpdateErrors::new, new UpdateErrorsSerializer());
         factory.register((short)-48, GridDhtAtomicNearResponse::new, new GridDhtAtomicNearResponseSerializer());
-        factory.register((short)-45, GridChangeGlobalStateMessageResponse::new);
+        factory.register((short)-45, GridChangeGlobalStateMessageResponse::new, new GridChangeGlobalStateMessageResponseSerializer());
         factory.register((short)-43, IgniteIoTestMessage::new);
         factory.register((short)-36, GridDhtAtomicSingleUpdateRequest::new);
         factory.register((short)-27, GridDhtTxOnePhaseCommitAckRequest::new, new GridDhtTxOnePhaseCommitAckRequestSerializer());
