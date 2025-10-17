@@ -218,13 +218,23 @@ public class IndexProcessor extends GridProcessorAdapter {
         IndexDefinition definition,
         SchemaIndexCacheVisitor cacheVisitor
     ) {
-        Index idx = createIndex(cctx, factory, definition);
+        IndexFactory dynamicFactory = (gcctx, indexDefinition) -> {
+            Index idx = factory.createIndex(gcctx, indexDefinition);
+
+            idx.markIndexRebuild(true);
+
+            return idx;
+        };
+
+        Index idx = createIndex(cctx, dynamicFactory, definition);
 
         // Populate index with cache rows.
         cacheVisitor.visit(row -> {
             if (idx.canHandle(row))
                 idx.onUpdate(null, row, false);
         });
+
+        idx.markIndexRebuild(false);
 
         return idx;
     }
