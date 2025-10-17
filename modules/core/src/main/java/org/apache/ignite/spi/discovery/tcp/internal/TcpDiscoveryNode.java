@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -590,7 +592,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         out.writeLong(intOrder);
         out.writeObject(ver);
         U.writeUuid(out, clientRouterNodeId);
-        out.writeObject(dcId);
     }
 
     /** {@inheritDoc} */
@@ -628,7 +629,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         else
             consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
 
-        dcId = (String)in.readObject();
+        dcId = (String)attrs.get(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
     }
 
     /** {@inheritDoc} */
