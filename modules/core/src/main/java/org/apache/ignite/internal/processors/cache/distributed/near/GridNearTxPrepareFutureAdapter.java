@@ -281,7 +281,8 @@ public abstract class GridNearTxPrepareFutureAdapter extends
                 if (map != null)
                     map.dhtVersion(res.dhtVersion(), writeVer);
 
-                tx.readyNearLocks(m, F.emptyIfNull(res.pending()), res.committedVersions(), res.rolledbackVersions());
+                tx.readyNearLocks(m, F.emptyIfNull(res.pending()), F.emptyIfNull(res.committedVersions()),
+                    F.emptyIfNull(res.rolledbackVersions()));
             }
         }
     }
