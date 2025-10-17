@@ -12,8 +12,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+
 = Python Thin Client
 
+To see the documentation for Python thin client, please click link:https://apache-ignite-binary-protocol-client.readthedocs.io/en/stable/[here,window=_blank].
+
+////
 :sourceFileDir: code-snippets/python
 
 == Prerequisites
@@ -345,12 +350,6 @@ Query indexes define the fields that will be indexed.
 - `type_name`: name of the complex object.
 - `affinity_key_field_name`: name of the affinity key field.
 
-////
-== Data Type Mapping
-
-*TODO*
-////
-
 == Using Key-Value API
 
 The `pyignite.cache.Cache` class provides methods for working with cache entries by using key-value operations, such as put, get, put all, get all, replace, and others.
@@ -403,31 +402,6 @@ Refer to the link:sql-reference/index[SQL Reference] section for the list of sup
 -------------------------------------------------------------------------------
 include::{sourceFileDir}/sql.py[tag=!field-names,indent=0]
 -------------------------------------------------------------------------------
-
-////
-TODO
-The `sql()` method supports a number of parameters that
-
-
-[cols="",opts="header", width="100%"]
-|===
-| Parameter | Description
-| `query_str` |
-| `page_size` |
-| `query_args` |
-| `schema` |
-| `statement_type` |
-| `distributed_joins` |
-| `local` |
-| `replicated_only` |
-| `enforce_join_order` |
-| `collocated` |
-| `lazy` |
-| `include_field_names` |
-| `max_rows` |
-| `timeout` |
-|===
-////
 
 The `sql()` method returns a generator that yields the resulting rows.
 
@@ -485,4 +459,4 @@ If you still want to use authentication without securing the connection, simply 
 ----
 include::{sourceFileDir}/auth.py[tag=no-ssl,indent=0]
 ----
-
+////
