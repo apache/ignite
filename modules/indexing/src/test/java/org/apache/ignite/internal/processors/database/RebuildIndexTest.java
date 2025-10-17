@@ -65,8 +65,8 @@ public class RebuildIndexTest extends GridCommonAbstractTest {
             "Scanned rows 2, visited types \\[UserValue].*" +
             "Type name=UserValue.*" +
             "Index: name=_key_PK, size=2.*" +
-            "Index: name=IDX_2, size=2.*" +
-            "Index: name=IDX_1, size=2.*",
+            "(Index: name=IDX_1, size=2)|(Index: name=IDX_2, size=2).*" +
+            "(Index: name=IDX_1, size=2)|(Index: name=IDX_2, size=2).*",
         Pattern.DOTALL);
 
     /** {@inheritDoc} */
