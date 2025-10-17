@@ -49,6 +49,11 @@ public class MultiDataCenterDeploymentTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
+        return super.optimize(cfg).setIncludeProperties((String)null);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -68,8 +73,11 @@ public class MultiDataCenterDeploymentTest extends GridCommonAbstractTest {
         String dcId = testGrid.localNode().dataCenterId();
 
         assertNotNull("Data Center ID of the node should not be null", dcId);
-
         assertEquals(DC_ID_0, dcId);
+
+        String dcIdFromSysProp = testGrid.localNode().attribute(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
+        assertNotNull("Data Center ID of the node should not be null", dcIdFromSysProp);
+        assertEquals(DC_ID_0, dcIdFromSysProp);
     }
 
     /**

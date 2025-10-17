@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
@@ -340,8 +341,6 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
             mtr = ClusterMetricsSnapshot.serialize(metrics);
 
         U.writeByteArray(out, mtr);
-
-        out.writeObject(dcId);
     }
 
     /** {@inheritDoc} */
@@ -363,7 +362,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
         if (mtr != null)
             metrics = ClusterMetricsSnapshot.deserialize(mtr, 0);
 
-        dcId = (String)in.readObject();
+        dcId = (String)attrs.get(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
     }
 
     /** {@inheritDoc} */
