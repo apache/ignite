@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.verify.TransactionsHashRecord
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /** */
-public class IncrementalSnapshotVerificationTaskResult implements Serializable {
+public class IncrementalSnapshotVerifyResult implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -47,12 +47,12 @@ public class IncrementalSnapshotVerificationTaskResult implements Serializable {
     private Collection<Exception> exceptions;
 
     /** */
-    public IncrementalSnapshotVerificationTaskResult() {
+    public IncrementalSnapshotVerifyResult() {
         // No-op.
     }
 
     /** */
-    IncrementalSnapshotVerificationTaskResult(
+    IncrementalSnapshotVerifyResult(
         Map<Object, TransactionsHashRecord> txHashRes,
         Map<PartitionKey, PartitionHashRecord> partHashRes,
         Collection<GridCacheVersion> partiallyCommittedTxs,

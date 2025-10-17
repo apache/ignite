@@ -54,7 +54,7 @@ import org.apache.ignite.transactions.TransactionState;
 import static org.apache.ignite.internal.managers.discovery.ConsistentIdMapper.ALL_NODES;
 
 /** */
-public class IncrementalSnapshotVerificationTask implements Supplier<IncrementalSnapshotVerificationTaskResult> {
+public class IncrementalSnapshotVerify implements Supplier<IncrementalSnapshotVerifyResult> {
     /** */
     private final IgniteEx ignite;
 
@@ -71,7 +71,7 @@ public class IncrementalSnapshotVerificationTask implements Supplier<Incremental
     private LongAdder procEntriesCnt;
 
     /** */
-    public IncrementalSnapshotVerificationTask(IgniteEx ignite, IgniteLogger log, SnapshotFileTree sft, int incrementalIdx) {
+    public IncrementalSnapshotVerify(IgniteEx ignite, IgniteLogger log, SnapshotFileTree sft, int incrementalIdx) {
         this.ignite = ignite;
         this.log = log;
         this.sft = sft;
@@ -81,7 +81,7 @@ public class IncrementalSnapshotVerificationTask implements Supplier<Incremental
     /**
      * @return Map containing calculated transactions hash for every remote node in the cluster.
      */
-    @Override public IncrementalSnapshotVerificationTaskResult get() throws IgniteException {
+    @Override public IncrementalSnapshotVerifyResult get() throws IgniteException {
         try {
             if (log.isInfoEnabled()) {
                 log.info("Verify incremental snapshot procedure has been initiated " +
@@ -89,7 +89,7 @@ public class IncrementalSnapshotVerificationTask implements Supplier<Incremental
             }
 
             if (incIdx <= 0)
-                return new IncrementalSnapshotVerificationTaskResult();
+                return new IncrementalSnapshotVerifyResult();
 
             BaselineTopology blt = ignite.context().state().clusterState().baselineTopology();
 
@@ -266,7 +266,7 @@ public class IncrementalSnapshotVerificationTask implements Supplier<Incremental
                     ", walSegments=" + procSegCnt.get() + ']');
             }
 
-            return new IncrementalSnapshotVerificationTaskResult(
+            return new IncrementalSnapshotVerifyResult(
                 txHashRes,
                 partHashRes,
                 partiallyCommittedTxs,
