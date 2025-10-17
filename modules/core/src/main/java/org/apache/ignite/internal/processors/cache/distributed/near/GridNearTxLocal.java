@@ -3381,6 +3381,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         fut.prepare();
 
+        if (onePhaseCommit)
+            state(PREPARED);
+
         return fut;
     }
 
