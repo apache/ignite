@@ -692,13 +692,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (qryResCache.putIfAbsent(resKey, res) != null)
             resKey = null; // Failed to cache result.
 
-        try {
-            return res;
-        }
-        finally {
-            if (resKey != null)
-                qryResCache.remove(resKey, res);
-        }
+        if (resKey != null)
+            qryResCache.remove(resKey, res);
+
+        return res;
     }
 
     /**
