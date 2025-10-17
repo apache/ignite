@@ -36,7 +36,7 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
  */
 @SuppressWarnings({"NullableProblems", "unused"})
 public class ErrorMessage implements Message {
-    /** Serialization and deserealization methods call holder. */
+    /** Serialization and deserealization methods call holder. Is not uses as a data holder. */
     @Order(value = 0, method = "errorBytes")
     private @Nullable byte[] errBytes;
 
@@ -89,7 +89,7 @@ public class ErrorMessage implements Message {
     }
 
     /** */
-    public @Nullable Throwable toThrowable() {
+    public @Nullable Throwable error() {
         return err;
     }
 
@@ -100,7 +100,7 @@ public class ErrorMessage implements Message {
      * @return Error containing in the message.
      */
     public static @Nullable Throwable error(@Nullable ErrorMessage errorMsg) {
-        return errorMsg == null ? null : errorMsg.toThrowable();
+        return errorMsg == null ? null : errorMsg.error();
     }
 
     /** {@inheritDoc} */
@@ -110,6 +110,6 @@ public class ErrorMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return toThrowable().toString();
+        return error().toString();
     }
 }
