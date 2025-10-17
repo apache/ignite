@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelTraitSet;
@@ -47,7 +46,6 @@ import org.apache.calcite.util.mapping.Mappings;
 import org.apache.ignite.internal.processors.query.calcite.trait.CorrelationTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.DistributionFunction;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
-import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitsAwareIgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -112,27 +110,6 @@ public abstract class AbstractIgniteJoin extends Join implements TraitsAwareIgni
         rightTraits = right.replace(RelCollations.EMPTY);
 
         return ImmutableList.of(Pair.of(outTraits, ImmutableList.of(leftTraits, rightTraits)));
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<Pair<RelTraitSet, List<RelTraitSet>>> deriveRewindability(RelTraitSet nodeTraits, List<RelTraitSet> inputTraits) {
-        // The node is rewindable only if both sources are rewindable.
-
-        RelTraitSet left = inputTraits.get(0), right = inputTraits.get(1);
-
-        RewindabilityTrait leftRewindability = TraitUtils.rewindability(left);
-        RewindabilityTrait rightRewindability = TraitUtils.rewindability(right);
-
-        List<Pair<RelTraitSet, List<RelTraitSet>>> pairs = new ArrayList<>();
-
-        pairs.add(Pair.of(nodeTraits.replace(RewindabilityTrait.ONE_WAY),
-            ImmutableList.of(left.replace(RewindabilityTrait.ONE_WAY), right.replace(RewindabilityTrait.ONE_WAY))));
-
-        if (leftRewindability.rewindable() && rightRewindability.rewindable())
-            pairs.add(Pair.of(nodeTraits.replace(RewindabilityTrait.REWINDABLE),
-                ImmutableList.of(left.replace(RewindabilityTrait.REWINDABLE), right.replace(RewindabilityTrait.REWINDABLE))));
-
-        return ImmutableList.copyOf(pairs);
     }
 
     /** {@inheritDoc} */
