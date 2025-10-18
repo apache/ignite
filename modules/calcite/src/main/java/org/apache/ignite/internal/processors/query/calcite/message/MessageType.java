@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.function.Supplier;
 import org.apache.ignite.internal.codegen.FragmentDescriptionSerializer;
+import org.apache.ignite.internal.codegen.InboxCloseMessageSerializer;
 import org.apache.ignite.internal.codegen.QueryTxEntrySerializer;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
@@ -45,7 +46,7 @@ public enum MessageType {
     QUERY_ACKNOWLEDGE_MESSAGE(304, QueryBatchAcknowledgeMessage::new),
 
     /** */
-    QUERY_INBOX_CANCEL_MESSAGE(305, InboxCloseMessage::new),
+    QUERY_INBOX_CANCEL_MESSAGE(305, InboxCloseMessage::new, new InboxCloseMessageSerializer()),
 
     /** */
     QUERY_CLOSE_MESSAGE(306, QueryCloseMessage::new),
