@@ -244,7 +244,7 @@ public class GridCacheReturn implements Externalizable, Message {
         KeyCacheObject key,
         @Nullable Object key0,
         @Nullable Object res,
-        @Nullable Exception err,
+        @Nullable Throwable err,
         boolean keepBinary) {
         assert v == null || v instanceof Map : v;
         assert key != null;

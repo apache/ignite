@@ -193,7 +193,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
 
     /** {@inheritDoc} */
     @Override public Throwable error() {
-        return errs != null ? errs.errorMessage().toThrowable() : null;
+        return errs != null ? errs.errorMessage().error() : null;
     }
 
     /**
