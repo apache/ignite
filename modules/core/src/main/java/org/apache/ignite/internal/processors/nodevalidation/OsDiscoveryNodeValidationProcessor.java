@@ -84,7 +84,7 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
         return new IgniteNodeValidationResult(node.id(), errMsg);
     }
 
-    /** Checks if versions has same major, minor and maintenance versions. */
+    /** Checks if versions have same major, minor and maintenance versions. */
     private boolean versionsMatch(IgniteProductVersion ver1, IgniteProductVersion ver2) {
         if (ver1 == null || ver2 == null)
             return false;
