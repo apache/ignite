@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.processors.metastorage.DistributedMetaS
 /** Rolling upgrade processor. Manages current and target versions of cluster. */
 public class RollingUpgradeProcessor extends GridProcessorAdapter {
     /** Key for the distributed property that holds current and target versions. */
-    private static final String ROLL_UP_VERSIONS = IGNITE_INTERNAL_KEY_PREFIX + "rolling.upgrade.versions";
+    private static final String ROLLING_UPGRADE_VERSIONS_KEY = IGNITE_INTERNAL_KEY_PREFIX + "rolling.upgrade.versions";
 
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
@@ -58,7 +58,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(new DistributedMetastorageLifecycleListener() {
             @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
                 try {
-                    IgnitePair<IgniteProductVersion> pair = metastorage.read(ROLL_UP_VERSIONS);
+                    IgnitePair<IgniteProductVersion> pair = metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
 
                     if (verPairHolder.compareAndSet(null, pair) && log.isDebugEnabled())
                         log.debug("Read current and target versions from metastore: " + pair);
@@ -67,7 +67,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
                     throw new IgniteException(e);
                 }
 
-                metastorage.listen(ROLL_UP_VERSIONS::equals, (key, oldVal, newVal) ->
+                metastorage.listen(ROLLING_UPGRADE_VERSIONS_KEY::equals, (key, oldVal, newVal) ->
                     verPairHolder.compareAndSet((IgnitePair<IgniteProductVersion>)oldVal, (IgnitePair<IgniteProductVersion>)newVal)
                 );
             }
@@ -90,8 +90,12 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
         String curBuildVer = ctx.discovery().localNode().attribute(ATTR_BUILD_VER);
         IgniteProductVersion curtVer = IgniteProductVersion.fromString(curBuildVer);
 
-        if (checkVersions(curtVer, target))
-            metastorage.write(ROLL_UP_VERSIONS, F.pair(curtVer, target));
+        if (checkVersions(curtVer, target)) {
+            metastorage.write(ROLLING_UPGRADE_VERSIONS_KEY, F.pair(curtVer, target));
+
+            if (log.isInfoEnabled())
+                log.info("Rolling upgrade enabled [current=" + curtVer + ", target=" + target + ']');
+        }
     }
 
     /**
@@ -102,17 +106,24 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     public void disable() throws IgniteCheckedException {
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
 
-        metastorage.remove(ROLL_UP_VERSIONS);
+        metastorage.remove(ROLLING_UPGRADE_VERSIONS_KEY);
+
+        if (log.isInfoEnabled())
+            log.info("Rolling upgrade disabled");
     }
 
     /**
-     * Returns a pair containing the current and target versions.
+     * Returns a pair containing the current and target versions of the cluster.
+     * <p>
+     * This method returns {@code null} if rolling upgrade has not been enabled yet
+     * or if version information has not been read from the distributed metastorage.
      *
      * @return A pair where:
      *     <ul>
      *         <li><b>First element</b> — current version of the cluster.</li>
      *         <li><b>Second element</b> — target version to which the cluster is being upgraded.</li>
      *     </ul>
+     *     or {@code null} if rolling upgrade is not active.
      */
     public IgnitePair<IgniteProductVersion> versions() {
         return verPairHolder.get();
@@ -120,7 +131,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
 
     /** Сhecks whether the cluster is in the rolling upgrade mode. */
     public boolean isRollingUpgradeEnabled() {
-        return verPairHolder.get() != null;
+        return versions() != null;
     }
 
     /**
