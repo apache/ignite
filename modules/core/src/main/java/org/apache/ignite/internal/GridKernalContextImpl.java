@@ -363,9 +363,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringExclude
     private PerformanceStatisticsProcessor perfStatProc;
 
-    /** Performance statistics processor. */
+    /** Rolling upgrade processor. */
     @GridToStringExclude
-    private RollingUpgradeProcessor rollingUpgradeProc;
+    private RollingUpgradeProcessor rolUpProc;
 
     /** */
     private Thread.UncaughtExceptionHandler hnd;
@@ -602,7 +602,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof PerformanceStatisticsProcessor)
             perfStatProc = (PerformanceStatisticsProcessor)comp;
         else if (comp instanceof RollingUpgradeProcessor)
-            rollingUpgradeProc = (RollingUpgradeProcessor)comp;
+            rolUpProc = (RollingUpgradeProcessor)comp;
         else if (comp instanceof IndexProcessor)
             indexProc = (IndexProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
@@ -1114,7 +1114,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public RollingUpgradeProcessor rollingUpgrade() {
-        return rollingUpgradeProc;
+        return rolUpProc;
     }
 
     /** {@inheritDoc} */
