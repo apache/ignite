@@ -52,6 +52,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     private List<KeyCacheObject> nearEvicted;
 
     /** */
+    @Order(value = 7, method = "partition")
     private int partId;
 
     /**
@@ -141,6 +142,13 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     /** {@inheritDoc} */
     @Override public int partition() {
         return partId;
+    }
+
+    /**
+     * @param partId Partition.
+     */
+    public void partition(int partId) {
+        this.partId = partId;
     }
 
     /** {@inheritDoc} */
