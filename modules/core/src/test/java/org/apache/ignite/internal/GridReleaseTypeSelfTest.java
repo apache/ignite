@@ -149,7 +149,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertRemoteRejected(() -> startGrid(3, "2.18.1", isClient));
 
-        allowRollingUpgradeVersionCheck(ign0, "2.18.1");
+        configureRollingUpgradeVersion(ign0, "2.18.1");
 
         ign2.close();
 
@@ -182,7 +182,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         IgniteEx ign0 = startGrid(0, "2.18.0", false);
         IgniteEx ign1 = startGrid(1, "2.18.0", false);
 
-        allowRollingUpgradeVersionCheck(ign0, "2.19.0");
+        configureRollingUpgradeVersion(ign0, "2.19.0");
 
         startGrid(2, "2.19.0", false);
 
@@ -213,7 +213,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertClusterSize(3);
 
-        allowRollingUpgradeVersionCheck(grid(0), "2.18.1");
+        configureRollingUpgradeVersion(grid(0), "2.18.1");
 
         for (int i = 0; i < 3; i++)
             grid(i).close();
@@ -295,7 +295,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         ThrowableSupplier<IgniteEx, Exception> sup = () -> {
             IgniteEx ign = startGrid(0, acceptedVer1, false);
 
-            allowRollingUpgradeVersionCheck(ign, rollUpVer);
+            configureRollingUpgradeVersion(ign, rollUpVer);
 
             startGrid(1, acceptedVer2, isClient);
 
@@ -323,7 +323,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         String rollUpVerCheck) throws Exception {
         IgniteEx grid = startGrid(0, acceptedVer1, false);
 
-        allowRollingUpgradeVersionCheck(grid, rollUpVerCheck);
+        configureRollingUpgradeVersion(grid, rollUpVerCheck);
 
         startGrid(1, acceptedVer2, isClient);
 
@@ -345,7 +345,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     ) throws Exception {
         IgniteEx grid = startGrid(0, acceptedVer1, false);
 
-        allowRollingUpgradeVersionCheck(grid, rollUpVerCheck);
+        configureRollingUpgradeVersion(grid, rollUpVerCheck);
 
         startGrid(1, acceptedVer2, isClient);
         startGrid(2, acceptedVer3, isClient);
@@ -378,7 +378,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /**
      * @param ver Version for rolling upgrade support.
      */
-    private void allowRollingUpgradeVersionCheck(IgniteEx grid, String ver) throws IgniteCheckedException {
+    private void configureRollingUpgradeVersion(IgniteEx grid, String ver) throws IgniteCheckedException {
         if (ver == null) {
             grid.context().rollingUpgrade().disable();
             return;
@@ -393,6 +393,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
      * @param size Expected cluster size.
      */
     private void assertClusterSize(int size) throws IgniteInterruptedCheckedException {
-        assertTrue(waitForCondition(() -> Ignition.allGrids().size() == size, getTestTimeout()));
+        assertTrue("Expected cluster size: " + size + ", but was: " + Ignition.allGrids().size(),
+            waitForCondition(() -> Ignition.allGrids().size() == size, getTestTimeout()));
     }
 }
