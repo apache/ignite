@@ -109,12 +109,13 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testThreeConflictVersions() {
-        testConflictVersionsWithRollingUpgrade("2.18.0", "2.18.2", "2.16.0", isClient, "2.18.2");
-        testConflictVersionsWithRollingUpgrade("2.18.0", "2.18.3", "2.20.0", isClient, "2.18.3");
+        testConflictVersionsWithRollingUpgrade("2.18.0", "2.18.1", "2.18.2", isClient, "2.18.1");
 
-        testConflictVersionsWithRollingUpgrade("2.18.0", "2.19.2", "2.17.0", isClient, "2.19.2");
+        testConflictVersionsWithRollingUpgrade("2.18.0", "2.18.1", "2.17.2", isClient, "2.18.1");
 
-        testConflictVersionsWithRollingUpgrade("2.18.0", "2.19.2", "2.20.0", isClient, "2.19.2");
+        testConflictVersionsWithRollingUpgrade("2.18.1", "2.19.0", "2.19.1", isClient, "2.19.0");
+
+        testConflictVersionsWithRollingUpgrade("2.18.1", "2.18.2", "2.18.0", isClient, "2.18.2");
     }
 
     /** */
@@ -124,7 +125,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         testCompatibleVersions("2.19.2", "2.19.2", isClient, null);
 
         testCompatibleVersions("2.18.0", "2.18.1", isClient, "2.18.1");
-        testCompatibleVersions("2.18.0", "2.19.6", isClient, "2.19.6");
+        testCompatibleVersions("2.18.2", "2.19.0", isClient, "2.19.0");
     }
 
     /** */
@@ -134,7 +135,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         testCompatibleVersions("2.18.2", "2.18.2", "2.18.2", isClient, null);
 
         testCompatibleVersions("2.18.0", "2.18.1", "2.18.1", isClient, "2.18.1");
-        testCompatibleVersions("2.18.0", "2.18.2", "2.18.2", isClient, "2.18.2");
+        testCompatibleVersions("2.18.1", "2.19.0", "2.18.1", isClient, "2.19.0");
     }
 
     /** */
@@ -378,8 +379,10 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
      * @param ver Version for rolling upgrade support.
      */
     private void allowRollingUpgradeVersionCheck(IgniteEx grid, String ver) throws IgniteCheckedException {
-        if (ver == null)
+        if (ver == null) {
             grid.context().rollingUpgrade().disable();
+            return;
+        }
 
         IgniteProductVersion target = IgniteProductVersion.fromString(ver);
 
