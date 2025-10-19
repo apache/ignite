@@ -93,7 +93,7 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
     }
 
     /**
-     * @param futIds New aCK future versions.
+     * @param futIds New list of ACKed future ids.
      */
     public void futureIds(GridLongList futIds) {
         this.futIds = futIds;
