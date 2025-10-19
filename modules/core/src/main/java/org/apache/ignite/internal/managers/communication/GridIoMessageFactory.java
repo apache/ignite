@@ -54,6 +54,7 @@ import org.apache.ignite.internal.codegen.GridDeploymentResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDhtAffinityAssignmentRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtAtomicDeferredUpdateResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDhtAtomicNearResponseSerializer;
+import org.apache.ignite.internal.codegen.GridDhtAtomicSingleUpdateRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtAtomicUpdateResponseSerializer;
 import org.apache.ignite.internal.codegen.GridDhtForceKeysRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDhtForceKeysResponseSerializer;
@@ -298,7 +299,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)-48, GridDhtAtomicNearResponse::new, new GridDhtAtomicNearResponseSerializer());
         factory.register((short)-45, GridChangeGlobalStateMessageResponse::new, new GridChangeGlobalStateMessageResponseSerializer());
         factory.register((short)-43, IgniteIoTestMessage::new);
-        factory.register((short)-36, GridDhtAtomicSingleUpdateRequest::new);
+        factory.register((short)-36, GridDhtAtomicSingleUpdateRequest::new, new GridDhtAtomicSingleUpdateRequestSerializer());
         factory.register((short)-27, GridDhtTxOnePhaseCommitAckRequest::new, new GridDhtTxOnePhaseCommitAckRequestSerializer());
         factory.register((short)-26, TxLockList::new, new TxLockListSerializer());
         factory.register((short)-25, TxLock::new, new TxLockSerializer());

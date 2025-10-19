@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -32,8 +32,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,10 +43,12 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdateRequest {
     /** Key to update. */
     @GridToStringInclude
+    @Order(12)
     protected KeyCacheObject key;
 
     /** Value to update. */
     @GridToStringInclude
+    @Order(value = 13, method = "value")
     protected CacheObject val;
 
     /** Previous value. */
@@ -212,6 +212,20 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         return near() ? null : key;
     }
 
+    /**
+     * @return Key to update
+     */
+    public KeyCacheObject key() {
+        return key;
+    }
+
+    /**
+     * @param key New key to update.
+     */
+    public void key(KeyCacheObject key) {
+        this.key = key;
+    }
+
     /** {@inheritDoc} */
     @Override public int obsoleteNearKeysSize() {
         return isFlag(DHT_ATOMIC_OBSOLETE_NEAR_KEY_FLAG_MASK) ? 1 : 0;
@@ -254,11 +268,39 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         return near() ? null : val;
     }
 
+    /**
+     * @return Cache object value
+     */
+    public CacheObject value() {
+        return val;
+    }
+
+    /**
+     * @param val Cache object value to update.
+     */
+    public void value(CacheObject val) {
+        this.val = val;
+    }
+
     /** {@inheritDoc} */
     @Override @Nullable public CacheObject previousValue(int idx) {
         assert idx == 0 : idx;
 
         return prevVal;
+    }
+
+    /**
+     * @return Previous value.
+     */
+    public CacheObject prevValue() {
+        return prevVal;
+    }
+
+    /**
+     * @param prevVal New previous value.
+     */
+    public void prevValue(CacheObject prevVal) {
+        this.prevVal = prevVal;
     }
 
     /** {@inheritDoc} */
@@ -346,95 +388,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         finishUnmarshalObject(val, cctx, ldr);
 
         finishUnmarshalObject(prevVal, cctx, ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 12:
-                if (!writer.writeKeyCacheObject(key))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeCacheObject(prevVal))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeLong(updateCntr))
-                    return false;
-
-                writer.incrementState();
-
-            case 15:
-                if (!writer.writeCacheObject(val))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 12:
-                key = reader.readKeyCacheObject();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                prevVal = reader.readCacheObject();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                updateCntr = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 15:
-                val = reader.readCacheObject();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /**
