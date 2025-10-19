@@ -1056,7 +1056,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             try {
                 startProcessor(COMPRESSION.createOptional(ctx));
                 startProcessor(new GridMarshallerMappingProcessor(ctx));
-                startProcessor(createComponent(RollingUpgradeProcessor.class, ctx));
+                startProcessor(new RollingUpgradeProcessor(ctx));
                 startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
                 startProcessor(new GridAffinityProcessor(ctx));
                 startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
@@ -3225,9 +3225,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         if (cls.equals(IgniteCacheObjectProcessor.class))
             return (T)new CacheObjectBinaryProcessorImpl(ctx);
-
-        if (cls.equals(RollingUpgradeProcessor.class))
-            return (T)new RollingUpgradeProcessor(ctx);
 
         if (cls.equals(DiscoveryNodeValidationProcessor.class))
             return (T)new OsDiscoveryNodeValidationProcessor(ctx);
