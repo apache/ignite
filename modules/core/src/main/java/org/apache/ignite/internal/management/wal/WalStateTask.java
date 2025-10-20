@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.lang.GridTuple4;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -79,8 +79,6 @@ public class WalStateTask extends
 
         /** {@inheritDoc} */
         @Override protected NodeWalState run(@Nullable WalStateCommandArg arg) throws IgniteException {
-            boolean walDisabled = !isPersistenceEnabled(ignite.configuration()) && !isCdcEnabled(ignite.configuration());
-
             Set<String> grps = F.isEmpty(arg.groups()) ? null : new HashSet<>(Arrays.asList(arg.groups()));
 
             Map<String, GroupWalState> res = new HashMap<>();
@@ -91,16 +89,27 @@ public class WalStateTask extends
                 if (grps != null && !grps.contains(grpName))
                     continue;
 
-                if (walDisabled || !gctx.persistenceEnabled())
-                    res.put(grpName, new GroupWalState(false, false, false));
-                else
-                    res.put(grpName, new GroupWalState(gctx.globalWalEnabled(), gctx.localWalEnabled(), gctx.indexWalEnabled()));
+                boolean pe = gctx.persistenceEnabled();
+
+                res.put(
+                    grpName,
+                    new GroupWalState(
+                        pe && gctx.globalWalEnabled(),
+                        pe && gctx.localWalEnabled(),
+                        pe && gctx.indexWalEnabled(),
+                        gctx.cdcEnabled()
+                    )
+                );
             }
+
+            DataStorageConfiguration dsCfg = ignite.configuration().getDataStorageConfiguration();
 
             return new NodeWalState(
                 ignite.localNode().id(),
                 ignite.localNode().consistentId(),
-                walDisabled ? null : ignite.configuration().getDataStorageConfiguration().getWalMode(),
+                (isPersistenceEnabled(ignite.configuration()) || isCdcEnabled(ignite.configuration())) && dsCfg != null
+                    ? dsCfg.getWalMode()
+                    : null,
                 res
             );
         }
@@ -133,7 +142,7 @@ public class WalStateTask extends
     }
 
     /** Global, Local, Index states of WAL for group. */
-    public static class GroupWalState extends GridTuple3<Boolean, Boolean, Boolean> {
+    public static class GroupWalState extends GridTuple4<Boolean, Boolean, Boolean, Boolean> {
         /** */
         private static final long serialVersionUID = 0;
 
@@ -143,23 +152,28 @@ public class WalStateTask extends
         }
 
         /** */
-        public GroupWalState(@Nullable Boolean val1, @Nullable Boolean val2, @Nullable Boolean val3) {
-            super(val1, val2, val3);
+        public GroupWalState(Boolean val1, Boolean val2, Boolean val3, Boolean val4) {
+            super(val1, val2, val3, val4);
         }
 
         /** */
-        boolean globalWalEnabled() {
+        boolean global() {
             return get1();
         }
 
         /** */
-        boolean localWalEnabled() {
+        boolean local() {
             return get2();
         }
 
         /** */
-        boolean indexWalEnabled() {
+        boolean index() {
             return get3();
+        }
+
+        /** */
+        boolean cdc() {
+            return get4();
         }
     }
 }

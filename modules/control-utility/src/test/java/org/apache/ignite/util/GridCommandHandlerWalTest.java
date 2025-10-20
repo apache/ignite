@@ -20,6 +20,8 @@ package org.apache.ignite.util;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
@@ -32,14 +34,20 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 /** */
 public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
     /** */
-    private boolean inMemory;
+    private int clusterState;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (inMemory)
+        if (clusterState == 1)
             cfg.setDataStorageConfiguration(null);
+        else if (clusterState == 2) {
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setCdcEnabled(true)
+                    .setPersistenceEnabled(false)));
+        }
         else {
             cfg.getDataStorageConfiguration().setWalMode(getTestIgniteInstanceName(0).equals(igniteInstanceName)
                 ? WALMode.BACKGROUND
@@ -57,14 +65,14 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
 
         injectTestSystemOut();
 
-        inMemory = false;
-
         super.beforeTest();
     }
 
     /** */
     @Test
     public void testWalStatePersistenceCluster() throws Exception {
+        clusterState = 0; // PDS cluster.
+
         IgniteEx srv = startGrids(2);
         IgniteEx cli = startClientGrid("client");
 
@@ -102,7 +110,7 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
     /** */
     @Test
     public void testWalStateInMemoryCluster() throws Exception {
-        inMemory = true;
+        clusterState = 1; // In-memory.
 
         IgniteEx srv = startGrids(2);
         IgniteEx cli = startClientGrid("client");
@@ -122,6 +130,45 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
         outputContains("cache1.*false.*false.*false");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--wal", "--disable", "--groups", CU.UTILITY_CACHE_NAME));
+    }
+
+    /** */
+    @Test
+    public void testWalStateInMemoryCdcCluster() throws Exception {
+        clusterState = 2; // In-memory CDC.
+
+        IgniteEx srv = startGrids(2);
+        IgniteEx cli = startClientGrid("client");
+
+        srv.cluster().state(ClusterState.ACTIVE);
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "state"));
+
+        String out = testOut.toString();
+
+        assertFalse(out.contains(cli.localNode().id().toString()));
+        assertFalse(out.contains(Objects.toString(cli.localNode().consistentId())));
+
+        outputContains("Node \\[consistentId=" + getTestIgniteInstanceName(0) + ".*" + WALMode.LOG_ONLY);
+        outputContains("Node \\[consistentId=" + getTestIgniteInstanceName(1) + ".*" + WALMode.LOG_ONLY);
+        outputContains(CU.UTILITY_CACHE_NAME + ".*false.*false.*false.*false");
+
+        srv.createCache("cache1");
+        srv.createCache("cache2");
+        srv.createCache("cache3");
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "disable", "--groups", "cache2"));
+        assertEquals(EXIT_CODE_OK, execute("--wal", "state"));
+
+        outputContains(".*cache2.*false.*false.*false.*true");
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "enable", "--groups", "cache2"));
+        assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "cache1,cache2"));
+
+        outputContains(".*cache1.*false.*false.*false.*true");
+        outputContains(".*cache2.*false.*false.*false.*true");
+
+        assertFalse(testOut.toString().contains("cache3"));
     }
 
     /** */
