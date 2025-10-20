@@ -33,7 +33,7 @@ import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class WalDisableTask extends VisorMultiNodeTask<WalDisableCommandArg, Void, Void> {
+public class WalSetStateTask extends VisorMultiNodeTask<WalDisableCommandArg, Void, Void> {
     /** */
     private static final long serialVersionUID = 0;
 

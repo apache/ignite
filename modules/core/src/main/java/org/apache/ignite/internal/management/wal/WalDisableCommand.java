@@ -22,8 +22,8 @@ import org.apache.ignite.internal.management.api.ComputeCommand;
 /** */
 public class WalDisableCommand implements ComputeCommand<WalDisableCommand.WalDisableCommandArg, Void> {
     /** {@inheritDoc} */
-    @Override public Class<WalDisableTask> taskClass() {
-        return WalDisableTask.class;
+    @Override public Class<WalSetStateTask> taskClass() {
+        return WalSetStateTask.class;
     }
 
     /** {@inheritDoc} */

@@ -31,7 +31,7 @@ public class WalStateCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(
-        description = "Comma-separated list of cache groups",
+        description = "Comma-separated list of cache groups. If not set action applied to all groups",
         optional = true
     )
     private String[] groups;
