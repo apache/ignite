@@ -226,7 +226,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         assertClusterSize(3);
 
         for (int i = 0; i < 3; i++) {
-            assertTrue(grid(i).context().rollingUpgrade().isRollingUpgradeEnabled());
+            assertTrue(grid(i).context().rollingUpgrade().enabled());
 
             IgnitePair<IgniteProductVersion> stored = grid(i).context().rollingUpgrade().versions();
 
@@ -252,7 +252,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         grid0.context().rollingUpgrade().enable(newPair.get2());
 
         for (int i = 0; i < 2; i++) {
-            assertTrue(waitForCondition(grid(i).context().rollingUpgrade()::isRollingUpgradeEnabled, getTestTimeout()));
+            assertTrue(waitForCondition(grid(i).context().rollingUpgrade()::enabled, getTestTimeout()));
 
             assertEquals(newPair, grid(i).context().rollingUpgrade().versions());
         }
