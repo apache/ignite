@@ -50,7 +50,7 @@ public class MultiDataCenterDeploymentTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
-        return super.optimize(cfg).setIncludeProperties((String)null);
+        return super.optimize(cfg).setIncludeProperties((String[])null);
     }
 
     /** {@inheritDoc} */
