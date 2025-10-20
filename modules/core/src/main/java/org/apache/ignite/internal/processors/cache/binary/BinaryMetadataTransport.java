@@ -849,7 +849,7 @@ final class BinaryMetadataTransport {
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to marshal binary metadata for [typeId=" + typeId + ']', e);
 
-                    resp.error(true);
+                    resp.markErrorOnRequest();
                 }
             }
 
@@ -885,7 +885,7 @@ final class BinaryMetadataTransport {
             if (fut == null)
                 return;
 
-            if (!msg0.metadataFound() && !msg0.error()) {
+            if (msg0.metadataNotFound()) {
                 fut.onDone(MetadataUpdateResult.createSuccessfulResult(-1));
 
                 return;

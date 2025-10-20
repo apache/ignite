@@ -24,21 +24,26 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Carries latest version of metadata to client as a response for {@link MetadataRequestMessage}.
  */
 public class MetadataResponseMessage implements Message {
-    /** */
+    /** Response status if any exception happened during preparing response. */
+    private static final byte ERROR = -1;
+
+    /** Response status if metadata was not found on server node replied with the response. */
+    private static final byte METADATA_NOT_FOUND = 0;
+
+    /** Response status if metadata was found on server node replied with the response. */
+    private static final byte METADATA_FOUND = 1;
+
+    /** Type ID. */
     @Order(0)
     private int typeId;
 
-    /** */
+    /** Binary metadata version info. */
     @Order(value = 1, method = "metadataVersionInfo")
     private BinaryMetadataVersionInfo metaVerInfo;
 
-    /** */
+    /** Client response status. */
     @Order(2)
-    private boolean metadataFound;
-
-    /** */
-    @Order(3)
-    private boolean error;
+    private byte status = ERROR;
 
     /** */
     public MetadataResponseMessage() {
@@ -46,7 +51,7 @@ public class MetadataResponseMessage implements Message {
     }
 
     /**
-     * @param typeId Type id.
+     * @param typeId Type ID.
      */
     MetadataResponseMessage(int typeId) {
         this.typeId = typeId;
@@ -68,9 +73,19 @@ public class MetadataResponseMessage implements Message {
      * @param metaVerInfo Binary metadata version info.
      */
     public void metadataVersionInfo(BinaryMetadataVersionInfo metaVerInfo) {
-        this.metaVerInfo = metaVerInfo;
+        if (metaVerInfo != null)
+            status = METADATA_FOUND;
+        else
+            status = METADATA_NOT_FOUND;
 
-        metadataFound = metaVerInfo != null;
+        this.metaVerInfo = metaVerInfo;
+    }
+
+    /**
+     * Marks message if any exception happened during preparing response.
+     */
+    void markErrorOnRequest() {
+        status = ERROR;
     }
 
     /**
@@ -88,31 +103,24 @@ public class MetadataResponseMessage implements Message {
     }
 
     /**
-     * @return {@code true} if metadata was found on server node replied with the response.
+     * @return {@code true} if metadata was not found on server node replied with the response.
      */
-    public boolean metadataFound() {
-        return metadataFound;
+    boolean metadataNotFound() {
+        return status == METADATA_NOT_FOUND;
     }
 
     /**
-     * @return {@code true} if any exception happened during preparing response.
+     * @return Client response status.
      */
-    public boolean error() {
-        return error;
+    public byte status() {
+        return status;
     }
 
     /**
-     * @param error {@code true} if any exception happened during preparing response.
+     * @param status Client response status.
      */
-    public void error(boolean error) {
-        this.error = error;
-    }
-
-    /**
-     * @param metadataFound {@code true} if metadata was found on server node replied with the response.
-     */
-    public void metadataFound(boolean metadataFound) {
-        this.metadataFound = metadataFound;
+    public void status(byte status) {
+        this.status = status;
     }
 
     /** {@inheritDoc} */
