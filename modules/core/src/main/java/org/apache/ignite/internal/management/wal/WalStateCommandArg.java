@@ -31,7 +31,7 @@ public class WalStateCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(
-        description = "Comma-separated list of cache groups to disable WAL for. If not set, WAL will be disabled globally.",
+        description = "Comma-separated list of cache groups to disable WAL for. If not set, WAL will be disabled globally",
         optional = true
     )
     private String[] groups;

@@ -40,10 +40,9 @@ public class WalStateCommand implements ComputeCommand<WalStateCommandArg, List<
     /** {@inheritDoc} */
     @Override public String description() {
         return "Print state of WAL:\n" +
-            "ConfigMode - WAL mode from config.\n" +
-            "Global     - WAL enabled for group cluster-wide. May be disabled by `--wal disable` command.\n" +
-            "Local      - WAL enabled for group on specific node. May be disabled during rebalance or other system processes.\n" +
-            "Index      - WAL enabled for groups indexes on specific node. May be disabled during index rebuilt.";
+            "    Global     - WAL enabled for group cluster-wide. May be disabled by `--wal disable` command.\n" +
+            "    Local      - WAL enabled for group on specific node. May be disabled during rebalance or other system processes.\n" +
+            "    Index      - WAL enabled for groups indexes on specific node. May be disabled during index rebuilt";
     }
 
     /** {@inheritDoc} */

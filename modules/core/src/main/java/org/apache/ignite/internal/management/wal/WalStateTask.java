@@ -28,6 +28,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -41,11 +43,14 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isCdcEn
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistenceEnabled;
 
 /**
- *
+ * Get state of WAL on each server node.
  */
 @GridInternal
 public class WalStateTask extends
     VisorMultiNodeTask<WalStateCommandArg, List<WalStateTask.NodeWalState>, WalStateTask.NodeWalState> {
+    /** */
+    private static final long serialVersionUID = 0;
+
     /** {@inheritDoc} */
     @Override protected VisorJob<WalStateCommandArg, NodeWalState> job(WalStateCommandArg arg) {
         return new WalStateJob(arg, false);
@@ -64,6 +69,9 @@ public class WalStateTask extends
 
     /** */
     private static class WalStateJob extends VisorJob<WalStateCommandArg, NodeWalState> {
+        /** */
+        private static final long serialVersionUID = 0;
+
         /** */
         protected WalStateJob(@Nullable WalStateCommandArg arg, boolean debug) {
             super(arg, debug);
@@ -101,17 +109,21 @@ public class WalStateTask extends
     /** */
     public static class NodeWalState implements Serializable {
         /** */
+        private static final long serialVersionUID = 0;
+
+        /** @see IgniteConfiguration#getNodeId() */
         final UUID id;
 
-        /** */
+        /** @see IgniteConfiguration#getConsistentId() */
         final Object consistentId;
 
-        /** */
+        /** @see DataStorageConfiguration#setWalMode(WALMode) */
         @Nullable final WALMode cfgVal;
 
         /** */
         final Map<String, GroupWalState> grpsState;
 
+        /** */
         public NodeWalState(UUID id, Object consistentId, @Nullable WALMode cfgVal, Map<String, GroupWalState> grpsState) {
             this.id = id;
             this.consistentId = consistentId;
@@ -120,8 +132,11 @@ public class WalStateTask extends
         }
     }
 
-    /** */
+    /** Global, Local, Index states of WAL for group. */
     public static class GroupWalState extends GridTuple3<Boolean, Boolean, Boolean> {
+        /** */
+        private static final long serialVersionUID = 0;
+
         /** */
         public GroupWalState() {
             // No-op.

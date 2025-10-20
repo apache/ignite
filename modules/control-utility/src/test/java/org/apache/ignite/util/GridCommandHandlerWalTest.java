@@ -38,7 +38,12 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
                 ? WALMode.BACKGROUND
                 : WALMode.LOG_ONLY);
 
-        return super.getConfiguration(igniteInstanceName).setDataStorageConfiguration(dsCfg);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        if (!getTestIgniteInstanceName(3).equals(igniteInstanceName))
+            cfg.setDataStorageConfiguration(dsCfg);
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -55,7 +60,7 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
     /** */
     @Test
     public void testWalStateInPersistenceCluster() throws Exception {
-        IgniteEx srv = startGrids(2);
+        IgniteEx srv = startGrids(3); // Third node without persistence.
         IgniteEx cli = startClientGrid("client");
 
         srv.cluster().state(ClusterState.ACTIVE);
