@@ -115,20 +115,20 @@ public class WalStateTask extends
         final UUID id;
 
         /** @see IgniteConfiguration#getConsistentId() */
-        final Object consistentId;
+        final Object consId;
 
         /** @see DataStorageConfiguration#setWalMode(WALMode) */
-        @Nullable final WALMode cfgVal;
+        @Nullable final WALMode mode;
 
         /** */
-        final Map<String, GroupWalState> grpsState;
+        final Map<String, GroupWalState> states;
 
         /** */
-        public NodeWalState(UUID id, Object consistentId, @Nullable WALMode cfgVal, Map<String, GroupWalState> grpsState) {
+        public NodeWalState(UUID id, Object consId, @Nullable WALMode mode, Map<String, GroupWalState> states) {
             this.id = id;
-            this.consistentId = consistentId;
-            this.cfgVal = cfgVal;
-            this.grpsState = grpsState;
+            this.consId = consId;
+            this.mode = mode;
+            this.states = states;
         }
     }
 

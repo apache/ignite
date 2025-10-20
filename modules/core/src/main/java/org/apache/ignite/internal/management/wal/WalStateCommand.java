@@ -61,17 +61,17 @@ public class WalStateCommand implements ComputeCommand<WalStateCommandArg, List<
     /** {@inheritDoc} */
     @Override public void printResult(WalStateCommandArg arg, List<NodeWalState> res, Consumer<String> printer) {
         for (NodeWalState r : res)
-            printer.accept("Node [consistentId=" + r.consistentId + ", id=" + r.id + "] config WAL mode: " + r.cfgVal);
+            printer.accept("Node [consistentId=" + r.consId + ", id=" + r.id + "] config WAL mode: " + r.mode);
 
         printer.accept("");
 
         SystemViewCommand.printTable(
             List.of("Node", "Group", "Global", "Local", "Index"),
             List.of(STRING, STRING, STRING, STRING, STRING),
-            res.stream().flatMap(r -> r.grpsState.entrySet().stream()
+            res.stream().flatMap(r -> r.states.entrySet().stream()
                 .map(e -> {
                     GroupWalState state = e.getValue();
-                    return List.of(r.consistentId, e.getKey(), state.globalWalEnabled(), state.localWalEnabled(), state.indexWalEnabled());
+                    return List.of(r.consId, e.getKey(), state.globalWalEnabled(), state.localWalEnabled(), state.indexWalEnabled());
                 })).collect(Collectors.toList()),
             printer
         );
