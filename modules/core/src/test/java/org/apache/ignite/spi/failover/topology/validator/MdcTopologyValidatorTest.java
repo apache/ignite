@@ -42,10 +42,10 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
     private static final String DC_ID_2 = "DC2";
 
     /** */
-    private static final String key = "key";
+    private static final String KEY = "key";
 
     /** */
-    private static final String val = "val";
+    private static final String VAL = "val";
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -63,20 +63,20 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache = createCache(topValidator);
 
-        cache.put(key, val);
-        assertEquals(val, cache.get(key));
+        cache.put(KEY, VAL);
+        assertEquals(VAL, cache.get(KEY));
 
         int randomNode = ThreadLocalRandom.current().nextInt(1, 3);
 
         stopGrid(randomNode);
 
-        cache.put(key, val + 1);
-        assertEquals(val + 1, cache.get(key));
+        cache.put(KEY, VAL + 1);
+        assertEquals(VAL + 1, cache.get(KEY));
 
         stopGrid(randomNode == 1 ? 2 : 1);
 
-        cache.put(key, val + 2);
-        assertEquals(val + 2, cache.get(key));
+        cache.put(KEY, VAL + 2);
+        assertEquals(VAL + 2, cache.get(KEY));
     }
 
     /** */
@@ -89,17 +89,17 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache = createCache(topValidator);
 
-        cache.put(key, val);
-        assertEquals(val, cache.get(key));
+        cache.put(KEY, VAL);
+        assertEquals(VAL, cache.get(KEY));
 
         stopGrid(2);
 
-        cache.put(key, val + 1);
-        assertEquals(val + 1, cache.get(key));
+        cache.put(KEY, VAL + 1);
+        assertEquals(VAL + 1, cache.get(KEY));
 
         stopGrid(1);
 
-        GridTestUtils.assertThrows(log, () -> cache.put(key, val + 2), IgniteException.class, "cache topology is not valid");
+        GridTestUtils.assertThrows(log, () -> cache.put(KEY, VAL + 2), IgniteException.class, "cache topology is not valid");
     }
 
     /** */
@@ -111,19 +111,19 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
 
         IgniteCache<Object, Object> cache = createCache(topValidator);
 
-        cache.put(key, val);
-        assertEquals(val, cache.get(key));
+        cache.put(KEY, VAL);
+        assertEquals(VAL, cache.get(KEY));
 
         int randomNode = ThreadLocalRandom.current().nextInt(1, 3);
 
         stopGrid(randomNode);
 
-        cache.put(key, val + 1);
-        assertEquals(val + 1, cache.get(key));
+        cache.put(KEY, VAL + 1);
+        assertEquals(VAL + 1, cache.get(KEY));
 
         stopGrid(randomNode == 1 ? 2 : 1);
 
-        GridTestUtils.assertThrows(log, () -> cache.put(key, val + 2), IgniteException.class, "cache topology is not valid");
+        GridTestUtils.assertThrows(log, () -> cache.put(KEY, VAL + 2), IgniteException.class, "cache topology is not valid");
     }
 
     /** */
