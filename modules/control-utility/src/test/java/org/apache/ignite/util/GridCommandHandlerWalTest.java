@@ -26,6 +26,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+
 /** */
 public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
     /** */
@@ -67,7 +70,7 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
 
         srv.cluster().state(ClusterState.ACTIVE);
 
-        assertEquals(0, execute("--wal", "state"));
+        assertEquals(EXIT_CODE_OK, execute("--wal", "state"));
 
         String out = testOut.toString();
 
@@ -82,13 +85,13 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
         srv.createCache("cache2");
         srv.createCache("cache3");
 
-        assertEquals(0, execute("--wal", "disable", "--groups", "cache2"));
-        assertEquals(0, execute("--wal", "state"));
+        assertEquals(EXIT_CODE_OK, execute("--wal", "disable", "--groups", "cache2"));
+        assertEquals(EXIT_CODE_OK, execute("--wal", "state"));
 
         outputContains(".*cache2.*false.*true.*true");
 
-        assertEquals(0, execute("--wal", "enable", "--groups", "cache2"));
-        assertEquals(0, execute("--wal", "state", "--groups", "cache1,cache2"));
+        assertEquals(EXIT_CODE_OK, execute("--wal", "enable", "--groups", "cache2"));
+        assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "cache1,cache2"));
 
         outputContains(".*cache1.*true.*true.*true");
         outputContains(".*cache2.*true.*true.*true");
@@ -106,7 +109,7 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
 
         srv.createCache("cache1");
 
-        assertEquals(0, execute("--wal", "state"));
+        assertEquals(EXIT_CODE_OK, execute("--wal", "state"));
 
         String out = testOut.toString();
 
@@ -118,7 +121,7 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
         outputContains(CU.UTILITY_CACHE_NAME + ".*false.*false.*false");
         outputContains("cache1.*false.*false.*false");
 
-        assertEquals(1, execute("--wal", "--disable", "--groups", CU.UTILITY_CACHE_NAME));
+        assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--wal", "--disable", "--groups", CU.UTILITY_CACHE_NAME));
     }
 
     /** */
