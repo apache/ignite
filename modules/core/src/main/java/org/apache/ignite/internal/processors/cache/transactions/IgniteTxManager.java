@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -3247,20 +3249,18 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     *
+     * Near version container. Is not for resending or serialization.
      */
-    private static class CommittedVersion extends GridCacheVersion {
+    private static final class CommittedVersion extends GridCacheVersion {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Corresponding near version. Transient. */
-        private GridCacheVersion nearVer;
+        /** Corresponding near version. */
+        private final GridCacheVersion nearVer;
 
-        /**
-         * Empty constructor required by {@link Externalizable}.
-         */
+        /** */
         public CommittedVersion() {
-            // No-op.
+            throw new UnsupportedOperationException("Near committed version container is not a message to send or serialize.");
         }
 
         /**
@@ -3273,6 +3273,21 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             assert nearVer != null;
 
             this.nearVer = nearVer;
+        }
+
+        /** {@inheritDoc} */
+        @Override public short directType() {
+            throw new UnsupportedOperationException("Near committed version container is not a message to send or serialize.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            throw new UnsupportedOperationException("Near committed version container is not a message to send or serialize.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException {
+            throw new UnsupportedOperationException("Near committed version container is not a message to send or serialize.");
         }
     }
 

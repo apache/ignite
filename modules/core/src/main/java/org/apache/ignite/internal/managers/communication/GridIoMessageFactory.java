@@ -73,6 +73,7 @@ import org.apache.ignite.internal.codegen.GridNearGetRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearLockRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearLockResponseSerializer;
 import org.apache.ignite.internal.codegen.GridNearSingleGetRequestSerializer;
+import org.apache.ignite.internal.codegen.GridNearSingleGetResponseSerializer;
 import org.apache.ignite.internal.codegen.GridNearTxFinishResponseSerializer;
 import org.apache.ignite.internal.codegen.GridNearTxPrepareRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearUnlockRequestSerializer;
@@ -101,6 +102,7 @@ import org.apache.ignite.internal.codegen.SnapshotFilesRequestMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpInverseConnectionResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.TransactionAttributesAwareRequestSerializer;
 import org.apache.ignite.internal.codegen.TransactionIsolationMessageSerializer;
+import org.apache.ignite.internal.codegen.TxLockListSerializer;
 import org.apache.ignite.internal.codegen.TxLockSerializer;
 import org.apache.ignite.internal.codegen.TxLocksRequestSerializer;
 import org.apache.ignite.internal.codegen.TxLocksResponseSerializer;
@@ -264,7 +266,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)-43, IgniteIoTestMessage::new);
         factory.register((short)-36, GridDhtAtomicSingleUpdateRequest::new);
         factory.register((short)-27, GridDhtTxOnePhaseCommitAckRequest::new, new GridDhtTxOnePhaseCommitAckRequestSerializer());
-        factory.register((short)-26, TxLockList::new);
+        factory.register((short)-26, TxLockList::new, new TxLockListSerializer());
         factory.register((short)-25, TxLock::new, new TxLockSerializer());
         factory.register((short)-24, TxLocksRequest::new, new TxLocksRequestSerializer());
         factory.register((short)-23, TxLocksResponse::new, new TxLocksResponseSerializer());
@@ -364,7 +366,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)114, GridDhtPartitionSupplyMessage::new, new GridDhtPartitionSupplyMessageSerializer());
         factory.register((short)115, UUIDCollectionMessage::new);
         factory.register((short)116, GridNearSingleGetRequest::new, new GridNearSingleGetRequestSerializer());
-        factory.register((short)117, GridNearSingleGetResponse::new);
+        factory.register((short)117, GridNearSingleGetResponse::new, new GridNearSingleGetResponseSerializer());
         factory.register((short)118, CacheContinuousQueryBatchAck::new, new CacheContinuousQueryBatchAckSerializer());
 
         // [120..123] - DR
