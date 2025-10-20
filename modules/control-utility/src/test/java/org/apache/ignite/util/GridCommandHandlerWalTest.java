@@ -82,14 +82,12 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
         srv.createCache("cache2");
         srv.createCache("cache3");
 
-        srv.cluster().disableWal("cache2");
-
+        assertEquals(0, execute("--wal", "disable", "--groups", "cache2"));
         assertEquals(0, execute("--wal", "state"));
 
         outputContains(".*cache2.*false.*true.*true");
 
-        srv.cluster().enableWal("cache2");
-
+        assertEquals(0, execute("--wal", "enable", "--groups", "cache2"));
         assertEquals(0, execute("--wal", "state", "--groups", "cache1,cache2"));
 
         outputContains(".*cache1.*true.*true.*true");
@@ -119,6 +117,8 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
         outputContains("Node \\[consistentId=" + getTestIgniteInstanceName(1) + ".*null");
         outputContains(CU.UTILITY_CACHE_NAME + ".*false.*false.*false");
         outputContains("cache1.*false.*false.*false");
+
+        assertEquals(1, execute("--wal", "--disable", "--groups", CU.UTILITY_CACHE_NAME));
     }
 
     /** */

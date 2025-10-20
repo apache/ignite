@@ -17,20 +17,24 @@
 
 package org.apache.ignite.internal.management.wal;
 
-import org.apache.ignite.internal.management.api.CommandRegistryImpl;
-import org.apache.ignite.lang.IgniteExperimental;
+import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.management.wal.WalDisableCommand.WalDisableCommandArg;
+import org.apache.ignite.internal.management.wal.WalDisableCommand.WalEnableCommandArg;
 
 /** */
-@IgniteExperimental
-public class WalCommand extends CommandRegistryImpl {
-    /** */
-    public WalCommand() {
-        super(
-            new WalPrintCommand(),
-            new WalDeleteCommand(),
-            new WalStateCommand(),
-            new WalDisableCommand(),
-            new WalEnableCommand()
-        );
+public class WalEnableCommand implements ComputeCommand<WalDisableCommandArg, Void> {
+    /** {@inheritDoc} */
+    @Override public Class<WalDisableTask> taskClass() {
+        return WalDisableTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String description() {
+        return "Enable WAL for specific cache groups";
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<WalEnableCommandArg> argClass() {
+        return WalEnableCommandArg.class;
     }
 }

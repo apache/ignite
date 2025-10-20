@@ -95,7 +95,19 @@ This utility can do the following commands:
     control.(sh|bat) --wal state [--groups group1[,group2,....,groupN]]
 
      Parameters:
-       --groups group1[,group2,....,groupN]  - Comma-separated list of cache groups to disable WAL for. If not set, WAL will be disabled globally.
+       --groups group1[,group2,....,groupN]  - Comma-separated list of cache groups.
+
+  Disable WAL for specific cache groups:
+    control.(sh|bat) --wal disable [--groups group1[,group2,....,groupN]]
+
+    Parameters:
+      --groups group1[,group2,....,groupN]  - Comma-separated list of cache groups.
+
+  Enable WAL for specific cache groups:
+    control.(sh|bat) --wal enable [--groups group1[,group2,....,groupN]]
+
+    Parameters:
+      --groups group1[,group2,....,groupN]  - Comma-separated list of cache groups.
 
   Print diagnostic command help:
     control.(sh|bat) --diagnostic
