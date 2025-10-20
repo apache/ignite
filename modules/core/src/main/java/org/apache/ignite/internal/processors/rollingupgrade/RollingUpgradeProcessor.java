@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMeta
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
@@ -154,7 +153,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
         if (cur.major() != target.major()) {
             String errMsg = "Major versions are different.";
 
-            LT.warn(log, errMsg);
+            log.warning(errMsg);
 
             throw new IgniteCheckedException(errMsg);
         }
@@ -165,7 +164,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
 
             String errMsg = "Minor version can only be incremented by 1.";
 
-            LT.warn(log, errMsg);
+            log.warning(errMsg);
 
             throw new IgniteCheckedException(errMsg);
         }
@@ -173,7 +172,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
         if (cur.maintenance() + 1 != target.maintenance()) {
             String errMsg = "Patch version can only be incremented by 1.";
 
-            LT.warn(log, errMsg);
+            log.warning(errMsg);
 
             throw new IgniteCheckedException(errMsg);
         }
