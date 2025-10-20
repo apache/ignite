@@ -21,6 +21,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.MessageProcessor;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -38,6 +40,7 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
 public class ErrorMessage implements Message {
     /** Serialization and deserealization methods call holder. Is not uses as a data holder. */
     @Order(value = 0, method = "errorBytes")
+    @GridToStringExclude
     private @Nullable byte[] errBytes;
 
     /** Original error. It is transient and necessary only to avoid duplicated serialization and deserializtion. */
@@ -110,6 +113,6 @@ public class ErrorMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return error().toString();
+        return S.toString(ErrorMessage.class, this);
     }
 }
