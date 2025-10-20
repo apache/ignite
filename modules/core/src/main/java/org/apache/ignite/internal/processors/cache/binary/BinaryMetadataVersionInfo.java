@@ -61,7 +61,7 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
     /** A flag indicating whether the metadata is currently being removed. */
     private final transient boolean removing;
 
-    /** */
+    /** Constructor. */
     public BinaryMetadataVersionInfo() {
         removing = false;
     }
