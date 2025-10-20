@@ -38,15 +38,16 @@ public class MdcTopologyValidator implements TopologyValidator {
 
     /** */
     private List<String> dcs;
+
     /** */
     private String primDc;
 
-    /** */
+    /** @param datacenters Datacenters.*/
     public void setDatacenters(List<String> datacenters) {
         dcs = datacenters;
     }
 
-    /** */
+    /** @param primaryDatacenter Primary datacenter.*/
     public void setPrimaryDatacenter(String primaryDatacenter) {
         primDc = primaryDatacenter;
     }

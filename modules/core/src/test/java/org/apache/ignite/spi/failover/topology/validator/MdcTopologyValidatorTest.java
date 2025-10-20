@@ -30,6 +30,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+/** */
 public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
     /** */
     private static final String DC_ID_0 = "DC0";
