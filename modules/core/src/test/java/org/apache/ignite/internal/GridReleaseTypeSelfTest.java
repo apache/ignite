@@ -108,7 +108,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testThreeConflictVersions() {
+    public void testThreeConflictVersions() throws Exception {
         testConflictVersionsWithRollingUpgrade("2.18.0", "2.18.1", "2.18.2", isClient, "2.18.1");
 
         testConflictVersionsWithRollingUpgrade("2.18.0", "2.18.1", "2.17.2", isClient, "2.18.1");
@@ -291,7 +291,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
     /** Checks that the third grid is not compatible when rolling upgrade version is set. */
     private void testConflictVersionsWithRollingUpgrade(String acceptedVer1, String acceptedVer2, String rejVer,
-        boolean isClient, String rollUpVer) {
+        boolean isClient, String rollUpVer) throws Exception {
         ThrowableSupplier<IgniteEx, Exception> sup = () -> {
             IgniteEx ign = startGrid(0, acceptedVer1, false);
 
@@ -307,6 +307,8 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         assertRemoteRejected(sup);
 
         stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** Checks that remote node rejected due to incompatible version. */

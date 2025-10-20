@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade;
 
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
-import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -42,9 +40,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
 
-    /** Distributed property that holds current and target version. */
-    private final AtomicReference<IgnitePair<IgniteProductVersion>> verPairHolder = new AtomicReference<>();
-
     /**
      * @param ctx Context.
      */
@@ -55,25 +50,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(new DistributedMetastorageLifecycleListener() {
-            @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
-                try {
-                    IgnitePair<IgniteProductVersion> pair = metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
-
-                    if (verPairHolder.compareAndSet(null, pair) && log.isInfoEnabled())
-                        log.info("Read current and target versions from metastore: " + pair);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-
-                metastorage.listen(ROLLING_UPGRADE_VERSIONS_KEY::equals, (key, oldVal, newVal) -> {
-                        if (verPairHolder.compareAndSet((IgnitePair<IgniteProductVersion>)oldVal, (IgnitePair<IgniteProductVersion>)newVal)
-                            && log.isInfoEnabled())
-                            log.info("Replaced (current, target) version pair [" + oldVal + "] with [" + newVal + ']');
-                    }
-                );
-            }
-
             @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
                 RollingUpgradeProcessor.this.metastorage = metastorage;
             }
@@ -90,14 +66,17 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
 
         String curBuildVer = ctx.discovery().localNode().attribute(ATTR_BUILD_VER);
-        IgniteProductVersion curtVer = IgniteProductVersion.fromString(curBuildVer);
+        IgniteProductVersion curVer = IgniteProductVersion.fromString(curBuildVer);
 
-        if (checkVersions(curtVer, target)) {
-            metastorage.write(ROLLING_UPGRADE_VERSIONS_KEY, F.pair(curtVer, target));
+        if (!checkVersions(curVer, target))
+            return;
 
-            if (log.isInfoEnabled())
-                log.info("Rolling upgrade enabled [current=" + curtVer + ", target=" + target + ']');
-        }
+        IgnitePair<IgniteProductVersion> newPair = F.pair(curVer, target);
+
+        if (!metastorage.compareAndSet(ROLLING_UPGRADE_VERSIONS_KEY, null, newPair))
+            throw new IgniteCheckedException("Rolling upgrade is already enabled with a different target version.");
+
+        log.info("Rolling upgrade enabled [current=" + curVer + ", target=" + target + ']');
     }
 
     /**
@@ -128,7 +107,12 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
      *     or {@code null} if rolling upgrade is not active.
      */
     public IgnitePair<IgniteProductVersion> versions() {
-        return verPairHolder.get();
+        try {
+            return metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** Сhecks whether the cluster is in the rolling upgrade mode. */
@@ -145,11 +129,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If versions are incorrect.
      */
     private boolean checkVersions(IgniteProductVersion cur, IgniteProductVersion target) throws IgniteCheckedException {
-        IgnitePair<IgniteProductVersion> pair = verPairHolder.get();
-
-        if (pair != null && pair.get2().equals(target))
-            return false;
-
         if (cur.major() != target.major()) {
             String errMsg = "Major versions are different.";
 
