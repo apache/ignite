@@ -71,7 +71,7 @@ public final class GridChangeGlobalStateMessageResponse extends GridCacheMessage
      * @return Activation error.
      */
     public @Nullable Throwable getError() {
-        return errMsg.toThrowable();
+        return ErrorMessage.error(errMsg);
     }
 
     /**
