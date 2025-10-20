@@ -59,12 +59,11 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
     private int acceptedVer;
 
     /** A flag indicating whether the metadata is currently being removed. */
-    @Order(3)
-    private transient boolean removing;
+    private final transient boolean removing;
 
     /** */
     public BinaryMetadataVersionInfo() {
-        // No-op.
+        removing = false;
     }
 
     /**
@@ -143,15 +142,8 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
     /**
      * @return {@code true} is the metadata is removing now.
      */
-    public boolean removing() {
+    boolean removing() {
         return removing;
-    }
-
-    /**
-     * @param removing {@code true} is the metadata is removing now.
-     */
-    public void removing(boolean removing) {
-        this.removing = removing;
     }
 
     /**
