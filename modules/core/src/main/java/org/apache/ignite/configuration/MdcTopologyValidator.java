@@ -26,7 +26,7 @@ import org.apache.ignite.lang.IgniteExperimental;
 /**
  * Multi-Datacenter topology validator.
  * Performs data protection in case of DC failure.
- * Covered DCs SHOULD be specified via {@link MdcTopologyValidator#setDatacenters)}
+ * Covered DCs SHOULD be specified via {@link MdcTopologyValidator#setDatacenters}
  * and primary DC MAY be specified via {@link MdcTopologyValidator#setPrimaryDatacenter}.
  * When primary datacenter is specified Topology Validator keeps cluster write accessed while primary DC is visible,
  * otherwise DC majority check is used.
