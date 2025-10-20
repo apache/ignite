@@ -66,12 +66,12 @@ public class WalStateCommand implements ComputeCommand<WalStateCommandArg, List<
         printer.accept("");
 
         SystemViewCommand.printTable(
-            List.of("Node", "Group", "Global", "Local", "Index", "CDC"),
-            List.of(STRING, STRING, STRING, STRING, STRING, STRING),
+            List.of("Node", "Group", "Persistence", "Global", "Local", "Index", "CDC"),
+            List.of(STRING, STRING, STRING, STRING, STRING, STRING, STRING),
             res.stream().flatMap(r -> r.states.entrySet().stream()
                 .map(e -> {
-                    GroupWalState state = e.getValue();
-                    return List.of(r.consId, e.getKey(), state.global(), state.local(), state.index(), state.cdc());
+                    GroupWalState s = e.getValue();
+                    return List.of(r.consId, e.getKey(), s.persistenceEnabled(), s.global(), s.local(), s.index(), s.cdc());
                 })).collect(Collectors.toList()),
             printer
         );

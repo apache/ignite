@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.lang.GridTuple4;
+import org.apache.ignite.internal.util.lang.GridTuple5;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -89,14 +89,13 @@ public class WalStateTask extends
                 if (grps != null && !grps.contains(grpName))
                     continue;
 
-                boolean pe = gctx.persistenceEnabled();
-
                 res.put(
                     grpName,
                     new GroupWalState(
-                        pe && gctx.globalWalEnabled(),
-                        pe && gctx.localWalEnabled(),
-                        pe && gctx.indexWalEnabled(),
+                        gctx.persistenceEnabled(),
+                        gctx.globalWalEnabled(),
+                        gctx.localWalEnabled(),
+                        gctx.indexWalEnabled(),
                         gctx.cdcEnabled()
                     )
                 );
@@ -142,7 +141,7 @@ public class WalStateTask extends
     }
 
     /** Global, Local, Index states of WAL for group. */
-    public static class GroupWalState extends GridTuple4<Boolean, Boolean, Boolean, Boolean> {
+    public static class GroupWalState extends GridTuple5<Boolean, Boolean, Boolean, Boolean, Boolean> {
         /** */
         private static final long serialVersionUID = 0;
 
@@ -152,28 +151,33 @@ public class WalStateTask extends
         }
 
         /** */
-        public GroupWalState(Boolean val1, Boolean val2, Boolean val3, Boolean val4) {
-            super(val1, val2, val3, val4);
+        public GroupWalState(boolean val1, boolean val2, boolean val3, boolean val4, boolean val5) {
+            super(val1, val2, val3, val4, val5);
         }
 
         /** */
-        boolean global() {
+        boolean persistenceEnabled() {
             return get1();
         }
 
         /** */
-        boolean local() {
+        boolean global() {
             return get2();
         }
 
         /** */
-        boolean index() {
+        boolean local() {
             return get3();
         }
 
         /** */
-        boolean cdc() {
+        boolean index() {
             return get4();
+        }
+
+        /** */
+        boolean cdc() {
+            return get5();
         }
     }
 }

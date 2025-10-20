@@ -87,7 +87,7 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
 
         outputContains("Node \\[consistentId=" + getTestIgniteInstanceName(0) + ".*" + WALMode.BACKGROUND);
         outputContains("Node \\[consistentId=" + getTestIgniteInstanceName(1) + ".*" + WALMode.LOG_ONLY);
-        outputContains(CU.UTILITY_CACHE_NAME + ".*true.*true.*true");
+        outputContains(CU.UTILITY_CACHE_NAME + ".*true.*true.*true.*true.*false");
 
         srv.createCache("cache1");
         srv.createCache("cache2");
@@ -96,13 +96,13 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
         assertEquals(EXIT_CODE_OK, execute("--wal", "disable", "--groups", "cache2"));
         assertEquals(EXIT_CODE_OK, execute("--wal", "state"));
 
-        outputContains(".*cache2.*false.*true.*true");
+        outputContains(".*cache2.*true.*false.*true.*true.*false");
 
         assertEquals(EXIT_CODE_OK, execute("--wal", "enable", "--groups", "cache2"));
         assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "cache1,cache2"));
 
-        outputContains(".*cache1.*true.*true.*true");
-        outputContains(".*cache2.*true.*true.*true");
+        outputContains(".*cache1.*true.*true.*true.*true.*false");
+        outputContains(".*cache2.*true.*true.*true.*true.*false");
 
         assertFalse(testOut.toString().contains("cache3"));
     }
@@ -126,8 +126,8 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
 
         outputContains("Node \\[consistentId=" + getTestIgniteInstanceName(0) + ".*null");
         outputContains("Node \\[consistentId=" + getTestIgniteInstanceName(1) + ".*null");
-        outputContains(CU.UTILITY_CACHE_NAME + ".*false.*false.*false");
-        outputContains("cache1.*false.*false.*false");
+        outputContains(CU.UTILITY_CACHE_NAME + ".*false.*false.*true.*true.*false");
+        outputContains("cache1.*false.*false.*true.*true.*false");
 
         assertEquals(EXIT_CODE_INVALID_ARGUMENTS, execute("--wal", "--disable", "--groups", CU.UTILITY_CACHE_NAME));
     }
@@ -151,7 +151,7 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
 
         outputContains("Node \\[consistentId=" + getTestIgniteInstanceName(0) + ".*" + WALMode.LOG_ONLY);
         outputContains("Node \\[consistentId=" + getTestIgniteInstanceName(1) + ".*" + WALMode.LOG_ONLY);
-        outputContains(CU.UTILITY_CACHE_NAME + ".*false.*false.*false.*false");
+        outputContains(CU.UTILITY_CACHE_NAME + ".*false.*true.*true.*true.*false");
 
         srv.createCache("cache1");
         srv.createCache("cache2");
@@ -160,13 +160,13 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
         assertEquals(EXIT_CODE_OK, execute("--wal", "disable", "--groups", "cache2"));
         assertEquals(EXIT_CODE_OK, execute("--wal", "state"));
 
-        outputContains(".*cache2.*false.*false.*false.*true");
+        outputContains(".*cache2.*false.*true.*true.*true.*true");
 
         assertEquals(EXIT_CODE_OK, execute("--wal", "enable", "--groups", "cache2"));
         assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "cache1,cache2"));
 
-        outputContains(".*cache1.*false.*false.*false.*true");
-        outputContains(".*cache2.*false.*false.*false.*true");
+        outputContains(".*cache1.*false.*true.*true.*true.*true");
+        outputContains(".*cache2.*false.*true.*true.*true.*true");
 
         assertFalse(testOut.toString().contains("cache3"));
     }
