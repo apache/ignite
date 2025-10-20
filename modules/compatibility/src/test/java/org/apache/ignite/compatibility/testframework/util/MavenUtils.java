@@ -165,7 +165,8 @@ public class MavenUtils {
             return F.transform(model.getRepositories(), RepositoryBase::getUrl);
         }
         finally {
-            Files.deleteIfExists(outPath);
+            if (!U.isWindows())
+                Files.deleteIfExists(outPath);
         }
     }
 
@@ -191,6 +192,39 @@ public class MavenUtils {
     }
 
     /**
+     * Adds escape characters to path elements that contain spaces.
+     *
+     * @param path Original path with unescaped elements.
+     * @return Path with escaped elements.
+     */
+    public static String escapeSpaceCharsInPath(String path) {
+        int startBSlashIdx = path.indexOf('\\');
+        int endBSlashIdx = path.indexOf('\\', startBSlashIdx + 1);
+
+        if (endBSlashIdx < 0)
+            return path;
+
+        StringBuilder res = new StringBuilder(path.substring(0, startBSlashIdx));
+
+        while (endBSlashIdx > 0) {
+            String substring = path.substring(startBSlashIdx + 1, endBSlashIdx);
+
+            if (substring.contains(" "))
+                res.append("\\\"").append(substring).append("\"");
+            else
+                res.append("\\").append(substring);
+
+            startBSlashIdx = endBSlashIdx;
+            endBSlashIdx = path.indexOf('\\', startBSlashIdx + 1);
+        }
+
+        res.append("\\")
+            .append(path.substring(startBSlashIdx + 1));
+
+        return res.toString();
+    }
+
+    /**
      * Executes given command in operation system.
      *
      * @param cmd Command to execute.
@@ -202,7 +236,7 @@ public class MavenUtils {
         pb.redirectErrorStream(true);
 
         pb.command(U.isWindows() ?
-            new String[] {"cmd", "/c", cmd} :
+            new String[] {"cmd", "/c", escapeSpaceCharsInPath(cmd)} :
             new String[] {"/bin/bash", "-c", cmd});
 
         final Process p = pb.start();
