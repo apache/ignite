@@ -242,7 +242,7 @@ public class CachePartitionDefragmentationManager {
         sharedCtx.wal().onDeActivate(sharedCtx.kernalContext());
 
         for (CacheGroupContext oldGrpCtx : sharedCtx.cache().cacheGroups()) {
-            if (!oldGrpCtx.userCache() || cacheGrpCtxsForDefragmentation.contains(oldGrpCtx))
+            if (!oldGrpCtx.cacheType().userCache() || cacheGrpCtxsForDefragmentation.contains(oldGrpCtx))
                 continue;
 
             if (!cachesForDefragmentation.isEmpty()) {
