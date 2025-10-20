@@ -60,8 +60,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
                 try {
                     IgnitePair<IgniteProductVersion> pair = metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
 
-                    if (verPairHolder.compareAndSet(null, pair) && log.isDebugEnabled())
-                        log.debug("Read current and target versions from metastore: " + pair);
+                    if (verPairHolder.compareAndSet(null, pair) && log.isInfoEnabled())
+                        log.info("Read current and target versions from metastore: " + pair);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
