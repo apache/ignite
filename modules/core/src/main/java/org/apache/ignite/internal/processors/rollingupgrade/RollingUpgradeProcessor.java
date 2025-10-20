@@ -67,8 +67,11 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
                     throw new IgniteException(e);
                 }
 
-                metastorage.listen(ROLLING_UPGRADE_VERSIONS_KEY::equals, (key, oldVal, newVal) ->
-                    verPairHolder.compareAndSet((IgnitePair<IgniteProductVersion>)oldVal, (IgnitePair<IgniteProductVersion>)newVal)
+                metastorage.listen(ROLLING_UPGRADE_VERSIONS_KEY::equals, (key, oldVal, newVal) -> {
+                        if (verPairHolder.compareAndSet((IgnitePair<IgniteProductVersion>)oldVal, (IgnitePair<IgniteProductVersion>)newVal)
+                            && log.isInfoEnabled())
+                            log.info("Replaced (current, target) version pair [" + oldVal + "] with [" + newVal + ']');
+                    }
                 );
             }
 
