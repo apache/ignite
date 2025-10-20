@@ -102,7 +102,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
     }
 
     /**
-     * @param errs Errs.
+     * @param errs Errors.
      */
     public void errors(UpdateErrors errs) {
         this.errs = errs;
