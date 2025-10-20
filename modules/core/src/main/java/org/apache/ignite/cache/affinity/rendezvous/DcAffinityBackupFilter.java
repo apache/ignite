@@ -20,6 +20,7 @@ package org.apache.ignite.cache.affinity.rendezvous;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
@@ -49,14 +50,28 @@ public class DcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, Li
 
     /** {@inheritDoc} */
     @Override public boolean apply(ClusterNode node, List<ClusterNode> list) {
-        //я хочу переиспользовать метки DC_ID, чтобы не наполнять мапу снова и снова
-        //но как инициализировать метки?
-        //окей, в самом начале мапа пустая - как мне понять, как распределить остаток?
-        //у меня есть количество бэкапов и DC, мне нужна функция, которая для первых вызовов вернет
-        //частное от деления плюс единичку, а когда единички кончатся, то вернет просто частное
-//        if ()
+        String candidateDcId = node.dataCenterId();
+        Integer candDcPartsCopies = partsDistrMap.get(candidateDcId);
+        boolean res = false;
 
-        return false;
+        if (candDcPartsCopies == null || candDcPartsCopies == -1)
+            partsDistrMap.put(candidateDcId, 1);
+        else {
+            int partCopiesPerDc = primaryAndBackups / dcsCount;
+
+            if (candDcPartsCopies < partCopiesPerDc) {
+                partsDistrMap.put(candidateDcId, candDcPartsCopies + 1);
+
+                res = true;
+            }
+        }
+
+        Optional<Integer> sum = partsDistrMap.values().stream().reduce(Integer::sum);
+
+        if (sum.isPresent() || sum.get() == primaryAndBackups)
+            partsDistrMap.replaceAll((e, v) -> -1);
+
+        return res;
     }
 
 //    private int nextBucketVolume(int primaryAndBackups, int dcsCount, int ) {
