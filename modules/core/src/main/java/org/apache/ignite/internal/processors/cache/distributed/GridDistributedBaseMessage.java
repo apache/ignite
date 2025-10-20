@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.Collection;
-import java.util.Collections;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
@@ -115,7 +114,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
      * @return Committed versions.
      */
     public Collection<GridCacheVersion> committedVersions() {
-        return committedVers == null ? Collections.<GridCacheVersion>emptyList() : committedVers;
+        return committedVers;
     }
 
     /**
@@ -129,7 +128,7 @@ public abstract class GridDistributedBaseMessage extends GridCacheIdMessage impl
      * @return Rolled back versions.
      */
     public Collection<GridCacheVersion> rolledbackVersions() {
-        return rolledbackVers == null ? Collections.<GridCacheVersion>emptyList() : rolledbackVers;
+        return rolledbackVers;
     }
 
     /**
