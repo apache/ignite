@@ -34,6 +34,9 @@ import org.apache.ignite.lang.IgniteExperimental;
 @IgniteExperimental
 public class MdcTopologyValidator implements TopologyValidator {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private List<String> dcs;
     /** */
     private String primDc;
