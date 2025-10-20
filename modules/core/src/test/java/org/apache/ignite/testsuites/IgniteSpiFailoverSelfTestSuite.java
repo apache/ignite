@@ -49,7 +49,7 @@ import org.junit.runners.Suite;
     GridJobStealingFailoverSpiStartStopSelfTest.class,
     GridJobStealingFailoverSpiConfigSelfTest.class,
 
-    //Topology validator
+    // Topology validator
     MdcTopologyValidatorTest.class,
 })
 public class IgniteSpiFailoverSelfTestSuite {
