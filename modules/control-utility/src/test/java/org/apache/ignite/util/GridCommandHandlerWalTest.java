@@ -20,8 +20,6 @@ package org.apache.ignite.util;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
@@ -30,18 +28,20 @@ import org.junit.Test;
 
 /** */
 public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
+    /** */
+    private boolean inMemory;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        DataStorageConfiguration dsCfg = new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
-            .setWalMode(getTestIgniteInstanceName(0).equals(igniteInstanceName)
-                ? WALMode.BACKGROUND
-                : WALMode.LOG_ONLY);
-
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (!getTestIgniteInstanceName(3).equals(igniteInstanceName))
-            cfg.setDataStorageConfiguration(dsCfg);
+        if (inMemory)
+            cfg.setDataStorageConfiguration(null);
+        else {
+            cfg.getDataStorageConfiguration().setWalMode(getTestIgniteInstanceName(0).equals(igniteInstanceName)
+                ? WALMode.BACKGROUND
+                : WALMode.LOG_ONLY);
+        }
 
         return cfg;
     }
@@ -54,13 +54,15 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
 
         injectTestSystemOut();
 
+        inMemory = false;
+
         super.beforeTest();
     }
 
     /** */
     @Test
-    public void testWalStateInPersistenceCluster() throws Exception {
-        IgniteEx srv = startGrids(3); // Third node without persistence.
+    public void testWalStatePersistenceCluster() throws Exception {
+        IgniteEx srv = startGrids(2);
         IgniteEx cli = startClientGrid("client");
 
         srv.cluster().state(ClusterState.ACTIVE);
@@ -94,6 +96,29 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
         outputContains(".*cache2.*true.*true.*true");
 
         assertFalse(testOut.toString().contains("cache3"));
+    }
+
+    /** */
+    @Test
+    public void testWalStateInMemoryCluster() throws Exception {
+        inMemory = true;
+
+        IgniteEx srv = startGrids(2);
+        IgniteEx cli = startClientGrid("client");
+
+        srv.createCache("cache1");
+
+        assertEquals(0, execute("--wal", "state"));
+
+        String out = testOut.toString();
+
+        assertFalse(out.contains(cli.localNode().id().toString()));
+        assertFalse(out.contains(Objects.toString(cli.localNode().consistentId())));
+
+        outputContains("Node \\[consistentId=" + getTestIgniteInstanceName(0) + ".*null");
+        outputContains("Node \\[consistentId=" + getTestIgniteInstanceName(1) + ".*null");
+        outputContains(CU.UTILITY_CACHE_NAME + ".*false.*false.*false");
+        outputContains("cache1.*false.*false.*false");
     }
 
     /** */
