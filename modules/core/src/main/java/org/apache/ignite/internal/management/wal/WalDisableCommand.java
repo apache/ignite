@@ -43,12 +43,4 @@ public class WalDisableCommand implements ComputeCommand<WalDisableCommand.WalDi
 
         // No-op.
     }
-
-    /** */
-    public static class WalEnableCommandArg extends WalDisableCommandArg {
-        /** */
-        private static final long serialVersionUID = 0;
-
-        // No-op.
-    }
 }

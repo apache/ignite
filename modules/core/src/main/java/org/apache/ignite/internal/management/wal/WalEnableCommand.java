@@ -19,7 +19,6 @@ package org.apache.ignite.internal.management.wal;
 
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.wal.WalDisableCommand.WalDisableCommandArg;
-import org.apache.ignite.internal.management.wal.WalDisableCommand.WalEnableCommandArg;
 
 /** */
 public class WalEnableCommand implements ComputeCommand<WalDisableCommandArg, Void> {
@@ -36,5 +35,13 @@ public class WalEnableCommand implements ComputeCommand<WalDisableCommandArg, Vo
     /** {@inheritDoc} */
     @Override public Class<WalEnableCommandArg> argClass() {
         return WalEnableCommandArg.class;
+    }
+
+    /** */
+    public static class WalEnableCommandArg extends WalDisableCommandArg {
+        /** */
+        private static final long serialVersionUID = 0;
+
+        // No-op.
     }
 }

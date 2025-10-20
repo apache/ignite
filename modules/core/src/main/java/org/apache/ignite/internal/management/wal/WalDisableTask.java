@@ -24,7 +24,7 @@ import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.wal.WalDisableCommand.WalDisableCommandArg;
-import org.apache.ignite.internal.management.wal.WalDisableCommand.WalEnableCommandArg;
+import org.apache.ignite.internal.management.wal.WalEnableCommand.WalEnableCommandArg;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.F;
