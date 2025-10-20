@@ -96,6 +96,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.TTL_ETERNAL;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.REBALANCE_TOPIC;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.PAGE_SNAPSHOT_TAKEN;
@@ -406,7 +407,7 @@ public class GridDhtPartitionDemander {
                     metrics.clearRebalanceCounters();
 
                     for (GridDhtPartitionDemandMessage msg : assignments.values()) {
-                        for (Integer partId : msg.partitions().fullSet())
+                        for (Integer partId : msg.partitions().full())
                             metrics.onRebalancingKeysCountEstimateReceived(grp.topology().globalPartSizes().get(partId));
 
                         CachePartitionPartialCountersMap histMap = msg.partitions().historicalMap();
@@ -472,7 +473,7 @@ public class GridDhtPartitionDemander {
         if (fut.isActual(supplyMsg.rebalanceId())) {
             boolean historical = false;
 
-            for (Integer p : supplyMsg.infos().keySet()) {
+            for (Integer p : supplyMsg.getInfosSafe().keySet()) {
                 fut.queued.get(p).increment();
 
                 if (fut.historical.contains(p))
@@ -546,7 +547,7 @@ public class GridDhtPartitionDemander {
             if (msgExc != null) {
                 GridDhtPartitionMap partMap = top.localPartitionMap();
 
-                Set<Integer> unstableParts = supplyMsg.infos().keySet().stream()
+                Set<Integer> unstableParts = supplyMsg.getInfosSafe().keySet().stream()
                     .filter(p -> partMap.get(p) == MOVING)
                     .collect(Collectors.toSet());
 
@@ -563,12 +564,6 @@ public class GridDhtPartitionDemander {
 
             for (GridCacheContext cctx : grp.caches()) {
                 if (cctx.statisticsEnabled()) {
-                    long keysCnt = grp.sharedGroup() ? supplyMsg.keysForCache(cctx.cacheId()) :
-                        supplyMsg.estimatedKeysCount();
-
-                    if (keysCnt != -1)
-                        cctx.cache().metrics0().onRebalancingKeysCountEstimateReceived(keysCnt);
-
                     // Can not be calculated per cache.
                     cctx.cache().metrics0().onRebalanceBatchReceived(supplyMsg.messageSize());
                 }
@@ -578,7 +573,7 @@ public class GridDhtPartitionDemander {
                 AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
                 // Preload.
-                for (Map.Entry<Integer, CacheEntryInfoCollection> e : supplyMsg.infos().entrySet()) {
+                for (Map.Entry<Integer, CacheEntryInfoCollection> e : supplyMsg.getInfosSafe().entrySet()) {
                     int p = e.getKey();
 
                     if (aff.get(p).contains(ctx.localNode())) {
@@ -604,7 +599,7 @@ public class GridDhtPartitionDemander {
 
                         assert part != null;
 
-                        boolean last = supplyMsg.last().containsKey(p);
+                        boolean last = supplyMsg.last() != null && supplyMsg.last().containsKey(p);
 
                         if (part.state() == MOVING) {
                             boolean reserved = part.reserve();
@@ -670,13 +665,15 @@ public class GridDhtPartitionDemander {
                     }
                 }
 
+                Collection<Integer> missed = supplyMsg.missed() == null ? Collections.emptyList() : supplyMsg.missed();
+
                 // Only request partitions based on latest topology version.
-                for (Integer miss : supplyMsg.missed()) {
+                for (Integer miss : missed) {
                     if (aff.get(miss).contains(ctx.localNode()))
                         fut.partitionMissed(nodeId, miss);
                 }
 
-                for (Integer miss : supplyMsg.missed())
+                for (Integer miss : missed)
                     fut.partitionDone(nodeId, miss, false);
 
                 GridDhtPartitionDemandMessage d = new GridDhtPartitionDemandMessage(
@@ -689,7 +686,7 @@ public class GridDhtPartitionDemander {
                 if (!fut.isDone()) {
                     // Send demand message.
                     try {
-                        ctx.io().sendOrderedMessage(node, d.topic(), d, grp.ioPolicy(), grp.preloader().timeout());
+                        ctx.io().sendOrderedMessage(node, REBALANCE_TOPIC, d, grp.ioPolicy(), grp.preloader().timeout());
 
                         if (log.isDebugEnabled())
                             log.debug("Send next demand message [" + demandRoutineInfo(nodeId, supplyMsg) + "]");
@@ -1066,13 +1063,13 @@ public class GridDhtPartitionDemander {
                 HashSet<Integer> parts = new HashSet<>(v.partitions().size());
 
                 parts.addAll(v.partitions().historicalSet());
-                parts.addAll(v.partitions().fullSet());
+                parts.addAll(v.partitions().full());
 
                 rebalancingParts.put(k.id(), parts);
 
                 historical.addAll(v.partitions().historicalSet());
 
-                Stream.concat(v.partitions().historicalSet().stream(), v.partitions().fullSet().stream())
+                Stream.concat(v.partitions().historicalSet().stream(), v.partitions().full().stream())
                     .forEach(
                         p -> {
                             queued.put(p, new LongAdder());
@@ -1185,11 +1182,11 @@ public class GridDhtPartitionDemander {
                     // Make sure partitions scheduled for full rebalancing are cleared first.
                     // Clearing attempt is also required for in-memory caches because some partitions can be switched
                     // from RENTING to MOVING state in the middle of clearing.
-                    final int fullSetSize = d.partitions().fullSet().size();
+                    final int fullSetSize = d.partitions().full().size();
 
                     AtomicInteger waitCnt = new AtomicInteger(fullSetSize);
 
-                    for (Integer partId : d.partitions().fullSet()) {
+                    for (Integer partId : d.partitions().full()) {
                         GridDhtLocalPartition part = grp.topology().localPartition(partId);
 
                         // Due to rebalance cancellation it's possible for a group to be already partially rebalanced,
@@ -1217,7 +1214,7 @@ public class GridDhtPartitionDemander {
                     }
 
                     // The special case for historical only rebalancing.
-                    if (d.partitions().fullSet().isEmpty() && !d.partitions().historicalSet().isEmpty())
+                    if (d.partitions().full().isEmpty() && !d.partitions().historicalSet().isEmpty())
                         ctx.kernalContext().closure().runLocalSafe((GridPlainRunnable)() -> requestPartitions0(node, parts, d));
                 }
             }
@@ -1241,11 +1238,11 @@ public class GridDhtPartitionDemander {
                     log.info("Starting rebalance routine [" + grp.cacheOrGroupName() +
                         ", topVer=" + topVer +
                         ", supplier=" + supplierNode.id() +
-                        ", fullPartitions=" + S.toStringSortedDistinct(parts.fullSet()) +
+                        ", fullPartitions=" + S.toStringSortedDistinct(parts.full()) +
                         ", histPartitions=" + S.toStringSortedDistinct(parts.historicalSet()) +
                         ", rebalanceId=" + rebalanceId + ']');
 
-                ctx.io().sendOrderedMessage(supplierNode, msg.topic(), msg, grp.ioPolicy(), msg.timeout());
+                ctx.io().sendOrderedMessage(supplierNode, REBALANCE_TOPIC, msg, grp.ioPolicy(), msg.timeout());
 
                 // Cleanup required in case partitions demanded in parallel with cancellation.
                 synchronized (this) {
@@ -1680,7 +1677,7 @@ public class GridDhtPartitionDemander {
                 p0.addAll(partitions);
 
             for (GridDhtPartitionDemandMessage msg : newAssignments.values()) {
-                p1.addAll(msg.partitions().fullSet());
+                p1.addAll(msg.partitions().full());
                 p1.addAll(msg.partitions().historicalSet());
             }
 

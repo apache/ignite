@@ -607,7 +607,7 @@ public class JmxExporterSpiTest extends AbstractExporterSpiTest {
     /** */
     @Test
     public void testHistogramSearchByName() throws Exception {
-        MetricRegistryImpl mreg = new MetricRegistryImpl("test", name -> null, name -> null, null);
+        MetricRegistryImpl mreg = new MetricRegistryImpl("test", name -> null, name -> null, name -> null, null);
 
         createTestHistogram(mreg);
 

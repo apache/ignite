@@ -624,6 +624,8 @@ public class QueryUtils {
             desc.affinityFieldInlineSize(-1);
         }
 
+        desc.onInitialized();
+
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }
 
@@ -952,11 +954,13 @@ public class QueryUtils {
     public static GridQueryProperty buildProperty(Class<?> keyCls, Class<?> valCls, String keyFieldName,
         String valueFieldName, String pathStr, Class<?> resType, Map<String, String> aliases, boolean notNull,
         CacheObjectContext coCtx) throws IgniteCheckedException {
+        String alias = aliases.get(pathStr);
+
         if (pathStr.equals(keyFieldName))
-            return new KeyOrValProperty(true, pathStr, keyCls);
+            return new KeyOrValProperty(true, alias == null ? pathStr : alias, keyCls);
 
         if (pathStr.equals(valueFieldName))
-            return new KeyOrValProperty(false, pathStr, valCls);
+            return new KeyOrValProperty(false, alias == null ? pathStr : alias, valCls);
 
         return buildClassProperty(keyCls,
                 valCls,

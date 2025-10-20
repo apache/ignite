@@ -85,6 +85,7 @@ import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -1134,7 +1135,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                         assertEquals("Exchange order violated: " + fut.firstEvent(), 1, order.getAndIncrement());
                     }
 
-                    @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+                    @Override public void onDoneBeforeTopologyUnlock(
+                        GridDhtPartitionsExchangeFuture fut,
+                        @Nullable Throwable err
+                    ) {
                         assertEquals("Exchange order violated: " + fut.firstEvent(), 2, order.getAndIncrement());
                     }
 

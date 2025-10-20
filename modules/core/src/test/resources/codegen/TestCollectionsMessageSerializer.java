@@ -18,13 +18,12 @@
 package org.apache.ignite.internal.codegen;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.TestCollectionsMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.internal.TestCollectionsMessage;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  * This class is generated automatically.
@@ -183,7 +182,6 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                     return false;
 
                 writer.incrementState();
-
         }
 
         return true;
@@ -379,7 +377,6 @@ public class TestCollectionsMessageSerializer implements MessageSerializer {
                     return false;
 
                 reader.incrementState();
-
         }
 
         return true;

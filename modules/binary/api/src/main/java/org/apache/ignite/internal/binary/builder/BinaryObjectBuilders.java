@@ -21,18 +21,33 @@ import java.util.Iterator;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Utility class to provide static methods to create {@link BinaryObjectBuilder}.
  */
 public class BinaryObjectBuilders {
+    /** Streams factory implementation. */
+    private static final BinaryObjectBuildersFactory factory;
+
+    static {
+        Iterator<BinaryObjectBuildersFactory> factories = CommonUtils.loadService(BinaryObjectBuildersFactory.class).iterator();
+
+        A.ensure(
+            factories.hasNext(),
+            "Implementation for BinaryObjectBuildersFactory service not found. Please add ignite-binary-impl to classpath"
+        );
+
+        factory = factories.next();
+    }
+
     /**
      * @param obj Object to convert to builder.
      * @return Builder instance.
      */
     public static BinaryObjectBuilder builder(BinaryObject obj) {
-        return BinaryObjectBuilderImpl.wrap(obj);
+        return factory.builder(obj);
     }
 
     /**
@@ -41,37 +56,6 @@ public class BinaryObjectBuilders {
      * @return Builder instance.
      */
     public static BinaryObjectBuilder builder(BinaryContext binaryCtx, String clsName) {
-        return new BinaryObjectBuilderImpl(binaryCtx, clsName);
-    }
-
-    /**
-     * @param obj Value to unwrap.
-     * @return Unwrapped value.
-     */
-    static Object unwrapLazy(@Nullable Object obj) {
-        if (obj instanceof BinaryLazyValue)
-            return ((BinaryLazyValue)obj).value();
-
-        return obj;
-    }
-
-    /**
-     * @param delegate Iterator to delegate.
-     * @return New iterator.
-     */
-    static Iterator<Object> unwrapLazyIterator(final Iterator<Object> delegate) {
-        return new Iterator<Object>() {
-            @Override public boolean hasNext() {
-                return delegate.hasNext();
-            }
-
-            @Override public Object next() {
-                return unwrapLazy(delegate.next());
-            }
-
-            @Override public void remove() {
-                delegate.remove();
-            }
-        };
+        return factory.builder(binaryCtx, clsName);
     }
 }

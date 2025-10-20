@@ -255,11 +255,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         this.idealAffDiff = idealAffDiff;
     }
 
-    /** {@inheritDoc} */
-    @Override public int handlerId() {
-        return 0;
-    }
-
     /**
      * @return Local partitions.
      */
