@@ -36,6 +36,11 @@ public class WalDisableCommand implements ComputeCommand<WalDisableCommand.WalDi
         return WalDisableCommandArg.class;
     }
 
+    /** {@inheritDoc} */
+    @Override public String confirmationPrompt(WalDisableCommandArg arg) {
+        return "Are you sure? Any node failure without WAL can lead to the loss of all PDS data. CDC events will be lost without WAL.";
+    }
+
     /** */
     public static class WalDisableCommandArg extends WalStateCommandArg {
         /** */
