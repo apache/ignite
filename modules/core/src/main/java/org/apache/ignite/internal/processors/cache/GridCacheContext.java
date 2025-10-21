@@ -260,6 +260,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Updates allowed flag. */
     private boolean updatesAllowed;
 
+    // TODO: IGNITE-26571, is always false.
     /** Deployment enabled flag for this specific cache */
     private boolean depEnabled;
 
@@ -2291,7 +2292,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** */
     public void dumpListener(DumpEntryChangeListener dumpEntryChangeLsnr) {
         assert this.dumpLsnr == null || dumpEntryChangeLsnr == null;
-        assert cacheType == CacheType.USER;
+        assert cacheType == CacheType.USER || cacheType == CacheType.DATA_STRUCTURES;
 
         this.dumpLsnr = dumpEntryChangeLsnr;
     }
