@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +26,7 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -48,17 +50,17 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  */
 public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingleUpdateRequest {
     /** Optional arguments for entry processor. */
-    @GridDirectTransient
     private Object[] invokeArgs;
 
     /** Entry processor arguments bytes. */
-    private byte[][] invokeArgsBytes;
+    @Order(value = 11, method = "invokeArgumentsBytes")
+    private @Nullable Collection<byte[]> invokeArgsBytes;
 
     /** Entry processors. */
-    @GridDirectTransient
     private EntryProcessor<Object, Object, Object> entryProcessor;
 
     /** Entry processors bytes. */
+    @Order(value = 12, method = "invokeArgumentsBytes")
     private byte[] entryProcessorBytes;
 
     /**
