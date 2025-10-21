@@ -173,7 +173,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
-import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.thread.IgniteStripedExecutor;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -1335,8 +1335,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             poolActiveThreads = Math.min(poolSize, exec.getActiveCount());
             poolQSize = exec.getQueue().size();
         }
-        else if (execSvc instanceof StripedExecutor) {
-            StripedExecutor exec = (StripedExecutor)execSvc;
+        else if (execSvc instanceof IgniteStripedExecutor) {
+            IgniteStripedExecutor exec = (IgniteStripedExecutor)execSvc;
 
             poolSize = exec.stripesCount();
             poolActiveThreads = exec.activeStripesCount();
