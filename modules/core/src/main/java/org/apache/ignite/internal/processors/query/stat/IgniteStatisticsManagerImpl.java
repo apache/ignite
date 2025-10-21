@@ -41,9 +41,9 @@ import org.apache.ignite.internal.processors.query.schema.management.SchemaManag
 import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 import static org.apache.ignite.internal.processors.query.stat.StatisticsUsageState.NO_UPDATE;
 import static org.apache.ignite.internal.processors.query.stat.StatisticsUsageState.OFF;
