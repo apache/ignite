@@ -20,6 +20,9 @@ package org.apache.ignite.internal.thread.pool;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -28,11 +31,14 @@ import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.pool.MetricsAwareExecutorService;
 import org.apache.ignite.internal.thread.IgniteThreadFactory;
+import org.apache.ignite.internal.thread.context.concurrent.ContextAwareExecutorService;
 import org.apache.ignite.internal.util.GridMutableLong;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Integer.MAX_VALUE;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.ACTIVE_COUNT_DESC;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.COMPLETED_TASK_DESC;
@@ -55,7 +61,7 @@ import static org.apache.ignite.internal.processors.pool.PoolProcessor.THRD_FACT
 /**
  * An {@link ExecutorService} that executes submitted tasks using pooled grid threads.
  */
-public class IgniteThreadPoolExecutor extends ThreadPoolExecutor implements MetricsAwareExecutorService {
+public class IgniteThreadPoolExecutor extends ContextAwareExecutorService<ThreadPoolExecutor> implements MetricsAwareExecutorService {
     /** Thread local task start time. */
     @GridToStringExclude
     private final ThreadLocal<GridMutableLong> taskStartTime = ThreadLocal.withInitial(() -> new GridMutableLong(0));
@@ -85,15 +91,18 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor implements Metr
         int corePoolSize,
         int maxPoolSize,
         long keepAliveTime,
-        BlockingQueue<Runnable> workQ) {
-        this(threadNamePrefix,
+        BlockingQueue<Runnable> workQ
+    ) {
+        this(
+            threadNamePrefix,
             igniteInstanceName,
             corePoolSize,
             maxPoolSize,
             keepAliveTime,
             workQ,
             GridIoPolicy.UNDEFINED,
-            null);
+            null
+        );
     }
 
     /**
@@ -121,7 +130,8 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor implements Metr
         long keepAliveTime,
         BlockingQueue<Runnable> workQ,
         byte plc,
-        UncaughtExceptionHandler eHnd) {
+        UncaughtExceptionHandler eHnd
+    ) {
         this(
             corePoolSize,
             maxPoolSize,
@@ -150,7 +160,8 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor implements Metr
         int maxPoolSize,
         long keepAliveTime,
         BlockingQueue<Runnable> workQ,
-        ThreadFactory threadFactory) {
+        ThreadFactory threadFactory
+    ) {
         this(
             corePoolSize,
             maxPoolSize,
@@ -182,36 +193,111 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor implements Metr
         long keepAliveTime,
         BlockingQueue<Runnable> workQ,
         ThreadFactory threadFactory,
-        @Nullable HistogramMetricImpl execTime) {
-        super(
+        @Nullable HistogramMetricImpl execTime
+    ) {
+        delegate = new ThreadPoolExecutor(
             corePoolSize,
             maxPoolSize,
             keepAliveTime,
             TimeUnit.MILLISECONDS,
             workQ,
             threadFactory,
-            new AbortPolicy()
-        );
+            new ThreadPoolExecutor.AbortPolicy()
+        ) {
+            @Override protected void beforeExecute(Thread t, Runnable r) {
+                IgniteThreadPoolExecutor.this.beforeExecute(t, r);
+            }
+
+            @Override protected void afterExecute(Runnable r, Throwable t) {
+                IgniteThreadPoolExecutor.this.afterExecute(r, t);
+            }
+        };
 
         this.execTime = execTime != null
             ? execTime
             : new HistogramMetricImpl(TASK_EXEC_TIME, TASK_EXEC_TIME_DESC, TASK_EXEC_TIME_HISTOGRAM_BUCKETS);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeExecute(Thread t, Runnable r) {
-        super.beforeExecute(t, r);
+    /** */
+    public boolean isTerminating() {
+        return delegate.isTerminating();
+    }
 
+    /** */
+    public ThreadFactory getThreadFactory() {
+        return delegate.getThreadFactory();
+    }
+
+    /** */
+    public RejectedExecutionHandler getRejectedExecutionHandler() {
+        return delegate.getRejectedExecutionHandler();
+    }
+
+    /** */
+    public int getCorePoolSize() {
+        return delegate.getCorePoolSize();
+    }
+
+    /** */
+    public int getMaximumPoolSize() {
+        return delegate.getMaximumPoolSize();
+    }
+
+    /** */
+    public long getKeepAliveTime(TimeUnit unit) {
+        return delegate.getKeepAliveTime(unit);
+    }
+
+    /** */
+    public BlockingQueue<Runnable> getQueue() {
+        return delegate.getQueue();
+    }
+
+    /** */
+    public int getPoolSize() {
+        return delegate.getPoolSize();
+    }
+
+    /** */
+    public int getActiveCount() {
+        return delegate.getActiveCount();
+    }
+
+    /** */
+    public int getLargestPoolSize() {
+        return delegate.getLargestPoolSize();
+    }
+
+    /** */
+    public long getTaskCount() {
+        return delegate.getTaskCount();
+    }
+
+    /** */
+    public long getCompletedTaskCount() {
+        return delegate.getCompletedTaskCount();
+    }
+
+    /** */
+    public void allowCoreThreadTimeOut(boolean value) {
+        delegate.allowCoreThreadTimeOut(value);
+    }
+
+    /** */
+    public int prestartAllCoreThreads() {
+        return delegate.prestartAllCoreThreads();
+    }
+
+    /** */
+    protected void beforeExecute(Thread t, Runnable r) {
         taskStartTime.get().set(U.currentTimeMillis());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterExecute(Runnable r, Throwable t) {
+    /** */
+    protected void afterExecute(Runnable r, Throwable t) {
         GridMutableLong val = taskStartTime.get();
 
         execTime.value(U.currentTimeMillis() - val.get());
-
-        super.afterExecute(r, t);
     }
 
     /** {@inheritDoc} */
@@ -245,5 +331,40 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor implements Metr
      */
     protected void executionTimeMetric(HistogramMetricImpl execTime) {
         this.execTime = execTime;
+    }
+
+    /**
+     * @param threadNamePrefix Pool thread name prefix.
+     * @param igniteInstanceName Ignite instance name.
+     * @return Thread pool instance.
+     */
+    public static IgniteThreadPoolExecutor newSingleThreadExecutor(String threadNamePrefix, String igniteInstanceName) {
+        return new IgniteThreadPoolExecutor(threadNamePrefix, igniteInstanceName, 1, 1, 0, new LinkedBlockingQueue<>());
+    }
+
+    /**
+     * @param threadNamePrefix Pool thread name prefix.
+     * @param igniteInstanceName Ignite instance name.
+     * @param poolSize Pool size.
+     * @return Thread pool instance.
+     */
+    public static IgniteThreadPoolExecutor newFixedThreadPool(String threadNamePrefix, String igniteInstanceName, int poolSize) {
+        return new IgniteThreadPoolExecutor(threadNamePrefix, igniteInstanceName, poolSize, poolSize, 0, new LinkedBlockingQueue<>());
+    }
+
+    /**
+     * @param threadNamePrefix Pool thread name prefix.
+     * @param igniteInstanceName Ignite instance name.
+     * @return Thread pool instance.
+     */
+    public static IgniteThreadPoolExecutor newCachedThreadPool(String threadNamePrefix, String igniteInstanceName) {
+        return new IgniteThreadPoolExecutor(
+            threadNamePrefix,
+            igniteInstanceName,
+            0,
+            MAX_VALUE,
+            MINUTES.toMillis(60),
+            new SynchronousQueue<>()
+        );
     }
 }
