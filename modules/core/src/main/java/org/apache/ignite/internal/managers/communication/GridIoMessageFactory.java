@@ -69,6 +69,7 @@ import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridJobSiblingsRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearAtomicCheckUpdateRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearAtomicSingleUpdateFilterRequestSerializer;
+import org.apache.ignite.internal.codegen.GridNearAtomicSingleUpdateInvokeRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearAtomicSingleUpdateRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearAtomicUpdateResponseSerializer;
 import org.apache.ignite.internal.codegen.GridNearGetRequestSerializer;
@@ -377,7 +378,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
 
         // [120..123] - DR
         factory.register((short)125, GridNearAtomicSingleUpdateRequest::new, new GridNearAtomicSingleUpdateRequestSerializer());
-        factory.register((short)126, GridNearAtomicSingleUpdateInvokeRequest::new);
+        factory.register((short)126, GridNearAtomicSingleUpdateInvokeRequest::new, new GridNearAtomicSingleUpdateInvokeRequestSerializer());
         factory.register((short)127, GridNearAtomicSingleUpdateFilterRequest::new, new GridNearAtomicSingleUpdateFilterRequestSerializer());
         factory.register((short)128, CacheGroupAffinityMessage::new, new CacheGroupAffinityMessageSerializer());
         factory.register((short)129, WalStateAckMessage::new, new WalStateAckMessageSerializer());
