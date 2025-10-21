@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.CacheWriteSynchronizationModeMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
@@ -29,8 +29,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAwa
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,46 +57,50 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     protected static final int STORE_ENABLED_FLAG_MASK = 0x20;
 
     /** Topology version. */
+    @Order(value = 7, method = "topologyVersion")
     private AffinityTopologyVersion topVer;
 
     /** Future ID. */
+    @Order(value = 8, method = "futureId")
     private IgniteUuid futId;
 
     /** Thread ID. */
+    @Order(9)
     private long threadId;
 
     /** Commit version. */
+    @Order(value = 10, method = "commitVersion")
     private GridCacheVersion commitVer;
 
     /** Invalidate flag. */
+    @Order(value = 11, method = "isInvalidate")
     private boolean invalidate;
 
     /** Commit flag. */
+    @Order(12)
     private boolean commit;
 
     /** Min version used as base for completed versions. */
+    @Order(value = 13, method = "baseVersion")
     private GridCacheVersion baseVer;
 
-    /** Expected txSize. */
-    private int txSize;
-
-    /** System transaction flag. */
-    private boolean sys;
-
     /** IO policy. */
+    @Order(value = 14, method = "policy")
     private byte plc;
 
     /** Task name hash. */
+    @Order(15)
     private int taskNameHash;
 
     /** */
+    @Order(16)
     private byte flags;
 
-    /** Write synchronization mode. */
-    private CacheWriteSynchronizationMode syncMode;
+    /** Write synchronization mode wrapper message. */
+    @Order(value = 17, method = "writeSynchronizationModeMessage")
+    private CacheWriteSynchronizationModeMessage syncModeMsg;
 
     /** Transient TX state. */
-    @GridDirectTransient
     private IgniteTxState txState;
 
     /**
@@ -115,13 +117,11 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
      * @param commitVer Commit version.
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
-     * @param sys System transaction flag.
      * @param plc IO policy.
      * @param syncMode Write synchronization mode.
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
-     * @param txSize Expected transaction size.
      * @param addDepInfo Deployment info flag.
      */
     public GridDistributedTxFinishRequest(
@@ -132,14 +132,12 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         long threadId,
         boolean commit,
         boolean invalidate,
-        boolean sys,
         byte plc,
         CacheWriteSynchronizationMode syncMode,
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
         int taskNameHash,
-        int txSize,
         boolean addDepInfo
     ) {
         super(xidVer, 0, addDepInfo);
@@ -153,12 +151,10 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         this.threadId = threadId;
         this.commit = commit;
         this.invalidate = invalidate;
-        this.sys = sys;
         this.plc = plc;
-        this.syncMode = syncMode;
+        syncModeMsg = new CacheWriteSynchronizationModeMessage(syncMode);
         this.baseVer = baseVer;
         this.taskNameHash = taskNameHash;
-        this.txSize = txSize;
 
         completedVersions(committedVers, rolledbackVers);
     }
@@ -166,8 +162,22 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     /**
      * @return Transaction write synchronization mode (can be null is message sent from old nodes).
      */
-    public final CacheWriteSynchronizationMode syncMode() {
-        return syncMode;
+    @Nullable public final CacheWriteSynchronizationMode syncMode() {
+        return syncModeMsg != null ? syncModeMsg.value() : null;
+    }
+
+    /**
+     * @return Transaction write synchronization mode wrapper message.
+     */
+    public CacheWriteSynchronizationModeMessage writeSynchronizationModeMessage() {
+        return syncModeMsg;
+    }
+
+    /**
+     * @param syncModeMsg Transaction write synchronization mode wrapper message.
+     */
+    public void writeSynchronizationModeMessage(CacheWriteSynchronizationModeMessage syncModeMsg) {
+        this.syncModeMsg = syncModeMsg;
     }
 
     /**
@@ -198,6 +208,13 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
+     * @param taskNameHash Task name hash.
+     */
+    public void taskNameHash(int taskNameHash) {
+        this.taskNameHash = taskNameHash;
+    }
+
+    /**
      * @return Topology version.
      */
     @Override public final AffinityTopologyVersion topologyVersion() {
@@ -205,10 +222,10 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
-     * @return System transaction flag.
+     * @param topVer Topology version.
      */
-    public boolean system() {
-        return sys;
+    public void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
     }
 
     /**
@@ -219,10 +236,24 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
+     * @param plc IO policy.
+     */
+    public void policy(byte plc) {
+        this.plc = plc;
+    }
+
+    /**
      * @return Future ID.
      */
     public IgniteUuid futureId() {
         return futId;
+    }
+
+    /**
+     * @param futId Future ID.
+     */
+    public void futureId(IgniteUuid futId) {
+        this.futId = futId;
     }
 
     /**
@@ -233,6 +264,13 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
+     * @param threadId Thread ID.
+     */
+    public void threadId(long threadId) {
+        this.threadId = threadId;
+    }
+
+    /**
      * @return Commit version.
      */
     public GridCacheVersion commitVersion() {
@@ -240,10 +278,24 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
+     * @param commitVer Commit version.
+     */
+    public void commitVersion(GridCacheVersion commitVer) {
+        this.commitVer = commitVer;
+    }
+
+    /**
      * @return Commit flag.
      */
     public boolean commit() {
         return commit;
+    }
+
+    /**
+     * @param commit Commit flag.
+     */
+    public void commit(boolean commit) {
+        this.commit = commit;
     }
 
     /**
@@ -255,6 +307,13 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
+     * @param invalidate Invalidate flag.
+     */
+    public void isInvalidate(boolean invalidate) {
+        this.invalidate = invalidate;
+    }
+
+    /**
      * @return Base version.
      */
     public GridCacheVersion baseVersion() {
@@ -262,10 +321,24 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
-     * @return Expected tx size.
+     * @param baseVer Base version.
      */
-    public int txSize() {
-        return txSize;
+    public void baseVersion(GridCacheVersion baseVer) {
+        this.baseVer = baseVer;
+    }
+
+    /**
+     * @return Flags.
+     */
+    public byte flags() {
+        return flags;
+    }
+
+    /**
+     * @param flags Flags.
+     */
+    public void flags(byte flags) {
+        this.flags = flags;
     }
 
     /**
@@ -273,9 +346,9 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
      * @return {@code True} if reply is required.
      */
     public boolean replyRequired() {
-        assert syncMode != null;
+        assert syncModeMsg != null && syncModeMsg.value() != null;
 
-        return syncMode == FULL_SYNC;
+        return syncModeMsg.value() == FULL_SYNC;
     }
 
     /** {@inheritDoc} */
@@ -291,225 +364,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.txFinishMessageLogger();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 7:
-                if (!writer.writeMessage(baseVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeBoolean(commit))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeMessage(commitVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeByte(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeIgniteUuid(futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeBoolean(invalidate))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeByte(plc))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeByte(syncMode != null ? (byte)syncMode.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 15:
-                if (!writer.writeBoolean(sys))
-                    return false;
-
-                writer.incrementState();
-
-            case 16:
-                if (!writer.writeInt(taskNameHash))
-                    return false;
-
-                writer.incrementState();
-
-            case 17:
-                if (!writer.writeLong(threadId))
-                    return false;
-
-                writer.incrementState();
-
-            case 18:
-                if (!writer.writeAffinityTopologyVersion(topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 19:
-                if (!writer.writeInt(txSize))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 7:
-                baseVer = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                commit = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                commitVer = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                flags = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                futId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                invalidate = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                plc = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                byte syncModeOrd;
-
-                syncModeOrd = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                syncMode = CacheWriteSynchronizationMode.fromOrdinal(syncModeOrd);
-
-                reader.incrementState();
-
-            case 15:
-                sys = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 16:
-                taskNameHash = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 17:
-                threadId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 18:
-                topVer = reader.readAffinityTopologyVersion();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 19:
-                txSize = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
