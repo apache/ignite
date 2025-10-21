@@ -90,7 +90,7 @@ public class CommunicationMessageDelayTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public static class DelayingTcpCommunicationSpi extends TcpCommunicationSpi {
+    private static class DelayingTcpCommunicationSpi extends TcpCommunicationSpi {
         /** */
         private Class<?> delayMsg;
 
@@ -110,13 +110,13 @@ public class CommunicationMessageDelayTest extends GridCommonAbstractTest {
         }
 
         /** */
-        public void delay(Class<?> delayMsg, long delayTime) {
+        private void delay(Class<?> delayMsg, long delayTime) {
             this.delayMsg = delayMsg;
             this.delayTime = delayTime;
         }
 
         /** */
-        public static void delay(Ignite ignite, Class<?> delayMsg, long delayTime) {
+        private static void delay(Ignite ignite, Class<?> delayMsg, long delayTime) {
             ((DelayingTcpCommunicationSpi)ignite.configuration().getCommunicationSpi()).delay(delayMsg, delayTime);
         }
     }
