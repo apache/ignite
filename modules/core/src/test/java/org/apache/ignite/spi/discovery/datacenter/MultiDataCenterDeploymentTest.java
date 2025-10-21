@@ -50,7 +50,7 @@ public class MultiDataCenterDeploymentTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
-        // super.optimize() method sets includeProperties to a non-null value which later leades to
+        // super.optimize() method sets includeProperties to a non-null value which later leads to
         // IgniteSystemProperties not being added to node attributes.
         // This test relies on the presence of IgniteSystemProperties in node attributes so we need set includeProperties to null.
         return super.optimize(cfg).setIncludeProperties((String[])null);
