@@ -40,22 +40,28 @@ public class DcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, Li
 
     /**
      * @param dcsCount
-     * @param primaryAndBackups
+     * @param backups
      */
-    public DcAffinityBackupFilter(int dcsCount, int primaryAndBackups) {
+    public DcAffinityBackupFilter(int dcsCount, int backups) {
         this.dcsCount = dcsCount;
         partsDistrMap = new LinkedHashMap<>(4);
-        this.primaryAndBackups = primaryAndBackups;
+        primaryAndBackups = backups + 1;
     }
 
     /** {@inheritDoc} */
     @Override public boolean apply(ClusterNode node, List<ClusterNode> list) {
+        if (list.size() == 1)
+            partsDistrMap.put(list.get(0).dataCenterId(), 1); //account for primary node which is assigned beforehand
+
         String candidateDcId = node.dataCenterId();
         Integer candDcPartsCopies = partsDistrMap.get(candidateDcId);
         boolean res = false;
 
-        if (candDcPartsCopies == null || candDcPartsCopies == -1)
+        if (candDcPartsCopies == null || candDcPartsCopies == -1) {
             partsDistrMap.put(candidateDcId, 1);
+
+            res = true;
+        }
         else {
             int partCopiesPerDc = primaryAndBackups / dcsCount;
 
@@ -68,11 +74,9 @@ public class DcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, Li
 
         Optional<Integer> sum = partsDistrMap.values().stream().reduce(Integer::sum);
 
-        if (sum.isPresent() || sum.get() == primaryAndBackups)
+        if (sum.isPresent() && sum.get() == primaryAndBackups)
             partsDistrMap.replaceAll((e, v) -> -1);
 
         return res;
     }
-
-//    private int nextBucketVolume(int primaryAndBackups, int dcsCount, int ) {
 }
