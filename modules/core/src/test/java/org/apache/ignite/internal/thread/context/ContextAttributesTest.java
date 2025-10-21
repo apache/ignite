@@ -26,9 +26,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.thread.pool.ContextAwareStripedExecutor;
-import org.apache.ignite.internal.thread.pool.ContextAwareStripedThreadPoolExecutor;
-import org.apache.ignite.internal.thread.pool.ContextAwareThreadPoolExecutor;
+import org.apache.ignite.internal.thread.pool.IgniteForkJoinPool;
+import org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor;
+import org.apache.ignite.internal.thread.pool.IgniteStripedExecutor;
+import org.apache.ignite.internal.thread.pool.IgniteStripedThreadPoolExecutor;
+import org.apache.ignite.internal.thread.pool.IgniteThreadPoolExecutor;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -457,7 +459,7 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testContextAwareThreadPool() throws Exception {
-        ContextAwareThreadPoolExecutor pool = deferShutdown(new ContextAwareThreadPoolExecutor(
+        IgniteThreadPoolExecutor pool = deferShutdown(new IgniteThreadPoolExecutor(
             "test",
             null,
             1,
@@ -473,7 +475,7 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testContextAwareStripedThreadPoolExecutor() throws Exception {
-        ContextAwareStripedThreadPoolExecutor pool = deferShutdown(new ContextAwareStripedThreadPoolExecutor(
+        IgniteStripedThreadPoolExecutor pool = deferShutdown(new IgniteStripedThreadPoolExecutor(
             2,
             getTestIgniteInstanceName(0),
             "",
@@ -492,7 +494,7 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testContextAwareStripedExecutor() throws Exception {
-        ContextAwareStripedExecutor pool = deferShutdown(new ContextAwareStripedExecutor(
+        IgniteStripedExecutor pool = deferShutdown(new IgniteStripedExecutor(
             2,
             getTestIgniteInstanceName(0),
             "",
@@ -511,6 +513,41 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
         createAttributeChecks(checks);
 
         AttributeValueChecker.assertAllCreatedChecksPassed();
+    }
+
+    /** */
+    @Test
+    public void testThreadContextAwareScheduledThreadPoolExecutor() throws Exception {
+        IgniteScheduledThreadPoolExecutor pool = deferShutdown(new IgniteScheduledThreadPoolExecutor("test", "test", 1));
+
+        doContextAwareExecutorServiceTest(pool);
+
+        CountDownLatch poolUnblockedLatch = blockPool(pool);
+
+        BiConsumerX<String, Integer> checks = (s, i) -> {
+            pool.schedule((Callable<Integer>)new AttributeValueChecker(s, i), 100, MILLISECONDS);
+            pool.schedule((Runnable)new AttributeValueChecker(s, i), 100, MILLISECONDS);
+            pool.scheduleAtFixedRate(new AttributeValueChecker(s, i), 100, 100, MILLISECONDS);
+            pool.scheduleWithFixedDelay(new AttributeValueChecker(s, i), 100, 100, MILLISECONDS);
+        };
+
+        createAttributeChecks(checks);
+
+        poolUnblockedLatch.countDown();
+
+        AttributeValueChecker.assertAllCreatedChecksPassed();
+    }
+
+    /** */
+    @Test
+    public void testThreadContextAwareForkJoinCommonPool() throws Exception {
+        doContextAwareExecutorServiceTest(IgniteForkJoinPool.commonPool());
+    }
+
+    /** */
+    @Test
+    public void testThreadContextAwareForkJoinPool() throws Exception {
+        doContextAwareExecutorServiceTest(deferShutdown(new IgniteForkJoinPool()));
     }
 
     /** */

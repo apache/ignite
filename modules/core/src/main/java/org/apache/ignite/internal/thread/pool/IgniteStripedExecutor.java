@@ -59,6 +59,7 @@ import static org.apache.ignite.internal.processors.pool.PoolProcessor.IS_TERMIN
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME_DESC;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME_HISTOGRAM_BUCKETS;
+import static org.apache.ignite.internal.thread.context.function.ContextAwareRunnable.wrapIfContextNotEmpty;
 
 /**
  * Striped executor.
@@ -830,7 +831,7 @@ public class IgniteStripedExecutor implements ExecutorService, MetricsAwareExecu
 
         /** {@inheritDoc} */
         @Override void execute(Runnable cmd) {
-            queue.add(cmd);
+            queue.add(wrapIfContextNotEmpty(cmd));
 
             if (parked)
                 LockSupport.unpark(thread);

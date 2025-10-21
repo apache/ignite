@@ -194,6 +194,39 @@
 
         <!-- Usage of Ignite abbrevations check. -->
         <module name="org.apache.ignite.tools.checkstyle.IgniteAbbrevationsRule"/>
+
+        <module name="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule">
+            <property name="className" value="java.util.concurrent.ForkJoinPool"/>
+            <property name="factoryMethods" value="commonPool"/>
+            <property name="substitutionClassName" value="org.apache.ignite.internal.thread.pool.IgniteForkJoinPool"/>
+        </module>
+
+        <module name="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule">
+            <property name="className" value="java.util.concurrent.Executors"/>
+            <property name="factoryMethods" value="newFixedThreadPool, newWorkStealingPool, newSingleThreadExecutor, newCachedThreadPool, unconfigurableExecutorService"/>
+            <property name="substitutionClassName" value="org.apache.ignite.internal.thread.IgniteThreadPoolExecutor"/>
+        </module>
+
+        <module name="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule">
+            <property name="className" value="java.util.concurrent.Executors"/>
+            <property name="factoryMethods" value="newSingleThreadScheduledExecutor, newScheduledThreadPool, , unconfigurableScheduledExecutorService"/>
+            <property name="substitutionClassName" value="org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor"/>
+        </module>
+
+        <module name="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule">
+            <property name="className" value="java.util.concurrent.ThreadPoolExecutor"/>
+            <property name="substitutionClassName" value="org.apache.ignite.internal.thread.IgniteThreadPoolExecutor"/>
+        </module>
+
+        <module name="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule">
+            <property name="className" value="java.util.concurrent.ScheduledThreadPoolExecutor"/>
+            <property name="substitutionClassName" value="org.apache.ignite.internal.thread.pool.IgniteScheduledThreadPoolExecutor"/>
+        </module>
+
+        <module name="SuppressionXpathSingleFilter">
+            <property name="checks" value="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule"/>
+            <property name="files" value="DumpReader\.java|CacheLoadOnlyStoreAdapter\.java|[\\/]io[\\/]opencensus[\\/]|[\\/]jdbc[\\/]thin[\\/]|[\\/]test[\\/]|[\\/]tests[\\/]|[\\/]internal[\\/]client[\\/]|[\\/]org[\\/]apache[\\/]ignite[\\/]internal[\\/]thread[\\/]"/>
+        </module>
     </module>
 
     <!--
