@@ -107,6 +107,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
      *     or {@code null} if rolling upgrade is not active.
      */
     public IgnitePair<IgniteProductVersion> versions() {
+        A.notNull(metastorage, "Metastorage not ready. Node not started?");
+
         try {
             return metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
         }
