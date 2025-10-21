@@ -37,8 +37,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * See {@link ScanQuery} for details.</li>
  * <li><b>Continuous query.</b> Provides flexible way to process all existed cache data and all future cache updates as well.
  * See {@link ContinuousQuery} for details.</li>
- * <li><b>Spi query.</b> Allow run queries for pluggable user query engine implementation.
- * See {@link SpiQuery} for details.</li>
  * </ul>
  *
  * @see IgniteCache#query(Query)
