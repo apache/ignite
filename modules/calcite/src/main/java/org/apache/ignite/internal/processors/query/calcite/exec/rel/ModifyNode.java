@@ -218,7 +218,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         GridCacheProxyImpl<Object, Object> cache
     ) throws IgniteCheckedException {
         Map<Object, EntryProcessor<Object, Object, Long>> map = invokeMap(tuples);
-        Map<Object, EntryProcessorResult<Long>> res = cache.invokeAll(map);
+        Map<Object, EntryProcessorResult<Long>> res = cache.withSkipReadThrough().invokeAll(map);
 
         long updated = res.values().stream().mapToLong(EntryProcessorResult::get).sum();
 

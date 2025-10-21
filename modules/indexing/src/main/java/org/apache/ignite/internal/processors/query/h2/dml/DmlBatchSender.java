@@ -237,7 +237,7 @@ public class DmlBatchSender {
         Map<Object, EntryProcessorResult<Boolean>> res;
 
         try {
-            res = cctx.cache().invokeAll(batch.rowProcessors());
+            res = cctx.cache().withSkipReadThrough().invokeAll(batch.rowProcessors());
         }
         catch (IgniteCheckedException e) {
             for (Integer rowNum : batch.rowNumbers().values()) {

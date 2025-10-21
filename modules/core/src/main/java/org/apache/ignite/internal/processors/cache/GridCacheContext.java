@@ -1376,6 +1376,16 @@ public class GridCacheContext<K, V> implements Externalizable {
         return (opCtx != null && opCtx.skipStore());
     }
 
+    /** @return {@code true} if the skip read-through cache store flag is set. */
+    public boolean skipReadThrough() {
+        if (nearContext())
+            return dht().near().context().skipReadThrough();
+
+        CacheOperationContext opCtx = opCtxPerCall.get();
+
+        return (opCtx != null && opCtx.skipReadThrough());
+    }
+
     /**
      * @return {@code True} if need check near cache context.
      */
@@ -1429,7 +1439,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if store read-through mode is enabled.
      */
     public boolean readThrough() {
-        return config().isReadThrough() && !skipStore();
+        return config().isReadThrough() && !skipStore() && !skipReadThrough();
     }
 
     /**

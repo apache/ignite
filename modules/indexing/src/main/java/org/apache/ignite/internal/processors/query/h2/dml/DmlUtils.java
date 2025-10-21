@@ -205,7 +205,7 @@ public class DmlUtils {
                     .create(SQL_CACHE_UPDATE, MTC.span())
                     .addTag(SQL_CACHE_UPDATES, () -> "1"))
             ) {
-                if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
+                if (cctx.cache().withSkipReadThrough().putIfAbsent(t.getKey(), t.getValue()))
                     return 1;
                 else
                     throw new IgniteSQLException(errMsg + '[' + t.getKey() + "]]", DUPLICATE_KEY);
@@ -315,7 +315,7 @@ public class DmlUtils {
                     .create(SQL_CACHE_UPDATE, MTC.span())
                     .addTag(SQL_CACHE_UPDATES, () -> "1"))
             ) {
-                cctx.cache().put(t.getKey(), t.getValue());
+                cctx.cache().withSkipReadThrough().put(t.getKey(), t.getValue());
             }
 
             return 1;
@@ -338,7 +338,7 @@ public class DmlUtils {
                             .create(SQL_CACHE_UPDATE, MTC.span())
                             .addTag(SQL_CACHE_UPDATES, () -> Integer.toString(rows.size())))
                     ) {
-                        cctx.cache().putAll(rows);
+                        cctx.cache().withSkipReadThrough().putAll(rows);
 
                         resCnt += rows.size();
 
@@ -554,7 +554,7 @@ public class DmlUtils {
 
         if (opCtx == null)
             // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-            newOpCtx = new CacheOperationContext(false, true, null, false, null, false, null, null);
+            newOpCtx = new CacheOperationContext(false, false, true, null, false, null, false, null, null);
         else if (!opCtx.isKeepBinary())
             newOpCtx = opCtx.keepBinary();
 
