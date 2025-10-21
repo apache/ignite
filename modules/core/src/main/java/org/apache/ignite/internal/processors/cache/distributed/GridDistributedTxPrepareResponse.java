@@ -37,7 +37,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     @Order(value = 7, method = "errorMessage")
     private @Nullable ErrorMessage errMsg;
 
-    /** Transient TX state. */
+    /** TX state. */
     private IgniteTxState txState;
 
     /** Partition ID this message is targeted to. */
