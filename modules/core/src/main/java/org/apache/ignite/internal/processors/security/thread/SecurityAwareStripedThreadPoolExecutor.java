@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.security.thread;
 
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
+import org.apache.ignite.internal.thread.IgniteStripedThreadPoolExecutor;
 
 /**
  * Extends {@link IgniteStripedThreadPoolExecutor} with the ability to execute tasks in security context that was actual

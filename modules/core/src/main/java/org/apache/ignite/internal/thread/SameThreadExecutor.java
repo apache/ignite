@@ -15,9 +15,23 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains threads-related utility classes.
- */
+package org.apache.ignite.internal.thread;
 
-package org.apache.ignite.thread;
+import java.util.concurrent.Executor;
+import org.jetbrains.annotations.NotNull;
+
+/**
+ *
+ */
+public class SameThreadExecutor implements Executor {
+    /** */
+    public static final Executor INSTANCE = new SameThreadExecutor();
+
+    /** */
+    private SameThreadExecutor() {}
+
+    /** {@inheritDoc} */
+    @Override public void execute(@NotNull Runnable command) {
+        command.run();
+    }
+}

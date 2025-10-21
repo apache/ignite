@@ -73,6 +73,8 @@ import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.processors.platform.services.PlatformServiceConfiguration;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.thread.IgniteThreadFactory;
+import org.apache.ignite.internal.thread.OomExceptionHandler;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -97,8 +99,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.systemview.view.ServiceView;
-import org.apache.ignite.thread.IgniteThreadFactory;
-import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

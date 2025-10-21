@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread;
+package org.apache.ignite.internal.thread;
 
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
