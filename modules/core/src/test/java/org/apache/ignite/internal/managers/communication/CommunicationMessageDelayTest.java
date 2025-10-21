@@ -32,10 +32,14 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /** */
 public class CommunicationMessageDelayTest extends GridCommonAbstractTest {
@@ -49,12 +53,25 @@ public class CommunicationMessageDelayTest extends GridCommonAbstractTest {
     public void testTxConsistencyAfterTimeout1PC() throws Exception {
         IgniteEx srv = startGrid(0);
         IgniteEx client = startClientGrid(1);
+
+        checkTx(client, srv, PESSIMISTIC, REPEATABLE_READ);
+        checkTx(client, srv, OPTIMISTIC, REPEATABLE_READ);
+        checkTx(client, srv, OPTIMISTIC, SERIALIZABLE);
+    }
+
+    /** */
+    private void checkTx(
+        IgniteEx client,
+        IgniteEx srv,
+        TransactionConcurrency txConcurrency,
+        TransactionIsolation txIsolation
+    ) {
         long txTimout = 1_000L;
 
         IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL));
 
-        Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, txTimout, 0);
+        Transaction tx = client.transactions().txStart(txConcurrency, txIsolation, txTimout, 0);
 
         cache.put(0, 0);
 
@@ -68,6 +85,8 @@ public class CommunicationMessageDelayTest extends GridCommonAbstractTest {
         catch (Exception e) {
             assertFalse(cache.containsKey(0));
         }
+
+        cache.remove(0);
     }
 
     /** */
