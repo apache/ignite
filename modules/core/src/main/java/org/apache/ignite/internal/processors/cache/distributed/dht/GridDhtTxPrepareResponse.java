@@ -32,16 +32,16 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * DHT transaction prepare response.
  */
-@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /** Evicted readers. */
     @GridToStringInclude
     @Order(9)
-    private Collection<IgniteTxKey> nearEvicted;
+    private @Nullable Collection<IgniteTxKey> nearEvicted;
 
     /** Future ID.  */
     @Order(value = 10, method = "futureId")
@@ -53,11 +53,11 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
 
     /** Invalid partitions by cache ID. */
     @Order(value = 12, method = "invalidPartitions")
-    private Map<Integer, int[]> invalidParts;
+    private @Nullable Map<Integer, int[]> invalidParts;
 
     /** Preload entries found on backup node. */
     @Order(13)
-    private List<GridCacheEntryInfo> preloadEntries;
+    private @Nullable List<GridCacheEntryInfo> preloadEntries;
 
     /**
      * Empty constructor.
@@ -115,14 +115,14 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /**
      * @return Evicted readers.
      */
-    public Collection<IgniteTxKey> nearEvicted() {
+    public @Nullable Collection<IgniteTxKey> nearEvicted() {
         return nearEvicted;
     }
 
     /**
      * @param nearEvicted New evicted readers.
      */
-    public void nearEvicted(Collection<IgniteTxKey> nearEvicted) {
+    public void nearEvicted(@Nullable Collection<IgniteTxKey> nearEvicted) {
         this.nearEvicted = nearEvicted;
     }
 
@@ -157,28 +157,28 @@ public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /**
      * @return Invalid partitions by cache ID.
      */
-    public Map<Integer, int[]> invalidPartitions() {
+    public @Nullable Map<Integer, int[]> invalidPartitions() {
         return invalidParts;
     }
 
     /**
      * @param invalidParts New invalid partitions by cache ID.
      */
-    public void invalidPartitions(Map<Integer, int[]> invalidParts) {
+    public void invalidPartitions(@Nullable Map<Integer, int[]> invalidParts) {
         this.invalidParts = invalidParts;
     }
 
     /**
      * @return Preload entries found on backup node.
      */
-    public Collection<GridCacheEntryInfo> preloadEntries() {
+    public @Nullable Collection<GridCacheEntryInfo> preloadEntries() {
         return preloadEntries;
     }
 
     /**
      * @param preloadEntries New preload entries found on backup node.
      */
-    public void preloadEntries(List<GridCacheEntryInfo> preloadEntries) {
+    public void preloadEntries(@Nullable List<GridCacheEntryInfo> preloadEntries) {
         this.preloadEntries = preloadEntries;
     }
 

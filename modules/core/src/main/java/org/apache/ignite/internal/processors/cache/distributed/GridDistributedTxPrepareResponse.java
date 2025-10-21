@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAwa
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Response to prepare request.
@@ -34,7 +35,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     /** Error message. */
     @GridToStringExclude
     @Order(value = 7, method = "errorMessage")
-    private ErrorMessage errMsg;
+    private @Nullable ErrorMessage errMsg;
 
     /** Transient TX state. */
     private IgniteTxState txState;
@@ -67,11 +68,13 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
      * @param err Error.
      * @param addDepInfo Deployment info flag.
      */
-    public GridDistributedTxPrepareResponse(int part, GridCacheVersion xid, Throwable err, boolean addDepInfo) {
+    public GridDistributedTxPrepareResponse(int part, GridCacheVersion xid, @Nullable Throwable err, boolean addDepInfo) {
         super(xid, 0, addDepInfo);
 
         this.part = part;
-        errMsg = new ErrorMessage(err);
+
+        if (err != null)
+            errMsg = new ErrorMessage(err);
     }
 
     /** {@inheritDoc} */
@@ -87,8 +90,16 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
-    @Override public Throwable error() {
+    @Override @Nullable public Throwable error() {
         return ErrorMessage.error(errMsg);
+    }
+
+    /**
+     * @param err Error to set.
+     */
+    public void error(@Nullable Throwable err) {
+        if (err != null)
+            errMsg = new ErrorMessage(err);
     }
 
     /** {@inheritDoc} */
@@ -114,14 +125,14 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
     /**
      * @return Error message.
      */
-    public ErrorMessage errorMessage() {
+    public @Nullable ErrorMessage errorMessage() {
         return errMsg;
     }
 
     /**
      * @param errMsg New error message.
      */
-    public void errorMessage(ErrorMessage errMsg) {
+    public void errorMessage(@Nullable ErrorMessage errMsg) {
         this.errMsg = errMsg;
     }
 

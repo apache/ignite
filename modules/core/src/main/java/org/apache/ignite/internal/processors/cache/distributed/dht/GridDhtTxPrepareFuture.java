@@ -44,7 +44,6 @@ import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidates;
@@ -777,7 +776,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
                             @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
                                 if (res.error() == null && fut.error() != null)
-                                    res.errorMessage(new ErrorMessage(fut.error()));
+                                    res.error(fut.error());
 
                                 if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1))
                                     sendPrepareResponse(res);
@@ -790,7 +789,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                 tx.commitAsync().listen(resClo);
                             }
                             catch (Throwable e) {
-                                res.errorMessage(new ErrorMessage(e));
+                                res.error(e);
 
                                 tx.systemInvalidate(true);
 
@@ -1041,7 +1040,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             catch (IgniteException e) {
                 tx.setRollbackOnly();
 
-                res.errorMessage(new ErrorMessage(e));
+                res.error(e);
             }
 
         if (super.onDone(res, res == null ? err : null)) {
@@ -1063,8 +1062,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     public void complete() {
         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse();
 
-        res.errorMessage(new ErrorMessage(err != null ? err :
-            new IgniteCheckedException("Failed to prepare transaction.")));
+        res.error(err != null ? err : new IgniteCheckedException("Failed to prepare transaction."));
 
         onComplete(res);
     }

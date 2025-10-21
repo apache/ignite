@@ -42,12 +42,11 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Near cache prepare response.
  */
-@SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
 public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse {
     /** Versions that are less than lock version ({@link #version()}). */
     @GridToStringInclude
     @Order(9)
-    private Collection<GridCacheVersion> pending;
+    private @Nullable Collection<GridCacheVersion> pending;
 
     /** Future ID.  */
     @Order(value = 10, method = "futureId")
@@ -71,11 +70,11 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
     /** OwnedVals' keys for marshalling. */
     @Order(value = 14, method = "ownedValuesKeys")
-    private Collection<IgniteTxKey> ownedValKeys;
+    private @Nullable Collection<IgniteTxKey> ownedValKeys;
 
     /** OwnedVals' values for marshalling. */
     @Order(value = 15, method = "ownedValuesValues")
-    private Collection<CacheVersionedValue> ownedValVals;
+    private @Nullable Collection<CacheVersionedValue> ownedValVals;
 
     /** Cache return value. */
     @Order(value = 16, method = "returnValue")
@@ -83,11 +82,11 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
 
     /** Keys that did not pass the filter. */
     @Order(17)
-    private Collection<IgniteTxKey> filterFailedKeys;
+    private @Nullable Collection<IgniteTxKey> filterFailedKeys;
 
     /** Topology version, which is set when client node should remap lock request. */
     @Order(value = 18, method = "clientRemapVersion")
-    private AffinityTopologyVersion clientRemapVer;
+    private @Nullable AffinityTopologyVersion clientRemapVer;
 
     /** One-phase commit on primary flag. */
     @Order(19)
@@ -120,8 +119,8 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         GridCacheVersion dhtVer,
         GridCacheVersion writeVer,
         GridCacheReturn retVal,
-        Throwable err,
-        AffinityTopologyVersion clientRemapVer,
+        @Nullable Throwable err,
+        @Nullable AffinityTopologyVersion clientRemapVer,
         boolean onePhaseCommit,
         boolean addDepInfo
     ) {
@@ -163,21 +162,21 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /**
      * @param clientRemapVer New topology version, which is set when client node should remap lock request.
      */
-    public void clientRemapVersion(AffinityTopologyVersion clientRemapVer) {
+    public void clientRemapVersion(@Nullable AffinityTopologyVersion clientRemapVer) {
         this.clientRemapVer = clientRemapVer;
     }
 
     /**
      * @return Versions that are less than lock version ({@link #version()}).
      */
-    public Collection<GridCacheVersion> pending() {
+    public @Nullable Collection<GridCacheVersion> pending() {
         return pending;
     }
 
     /**
      * @param pending New versions that are less than lock version ({@link #version()}).
      */
-    public void pending(Collection<GridCacheVersion> pending) {
+    public void pending(@Nullable Collection<GridCacheVersion> pending) {
         this.pending = pending;
     }
 
@@ -280,14 +279,14 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /**
      * @param filterFailedKeys Keys that did not pass the filter.
      */
-    public void filterFailedKeys(Collection<IgniteTxKey> filterFailedKeys) {
+    public void filterFailedKeys(@Nullable Collection<IgniteTxKey> filterFailedKeys) {
         this.filterFailedKeys = filterFailedKeys;
     }
 
     /**
      * @return New keys that did not pass the filter.
      */
-    public Collection<IgniteTxKey> filterFailedKeys() {
+    public @Nullable Collection<IgniteTxKey> filterFailedKeys() {
         return filterFailedKeys;
     }
 
@@ -302,28 +301,28 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /**
      * @return OwnedVals' keys for marshalling.
      */
-    public Collection<IgniteTxKey> ownedValuesKeys() {
+    public @Nullable Collection<IgniteTxKey> ownedValuesKeys() {
         return ownedValKeys;
     }
 
     /**
      * @param ownedValKeys New ownedVals' keys for marshalling.
      */
-    public void ownedValuesKeys(Collection<IgniteTxKey> ownedValKeys) {
+    public void ownedValuesKeys(@Nullable Collection<IgniteTxKey> ownedValKeys) {
         this.ownedValKeys = ownedValKeys;
     }
 
     /**
      * @return OwnedVals' values for marshalling.
      */
-    public Collection<CacheVersionedValue> ownedValuesValues() {
+    public @Nullable Collection<CacheVersionedValue> ownedValuesValues() {
         return ownedValVals;
     }
 
     /**
      * @param ownedValVals New ownedVals' values for marshalling.
      */
-    public void ownedValuesValues(Collection<CacheVersionedValue> ownedValVals) {
+    public void ownedValuesValues(@Nullable Collection<CacheVersionedValue> ownedValVals) {
         this.ownedValVals = ownedValVals;
     }
 
