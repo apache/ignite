@@ -62,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.Checkpoin
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.PartitionAllocationMap;
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
+import org.apache.ignite.internal.thread.IgniteForkJoinPool;
 import org.apache.ignite.internal.thread.IgniteStripedExecutor;
 import org.apache.ignite.internal.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -495,7 +496,7 @@ public class CheckpointWorkflow {
             Comparator<FullPageId> cmp = Comparator.comparingInt(FullPageId::groupId)
                 .thenComparingLong(FullPageId::effectivePageId);
 
-            ForkJoinPool pool = null;
+            IgniteForkJoinPool pool = null;
 
             for (T2<PageMemoryEx, FullPageId[]> pagesPerReg : cpPagesPerRegion) {
                 if (pagesPerReg.getValue().length >= parallelSortThreshold)
@@ -518,10 +519,10 @@ public class CheckpointWorkflow {
      * @param cmp Cmp.
      * @return ForkJoinPool instance, check {@link ForkJoinTask#fork()} realization.
      */
-    private static ForkJoinPool parallelSortInIsolatedPool(
+    private static IgniteForkJoinPool parallelSortInIsolatedPool(
         FullPageId[] pagesArr,
         Comparator<FullPageId> cmp,
-        ForkJoinPool pool
+        IgniteForkJoinPool pool
     ) throws IgniteCheckedException {
         ForkJoinPool.ForkJoinWorkerThreadFactory factory = new ForkJoinPool.ForkJoinWorkerThreadFactory() {
             @Override public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
@@ -533,8 +534,9 @@ public class CheckpointWorkflow {
             }
         };
 
-        ForkJoinPool execPool = pool == null ?
-            new ForkJoinPool(PARALLEL_SORT_THREADS + 1, factory, null, false) : pool;
+        IgniteForkJoinPool execPool = pool == null
+            ? new IgniteForkJoinPool(PARALLEL_SORT_THREADS + 1, factory, null, false)
+            : pool;
 
         Future<?> sortTask = execPool.submit(() -> Arrays.parallelSort(pagesArr, cmp));
 

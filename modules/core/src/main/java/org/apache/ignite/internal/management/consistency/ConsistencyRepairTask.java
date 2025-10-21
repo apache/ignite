@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.cache.CacheException;
@@ -40,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteIrreparableConsistencyViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.thread.IgniteForkJoinPool;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -103,7 +103,7 @@ public class ConsistencyRepairTask extends AbstractConsistencyTask<ConsistencyRe
             AtomicReference<Exception> err = new AtomicReference<>();
 
             Map<Boolean, List<IgniteBiTuple<Integer, String>>> res = Arrays.stream(arg.partitions())
-                .mapToObj(p -> F.t(p, ForkJoinPool.commonPool().submit(() -> processPartition(p, arg))))
+                .mapToObj(p -> F.t(p, IgniteForkJoinPool.commonPool().submit(() -> processPartition(p, arg))))
                 .map(t -> {
                     try {
                         return F.t(t.get1(), t.get2().get());

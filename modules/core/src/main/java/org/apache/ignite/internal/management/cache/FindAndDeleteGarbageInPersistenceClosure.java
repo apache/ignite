@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -51,6 +50,8 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 
+import static org.apache.ignite.internal.thread.IgniteThreadPoolExecutor.newFixedThreadPool;
+
 /**
  * Class contains logic of finding data of already destroyed caches in running cache groups.
  *
@@ -59,6 +60,9 @@ import org.apache.ignite.resources.LoggerResource;
 public class FindAndDeleteGarbageInPersistenceClosure implements IgniteCallable<FindAndDeleteGarbageInPersistenceJobResult> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final String THREAD_NAME_PREFIX = "persistence-clean-worker";
 
     /** Ignite. */
     @IgniteInstanceResource
@@ -97,7 +101,7 @@ public class FindAndDeleteGarbageInPersistenceClosure implements IgniteCallable<
 
     /** {@inheritDoc} */
     @Override public FindAndDeleteGarbageInPersistenceJobResult call() throws Exception {
-        calcExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        calcExecutor = newFixedThreadPool(THREAD_NAME_PREFIX, ignite.name(), Runtime.getRuntime().availableProcessors());
 
         try {
             return call0();

@@ -39,7 +39,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.CacheException;
@@ -174,6 +173,7 @@ import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.suggestions.JvmConfigurationSuggestions;
 import org.apache.ignite.internal.suggestions.OsConfigurationSuggestions;
 import org.apache.ignite.internal.thread.IgniteStripedExecutor;
+import org.apache.ignite.internal.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.TimeBag;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -1328,8 +1328,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         int poolActiveThreads = 0;
         int poolQSize = 0;
 
-        if (execSvc instanceof ThreadPoolExecutor) {
-            ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
+        if (execSvc instanceof IgniteThreadPoolExecutor) {
+            IgniteThreadPoolExecutor exec = (IgniteThreadPoolExecutor)execSvc;
 
             poolSize = exec.getPoolSize();
             poolActiveThreads = Math.min(poolSize, exec.getActiveCount());

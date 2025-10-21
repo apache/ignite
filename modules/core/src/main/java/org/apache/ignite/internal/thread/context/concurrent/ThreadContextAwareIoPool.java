@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.thread.context.pool;
+package org.apache.ignite.internal.thread.context.concurrent;
 
 import java.util.concurrent.Executor;
-import org.apache.ignite.internal.thread.context.concurrent.ThreadContextAwareExecutor;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
 
 /** */

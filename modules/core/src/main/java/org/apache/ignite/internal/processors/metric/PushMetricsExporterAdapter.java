@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.metric;
 
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.function.Predicate;
-import org.apache.ignite.internal.thread.IgniteThreadFactory;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -31,6 +29,7 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.internal.thread.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
 
 /**
  * Base class for exporters that pushes metrics to the external system.
@@ -100,8 +99,7 @@ public abstract class PushMetricsExporterAdapter extends IgniteSpiAdapter implem
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         super.onContextInitialized0(spiCtx);
 
-        execSvc = Executors.newSingleThreadScheduledExecutor(new IgniteThreadFactory(igniteInstanceName,
-            "push-metrics-exporter"));
+        execSvc = newSingleThreadScheduledExecutor("push-metrics-exporter", igniteInstanceName);
 
         fut = execSvc.scheduleWithFixedDelay(() -> {
             try {

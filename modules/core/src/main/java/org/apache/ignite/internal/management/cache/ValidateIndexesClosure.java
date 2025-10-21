@@ -30,7 +30,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -90,6 +89,7 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.compareUpdateCounters;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.formatUpdateCountersDiff;
 import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.getUpdateCountersSnapshot;
+import static org.apache.ignite.internal.thread.IgniteThreadPoolExecutor.newFixedThreadPool;
 import static org.apache.ignite.internal.util.IgniteUtils.error;
 
 /**
@@ -103,6 +103,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.error;
 public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJobResult> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final String THREAD_NAME_PREFIX = "idx-validate-worker";
 
     /** Exception message throwing when closure was cancelled. */
     public static final String CANCELLED_MSG = "Closure of index validation was cancelled.";
@@ -194,7 +197,7 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
 
     /** {@inheritDoc} */
     @Override public ValidateIndexesJobResult call() throws Exception {
-        calcExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        calcExecutor = newFixedThreadPool(THREAD_NAME_PREFIX, ignite.name(), Runtime.getRuntime().availableProcessors());
 
         try {
             return call0();

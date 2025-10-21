@@ -56,7 +56,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -104,7 +103,6 @@ import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.processors.tracing.SpanTags;
-import org.apache.ignite.internal.thread.IgniteThreadFactory;
 import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -168,6 +166,8 @@ import static org.apache.ignite.internal.processors.tracing.MTC.support;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_ORDERED_PROCESS;
 import static org.apache.ignite.internal.processors.tracing.SpanType.COMMUNICATION_REGULAR_PROCESS;
 import static org.apache.ignite.internal.processors.tracing.messages.TraceableMessagesTable.traceName;
+import static org.apache.ignite.internal.thread.IgniteThreadPoolExecutor.newCachedThreadPool;
+import static org.apache.ignite.internal.thread.IgniteThreadPoolExecutor.newFixedThreadPool;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.localNode;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
 import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.threadProcessingMessage;
@@ -663,7 +663,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         final boolean procFromNioThread,
         final List<ClusterNode> nodes
     ) {
-        ExecutorService svc = Executors.newFixedThreadPool(threads + 1);
+        ExecutorService svc = newFixedThreadPool("io-latency-monitor", ctx.igniteInstanceName(), threads + 1);
 
         final AtomicBoolean warmupFinished = new AtomicBoolean();
         final AtomicBoolean done = new AtomicBoolean();
@@ -4341,8 +4341,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         /**
          * Executor service to send special communication message.
          */
-        private ExecutorService responseSendService = Executors
-            .newCachedThreadPool(new IgniteThreadFactory(ctx.igniteInstanceName(), "io-send-service"));
+        private final ExecutorService responseSendService = newCachedThreadPool("io-send-service", ctx.igniteInstanceName());
 
         /**
          * Discovery event listener (works only on client nodes for now) notified when
