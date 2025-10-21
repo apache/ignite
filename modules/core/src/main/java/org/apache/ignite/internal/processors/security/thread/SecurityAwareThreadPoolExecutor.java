@@ -27,7 +27,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.apache.ignite.internal.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.NotNull;
 
 /**

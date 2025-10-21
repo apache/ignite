@@ -49,6 +49,9 @@ import org.apache.ignite.internal.processors.security.thread.SecurityAwareStripe
 import org.apache.ignite.internal.processors.security.thread.SecurityAwareStripedThreadPoolExecutor;
 import org.apache.ignite.internal.processors.security.thread.SecurityAwareThreadPoolExecutor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.thread.IgniteStripedThreadPoolExecutor;
+import org.apache.ignite.internal.thread.IgniteThreadPoolExecutor;
+import org.apache.ignite.internal.thread.SameThreadExecutor;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -61,9 +64,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
 import org.apache.ignite.spi.systemview.view.StripedExecutorTaskView;
-import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
-import org.apache.ignite.thread.SameThreadExecutor;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
