@@ -844,12 +844,10 @@ final class BinaryMetadataTransport {
 
             if (metaVerInfo != null) {
                 try {
-                    metaVerInfo.marshalMetadata(ctx);
+                    metaVerInfo.marshalMetadata();
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to marshal binary metadata for [typeId=" + typeId + ']', e);
-
-                    resp.markErrorOnRequest();
                 }
             }
 
@@ -885,18 +883,18 @@ final class BinaryMetadataTransport {
             if (fut == null)
                 return;
 
-            if (msg0.metadataNotFound()) {
+            BinaryMetadataVersionInfo metaVerInfo = msg0.metadataVersionInfo();
+
+            if (metaVerInfo == null) {
                 fut.onDone(MetadataUpdateResult.createSuccessfulResult(-1));
 
                 return;
             }
 
             try {
-                BinaryMetadataVersionInfo metaVerInfo = msg0.metadataVersionInfo();
-
                 assert metaVerInfo != null;
 
-                metaVerInfo.unmarshalMetadata(ctx);
+                metaVerInfo.unmarshalMetadata();
 
                 casBinaryMetadata(typeId, metaVerInfo);
 

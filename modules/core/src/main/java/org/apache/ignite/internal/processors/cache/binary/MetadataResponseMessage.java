@@ -24,15 +24,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  * Carries latest version of metadata to client as a response for {@link MetadataRequestMessage}.
  */
 public class MetadataResponseMessage implements Message {
-    /** Response status if any exception happened during preparing response. */
-    private static final byte ERROR = -1;
-
-    /** Response status if metadata was not found on server node replied with the response. */
-    private static final byte METADATA_NOT_FOUND = 0;
-
-    /** Response status if metadata was found on server node replied with the response. */
-    private static final byte METADATA_FOUND = 1;
-
     /** Type ID. */
     @Order(0)
     private int typeId;
@@ -40,10 +31,6 @@ public class MetadataResponseMessage implements Message {
     /** Binary metadata version info. */
     @Order(value = 1, method = "metadataVersionInfo")
     private BinaryMetadataVersionInfo metaVerInfo;
-
-    /** Client response status. */
-    @Order(2)
-    private byte status = ERROR;
 
     /** */
     public MetadataResponseMessage() {
@@ -73,19 +60,7 @@ public class MetadataResponseMessage implements Message {
      * @param metaVerInfo Binary metadata version info.
      */
     public void metadataVersionInfo(BinaryMetadataVersionInfo metaVerInfo) {
-        if (metaVerInfo != null)
-            status = METADATA_FOUND;
-        else
-            status = METADATA_NOT_FOUND;
-
         this.metaVerInfo = metaVerInfo;
-    }
-
-    /**
-     * Marks message if any exception happened during preparing response.
-     */
-    void markErrorOnRequest() {
-        status = ERROR;
     }
 
     /**
@@ -100,27 +75,6 @@ public class MetadataResponseMessage implements Message {
      */
     public void typeId(int typeId) {
         this.typeId = typeId;
-    }
-
-    /**
-     * @return {@code true} if metadata was not found on server node replied with the response.
-     */
-    boolean metadataNotFound() {
-        return status == METADATA_NOT_FOUND;
-    }
-
-    /**
-     * @return Client response status.
-     */
-    public byte status() {
-        return status;
-    }
-
-    /**
-     * @param status Client response status.
-     */
-    public void status(byte status) {
-        this.status = status;
     }
 
     /** {@inheritDoc} */

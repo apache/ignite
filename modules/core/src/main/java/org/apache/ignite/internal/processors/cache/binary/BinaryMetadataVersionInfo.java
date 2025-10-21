@@ -18,11 +18,12 @@ package org.apache.ignite.internal.processors.cache.binary;
 
 import java.io.Serializable;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
+
+import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  * Wrapper for {@link BinaryMetadata} which is stored in metadata local cache on each node.
@@ -42,7 +43,7 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
 
     /** Serialized binary metadata. */
     @Order(0)
-    private byte[] metadataBytes;
+    private transient byte[] metadataBytes;
 
     /**
      * The version of metadata that has been proposed for update. This represents how many unique updates have been issued
@@ -161,22 +162,25 @@ public final class BinaryMetadataVersionInfo implements Serializable, Message {
     }
 
     /**
-     * @param ctx Grid kernal context.
+     * Marshals binary metadata to byte array.
+     *
      * @throws IgniteCheckedException If failed.
      */
-    public void marshalMetadata(GridKernalContext ctx) throws IgniteCheckedException {
+    public void marshalMetadata() throws IgniteCheckedException {
         if (metadataBytes == null)
-            metadataBytes = U.marshal(ctx, metadata);
+            metadataBytes = U.marshal(jdk(), metadata);
     }
 
     /**
-     * @param ctx Grid kernal context.
+     * Unmarshals binary metadata from byte array.
+     *
      * @throws IgniteCheckedException If failed.
      */
-    public void unmarshalMetadata(GridKernalContext ctx) throws IgniteCheckedException {
+    public void unmarshalMetadata() throws IgniteCheckedException {
         if (metadata == null && metadataBytes != null) {
-            metadata = U.unmarshal(ctx, metadataBytes, U.resolveClassLoader(ctx.config()));
+            metadata = U.unmarshal(jdk(), metadataBytes, U.gridClassLoader());
 
+            // It is not required anymore.
             metadataBytes = null;
         }
     }
