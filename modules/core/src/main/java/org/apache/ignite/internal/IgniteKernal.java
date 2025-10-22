@@ -1464,7 +1464,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 String name = sysEntry.getKey();
 
                 if (incProps == null || U.containsStringArray(incProps, name, true) ||
-                    U.isVisorNodeStartProperty(name) || U.isVisorRequiredProperty(name))
+                    U.isVisorNodeStartProperty(name) || U.isSystemRequiredProperty(name))
                     ctx.addNodeAttribute(name, sysEntry.getValue());
             }
 
@@ -1483,7 +1483,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 String key = (String)e.getKey();
 
                 if (incProps == null || U.containsStringArray(incProps, key, true) ||
-                    U.isVisorRequiredProperty(key)) {
+                    U.isSystemRequiredProperty(key)) {
                     Object val = ctx.nodeAttribute(key);
 
                     if (val != null && !val.equals(e.getValue()))

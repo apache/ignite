@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -195,6 +197,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
 
+        String dcId = ctx.localNode().dataCenterId();
+        Collection<UUID> sameDcNodeIds = dcId == null ? null : new HashSet<>(F.viewReadOnly(
+            ctx.discovery().aliveServerNodes(), ClusterNode::id, n -> Objects.equals(n.dataCenterId(), dcId)));
+
         for (int p = 0; p < partitions; p++) {
             if (ctx.exchange().hasPendingServerExchange()) {
                 if (log.isDebugEnabled())
@@ -228,8 +234,18 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 if (grp.persistenceEnabled() && exchFut != null) {
                     List<UUID> nodeIds = exchFut.partitionHistorySupplier(grp.groupId(), p, part.initialUpdateCounter());
 
-                    if (!F.isEmpty(nodeIds))
+                    if (!F.isEmpty(nodeIds)) {
+                        if (sameDcNodeIds != null) {
+                            List<UUID> nodeIds0 = new ArrayList<>(nodeIds);
+
+                            nodeIds0.retainAll(sameDcNodeIds);
+
+                            if (!F.isEmpty(nodeIds0))
+                                nodeIds = nodeIds0;
+                        }
+
                         histSupplier = ctx.discovery().node(nodeIds.get(p % nodeIds.size()));
+                    }
                 }
 
                 if (histSupplier != null && !exchFut.isClearingPartition(grp, p)) {
@@ -260,6 +276,15 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     });
 
                     if (!picked.isEmpty()) {
+                        if (dcId != null) {
+                            List<ClusterNode> picked0 = new ArrayList<>(picked);
+
+                            picked0.removeIf(n -> !Objects.equals(dcId, n.dataCenterId()));
+
+                            if (!F.isEmpty(picked0))
+                                picked = picked0;
+                        }
+
                         ClusterNode n = picked.get(p % picked.size());
 
                         GridDhtPartitionDemandMessage msg = assignments.get(n);

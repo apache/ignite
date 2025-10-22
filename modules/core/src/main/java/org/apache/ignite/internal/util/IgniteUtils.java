@@ -5689,14 +5689,15 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Checks whether property is one required by Visor to work correctly.
+     * Checks whether property is one required by Ignite to work correctly.
      *
      * @param name Property name to check.
-     * @return {@code True} if property is required by Visor, {@code false} otherwise.
+     * @return {@code True} if property is required by Ignite, {@code false} otherwise.
      */
-    public static boolean isVisorRequiredProperty(String name) {
+    public static boolean isSystemRequiredProperty(String name) {
         return "java.version".equals(name) || "java.vm.name".equals(name) || "os.arch".equals(name) ||
-            "os.name".equals(name) || "os.version".equals(name);
+            "os.name".equals(name) || "os.version".equals(name) ||
+            IgniteSystemProperties.IGNITE_DATA_CENTER_ID.equals(name);
     }
 
     /**
