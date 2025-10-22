@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.affinity.rendezvous;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -25,7 +25,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 /** */
-public class DcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, List<ClusterNode>> {
+public class MdcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, List<ClusterNode>> {
     /** */
     private static final long serialVersionUID = 1L;
 
@@ -42,16 +42,16 @@ public class DcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, Li
      * @param dcsCount
      * @param backups
      */
-    public DcAffinityBackupFilter(int dcsCount, int backups) {
+    public MdcAffinityBackupFilter(int dcsCount, int backups) {
         this.dcsCount = dcsCount;
-        partsDistrMap = new LinkedHashMap<>(4);
+        partsDistrMap = new HashMap<>(dcsCount + 1);
         primaryAndBackups = backups + 1;
     }
 
     /** {@inheritDoc} */
     @Override public boolean apply(ClusterNode node, List<ClusterNode> list) {
-        if (list.size() == 1)
-            partsDistrMap.put(list.get(0).dataCenterId(), 1); //account for primary node which is assigned beforehand
+        if (list.size() == 1) //account for primary node which is assigned beforehand
+            partsDistrMap.put(list.get(0).dataCenterId(), 1);
 
         String candidateDcId = node.dataCenterId();
         Integer candDcPartsCopies = partsDistrMap.get(candidateDcId);
