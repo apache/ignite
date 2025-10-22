@@ -40,8 +40,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalWrapper;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -245,7 +245,7 @@ public class SecurityUtils {
 
     /** */
     public static Object unwrap(Object target) {
-        return target instanceof GridInternalWrapper ? ((GridInternalWrapper<?>)target).userObject() : target;
+        return target instanceof IgniteInternalWrapper ? ((IgniteInternalWrapper<?>)target).delegate() : target;
     }
 
     /**
@@ -293,8 +293,8 @@ public class SecurityUtils {
 
     /** Array of proxy classes. */
     private static <T> Class[] proxyClasses(Class cls, T instance) {
-        return instance instanceof GridInternalWrapper
-            ? new Class[] {cls, GridInternalWrapper.class}
+        return instance instanceof IgniteInternalWrapper
+            ? new Class[] {cls, IgniteInternalWrapper.class}
             : new Class[] {cls};
     }
 
@@ -315,8 +315,8 @@ public class SecurityUtils {
         /** {@inheritDoc} */
         @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
             try {
-                if (proxy instanceof GridInternalWrapper &&
-                    GridInternalWrapper.class.getMethod(mtd.getName(), mtd.getParameterTypes()) != null)
+                if (proxy instanceof IgniteInternalWrapper &&
+                    IgniteInternalWrapper.class.getMethod(mtd.getName(), mtd.getParameterTypes()) != null)
                     return mtd.invoke(original, args);
             }
             catch (NoSuchMethodException ignore) {

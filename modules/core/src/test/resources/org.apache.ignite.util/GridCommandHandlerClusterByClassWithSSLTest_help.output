@@ -88,6 +88,27 @@ This utility can do the following commands:
   Delete unused archived wal segments on each node:
     control.(sh|bat) --wal delete [consistentId1,consistentId2,....,consistentIdN] [--yes]
 
+  Print state of WAL:
+    Global     - WAL enabled for group cluster-wide. May be disabled by `--wal disable` command.
+    Local      - WAL enabled for group on specific node. May be disabled during rebalance or other system processes.
+    Index      - WAL enabled for groups indexes on specific node. May be disabled during index rebuilt:
+    control.(sh|bat) --wal state [--groups group1[,group2,....,groupN]]
+
+     Parameters:
+       --groups group1[,group2,....,groupN]  - Comma-separated list of cache groups. If not set action applied to all groups.
+
+  Disable WAL for specific cache groups:
+    control.(sh|bat) --wal disable [--groups group1[,group2,....,groupN]]
+
+    Parameters:
+      --groups group1[,group2,....,groupN]  - Comma-separated list of cache groups. If not set action applied to all groups.
+
+  Enable WAL for specific cache groups:
+    control.(sh|bat) --wal enable [--groups group1[,group2,....,groupN]]
+
+    Parameters:
+      --groups group1[,group2,....,groupN]  - Comma-separated list of cache groups. If not set action applied to all groups.
+
   Print diagnostic command help:
     control.(sh|bat) --diagnostic
 

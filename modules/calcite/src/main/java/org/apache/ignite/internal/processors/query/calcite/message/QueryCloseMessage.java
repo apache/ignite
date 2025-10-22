@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.UUID;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.internal.Order;
 
 /**
  *
  */
 public class QueryCloseMessage implements CalciteMessage {
     /** */
+    @Order(value = 0, method = "queryId")
     private UUID qryId;
 
     /** */
@@ -45,40 +45,11 @@ public class QueryCloseMessage implements CalciteMessage {
         return qryId;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(MessageWriter writer) {
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeUuid(qryId))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(MessageReader reader) {
-        switch (reader.state()) {
-            case 0:
-                qryId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
+    /**
+     * @param qryId New query ID.
+     */
+    public void queryId(UUID qryId) {
+        this.qryId = qryId;
     }
 
     /** {@inheritDoc} */
