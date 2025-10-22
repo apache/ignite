@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -58,6 +59,7 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     private transient UUID sndNodeId;
 
     /** Message ID. */
+    @Order(0)
     private IgniteUuid id;
 
     /**
@@ -133,6 +135,15 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
      */
     public IgniteUuid id() {
         return id;
+    }
+
+    /**
+     * Sets message ID.
+     *
+     * @param id Message ID.
+     */
+    public void id(IgniteUuid id) {
+        this.id = id;
     }
 
     /**
