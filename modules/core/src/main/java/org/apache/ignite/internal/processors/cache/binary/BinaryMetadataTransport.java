@@ -892,8 +892,6 @@ final class BinaryMetadataTransport {
             }
 
             try {
-                assert metaVerInfo != null;
-
                 metaVerInfo.unmarshalMetadata();
 
                 casBinaryMetadata(typeId, metaVerInfo);
