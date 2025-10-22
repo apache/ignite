@@ -80,6 +80,7 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.TestDumpConsumer;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -146,7 +147,8 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
+            .setConsistentId(igniteInstanceName);
 
         if (lsnr != null) {
             ListeningTestLogger testLog = new ListeningTestLogger(log);
@@ -213,6 +215,36 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     @Test
     public void testDumpRawCustomStoragePathAndDumpPath() throws Exception {
         doTestDumpRawData(true, true);
+    }
+
+    /** */
+    @Test
+    public void testCheckDumpFromOtherNode() throws Exception {
+        IgniteEx ign = startGrid(1);
+
+        System.out.println("ign.localNode().consistentId() = " + ign.localNode().consistentId());
+
+        CacheConfiguration<Object, Object> ccfg = defaultCacheConfiguration();
+
+        ign.createCache(ccfg);
+
+        for (int i = 0; i < KEYS_CNT; ++i)
+            ign.cache(DEFAULT_CACHE_NAME).put(i, USER_FACTORY.apply(i));
+
+        ign.snapshot().createDump(DMP_NAME, null).get(getTestTimeout());
+
+        stopGrid(1);
+
+        cleanPersistenceDir(true);
+
+        ign = startGrid(2);
+
+        System.out.println("ign.localNode().consistentId() = " + ign.localNode().consistentId());
+
+        SnapshotPartitionsVerifyTaskResult res =
+            ign.context().cache().context().snapshotMgr().checkSnapshot(DMP_NAME, null).get(getTestTimeout());
+
+        assertTrue(F.isEmpty(res.exceptions()));
     }
 
     /** */

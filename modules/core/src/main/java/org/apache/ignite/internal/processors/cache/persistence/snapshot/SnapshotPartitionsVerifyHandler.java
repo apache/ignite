@@ -397,6 +397,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         try {
             String node = cctx.kernalContext().pdsFolderResolver().fileTree().folderName();
 
+            // TODO: add flag that show - if dump MUST contains local node data.
+
             try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part, null)) {
                 long size = 0;
 
