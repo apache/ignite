@@ -44,6 +44,7 @@ import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.TestDumpConsumer;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -116,7 +117,7 @@ public class DumpCacheConfigTest extends GridCommonAbstractTest {
             }
 
             @Override public void stop() {
-                // No-op.
+                U.closeQuiet(thin);
             }
         };
 
