@@ -228,8 +228,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 req.version(),
                                 req.version(),
                                 null,
-                                req.committedVersions(),
-                                req.rolledbackVersions(),
+                                F.emptyIfNull(req.committedVersions()),
+                                F.emptyIfNull(req.rolledbackVersions()),
                                 /*system invalidate*/false);
 
                             // Note that we don't reorder completed versions here,
