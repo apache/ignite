@@ -682,12 +682,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         if (log.isInfoEnabled())
             log.info("Finished node ping [nodeId=" + nodeId + ", res=" + res + ", time=" + (end - start) + "ms]");
 
-        if (!res && node.clientRouterNodeId() == null && nodeAlive(nodeId)) {
-            LT.warn(log, "Failed to ping node (status check will be initiated): " + nodeId);
-
-            msgWorker.addMessage(createTcpDiscoveryStatusCheckMessage(locNode, locNode.id(), node.id()));
-        }
-
         return res;
     }
 
@@ -2960,12 +2954,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Output stream. */
         private OutputStream out;
 
-        /** Last time status message has been sent. */
-        private long lastTimeStatusMsgSentNanos;
-
-        /** Incoming metrics check frequency. */
-        private long metricsCheckFreq = 3 * spi.metricsUpdateFreq + 50;
-
         /** Last time metrics update message has been sent. */
         private long lastTimeMetricsUpdateMsgSentNanos = System.nanoTime() - U.millisToNanos(spi.metricsUpdateFreq);
 
@@ -3346,8 +3334,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             sendMetricsUpdateMessage();
 
-            checkMetricsReceiving();
-
             checkPendingCustomMessages();
 
             checkFailedNodesList();
@@ -3643,7 +3629,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         }
                                     }
 
-                                    updateLastSentMessageTime();
+                                    ringMessageSent(-1);
 
                                     if (log.isDebugEnabled())
                                         log.debug("Initialized connection with next node: " + next.id());
@@ -3759,7 +3745,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                     int res = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
 
-                                    updateLastSentMessageTime();
+                                    ringMessageSent(res);
 
                                     spi.stats.onMessageSent(pendingMsg, U.nanosToMillis(tsNanos0 - tsNanos));
 
@@ -3810,7 +3796,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 int res = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
 
-                                updateLastSentMessageTime();
+                                ringMessageSent(res);
 
                                 if (latencyCheck && log.isInfoEnabled())
                                     log.info("Latency check message has been acked: " + msg.id());
@@ -6451,24 +6437,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Checks the last time a metrics update message received. If the time is bigger than {@code metricsCheckFreq}
-         * than {@link TcpDiscoveryStatusCheckMessage} is sent across the ring.
-         */
-        private void checkMetricsReceiving() {
-            if (lastTimeStatusMsgSentNanos < locNode.lastUpdateTimeNanos())
-                lastTimeStatusMsgSentNanos = locNode.lastUpdateTimeNanos();
-
-            long updateTimeNanos = Math.max(lastTimeStatusMsgSentNanos, lastRingMsgTimeNanos);
-
-            if (U.millisSinceNanos(updateTimeNanos) < metricsCheckFreq)
-                return;
-
-            msgWorker.addMessage(createTcpDiscoveryStatusCheckMessage(locNode, locNode.id(), null));
-
-            lastTimeStatusMsgSentNanos = System.nanoTime();
-        }
-
-        /**
          * Check connection to next node in the ring.
          */
         private void checkConnection() {
@@ -6518,8 +6486,14 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** Fixates time of last sent message. */
-    private void updateLastSentMessageTime() {
+    private void ringMessageSent(int res) {
         lastRingMsgSentTime = System.nanoTime();
+
+        if (res == RES_OK_NOT_IN_RING && spiState == CONNECTED) {
+            U.warn(log, "Node is out of topology (probably, due to short-time network problems).");
+
+            notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
+        }
     }
 
     /** Thread that executes {@link TcpServer}'s code. */
@@ -7031,6 +7005,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         TcpDiscoveryAbstractMessage msg = U.unmarshal(spi.marshaller(), in,
                             U.resolveClassLoader(spi.ignite().configuration()));
 
+                        int res = RES_OK;
+
                         msg.senderNodeId(nodeId);
 
                         DebugLogger debugLog = messageLogger(msg);
@@ -7044,9 +7020,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             debugLog(msg, "Message has been received: " + msg);
 
                         if (msg instanceof TcpDiscoveryConnectionCheckMessage) {
-                            ringMessageReceived();
-
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            spi.writeToSocket(msg, sock, ringMessageReceived(nodeId), sockTimeout);
 
                             continue;
                         }
@@ -7067,7 +7041,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             TcpDiscoverySpiState state = spiStateCopy();
 
                             if (state == CONNECTED) {
-                                spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                                spi.writeToSocket(msg, sock, res, sockTimeout);
 
                                 if (clientMsgWrk != null && clientMsgWrk.runner() == null && !clientMsgWrk.isDone())
                                     new MessageWorkerThreadWithCleanup<>(clientMsgWrk, log).start();
@@ -7081,7 +7055,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 // If message is received from previous node and node is connecting forward to next node.
                                 if (!getLocalNodeId().equals(msg0.routerNodeId()) && state == CONNECTING) {
-                                    spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                                    spi.writeToSocket(msg, sock, res, sockTimeout);
 
                                     msgWorker.addMessage(msg);
 
@@ -7095,7 +7069,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                         else if (msg instanceof TcpDiscoveryDuplicateIdMessage) {
                             // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            spi.writeToSocket(msg, sock, res, sockTimeout);
 
                             boolean ignored = false;
 
@@ -7124,7 +7098,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                         else if (msg instanceof TcpDiscoveryAuthFailedMessage) {
                             // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            spi.writeToSocket(msg, sock, res, sockTimeout);
 
                             synchronized (mux) {
                                 if (spiState == CONNECTING) {
@@ -7152,7 +7126,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                         else if (msg instanceof TcpDiscoveryCheckFailedMessage) {
                             // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            spi.writeToSocket(msg, sock, res, sockTimeout);
 
                             boolean ignored = false;
 
@@ -7195,7 +7169,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                         else if (msg instanceof TcpDiscoveryLoopbackProblemMessage) {
                             // Send receipt back.
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            spi.writeToSocket(msg, sock, res, sockTimeout);
 
                             boolean ignored = false;
 
@@ -7233,7 +7207,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             continue;
                         }
                         else if (msg instanceof TcpDiscoveryRingLatencyCheckMessage) {
-                            ringMessageReceived();
+                            res = ringMessageReceived(nodeId);
 
                             if (log.isInfoEnabled())
                                 log.info("Latency check message has been read: " + msg.id());
@@ -7246,7 +7220,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
                             metricsUpdateMsg = (TcpDiscoveryClientMetricsUpdateMessage)msg;
                         else {
-                            ringMessageReceived();
+                            res = ringMessageReceived(nodeId);
 
                             msgWorker.addMessage(msg, false, true);
                         }
@@ -7260,7 +7234,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             clientMsgWrk.addMessage(ack);
                         }
                         else
-                            spi.writeToSocket(msg, sock, RES_OK, sockTimeout);
+                            spi.writeToSocket(msg, sock, res, sockTimeout);
 
                         if (metricsUpdateMsg != null)
                             processClientMetricsUpdateMessage(metricsUpdateMsg);
@@ -7343,9 +7317,19 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /**
          * Update last ring message received timestamp.
+         *
+         * @param sndId ID of the sending node.
+         * @return Response.
          */
-        private void ringMessageReceived() {
+        private int ringMessageReceived(UUID sndId) {
             lastRingMsgReceivedTime = System.nanoTime();
+
+            if (sndId == null)
+                return RES_OK;
+
+            synchronized (mux) {
+                return ring.node(sndId) == null && spiState == CONNECTED ? RES_OK_NOT_IN_RING : RES_OK;
+            }
         }
 
         /**
