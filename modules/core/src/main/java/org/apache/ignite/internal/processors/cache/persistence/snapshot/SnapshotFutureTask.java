@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
@@ -67,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -125,7 +125,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     private final boolean withMetaStorage;
 
     /** Checkpoint end future. */
-    private final CompletableFuture<Boolean> cpEndFut = new CompletableFuture<>();
+    private final IgniteCompletableFuture<Boolean> cpEndFut = new IgniteCompletableFuture<>();
 
     /** Future to wait until checkpoint mark phase will be finished and snapshot tasks scheduled. */
     private final GridFutureAdapter<Void> startedFut = new GridFutureAdapter<>();
@@ -379,7 +379,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     }
 
     /** {@inheritDoc} */
-    @Override protected List<CompletableFuture<Void>> saveGroup(int grpId, Set<Integer> grpParts) {
+    @Override protected List<IgniteCompletableFuture<Void>> saveGroup(int grpId, Set<Integer> grpParts) {
         // Process partitions for a particular cache group.
         return grpParts.stream().map(partId -> {
             GroupPartitionId pair = new GroupPartitionId(grpId, partId);
@@ -438,7 +438,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     }
 
     /** {@inheritDoc} */
-    @Override protected List<CompletableFuture<Void>> saveCacheConfigs() {
+    @Override protected List<IgniteCompletableFuture<Void>> saveCacheConfigs() {
         // Send configuration files of all cache groups.
         return ccfgSndrs.stream()
             .map(ccfgSndr -> runAsync(ccfgSndr::sendCacheConfig))
@@ -467,7 +467,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized CompletableFuture<Void> closeAsync() {
+    @Override public synchronized IgniteCompletableFuture<Void> closeAsync() {
         if (closeFut == null) {
             Throwable err0 = err.get();
 
@@ -477,8 +477,10 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
 
-            closeFut = CompletableFuture.runAsync(() -> onDone(new SnapshotFutureTaskResult(taken, snpPtr), err0),
-                cctx.kernalContext().pools().getSystemExecutorService());
+            closeFut = IgniteCompletableFuture.runAsync(
+                () -> onDone(new SnapshotFutureTaskResult(taken, snpPtr), err0),
+                cctx.kernalContext().pools().getSystemExecutorService()
+            );
         }
 
         return closeFut;

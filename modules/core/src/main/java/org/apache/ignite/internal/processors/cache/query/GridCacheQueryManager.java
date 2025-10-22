@@ -38,7 +38,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
@@ -91,6 +90,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 import org.apache.ignite.internal.util.GridBoundedPriorityQueue;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -2379,7 +2379,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private final GridCacheQueryType type;
 
         /** Future of query result metadata. Completed when query actually started. */
-        private final CompletableFuture<IndexQueryResultMeta> metadata;
+        private final IgniteCompletableFuture<IndexQueryResultMeta> metadata;
 
         /** Flag shows whether first result page was delivered to user. */
         private volatile boolean sentFirst;
@@ -2393,7 +2393,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             this.type = type;
 
-            metadata = type == INDEX ? new CompletableFuture<>() : null;
+            metadata = type == INDEX ? new IgniteCompletableFuture<>() : null;
         }
 
         /**

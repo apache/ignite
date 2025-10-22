@@ -223,6 +223,12 @@
             <property name="substitutionClassName" value="org.apache.ignite.internal.thread.IgniteScheduledThreadPoolExecutor"/>
         </module>
 
+        <module name="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule">
+            <property name="className" value="java.util.concurrent.CompletableFuture"/>
+            <property name="factoryMethods" value="allOf, anyOf, supplyAsync, runAsync, completedFuture"/>
+            <property name="substitutionClassName" value="org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture"/>
+        </module>
+
         <module name="SuppressionXpathSingleFilter">
             <property name="checks" value="org.apache.ignite.tools.checkstyle.ClassUsageRestrictionRule"/>
             <property name="files" value="DumpReader\.java|CacheLoadOnlyStoreAdapter\.java|[\\/]io[\\/]opencensus[\\/]|[\\/]jdbc[\\/]thin[\\/]|[\\/]test[\\/]|[\\/]tests[\\/]|[\\/]internal[\\/]client[\\/]|[\\/]org[\\/]apache[\\/]ignite[\\/]internal[\\/]thread[\\/]"/>

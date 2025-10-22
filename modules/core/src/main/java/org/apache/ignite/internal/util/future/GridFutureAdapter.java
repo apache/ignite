@@ -28,6 +28,7 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.thread.context.function.ThreadContextAwareInClosure;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -79,7 +80,9 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
          * @param val Node value.
          */
         Node(Object val) {
-            this.val = val;
+            this.val = val instanceof Thread
+                ? val
+                : ThreadContextAwareInClosure.wrap((IgniteInClosure<?>)val);
         }
     }
 
