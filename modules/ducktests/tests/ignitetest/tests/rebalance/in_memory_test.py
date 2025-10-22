@@ -43,7 +43,7 @@ class RebalanceInMemoryTest(BaseRebalanceTest):
         """
         return self.__run(ignite_version, TriggerEvent.NODE_JOIN,
                           backups, cache_count, entry_count, entry_size, preloaders,
-                          thread_pool_size, batch_size, batches_prefetch_count, throttle)
+                          thread_pool_size, batch_size, batches_prefetch_count, throttle, None)
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH), str(LATEST))
@@ -57,11 +57,26 @@ class RebalanceInMemoryTest(BaseRebalanceTest):
         """
         return self.__run(ignite_version, TriggerEvent.NODE_LEFT,
                           backups, cache_count, entry_count, entry_size, preloaders,
-                          thread_pool_size, batch_size, batches_prefetch_count, throttle)
+                          thread_pool_size, batch_size, batches_prefetch_count, throttle, None)
+
+    @cluster(num_nodes=NUM_NODES)
+    @ignite_versions(str(DEV_BRANCH))
+    @defaults(backups=[1], cache_count=[1], entry_count=[15_000], entry_size=[50_000], preloaders=[1],
+              thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None],
+              init_version=str(LATEST), upgrade_version=str(DEV_BRANCH))
+    def test_node_join_with_upgrade(self, ignite_version,
+                       backups, cache_count, entry_count, entry_size, preloaders,
+                       thread_pool_size, batch_size, batches_prefetch_count, throttle, init_version, upgrade_version):
+        """
+        Tests rebalance on node left.
+        """
+        return self.__run(init_version, TriggerEvent.NODE_JOIN,
+                          backups, cache_count, entry_count, entry_size, preloaders,
+                          thread_pool_size, batch_size, batches_prefetch_count, throttle, upgrade_version)
 
     def __run(self, ignite_version, trigger_event,
               backups, cache_count, entry_count, entry_size, preloaders,
-              thread_pool_size, batch_size, batches_prefetch_count, throttle):
+              thread_pool_size, batch_size, batches_prefetch_count, throttle, upgrade_version):
         """
         Test performs rebalance test which consists of following steps:
             * Start cluster.
@@ -101,6 +116,10 @@ class RebalanceInMemoryTest(BaseRebalanceTest):
             ignite = IgniteService(self.test_context,
                                    ignites.config._replace(discovery_spi=from_ignite_cluster(ignites)), num_nodes=1,
                                    modules=reb_params.modules)
+
+            if upgrade_version is not None:
+                ignite.config._replace(version=upgrade_version)
+
             ignite.start()
             rebalance_nodes = ignite.nodes
 
