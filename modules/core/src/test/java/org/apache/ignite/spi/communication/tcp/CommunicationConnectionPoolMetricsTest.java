@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -540,7 +539,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        @Override public boolean writeTo(MessageWriter writer) {
             if (writeDelay > 0) {
                 try {
                     U.sleep(writeDelay);
@@ -550,7 +549,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
                 }
             }
 
-            return super.writeTo(buf, writer);
+            return super.writeTo(writer);
         }
     }
 }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.GridDirectCollection;
@@ -155,9 +154,7 @@ public class GridDeploymentRequest implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
+    @Override public boolean writeTo(MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType()))
                 return false;
@@ -202,9 +199,7 @@ public class GridDeploymentRequest implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
+    @Override public boolean readFrom(MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 isUndeploy = reader.readBoolean();

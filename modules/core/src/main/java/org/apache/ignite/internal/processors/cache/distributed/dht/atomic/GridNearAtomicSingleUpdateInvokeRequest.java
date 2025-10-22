@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -204,10 +203,8 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
+    @Override public boolean writeTo(MessageWriter writer) {
+        if (!super.writeTo(writer))
             return false;
 
         if (!writer.isHeaderWritten()) {
@@ -236,10 +233,8 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
+    @Override public boolean readFrom(MessageReader reader) {
+        if (!super.readFrom(reader))
             return false;
 
         switch (reader.state()) {

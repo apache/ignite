@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
@@ -160,11 +159,9 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+    @Override public boolean writeTo(MessageWriter writer) {
         // TODO: Remove #writeTo() after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
+        if (!super.writeTo(writer))
             return false;
 
         if (!writer.isHeaderWritten()) {
@@ -199,11 +196,9 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+    @Override public boolean readFrom(MessageReader reader) {
         // TODO: Remove #readFrom() after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
+        if (!super.readFrom(reader))
             return false;
 
         switch (reader.state()) {

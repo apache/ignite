@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -650,10 +649,8 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+    @Override public boolean writeTo(MessageWriter writer) {
         // TODO: Safe to remove only after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
-        writer.setBuffer(buf);
-
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType()))
                 return false;
@@ -686,10 +683,8 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+    @Override public boolean readFrom(MessageReader reader) {
         // TODO: Safe to remove only after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
-        reader.setBuffer(buf);
-
         switch (reader.state()) {
             case 0:
                 depInfo = reader.readMessage();

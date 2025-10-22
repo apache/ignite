@@ -62,7 +62,14 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
     private <T extends Message> T doMarshalUnmarshal(T srcMsg) {
         ByteBuffer buf = ByteBuffer.allocate(8 * 1024);
 
-        boolean fullyWritten = loopBuffer(buf, 0, buf0 -> srcMsg.writeTo(buf0, new DirectMessageWriter(msgFactory)));
+        DirectMessageReader reader = new DirectMessageReader(msgFactory, null);
+        DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
+
+        boolean fullyWritten = loopBuffer(buf, 0, buf0 -> {
+            writer.setBuffer(buf);
+            return srcMsg.writeTo(new DirectMessageWriter(msgFactory));
+        });
+
         assertTrue("The message was not written completely.", fullyWritten);
 
         buf.flip();
@@ -76,8 +83,11 @@ public class DirectMarshallingMessagesTest extends GridCommonAbstractTest {
 
         T resMsg = (T)msgFactory.create(type);
 
-        boolean fullyRead = loopBuffer(buf, buf.position(),
-            buf0 -> resMsg.readFrom(buf0, new DirectMessageReader(msgFactory, null)));
+        boolean fullyRead = loopBuffer(buf, buf.position(), buf0 -> {
+            reader.setBuffer(buf0);
+            return resMsg.readFrom(reader);
+        });
+
         assertTrue("The message was not read completely.", fullyRead);
 
         return resMsg;

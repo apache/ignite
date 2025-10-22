@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -97,12 +96,12 @@ public class MessageDirectTypeIdConflictTest extends GridCommonAbstractTest {
     /** Test message with already registered direct type. */
     private static class TestMessage implements Message {
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        @Override public boolean writeTo(MessageWriter writer) {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        @Override public boolean readFrom(MessageReader reader) {
             return false;
         }
 

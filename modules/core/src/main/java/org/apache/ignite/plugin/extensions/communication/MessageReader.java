@@ -17,7 +17,6 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -35,13 +34,6 @@ import org.apache.ignite.lang.IgniteUuid;
  * Allows to customize the binary format of communication messages.
  */
 public interface MessageReader {
-    /**
-     * Sets but buffer to read from.
-     *
-     * @param buf Byte buffer.
-     */
-    public void setBuffer(ByteBuffer buf);
-
     /**
      * Reads {@code byte} value.
      *
