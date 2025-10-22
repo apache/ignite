@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.query.reducer.IndexQueryReduc
 import org.apache.ignite.internal.processors.cache.query.reducer.NodePageStream;
 import org.apache.ignite.internal.processors.cache.query.reducer.TextQueryReducer;
 import org.apache.ignite.internal.processors.cache.query.reducer.UnsortedCacheQueryReducer;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -67,7 +67,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
     private Set<UUID> rcvdFirstPage = ConcurrentHashMap.newKeySet();
 
     /** Metadata for IndexQuery. */
-    private final CompletableFuture<IndexQueryResultMeta> idxQryMetaFut;
+    private final IgniteCompletableFuture<IndexQueryResultMeta> idxQryMetaFut;
 
     /** Query start time in nanoseconds to measure duration. */
     private final long startTimeNanos;
@@ -104,7 +104,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
         Map<UUID, NodePageStream<R>> streamsMap = Collections.unmodifiableMap(streams);
 
         if (qry.query().type() == INDEX) {
-            idxQryMetaFut = new CompletableFuture<>();
+            idxQryMetaFut = new IgniteCompletableFuture<>();
 
             reducer = new IndexQueryReducer<>(qry.query().idxQryDesc().valType(), streamsMap, cctx, idxQryMetaFut);
         }

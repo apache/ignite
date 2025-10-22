@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache.query.reducer;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 
 /**
  * Reducer of cache query results, no ordering of results is provided.
@@ -33,14 +33,14 @@ public class UnsortedCacheQueryReducer<R> extends CacheQueryReducer<R> {
     /** Current page to return data to user. */
     private NodePage<R> page;
 
-    /** Pending futures for requeseted pages. */
-    private final CompletableFuture<NodePage<R>>[] futs;
+    /** Pending futures for requested pages. */
+    private final IgniteCompletableFuture<NodePage<R>>[] futs;
 
     /** */
     public UnsortedCacheQueryReducer(Map<UUID, NodePageStream<R>> pageStreams) {
         super(pageStreams);
 
-        futs = new CompletableFuture[pageStreams.size()];
+        futs = new IgniteCompletableFuture[pageStreams.size()];
     }
 
     /** {@inheritDoc} */
@@ -52,7 +52,7 @@ public class UnsortedCacheQueryReducer<R> extends CacheQueryReducer<R> {
                 if (s.closed())
                     continue;
 
-                CompletableFuture<NodePage<R>> f = s.headPage();
+                IgniteCompletableFuture<NodePage<R>> f = s.headPage();
 
                 if (f.isDone()) {
                     page = get(f);
@@ -67,11 +67,11 @@ public class UnsortedCacheQueryReducer<R> extends CacheQueryReducer<R> {
             if (pendingNodesCnt == 0)
                 return false;
 
-            CompletableFuture[] pendingFuts = Arrays.copyOf(futs, pendingNodesCnt);
+            IgniteCompletableFuture<?>[] pendingFuts = Arrays.copyOf(futs, pendingNodesCnt);
 
             Arrays.fill(futs, 0, pendingNodesCnt, null);
 
-            page = get(CompletableFuture.anyOf(pendingFuts));
+            page = get(IgniteCompletableFuture.anyOf(pendingFuts));
         }
 
         return true;

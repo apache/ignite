@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache.query.reducer;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.processors.cache.query.ScoredCacheEntry;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 
 /**
  * Reducer for {@code TextQuery} results.
@@ -36,8 +36,8 @@ public class TextQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
     }
 
     /** {@inheritDoc} */
-    @Override protected CompletableFuture<Comparator<NodePage<R>>> pageComparator() {
-        CompletableFuture<Comparator<NodePage<R>>> f = new CompletableFuture<>();
+    @Override protected IgniteCompletableFuture<Comparator<NodePage<R>>> pageComparator() {
+        IgniteCompletableFuture<Comparator<NodePage<R>>> f = new IgniteCompletableFuture<>();
 
         f.complete((o1, o2) -> -Float.compare(
             ((ScoredCacheEntry<?, ?>)o1.head()).score(), ((ScoredCacheEntry<?, ?>)o2.head()).score()));

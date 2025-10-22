@@ -18,18 +18,32 @@
 package org.apache.ignite.internal.thread.context;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.thread.IgniteForkJoinPool;
 import org.apache.ignite.internal.thread.IgniteScheduledThreadPoolExecutor;
 import org.apache.ignite.internal.thread.IgniteStripedExecutor;
 import org.apache.ignite.internal.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.internal.thread.IgniteThreadPoolExecutor;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteOutClosure;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -260,6 +274,104 @@ public class ThreadContextAttributesTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testGridFutureAdapterContextPropagation() throws Exception {
+        GridFutureAdapter<Integer> fut = new GridFutureAdapter<>();
+
+        BiConsumerX<String, Integer> checks = (s, i) -> {
+            fut.listen(new AttributeValueChecker(s, i));
+            fut.listen(AttributeValueChecker.createListenInClosureChecker(s, i));
+            fut.chain(AttributeValueChecker.createChainClosureChecker(s, i))
+                .chain(AttributeValueChecker.createChainClosureChecker(s, i), IgniteForkJoinPool.commonPool())
+                .chain(AttributeValueChecker.createChainOutClosureChecker(s, i))
+                .chain(AttributeValueChecker.createChainOutClosureChecker(s, i), IgniteForkJoinPool.commonPool())
+                .chainCompose(AttributeValueChecker.createChainComposeChecker(s, i))
+                .chainCompose(AttributeValueChecker.createChainComposeChecker(s, i), IgniteForkJoinPool.commonPool());
+        };
+
+        createAttributeChecks(checks);
+
+        try (Scope ignored = ThreadContext.withAttribute(STR_ATTR, "test").withAttribute(INT_ATTR, 5)) {
+            checkAttributeValues("test", 5);
+
+            fut.onDone(0);
+
+            checkAttributeValues("test", 5);
+        }
+
+        AttributeValueChecker.assertAllCreatedChecksPassed();
+    }
+
+    /** */
+    @Test
+    public void testCompletableFutureContextPropagation() throws Exception {
+        IgniteCompletableFuture<Integer> fut = new IgniteCompletableFuture<>();
+        IgniteCompletableFuture<Integer> failedFut = new IgniteCompletableFuture<>();
+        IgniteCompletableFuture<Integer> testCompletionStage = new IgniteCompletableFuture<>();
+
+        BiConsumerX<String, Integer> checks = (s, i) -> {
+            fut.thenCompose(AttributeValueChecker.createCompletableStageFactory(s, i))
+                .thenComposeAsync(AttributeValueChecker.createCompletableStageFactory(s, i))
+                .thenComposeAsync(AttributeValueChecker.createCompletableStageFactory(s, i), IgniteForkJoinPool.commonPool())
+                .thenApply(AttributeValueChecker.createFunction(s, i))
+                .thenApplyAsync(AttributeValueChecker.createFunction(s, i))
+                .thenApplyAsync(AttributeValueChecker.createFunction(s, i), IgniteForkJoinPool.commonPool())
+                .whenComplete(AttributeValueChecker.createBiConsumer(s, i))
+                .whenCompleteAsync(AttributeValueChecker.createBiConsumer(s, i))
+                .whenCompleteAsync(AttributeValueChecker.createBiConsumer(s, i), IgniteForkJoinPool.commonPool())
+                .thenCombine(testCompletionStage, AttributeValueChecker.createBiFunction(s, i))
+                .thenCombineAsync(testCompletionStage, AttributeValueChecker.createBiFunction(s, i))
+                .thenCombineAsync(testCompletionStage, AttributeValueChecker.createBiFunction(s, i), IgniteForkJoinPool.commonPool())
+                .applyToEither(testCompletionStage, AttributeValueChecker.createFunction(s, i))
+                .applyToEitherAsync(testCompletionStage, AttributeValueChecker.createFunction(s, i))
+                .applyToEitherAsync(testCompletionStage, AttributeValueChecker.createFunction(s, i), IgniteForkJoinPool.commonPool())
+                .handle(AttributeValueChecker.createBiFunction(s, i))
+                .handleAsync(AttributeValueChecker.createBiFunction(s, i))
+                .handleAsync(AttributeValueChecker.createBiFunction(s, i), IgniteForkJoinPool.commonPool());
+
+            fut.thenAccept(AttributeValueChecker.createConsumer(s, i));
+            fut.thenAcceptAsync(AttributeValueChecker.createConsumer(s, i));
+            fut.thenAcceptAsync(AttributeValueChecker.createConsumer(s, i), IgniteForkJoinPool.commonPool());
+
+            fut.thenRun(new AttributeValueChecker(s, i));
+            fut.thenRunAsync(new AttributeValueChecker(s, i));
+            fut.thenRunAsync(new AttributeValueChecker(s, i), IgniteForkJoinPool.commonPool());
+
+            fut.thenAcceptBoth(testCompletionStage, AttributeValueChecker.createBiConsumer(s, i));
+            fut.thenAcceptBothAsync(testCompletionStage, AttributeValueChecker.createBiConsumer(s, i));
+            fut.thenAcceptBothAsync(testCompletionStage, AttributeValueChecker.createBiConsumer(s, i), IgniteForkJoinPool.commonPool());
+
+            fut.runAfterBoth(testCompletionStage, new AttributeValueChecker(s, i));
+            fut.runAfterBothAsync(testCompletionStage, new AttributeValueChecker(s, i));
+            fut.runAfterBothAsync(testCompletionStage, new AttributeValueChecker(s, i), IgniteForkJoinPool.commonPool());
+
+            fut.acceptEither(testCompletionStage, AttributeValueChecker.createConsumer(s, i));
+            fut.acceptEitherAsync(testCompletionStage, AttributeValueChecker.createConsumer(s, i));
+            fut.acceptEitherAsync(testCompletionStage, AttributeValueChecker.createConsumer(s, i), IgniteForkJoinPool.commonPool());
+
+            fut.runAfterEither(testCompletionStage, new AttributeValueChecker(s, i));
+            fut.runAfterEitherAsync(testCompletionStage, new AttributeValueChecker(s, i));
+            fut.runAfterEitherAsync(testCompletionStage, new AttributeValueChecker(s, i), IgniteForkJoinPool.commonPool());
+
+            failedFut.exceptionally(AttributeValueChecker.createFunction(s, i));
+        };
+
+        createAttributeChecks(checks);
+
+        try (Scope ignored = ThreadContext.withAttribute(STR_ATTR, "test").withAttribute(INT_ATTR, 5)) {
+            checkAttributeValues("test", 5);
+
+            fut.complete(0);
+            failedFut.completeExceptionally(new IgniteException());
+            testCompletionStage.complete(0);
+
+            checkAttributeValues("test", 5);
+        }
+
+        AttributeValueChecker.assertAllCreatedChecksPassed();
+    }
+
+    /** */
     private void doThreadContextAwareExecutorServiceTest(ExecutorService pool) throws Exception {
         CountDownLatch poolUnblockedLatch = blockPool(pool);
 
@@ -374,9 +486,12 @@ public class ThreadContextAttributesTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class AttributeValueChecker extends CompletableFuture<Void> implements Runnable, Callable<Integer> {
+    private static class AttributeValueChecker extends CompletableFuture<Void> implements IgniteRunnable, Callable<Integer> {
         /** */
-        static final List<AttributeValueChecker> CHECKS = new ArrayList<>();
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        static final List<AttributeValueChecker> CHECKS = Collections.synchronizedList(new ArrayList<>());
 
         /** */
         private final String strAttrVal;
@@ -416,6 +531,96 @@ public class ThreadContextAttributesTest extends GridCommonAbstractTest {
             for (AttributeValueChecker check : CHECKS) {
                 check.get(1000, MILLISECONDS);
             }
+        }
+
+        /** */
+        static IgniteClosure<IgniteInternalFuture<Integer>, Integer> createChainClosureChecker(String strAttrVal, int intAttrVal) {
+            AttributeValueChecker checker = new AttributeValueChecker(strAttrVal, intAttrVal);
+
+            return fut -> {
+                checker.run();
+
+                return 0;
+            };
+        }
+
+        /** */
+        static IgniteClosure<IgniteInternalFuture<Integer>, IgniteInternalFuture<Integer>> createChainComposeChecker(
+            String strAttrVal,
+            int intAttrVal
+        ) {
+            AttributeValueChecker checker = new AttributeValueChecker(strAttrVal, intAttrVal);
+
+            return fut -> {
+                checker.run();
+
+                return fut;
+            };
+        }
+
+        /** */
+        static IgniteInClosure<IgniteInternalFuture<Integer>> createListenInClosureChecker(String strAttrVal, int intAttrVal) {
+            AttributeValueChecker checker = new AttributeValueChecker(strAttrVal, intAttrVal);
+
+            return fut -> checker.run();
+        }
+
+        /** */
+        static IgniteOutClosure<Integer> createChainOutClosureChecker(String strAttrVal, int intAttrVal) {
+            AttributeValueChecker checker = new AttributeValueChecker(strAttrVal, intAttrVal);
+
+            return () -> {
+                checker.run();
+
+                return 0;
+            };
+        }
+
+        /** */
+        static <T> BiFunction<Integer, T, Integer> createBiFunction(String strAttrVal, int intAttrVal) {
+            AttributeValueChecker checker = new AttributeValueChecker(strAttrVal, intAttrVal);
+
+            return (r, t) -> {
+                checker.run();
+
+                return 0;
+            };
+        }
+
+        /** */
+        static <T> Function<T, Integer> createFunction(String strAttrVal, int intAttrVal) {
+            AttributeValueChecker checker = new AttributeValueChecker(strAttrVal, intAttrVal);
+
+            return a -> {
+                checker.run();
+
+                return 0;
+            };
+        }
+
+        /** */
+        static Function<Integer, CompletionStage<Integer>> createCompletableStageFactory(String strAttrVal, int intAttrVal) {
+            AttributeValueChecker checker = new AttributeValueChecker(strAttrVal, intAttrVal);
+
+            return a -> {
+                checker.run();
+
+                return IgniteCompletableFuture.completedFuture(0);
+            };
+        }
+
+        /** */
+        static Consumer<Integer> createConsumer(String strAttrVal, int intAttrVal) {
+            AttributeValueChecker checker = new AttributeValueChecker(strAttrVal, intAttrVal);
+
+            return a -> checker.run();
+        }
+
+        /** */
+        static <T, R> BiConsumer<T, R> createBiConsumer(String strAttrVal, int intAttrVal) {
+            AttributeValueChecker checker = new AttributeValueChecker(strAttrVal, intAttrVal);
+
+            return (r, t) -> checker.run();
         }
     }
 

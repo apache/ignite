@@ -37,7 +37,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -85,6 +84,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSn
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -944,8 +944,8 @@ public class SnapshotRestoreProcess {
                     ", caches=" + F.transform(opCtx0.dirs.values(), s -> NodeFileTree.cacheName(s.get(0))) + ']');
             }
 
-            CompletableFuture<Void> metaFut = ctx.localNodeId().equals(opCtx0.opNodeId) ?
-                CompletableFuture.runAsync(
+            IgniteCompletableFuture<Void> metaFut = ctx.localNodeId().equals(opCtx0.opNodeId) ?
+                IgniteCompletableFuture.runAsync(
                     () -> {
                         try {
                             SnapshotMetadata meta = F.first(opCtx0.metasPerNode.get(opCtx0.opNodeId));
@@ -966,7 +966,7 @@ public class SnapshotRestoreProcess {
 
                             opCtx0.errHnd.accept(t);
                         }
-                    }, snpMgr.snapshotExecutorService()) : CompletableFuture.completedFuture(null);
+                    }, snpMgr.snapshotExecutorService()) : IgniteCompletableFuture.completedFuture(null);
 
             Map<String, GridAffinityAssignmentCache> affCache = new HashMap<>();
 
@@ -1136,7 +1136,7 @@ public class SnapshotRestoreProcess {
                                     return;
                                 }
 
-                                CompletableFuture.runAsync(
+                                IgniteCompletableFuture.runAsync(
                                     () -> {
                                         try {
                                             punchHole(grpId, partId, snpFile);
@@ -1166,7 +1166,7 @@ public class SnapshotRestoreProcess {
 
             opCtx0.totalParts = size;
 
-            CompletableFuture.allOf(allPartFuts.toArray(new CompletableFuture[size]))
+            IgniteCompletableFuture.allOf(allPartFuts.toArray(new IgniteCompletableFuture[size]))
                 .runAfterBothAsync(metaFut, () -> {
                     try {
                         if (opCtx0.stopChecker.getAsBoolean())
@@ -1733,7 +1733,7 @@ public class SnapshotRestoreProcess {
     ) {
         IgniteSnapshotManager snapMgr = ctx.cache().context().snapshotMgr();
 
-        CompletableFuture<Path> copyPartFut = CompletableFuture.supplyAsync(() -> {
+        IgniteCompletableFuture<Path> copyPartFut = IgniteCompletableFuture.supplyAsync(() -> {
             if (opCtx.stopChecker.getAsBoolean())
                 throw new IgniteInterruptedException("The operation has been stopped on copy file: " + snpFile.getAbsolutePath());
 
@@ -1753,7 +1753,8 @@ public class SnapshotRestoreProcess {
         if (opCtx.isGroupCompressed(grpId)) {
             copyPartFut = copyPartFut.thenComposeAsync(
                 p -> {
-                    CompletableFuture<Path> result = new CompletableFuture<>();
+                    IgniteCompletableFuture<Path> result = new IgniteCompletableFuture<>();
+
                     try {
                         punchHole(grpId, partFut.partId, tmpPartFile);
 
@@ -1973,7 +1974,7 @@ public class SnapshotRestoreProcess {
     }
 
     /** Future will be completed when partition processing ends. */
-    private static class PartitionRestoreFuture extends CompletableFuture<Path> {
+    private static class PartitionRestoreFuture extends IgniteCompletableFuture<Path> {
         /** Partition id. */
         private final int partId;
 

@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.thread.IgniteThreadPoolExecutor;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 
@@ -152,10 +152,10 @@ public class BusyExecutor {
      * @param r Task to execute.
      * @return Completable future with executed flag in result.
      */
-    public CompletableFuture<Boolean> submit(Runnable r) {
+    public IgniteCompletableFuture<Boolean> submit(Runnable r) {
         GridBusyLock lock = busyLock;
 
-        CompletableFuture<Boolean> res = new CompletableFuture<>();
+        IgniteCompletableFuture<Boolean> res = new IgniteCompletableFuture<>();
 
         if (r instanceof CancellableTask) {
             CancellableTask ct = (CancellableTask)r;
