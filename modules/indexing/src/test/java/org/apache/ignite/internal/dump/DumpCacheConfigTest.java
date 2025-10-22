@@ -57,6 +57,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.d
 public class DumpCacheConfigTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        stopAllGrids();
+
         cleanPersistenceDir();
 
         super.beforeTest();
