@@ -78,6 +78,31 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
             "Datacenters count must be even when primary datacenter is set.");
     }
 
+    /** */
+    @Test
+    public void testClientDoesNotAffectValidation() throws Exception {
+        MdcTopologyValidator topValidator = new MdcTopologyValidator();
+
+        topValidator.setPrimaryDatacenter(DC_ID_1);
+        topValidator.setDatacenters(List.of(DC_ID_0, DC_ID_1));
+
+        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
+        startGrid(0);
+
+        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
+        startClientGrid();
+
+        IgniteEx client = startClientGrid("client");
+
+        waitForTopology(3);
+
+        CacheConfiguration<Object, Object> cfgCache = new CacheConfiguration<>("cache").setTopologyValidator(topValidator);
+
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(cfgCache);
+
+        GridTestUtils.assertThrows(log, () -> cache.put(KEY, VAL), IgniteException.class, "cache topology is not valid");
+    }
+
     /** Checks 1DC case with MdcTopologyValidator usage */
     @Test
     public void testEmptyDc() throws Exception {

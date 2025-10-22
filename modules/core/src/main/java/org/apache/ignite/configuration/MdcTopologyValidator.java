@@ -19,15 +19,15 @@ package org.apache.ignite.configuration;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
  * Multi-Datacenter topology validator.
  * Performs data protection in case of DC failure.
- * Covered DCs SHOULD be specified via {@link MdcTopologyValidator#setDatacenters}
- * and primary DC MAY be specified via {@link MdcTopologyValidator#setPrimaryDatacenter} in case of even DC count.
+ * Covered DCs MUST be specified via {@link MdcTopologyValidator#setDatacenters}
+ * and primary DC MUST be specified via {@link MdcTopologyValidator#setPrimaryDatacenter} in case of even DC count.
  * When primary datacenter is specified Topology Validator keeps cluster write accessed while primary DC is visible,
  * otherwise DC majority check is used.
  * */
@@ -60,12 +60,13 @@ public class MdcTopologyValidator implements TopologyValidator {
 
     /** {@inheritDoc} */
     @Override public boolean validate(Collection<ClusterNode> nodes) {
+        Stream<ClusterNode> servers = nodes.stream().filter(node -> !node.isClient());
+
         if (primDc != null) {
-            return nodes.stream().anyMatch(n -> n.dataCenterId().equals(primDc));
+            return servers.anyMatch(n -> n.dataCenterId().equals(primDc));
         }
 
-        List<String> visibleDcs = nodes.stream().map(ClusterNode::dataCenterId).collect(Collectors.toList());
-        int visible = visibleDcs.size();
+        long visible = servers.map(ClusterNode::dataCenterId).count();
         int half = dcs.size() / 2;
 
         return visible > half;
