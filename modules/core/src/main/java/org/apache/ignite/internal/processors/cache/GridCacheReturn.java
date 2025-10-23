@@ -37,7 +37,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Return value for cases where both, value and success flag need to be returned.
  */
-public final class GridCacheReturn implements Message {
+public class GridCacheReturn implements Message {
     /** Value. */
     @GridToStringInclude(sensitive = true)
     private volatile Object v;
@@ -97,7 +97,7 @@ public final class GridCacheReturn implements Message {
      * @param success Success flag.
      */
     public GridCacheReturn(
-        GridCacheContext<?, ?> cctx,
+        GridCacheContext cctx,
         boolean loc,
         boolean keepBinary,
         @Nullable ClassLoader ldr,
@@ -153,7 +153,7 @@ public final class GridCacheReturn implements Message {
      * @param ldr Class loader, used for deserialization from binary representation.
      * @return This instance for chaining.
      */
-    public GridCacheReturn value(GridCacheContext<?, ?> cctx, CacheObject v, boolean keepBinary, @Nullable ClassLoader ldr) {
+    public GridCacheReturn value(GridCacheContext cctx, CacheObject v, boolean keepBinary, @Nullable ClassLoader ldr) {
         initValue(cctx, v, keepBinary, ldr);
 
         return this;
@@ -175,7 +175,7 @@ public final class GridCacheReturn implements Message {
      * @return This instance for chaining.
      */
     public GridCacheReturn set(
-        GridCacheContext<?, ?> cctx,
+        GridCacheContext cctx,
         @Nullable CacheObject cacheObj,
         boolean success,
         boolean keepBinary,
@@ -195,7 +195,7 @@ public final class GridCacheReturn implements Message {
      * @param ldr Class loader, used for deserialization from binary representation.
      */
     private void initValue(
-        GridCacheContext<?, ?> cctx,
+        GridCacheContext cctx,
         @Nullable CacheObject cacheObj,
         boolean keepBinary,
         @Nullable ClassLoader ldr
@@ -230,7 +230,7 @@ public final class GridCacheReturn implements Message {
      * @param keepBinary Keep binary.
      */
     public synchronized void addEntryProcessResult(
-        GridCacheContext<?, ?> cctx,
+        GridCacheContext cctx,
         KeyCacheObject key,
         @Nullable Object key0,
         @Nullable Object res,
@@ -243,7 +243,7 @@ public final class GridCacheReturn implements Message {
         invokeRes = true;
 
         if (loc) {
-            HashMap<Object, EntryProcessorResult<?>> resMap = (HashMap<Object, EntryProcessorResult<?>>)v;
+            HashMap<Object, EntryProcessorResult> resMap = (HashMap<Object, EntryProcessorResult>)v;
 
             if (resMap == null) {
                 resMap = new HashMap<>();
@@ -259,7 +259,7 @@ public final class GridCacheReturn implements Message {
                     throw (UnregisteredBinaryTypeException)err;
             }
 
-            CacheInvokeResult<?> res0 = err == null ? CacheInvokeResult.fromResult(res) : CacheInvokeResult.fromError(err);
+            CacheInvokeResult res0 = err == null ? CacheInvokeResult.fromResult(res) : CacheInvokeResult.fromError(err);
 
             Object resKey = key0 != null ? key0 :
                 ((keepBinary && key instanceof BinaryObject) ? key : CU.value(key, cctx, true));
@@ -340,7 +340,7 @@ public final class GridCacheReturn implements Message {
 
         invokeRes = true;
 
-        HashMap<Object, EntryProcessorResult<?>> resMap = (HashMap<Object, EntryProcessorResult<?>>)v;
+        HashMap<Object, EntryProcessorResult> resMap = (HashMap<Object, EntryProcessorResult>)v;
 
         if (resMap == null) {
             resMap = new HashMap<>();
@@ -348,7 +348,7 @@ public final class GridCacheReturn implements Message {
             v = resMap;
         }
 
-        resMap.putAll((Map<Object, EntryProcessorResult<?>>)other.v);
+        resMap.putAll((Map<Object, EntryProcessorResult>)other.v);
     }
 
     /**
@@ -356,7 +356,7 @@ public final class GridCacheReturn implements Message {
      *
      * @param ctx Cache context.
      */
-    public void marshalResult(GridCacheContext<?, ?> ctx) {
+    public void marshalResult(GridCacheContext ctx) {
         if (invokeRes && invokeResCol != null) {
             for (CacheInvokeDirectResult directRes : invokeResCol)
                 directRes.marshalResult(ctx);
@@ -367,7 +367,7 @@ public final class GridCacheReturn implements Message {
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    public void prepareMarshal(GridCacheContext<?, ?> ctx) throws IgniteCheckedException {
+    public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
         assert !loc;
 
         if (cacheObj != null)
@@ -384,7 +384,7 @@ public final class GridCacheReturn implements Message {
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */
-    public void finishUnmarshal(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         loc = true;
 
         if (cacheObj != null) {
@@ -397,7 +397,7 @@ public final class GridCacheReturn implements Message {
             for (CacheInvokeDirectResult res : invokeResCol)
                 res.finishUnmarshal(ctx, ldr);
 
-            Map<Object, CacheInvokeResult<?>> map0 = U.newHashMap(invokeResCol.size());
+            Map<Object, CacheInvokeResult> map0 = U.newHashMap(invokeResCol.size());
 
             for (CacheInvokeDirectResult res : invokeResCol) {
                 CacheInvokeResult<?> res0 = res.error() == null ?

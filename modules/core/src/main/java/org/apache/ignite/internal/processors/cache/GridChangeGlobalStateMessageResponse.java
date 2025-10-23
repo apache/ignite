@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public final class GridChangeGlobalStateMessageResponse extends GridCacheMessage {
+public class GridChangeGlobalStateMessageResponse extends GridCacheMessage {
     /** Request id. */
     @Order(value = 3, method = "requestId")
     private UUID reqId;

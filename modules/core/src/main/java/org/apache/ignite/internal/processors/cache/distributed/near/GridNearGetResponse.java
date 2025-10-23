@@ -40,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Get response.
  */
-public final class GridNearGetResponse extends GridCacheIdMessage implements GridCacheDeployable, GridCacheVersionable {
+public class GridNearGetResponse extends GridCacheIdMessage implements GridCacheDeployable, GridCacheVersionable {
     /** Future ID. */
     @Order(value = 4, method = "futureId")
     private IgniteUuid futId;
