@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDi
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -414,8 +415,12 @@ public class DynamicCacheDescriptor {
 
             if (res) {
                 for (SchemaAbstractOperation op: patch.getPatchOperations()) {
-                    if (op instanceof SchemaAddQueryEntityOperation)
+                    if (op instanceof SchemaAddQueryEntityOperation) {
+                        if (!F.isEmpty(((SchemaAddQueryEntityOperation)op).entities()))
+                            sql = true;
+
                         cacheCfg = GridCacheUtils.patchCacheConfiguration(cacheCfg, (SchemaAddQueryEntityOperation)op);
+                    }
                 }
             }
 
