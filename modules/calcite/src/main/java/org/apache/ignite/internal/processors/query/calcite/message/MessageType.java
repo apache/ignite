@@ -51,7 +51,7 @@ public enum MessageType {
     QUERY_INBOX_CANCEL_MESSAGE(305, InboxCloseMessage::new),
 
     /** */
-    QUERY_CLOSE_MESSAGE(306, QueryCloseMessage::new),
+    QUERY_CLOSE_MESSAGE(306, QueryCloseMessage::new, new QueryCloseMessageSerializer()),
 
     /** */
     GENERIC_VALUE_MESSAGE(307, GenericValueMessage::new),
