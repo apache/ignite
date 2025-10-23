@@ -19,6 +19,7 @@ package org.apache.ignite.topology;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.TopologyValidator;
@@ -71,5 +72,18 @@ public class MdcTopologyValidator implements TopologyValidator {
         int half = dcs.size() / 2;
 
         return visible > half;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass())
+            return false;
+        MdcTopologyValidator validator = (MdcTopologyValidator)o;
+        return Objects.equals(dcs, validator.dcs) && Objects.equals(primDc, validator.primDc);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return Objects.hash(dcs, primDc);
     }
 }
