@@ -17,31 +17,26 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.query.calcite.message.MarshalableMessage;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 
 /**
  *
  */
-public class FragmentMapping implements MarshalableMessage {
+public class FragmentMapping implements CalciteMessage {
     /** */
-    @GridDirectCollection(ColocationGroup.class)
+    @Order(0)
     private List<ColocationGroup> colocationGroups;
 
     /** */
@@ -129,6 +124,11 @@ public class FragmentMapping implements MarshalableMessage {
     }
 
     /** */
+    public void colocationGroups(List<ColocationGroup> colocationGrps) {
+        colocationGroups = colocationGrps;
+    }
+
+    /** */
     public FragmentMapping finalizeMapping(Supplier<List<UUID>> nodesSource) {
         if (colocationGroups.isEmpty())
             return this;
@@ -179,58 +179,7 @@ public class FragmentMapping implements MarshalableMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) {
-        colocationGroups.forEach(g -> g.prepareMarshal(ctx));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) {
-        colocationGroups.forEach(g -> g.prepareUnmarshal(ctx));
-    }
-
-    /** {@inheritDoc} */
     @Override public MessageType type() {
         return MessageType.FRAGMENT_MAPPING;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeCollection(colocationGroups, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                colocationGroups = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 }

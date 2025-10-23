@@ -17,56 +17,49 @@
 
 package org.apache.ignite.internal.processors.query.calcite.metadata;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.query.calcite.message.MarshalableMessage;
+import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
-import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /** */
-public class ColocationGroup implements MarshalableMessage {
+public class ColocationGroup implements CalciteMessage {
     /** */
+    @Order(value = 0, method = "sourceIds")
     private long[] sourceIds;
 
     /** */
-    @GridDirectCollection(UUID.class)
+    @Order(1)
     private List<UUID> nodeIds;
 
     /** */
-    @GridDirectTransient
     private List<List<UUID>> assignments;
+
+    /** */
+    @Order(value = 2, method = "assigmentsMessage")
+    private @Nullable List<UUIDCollectionMessage> assigmentsMsg;
 
     /**
      * Flag, indacating that assignment is formed by original cache assignment for given topology.
      * In case of {@code true} value we can skip assignment marshalling and calc assignment on remote nodes.
      */
-    @GridDirectTransient
     private boolean primaryAssignment;
-
-    /** Marshalled assignments. */
-    private int[] marshalledAssignments;
 
     /** */
     public static ColocationGroup forNodes(List<UUID> nodeIds) {
@@ -112,6 +105,12 @@ public class ColocationGroup implements MarshalableMessage {
         this(sourceIds, nodeIds, assignments);
 
         this.primaryAssignment = primaryAssignment;
+
+        if (primaryAssignment && assignments != null) {
+            assigmentsMsg = new ArrayList<>(assignments.size());
+
+            assignments.forEach(a -> assigmentsMsg.add(new UUIDCollectionMessage(a)));
+        }
     }
 
     /**
@@ -119,6 +118,11 @@ public class ColocationGroup implements MarshalableMessage {
      */
     public List<UUID> nodeIds() {
         return nodeIds == null ? Collections.emptyList() : nodeIds;
+    }
+
+    /** */
+    public void nodeIds(List<UUID> nodeIds) {
+        this.nodeIds = nodeIds;
     }
 
     /**
@@ -133,6 +137,32 @@ public class ColocationGroup implements MarshalableMessage {
             return nodeIds.stream().map(Collections::singletonList).collect(Collectors.toList());
 
         return Collections.emptyList();
+    }
+
+    /** */
+    public @Nullable List<UUIDCollectionMessage> assigmentsMessage() {
+        return assigmentsMsg;
+    }
+
+    /** */
+    public void assigmentsMessage(@Nullable List<UUIDCollectionMessage> assigmentsMsg) {
+        if (assigmentsMsg == null)
+            return;
+
+        assignments = new ArrayList<>(assigmentsMsg.size());
+
+        assigmentsMsg.forEach(am -> assignments.add(am.uuids() instanceof List ? (List<UUID>)am.uuids()
+            : new ArrayList<>(am.uuids())));
+    }
+
+    /** */
+    public long[] sourceIds() {
+        return sourceIds;
+    }
+
+    /** */
+    public void sourceIds(long[] srcIds) {
+        this.sourceIds = srcIds;
     }
 
     /** */
@@ -312,275 +342,5 @@ public class ColocationGroup implements MarshalableMessage {
     /** {@inheritDoc} */
     @Override public MessageType type() {
         return MessageType.COLOCATION_GROUP;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeIntArray(marshalledAssignments))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeCollection(nodeIds, MessageCollectionItemType.UUID))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeLongArray(sourceIds))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                marshalledAssignments = reader.readIntArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                nodeIds = reader.readCollection(MessageCollectionItemType.UUID);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                sourceIds = reader.readLongArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) {
-        if (assignments != null && marshalledAssignments == null && !primaryAssignment) {
-            Map<UUID, Integer> nodeIdxs = new HashMap<>();
-
-            for (int i = 0; i < nodeIds.size(); i++)
-                nodeIdxs.put(nodeIds.get(i), i);
-
-            int bitsPerPart = Integer.SIZE - Integer.numberOfLeadingZeros(nodeIds.size());
-
-            CompactedIntArray.Builder builder = CompactedIntArray.builder(bitsPerPart, assignments.size());
-
-            for (List<UUID> assignment : assignments) {
-                assert F.isEmpty(assignment) || assignment.size() == 1;
-
-                if (F.isEmpty(assignment))
-                    builder.add(nodeIds.size());
-                else {
-                    Integer nodeIdx = nodeIdxs.get(assignment.get(0));
-
-                    builder.add(nodeIdx);
-                }
-            }
-
-            marshalledAssignments = builder.build().buffer();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) {
-        if (marshalledAssignments != null && assignments == null) {
-            int bitsPerPart = Integer.SIZE - Integer.numberOfLeadingZeros(nodeIds.size());
-
-            CompactedIntArray compactedArr = CompactedIntArray.of(bitsPerPart, marshalledAssignments);
-
-            assignments = new ArrayList<>(compactedArr.size());
-
-            for (GridIntIterator iter = compactedArr.iterator(); iter.hasNext(); ) {
-                int nodeIdx = iter.next();
-
-                assignments.add(nodeIdx >= nodeIds.size() ? Collections.emptyList() :
-                    Collections.singletonList(nodeIds.get(nodeIdx)));
-            }
-        }
-    }
-
-    /** */
-    private static class CompactedIntArray {
-        /** */
-        protected static final int BUF_POS_MASK = Integer.SIZE - 1;
-
-        /** */
-        protected static final int BUF_POS_LOG2 = Integer.SIZE - Integer.numberOfLeadingZeros(Integer.SIZE - 1);
-
-        /** */
-        protected static final int[] BIT_MASKS = new int[Integer.SIZE];
-
-        static {
-            for (int i = 0; i < Integer.SIZE; i++)
-                BIT_MASKS[i] = ~(-1 << i);
-        }
-
-        /** Buffer. */
-        private final int[] buf;
-
-        /** Bits count per each item. */
-        private final int bitsPerItem;
-
-        /** Ctor. */
-        private CompactedIntArray(int bitsPerItem, int[] buf) {
-            this.bitsPerItem = bitsPerItem;
-            this.buf = buf;
-        }
-
-        /** */
-        public int[] buffer() {
-            return buf;
-        }
-
-        /** */
-        public int size() {
-            return buf[0];
-        }
-
-        /** */
-        public GridIntIterator iterator() {
-            return new Iterator();
-        }
-
-        /** */
-        public static CompactedIntArray of(int bitsPerItem, int[] buf) {
-            return new CompactedIntArray(bitsPerItem, buf);
-        }
-
-        /** */
-        public static Builder builder(int bitsPerItem, int capacity) {
-            return new Builder(bitsPerItem, capacity);
-        }
-
-        /** */
-        private static class Builder {
-            /** Current bit position. */
-            private int bitPos = Integer.SIZE; // Skip first element.
-
-            /** Current size. */
-            private int size;
-
-            /** Buffer. */
-            protected final int[] buf;
-
-            /** Bits count per each item. */
-            protected final int bitsPerItem;
-
-            /** Ctor. */
-            public Builder(int bitsPerItem, int capacity) {
-                this.bitsPerItem = bitsPerItem;
-                buf = new int[(capacity * bitsPerItem + Integer.SIZE - 1) / Integer.SIZE + 1];
-                buf[0] = capacity;
-            }
-
-            /** Add the next item. */
-            public void add(int val) {
-                assert size < buf[0];
-
-                int bitsToWrite = bitsPerItem;
-                int bitPos = this.bitPos;
-
-                do {
-                    int bitsToWriteCurBuf = Math.min(bitsToWrite, Integer.SIZE - (bitPos & BUF_POS_MASK));
-
-                    int writeVal = (val & BIT_MASKS[bitsToWriteCurBuf]) << (bitPos & BUF_POS_MASK);
-
-                    val >>= bitsToWriteCurBuf;
-
-                    buf[bitPos >> BUF_POS_LOG2] |= writeVal;
-
-                    bitPos += bitsToWriteCurBuf;
-
-                    bitsToWrite -= bitsToWriteCurBuf;
-                }
-                while (bitsToWrite > 0);
-
-                this.bitPos = bitPos;
-
-                size++;
-            }
-
-            /** */
-            public CompactedIntArray build() {
-                buf[0] = size;
-
-                return new CompactedIntArray(bitsPerItem, buf);
-            }
-        }
-
-        /** */
-        private class Iterator implements GridIntIterator {
-            /** Current bit position. */
-            private int bitPos = Integer.SIZE; // Skip first element.
-
-            /** Current item position. */
-            private int pos;
-
-            /** Array size. */
-            private final int size = buf[0];
-
-            /** {@inheritDoc} */
-            @Override public boolean hasNext() {
-                return pos < size;
-            }
-
-            /** {@inheritDoc} */
-            @Override public int next() {
-                assert pos < size;
-
-                int bitPos = this.bitPos;
-
-                int bitsFirstBuf = Math.min(bitsPerItem, Integer.SIZE - (bitPos & BUF_POS_MASK));
-
-                int val = ((buf[bitPos >> BUF_POS_LOG2] >> (bitPos & BUF_POS_MASK)) & BIT_MASKS[bitsFirstBuf]);
-
-                bitPos += bitsFirstBuf;
-
-                if (bitsFirstBuf < bitsPerItem) {
-                    int bitsSecondBuf = bitsPerItem - bitsFirstBuf;
-
-                    val |= ((buf[bitPos >> BUF_POS_LOG2] >> (bitPos & BUF_POS_MASK)) & BIT_MASKS[bitsSecondBuf])
-                        << bitsFirstBuf;
-
-                    bitPos += bitsSecondBuf;
-                }
-
-                this.bitPos = bitPos;
-
-                pos++;
-
-                return val;
-            }
-        }
     }
 }

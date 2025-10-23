@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.function.Supplier;
+import org.apache.ignite.internal.codegen.ColocationGroupSerializer;
 import org.apache.ignite.internal.codegen.FragmentDescriptionSerializer;
+import org.apache.ignite.internal.codegen.FragmentMappingSerializer;
+import org.apache.ignite.internal.codegen.QueryStartResponseSerializer;
 import org.apache.ignite.internal.codegen.QueryTxEntrySerializer;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
@@ -33,7 +36,7 @@ public enum MessageType {
     QUERY_START_REQUEST(300, QueryStartRequest::new),
 
     /** */
-    QUERY_START_RESPONSE(301, QueryStartResponse::new),
+    QUERY_START_RESPONSE(301, QueryStartResponse::new, new QueryStartResponseSerializer()),
 
     /** */
     QUERY_ERROR_MESSAGE(302, ErrorMessage::new),
@@ -54,10 +57,10 @@ public enum MessageType {
     GENERIC_VALUE_MESSAGE(307, GenericValueMessage::new),
 
     /** */
-    FRAGMENT_MAPPING(350, FragmentMapping::new),
+    FRAGMENT_MAPPING(350, FragmentMapping::new, new FragmentMappingSerializer()),
 
     /** */
-    COLOCATION_GROUP(351, ColocationGroup::new),
+    COLOCATION_GROUP(351, ColocationGroup::new, new ColocationGroupSerializer()),
 
     /** */
     FRAGMENT_DESCRIPTION(352, FragmentDescription::new, new FragmentDescriptionSerializer()),
