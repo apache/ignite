@@ -63,11 +63,11 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     /** Rolling upgrade disabled flag. */
     private volatile boolean disabled;
 
-    /** Last joining node timestamp. */
-    private long lastJoiningNodeTimestamp;
-
     /** Last joining node. */
-    private ClusterNode lastJoiningNode = null;
+    private volatile ClusterNode lastJoiningNode = null;
+
+    /** Last joining node timestamp. */
+    private volatile long lastJoiningNodeTimestamp;
 
     /** */
     private final Object lock = new Object();
@@ -114,8 +114,13 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
 
         IgnitePair<IgniteProductVersion> newPair = F.pair(curVer, target);
 
-        if (!metastorage.compareAndSet(ROLLING_UPGRADE_VERSIONS_KEY, null, newPair))
-            throw new IgniteCheckedException("Rolling upgrade is already enabled with a different target version.");
+        synchronized (lock) {
+            if (!metastorage.compareAndSet(ROLLING_UPGRADE_VERSIONS_KEY, null, newPair))
+                throw new IgniteCheckedException("Rolling upgrade is already enabled with a different target version: "
+                    + metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY));
+
+            disabled = false;
+        }
 
         log.info("Rolling upgrade enabled [current=" + curVer + ", target=" + target + ']');
     }
@@ -199,6 +204,24 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If versions are incorrect.
      */
     private boolean checkVersions(IgniteProductVersion cur, IgniteProductVersion target) throws IgniteCheckedException {
+        IgniteProductVersion prevVerPair = metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
+
+        if (prevVerPair != null) {
+            if (prevVerPair.equals(F.pair(cur, target))) {
+                if (log.isInfoEnabled())
+                    log.info("Rolling upgrade is already enabled with the same current and target versions: " + cur + " , " + target);
+
+                return false;
+            }
+
+            String errMsg = "Rolling upgrade is already enabled with a different target version: "
+                + metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
+
+            log.warning(errMsg);
+
+            throw new IgniteCheckedException(errMsg);
+        }
+
         if (cur.major() != target.major()) {
             String errMsg = "Major versions are different.";
 
