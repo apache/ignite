@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.rollingupgrade;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
@@ -27,7 +28,13 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
@@ -37,8 +44,13 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     /** Key for the distributed property that holds current and target versions. */
     private static final String ROLLING_UPGRADE_VERSIONS_KEY = IGNITE_INTERNAL_KEY_PREFIX + "rolling.upgrade.versions";
 
+    private static long
+
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
+
+    /** */
+    private TcpDiscoveryNodesRing ring;
 
     /**
      * @param ctx Context.
@@ -47,6 +59,15 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
         super(ctx);
     }
 
+    /** */
+    private volatile boolean disabled;
+
+    /** */
+    private final Set<ClusterNode> joining = new HashSet<>();
+
+    /** */
+    private final Object lock = new Object();
+
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(new DistributedMetastorageLifecycleListener() {
@@ -54,6 +75,23 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
                 RollingUpgradeProcessor.this.metastorage = metastorage;
             }
         });
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
+        synchronized (lock) {
+            joining.add(node);
+
+            // TODO: clean not-ringed nodes. Add timer for failure detection/join timeout.
+            joining.removeAll(ring.allNodes());
+
+            IgniteProductVersion ringMinVer = ring.minimumNodeVersion();
+
+            if (disabled && !ringMinVer.equals(node.version()))
+                return new IgniteNodeValidationResult(node.id(), "Rolling upgrade is disabled. " +
+                        "Allowed version for joining: " + ringMinVer.major() + "." + ringMinVer.minor() + "." + ringMinVer.maintenance());
+        }
+        return null;
     }
 
     /**
@@ -87,10 +125,24 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     public void disable() throws IgniteCheckedException {
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
 
-        metastorage.remove(ROLLING_UPGRADE_VERSIONS_KEY);
-
         if (log.isInfoEnabled())
             log.info("Rolling upgrade disabled");
+
+        synchronized (lock) {
+            Set<IgniteProductVersion> vers = joining
+                .stream()
+                .map(ClusterNode::version)
+                .collect(Collectors.toSet());
+
+            vers.add(ring.minimumNodeVersion());
+            vers.add(ring.maximumNodeVersion());
+
+            if (vers.size() > 1)
+                throw new IgniteCheckedException();
+
+            disabled = true;
+            metastorage.removeAsync(ROLLING_UPGRADE_VERSIONS_KEY);
+        }
     }
 
     /**
