@@ -267,7 +267,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
         this.cpSpi = cpSpi == null || cpSpi.isEmpty() ? null : cpSpi;
     }
-    
+
     /**
      * @return Task session ID.
      */
