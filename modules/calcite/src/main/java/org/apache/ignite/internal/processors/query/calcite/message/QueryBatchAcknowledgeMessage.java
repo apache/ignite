@@ -59,7 +59,7 @@ public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
     }
 
     /**
-     * @param queryId New query ID.
+     * @param qryId New query ID.
      */
     public void queryId(UUID queryId) {
         this.queryId = queryId;
