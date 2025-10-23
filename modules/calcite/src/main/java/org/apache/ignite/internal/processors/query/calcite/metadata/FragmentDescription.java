@@ -39,7 +39,7 @@ public class FragmentDescription implements MarshalableMessage {
     private FragmentMapping mapping;
 
     /** */
-    @Order(2) // TODO: Remove this field (and MarshallableMessage interface) once IGNITE-26133 is completed
+    @Order(2)
     private Map<Long, UUIDCollectionMessage> remoteSources0;
 
     /** */
