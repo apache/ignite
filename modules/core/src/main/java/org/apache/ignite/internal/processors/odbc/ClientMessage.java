@@ -23,10 +23,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /** */
 public class ClientMessage implements Message, Externalizable {
@@ -83,11 +81,14 @@ public class ClientMessage implements Message, Externalizable {
         isFirstMessage = false;
     }
 
-    /** */
-    @Override public boolean writeTo(MessageWriter writer) {
+    /**
+     * Writes this message to provided byte buffer.
+     *
+     * @param buf Byte buffer.
+     * @return Whether message was fully written.
+     */
+    public boolean writeTo(ByteBuffer buf) {
         assert stream != null || data != null;
-
-        ByteBuffer buf = ((DirectMessageWriter)writer).getBuffer();
 
         byte[] data = stream != null ? stream.array() : this.data;
         int msgSize = stream != null ? stream.position() : data.length;
