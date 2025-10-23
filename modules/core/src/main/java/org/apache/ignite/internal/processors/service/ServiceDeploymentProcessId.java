@@ -86,7 +86,7 @@ public class ServiceDeploymentProcessId implements Message, Serializable {
     /**
      * @param reqId Request's id.
      */
-    public void requestId(IgniteUuid reqId) {
+    public void requestId(@Nullable IgniteUuid reqId) {
         this.reqId = reqId;
     }
 
