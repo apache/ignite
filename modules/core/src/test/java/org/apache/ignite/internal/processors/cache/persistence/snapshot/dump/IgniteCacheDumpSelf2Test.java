@@ -222,8 +222,6 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     public void testCheckDumpFromOtherNode() throws Exception {
         IgniteEx ign = startGrid(1);
 
-        System.out.println("ign.localNode().consistentId() = " + ign.localNode().consistentId());
-
         CacheConfiguration<Object, Object> ccfg = defaultCacheConfiguration();
 
         ign.createCache(ccfg);
@@ -238,8 +236,6 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         cleanPersistenceDir(true);
 
         ign = startGrid(2);
-
-        System.out.println("ign.localNode().consistentId() = " + ign.localNode().consistentId());
 
         SnapshotPartitionsVerifyTaskResult res =
             ign.context().cache().context().snapshotMgr().checkSnapshot(DMP_NAME, null).get(getTestTimeout());

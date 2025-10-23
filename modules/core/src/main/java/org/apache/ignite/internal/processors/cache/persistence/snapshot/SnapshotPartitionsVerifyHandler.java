@@ -68,6 +68,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -395,36 +396,58 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         }
 
         try {
-            String node = cctx.kernalContext().pdsFolderResolver().fileTree().folderName();
+            String loc = cctx.kernalContext().pdsFolderResolver().fileTree().folderName();
 
-            // TODO: add flag that show - if dump MUST contains local node data.
+            if (dump.fileTrees().stream().anyMatch(sft -> sft.folderName().equals(loc)))
+                return partHash(dump, loc, grpName, part);
+            else {
+                List<PartitionHashRecord> recs = new ArrayList<>();
 
-            try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part, null)) {
-                long size = 0;
+                for (SnapshotFileTree sft : dump.fileTrees()) {
+                    if (!dump.partitions(sft.folderName(), CU.cacheId(grpName)).contains(part))
+                        continue;
 
-                VerifyPartitionContext ctx = new VerifyPartitionContext();
-
-                while (iter.hasNext()) {
-                    DumpEntry e = iter.next();
-
-                    ctx.update((KeyCacheObject)e.key(), (CacheObject)e.value(), e.version());
-
-                    size++;
+                    recs.add(partHash(dump, sft.folderName(), grpName, part));
                 }
 
-                return new PartitionHashRecord(
-                    new PartitionKey(CU.cacheId(grpName), part, grpName),
-                    false,
-                    cctx.localNode().consistentId(),
-                    null,
-                    size,
-                    PartitionHashRecord.PartitionState.OWNING,
-                    ctx
-                );
+                if (recs.isEmpty()) {
+                    throw new IgniteException("Can't find group partition " +
+                        "[dump=" + dump.fileTrees().get(0).name() + ", grp=" + grpName + ", part=" + part + ']');
+                }
+
+                return recs.get(0);
             }
+
         }
         catch (Exception e) {
             throw new IgniteException(e);
+        }
+    }
+
+    /** */
+    private @NotNull PartitionHashRecord partHash(Dump dump, String node, String grpName, int part) throws Exception {
+        try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part, null)) {
+            long size = 0;
+
+            VerifyPartitionContext ctx = new VerifyPartitionContext();
+
+            while (iter.hasNext()) {
+                DumpEntry e = iter.next();
+
+                ctx.update((KeyCacheObject)e.key(), (CacheObject)e.value(), e.version());
+
+                size++;
+            }
+
+            return new PartitionHashRecord(
+                new PartitionKey(CU.cacheId(grpName), part, grpName),
+                false,
+                cctx.localNode().consistentId(),
+                null,
+                size,
+                PartitionHashRecord.PartitionState.OWNING,
+                ctx
+            );
         }
     }
 

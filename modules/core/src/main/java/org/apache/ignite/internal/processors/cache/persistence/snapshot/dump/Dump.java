@@ -28,7 +28,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -299,13 +298,7 @@ public class Dump implements AutoCloseable {
 
     /** @return Snapshot file tree for specific folder name. */
     private SnapshotFileTree sft(String folderName) {
-        Optional<SnapshotFileTree> first = sfts.stream().filter(sft -> sft.folderName().equals(folderName)).findFirst();
-
-        if (first.isEmpty()) {
-            System.out.println("Dump.sft");
-        }
-
-        return first.orElseThrow();
+        return sfts.stream().filter(sft -> sft.folderName().equals(folderName)).findFirst().orElseThrow();
     }
 
     /** @return Kernal context. */
