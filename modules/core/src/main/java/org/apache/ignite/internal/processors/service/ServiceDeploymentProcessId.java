@@ -79,7 +79,7 @@ public class ServiceDeploymentProcessId implements Message, Serializable {
     /**
      * @return Requests id.
      */
-    public IgniteUuid requestId() {
+    public @Nullable IgniteUuid requestId() {
         return reqId;
     }
 
