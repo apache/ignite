@@ -650,9 +650,10 @@ class MessageSerializerGenerator {
 
     /** */
     private void finish(List<String> code) {
-        // Remove the last empty line for the last "case".
-        String removed = code.remove(code.size() - 1);
-        assert EMPTY.equals(removed) : removed;
+        String lastLine = code.get(code.size() - 1);
+
+        if (EMPTY.equals(lastLine))
+            code.remove(code.size() - 1);
 
         code.add(line("}"));
         code.add(EMPTY);

@@ -375,7 +375,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     /**
      * @param ctx Grid kernal context.
      */
-    @SuppressWarnings("deprecation")
     public GridIoManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getCommunicationSpi());
 
@@ -433,13 +432,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         }
         else {
             formatter = new MessageFormatter() {
-                @Override public MessageWriter writer(UUID rmtNodeId, MessageFactory msgFactory) {
-                    assert rmtNodeId != null;
-
+                @Override public MessageWriter writer(MessageFactory msgFactory) {
                     return new DirectMessageWriter(msgFactory);
                 }
 
-                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
+                @Override public MessageReader reader(MessageFactory msgFactory) {
                     return new DirectMessageReader(msgFactory, ctx.cacheObjects());
                 }
             };
@@ -918,7 +915,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     @Override public void onKernalStart0() throws IgniteCheckedException {
         discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -3768,7 +3764,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
         @Override public void onTimeout() {
             GridMessageListener lsnr = listenerGet0(topic);
 
