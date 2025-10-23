@@ -122,14 +122,22 @@ tab:XML[]
 --
 
 When validation is enabled, Ignite runs extra checks for each SQL `INSERT`, `MERGE`, and `UPDATE` statement as well as cache API calls that modify SQL-managed tables and rejects data that breaks the schema. Violations raise an `IgniteSQLException` for SQL clients (JDBC, ODBC, REST), while key-value API callers get a `CacheException` whose root cause is that same `IgniteSQLException`.
-In both cases the application can handle the failure and the incorrect values are not stored.
+In both cases the application can handle the failure and the incorrect values are not stored. SQL DML already attempts to coerce values to the declared column types, so type mismatches typically appear when you write data through the cache API or binary objects.
 
-[source,sql]
+[source,java]
 ----
-CREATE TABLE Person (id INT PRIMARY KEY, age INT NOT NULL);
+// CREATE TABLE Person (id INT PRIMARY KEY, age INT);
 
-INSERT INTO Person VALUES (1, 42);          -- succeeds
-INSERT INTO Person VALUES (2, 'forty-two'); -- throws IgniteSQLException when validation is on
+IgniteCache<Integer, BinaryObject> cache = ignite.cache("SQL_PUBLIC_PERSON").withKeepBinary();
+
+BinaryObject invalidPerson = ignite.binary().builder("Person")
+    .setField("id", 2)
+    .setField("age", "forty-two") // String instead of INT column
+    .build();
+
+cache.put(2, invalidPerson); // CacheException wrapping IgniteSQLException when validation is enabled
 ----
+
+With the default configuration (validation disabled for non-indexed columns), the `put` above succeeds even though the stored `BinaryObject` does not match the SQL schema. Turning on validation causes Ignite to reject the update, protecting the table from malformed records.
 
 Enable the option when you need stronger guarantees that dynamic or user-provided data cannot break the table definition, and keep it disabled when the overhead of additional checks outweighs the risk of incorrect data.
