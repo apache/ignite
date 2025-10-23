@@ -30,6 +30,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -91,32 +92,18 @@ public class TcpDiscoveryNodesRing {
     @GridToStringExclude
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
-    /** */
-    private IgniteProductVersion maxNodeVer;
-
-    /** */
+    /** Minimum node version in the cluster. */
     private IgniteProductVersion minNodeVer;
 
-    /** */
-    public IgniteProductVersion maximumNodeVersion() {
+    /** Maximum node version in the cluster. */
+    private IgniteProductVersion maxNodeVer;
+
+    /** Returns min and max node versions. */
+    public IgnitePair<IgniteProductVersion> minMaxNodeVersions() {
         rwLock.readLock().lock();
 
         try {
-            return maxNodeVer;
-        }
-        finally {
-            rwLock.readLock().unlock();
-        }
-    }
-
-    /**
-     * @return Minimum node version.
-     */
-    public IgniteProductVersion minimumNodeVersion() {
-        rwLock.readLock().lock();
-
-        try {
-            return minNodeVer;
+            return F.pair(minNodeVer, maxNodeVer);
         }
         finally {
             rwLock.readLock().unlock();
@@ -425,8 +412,10 @@ public class TcpDiscoveryNodesRing {
 
             topVer = 0;
 
-            if (locNode != null)
+            if (locNode != null) {
                 minNodeVer = locNode.version();
+                maxNodeVer = locNode.version();
+            }
         }
         finally {
             rwLock.writeLock().unlock();
@@ -712,12 +701,13 @@ public class TcpDiscoveryNodesRing {
      */
     private void initializeMinMaxVersions() {
         minNodeVer = null;
+        maxNodeVer = null;
 
         for (TcpDiscoveryNode node : nodes) {
             if (minNodeVer == null || node.version().compareTo(minNodeVer) < 0)
                 minNodeVer = node.version();
 
-            if (maxNodeVer == null || node.version().compareTo(minNodeVer) > 0)
+            if (maxNodeVer == null || node.version().compareTo(maxNodeVer) > 0)
                 maxNodeVer = node.version();
         }
     }
