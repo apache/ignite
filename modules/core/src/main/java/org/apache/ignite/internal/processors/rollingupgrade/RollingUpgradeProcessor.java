@@ -44,7 +44,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     private static final String ROLLING_UPGRADE_VERSIONS_KEY = IGNITE_INTERNAL_KEY_PREFIX + "rolling.upgrade.versions";
 
     /** Joining timeout. */
-    private static final long JOINING_TIMEOUT = 2000;
+    private static final long JOINING_TIMEOUT = 200;
 
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
@@ -63,10 +63,10 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     private volatile boolean disabled;
 
     /** Last joining node. */
-    private volatile ClusterNode lastJoiningNode = null;
+    private ClusterNode lastJoiningNode = null;
 
     /** Last joining node timestamp. */
-    private volatile long lastJoiningNodeTimestamp;
+    private long lastJoiningNodeTimestamp;
 
     /** */
     private final Object lock = new Object();
@@ -120,10 +120,11 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException("Rolling upgrade is already enabled with a different target version: "
                     + metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY));
 
+            if (log.isInfoEnabled())
+                log.info("Rolling upgrade enabled [current=" + curVer + ", target=" + target + ']');
+
             disabled = false;
         }
-
-        log.info("Rolling upgrade enabled [current=" + curVer + ", target=" + target + ']');
     }
 
     /**
@@ -161,9 +162,9 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException(msg);
             }
 
-            disabled = true;
-
             metastorage.removeAsync(ROLLING_UPGRADE_VERSIONS_KEY);
+
+            disabled = true;
 
             if (log.isInfoEnabled())
                 log.info("Rolling upgrade disabled");
@@ -196,7 +197,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
 
     /** Сhecks whether the cluster is in the rolling upgrade mode. */
     public boolean enabled() {
-        return versions() != null;
+        return !disabled;
     }
 
     /**
