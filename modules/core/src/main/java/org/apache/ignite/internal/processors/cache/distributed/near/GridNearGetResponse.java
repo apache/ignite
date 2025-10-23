@@ -201,7 +201,8 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
      * @param err Error.
      */
     public void error(@Nullable Throwable err) {
-        errMsg = new ErrorMessage(err);
+        if (err != null)
+            errMsg = new ErrorMessage(err);
     }
 
     /**
