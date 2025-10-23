@@ -855,9 +855,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     req.version(),
                     req.deployInfo() != null);
 
-                // Minor optimization.
-                if (req.classError() != null)
-                    res.error(req.classError());
+                res.error(req.classError());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
             }
@@ -876,9 +874,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     return;
                 }
 
-                // Minor optimization.
-                if (res.classError() != null)
-                    res.error(res.classError());
+                res.error(res.classError());
 
                 fut.onResult(nodeId, res);
             }
