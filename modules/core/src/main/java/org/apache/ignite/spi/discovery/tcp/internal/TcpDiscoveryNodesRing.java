@@ -92,7 +92,22 @@ public class TcpDiscoveryNodesRing {
     private final ReadWriteLock rwLock = new ReentrantReadWriteLock();
 
     /** */
+    private IgniteProductVersion maxNodeVer;
+
+    /** */
     private IgniteProductVersion minNodeVer;
+
+    /** */
+    public IgniteProductVersion maximumNodeVersion() {
+        rwLock.readLock().lock();
+
+        try {
+            return maxNodeVer;
+        }
+        finally {
+            rwLock.readLock().unlock();
+        }
+    }
 
     /**
      * @return Minimum node version.
@@ -257,7 +272,7 @@ public class TcpDiscoveryNodesRing {
 
             maxInternalOrder = node.internalOrder();
 
-            initializeMinimumVersion();
+            initializeMinMaxVersions();
         }
         finally {
             rwLock.writeLock().unlock();
@@ -329,7 +344,7 @@ public class TcpDiscoveryNodesRing {
 
             nodeOrder = topVer;
 
-            initializeMinimumVersion();
+            initializeMinMaxVersions();
         }
         finally {
             rwLock.writeLock().unlock();
@@ -376,7 +391,7 @@ public class TcpDiscoveryNodesRing {
                 nodes.remove(rmv);
             }
 
-            initializeMinimumVersion();
+            initializeMinMaxVersions();
 
             return rmv;
         }
@@ -695,12 +710,15 @@ public class TcpDiscoveryNodesRing {
     /**
      *
      */
-    private void initializeMinimumVersion() {
+    private void initializeMinMaxVersions() {
         minNodeVer = null;
 
         for (TcpDiscoveryNode node : nodes) {
             if (minNodeVer == null || node.version().compareTo(minNodeVer) < 0)
                 minNodeVer = node.version();
+
+            if (maxNodeVer == null || node.version().compareTo(minNodeVer) > 0)
+                maxNodeVer = node.version();
         }
     }
 
