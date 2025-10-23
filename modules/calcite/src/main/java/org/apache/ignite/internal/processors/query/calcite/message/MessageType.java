@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 import org.apache.ignite.internal.codegen.ColocationGroupSerializer;
 import org.apache.ignite.internal.codegen.FragmentDescriptionSerializer;
 import org.apache.ignite.internal.codegen.FragmentMappingSerializer;
+import org.apache.ignite.internal.codegen.QueryCloseMessageSerializer;
 import org.apache.ignite.internal.codegen.QueryStartResponseSerializer;
 import org.apache.ignite.internal.codegen.QueryTxEntrySerializer;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
