@@ -27,6 +27,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -74,6 +75,17 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(new DistributedMetastorageLifecycleListener() {
+            @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
+                synchronized (lock) {
+                    try {
+                        disabled = metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY) != null;
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+            }
+
             @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
                 RollingUpgradeProcessor.this.metastorage = metastorage;
             }
