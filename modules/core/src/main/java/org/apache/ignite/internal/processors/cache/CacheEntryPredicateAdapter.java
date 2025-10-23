@@ -46,7 +46,7 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
 
     /** */
     @GridToStringInclude
-    @Order(1)
+    @Order(value = 1, method = "value")
     @Nullable private CacheObject val;
 
     /** */
@@ -87,7 +87,7 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
      * @param entry Entry.
      * @return Value.
      */
-    @Nullable protected CacheObject peekVisibleValue(GridCacheEntryEx entry) {
+    @Nullable private CacheObject peekVisibleValue(GridCacheEntryEx entry) {
         return locked ? entry.rawGet() : entry.peekVisibleValue();
     }
 
@@ -143,12 +143,12 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     }
 
     /** */
-    public @Nullable CacheObject val() {
+    public @Nullable CacheObject value() {
         return val;
     }
 
     /** */
-    public void val(@Nullable CacheObject val) {
+    public void value(@Nullable CacheObject val) {
         this.val = val;
     }
 
