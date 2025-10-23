@@ -65,7 +65,7 @@ public class ServiceDeploymentProcessId implements Message, Serializable {
     /**
      * @return Topology version.
      */
-    public AffinityTopologyVersion topologyVersion() {
+    public @Nullable AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
