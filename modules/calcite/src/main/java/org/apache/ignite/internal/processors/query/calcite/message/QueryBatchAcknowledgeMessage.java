@@ -46,8 +46,8 @@ public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
     }
 
     /** */
-    public QueryBatchAcknowledgeMessage(UUID queryId, long fragmentId, long exchangeId, int batchId) {
-        this.queryId = queryId;
+    public QueryBatchAcknowledgeMessage(UUID qryId, long fragmentId, long exchangeId, int batchId) {
+        this.qryId = qryId;
         this.fragmentId = fragmentId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
@@ -55,7 +55,7 @@ public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
 
     /** {@inheritDoc} */
     @Override public UUID queryId() {
-        return queryId;
+        return qryId;
     }
 
     /**
