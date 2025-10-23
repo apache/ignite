@@ -20,7 +20,6 @@ package org.apache.ignite.cache.affinity.rendezvous;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
@@ -50,8 +49,11 @@ public class MdcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, L
 
     /** {@inheritDoc} */
     @Override public boolean apply(ClusterNode node, List<ClusterNode> list) {
-        if (list.size() == 1) //account for primary node which is assigned beforehand
+        if (list.size() == 1) { //list contains only primary node, thus we started new assignment round.
+            partsDistrMap.replaceAll((e, v) -> -1);
+
             partsDistrMap.put(list.get(0).dataCenterId(), 1);
+        }
 
         String candidateDcId = node.dataCenterId();
         Integer candDcPartsCopies = partsDistrMap.get(candidateDcId);
@@ -71,11 +73,6 @@ public class MdcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, L
                 res = true;
             }
         }
-
-        Optional<Integer> sum = partsDistrMap.values().stream().reduce(Integer::sum);
-
-        if (sum.isPresent() && sum.get() == primaryAndBackups)
-            partsDistrMap.replaceAll((e, v) -> -1);
 
         return res;
     }
