@@ -17,7 +17,6 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.plugin.Extension;
 
@@ -35,20 +34,18 @@ public interface MessageFormatter extends Extension {
     /**
      * Creates new message writer instance.
      *
-     * @param rmtNodeId Remote node ID.
      * @param msgFactory Message factory.
      * @return Message writer.
      * @throws IgniteCheckedException In case of error.
      */
-    public MessageWriter writer(UUID rmtNodeId, MessageFactory msgFactory) throws IgniteCheckedException;
+    public MessageWriter writer(MessageFactory msgFactory) throws IgniteCheckedException;
 
     /**
      * Creates new message reader instance.
      *
-     * @param rmtNodeId Remote node ID.
      * @param msgFactory Message factory.
      * @return Message reader.
      * @throws IgniteCheckedException In case of error.
      */
-    public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) throws IgniteCheckedException;
+    public MessageReader reader(MessageFactory msgFactory) throws IgniteCheckedException;
 }

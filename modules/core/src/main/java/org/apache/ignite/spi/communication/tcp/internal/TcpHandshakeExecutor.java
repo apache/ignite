@@ -25,12 +25,19 @@ import java.util.UUID;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.codegen.RecoveryLastReceivedMessageSerializer;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.IgniteSpiContext;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.plugin.extensions.communication.Message.DIRECT_TYPE_SIZE;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE;
@@ -69,6 +76,7 @@ public class TcpHandshakeExecutor {
      * @param rmtNodeId Expected remote node.
      * @param sslMeta Required data for ssl.
      * @param msg Handshake message which should be sent during handshake.
+     * @param spiCtx Spi context.
      * @return Handshake response from predefined variants from {@link RecoveryLastReceivedMessage}.
      * @throws IgniteCheckedException If handshake failed.
      */
@@ -76,17 +84,16 @@ public class TcpHandshakeExecutor {
         SocketChannel ch,
         UUID rmtNodeId,
         GridSslMeta sslMeta,
-        HandshakeMessage msg
+        HandshakeMessage msg,
+        IgniteSpiContext spiCtx
     ) throws IgniteCheckedException {
         BlockingTransport transport = stateProvider.isSslEnabled() ?
-            new SslTransport(sslMeta, ch, directBuffer, log) : new TcpTransport(ch);
+            new SslTransport(sslMeta, ch, directBuffer, log, spiCtx) : new TcpTransport(ch, spiCtx);
 
-        ByteBuffer buf = transport.receiveNodeId();
+        UUID rmtNodeId0 = transport.receiveNodeId();
 
-        if (buf == null)
+        if (rmtNodeId0 == null)
             return NEED_WAIT;
-
-        UUID rmtNodeId0 = U.bytesToUuid(buf.array(), DIRECT_TYPE_SIZE);
 
         if (!rmtNodeId.equals(rmtNodeId0))
             throw new HandshakeException("Remote node ID is not as expected [expected=" + rmtNodeId + ", rcvd=" + rmtNodeId0 + ']');
@@ -98,9 +105,7 @@ public class TcpHandshakeExecutor {
 
         transport.sendHandshake(msg);
 
-        buf = transport.receiveAcknowledge();
-
-        long rcvCnt = buf.getLong(DIRECT_TYPE_SIZE);
+        long rcvCnt = transport.receiveAcknowledge();
 
         if (log.isDebugEnabled())
             log.debug("Received handshake message [rmtNode=" + rmtNodeId + ", rcvCnt=" + rcvCnt + ']');
@@ -119,13 +124,29 @@ public class TcpHandshakeExecutor {
      * Encapsulates handshake logic.
      */
     private abstract static class BlockingTransport {
+        /** Message reader. */
+        private final MessageReader reader;
+
+        /** Message writer. */
+        private final MessageWriter writer;
+
+        /** Message factory. */
+        private final MessageFactory msgFactory;
+
+        /** */
+        BlockingTransport(IgniteSpiContext spiCtx) throws IgniteCheckedException {
+            msgFactory = spiCtx.messageFactory();
+            reader = spiCtx.messageFormatter().reader(msgFactory);
+            writer = spiCtx.messageFormatter().writer(msgFactory);
+        }
+
         /**
          * Receive {@link NodeIdMessage}.
          *
-         * @return Buffer with {@link NodeIdMessage}.
+         * @return UUID from {@link NodeIdMessage}, or {@code null} if need wait.
          * @throws IgniteCheckedException If failed.
          */
-        ByteBuffer receiveNodeId() throws IgniteCheckedException {
+        @Nullable UUID receiveNodeId() throws IgniteCheckedException {
             ByteBuffer buf = ByteBuffer.allocate(NodeIdMessage.MESSAGE_FULL_SIZE)
                     .order(ByteOrder.LITTLE_ENDIAN);
 
@@ -140,12 +161,21 @@ public class TcpHandshakeExecutor {
 
                     if (msgType == HANDSHAKE_WAIT_MSG_TYPE)
                         return null;
+
+                    assert msgType == TcpCommunicationSpi.NODE_ID_MSG_TYPE;
                 }
 
                 totalBytes += readBytes;
             }
 
-            return buf;
+            buf.position(DIRECT_TYPE_SIZE);
+
+            NodeIdMessage nodeIdMsg = new NodeIdMessage();
+
+            msgFactory.serializer(nodeIdMsg.directType()).readFrom(nodeIdMsg, buf, reader);
+            reader.reset();
+
+            return nodeIdMsg.nodeId();
         }
 
         /**
@@ -159,7 +189,8 @@ public class TcpHandshakeExecutor {
                     .order(ByteOrder.LITTLE_ENDIAN)
                     .put(U.IGNITE_HEADER);
 
-            msg.writeTo(buf, null);
+            msgFactory.serializer(msg.directType()).writeTo(msg, buf, writer);
+
             buf.flip();
 
             write(buf);
@@ -168,24 +199,54 @@ public class TcpHandshakeExecutor {
         /**
          * Receive {@link RecoveryLastReceivedMessage} acknowledge message.
          *
-         * @return Buffer with message.
-         * @throws IgniteCheckedException If failed.
+         * @return Received count.
          */
-        ByteBuffer receiveAcknowledge() throws IgniteCheckedException {
+        long receiveAcknowledge() throws IgniteCheckedException {
             ByteBuffer buf = ByteBuffer.allocate(RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE)
                     .order(ByteOrder.LITTLE_ENDIAN);
 
-            for (int totalBytes = 0; totalBytes < RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE; ) {
-                int readBytes = read(buf);
+            boolean fininshed = false;
+
+            RecoveryLastReceivedMessage msg = new RecoveryLastReceivedMessage();
+            RecoveryLastReceivedMessageSerializer msgSer =
+                (RecoveryLastReceivedMessageSerializer)msgFactory.serializer(msg.directType());
+
+            short msgType = 0;
+            int readPos = 0;
+            int readBytes = 0;
+
+            // Might read less than MESSAGE_FULL_SIZE, due to optimizaton for writing long values.
+            // For this reason read byte by byte while not finished. To avoid case when we read more than needed.
+            while (!fininshed) {
+                // Read byte by byte.
+                buf.limit(buf.position() + 1);
+
+                readBytes += read(buf);
 
                 if (readBytes == -1)
-                    throw new HandshakeException("Failed to read remote node recovery handshake " +
-                            "(connection closed).");
+                    throw new HandshakeException("Failed to read remote node recovery handshake (connection closed).");
 
-                totalBytes += readBytes;
+                if (msgType == 0 && readBytes >= DIRECT_TYPE_SIZE) {
+                    msgType = makeMessageType(buf.get(0), buf.get(1));
+
+                    assert msgType == msg.directType();
+
+                    readPos = DIRECT_TYPE_SIZE;
+                }
+
+                if (msgType == 0)
+                    continue;
+
+                buf.position(readPos);
+
+                fininshed = msgSer.readFrom(msg, buf, reader);
+
+                readPos = buf.position();
             }
 
-            return buf;
+            reader.reset();
+
+            return msg.received();
         }
 
         /**
@@ -222,7 +283,9 @@ public class TcpHandshakeExecutor {
         private final SocketChannel ch;
 
         /** */
-        TcpTransport(SocketChannel ch) {
+        TcpTransport(SocketChannel ch, IgniteSpiContext spiCtx) throws IgniteCheckedException {
+            super(spiCtx);
+
             this.ch = ch;
         }
 
@@ -262,7 +325,15 @@ public class TcpHandshakeExecutor {
         private final ByteBuffer readBuf;
 
         /** */
-        SslTransport(GridSslMeta meta, SocketChannel ch, boolean directBuf, IgniteLogger log) throws IgniteCheckedException {
+        SslTransport(
+            GridSslMeta meta,
+            SocketChannel ch,
+            boolean directBuf,
+            IgniteLogger log,
+            IgniteSpiContext spiCtx
+        ) throws IgniteCheckedException {
+            super(spiCtx);
+
             try {
                 this.ch = ch;
                 handler = new BlockingSslHandler(meta.sslEngine(), ch, directBuf, ByteOrder.LITTLE_ENDIAN, log);
