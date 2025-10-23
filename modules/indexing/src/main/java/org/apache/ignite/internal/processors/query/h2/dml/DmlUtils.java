@@ -59,6 +59,7 @@ import org.h2.value.ValueTimestamp;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
+import static org.apache.ignite.internal.processors.query.QueryUtils.cacheForDML;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_CACHE_UPDATES;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_CACHE_UPDATE;
 
@@ -205,7 +206,7 @@ public class DmlUtils {
                     .create(SQL_CACHE_UPDATE, MTC.span())
                     .addTag(SQL_CACHE_UPDATES, () -> "1"))
             ) {
-                if (cctx.cache().withSkipReadThrough().putIfAbsent(t.getKey(), t.getValue()))
+                if (cacheForDML(cctx.cache()).putIfAbsent(t.getKey(), t.getValue()))
                     return 1;
                 else
                     throw new IgniteSQLException(errMsg + '[' + t.getKey() + "]]", DUPLICATE_KEY);
@@ -315,7 +316,7 @@ public class DmlUtils {
                     .create(SQL_CACHE_UPDATE, MTC.span())
                     .addTag(SQL_CACHE_UPDATES, () -> "1"))
             ) {
-                cctx.cache().withSkipReadThrough().put(t.getKey(), t.getValue());
+                cacheForDML(cctx.cache()).put(t.getKey(), t.getValue());
             }
 
             return 1;
@@ -338,7 +339,7 @@ public class DmlUtils {
                             .create(SQL_CACHE_UPDATE, MTC.span())
                             .addTag(SQL_CACHE_UPDATES, () -> Integer.toString(rows.size())))
                     ) {
-                        cctx.cache().withSkipReadThrough().putAll(rows);
+                        cacheForDML(cctx.cache()).putAll(rows);
 
                         resCnt += rows.size();
 

@@ -943,8 +943,29 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets flag indicating whether value should be loaded from store if it is not in the cache
-     * for following cache operations:
+     * Indicates whether a value should be loaded from storage if it's missing in the cache during
+     * SQL Data Manipulation Language (DML) operations or specific cache methods:
+     * <ul>
+     *     <li>{@link IgniteCache#putIfAbsent(Object, Object)}</li>
+     *     <li>{@link IgniteCache#replace(Object, Object)}</li>
+     *     <li>{@link IgniteCache#replace(Object, Object, Object)}</li>
+     *     <li>{@link IgniteCache#remove(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndPut(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndRemove(Object)}</li>
+     *     <li>{@link IgniteCache#getAndReplace(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndPutIfAbsent(Object, Object)}</li>
+     *</ul>
+     * Default value is {@link #DFLT_LOAD_PREV_VAL}.
+     *
+     * @return Load previous value flag.
+     */
+    public boolean isLoadPreviousValue() {
+        return loadPrevVal;
+    }
+
+    /**
+     * Indicates whether a value should be loaded from storage if it's missing in the cache during
+     * SQL Data Manipulation Language (DML) operations or specific cache methods:
      * <ul>
      *     <li>{@link IgniteCache#putIfAbsent(Object, Object)}</li>
      *     <li>{@link IgniteCache#replace(Object, Object)}</li>
@@ -956,25 +977,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *     <li>{@link IgniteCache#getAndPutIfAbsent(Object, Object)}</li>
      *</ul>
      *
-     * @return Load previous value flag.
-     */
-    public boolean isLoadPreviousValue() {
-        return loadPrevVal;
-    }
-
-    /**
-     * Sets flag indicating whether value should be loaded from store if it is not in the cache
-     * for following cache operations:
-     * <ul>
-     *     <li>{@link IgniteCache#putIfAbsent(Object, Object)}</li>
-     *     <li>{@link IgniteCache#replace(Object, Object)}</li>
-     *     <li>{@link IgniteCache#replace(Object, Object, Object)}</li>
-     *     <li>{@link IgniteCache#remove(Object, Object)}</li>
-     *     <li>{@link IgniteCache#getAndPut(Object, Object)}</li>
-     *     <li>{@link IgniteCache#getAndRemove(Object)}</li>
-     *     <li>{@link IgniteCache#getAndReplace(Object, Object)}</li>
-     *     <li>{@link IgniteCache#getAndPutIfAbsent(Object, Object)}</li>
-     *</ul>
      * When not set, default value is {@link #DFLT_LOAD_PREV_VAL}.
      *
      * @param loadPrevVal Load previous value flag.
