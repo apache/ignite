@@ -361,14 +361,19 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     ) {
         EncryptionSpi encSpi = opCtx.metadata().encryptionKey() != null ? cctx.gridConfig().getEncryptionSpi() : null;
 
-        SnapshotFileTree sft = opCtx.snapshotFileTree();
+        List<SnapshotFileTree> sft = Collections.singletonList(opCtx.snapshotFileTree());
         List<SnapshotMetadata> metadata = Collections.singletonList(opCtx.metadata());
 
-        try (Dump dump = new Dump(cctx.kernalContext(), Collections.singletonList(sft), metadata, true, true, encSpi, log)) {
+        try (Dump dump = new Dump(cctx.kernalContext(), sft, metadata, true, true, encSpi, log)) {
             Collection<PartitionHashRecord> partitionHashRecords = U.doInParallel(
                 cctx.snapshotMgr().snapshotExecutorService(),
                 partFiles,
-                part -> calculateDumpedPartitionHash(dump, sft.folderName(), cacheName(part.getParentFile()), partId(part))
+                part -> calculateDumpedPartitionHash(
+                    dump,
+                    opCtx.snapshotFileTree().folderName(),
+                    cacheName(part.getParentFile()),
+                    partId(part)
+                )
             );
 
             return partitionHashRecords.stream().collect(Collectors.toMap(PartitionHashRecord::partitionKey, r -> r));
@@ -376,7 +381,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         catch (Throwable t) {
             log.error("Error executing handler: ", t);
 
-            throw new IgniteException("Node: " + sft.consistentId(), t);
+            throw new IgniteException("Node: " + sft.get(0).consistentId(), t);
         }
     }
 
