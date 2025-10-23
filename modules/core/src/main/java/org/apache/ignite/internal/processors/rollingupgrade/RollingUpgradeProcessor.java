@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -30,11 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.HashSet;
-import java.util.Set;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
@@ -50,8 +49,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
 
-    /** */
-    private TcpDiscoveryNodesRing ring;
+    /** Min max version of nodes in cluster supplier. */
+    private Supplier<IgnitePair<IgniteProductVersion>> minMaxVersionSupplier;
 
     /**
      * @param ctx Context.
@@ -88,7 +87,9 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
 
             lastJoiningNodeTimestamp = U.currentTimeMillis();
 
-            IgniteProductVersion ringMinVer = ring.minimumNodeVersion();
+            IgnitePair<IgniteProductVersion> minMaxVerPair = minMaxVersionSupplier.get();
+
+            IgniteProductVersion ringMinVer = minMaxVerPair.get1();
 
             if (disabled && !ringMinVer.equals(node.version()))
                 return new IgniteNodeValidationResult(node.id(), "Rolling upgrade is disabled. " +
@@ -142,17 +143,19 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
             if (lastJoiningNode != null && U.currentTimeMillis() - lastJoiningNodeTimestamp > JOINING_TIMEOUT)
                 lastJoiningNode = null;
 
+            IgnitePair<IgniteProductVersion> minMaxVerPair = minMaxVersionSupplier.get();
+
             Set<IgniteProductVersion> vers = new HashSet<>();
 
-            vers.add(ring.maximumNodeVersion());
+            vers.add(minMaxVerPair.get1());
 
-            vers.add(ring.minimumNodeVersion());
+            vers.add(minMaxVerPair.get2());
 
             if (lastJoiningNode != null)
                 vers.add(lastJoiningNode.version());
 
             if (vers.size() > 1) {
-                String msg = "Can't disable rolling upgrade with different versions: " + vers;
+                String msg = "Can't disable rolling upgrade with different versions in cluster: " + vers;
                 log.warning(msg);
                 throw new IgniteCheckedException(msg);
             }
@@ -250,5 +253,12 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
         }
 
         return true;
+    }
+
+    /**
+     * @param minMaxVersionSupplier Min max versions of nodes in cluster supplier.
+     */
+    public void minMaxVersionCallback(Supplier<IgnitePair<IgniteProductVersion>> minMaxVersionSupplier) {
+        this.minMaxVersionSupplier = minMaxVersionSupplier;
     }
 }
