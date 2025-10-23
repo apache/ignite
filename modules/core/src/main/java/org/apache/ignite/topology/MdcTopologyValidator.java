@@ -78,7 +78,9 @@ public class MdcTopologyValidator implements TopologyValidator {
     @Override public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass())
             return false;
+
         MdcTopologyValidator validator = (MdcTopologyValidator)o;
+
         return Objects.equals(dcs, validator.dcs) && Objects.equals(primDc, validator.primDc);
     }
 
