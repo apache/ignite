@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public final class GridNearSingleGetResponse extends GridCacheIdMessage implements GridCacheDeployable {
+public class GridNearSingleGetResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
     public static final int INVALID_PART_FLAG_MASK = 0x1;
 

@@ -3257,7 +3257,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /**
      * Near version container. Is not for resending or serialization. Should not be exposed outside.
      */
-    private static final class CommittedVersion extends GridCacheVersion {
+    private static class CommittedVersion extends GridCacheVersion {
         /** */
         private static final long serialVersionUID = 0L;
 
