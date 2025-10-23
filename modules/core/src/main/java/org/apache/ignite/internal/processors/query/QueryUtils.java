@@ -1789,7 +1789,7 @@ public class QueryUtils {
 
     /** */
     public static <K, V> IgniteInternalCache<K, V> cacheForDML(IgniteInternalCache<K, V> c) {
-        if (c.configuration().isLoadPreviousValue())
+        if (!c.configuration().isReadThrough() || c.configuration().isLoadPreviousValue())
             return c;
         else
             return c.withSkipReadThrough();
