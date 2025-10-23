@@ -254,6 +254,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         doTestCheckDumpFromOtherNode(3, 2);
     }
 
+    /** */
     private void doTestCheckDumpFromOtherNode(int nodes, int errorType) throws Exception {
         IgniteEx ign = startGrids(nodes);
 
