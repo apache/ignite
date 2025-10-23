@@ -68,7 +68,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
@@ -362,14 +361,14 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
     ) {
         EncryptionSpi encSpi = opCtx.metadata().encryptionKey() != null ? cctx.gridConfig().getEncryptionSpi() : null;
 
-        List<SnapshotFileTree> sft = Collections.singletonList(opCtx.snapshotFileTree());
+        SnapshotFileTree sft = opCtx.snapshotFileTree();
         List<SnapshotMetadata> metadata = Collections.singletonList(opCtx.metadata());
 
-        try (Dump dump = new Dump(cctx.kernalContext(), sft, metadata, true, true, encSpi, log)) {
+        try (Dump dump = new Dump(cctx.kernalContext(), Collections.singletonList(sft), metadata, true, true, encSpi, log)) {
             Collection<PartitionHashRecord> partitionHashRecords = U.doInParallel(
                 cctx.snapshotMgr().snapshotExecutorService(),
                 partFiles,
-                part -> calculateDumpedPartitionHash(dump, cacheName(part.getParentFile()), partId(part))
+                part -> calculateDumpedPartitionHash(dump, sft.folderName(), cacheName(part.getParentFile()), partId(part))
             );
 
             return partitionHashRecords.stream().collect(Collectors.toMap(PartitionHashRecord::partitionKey, r -> r));
@@ -377,12 +376,12 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         catch (Throwable t) {
             log.error("Error executing handler: ", t);
 
-            throw new IgniteException("Node: " + sft.get(0).consistentId(), t);
+            throw new IgniteException("Node: " + sft.consistentId(), t);
         }
     }
 
     /** */
-    private PartitionHashRecord calculateDumpedPartitionHash(Dump dump, String grpName, int part) {
+    private PartitionHashRecord calculateDumpedPartitionHash(Dump dump, String folderName, String grpName, int part) {
         if (skipHash()) {
             return new PartitionHashRecord(
                 new PartitionKey(CU.cacheId(grpName), part, grpName),
@@ -396,58 +395,32 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
         }
 
         try {
-            String loc = cctx.kernalContext().pdsFolderResolver().fileTree().folderName();
+            try (Dump.DumpedPartitionIterator iter = dump.iterator(folderName, CU.cacheId(grpName), part, null)) {
+                long size = 0;
 
-            if (dump.fileTrees().stream().anyMatch(sft -> sft.folderName().equals(loc)))
-                return partHash(dump, loc, grpName, part);
-            else {
-                List<PartitionHashRecord> recs = new ArrayList<>();
+                VerifyPartitionContext ctx = new VerifyPartitionContext();
 
-                for (SnapshotFileTree sft : dump.fileTrees()) {
-                    if (!dump.partitions(sft.folderName(), CU.cacheId(grpName)).contains(part))
-                        continue;
+                while (iter.hasNext()) {
+                    DumpEntry e = iter.next();
 
-                    recs.add(partHash(dump, sft.folderName(), grpName, part));
+                    ctx.update((KeyCacheObject)e.key(), (CacheObject)e.value(), e.version());
+
+                    size++;
                 }
 
-                if (recs.isEmpty()) {
-                    throw new IgniteException("Can't find group partition " +
-                        "[dump=" + dump.fileTrees().get(0).name() + ", grp=" + grpName + ", part=" + part + ']');
-                }
-
-                return recs.get(0);
+                return new PartitionHashRecord(
+                    new PartitionKey(CU.cacheId(grpName), part, grpName),
+                    false,
+                    cctx.localNode().consistentId(),
+                    null,
+                    size,
+                    PartitionHashRecord.PartitionState.OWNING,
+                    ctx
+                );
             }
-
         }
         catch (Exception e) {
             throw new IgniteException(e);
-        }
-    }
-
-    /** */
-    private @NotNull PartitionHashRecord partHash(Dump dump, String node, String grpName, int part) throws Exception {
-        try (Dump.DumpedPartitionIterator iter = dump.iterator(node, CU.cacheId(grpName), part, null)) {
-            long size = 0;
-
-            VerifyPartitionContext ctx = new VerifyPartitionContext();
-
-            while (iter.hasNext()) {
-                DumpEntry e = iter.next();
-
-                ctx.update((KeyCacheObject)e.key(), (CacheObject)e.value(), e.version());
-
-                size++;
-            }
-
-            return new PartitionHashRecord(
-                new PartitionKey(CU.cacheId(grpName), part, grpName),
-                false,
-                cctx.localNode().consistentId(),
-                null,
-                size,
-                PartitionHashRecord.PartitionState.OWNING,
-                ctx
-            );
         }
     }
 

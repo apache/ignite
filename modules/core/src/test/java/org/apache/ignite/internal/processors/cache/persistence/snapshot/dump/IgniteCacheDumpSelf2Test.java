@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -219,28 +220,107 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testCheckDumpFromOtherNode() throws Exception {
-        IgniteEx ign = startGrid(1);
+    public void testCheckDumpFromOtherNode_singleNode() throws Exception {
+        doTestCheckDumpFromOtherNode(1, 0);
+    }
 
-        CacheConfiguration<Object, Object> ccfg = defaultCacheConfiguration();
+    /** */
+    @Test
+    public void testCheckDumpFromOtherNode_multiNode() throws Exception {
+        doTestCheckDumpFromOtherNode(3, 0);
+    }
+
+    /** */
+    @Test
+    public void testCheckDumpFromOtherNode_singleNode_errorNoFile() throws Exception {
+        doTestCheckDumpFromOtherNode(1, 1);
+    }
+
+    /** */
+    @Test
+    public void testCheckDumpFromOtherNode_multiNode_errorNoFile() throws Exception {
+        doTestCheckDumpFromOtherNode(3, 1);
+    }
+
+    /** */
+    @Test
+    public void testCheckDumpFromOtherNode_singleNode_errorWrongHash() throws Exception {
+        doTestCheckDumpFromOtherNode(1, 2);
+    }
+
+    /** */
+    @Test
+    public void testCheckDumpFromOtherNode_multiNode_errorWrongHash() throws Exception {
+        doTestCheckDumpFromOtherNode(3, 2);
+    }
+
+    private void doTestCheckDumpFromOtherNode(int nodes, int errorType) throws Exception {
+        IgniteEx ign = startGrids(nodes);
+
+        CacheConfiguration<Object, Object> ccfg = defaultCacheConfiguration()
+            .setAffinity(new RendezvousAffinityFunction().setPartitions(20))
+            .setBackups(nodes - 1);
 
         ign.createCache(ccfg);
 
         for (int i = 0; i < KEYS_CNT; ++i)
             ign.cache(DEFAULT_CACHE_NAME).put(i, USER_FACTORY.apply(i));
 
+        SnapshotFileTree sft = snapshotFileTree(grid(nodes - 1), DMP_NAME);
+
         ign.snapshot().createDump(DMP_NAME, null).get(getTestTimeout());
 
-        stopGrid(1);
+        stopAllGrids();
 
         cleanPersistenceDir(true);
 
-        ign = startGrid(2);
+        if (errorType == 1) {
+            File part = sft.dumpPartition(ccfg, 13, false);
+
+            assertTrue(part.exists());
+            assertTrue(part.delete());
+        }
+        else if (errorType == 2) {
+            File part = sft.dumpPartition(ccfg, 13, false);
+
+            assertTrue(part.exists());
+            assertTrue(part.length() > HEADER_SZ);
+
+            try (RandomAccessFile raf = new RandomAccessFile(part, "rw")) {
+                raf.seek(HEADER_SZ);
+
+                byte first = raf.readByte();
+
+                raf.seek(HEADER_SZ);
+
+                raf.write(first - 1);
+            }
+        }
+
+        ign = startGrid(nodes + 1);
 
         SnapshotPartitionsVerifyTaskResult res =
             ign.context().cache().context().snapshotMgr().checkSnapshot(DMP_NAME, null).get(getTestTimeout());
 
-        assertTrue(F.isEmpty(res.exceptions()));
+        if (errorType == 0) {
+            assertTrue(F.isEmpty(res.exceptions()));
+        }
+        else if (errorType == 1) {
+            Exception err = res.exceptions().get(ign.localNode());
+
+            assertNotNull(err);
+            assertTrue(err.getMessage().contains("Snapshot data doesn't contain required cache group partition"));
+        }
+        else if (errorType == 2) {
+            Exception err = res.exceptions().get(ign.localNode());
+
+            assertNotNull(err);
+            assertTrue(err.getCause().getCause().getMessage().contains("Data corrupted"));
+
+        }
+        else
+            fail("Unknown errorType: " + errorType);
+
     }
 
     /** */
