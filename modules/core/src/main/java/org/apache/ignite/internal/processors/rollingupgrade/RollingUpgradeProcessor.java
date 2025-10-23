@@ -136,7 +136,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
 
         synchronized (lock) {
             if (disabled) {
-                log.info("Rolling upgrade is already disabled");
+                if (log.isInfoEnabled())
+                    log.info("Rolling upgrade is already disabled");
                 return;
             }
 
@@ -207,18 +208,18 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If versions are incorrect.
      */
     private boolean checkVersions(IgniteProductVersion cur, IgniteProductVersion target) throws IgniteCheckedException {
-        IgniteProductVersion prevVerPair = metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
+        IgnitePair<IgniteProductVersion> existingVerPair = metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
 
-        if (prevVerPair != null) {
-            if (prevVerPair.equals(F.pair(cur, target))) {
+        if (existingVerPair != null) {
+            if (existingVerPair.equals(F.pair(cur, target))) {
                 if (log.isInfoEnabled())
                     log.info("Rolling upgrade is already enabled with the same current and target versions: " + cur + " , " + target);
 
                 return false;
             }
 
-            String errMsg = "Rolling upgrade is already enabled with a different target version: "
-                + metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
+            String errMsg = "Rolling upgrade is already enabled with a different current and target version: " +
+                existingVerPair.get1() + " , " + existingVerPair.get2();
 
             log.warning(errMsg);
 
