@@ -29,6 +29,7 @@ from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
+
 class RollingUpgradeTest(IgniteTest):
     """
     Tests validates rolling upgrade
@@ -36,7 +37,7 @@ class RollingUpgradeTest(IgniteTest):
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH))
     @defaults(init_version=str(LATEST), upgrade_version=str(DEV_BRANCH))
-    @matrix(upgrade_coordinator = [True, False])
+    @matrix(upgrade_coordinator=[True, False])
     def test_rolling_upgrade(self, ignite_version, init_version, upgrade_version, upgrade_coordinator):
         results = {}
 
