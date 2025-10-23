@@ -330,7 +330,7 @@ public class TxDeadlockDetection {
         @SuppressWarnings("ForLoopReplaceableByForEach")
         private void mapTxKeys(@Nullable Set<IgniteTxKey> txKeys, Map<IgniteTxKey, TxLockList> txLocks) {
             for (Map.Entry<IgniteTxKey, TxLockList> e : txLocks.entrySet()) {
-                List<TxLock> locks = e.getValue().txLocks();
+                List<TxLock> locks = e.getValue().transactionLocks();
 
                 for (int i = 0; i < locks.size(); i++) {
                     TxLock txLock = locks.get(i);
@@ -426,7 +426,7 @@ public class TxDeadlockDetection {
                 TxLockList lockList = e.getValue();
 
                 if (lockList != null && !lockList.isEmpty()) {
-                    for (TxLock lock : lockList.txLocks()) {
+                    for (TxLock lock : lockList.transactionLocks()) {
                         if (lock.owner() || lock.candiate()) {
                             if (txs.get(lock.txId()) == null)
                                 txs.put(lock.txId(), new T2<>(lock.nearNodeId(), lock.threadId()));
@@ -466,7 +466,7 @@ public class TxDeadlockDetection {
 
                 GridCacheVersion txOwner = null;
 
-                for (TxLock lock : e.getValue().txLocks()) {
+                for (TxLock lock : e.getValue().transactionLocks()) {
                     if (lock.owner() && txOwner == null) {
                         // Actually we can get lock list with more than one owner. In this case ignore all owners
                         // except first because likely the first owner was cause of deadlock.
