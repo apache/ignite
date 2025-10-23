@@ -72,7 +72,7 @@ public class ServiceDeploymentProcessId implements Message, Serializable {
     /**
      * @param topVer New topology version.
      */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
+    public void topologyVersion(@Nullable AffinityTopologyVersion topVer) {
         this.topVer = topVer;
     }
 
