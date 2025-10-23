@@ -704,6 +704,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      * @param msg Message.
      */
     private void processMetricsUpdateMessage(UUID sndNodeId, ClusterMetricsUpdateMessage msg) {
+        // Single node metrics.
         if (msg.allNodesMetrics() == null && msg.allCachesMetrics() == null) {
             assert msg.nodeMetrics() != null;
             assert msg.cacheMetricsMsg() != null && msg.cacheMetricsMsg().cacheMetrics() != null;
@@ -713,6 +714,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             updateNodeMetrics(ctx.discovery().discoCache(), sndNodeId, msg.nodeMetrics(), msg.cacheMetricsMsg().cacheMetrics());
         }
         else {
+            // All-nodes metrics.
             assert msg.nodeMetrics() == null;
             assert msg.cacheMetricsMsg() == null;
             assert msg.allNodesMetrics() != null && msg.allCachesMetrics() != null;
