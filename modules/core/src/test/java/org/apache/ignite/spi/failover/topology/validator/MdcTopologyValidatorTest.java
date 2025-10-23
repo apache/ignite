@@ -20,9 +20,14 @@ package org.apache.ignite.spi.failover.topology.validator;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.topology.MdcTopologyValidator;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.IgniteEx;
@@ -52,6 +57,21 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+            .setDataStorageConfiguration(
+                new DataStorageConfiguration()
+                    .setDefaultDataRegionConfiguration(
+                        new DataRegionConfiguration()
+                            .setPersistenceEnabled(true)
+                    )
+            )
+            .setConsistentId(igniteInstanceName);
     }
 
     /** */
@@ -96,11 +116,50 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
 
         waitForTopology(3);
 
+        client.cluster().state(ClusterState.ACTIVE);
+
         CacheConfiguration<Object, Object> cfgCache = new CacheConfiguration<>("cache").setTopologyValidator(topValidator);
 
         IgniteCache<Object, Object> cache = client.getOrCreateCache(cfgCache);
 
         GridTestUtils.assertThrows(log, () -> cache.put(KEY, VAL), IgniteException.class, "cache topology is not valid");
+    }
+
+    /** */
+    @Test
+    public void testTopologyValidatorEqualityCheck() throws Exception {
+        IgniteEx srv0 = startGrid(0);
+
+        startGrid(1);
+
+        waitForTopology(2);
+
+        srv0.cluster().state(ClusterState.ACTIVE);
+
+        MdcTopologyValidator topValidator = new MdcTopologyValidator();
+
+        topValidator.setPrimaryDatacenter(DC_ID_1);
+        topValidator.setDatacenters(List.of(DC_ID_0, DC_ID_1));
+
+        CacheConfiguration<Object, Object> cfgCache1 = new CacheConfiguration<>(DEFAULT_CACHE_NAME).setTopologyValidator(topValidator);
+
+        srv0.getOrCreateCache(cfgCache1);
+
+        stopGrid(1);
+
+        srv0.destroyCache(cfgCache1.getName());
+
+        topValidator.setPrimaryDatacenter(DC_ID_0); // Changed
+
+        CacheConfiguration<Object, Object> cfgCache2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME).setTopologyValidator(topValidator);
+
+        srv0.getOrCreateCache(cfgCache2);
+
+        startGrid(2);
+
+        waitForTopology(2);
+
+        GridTestUtils.assertThrows(log, () -> startGrid(1), IgniteCheckedException.class, "Cache topology validator mismatch");
     }
 
     /** Checks 1DC case with MdcTopologyValidator usage */
@@ -177,8 +236,6 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
 
     /** */
     private IgniteCache<Object, Object> createCache(TopologyValidator topValidator) throws Exception {
-        CacheConfiguration<Object, Object> cfgCache = new CacheConfiguration<>("cache").setTopologyValidator(topValidator);
-
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
         IgniteEx srv0 = startGrid(0);
 
@@ -189,6 +246,10 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
         startGrid(2);
 
         waitForTopology(3);
+
+        srv0.cluster().state(ClusterState.ACTIVE);
+
+        CacheConfiguration<Object, Object> cfgCache = new CacheConfiguration<>("cache").setTopologyValidator(topValidator);
 
         return srv0.createCache(cfgCache);
     }
