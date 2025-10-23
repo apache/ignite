@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.configuration;
+package org.apache.ignite.topology;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
