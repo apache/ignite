@@ -25,7 +25,7 @@ import org.apache.ignite.internal.Order;
  */
 public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
     /** */
-    @Order(0)
+    @Order(value = 0, method = "queryId")
     private UUID queryId;
 
     /** */
