@@ -26,6 +26,7 @@ import org.apache.ignite.cache.store.CacheTransactionalStoreReadFromBackupTest;
 import org.apache.ignite.cache.store.GridStoreLoadCacheTest;
 import org.apache.ignite.cache.store.jdbc.dialect.OracleDialectTest;
 import org.apache.ignite.internal.IgniteInternalCacheRemoveTest;
+import org.apache.ignite.internal.managers.communication.CommunicationMessageDelayTest;
 import org.apache.ignite.internal.managers.communication.GridIoManagerSelfTest;
 import org.apache.ignite.internal.managers.communication.IgniteCommunicationBalanceMultipleConnectionsTest;
 import org.apache.ignite.internal.managers.communication.IgniteCommunicationBalancePairedConnectionsTest;
@@ -188,6 +189,7 @@ public class IgniteCacheTestSuite10 {
         GridTestUtils.addTestIfNeeded(suite, IgniteMessageFactoryImplTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, MessageDirectTypeIdConflictTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteIoCommunicationMessageSerializationTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CommunicationMessageDelayTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteIncompleteCacheObjectSelfTest.class, ignoredTests);
 

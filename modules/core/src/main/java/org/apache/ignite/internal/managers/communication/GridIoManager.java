@@ -375,7 +375,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     /**
      * @param ctx Grid kernal context.
      */
-    @SuppressWarnings("deprecation")
     public GridIoManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getCommunicationSpi());
 
@@ -916,7 +915,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     @Override public void onKernalStart0() throws IgniteCheckedException {
         discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -3766,7 +3764,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
         @Override public void onTimeout() {
             GridMessageListener lsnr = listenerGet0(topic);
 

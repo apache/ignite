@@ -17,14 +17,8 @@
 
 package org.apache.ignite.internal;
 
-/**
- * Internal wrapper interface for custom resource injection logic.
- */
-public interface GridInternalWrapper<T> {
-    /**
-     * Get user object where resources must be injected.
-     *
-     * @return User object.
-     */
-    public T userObject();
+/** Represents wrapper over arbitrary object. */
+public interface IgniteInternalWrapper<T> {
+    /** @return Wrapped object. */
+    public T delegate();
 }

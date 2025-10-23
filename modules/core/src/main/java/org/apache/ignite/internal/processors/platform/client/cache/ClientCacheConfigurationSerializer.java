@@ -40,6 +40,8 @@ import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeatur
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
+import org.apache.ignite.internal.util.typedef.T2;
+
 import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE;
 
@@ -306,7 +308,9 @@ public class ClientCacheConfigurationSerializer {
      * @param protocolCtx Client protocol context.
      * @return Configuration.
      */
-    static CacheConfiguration read(BinaryRawReader reader, ClientProtocolContext protocolCtx) {
+    static T2<CacheConfiguration, Boolean> read(BinaryRawReader reader, ClientProtocolContext protocolCtx) {
+        boolean sql = protocolCtx.isFeatureSupported(ClientBitmaskFeature.SQL_CACHE_CREATION) && reader.readBoolean();
+
         reader.readInt();  // Skip length.
 
         short propCnt = reader.readShort();
@@ -473,7 +477,7 @@ public class ClientCacheConfigurationSerializer {
         if (cfg.getCacheMode() == null)
             throw new ClientException("Unsupported cache mode");
 
-        return cfg;
+        return new T2<>(cfg, sql);
     }
 
     /**
