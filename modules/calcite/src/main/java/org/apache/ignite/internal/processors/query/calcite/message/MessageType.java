@@ -37,7 +37,7 @@ public enum MessageType {
     QUERY_START_RESPONSE(301, QueryStartResponse::new),
 
     /** */
-    QUERY_ERROR_MESSAGE(302, ErrorMessage::new),
+    QUERY_ERROR_MESSAGE(302, CalciteErrorMessage::new, new CalciteErrorMessageSerializaer()),
 
     /** */
     QUERY_BATCH_MESSAGE(303, QueryBatchMessage::new),
