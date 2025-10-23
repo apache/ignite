@@ -88,6 +88,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     private Map<UUID, ErrorMessage> errs;
 
     /** */
+    private Map<UUID, Throwable> errsMap;
+
+    /** */
     @Order(value = 14, method = "resultTopologyVersion")
     private AffinityTopologyVersion resTopVer;
 
@@ -434,14 +437,20 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @return Errors map.
      */
     @Nullable public Map<UUID, Throwable> errorsMap() {
-        return errs.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().toThrowable()));
+        if (errsMap == null && errs != null)
+            errsMap = errs.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().toThrowable()));
+
+        return errsMap;
     }
 
     /**
-     * @param errs Errors map.
+     * @param errsMap Errors map.
      */
-    public void errorsMap(Map<UUID, Exception> errs) {
-        this.errs = new HashMap<>(errs.entrySet().stream()
+    public void errorsMap(Map<UUID, Exception> errsMap) {
+        this.errsMap = new HashMap<>(errsMap);
+
+        errs = new HashMap<>(errsMap.entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, entry -> new ErrorMessage(entry.getValue()))));
     }
 
@@ -457,6 +466,12 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      */
     public void errors(Map<UUID, ErrorMessage> errs) {
         this.errs = errs;
+
+        if (errs == null)
+            errsMap = null;
+        else
+            errsMap = errs.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().toThrowable()));
     }
 
     /**
@@ -516,7 +531,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 assert map2 != null : e.getValue();
                 assert map1.size() == map2.size();
 
-                for (Map.Entry<UUID, GridDhtPartitionMap> e0: map2.entrySet()) {
+                for (Map.Entry<UUID, GridDhtPartitionMap> e0 : map2.entrySet()) {
                     GridDhtPartitionMap partMap1 = map1.get(e0.getKey());
 
                     assert partMap1 != null && partMap1.map().isEmpty() : partMap1;
