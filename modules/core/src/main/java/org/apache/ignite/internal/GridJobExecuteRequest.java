@@ -45,38 +45,45 @@ import static org.apache.ignite.plugin.extensions.communication.MessageCollectio
  */
 public class GridJobExecuteRequest implements ExecutorAwareMessage {
     /** */
+    @Order(value = 0, method = "sessionId")
     private IgniteUuid sesId;
 
     /** */
+    @Order(1)
     private IgniteUuid jobId;
 
     /** */
+    @Order(2)
     @GridToStringExclude
     private byte[] jobBytes;
 
     /** */
     @GridToStringExclude
-    @GridDirectTransient
     private ComputeJob job;
 
     /** */
+    @Order(3)
     private long startTaskTime;
 
     /** */
+    @Order(4)
     private long timeout;
 
     /** */
+    @Order(5)
     private String taskName;
 
     /** */
+    @Order(6)
     private String userVer;
 
     /** */
+    @Order(value = 7, method = "taskClassName")
     private String taskClsName;
 
     /** Node class loader participants. */
     @GridToStringInclude
-    @GridDirectMap(keyType = UUID.class, valueType = IgniteUuid.class)
+    @Order(value = 8, method = "loaderParticipants")
     private Map<UUID, IgniteUuid> ldrParticipants;
 
     /** */

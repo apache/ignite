@@ -281,7 +281,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(TcpCommunicationSpi.HANDSHAKE_MSG_TYPE, HandshakeMessage::new, new HandshakeMessageSerializer());
         factory.register(TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE, HandshakeWaitMessage::new, new HandshakeWaitMessageSerializer());
         factory.register((short)0, GridJobCancelRequest::new, new GridJobCancelRequestSerializer());
-        factory.register((short)1, GridJobExecuteRequest::new);
+        factory.register((short)1, GridJobExecuteRequest::new, GridJobExecuteRequestSerializaor());
         factory.register((short)2, GridJobExecuteResponse::new);
         factory.register((short)3, GridJobSiblingsRequest::new, new GridJobSiblingsRequestSerializer());
         factory.register((short)4, GridJobSiblingsResponse::new);
