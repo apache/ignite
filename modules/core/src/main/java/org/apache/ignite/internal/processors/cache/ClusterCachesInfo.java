@@ -412,8 +412,8 @@ public class ClusterCachesInfo {
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "topologyValidatorClass",
             "Cache topology validator class", locAttr.topologyValidatorClassName(), rmtAttr.topologyValidatorClassName(), true);
 
-        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "topologyValidator",
-            "Cache topology validator", locAttr.configuration().getTopologyValidator(), rmtAttr.configuration().getTopologyValidator(), true);
+        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "topologyValidator", "Cache topology validator",
+            locAttr.configuration().getTopologyValidator(), rmtAttr.configuration().getTopologyValidator(), true);
 
         ClusterNode rmtNode = ctx.discovery().node(rmt);
 
