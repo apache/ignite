@@ -32,7 +32,10 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
-/** */
+/**
+ * Verifies behaviour of {@link MdcAffinityBackupFilter} - guarantees that each DC has at least one copy of every partition,
+ * distribution uniformity.
+ */
 public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int PARTS_CNT = 1024;
@@ -83,21 +86,21 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
 
         IgniteEx srv = startClusterAcrossDataCenters(dcIds, nodesPerDc);
 
-        checkPartitionsDistribution(srv, dcIds, nodesPerDc, backups);
+        verifyDistributionProperties(srv, dcIds, nodesPerDc, backups);
 
         //stopping one node in DC_1 should not compromise distribution as there are additional nodes in the same DC
         stopGrid(5);
 
         awaitPartitionMapExchange();
 
-        checkPartitionsDistribution(srv, dcIds, nodesPerDc, backups);
+        verifyDistributionProperties(srv, dcIds, nodesPerDc, backups);
 
         //stopping another node in DC_1 should not compromise distribution as well
         stopGrid(6);
 
         awaitPartitionMapExchange();
 
-        checkPartitionsDistribution(srv, dcIds, nodesPerDc, backups);
+        verifyDistributionProperties(srv, dcIds, nodesPerDc, backups);
     }
 
     /**
@@ -113,7 +116,7 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
 
         IgniteEx srv = startClusterAcrossDataCenters(dcIds, 2);
 
-        checkPartitionsDistribution(srv, dcIds, nodesPerDc, backups);
+        verifyDistributionProperties(srv, dcIds, nodesPerDc, backups);
     }
 
     /** Starts specified number of nodes in each DC. */
@@ -132,10 +135,9 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks that copies of each partition are distributed evenly across data centers.
-     * If checkUniformity is true, then also checks that number of copies per node is close enough to ideal value (less than 10% variation).
+     * Checks that copies of each partition are distributed evenly across data centers and copies are spread evenly across nodes.
      */
-    private void checkPartitionsDistribution(
+    private void verifyDistributionProperties(
         IgniteEx srv,
         String[] dcIds,
         int nodesPerDc,
@@ -150,10 +152,10 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
         Map<ClusterNode, Integer> overallCopiesPerNode = new HashMap<>();
         int[] copiesPerNode = new int[dcIds.length * nodesPerDc];
 
-        for (int i = 0; i < partCnt; i++) {
+        for (int partId = 0; partId < partCnt; partId++) {
             int[] partCopiesPerDc = new int[dcIds.length];
 
-            Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(i);
+            Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(partId);
 
             //calculate actual number of copies in each data center
             //aggregate copies per each node
@@ -175,14 +177,23 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
                 }
             }
 
-            //check that each data center has expected number of copies
-            for (int dcIdx = 0; dcIdx < dcIds.length; dcIdx++) {
-                assertEquals(String.format("Unexpected number of copies of partition %d in data center %s", i, dcIds[dcIdx]),
-                    expectedCopiesPerNode,
-                    partCopiesPerDc[dcIdx]);
-            }
+            verifyCopyInEachDcGuarantee(partId, expectedCopiesPerNode, partCopiesPerDc);
         }
 
+        verifyDistributionUniformity(dcIds, overallCopiesPerNode);
+    }
+
+    /** */
+    private void verifyCopyInEachDcGuarantee(int partId, int expectedCopiesPerNode, int[] partCopiesPerDc) {
+        for (int dcIdx = 0; dcIdx < dcIds.length; dcIdx++) {
+            assertEquals(String.format("Unexpected number of copies of partition %d in data center %s", partId, dcIds[dcIdx]),
+                expectedCopiesPerNode,
+                partCopiesPerDc[dcIdx]);
+        }
+    }
+
+    /** */
+    private void verifyDistributionUniformity(String[] dcIds, Map<ClusterNode, Integer> overallCopiesPerNode) {
         for (String dcId : dcIds) {
             long nodesInDc = overallCopiesPerNode.entrySet().stream().filter(e -> e.getKey().dataCenterId().equals(dcId)).count();
 
