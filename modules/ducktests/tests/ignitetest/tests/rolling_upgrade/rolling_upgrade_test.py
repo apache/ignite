@@ -44,13 +44,12 @@ class RollingUpgradeTest(IgniteTest):
 
         ignites = self.start_ignite_cluster(init_version, results)
 
-        control_sh = ControlUtility(ignites[0])
-
-        check_topology(control_sh, RU_NUM_NODES)
+        check_topology(ControlUtility(ignites[0]), RU_NUM_NODES)
 
         self.upgrade_ignite_cluster(ignites, upgrade_version, upgrade_coordinator, results)
 
-        check_topology(control_sh, 3 * RU_NUM_NODES)
+        for ignite in ignites:
+            ignite.stop()
 
         return results
 
@@ -78,19 +77,27 @@ class RollingUpgradeTest(IgniteTest):
 
         return ignites
 
-    def upgrade_ignite_cluster(self, ignites: list, ignite_version: str, upgrade_coordinator: bool, results):
+    def upgrade_ignite_cluster(self, ignites: list, upgrade_version: str, upgrade_coordinator: bool, results):
         self.logger.info(f"Starting rolling upgrade.")
-
-        nodes_iter = range(RU_NUM_NODES) if upgrade_coordinator else reversed(range(RU_NUM_NODES))
 
         start = monotonic()
 
-        for i in nodes_iter:
-            ignites[i].config = IgniteConfiguration(version=IgniteVersion(ignite_version))
+        nodes_upgraded = 0
 
-            ignites[i].stop()
+        for ignite in ignites if upgrade_coordinator else reversed(ignites):
+            self.logger.debug(f"Updating {ignite.who_am_i()}")
 
-            ignites[i].start(clean=False)
+            ignite.config = IgniteConfiguration(version=IgniteVersion(upgrade_version))
+
+            ignite.stop()
+
+            ignite.start(clean=False)
+
+            nodes_upgraded += 1
+
+            exp_topology = RU_NUM_NODES + 2 * nodes_upgraded
+
+            check_topology(ControlUtility(ignite), exp_topology)
 
         results['Ignite cluster upgrade time (s)'] = round(monotonic() - start, 1)
 
