@@ -488,7 +488,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     @Override public void start() throws IgniteCheckedException {
         ctx.addNodeAttribute(ATTR_OFFHEAP_SIZE, requiredOffheap());
         ctx.addNodeAttribute(ATTR_DATA_REGIONS_OFFHEAP_SIZE, configuredOffheap());
-        ctx.addNodeAttribute(ATTR_DATA_CENTER_ID, dcId);
+
+        if (dcId != null)
+            ctx.addNodeAttribute(ATTR_DATA_CENTER_ID, dcId);
 
         DiscoverySpi spi = getSpi();
 
