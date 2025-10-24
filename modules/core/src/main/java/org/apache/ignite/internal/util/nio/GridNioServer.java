@@ -1609,15 +1609,15 @@ public class GridNioServer<T> {
 
                 int startPos = buf.position();
 
-                ((DirectMessageWriter)writer).setBuffer(buf);
-
                 if (messageFactory() == null) {
                     assert msg instanceof ClientMessage;  // TODO: Will refactor in IGNITE-26554.
 
-                    finished = msg.writeTo(writer);
+                    finished = ((ClientMessage)msg).writeTo(buf);
                 }
                 else {
                     MessageSerializer msgSer = messageFactory().serializer(msg.directType());
+
+                    ((DirectMessageWriter)writer).setBuffer(buf);
 
                     finished = msgSer.writeTo(msg, writer);
                 }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.codegen;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.TestMapMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -32,10 +31,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class TestMapMessageSerializer implements MessageSerializer {
     /** */
-    @Override public boolean writeTo(Message m, ByteBuffer buf, MessageWriter writer) {
+    @Override public boolean writeTo(Message m, MessageWriter writer) {
         TestMapMessage msg = (TestMapMessage)m;
-
-        writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
@@ -194,10 +191,8 @@ public class TestMapMessageSerializer implements MessageSerializer {
     }
 
     /** */
-    @Override public boolean readFrom(Message m, ByteBuffer buf, MessageReader reader) {
+    @Override public boolean readFrom(Message m, MessageReader reader) {
         TestMapMessage msg = (TestMapMessage)m;
-
-        reader.setBuffer(buf);
 
         switch (reader.state()) {
             case 0:
