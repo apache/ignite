@@ -44,7 +44,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     private static final String ROLLING_UPGRADE_VERSIONS_KEY = IGNITE_INTERNAL_KEY_PREFIX + "rolling.upgrade.versions";
 
     /** Joining timeout. */
-    private static final long JOINING_TIMEOUT = 200;
+    private static final long JOINING_TIMEOUT = 2_000;
 
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
