@@ -37,7 +37,7 @@ public class CachePartitionFullCountersMap implements Serializable, Message {
 
     /** */
     @Order(value = 0, method = "initialUpdateCounters")
-    private long[] initialUpdCntrs;
+    private long[] initUpdCntrs;
 
     /** */
     @Order(value = 1, method = "updateCounters")
@@ -52,7 +52,7 @@ public class CachePartitionFullCountersMap implements Serializable, Message {
      * @param other Map to copy.
      */
     public CachePartitionFullCountersMap(CachePartitionFullCountersMap other) {
-        initialUpdCntrs = Arrays.copyOf(other.initialUpdCntrs, other.initialUpdCntrs.length);
+        initUpdCntrs = Arrays.copyOf(other.initUpdCntrs, other.initUpdCntrs.length);
         updCntrs = Arrays.copyOf(other.updCntrs, other.updCntrs.length);
     }
 
@@ -60,7 +60,7 @@ public class CachePartitionFullCountersMap implements Serializable, Message {
      * @param partsCnt Total number of partitions.
      */
     public CachePartitionFullCountersMap(int partsCnt) {
-        initialUpdCntrs = new long[partsCnt];
+        initUpdCntrs = new long[partsCnt];
         updCntrs = new long[partsCnt];
     }
 
@@ -71,7 +71,7 @@ public class CachePartitionFullCountersMap implements Serializable, Message {
      * @return Initial update counter for the partition with the given ID.
      */
     public long initialUpdateCounter(int p) {
-        return initialUpdCntrs[p];
+        return initUpdCntrs[p];
     }
 
     /**
@@ -88,10 +88,10 @@ public class CachePartitionFullCountersMap implements Serializable, Message {
      * Sets an initial update counter by the partition ID.
      *
      * @param p Partition ID.
-     * @param initialUpdCntr Initial update counter to set.
+     * @param initUpdCntr Initial update counter to set.
      */
-    public void initialUpdateCounter(int p, long initialUpdCntr) {
-        initialUpdCntrs[p] = initialUpdCntr;
+    public void initialUpdateCounter(int p, long initUpdCntr) {
+        initUpdCntrs[p] = initUpdCntr;
     }
 
     /**
@@ -120,7 +120,7 @@ public class CachePartitionFullCountersMap implements Serializable, Message {
      * Clears full counters map.
      */
     public void clear() {
-        Arrays.fill(initialUpdCntrs, 0);
+        Arrays.fill(initUpdCntrs, 0);
         Arrays.fill(updCntrs, 0);
     }
 
@@ -128,14 +128,14 @@ public class CachePartitionFullCountersMap implements Serializable, Message {
      * @return Initial update counters.
      */
     public long[] initialUpdateCounters() {
-        return initialUpdCntrs;
+        return initUpdCntrs;
     }
 
     /**
-     * @param initialUpdCntrs Initial update counters.
+     * @param initUpdCntrs Initial update counters.
      */
-    public void initialUpdateCounters(long[] initialUpdCntrs) {
-        this.initialUpdCntrs = initialUpdCntrs;
+    public void initialUpdateCounters(long[] initUpdCntrs) {
+        this.initUpdCntrs = initUpdCntrs;
     }
 
     /**
