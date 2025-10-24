@@ -324,7 +324,7 @@ public class ColocationGroup implements CalciteMessage {
         return MessageType.COLOCATION_GROUP;
     }
 
-    /** */
+    /** Significantly compacts and fastens UUIDs marshalling. */
     public @Nullable int[] marshalledAssignments() {
         if (assignments == null || primaryAssignment)
             return null;
@@ -353,9 +353,9 @@ public class ColocationGroup implements CalciteMessage {
         return builder.build().buffer();
     }
 
-    /** */
+    /** Significantly compacts and fastens UUIDs unmarshalling. */
     public void marshalledAssignments(@Nullable int[] marshalledAssignments) {
-        if (marshalledAssignments == null) {
+        if (F.isEmpty(marshalledAssignments)) {
             assignments = null;
 
             return;

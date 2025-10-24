@@ -120,7 +120,7 @@ public class FragmentMapping implements CalciteMessage {
 
     /** */
     public List<ColocationGroup> colocationGroups() {
-        return Collections.unmodifiableList(colocationGroups);
+        return colocationGroups == null ? Collections.emptyList() : Collections.unmodifiableList(colocationGroups);
     }
 
     /** */
