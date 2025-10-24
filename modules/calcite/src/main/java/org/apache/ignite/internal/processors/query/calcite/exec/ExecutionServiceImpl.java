@@ -953,9 +953,9 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
         if (qry != null && qry.state() != QueryState.CLOSED) {
             assert qry instanceof RootQuery : "Unexpected query object: " + qry;
 
-            Exception e = new RemoteException(nodeId, msg.queryId(), msg.fragmentId(), msg.error());
+            Exception e = new RemoteException(nodeId, msg.queryId(), msg.fragmentId(), msg.toThrowable());
 
-            if (X.hasCause(msg.error(), QueryCancelledException.class)) {
+            if (X.hasCause(msg.toThrowable(), QueryCancelledException.class)) {
                 e = new IgniteSQLException(
                     "The query was cancelled while executing.",
                     IgniteQueryErrorCode.QUERY_CANCELED,

@@ -27,7 +27,7 @@ import org.apache.ignite.internal.managers.communication.ErrorMessage;
 public class CalciteErrorMessage extends ErrorMessage implements CalciteMessage {
     /** */
     @Order(1)
-    private UUID qryId;
+    private UUID queryId;
 
     /** */
     @Order(2)
@@ -39,12 +39,12 @@ public class CalciteErrorMessage extends ErrorMessage implements CalciteMessage 
     }
 
     /** */
-    public CalciteErrorMessage(UUID qryId, long fragmentId, Throwable err) {
+    public CalciteErrorMessage(UUID queryId, long fragmentId, Throwable err) {
         super(err);
 
         assert err != null;
 
-        this.qryId = qryId;
+        this.queryId = queryId;
         this.fragmentId = fragmentId;
     }
 
@@ -52,12 +52,12 @@ public class CalciteErrorMessage extends ErrorMessage implements CalciteMessage 
      * @return Query ID.
      */
     public UUID queryId() {
-        return qryId;
+        return queryId;
     }
 
     /** */
-    public void queryId(UUID qryId) {
-        this.qryId = qryId;
+    public void queryId(UUID queryId) {
+        this.queryId = queryId;
     }
 
     /**
