@@ -142,7 +142,7 @@ public class GridDistributedLockResponse extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public Throwable error() {
-        return errMsg != null ? errMsg.error() : null;
+        return ErrorMessage.error(errMsg);
     }
 
     /**

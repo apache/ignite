@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.marshaller.Marshallers.jdk;
@@ -38,7 +39,7 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
  */
 @SuppressWarnings({"NullableProblems", "unused"})
 public class ErrorMessage implements Message {
-    /** Serialization and deserealization methods call holder. Is not uses as a data holder. */
+    /** Serialization and deserealization call holder. */
     @Order(value = 0, method = "errorBytes")
     @GridToStringExclude
     private @Nullable byte[] errBytes;
@@ -61,7 +62,10 @@ public class ErrorMessage implements Message {
     }
 
     /**
-     * @return Serialized form of throwable.
+     * Gets serialized bytes of the error. Should be called only once.
+     *
+     * @return Serialized error.
+     * @see MessageWriter
      */
     public @Nullable byte[] errorBytes() {
         if (err == null)
@@ -76,7 +80,10 @@ public class ErrorMessage implements Message {
     }
 
     /**
-     * @param errBytes New serialized form of throwable.
+     * Serializes the error from {@code errBytes}. Should be called only once.
+     *
+     * @param errBytes Serialized error.
+     * @see MessageWriter
      */
     public void errorBytes(@Nullable byte[] errBytes) {
         if (errBytes == null)
