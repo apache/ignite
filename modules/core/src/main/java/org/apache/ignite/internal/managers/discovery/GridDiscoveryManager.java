@@ -486,7 +486,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ctx.addNodeAttribute(ATTR_OFFHEAP_SIZE, requiredOffheap());
         ctx.addNodeAttribute(ATTR_DATA_REGIONS_OFFHEAP_SIZE, configuredOffheap());
 
-        // TODO When exposing to public interfaces, replace the retrieval in IgniteClusterNode implementations.
+        // TODO When exposing to public interface, replace the retrieval in IgniteClusterNode implementations.
         String dcId = IgniteSystemProperties.getString(IGNITE_DATA_CENTER_ID);
 
         if (dcId != null)
