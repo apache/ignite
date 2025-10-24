@@ -171,9 +171,19 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertClusterSize(2);
 
-        startGrid(0, "2.18.1", isClient);
+        startGrid(0, "2.18.1", false);
 
         assertClusterSize(3);
+
+        grid(0).context().rollingUpgrade().disable();
+
+        assertFalse(grid(0).context().rollingUpgrade().enabled());
+
+        grid(0).context().rollingUpgrade().disable();
+
+        assertFalse(grid(0).context().rollingUpgrade().enabled());
+
+        assertRemoteRejected(() -> startGrid(3, "2.18.0", isClient));
     }
 
     /** */
@@ -250,6 +260,8 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
             IgniteProductVersion.fromString("2.19.0"));
 
         grid0.context().rollingUpgrade().enable(newPair.get2());
+
+        assertEnablingFails(grid0, "2.18.1", "Rolling upgrade is already enabled with a different current and target version");
 
         for (int i = 0; i < 2; i++) {
             assertTrue(waitForCondition(grid(i).context().rollingUpgrade()::enabled, getTestTimeout()));
