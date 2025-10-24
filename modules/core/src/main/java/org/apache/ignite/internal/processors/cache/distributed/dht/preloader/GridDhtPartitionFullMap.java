@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.AbstractMap;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -36,7 +37,8 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Full partition map from all nodes.
  */
-public class GridDhtPartitionFullMap implements Comparable<GridDhtPartitionFullMap>, Externalizable, Message {
+public class GridDhtPartitionFullMap
+    extends AbstractMap<UUID, GridDhtPartitionMap> implements Comparable<GridDhtPartitionFullMap>, Externalizable, Message {
     /** Type code. */
     public static final short TYPE_CODE = 506;
 
@@ -314,14 +316,14 @@ public class GridDhtPartitionFullMap implements Comparable<GridDhtPartitionFullM
     /**
      * @return Values from map.
      */
-    public Collection<GridDhtPartitionMap> values() {
+    @Override public Collection<GridDhtPartitionMap> values() {
         return map.values();
     }
 
     /**
      * @return
      */
-    public Set<Map.Entry<UUID, GridDhtPartitionMap>> entrySet() {
+    @Override public Set<Map.Entry<UUID, GridDhtPartitionMap>> entrySet() {
         return map.entrySet();
     }
 
@@ -333,17 +335,18 @@ public class GridDhtPartitionFullMap implements Comparable<GridDhtPartitionFullM
     }
 
     /**
-     * @param nodeId Node id.
+     * @param nodeId  Node id.
      * @param partMap Part map.
+     * @return
      */
-    public void put(UUID nodeId, GridDhtPartitionMap partMap) {
-        map.put(nodeId, partMap);
+    @Override public GridDhtPartitionMap put(UUID nodeId, GridDhtPartitionMap partMap) {
+        return map.put(nodeId, partMap);
     }
 
     /**
      * @return
      */
-    public Set<UUID> keySet() {
+    @Override public Set<UUID> keySet() {
         return map.keySet();
     }
 
@@ -357,7 +360,7 @@ public class GridDhtPartitionFullMap implements Comparable<GridDhtPartitionFullM
     /**
      * @return The number of key-value mappings in map.
      */
-    public int size() {
+    @Override public int size() {
         return map.size();
     }
 

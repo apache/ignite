@@ -155,7 +155,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                     val.nodeId(),
                     val.nodeOrder(),
                     val.updateSequence(),
-                    val.map(),
+                    val,
                     false));
             }
         }
