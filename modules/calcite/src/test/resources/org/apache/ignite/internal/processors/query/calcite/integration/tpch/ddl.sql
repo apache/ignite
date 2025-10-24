@@ -112,6 +112,6 @@ FROM
     lineitem
 WHERE
     l_shipdate >= DATE '1996-01-01'
-  AND l_shipdate < TIMESTAMPADD(MONTH, 3, DATE '1996-01-01')
+    AND l_shipdate < TIMESTAMPADD(MONTH, 3, DATE '1996-01-01')
 GROUP BY
     l_suppkey;
