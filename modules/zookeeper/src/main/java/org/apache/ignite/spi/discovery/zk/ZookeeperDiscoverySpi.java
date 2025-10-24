@@ -526,6 +526,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
 
         ZookeeperClusterNode locNode = new ZookeeperClusterNode(
             cfg.getNodeId(),
+            //TODO remove usage of internal API when an alternative from public API is available
             (String)((IgniteEx)ignite).context().nodeAttributes().get(ATTR_DATA_CENTER_ID),
             addrs.get1(),
             addrs.get2(),

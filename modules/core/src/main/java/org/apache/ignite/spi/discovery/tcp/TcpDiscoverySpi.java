@@ -1169,6 +1169,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         locNode = new TcpDiscoveryNode(
             ignite.configuration().getNodeId(),
+            //TODO remove usage of internal API when an alternative from public API is available
             (String)((IgniteEx)ignite).context().nodeAttributes().get(ATTR_DATA_CENTER_ID),
             addrs.get1(),
             addrs.get2(),
