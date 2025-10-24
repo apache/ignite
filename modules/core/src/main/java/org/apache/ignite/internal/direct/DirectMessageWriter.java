@@ -47,6 +47,9 @@ public class DirectMessageWriter implements MessageWriter {
     @GridToStringInclude
     private final DirectMessageState<StateItem> state;
 
+    /** Buffer for writing. */
+    private ByteBuffer buf;
+
     /** */
     public DirectMessageWriter(final MessageFactory msgFactory) {
         state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
@@ -56,9 +59,24 @@ public class DirectMessageWriter implements MessageWriter {
         });
     }
 
-    /** {@inheritDoc} */
-    @Override public void setBuffer(ByteBuffer buf) {
+    /**
+     * Sets but buffer to write to.
+     *
+     * @param buf Byte buffer.
+     */
+    public void setBuffer(ByteBuffer buf) {
+        this.buf = buf;
+
         state.item().stream.setBuffer(buf);
+    }
+
+    /**
+     * Gets buffer to write to.
+     *
+     * @return Byte buffer.
+     */
+    public ByteBuffer getBuffer() {
+        return buf;
     }
 
     /** {@inheritDoc} */
@@ -364,6 +382,8 @@ public class DirectMessageWriter implements MessageWriter {
     /** {@inheritDoc} */
     @Override public void beforeInnerMessageWrite() {
         state.forward();
+
+        state.item().stream.setBuffer(buf);
     }
 
     /** {@inheritDoc} */

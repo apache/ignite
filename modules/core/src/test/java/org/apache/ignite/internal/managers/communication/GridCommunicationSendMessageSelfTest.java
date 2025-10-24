@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -150,9 +149,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     /** */
     private static class TestMessage implements Message {
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            writer.setBuffer(buf);
-
+        @Override public boolean writeTo(MessageWriter writer) {
             if (!writer.writeHeader(directType()))
                 return false;
 
@@ -160,7 +157,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        @Override public boolean readFrom(MessageReader reader) {
             return true;
         }
 
@@ -173,9 +170,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     /** */
     private static class TestOverByteIdMessage implements Message {
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-            writer.setBuffer(buf);
-
+        @Override public boolean writeTo(MessageWriter writer) {
             if (!writer.writeHeader(directType()))
                 return false;
 
@@ -183,7 +178,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        @Override public boolean readFrom(MessageReader reader) {
             return true;
         }
 

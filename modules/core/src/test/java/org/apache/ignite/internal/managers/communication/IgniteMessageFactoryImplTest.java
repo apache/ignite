@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.nio.ByteBuffer;
-
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -144,12 +142,12 @@ public class IgniteMessageFactoryImplTest {
     /** Test message. */
     private static class TestMessage1 implements Message {
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        @Override public boolean writeTo(MessageWriter writer) {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        @Override public boolean readFrom(MessageReader reader) {
             return false;
         }
 
@@ -163,12 +161,12 @@ public class IgniteMessageFactoryImplTest {
     /** Test message. */
     private static class TestMessage2 implements Message {
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        @Override public boolean writeTo(MessageWriter writer) {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        @Override public boolean readFrom(MessageReader reader) {
             return false;
         }
 
@@ -182,12 +180,12 @@ public class IgniteMessageFactoryImplTest {
     /** Test message. */
     private static class TestMessage42 implements Message {
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        @Override public boolean writeTo(MessageWriter writer) {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        @Override public boolean readFrom(MessageReader reader) {
             return false;
         }
 

@@ -54,6 +54,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -1611,12 +1612,14 @@ public class GridNioServer<T> {
                 if (messageFactory() == null) {
                     assert msg instanceof ClientMessage;  // TODO: Will refactor in IGNITE-26554.
 
-                    finished = msg.writeTo(buf, writer);
+                    finished = ((ClientMessage)msg).writeTo(buf);
                 }
                 else {
                     MessageSerializer msgSer = messageFactory().serializer(msg.directType());
 
-                    finished = msgSer.writeTo(msg, buf, writer);
+                    ((DirectMessageWriter)writer).setBuffer(buf);
+
+                    finished = msgSer.writeTo(msg, writer);
                 }
 
                 span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));
@@ -1810,12 +1813,14 @@ public class GridNioServer<T> {
                 if (msgFactory == null) {
                     assert msg instanceof ClientMessage;  // TODO: Will refactor in IGNITE-26554.
 
-                    finished = msg.writeTo(buf, writer);
+                    finished = ((ClientMessage)msg).writeTo(buf);
                 }
                 else {
                     MessageSerializer msgSer = msgFactory.serializer(msg.directType());
 
-                    finished = msgSer.writeTo(msg, buf, writer);
+                    ((DirectMessageWriter)writer).setBuffer(buf);
+
+                    finished = msgSer.writeTo(msg, writer);
                 }
 
                 span.addTag(SOCKET_WRITE_BYTES, () -> Integer.toString(buf.position() - startPos));

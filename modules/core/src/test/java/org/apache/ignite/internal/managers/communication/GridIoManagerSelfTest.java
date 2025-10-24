@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -229,12 +228,12 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     private static class TestMessage implements Message {
 
         /** {@inheritDoc} */
-        @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        @Override public boolean writeTo(MessageWriter writer) {
             return true;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        @Override public boolean readFrom(MessageReader reader) {
             return true;
         }
 

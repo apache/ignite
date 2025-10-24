@@ -17,7 +17,6 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
@@ -35,13 +34,6 @@ import org.jetbrains.annotations.Nullable;
  * Allows to customize the binary format of communication messages.
  */
 public interface MessageWriter {
-    /**
-     * Sets but buffer to write to.
-     *
-     * @param buf Byte buffer.
-     */
-    public void setBuffer(ByteBuffer buf);
-
     /**
      * Writes message header.
      *

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
@@ -101,10 +100,8 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
+    @Override public boolean writeTo(MessageWriter writer) {
+        if (!super.writeTo(writer))
             return false;
 
         if (!writer.isHeaderWritten()) {
@@ -127,10 +124,8 @@ public class GridDhtAtomicDeferredUpdateResponse extends GridCacheIdMessage impl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
+    @Override public boolean readFrom(MessageReader reader) {
+        if (!super.readFrom(reader))
             return false;
 
         switch (reader.state()) {

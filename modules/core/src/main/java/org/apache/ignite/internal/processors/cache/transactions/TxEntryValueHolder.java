@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
@@ -159,9 +158,7 @@ public class TxEntryValueHolder implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
+    @Override public boolean writeTo(MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType()))
                 return false;
@@ -194,9 +191,7 @@ public class TxEntryValueHolder implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
+    @Override public boolean readFrom(MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 hasWriteVal = reader.readBoolean();

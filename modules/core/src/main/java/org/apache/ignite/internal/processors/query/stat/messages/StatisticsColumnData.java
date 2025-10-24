@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.stat.messages;
 
 import java.io.Serializable;
-import java.nio.ByteBuffer;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -166,9 +165,7 @@ public class StatisticsColumnData implements Message, Serializable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
+    @Override public boolean writeTo(MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType()))
                 return false;
@@ -237,9 +234,7 @@ public class StatisticsColumnData implements Message, Serializable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
+    @Override public boolean readFrom(MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 createdAt = reader.readLong();

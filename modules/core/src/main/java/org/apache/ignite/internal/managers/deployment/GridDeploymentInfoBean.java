@@ -21,7 +21,6 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -137,9 +136,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
+    @Override public boolean writeTo(MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType()))
                 return false;
@@ -184,9 +181,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
+    @Override public boolean readFrom(MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 clsLdrId = reader.readIgniteUuid();

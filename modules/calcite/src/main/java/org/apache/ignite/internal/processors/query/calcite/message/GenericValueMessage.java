@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -65,9 +64,7 @@ public final class GenericValueMessage implements ValueMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
+    @Override public boolean writeTo(MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType()))
                 return false;
@@ -88,9 +85,7 @@ public final class GenericValueMessage implements ValueMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
+    @Override public boolean readFrom(MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 serialized = reader.readByteArray();

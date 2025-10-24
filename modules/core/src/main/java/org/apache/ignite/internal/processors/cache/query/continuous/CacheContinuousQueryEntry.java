@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import java.nio.ByteBuffer;
 import javax.cache.event.EventType;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridCodegenConverter;
@@ -376,9 +375,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
+    @Override public boolean writeTo(MessageWriter writer) {
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType()))
                 return false;
@@ -453,9 +450,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
+    @Override public boolean readFrom(MessageReader reader) {
         switch (reader.state()) {
             case 0:
                 cacheId = reader.readInt();

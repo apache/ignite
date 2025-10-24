@@ -22,10 +22,10 @@ import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.jetbrains.annotations.Nullable;
 
@@ -67,10 +67,10 @@ public class GridDirectParser implements GridNioParser {
     /** {@inheritDoc} */
     @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf)
         throws IOException, IgniteCheckedException {
-        MessageReader reader = ses.meta(READER_META_KEY);
+        DirectMessageReader reader = ses.meta(READER_META_KEY);
 
         if (reader == null)
-            ses.addMeta(READER_META_KEY, reader = readerFactory.reader(ses, msgFactory));
+            ses.addMeta(READER_META_KEY, reader = (DirectMessageReader)readerFactory.reader(ses, msgFactory));
 
         Message msg = ses.removeMeta(MSG_META_KEY);
 
@@ -87,7 +87,9 @@ public class GridDirectParser implements GridNioParser {
             if (msg != null && buf.hasRemaining()) {
                 MessageSerializer msgSer = msgFactory.serializer(msg.directType());
 
-                finished = msgSer.readFrom(msg, buf, reader);
+                reader.setBuffer(buf);
+
+                finished = msgSer.readFrom(msg, reader);
             }
 
             if (finished) {

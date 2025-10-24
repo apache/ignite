@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
@@ -41,12 +40,12 @@ public abstract class GridH2ValueMessage implements Message {
     public abstract Value value(GridKernalContext ctx) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+    @Override public boolean writeTo(MessageWriter writer) {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+    @Override public boolean readFrom(MessageReader reader) {
         return true;
     }
 }
