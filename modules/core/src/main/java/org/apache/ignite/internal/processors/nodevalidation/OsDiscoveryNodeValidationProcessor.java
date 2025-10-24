@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.nodevalidation;
 
-import java.util.Objects;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,31 +45,50 @@ public class OsDiscoveryNodeValidationProcessor extends GridProcessorAdapter imp
     @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
         ClusterNode locNode = ctx.discovery().localNode();
 
-        // Check version.
         String locBuildVer = locNode.attribute(ATTR_BUILD_VER);
         String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
 
-        if (!Objects.equals(rmtBuildVer, locBuildVer)) {
-            // OS nodes don't support rolling updates.
-            if (!locBuildVer.equals(rmtBuildVer)) {
-                String errMsg = "Local node and remote node have different version numbers " +
-                    "(node will not join, Ignite does not support rolling updates, " +
-                    "so versions must be exactly the same) " +
-                    "[locBuildVer=" + locBuildVer + ", rmtBuildVer=" + rmtBuildVer +
-                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                    ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + node.id() + ']';
+        IgniteProductVersion rmtVer = IgniteProductVersion.fromString(rmtBuildVer);
 
-                LT.warn(log, errMsg);
+        IgnitePair<IgniteProductVersion> pair = ctx.rollingUpgrade().versions();
 
-                // Always output in debug.
-                if (log.isDebugEnabled())
-                    log.debug(errMsg);
-
-                return new IgniteNodeValidationResult(node.id(), errMsg);
-            }
+        if (pair == null) {
+            pair = F.pair(IgniteProductVersion.fromString(locBuildVer), null);
         }
 
-        return null;
+        IgniteProductVersion curVer = pair.get1();
+        IgniteProductVersion targetVer = pair.get2();
+
+        if (versionsMatch(rmtVer, curVer) || versionsMatch(rmtVer, targetVer))
+            return null;
+
+        String errMsg = "Remote node rejected due to incompatible version for cluster join.\n"
+            + "Remote node info:\n"
+            + "  - Version     : " + rmtBuildVer + "\n"
+            + "  - Addresses   : " + U.addressesAsString(node) + "\n"
+            + "  - Node ID     : " + node.id() + "\n"
+            + "Local node info:\n"
+            + "  - Version     : " + locBuildVer + "\n"
+            + "  - Addresses   : " + U.addressesAsString(locNode) + "\n"
+            + "  - Node ID     : " + locNode.id() + "\n"
+            + "Allowed versions for joining: \n"
+            + " - " + curVer.major() + "." + curVer.minor() + "." + curVer.maintenance()
+            + (targetVer == null || targetVer.equals(curVer) ? "" :
+            "\n - " + targetVer.major() + "." + targetVer.minor() + "." + targetVer.maintenance());
+
+        LT.warn(log, errMsg);
+
+        if (log.isDebugEnabled())
+            log.debug(errMsg);
+
+        return new IgniteNodeValidationResult(node.id(), errMsg);
+    }
+
+    /** Checks if versions have same major, minor and maintenance versions. */
+    private boolean versionsMatch(IgniteProductVersion ver1, IgniteProductVersion ver2) {
+        if (ver1 == null || ver2 == null)
+            return false;
+
+        return ver1.major() == ver2.major() && ver1.minor() == ver2.minor() && ver1.maintenance() == ver2.maintenance();
     }
 }
