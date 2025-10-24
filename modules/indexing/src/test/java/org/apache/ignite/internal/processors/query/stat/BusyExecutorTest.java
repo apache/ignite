@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.stat;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -26,10 +25,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.thread.IgniteThreadPoolExecutor;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -125,7 +125,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
         be.activate();
 
         be.execute(taskExec);
-        CompletableFuture<Boolean> submitFut = be.submit(taskSubmit);
+        IgniteCompletableFuture<Boolean> submitFut = be.submit(taskSubmit);
         be.execute(cancellableTask);
 
         Thread.sleep(TIME_TO_START_THREAD);
@@ -155,7 +155,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
         BusyExecutor be = new BusyExecutor("testActivateDeactivate", pool, () -> false, c -> log);
         be.activate();
 
-        CompletableFuture<Boolean> futures[] = new CompletableFuture[100];
+        IgniteCompletableFuture<Boolean> futures[] = new IgniteCompletableFuture[100];
         CountDownLatch executed = new CountDownLatch(futures.length * 2);
 
         for (int i = 0; i < futures.length; i++) {

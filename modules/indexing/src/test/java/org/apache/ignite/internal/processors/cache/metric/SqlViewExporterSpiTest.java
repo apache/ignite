@@ -72,7 +72,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.service.DummyService;
-import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.thread.IgniteStripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -846,7 +846,7 @@ public class SqlViewExporterSpiTest extends AbstractExporterSpiTest {
      * @param view System view name.
      * @param poolName Executor name.
      */
-    private void checkStripeExecutorView(StripedExecutor execSvc, String view, String poolName) throws Exception {
+    private void checkStripeExecutorView(IgniteStripedExecutor execSvc, String view, String poolName) throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
 
         execSvc.execute(0, new TestRunnable(latch, 0));

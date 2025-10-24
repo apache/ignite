@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -31,6 +30,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
+import org.apache.ignite.internal.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
@@ -82,7 +82,7 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
     private DiscoverySpiListener lsnr;
 
     /** */
-    private ExecutorService exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    private ExecutorService exec;
 
     /** */
     private DiscoverySpiNodeAuthenticator nodeAuth;
@@ -201,6 +201,12 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+        exec = IgniteThreadPoolExecutor.newFixedThreadPool(
+            "isolated-discovery-worker",
+            igniteInstanceName,
+            Runtime.getRuntime().availableProcessors()
+        );
+
         if (nodeAuth != null) {
             try {
                 SecurityCredentials locSecCred = (SecurityCredentials)locNode.attributes().get(ATTR_SECURITY_CREDENTIALS);
@@ -231,7 +237,8 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
-        exec.shutdownNow();
+        if (exec != null)
+            exec.shutdownNow();
     }
 
     /** {@inheritDoc} */

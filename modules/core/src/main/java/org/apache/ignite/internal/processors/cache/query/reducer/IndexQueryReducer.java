@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
@@ -37,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static org.apache.ignite.internal.cache.query.index.SortOrder.DESC;
@@ -49,7 +49,7 @@ public class IndexQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
     private static final long serialVersionUID = 0L;
 
     /** Future that will be completed with first page response. */
-    private final CompletableFuture<IndexQueryResultMeta> metaFut;
+    private final IgniteCompletableFuture<IndexQueryResultMeta> metaFut;
 
     /** */
     private final String valType;
@@ -62,7 +62,7 @@ public class IndexQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
         final String valType,
         final Map<UUID, NodePageStream<R>> pageStreams,
         final GridCacheContext<?, ?> cctx,
-        final CompletableFuture<IndexQueryResultMeta> meta
+        final IgniteCompletableFuture<IndexQueryResultMeta> meta
     ) {
         super(pageStreams);
 
@@ -72,7 +72,7 @@ public class IndexQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
     }
 
     /** {@inheritDoc} */
-    @Override protected CompletableFuture<Comparator<NodePage<R>>> pageComparator() {
+    @Override protected IgniteCompletableFuture<Comparator<NodePage<R>>> pageComparator() {
         return metaFut.thenApply(m -> {
             LinkedHashMap<String, IndexKeyDefinition> keyDefs = m.keyDefinitions();
 

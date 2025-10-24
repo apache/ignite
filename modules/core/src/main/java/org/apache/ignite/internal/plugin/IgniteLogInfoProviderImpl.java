@@ -35,7 +35,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -56,7 +55,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
-import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.thread.IgniteStripedExecutor;
+import org.apache.ignite.internal.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -778,15 +778,15 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
         int poolActiveThreads = 0;
         int poolQSize = 0;
 
-        if (execSvc instanceof ThreadPoolExecutor) {
-            ThreadPoolExecutor exec = (ThreadPoolExecutor)execSvc;
+        if (execSvc instanceof IgniteThreadPoolExecutor) {
+            IgniteThreadPoolExecutor exec = (IgniteThreadPoolExecutor)execSvc;
 
             poolSize = exec.getPoolSize();
             poolActiveThreads = Math.min(poolSize, exec.getActiveCount());
             poolQSize = exec.getQueue().size();
         }
-        else if (execSvc instanceof StripedExecutor) {
-            StripedExecutor exec = (StripedExecutor)execSvc;
+        else if (execSvc instanceof IgniteStripedExecutor) {
+            IgniteStripedExecutor exec = (IgniteStripedExecutor)execSvc;
 
             poolSize = exec.stripesCount();
             poolActiveThreads = exec.activeStripesCount();

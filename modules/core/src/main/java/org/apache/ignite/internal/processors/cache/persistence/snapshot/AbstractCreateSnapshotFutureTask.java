@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryType;
@@ -38,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.topology.Grid
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.marshaller.MappedName;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 import org.apache.ignite.internal.util.lang.IgniteThrowableRunner;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -55,7 +55,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
     protected final Map<Integer, Set<Integer>> processed = new HashMap<>();
 
     /** Future which will be completed when task requested to be closed. Will be executed on system pool. */
-    protected volatile CompletableFuture<Void> closeFut;
+    protected volatile IgniteCompletableFuture<Void> closeFut;
 
     /** Snapshot file tree. */
     protected final SnapshotFileTree sft;
@@ -81,10 +81,10 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
     }
 
     /** */
-    protected abstract List<CompletableFuture<Void>> saveCacheConfigs();
+    protected abstract List<IgniteCompletableFuture<Void>> saveCacheConfigs();
 
     /** */
-    protected abstract List<CompletableFuture<Void>> saveGroup(int grpId, Set<Integer> grpParts) throws IgniteCheckedException;
+    protected abstract List<IgniteCompletableFuture<Void>> saveGroup(int grpId, Set<Integer> grpParts) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
     @Override public boolean cancel() {
@@ -103,7 +103,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
     }
 
     /** @return Future which will be completed when operations truly stopped. */
-    protected abstract CompletableFuture<Void> closeAsync();
+    protected abstract IgniteCompletableFuture<Void> closeAsync();
 
     /**
      * @return {@code true} if current task requested to be stopped.
@@ -180,7 +180,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
     protected void saveSnapshotData() {
         try {
             // Submit all tasks for partitions and deltas processing.
-            List<CompletableFuture<Void>> futs = new ArrayList<>();
+            List<IgniteCompletableFuture<Void>> futs = new ArrayList<>();
 
             Collection<BinaryType> binTypesCopy = cctx.kernalContext()
                 .cacheObjects()
@@ -201,7 +201,7 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
 
             int futsSize = futs.size();
 
-            CompletableFuture.allOf(futs.toArray(new CompletableFuture[futsSize])).whenComplete((res, t) -> {
+            IgniteCompletableFuture.allOf(futs.toArray(new IgniteCompletableFuture[futsSize])).whenComplete((res, t) -> {
                 assert t == null : "Exception must never be thrown since a wrapper is used " +
                     "for each snapshot task: " + t;
 
@@ -244,8 +244,8 @@ public abstract class AbstractCreateSnapshotFutureTask extends AbstractSnapshotF
     }
 
     /** */
-    protected CompletableFuture<Void> runAsync(IgniteThrowableRunner task) {
-        return CompletableFuture.runAsync(
+    protected IgniteCompletableFuture<Void> runAsync(IgniteThrowableRunner task) {
+        return IgniteCompletableFuture.runAsync(
             wrapExceptionIfStarted(task),
             snpSndr.executor()
         );

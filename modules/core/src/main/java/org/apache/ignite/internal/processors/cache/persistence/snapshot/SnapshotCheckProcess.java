@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -44,6 +43,7 @@ import org.apache.ignite.internal.management.cache.IdleVerifyResult;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -293,7 +293,7 @@ public class SnapshotCheckProcess {
 
         GridFutureAdapter<SnapshotCheckResponse> phaseFut = new GridFutureAdapter<>();
 
-        CompletableFuture<SnapshotCheckResponse> workingFut;
+        IgniteCompletableFuture<SnapshotCheckResponse> workingFut;
 
         if (req.incrementalIndex() > 0) {
             assert !req.allRestoreHandlers() : "Snapshot handlers aren't supported for incremental snapshot.";
@@ -316,13 +316,13 @@ public class SnapshotCheckProcess {
     }
 
     /** @return A composed future of increment checks for each consistent id regarding {@link SnapshotCheckContext#metas}. */
-    private CompletableFuture<SnapshotCheckResponse> incrementalFuture(SnapshotCheckContext ctx) {
+    private IgniteCompletableFuture<SnapshotCheckResponse> incrementalFuture(SnapshotCheckContext ctx) {
         // Incremental snapshots do not support working on other topology. Only single meta and snapshot part can be processed.
         SnapshotMetadata meta = ctx.metas.get(0);
 
-        CompletableFuture<SnapshotCheckResponse> resFut = new CompletableFuture<>();
+        IgniteCompletableFuture<SnapshotCheckResponse> resFut = new IgniteCompletableFuture<>();
 
-        CompletableFuture<IncrementalSnapshotVerificationTaskResult> workingFut = snpChecker.checkIncrementalSnapshot(
+        IgniteCompletableFuture<IncrementalSnapshotVerificationTaskResult> workingFut = snpChecker.checkIncrementalSnapshot(
             ctx.locFileTree.get(meta.consistentId()), ctx.req.incrementalIndex());
 
         workingFut.whenComplete((res, err) -> {
@@ -336,16 +336,16 @@ public class SnapshotCheckProcess {
     }
 
     /** @return A composed future of partitions checks for each consistent id regarding {@link SnapshotCheckContext#metas}. */
-    private CompletableFuture<SnapshotCheckResponse> partitionsHashesFuture(SnapshotCheckContext ctx) {
+    private IgniteCompletableFuture<SnapshotCheckResponse> partitionsHashesFuture(SnapshotCheckContext ctx) {
         // Per metas result: consistent id -> check results per partition key.
         Map<String, Map<PartitionKey, PartitionHashRecord>> perMetaResults = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
         // Per consistent id.
         Map<String, Throwable> exceptions = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
-        CompletableFuture<SnapshotCheckResponse> composedFut = new CompletableFuture<>();
+        IgniteCompletableFuture<SnapshotCheckResponse> composedFut = new IgniteCompletableFuture<>();
         AtomicInteger metasProcessed = new AtomicInteger(ctx.metas.size());
 
         for (SnapshotMetadata meta : ctx.metas) {
-            CompletableFuture<Map<PartitionKey, PartitionHashRecord>> metaFut = snpChecker.checkPartitions(
+            IgniteCompletableFuture<Map<PartitionKey, PartitionHashRecord>> metaFut = snpChecker.checkPartitions(
                 meta,
                 ctx.locFileTree.get(meta.consistentId()),
                 ctx.req.groups(),
@@ -371,16 +371,16 @@ public class SnapshotCheckProcess {
      * @return A composed future of all the snapshot handlers for each consistent id regarding {@link SnapshotCheckContext#metas}.
      * @see IgniteSnapshotManager#handlers()
      */
-    private CompletableFuture<SnapshotCheckResponse> allHandlersFuture(SnapshotCheckContext ctx) {
+    private IgniteCompletableFuture<SnapshotCheckResponse> allHandlersFuture(SnapshotCheckContext ctx) {
         // Per metas result: snapshot part's consistent id -> check result per handler name.
         Map<String, Map<String, SnapshotHandlerResult<Object>>> perMetaResults = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
         // Per consistent id.
         Map<String, Throwable> exceptions = new ConcurrentHashMap<>(ctx.metas.size(), 1.0f);
-        CompletableFuture<SnapshotCheckResponse> composedFut = new CompletableFuture<>();
+        IgniteCompletableFuture<SnapshotCheckResponse> composedFut = new IgniteCompletableFuture<>();
         AtomicInteger metasProcessed = new AtomicInteger(ctx.metas.size());
 
         for (SnapshotMetadata meta : ctx.metas) {
-            CompletableFuture<Map<String, SnapshotHandlerResult<Object>>> metaFut = snpChecker.invokeCustomHandlers(meta,
+            IgniteCompletableFuture<Map<String, SnapshotHandlerResult<Object>>> metaFut = snpChecker.invokeCustomHandlers(meta,
                 ctx.locFileTree.get(meta.consistentId()), ctx.req.groups(), ctx.req.fullCheck());
 
             metaFut.whenComplete((res, err) -> {

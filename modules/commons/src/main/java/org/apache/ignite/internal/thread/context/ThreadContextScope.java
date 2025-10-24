@@ -15,30 +15,43 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread;
+package org.apache.ignite.internal.thread.context;
 
-import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.util.typedef.X;
+/** */
+class ThreadContextScope implements Scope {
+    /** */
+    private static final Scope INSTANCE = new ThreadContextScope();
 
-/**
- * OOM exception handler for system threads.
- */
-public class OomExceptionHandler implements Thread.UncaughtExceptionHandler {
-    /** Context. */
-    private final GridKernalContext ctx;
-
-    /**
-     * @param ctx Context.
-     */
-    public OomExceptionHandler(GridKernalContext ctx) {
-        this.ctx = ctx;
+    /** */
+    private ThreadContextScope() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void uncaughtException(Thread t, Throwable e) {
-        if (X.hasCause(e, OutOfMemoryError.class))
-            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+    @Override public <T> Scope withAttribute(ThreadContextAttribute<T> attr, T val) {
+        ThreadContext.data().put(attr, val);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        ThreadContext.data().onScopeClosed();
+    }
+
+    /** */
+    static Scope create() {
+        ThreadContext.data().onScopeCreated();
+
+        return INSTANCE;
+    }
+
+    /** */
+    static Scope createWith(ThreadContextSnapshot snapshot) {
+        ThreadContext.data().onScopeCreated();
+
+        ThreadContext.data().restoreSnapshot(snapshot);
+
+        return INSTANCE;
     }
 }

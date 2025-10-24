@@ -53,7 +53,6 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
@@ -119,6 +118,8 @@ import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionClientContext;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
+import org.apache.ignite.internal.thread.IgniteThreadFactory;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -128,7 +129,6 @@ import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -2587,7 +2587,7 @@ public class JdbcThinConnection implements Connection {
      */
     private abstract class BlockingJdbcChannel {
         /** Request ID -> Jdbc result map. */
-        private Map<Long, CompletableFuture<JdbcResult>> results = new ConcurrentHashMap<>();
+        private Map<Long, IgniteCompletableFuture<JdbcResult>> results = new ConcurrentHashMap<>();
 
         /**
          * Do request in blocking style. It just call
@@ -2602,9 +2602,9 @@ public class JdbcThinConnection implements Connection {
             R res;
 
             if (isStream()) {
-                CompletableFuture<JdbcResult> resFut = new CompletableFuture<>();
+                IgniteCompletableFuture<JdbcResult> resFut = new IgniteCompletableFuture<>();
 
-                CompletableFuture<JdbcResult> oldFut = results.put(req.requestId(), resFut);
+                IgniteCompletableFuture<JdbcResult> oldFut = results.put(req.requestId(), resFut);
 
                 assert oldFut == null : "Another request with the same id is waiting for result.";
 
@@ -2627,7 +2627,7 @@ public class JdbcThinConnection implements Connection {
         boolean handleResult(long reqId, JdbcResult res) {
             boolean handled = false;
 
-            CompletableFuture<JdbcResult> fut = results.remove(reqId);
+            IgniteCompletableFuture<JdbcResult> fut = results.remove(reqId);
 
             if (fut != null) {
                 fut.complete(res);

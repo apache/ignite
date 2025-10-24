@@ -22,7 +22,6 @@ import java.lang.management.ManagementFactory;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -30,13 +29,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.SensitiveInfoTestLoggerProxy;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
+import org.apache.ignite.internal.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -62,7 +61,7 @@ public class IgniteTestResources {
     private final String home = U.getIgniteHome();
 
     /** */
-    private ThreadPoolExecutor execSvc;
+    private IgniteThreadPoolExecutor execSvc;
 
     /** */
     private IgniteConfiguration cfg;
@@ -160,8 +159,13 @@ public class IgniteTestResources {
      * @param prestart Prestart flag.
      */
     public void startThreads(boolean prestart) {
-        execSvc = new IgniteThreadPoolExecutor(nodeId.toString(), null, 40, 40, Long.MAX_VALUE,
-                new LinkedBlockingQueue<>());
+        execSvc = new IgniteThreadPoolExecutor(
+            nodeId.toString(),
+            null,
+            40,
+            40,
+            Long.MAX_VALUE,
+            new LinkedBlockingQueue<>());
 
         // Improve concurrency for testing.
         if (prestart)

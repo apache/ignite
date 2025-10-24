@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.query.stat;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsObjectConfiguration;
+import org.apache.ignite.internal.thread.context.concurrent.IgniteCompletableFuture;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -52,7 +52,7 @@ public class LocalStatisticsGatheringContext {
     private final AffinityTopologyVersion topVer;
 
     /** Future with success status as a result. */
-    private final CompletableFuture<Void> future;
+    private final IgniteCompletableFuture<Void> future;
 
     /** Context cancelled flag. */
     private volatile boolean cancelled;
@@ -81,7 +81,7 @@ public class LocalStatisticsGatheringContext {
         this.remainingParts = new HashSet<>(remainingParts);
         this.allParts = (forceRecollect) ? null : new HashSet<>(remainingParts);
         this.topVer = topVer;
-        this.future = new CompletableFuture<>();
+        this.future = new IgniteCompletableFuture<>();
     }
 
     /**
@@ -173,7 +173,7 @@ public class LocalStatisticsGatheringContext {
     /**
      * @return Gathering completable future.
      */
-    public CompletableFuture<Void> future() {
+    public IgniteCompletableFuture<Void> future() {
         return future;
     }
 

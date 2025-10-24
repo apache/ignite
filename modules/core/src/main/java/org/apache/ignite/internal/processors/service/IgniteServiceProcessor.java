@@ -37,7 +37,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -71,8 +70,10 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.platform.services.PlatformService;
 import org.apache.ignite.internal.processors.platform.services.PlatformServiceConfiguration;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.thread.IgniteThreadFactory;
+import org.apache.ignite.internal.thread.OomExceptionHandler;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -97,8 +98,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.spi.systemview.view.ServiceView;
-import org.apache.ignite.thread.IgniteThreadFactory;
-import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -110,6 +109,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.SERVICE_PROC;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.nodeSecurityContext;
+import static org.apache.ignite.internal.thread.IgniteThreadPoolExecutor.newSingleThreadExecutor;
 import static org.apache.ignite.internal.util.IgniteUtils.allInterfaces;
 import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLOY;
 
@@ -124,7 +124,6 @@ import static org.apache.ignite.plugin.security.SecurityPermission.SERVICE_DEPLO
  * @see ServiceDeploymentActions
  * @see ServiceChangeBatchRequest
  */
-@SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
 public class IgniteServiceProcessor extends GridProcessorAdapter implements IgniteChangeGlobalStateSupport {
     /** */
     public static final String SVCS_VIEW = "services";
@@ -1305,7 +1304,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                         UUID.randomUUID(),
                         cacheName,
                         affKey,
-                        Executors.newSingleThreadExecutor(threadFactory),
+                        newSingleThreadExecutor("service-redeploy-worker", ctx.igniteInstanceName()),
                         cfg.isStatisticsEnabled());
 
                     ctxs.add(srvcCtx);
@@ -2083,7 +2082,7 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
             return err;
         }
 
-        try (OperationSecurityContext ignored = ctx.security().withContext(secCtx)) {
+        try (Scope ignored = ctx.security().withContext(secCtx)) {
             for (ServiceInfo desc : svcs) {
                 SecurityException err = checkPermissions(desc.name(), SERVICE_DEPLOY);
 
