@@ -41,59 +41,59 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     /** Size of serialized node metrics. */
     public static final int METRICS_SIZE =
         4/*max active jobs*/ +
-        4/*current active jobs*/ +
-        4/*average active jobs*/ +
-        4/*max waiting jobs*/ +
-        4/*current waiting jobs*/ +
-        4/*average waiting jobs*/ +
-        4/*max cancelled jobs*/ +
-        4/*current cancelled jobs*/ +
-        4/*average cancelled jobs*/ +
-        4/*max rejected jobs*/ +
-        4/*current rejected jobs*/ +
-        4/*average rejected jobs*/ +
-        4/*total executed jobs*/ +
-        4/*total rejected jobs*/ +
-        4/*total cancelled jobs*/ +
-        8/*max job wait time*/ +
-        8/*current job wait time*/ +
-        8/*average job wait time*/ +
-        8/*max job execute time*/ +
-        8/*current job execute time*/ +
-        8/*average job execute time*/ +
-        4/*total executed tasks*/ +
-        8/*current idle time*/ +
-        8/*total idle time*/ +
-        4/*available processors*/ +
-        8/*current CPU load*/ +
-        8/*average CPU load*/ +
-        8/*current GC CPU load*/ +
-        8/*heap memory init*/ +
-        8/*heap memory used*/ +
-        8/*heap memory committed*/ +
-        8/*heap memory max*/ +
-        8/*heap memory total*/ +
-        8/*non-heap memory init*/ +
-        8/*non-heap memory used*/ +
-        8/*non-heap memory committed*/ +
-        8/*non-heap memory max*/ +
-        8/*non-heap memory total*/ +
-        8/*uptime*/ +
-        8/*start time*/ +
-        8/*node start time*/ +
-        4/*thread count*/ +
-        4/*peak thread count*/ +
-        8/*total started thread count*/ +
-        4/*daemon thread count*/ +
-        8/*last data version.*/ +
-        4/*sent messages count*/ +
-        8/*sent bytes count*/ +
-        4/*received messages count*/ +
-        8/*received bytes count*/ +
-        4/*outbound messages queue size*/ +
-        4/*total nodes*/ +
-        8/*total jobs execution time*/ +
-        8/*current PME time*/;
+            4/*current active jobs*/ +
+            4/*average active jobs*/ +
+            4/*max waiting jobs*/ +
+            4/*current waiting jobs*/ +
+            4/*average waiting jobs*/ +
+            4/*max cancelled jobs*/ +
+            4/*current cancelled jobs*/ +
+            4/*average cancelled jobs*/ +
+            4/*max rejected jobs*/ +
+            4/*current rejected jobs*/ +
+            4/*average rejected jobs*/ +
+            4/*total executed jobs*/ +
+            4/*total rejected jobs*/ +
+            4/*total cancelled jobs*/ +
+            8/*max job wait time*/ +
+            8/*current job wait time*/ +
+            8/*average job wait time*/ +
+            8/*max job execute time*/ +
+            8/*current job execute time*/ +
+            8/*average job execute time*/ +
+            4/*total executed tasks*/ +
+            8/*current idle time*/ +
+            8/*total idle time*/ +
+            4/*available processors*/ +
+            8/*current CPU load*/ +
+            8/*average CPU load*/ +
+            8/*current GC CPU load*/ +
+            8/*heap memory init*/ +
+            8/*heap memory used*/ +
+            8/*heap memory committed*/ +
+            8/*heap memory max*/ +
+            8/*heap memory total*/ +
+            8/*non-heap memory init*/ +
+            8/*non-heap memory used*/ +
+            8/*non-heap memory committed*/ +
+            8/*non-heap memory max*/ +
+            8/*non-heap memory total*/ +
+            8/*uptime*/ +
+            8/*start time*/ +
+            8/*node start time*/ +
+            4/*thread count*/ +
+            4/*peak thread count*/ +
+            8/*total started thread count*/ +
+            4/*daemon thread count*/ +
+            8/*last data version.*/ +
+            4/*sent messages count*/ +
+            8/*sent bytes count*/ +
+            4/*received messages count*/ +
+            8/*received bytes count*/ +
+            4/*outbound messages queue size*/ +
+            4/*total nodes*/ +
+            8/*total jobs execution time*/ +
+            8/*current PME time*/;
 
     /** */
     private long lastUpdateTime = -1;

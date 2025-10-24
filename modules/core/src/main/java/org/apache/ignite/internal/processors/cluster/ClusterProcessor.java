@@ -78,7 +78,6 @@ import org.apache.ignite.mxbean.IgniteClusterMXBean;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CLUSTER_NAME;
@@ -163,9 +162,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     /** */
     private DiscoveryMetricsProvider metricsProvider;
 
-    /** */
-    private boolean sndMetrics;
-
     /** Cluster ID is stored in local variable before activation when it goes to distributed metastorage. */
     private volatile UUID locClusterId;
 
@@ -187,7 +183,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
         notifyEnabled.set(IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, DFLT_UPDATE_NOTIFIER));
 
         cluster = new IgniteClusterImpl(ctx);
-        sndMetrics = !(ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi);
         marsh = ctx.marshallerContext().jdkMarshaller();
     }
 
@@ -464,16 +459,14 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             }
         });
 
-        if (sndMetrics) {
-            ctx.io().addMessageListener(TOPIC_METRICS, new GridMessageListener() {
-                @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                    if (msg instanceof ClusterMetricsUpdateMessage)
-                        processMetricsUpdateMessage(nodeId, (ClusterMetricsUpdateMessage)msg);
-                    else
-                        U.warn(log, "Received unexpected message for TOPIC_METRICS: " + msg);
-                }
-            });
-        }
+        ctx.io().addMessageListener(TOPIC_METRICS, new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+                if (msg instanceof ClusterMetricsUpdateMessage)
+                    processMetricsUpdateMessage(nodeId, (ClusterMetricsUpdateMessage)msg);
+                else
+                    U.warn(log, "Received unexpected message for TOPIC_METRICS: " + msg);
+            }
+        });
     }
 
     /**
@@ -598,13 +591,9 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             }
         }
 
-        if (sndMetrics) {
-            metricsProvider = ctx.discovery().createMetricsProvider();
+        metricsProvider = ctx.discovery().createMetricsProvider();
 
-            long updateFreq = ctx.config().getMetricsUpdateFrequency();
-
-            ctx.timeout().addTimeoutObject(new MetricsUpdateTimeoutObject(updateFreq));
-        }
+        ctx.timeout().addTimeoutObject(new MetricsUpdateTimeoutObject(ctx.config().getMetricsUpdateFrequency()));
 
         IgniteClusterMXBeanImpl mxBeanImpl = new IgniteClusterMXBeanImpl(cluster);
 

@@ -198,14 +198,12 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
             TestTcpDiscoverySpi first = firstSpi();
             TestTcpDiscoverySpi next = nextSpi;
 
-            // The check message is sent in case no any discovery message were sent in configured period,
-            // but there are TcpDiscoveryMetricsUpdateMessage that is sent every 2 seconds and may affect
-            // the counters.
+            // The check message is sent in case no any discovery message were sent in configured period.
             assertTrue(GridTestUtils.waitForCondition(() -> {
                 int sent = first.connCheckStatusMsgCntSent;
                 int received = next.connCheckStatusMsgCntReceived;
 
-                return sent > 5 && received > 5;
+                return sent > 1 && received > 1;
             }, firstSpi().failureDetectionTimeout(), 500));
         }
         finally {
