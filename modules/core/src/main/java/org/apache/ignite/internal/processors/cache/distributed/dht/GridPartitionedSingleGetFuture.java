@@ -678,7 +678,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         UUID nodeId,
         boolean invalidParts,
         AffinityTopologyVersion rmtTopVer,
-        @Nullable IgniteCheckedException err
+        @Nullable Throwable err
     ) {
         if (err != null) {
             onDone(err);
