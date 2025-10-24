@@ -94,8 +94,8 @@ import org.apache.ignite.internal.processors.metric.impl.PeriodicHistogramMetric
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.service.DummyService;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.thread.IgniteStripedExecutor;
 import org.apache.ignite.internal.util.GridTestClockTimer;
-import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -1924,7 +1924,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
      * @param view System view.
      * @param poolName Executor name.
      */
-    private void checkStripeExecutorView(StripedExecutor execSvc, SystemView<StripedExecutorTaskView> view,
+    private void checkStripeExecutorView(IgniteStripedExecutor execSvc, SystemView<StripedExecutorTaskView> view,
         String poolName) throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
 

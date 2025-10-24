@@ -38,7 +38,6 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -112,9 +111,9 @@ import org.apache.ignite.internal.processors.performancestatistics.OperationType
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.platform.client.cache.ImmutableArrayMap;
 import org.apache.ignite.internal.processors.platform.client.cache.ImmutableArraySet;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
@@ -152,7 +151,6 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
 import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -166,6 +164,7 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_LOAD;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+import static org.apache.ignite.internal.thread.IgniteThreadPoolExecutor.newFixedThreadPool;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -1037,8 +1036,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             try {
                 if (jobs.size() > 1) {
-                    execSvc = Executors.newFixedThreadPool(jobs.size() - 1,
-                        new IgniteThreadFactory(ctx.igniteInstanceName(), "async-cache-cleaner"));
+                    execSvc = newFixedThreadPool("async-cache-cleaner", ctx.igniteInstanceName(), jobs.size() - 1);
 
                     for (int i = 1; i < jobs.size(); i++)
                         execSvc.execute(jobs.get(i));
@@ -3888,7 +3886,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 ctx.operationContextPerCall(opCtx);
                                 ctx.shared().txContextReset();
 
-                                try (OperationSecurityContext ignored = ctx.kernalContext().security().withContext(secCtx)) {
+                                try (Scope ignored = ctx.kernalContext().security().withContext(secCtx)) {
                                     opFut = op.op(tx0).chain(clo);
                                 }
                                 catch (Throwable e) {

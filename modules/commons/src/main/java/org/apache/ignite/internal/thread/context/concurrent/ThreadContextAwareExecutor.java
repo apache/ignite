@@ -15,23 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.thread;
+package org.apache.ignite.internal.thread.context.concurrent;
 
 import java.util.concurrent.Executor;
+import org.apache.ignite.internal.thread.context.function.ThreadContextAwareRunnable;
 import org.jetbrains.annotations.NotNull;
 
-/**
- *
- */
-public class SameThreadExecutor implements Executor {
+/** */
+public class ThreadContextAwareExecutor implements Executor {
     /** */
-    public static final Executor INSTANCE = new SameThreadExecutor();
+    private final Executor delegate;
 
     /** */
-    private SameThreadExecutor() {}
+    private ThreadContextAwareExecutor(Executor delegate) {
+        this.delegate = delegate;
+    }
 
     /** {@inheritDoc} */
     @Override public void execute(@NotNull Runnable command) {
-        command.run();
+        delegate.execute(ThreadContextAwareRunnable.wrap(command));
+    }
+
+    /**
+     * Creates executor wrapper that automatically captures scoped thread context attributes for the thread that
+     * invokes task execution. Captured attribute values will be restored before task execution, potentially in another
+     * thread.
+     */
+    public static Executor wrap(Executor delegate) {
+        return delegate == null ? null : new ThreadContextAwareExecutor(delegate);
     }
 }

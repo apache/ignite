@@ -15,32 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security;
+package org.apache.ignite.internal.thread.context;
 
 /**
- *
+ * Represents a scope with {@link ThreadContextAttribute} values bound to it. A newly created scope inherits {@link ThreadContextAttribute}
+ * values of the enclosing scope. Closing a scope restores the {@link ThreadContextAttribute} values bound to the
+ * enclosing scope. If no enclosing scope is present, attributes are restored to their initial values.
+ * Note, each created scope MUST be closed.
  */
-public class OperationSecurityContext implements AutoCloseable {
-    /** Ignite Security. */
-    private final IgniteSecurity proc;
-
-    /** Security context. */
-    private final SecurityContext secCtx;
-
-    /**
-     * @param proc Ignite Security.
-     * @param secCtx Security context.
-     */
-    OperationSecurityContext(IgniteSecurity proc, SecurityContext secCtx) {
-        this.proc = proc;
-        this.secCtx = secCtx;
-    }
+public interface Scope extends AutoCloseable {
+    /** Binds attribute with specified value to the current scope. */
+    public <T> Scope withAttribute(ThreadContextAttribute<T> attr, T val);
 
     /** {@inheritDoc} */
-    @Override public void close() {
-        if (secCtx == null)
-            ((IgniteSecurityProcessor)proc).restoreDefaultContext();
-        else
-            proc.withContext(secCtx);
-    }
+    @Override public void close();
 }
