@@ -242,6 +242,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
     protected List<List<?>> sql(IgniteEx ignite, String sql, Object... params) {
         List<FieldsQueryCursor<List<?>>> cur = queryProcessor(ignite).query(queryContext(), "PUBLIC", sql, params);
 
+        assert cur.size() == 1 : "The query: '" + sql + "' has produced " + cur.size() + " cursors while exactly one is allowed.";
+
         try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
             return srvCursor.getAll();
         }
