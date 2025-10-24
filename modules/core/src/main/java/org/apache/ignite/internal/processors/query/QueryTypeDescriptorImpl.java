@@ -783,7 +783,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 continue;
 
             if (!isCompatibleWithPropertyType(propVal, propType, componentTypes))
-                throwWrongColumnValueType(idxField, propVal, propType, componentTypes);
+                throwWrongColumnValueType(prop.name(), propVal, propType, componentTypes);
         }
     }
 
