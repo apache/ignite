@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
-import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
+import org.apache.ignite.internal.processors.query.calcite.message.CalciteErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.InboxCloseMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
@@ -171,7 +171,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** {@inheritDoc} */
     @Override public void sendError(UUID nodeId, UUID qryId, long fragmentId, Throwable err) throws IgniteCheckedException {
-        messageService().send(nodeId, new ErrorMessage(qryId, fragmentId, err));
+        messageService().send(nodeId, new CalciteErrorMessage(qryId, fragmentId, err));
     }
 
     /** {@inheritDoc} */
