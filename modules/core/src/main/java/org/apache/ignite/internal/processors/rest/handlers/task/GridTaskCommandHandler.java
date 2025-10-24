@@ -140,7 +140,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                     else
                         res.found(false);
 
-                    Object topic = U.unmarshal(ctx, req.topicBytes(), U.resolveClassLoader(ctx.config()));
+                    Object topic = TOPIC_REST.topic("task-result", req.topicId());
 
                     ctx.io().sendToCustomTopic(nodeId, topic, res, SYSTEM_POOL);
                 }
@@ -479,16 +479,15 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         };
 
         // 1. Create unique topic name and register listener.
-        Object topic = TOPIC_REST.topic("task-result", topicIdGen.getAndIncrement());
+        long topicId = topicIdGen.getAndIncrement();
+        Object topic = TOPIC_REST.topic("task-result", topicId);
 
         try {
             ctx.io().addMessageListener(topic, msgLsnr);
 
             // 2. Send message.
             try {
-                byte[] topicBytes = U.marshal(ctx, topic);
-
-                ctx.io().sendToGridTopic(taskNode, TOPIC_REST, new GridTaskResultRequest(taskId, topic, topicBytes), SYSTEM_POOL);
+                ctx.io().sendToGridTopic(taskNode, TOPIC_REST, new GridTaskResultRequest(taskId, topicId), SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
                 String errMsg = "Failed to send task result request [resHolderId=" + resHolderId +

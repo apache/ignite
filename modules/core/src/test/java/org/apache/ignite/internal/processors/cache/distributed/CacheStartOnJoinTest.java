@@ -17,16 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CyclicBarrier;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -61,15 +57,6 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
         TcpDiscoverySpi testSpi = new TcpDiscoverySpi() {
             /** */
             private boolean delay = true;
-
-            @Override protected void writeToSocket(
-                Socket sock,
-                OutputStream out,
-                TcpDiscoveryAbstractMessage msg,
-                long timeout
-            ) throws IOException, IgniteCheckedException {
-                super.writeToSocket(sock, out, msg, timeout);
-            }
 
             @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
                 if (getTestIgniteInstanceName(0).equals(ignite.name())) {

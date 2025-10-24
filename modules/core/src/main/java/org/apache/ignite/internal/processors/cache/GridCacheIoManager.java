@@ -313,17 +313,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      * @param plc Message policy.
      */
     private void handleMessage(UUID nodeId, GridCacheMessage cacheMsg, byte plc) {
-        handleMessage(nodeId, cacheMsg, cacheMsg.cacheGroupMessage() ? grpHandlers : cacheHandlers, plc);
-    }
+        MessageHandlers msgHandlers = cacheMsg instanceof GridCacheGroupIdMessage ? grpHandlers : cacheHandlers;
 
-    /**
-     * @param nodeId Sender node ID.
-     * @param cacheMsg Message.
-     * @param msgHandlers Message handlers.
-     * @param plc Message policy.
-     */
-    @SuppressWarnings("unchecked")
-    private void handleMessage(UUID nodeId, GridCacheMessage cacheMsg, MessageHandlers msgHandlers, byte plc) {
         Lock lock = rw.readLock();
 
         lock.lock();
@@ -335,10 +326,17 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             IgniteBiInClosure<UUID, GridCacheMessage> c = null;
 
+            int cacheOrGrpId = 0;
+
+            if (cacheMsg instanceof GridCacheIdMessage)
+                cacheOrGrpId = ((GridCacheIdMessage)cacheMsg).cacheId();
+            else if (cacheMsg instanceof GridCacheGroupIdMessage)
+                cacheOrGrpId = ((GridCacheGroupIdMessage)cacheMsg).groupId();
+
             if (msgIdx >= 0) {
                 Map<Integer, IndexedClassHandler> idxClsHandlers0 = msgHandlers.idxClsHandlers;
 
-                IndexedClassHandler cacheClsHandlers = idxClsHandlers0.get(cacheMsg.handlerId());
+                IndexedClassHandler cacheClsHandlers = idxClsHandlers0.get(cacheOrGrpId);
 
                 if (cacheClsHandlers != null &&
                     (NONE.equals(msgTopVer) || !msgTopVer.before(cacheClsHandlers.startTopVer)))
@@ -347,7 +345,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             if (c == null) {
                 RegularClassHandler rHnd = msgHandlers.clsHandlers.get(
-                        new ListenerKey(cacheMsg.handlerId(), cacheMsg.getClass()));
+                    new ListenerKey(cacheOrGrpId, cacheMsg.getClass()));
 
                 if (rHnd != null && (NONE.equals(msgTopVer) || !msgTopVer.before(rHnd.startTopVer)))
                     c = rHnd.hnd;

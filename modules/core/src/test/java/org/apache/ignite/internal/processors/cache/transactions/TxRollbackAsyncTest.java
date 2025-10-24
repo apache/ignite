@@ -298,6 +298,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             // Expected.
         }
 
+        // Cleanup context for further cache operations.
+        tx.close();
+
         checkFutures();
     }
 

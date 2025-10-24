@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.management.persistence;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.apache.ignite.internal.management.persistence.PersistenceCommand.PersistenceCleanAllTaskArg;
@@ -80,7 +80,7 @@ public abstract class PersistenceAbstractCommand implements ComputeCommand<Persi
             //clean command
             printer.accept("Maintenance task is " + (!res.maintenanceTaskCompleted() ? "not " : "") + "fixed.");
 
-            List<String> cleanedCaches = res.handledCaches();
+            Collection<String> cleanedCaches = res.handledCaches();
 
             if (cleanedCaches != null && !cleanedCaches.isEmpty()) {
                 String cacheDirNames = String.join(", ", cleanedCaches);
@@ -88,7 +88,7 @@ public abstract class PersistenceAbstractCommand implements ComputeCommand<Persi
                 printer.accept("Cache directories were cleaned: [" + cacheDirNames + ']');
             }
 
-            List<String> failedToHandleCaches = res.failedCaches();
+            Collection<String> failedToHandleCaches = res.failedCaches();
 
             if (failedToHandleCaches != null && !failedToHandleCaches.isEmpty()) {
                 String failedToHandleCachesStr = String.join(", ", failedToHandleCaches);
@@ -98,7 +98,7 @@ public abstract class PersistenceAbstractCommand implements ComputeCommand<Persi
         }
         else {
             // backup command
-            List<String> backupCompletedCaches = res.handledCaches();
+            Collection<String> backupCompletedCaches = res.handledCaches();
 
             if (backupCompletedCaches != null && !backupCompletedCaches.isEmpty()) {
                 String cacheDirNames = String.join(", ", backupCompletedCaches);
@@ -107,7 +107,7 @@ public abstract class PersistenceAbstractCommand implements ComputeCommand<Persi
                     cacheDirNames + ']');
             }
 
-            List<String> backupFailedCaches = res.failedCaches();
+            Collection<String> backupFailedCaches = res.failedCaches();
 
             if (backupFailedCaches != null && !backupFailedCaches.isEmpty()) {
                 String backupFailedCachesStr = String.join(", ", backupFailedCaches);

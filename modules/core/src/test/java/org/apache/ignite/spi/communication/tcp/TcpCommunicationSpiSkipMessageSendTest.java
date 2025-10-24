@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.Set;
@@ -292,7 +293,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (netDisabled) {
                 netDisabledLatch.countDown();
@@ -300,7 +301,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
                 throw new SocketTimeoutException("CustomDiscoverySpi: network is disabled.");
             }
             else
-                super.writeToSocket(sock, msg, timeout);
+                super.writeToSocket(sock, out, msg, timeout);
         }
 
         /**

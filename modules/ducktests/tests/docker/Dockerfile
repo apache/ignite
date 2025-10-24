@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG jdk_version=openjdk:11
+ARG jdk_version=eclipse-temurin:11
 FROM $jdk_version
 
 MAINTAINER Apache Ignite dev@ignite.apache.org
@@ -34,8 +34,10 @@ LABEL ducker.creator=$ducker_creator
 
 # Update Linux and install necessary utilities.
 RUN cat /etc/apt/sources.list | sed 's/http:\/\/deb.debian.org/https:\/\/deb.debian.org/g' > /etc/apt/sources.list.2 && mv /etc/apt/sources.list.2 /etc/apt/sources.list
-RUN apt update && apt install -y sudo netcat iptables rsync unzip wget curl jq coreutils openssh-server net-tools vim python3-pip python3-dev libffi-dev libssl-dev cmake pkg-config libfuse-dev iperf traceroute mc && apt-get -y clean
-RUN python3 -m pip install -U pip==24.3.1;
+RUN apt update && apt install -y sudo netcat-traditional iptables rsync unzip wget curl jq coreutils openssh-server net-tools vim python3-pip python3-dev python3-venv libffi-dev libssl-dev cmake pkg-config libfuse-dev iperf traceroute mc git && apt-get -y clean
+
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 COPY ./requirements.txt /root/requirements.txt
 RUN pip3 install -r /root/requirements.txt
 
@@ -67,6 +69,16 @@ RUN cd /opt && curl -O $APACHE_ARCHIVE/zookeeper/$ZOOKEEPER_NAME/$ZOOKEEPER_RELE
  && tar xvf $ZOOKEEPER_RELEASE_ARTIFACT && rm $ZOOKEEPER_RELEASE_ARTIFACT
 RUN mv /opt/$ZOOKEEPER_RELEASE_NAME /opt/$ZOOKEEPER_NAME
 
+#Install kafka
+ARG KAFKA_VERSION="3.9.1"
+ARG KAFKA_NAME="kafka"
+ARG KAFKA_RELEASE_NAME="${KAFKA_NAME}_2.13-$KAFKA_VERSION"
+ARG KAFKA_RELEASE_ARTIFACT="$KAFKA_RELEASE_NAME.tgz"
+RUN echo $APACHE_ARCHIVE/kafka/$KAFKA_VERSION/$KAFKA_RELEASE_ARTIFACT
+RUN cd /opt && curl -O $APACHE_ARCHIVE/kafka/$KAFKA_VERSION/$KAFKA_RELEASE_ARTIFACT \
+ && tar xvf $KAFKA_RELEASE_ARTIFACT && rm $KAFKA_RELEASE_ARTIFACT
+RUN mv /opt/$KAFKA_RELEASE_NAME /opt/$KAFKA_NAME-$KAFKA_VERSION
+
 # The version of Kibosh to use for testing.
 # If you update this, also update vagrant/base.sh
 ARG KIBOSH_VERSION="8841dd392e6fbf02986e2fb1f1ebf04df344b65a"
@@ -83,12 +95,15 @@ RUN cd /opt && curl -OL https://github.com/jiaqi/jmxterm/releases/download/v$JMX
        && mv $JMXTERM_ARTIFACT $JMXTERM_NAME.jar
 
 # Set up the ducker user.
-RUN useradd -ms /bin/bash ducker \
+RUN userdel -r ubuntu \
+    && useradd -ms /bin/bash ducker \
     && mkdir -p /home/ducker/ \
     && rsync -aiq /root/.ssh/ /home/ducker/.ssh \
     && chown -R ducker /home/ducker/ /mnt/ /var/log/ /opt \
+    && cp /dev/null /etc/environment \
     && echo "LANG=C.UTF-8" >> /home/ducker/.ssh/environment \
-    && echo "PATH=$(runuser -l ducker -c 'echo $PATH'):$JAVA_HOME/bin" >> /home/ducker/.ssh/environment \
+    && echo "PATH=$(runuser -l ducker -c 'echo $PATH'):$JAVA_HOME/bin:/opt/venv/bin" >> /home/ducker/.ssh/environment \
+    && echo "JAVA_HOME=$JAVA_HOME" >> /home/ducker/.ssh/environment \
     && echo 'PATH=$PATH:'"$JAVA_HOME/bin" >> /home/ducker/.profile \
     && echo 'ducker ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 USER ducker
@@ -96,4 +111,4 @@ USER ducker
 CMD sudo service ssh start && tail -f /dev/null
 
 # Container port exposure
-EXPOSE 11211 47100 47500 49112 10800 8080 2888 3888 2181 1098 8082
+EXPOSE 11211 47100 47500 49112 10800 8080 2888 3888 2181 1098 8082 8083

@@ -28,9 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Query table descriptor.
  */
 public class QueryTable implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Schema. */
     private String schema;
 
@@ -38,7 +35,7 @@ public class QueryTable implements Message {
     private String tbl;
 
     /**
-     * Defalt constructor.
+     * Default constructor.
      */
     public QueryTable() {
         // No-op.
@@ -82,13 +79,13 @@ public class QueryTable implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeString("schema", schema))
+                if (!writer.writeString(schema))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeString("tbl", tbl))
+                if (!writer.writeString(tbl))
                     return false;
 
                 writer.incrementState();
@@ -102,12 +99,9 @@ public class QueryTable implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                schema = reader.readString("schema");
+                schema = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -115,7 +109,7 @@ public class QueryTable implements Message {
                 reader.incrementState();
 
             case 1:
-                tbl = reader.readString("tbl");
+                tbl = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -124,17 +118,12 @@ public class QueryTable implements Message {
 
         }
 
-        return reader.afterMessageRead(QueryTable.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return -54;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 
     /** {@inheritDoc} */

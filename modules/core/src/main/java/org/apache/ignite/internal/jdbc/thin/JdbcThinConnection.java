@@ -126,6 +126,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -296,7 +297,7 @@ public class JdbcThinConnection implements Connection {
         netTimeout = connProps.getConnectionTimeout();
         qryTimeout = connProps.getQueryTimeout();
         maintenanceExecutor = Executors.newScheduledThreadPool(2,
-            new IgniteThreadFactory(ctx.configuration().getIgniteInstanceName(), "jdbc-maintenance"));
+            new IgniteThreadFactory(ctx.igniteInstanceName(), "jdbc-maintenance"));
 
         schema = JdbcUtils.normalizeSchema(connProps.getSchema());
 
@@ -323,11 +324,12 @@ public class JdbcThinConnection implements Connection {
         BinaryMarshaller marsh = new BinaryMarshaller();
         marsh.setContext(marshCtx);
 
-        BinaryConfiguration binCfg = new BinaryConfiguration().setCompactFooter(true);
-
-        BinaryContext ctx = new BinaryContext(metaHnd, new IgniteConfiguration(), new NullLogger());
-
-        ctx.configure(marsh, binCfg);
+        BinaryContext ctx = U.binaryContext(
+            metaHnd,
+            marsh,
+            new IgniteConfiguration().setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(true)),
+            NullLogger.INSTANCE
+        );
 
         ctx.registerUserTypesSchema();
 
@@ -2464,7 +2466,7 @@ public class JdbcThinConnection implements Connection {
 
         /** {@inheritDoc} */
         @Override public JdkMarshaller jdkMarshaller() {
-            return new JdkMarshaller();
+            return Marshallers.jdk();
         }
     }
 

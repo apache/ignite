@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -29,27 +28,22 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Transactions lock list request.
  */
 public class TxLocksRequest extends GridCacheMessage {
-    /** Serial version UID. */
-    private static final long serialVersionUID = 0L;
-
     /** Future ID. */
+    @Order(value = 3, method = "futureId")
     private long futId;
 
     /** Tx keys. */
     @GridToStringInclude
-    @GridDirectTransient
     private Set<IgniteTxKey> txKeys;
 
     /** Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling. */
     @GridToStringExclude
+    @Order(value = 4, method = "txKeysArray")
     private IgniteTxKey[] txKeysArr;
 
     /**
@@ -70,21 +64,32 @@ public class TxLocksRequest extends GridCacheMessage {
         this.txKeys = txKeys;
     }
 
-    /** {@inheritDoc} */
-    @Override public int handlerId() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean cacheGroupMessage() {
-        return false;
-    }
-
     /**
      * @return Future ID.
      */
     public long futureId() {
         return futId;
+    }
+
+    /**
+     * @param futId Future ID.
+     */
+    public void futureId(long futId) {
+        this.futId = futId;
+    }
+
+    /**
+     * @return Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling.
+     */
+    public IgniteTxKey[] txKeysArray() {
+        return txKeysArr;
+    }
+
+    /**
+     * @param txKeysArr Array of txKeys from {@link #txKeys}. Used during marshalling and unmarshalling.
+     */
+    public void txKeysArray(IgniteTxKey[] txKeysArr) {
+        this.txKeysArr = txKeysArr;
     }
 
     /**
@@ -132,70 +137,6 @@ public class TxLocksRequest extends GridCacheMessage {
         }
 
         txKeysArr = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 3:
-                if (!writer.writeLong("futId", futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeObjectArray("txKeysArr", txKeysArr, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 3:
-                futId = reader.readLong("futId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                txKeysArr = reader.readObjectArray("txKeysArr", MessageCollectionItemType.MSG, IgniteTxKey.class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(TxLocksRequest.class);
     }
 
     /** {@inheritDoc} */

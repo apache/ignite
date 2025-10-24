@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
@@ -27,9 +26,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -38,9 +34,6 @@ import org.jetbrains.annotations.Nullable;
  * Near cache lock request to primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
 public class GridNearLockRequest extends GridDistributedLockRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     private static final int NEED_RETURN_VALUE_FLAG_MASK = 0x01;
 
@@ -54,32 +47,40 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     private static final int NEAR_CACHE_FLAG_MASK = 0x08;
 
     /** Topology version. */
+    @Order(value = 20, method = "topologyVersion")
     private AffinityTopologyVersion topVer;
 
     /** Mini future ID. */
+    @Order(21)
     private int miniId;
 
     /** Array of mapped DHT versions for this entry. */
+    @Order(value = 22, method = "dhtVersions")
     @GridToStringInclude
     private GridCacheVersion[] dhtVers;
 
     /** Task name hash. */
+    @Order(23)
     private int taskNameHash;
 
     /** TTL for create operation. */
+    @Order(24)
     private long createTtl;
 
     /** TTL for read operation. */
+    @Order(25)
     private long accessTtl;
 
     /** */
+    @Order(value = 26, method = "nearFlags")
     private byte flags;
 
     /** Transaction label. */
+    @Order(value = 27, method = "txLabel")
     private String txLbl;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearLockRequest() {
         // No-op.
@@ -219,10 +220,17 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * @return Task name hash.q
+     * @return Task name hash.
      */
     public int taskNameHash() {
         return taskNameHash;
+    }
+
+    /**
+     * @param taskNameHash Task name hash.
+     */
+    public void taskNameHash(int taskNameHash) {
+        this.taskNameHash = taskNameHash;
     }
 
     /**
@@ -268,6 +276,20 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
+     * @return Array of mapped DHT versions for this entry.
+     */
+    public GridCacheVersion[] dhtVersions() {
+        return dhtVers;
+    }
+
+    /**
+     * @param dhtVers Array of mapped DHT versions for this entry.
+     */
+    public void dhtVersions(GridCacheVersion[] dhtVers) {
+        this.dhtVers = dhtVers;
+    }
+
+    /**
      * @param idx Index of the key.
      * @return DHT version for key at given index.
      */
@@ -283,10 +305,38 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /**
+     * @param createTtl New TTL to set after entry is created, -1 to leave unchanged.
+     */
+    public void createTtl(long createTtl) {
+        this.createTtl = createTtl;
+    }
+
+    /**
      * @return TTL for read operation.
      */
     public long accessTtl() {
         return accessTtl;
+    }
+
+    /**
+     * @param accessTtl TTL for read operation.
+     */
+    public void accessTtl(long accessTtl) {
+        this.accessTtl = accessTtl;
+    }
+
+    /**
+     * @return Flags.
+     */
+    public byte nearFlags() {
+        return flags;
+    }
+
+    /**
+     * @param flags Flags.
+     */
+    public void nearFlags(byte flags) {
+        this.flags = flags;
     }
 
     /**
@@ -296,151 +346,11 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         return txLbl;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 21:
-                if (!writer.writeLong("accessTtl", accessTtl))
-                    return false;
-
-                writer.incrementState();
-
-            case 22:
-                if (!writer.writeLong("createTtl", createTtl))
-                    return false;
-
-                writer.incrementState();
-
-            case 23:
-                if (!writer.writeObjectArray("dhtVers", dhtVers, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 24:
-                if (!writer.writeByte("flags", flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 25:
-                if (!writer.writeInt("miniId", miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 26:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
-                    return false;
-
-                writer.incrementState();
-
-            case 27:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 28:
-                if (!writer.writeString("txLbl", txLbl))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 21:
-                accessTtl = reader.readLong("accessTtl");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 22:
-                createTtl = reader.readLong("createTtl");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 23:
-                dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 24:
-                flags = reader.readByte("flags");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 25:
-                miniId = reader.readInt("miniId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 26:
-                taskNameHash = reader.readInt("taskNameHash");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 27:
-                topVer = reader.readAffinityTopologyVersion("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 28:
-                txLbl = reader.readString("txLbl");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(GridNearLockRequest.class);
+    /**
+     * @param txLbl Transaction label.
+     */
+    public void txLabel(String txLbl) {
+        this.txLbl = txLbl;
     }
 
     /** {@inheritDoc} */

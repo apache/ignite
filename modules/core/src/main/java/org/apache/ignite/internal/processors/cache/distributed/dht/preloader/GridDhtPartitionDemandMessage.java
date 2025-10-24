@@ -17,56 +17,34 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Partition demand request.
  */
-@IgniteCodeGeneratingFail
 public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Cache rebalance topic. */
-    private static final Object REBALANCE_TOPIC = GridCachePartitionExchangeManager.rebalanceTopic(0);
-
     /** Rebalance id. */
+    @Order(4)
     private long rebalanceId;
 
     /** Partitions map. */
-    @GridDirectTransient
+    @Order(value = 5, method = "partitions")
     private IgniteDhtDemandedPartitionsMap parts;
 
-    /** Serialized partitions map. */
-    private byte[] partsBytes;
-
-    /** Topic. */
-    @GridDirectTransient
-    private Object topic = REBALANCE_TOPIC;
-
-    /** Serialized topic. */
-    private byte[] topicBytes;
-
     /** Timeout. */
+    @Order(6)
     private long timeout;
 
     /** Worker ID. */
+    @Order(7)
     private int workerId = -1;
 
     /** Topology version. */
+    @Order(value = 8, method = "topologyVersion")
     private AffinityTopologyVersion topVer;
 
     /**
@@ -93,7 +71,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     }
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtPartitionDemandMessage() {
         // No-op.
@@ -109,7 +87,6 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
         GridDhtPartitionDemandMessage cp = new GridDhtPartitionDemandMessage();
         cp.grpId = grpId;
         cp.rebalanceId = rebalanceId;
-        cp.topic = topic;
         cp.timeout = timeout;
         cp.workerId = workerId;
         cp.topVer = topVer;
@@ -118,58 +95,58 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     }
 
     /**
-     * @return Partition.
+     * @return Partitions.
      */
     public IgniteDhtDemandedPartitionsMap partitions() {
         return parts;
     }
 
     /**
+     * @param parts Partitions.
+     */
+    public void partitions(IgniteDhtDemandedPartitionsMap parts) {
+        this.parts = parts;
+    }
+
+    /**
      * @param updateSeq Update sequence.
      */
-    void rebalanceId(long updateSeq) {
-        this.rebalanceId = updateSeq;
+    public void rebalanceId(long updateSeq) {
+        rebalanceId = updateSeq;
     }
 
     /**
      * @return Unique rebalance session id.
      */
-    long rebalanceId() {
+    public long rebalanceId() {
         return rebalanceId;
     }
 
     /**
      * @return Reply message timeout.
      */
-    long timeout() {
+    public long timeout() {
         return timeout;
     }
 
     /**
      * @param timeout Timeout.
      */
-    void timeout(long timeout) {
+    public void timeout(long timeout) {
         this.timeout = timeout;
-    }
-
-    /**
-     * @return Topic.
-     */
-    Object topic() {
-        return topic;
     }
 
     /**
      * @return Worker ID.
      */
-    int workerId() {
+    public int workerId() {
         return workerId;
     }
 
     /**
      * @param workerId Worker ID.
      */
-    void workerId(int workerId) {
+    public void workerId(int workerId) {
         this.workerId = workerId;
     }
 
@@ -180,151 +157,16 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
         return topVer;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (topic != null && topicBytes == null)
-            topicBytes = U.marshal(ctx, topic);
-
-        if (parts != null && partsBytes == null)
-            partsBytes = U.marshal(ctx, parts);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (topicBytes != null && topic == null)
-            topic = U.unmarshal(ctx, topicBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-
-        if (partsBytes != null && parts == null)
-            parts = U.unmarshal(ctx, partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+    /**
+     * @param topVer Topology version for which demand message is sent.
+     */
+    public void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeByteArray("partsBytes", partsBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeLong("timeout", timeout))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeByteArray("topicBytes", topicBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeLong("rebalanceId", rebalanceId))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeInt("workerId", workerId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                partsBytes = reader.readByteArray("partsBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                timeout = reader.readLong("timeout");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                topVer = reader.readAffinityTopologyVersion("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                topicBytes = reader.readByteArray("topicBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                rebalanceId = reader.readLong("rebalanceId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                workerId = reader.readInt("workerId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(GridDhtPartitionDemandMessage.class);
     }
 
     /** {@inheritDoc} */

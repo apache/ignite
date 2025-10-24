@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -30,9 +29,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Task session request.
  */
 public class GridTaskSessionRequest implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Task session ID. */
     private IgniteUuid sesId;
 
@@ -47,7 +43,7 @@ public class GridTaskSessionRequest implements Message {
     private Map<?, ?> attrs;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridTaskSessionRequest() {
         // No-op.
@@ -99,11 +95,6 @@ public class GridTaskSessionRequest implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -116,19 +107,19 @@ public class GridTaskSessionRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("attrsBytes", attrsBytes))
+                if (!writer.writeByteArray(attrsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("jobId", jobId))
+                if (!writer.writeIgniteUuid(jobId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeIgniteUuid("sesId", sesId))
+                if (!writer.writeIgniteUuid(sesId))
                     return false;
 
                 writer.incrementState();
@@ -142,12 +133,9 @@ public class GridTaskSessionRequest implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                attrsBytes = reader.readByteArray("attrsBytes");
+                attrsBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -155,7 +143,7 @@ public class GridTaskSessionRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                jobId = reader.readIgniteUuid("jobId");
+                jobId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -163,7 +151,7 @@ public class GridTaskSessionRequest implements Message {
                 reader.incrementState();
 
             case 2:
-                sesId = reader.readIgniteUuid("sesId");
+                sesId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -172,7 +160,7 @@ public class GridTaskSessionRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(GridTaskSessionRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */

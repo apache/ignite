@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
@@ -31,39 +30,35 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
 public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Entries keys. */
     @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
+    @Order(4)
     private List<KeyCacheObject> keys;
 
     /** Entries versions. */
-    @GridDirectCollection(GridCacheVersion.class)
+    @Order(value = 5, method = "versions")
     private List<GridCacheVersion> vers;
 
     /** Near entries keys. */
     @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
+    @Order(6)
     private List<KeyCacheObject> nearKeys;
 
     /** Near entries versions. */
-    @GridDirectCollection(GridCacheVersion.class)
+    @Order(value = 7, method = "nearVersions")
     private List<GridCacheVersion> nearVers;
 
     /** New TTL. */
+    @Order(8)
     private long ttl;
 
     /** Topology version. */
+    @Order(value = 9, method = "topologyVersion")
     private AffinityTopologyVersion topVer;
 
     /**
@@ -94,10 +89,24 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     }
 
     /**
+     * @param topVer New topology version.
+     */
+    public void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
+    }
+
+    /**
      * @return TTL.
      */
     public long ttl() {
         return ttl;
+    }
+
+    /**
+     * @param ttl New TTL.
+     */
+    public void ttl(long ttl) {
+        this.ttl = ttl;
     }
 
     /**
@@ -140,10 +149,24 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     }
 
     /**
+     * @param keys New entries keys.
+     */
+    public void keys(List<KeyCacheObject> keys) {
+        this.keys = keys;
+    }
+
+    /**
      * @return Versions.
      */
     public List<GridCacheVersion> versions() {
         return vers;
+    }
+
+    /**
+     * @param vers New entries versions.
+     */
+    public void versions(List<GridCacheVersion> vers) {
+        this.vers = vers;
     }
 
     /**
@@ -164,10 +187,24 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     }
 
     /**
+     * @param nearKeys New near entries keys.
+     */
+    public void nearKeys(List<KeyCacheObject> nearKeys) {
+        this.nearKeys = nearKeys;
+    }
+
+    /**
      * @return Versions for near cache entries.
      */
     public List<GridCacheVersion> nearVersions() {
         return nearVers;
+    }
+
+    /**
+     * @param nearVers New near entries versions.
+     */
+    public void nearVersions(List<GridCacheVersion> nearVers) {
+        this.nearVers = nearVers;
     }
 
     /** {@inheritDoc} */
@@ -196,126 +233,6 @@ public class GridCacheTtlUpdateRequest extends GridCacheIdMessage {
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeCollection("nearVers", nearVers, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeLong("ttl", ttl))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeCollection("vers", vers, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                nearVers = reader.readCollection("nearVers", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                topVer = reader.readAffinityTopologyVersion("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                ttl = reader.readLong("ttl");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                vers = reader.readCollection("vers", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(GridCacheTtlUpdateRequest.class);
     }
 
     /** {@inheritDoc} */

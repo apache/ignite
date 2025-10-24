@@ -21,6 +21,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -718,11 +719,13 @@ class ClientImpl extends TcpDiscoveryImpl {
             boolean openSock = false;
 
             Socket sock = null;
+            OutputStream out;
 
             try {
                 long tsNanos = System.nanoTime();
 
                 sock = spi.openSocket(addr, timeoutHelper);
+                out = spi.socketStream(sock);
 
                 openSock = true;
 
@@ -730,7 +733,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 req.client(true);
 
-                spi.writeToSocket(sock, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                spi.writeToSocket(sock, out, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, ackTimeout0);
 
@@ -785,7 +788,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (msg instanceof TraceableMessage)
                     tracing.messages().beforeSend((TraceableMessage)msg);
 
-                spi.writeToSocket(sock, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                spi.writeToSocket(sock, out, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 spi.stats.onMessageSent(msg, U.millisSinceNanos(tsNanos));
 
@@ -1386,6 +1389,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         try {
                             spi.writeToSocket(
                                 sock,
+                                spi.socketStream(sock),
                                 msg,
                                 sockTimeout);
                         }
@@ -1432,6 +1436,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     spi.writeToSocket(
                         sock,
+                        spi.socketStream(sock),
                         msg,
                         sockTimeout);
 

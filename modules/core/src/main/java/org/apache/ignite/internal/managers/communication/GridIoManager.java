@@ -235,7 +235,7 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIM
  * @see IgniteMessaging
  * @see TransmissionHandler
  */
-public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializable>> {
+public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> {
     /** Io communication metrics registry name. */
     public static final String COMM_METRICS = metricName("io", "communication");
 
@@ -331,7 +331,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private final ConcurrentMap<UUID, Deque<DelayedMessage>> waitMap = new ConcurrentHashMap<>();
 
     /** Communication message listener. */
-    private CommunicationListenerEx<Serializable> commLsnr;
+    private CommunicationListenerEx<Object> commLsnr;
 
     /** Grid marshaller. */
     private final Marshaller marsh;
@@ -375,7 +375,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @param ctx Grid kernal context.
      */
-    @SuppressWarnings("deprecation")
     public GridIoManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getCommunicationSpi());
 
@@ -433,14 +432,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         else {
             formatter = new MessageFormatter() {
-                @Override public MessageWriter writer(UUID rmtNodeId) {
-                    assert rmtNodeId != null;
-
-                    return new DirectMessageWriter();
+                @Override public MessageWriter writer(MessageFactory msgFactory) {
+                    return new DirectMessageWriter(msgFactory);
                 }
 
-                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
-                    return new DirectMessageReader(msgFactory);
+                @Override public MessageReader reader(MessageFactory msgFactory) {
+                    return new DirectMessageReader(msgFactory, ctx.cacheObjects());
                 }
             };
         }
@@ -466,7 +463,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         msgFactory = new IgniteMessageFactoryImpl(msgs);
 
-        CommunicationSpi<Serializable> spi = getSpi();
+        CommunicationSpi<Object> spi = getSpi();
 
         if ((CommunicationSpi<?>)spi instanceof TcpCommunicationSpi)
             getTcpCommunicationSpi().setConnectionRequestor(invConnHandler);
@@ -487,8 +484,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         ioMetric.register(RCVD_BYTES_CNT, spi::getReceivedBytesCount, "Received bytes count.");
 
-        getSpi().setListener(commLsnr = new CommunicationListenerEx<Serializable>() {
-            @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {
+        getSpi().setListener(commLsnr = new CommunicationListenerEx<Object>() {
+            @Override public void onMessage(UUID nodeId, Object msg, IgniteRunnable msgC) {
                 try {
                     onMessage0(nodeId, (GridIoMessage)msg, msgC);
                 }
@@ -504,7 +501,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     lsnr.onNodeDisconnected(nodeId);
             }
 
-            @Override public void onChannelOpened(UUID rmtNodeId, Serializable initMsg, Channel channel) {
+            @Override public void onChannelOpened(UUID rmtNodeId, Object initMsg, Channel channel) {
                 try {
                     onChannelOpened0(rmtNodeId, (GridIoMessage)initMsg, channel);
                 }
@@ -918,7 +915,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     @Override public void onKernalStart0() throws IgniteCheckedException {
         discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -3768,7 +3764,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
         @Override public void onTimeout() {
             GridMessageListener lsnr = listenerGet0(topic);
 

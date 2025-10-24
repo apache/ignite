@@ -192,11 +192,11 @@ public class ClientDiscoveryContext {
     /**
      * Gets list of endpoins for each node.
      *
-     * @return Collection of nodes with list of endpoints for each node, or {@code null} if endpoints are not changed
+     * @return Set of nodes with list of endpoints for each node, or {@code null} if endpoints are not changed
      * since last request.
      */
-    @Nullable Collection<List<InetSocketAddress>> getEndpoints() {
-        Collection<List<InetSocketAddress>> endpoints = null;
+    @Nullable Set<List<InetSocketAddress>> getEndpoints() {
+        Set<List<InetSocketAddress>> endpoints = null;
         TopologyInfo topInfo = this.topInfo;
 
         if (addrFinder != null || topInfo.topVer == UNKNOWN_TOP_VER) {
@@ -219,9 +219,9 @@ public class ClientDiscoveryContext {
     }
 
     /**
-     * @return List of host:port_range address lines parsed as {@link InetSocketAddress}.
+     * @return Set of host:port_range address lines parsed as {@link InetSocketAddress}.
      */
-    private static Collection<List<InetSocketAddress>> parsedAddresses(String[] addrs) throws ClientException {
+    private static Set<List<InetSocketAddress>> parsedAddresses(String[] addrs) throws ClientException {
         if (F.isEmpty(addrs))
             throw new ClientException("Empty addresses");
 
@@ -245,7 +245,7 @@ public class ClientDiscoveryContext {
             .flatMap(r -> IntStream
                 .rangeClosed(r.portFrom(), r.portTo()).boxed()
                 .map(p -> Collections.singletonList(InetSocketAddress.createUnresolved(r.host(), p)))
-            ).collect(Collectors.toList());
+            ).collect(Collectors.toSet());
     }
 
     /** */
@@ -257,7 +257,7 @@ public class ClientDiscoveryContext {
         private final Map<UUID, NodeInfo> nodes;
 
         /** Normalized nodes endpoints. */
-        private final Collection<List<InetSocketAddress>> endpoints;
+        private final Set<List<InetSocketAddress>> endpoints;
 
         /** */
         private TopologyInfo(long ver, Map<UUID, NodeInfo> nodes) {
@@ -267,8 +267,8 @@ public class ClientDiscoveryContext {
         }
 
         /** Remove duplicates from nodes endpoints. */
-        private static Collection<List<InetSocketAddress>> normalizeEndpoints(Collection<NodeInfo> nodes) {
-            Collection<List<InetSocketAddress>> endpoints = new ArrayList<>(nodes.size());
+        private static Set<List<InetSocketAddress>> normalizeEndpoints(Collection<NodeInfo> nodes) {
+            Set<List<InetSocketAddress>> endpoints = new HashSet<>();
             Set<InetSocketAddress> used = new HashSet<>();
 
             for (NodeInfo nodeInfo : nodes) {
@@ -286,7 +286,7 @@ public class ClientDiscoveryContext {
                     endpoints.add(addrs);
             }
 
-            return Collections.unmodifiableCollection(endpoints);
+            return endpoints;
         }
     }
 

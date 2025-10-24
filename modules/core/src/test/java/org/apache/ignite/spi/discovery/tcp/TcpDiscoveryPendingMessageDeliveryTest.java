@@ -102,6 +102,8 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
 
         startGrid("listener");
 
+        awaitPartitionMapExchange();
+
         sentEnsuredMsgs.clear();
         receivedEnsuredMsgs.clear();
 
@@ -162,6 +164,8 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
 
         startGrid("listener");
 
+        awaitPartitionMapExchange();
+
         sentEnsuredMsgs.clear();
         receivedEnsuredMsgs.clear();
 
@@ -208,6 +212,8 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
 
         //Node which should received all fail message in any way.
         startGrid("listener");
+
+        awaitPartitionMapExchange();
 
         sentEnsuredMsgs.clear();
         receivedEnsuredMsgs.clear();
@@ -256,13 +262,6 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
             long timeout) throws IOException {
             if (!blockMsgs)
                 super.writeToSocket(sock, msg, data, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
-            long timeout) throws IOException, IgniteCheckedException {
-            if (!blockMsgs)
-                super.writeToSocket(sock, msg, timeout);
         }
 
         /** {@inheritDoc} */

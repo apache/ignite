@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,9 +57,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
  * Lite DHT cache update request sent from near node to primary node.
  */
 public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdateRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Keys to update. */
     @GridToStringInclude
     @GridDirectCollection(KeyCacheObject.class)
@@ -110,7 +106,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     private int initSize;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearAtomicFullUpdateRequest() {
         // No-op.
@@ -179,13 +175,13 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         @Nullable GridCacheVersion conflictVer) {
         EntryProcessor<Object, Object, Object> entryProc = null;
 
-        if (op == TRANSFORM) {
+        if (operation() == TRANSFORM) {
             assert val instanceof EntryProcessor : val;
 
             entryProc = (EntryProcessor<Object, Object, Object>)val;
         }
 
-        assert val != null || op == DELETE;
+        assert val != null || operation() == DELETE;
 
         keys.add(key);
 
@@ -260,19 +256,19 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public List<?> values() {
-        return op == TRANSFORM ? entryProcessors : vals;
+        return operation() == TRANSFORM ? entryProcessors : vals;
     }
 
     /** {@inheritDoc} */
     @Override public CacheObject value(int idx) {
-        assert op == UPDATE : op;
+        assert operation() == UPDATE : operation();
 
         return vals.get(idx);
     }
 
     /** {@inheritDoc} */
     @Override public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
-        assert op == TRANSFORM : op;
+        assert operation() == TRANSFORM : operation();
 
         return entryProcessors.get(idx);
     }
@@ -364,7 +360,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 filter = null;
         }
 
-        if (op == TRANSFORM) {
+        if (operation() == TRANSFORM) {
             // force addition of deployment info for entry processors if P2P is enabled globally.
             if (!addDepInfo && ctx.deploymentEnabled())
                 addDepInfo = true;
@@ -397,7 +393,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             }
         }
 
-        if (op == TRANSFORM) {
+        if (operation() == TRANSFORM) {
             if (entryProcessors == null)
                 entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);
 
@@ -431,55 +427,55 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
         switch (writer.state()) {
             case 10:
-                if (!writer.writeMessage("conflictExpireTimes", conflictExpireTimes))
+                if (!writer.writeGridLongList(conflictExpireTimes))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeMessage("conflictTtls", conflictTtls))
+                if (!writer.writeGridLongList(conflictTtls))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeCollection("conflictVers", conflictVers, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(conflictVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeCollection("entryProcessorsBytes", entryProcessorsBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeCollection(entryProcessorsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeByteArray("expiryPlcBytes", expiryPlcBytes))
+                if (!writer.writeByteArray(expiryPlcBytes))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeObjectArray("filter", filter, MessageCollectionItemType.MSG))
+                if (!writer.writeObjectArray(filter, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
+                if (!writer.writeObjectArray(invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeCollection("keys", keys, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(keys, MessageCollectionItemType.KEY_CACHE_OBJECT))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeCollection("vals", vals, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(vals, MessageCollectionItemType.CACHE_OBJECT))
                     return false;
 
                 writer.incrementState();
@@ -493,15 +489,12 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 10:
-                conflictExpireTimes = reader.readMessage("conflictExpireTimes");
+                conflictExpireTimes = reader.readGridLongList();
 
                 if (!reader.isLastRead())
                     return false;
@@ -509,7 +502,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 reader.incrementState();
 
             case 11:
-                conflictTtls = reader.readMessage("conflictTtls");
+                conflictTtls = reader.readGridLongList();
 
                 if (!reader.isLastRead())
                     return false;
@@ -517,7 +510,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 reader.incrementState();
 
             case 12:
-                conflictVers = reader.readCollection("conflictVers", MessageCollectionItemType.MSG);
+                conflictVers = reader.readCollection(MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
                     return false;
@@ -525,7 +518,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 reader.incrementState();
 
             case 13:
-                entryProcessorsBytes = reader.readCollection("entryProcessorsBytes", MessageCollectionItemType.BYTE_ARR);
+                entryProcessorsBytes = reader.readCollection(MessageCollectionItemType.BYTE_ARR);
 
                 if (!reader.isLastRead())
                     return false;
@@ -533,7 +526,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 reader.incrementState();
 
             case 14:
-                expiryPlcBytes = reader.readByteArray("expiryPlcBytes");
+                expiryPlcBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -541,7 +534,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 reader.incrementState();
 
             case 15:
-                filter = reader.readObjectArray("filter", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
+                filter = reader.readObjectArray(MessageCollectionItemType.MSG, CacheEntryPredicate.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -549,7 +542,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 reader.incrementState();
 
             case 16:
-                invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
+                invokeArgsBytes = reader.readObjectArray(MessageCollectionItemType.BYTE_ARR, byte[].class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -557,7 +550,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 reader.incrementState();
 
             case 17:
-                keys = reader.readCollection("keys", MessageCollectionItemType.MSG);
+                keys = reader.readCollection(MessageCollectionItemType.KEY_CACHE_OBJECT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -565,7 +558,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 reader.incrementState();
 
             case 18:
-                vals = reader.readCollection("vals", MessageCollectionItemType.MSG);
+                vals = reader.readCollection(MessageCollectionItemType.CACHE_OBJECT);
 
                 if (!reader.isLastRead())
                     return false;
@@ -574,7 +567,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
         }
 
-        return reader.afterMessageRead(GridNearAtomicFullUpdateRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */

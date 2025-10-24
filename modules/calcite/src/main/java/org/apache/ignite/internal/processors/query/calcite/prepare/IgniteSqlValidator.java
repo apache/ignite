@@ -345,7 +345,7 @@ public class IgniteSqlValidator extends SqlValidatorImpl {
 
         node = super.performUnconditionalRewrites(node, underFrom);
 
-        if (config().callRewrite() && node instanceof SqlCall)
+        if (node instanceof SqlCall)
             node = IgniteSqlCallRewriteTable.INSTANCE.rewrite(this, (SqlCall)node);
 
         return node;

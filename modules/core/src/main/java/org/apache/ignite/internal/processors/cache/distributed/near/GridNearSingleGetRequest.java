@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
@@ -26,9 +26,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,9 +33,6 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class GridNearSingleGetRequest extends GridCacheIdMessage implements GridCacheDeployable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     private static final int READ_THROUGH_FLAG_MASK = 0x01;
 
@@ -58,31 +52,39 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     public static final int RECOVERY_FLAG_MASK = 0x20;
 
     /** Future ID. */
+    @Order(value = 4, method = "futureId")
     private long futId;
 
     /** */
+    @Order(5)
     private KeyCacheObject key;
 
     /** Flags. */
+    @Order(6)
     private byte flags;
 
     /** Topology version. */
+    @Order(value = 7, method = "topologyVersion")
     private AffinityTopologyVersion topVer;
 
     /** Task name hash. */
+    @Order(8)
     private int taskNameHash;
 
     /** TTL for read operation. */
+    @Order(9)
     private long createTtl;
 
     /** TTL for read operation. */
+    @Order(10)
     private long accessTtl;
 
     /** Transaction label. */
+    @Order(value = 11, method = "txLabel")
     private @Nullable String txLbl;
 
     /**
-     * Empty constructor required for {@link Message}.
+     * Empty constructor.
      */
     public GridNearSingleGetRequest() {
         // No-op.
@@ -149,10 +151,34 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     }
 
     /**
+     * Sets the key.
+     */
+    public void key(KeyCacheObject key) {
+        this.key = key;
+    }
+
+    /**
      * @return Key.
      */
     public KeyCacheObject key() {
         return key;
+    }
+
+    /** Sets the flags. */
+    public void flags(byte flags) {
+        this.flags = flags;
+    }
+
+    /** @return Flags. */
+    public byte flags() {
+        return flags;
+    }
+
+    /**
+     * Sets future ID.
+     */
+    public void futureId(long futId) {
+        this.futId = futId;
     }
 
     /**
@@ -160,6 +186,13 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
      */
     public long futureId() {
         return futId;
+    }
+
+    /**
+     * Sets task name hash.
+     */
+    public void taskNameHash(int taskNameHash) {
+        this.taskNameHash = taskNameHash;
     }
 
     /**
@@ -172,6 +205,13 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     }
 
     /**
+     * Sets topology version.
+     */
+    public void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
+    }
+
+    /**
      * @return Topology version.
      */
     @Override public AffinityTopologyVersion topologyVersion() {
@@ -179,10 +219,24 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
     }
 
     /**
+     * Sets TTL to set after entry is created, -1 to leave unchanged.
+     */
+    public void createTtl(long createTtl) {
+        this.createTtl = createTtl;
+    }
+
+    /**
      * @return New TTL to set after entry is created, -1 to leave unchanged.
      */
     public long createTtl() {
         return createTtl;
+    }
+
+    /**
+     * Sets new TTL to set after entry is accessed, -1 to leave unchanged.
+     */
+    public void accessTtl(long accessTtl) {
+        this.accessTtl = accessTtl;
     }
 
     /**
@@ -197,6 +251,13 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         assert key != null;
 
         return key.partition();
+    }
+
+    /**
+     * Sets the transaction label.
+     */
+    public void txLabel(String txLbl) {
+        this.txLbl = txLbl;
     }
 
     /**
@@ -270,154 +331,6 @@ public class GridNearSingleGetRequest extends GridCacheIdMessage implements Grid
         GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                accessTtl = reader.readLong("accessTtl");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                createTtl = reader.readLong("createTtl");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                flags = reader.readByte("flags");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                futId = reader.readLong("futId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                key = reader.readMessage("key");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                taskNameHash = reader.readInt("taskNameHash");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                topVer = reader.readAffinityTopologyVersion("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                txLbl = reader.readString("txLbl");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(GridNearSingleGetRequest.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeLong("accessTtl", accessTtl))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeLong("createTtl", createTtl))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeByte("flags", flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeLong("futId", futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeMessage("key", key))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeString("txLbl", txLbl))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

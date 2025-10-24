@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -45,9 +44,6 @@ import static org.apache.ignite.plugin.extensions.communication.MessageCollectio
  * Job execution request.
  */
 public class GridJobExecuteRequest implements ExecutorAwareMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     private IgniteUuid sesId;
 
@@ -157,7 +153,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     private String execName;
 
     /**
-     * No-op constructor to support {@link Externalizable} interface.
+     * Default constructor.
      */
     public GridJobExecuteRequest() {
         // No-op.
@@ -492,11 +488,6 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -509,151 +500,151 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
+                if (!writer.writeIgniteUuid(clsLdrId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeString("cpSpi", cpSpi))
+                if (!writer.writeString(cpSpi))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByte("depMode", depMode != null ? (byte)depMode.ordinal() : -1))
+                if (!writer.writeByte(depMode != null ? (byte)depMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeBoolean("dynamicSiblings", dynamicSiblings))
+                if (!writer.writeBoolean(dynamicSiblings))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeString("execName", execName))
+                if (!writer.writeString(execName))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeBoolean("forceLocDep", forceLocDep))
+                if (!writer.writeBoolean(forceLocDep))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeIntArray("idsOfCaches", idsOfCaches))
+                if (!writer.writeIntArray(idsOfCaches))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeBoolean("internal", internal))
+                if (!writer.writeBoolean(internal))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeByteArray("jobAttrsBytes", jobAttrsBytes))
+                if (!writer.writeByteArray(jobAttrsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeByteArray("jobBytes", jobBytes))
+                if (!writer.writeByteArray(jobBytes))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeIgniteUuid("jobId", jobId))
+                if (!writer.writeIgniteUuid(jobId))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeMap("ldrParticipants", ldrParticipants, MessageCollectionItemType.UUID, IGNITE_UUID))
+                if (!writer.writeMap(ldrParticipants, MessageCollectionItemType.UUID, IGNITE_UUID))
                     return false;
 
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeInt("part", part))
+                if (!writer.writeInt(part))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeByteArray("sesAttrsBytes", sesAttrsBytes))
+                if (!writer.writeByteArray(sesAttrsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeBoolean("sesFullSup", sesFullSup))
+                if (!writer.writeBoolean(sesFullSup))
                     return false;
 
                 writer.incrementState();
 
             case 15:
-                if (!writer.writeIgniteUuid("sesId", sesId))
+                if (!writer.writeIgniteUuid(sesId))
                     return false;
 
                 writer.incrementState();
 
             case 16:
-                if (!writer.writeByteArray("siblingsBytes", siblingsBytes))
+                if (!writer.writeByteArray(siblingsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 17:
-                if (!writer.writeLong("startTaskTime", startTaskTime))
+                if (!writer.writeLong(startTaskTime))
                     return false;
 
                 writer.incrementState();
 
             case 18:
-                if (!writer.writeString("taskClsName", taskClsName))
+                if (!writer.writeString(taskClsName))
                     return false;
 
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeString("taskName", taskName))
+                if (!writer.writeString(taskName))
                     return false;
 
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeLong("timeout", timeout))
+                if (!writer.writeLong(timeout))
                     return false;
 
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeCollection("top", top, MessageCollectionItemType.UUID))
+                if (!writer.writeCollection(top, MessageCollectionItemType.UUID))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeByteArray("topPredBytes", topPredBytes))
+                if (!writer.writeByteArray(topPredBytes))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeString("userVer", userVer))
+                if (!writer.writeString(userVer))
                     return false;
 
                 writer.incrementState();
@@ -667,12 +658,9 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                clsLdrId = reader.readIgniteUuid("clsLdrId");
+                clsLdrId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -680,7 +668,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 1:
-                cpSpi = reader.readString("cpSpi");
+                cpSpi = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -690,7 +678,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
             case 2:
                 byte depModeOrd;
 
-                depModeOrd = reader.readByte("depMode");
+                depModeOrd = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -700,7 +688,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 3:
-                dynamicSiblings = reader.readBoolean("dynamicSiblings");
+                dynamicSiblings = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -708,7 +696,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 4:
-                execName = reader.readString("execName");
+                execName = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -716,7 +704,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 5:
-                forceLocDep = reader.readBoolean("forceLocDep");
+                forceLocDep = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -724,7 +712,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 6:
-                idsOfCaches = reader.readIntArray("idsOfCaches");
+                idsOfCaches = reader.readIntArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -732,7 +720,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 7:
-                internal = reader.readBoolean("internal");
+                internal = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -740,7 +728,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 8:
-                jobAttrsBytes = reader.readByteArray("jobAttrsBytes");
+                jobAttrsBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -748,7 +736,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 9:
-                jobBytes = reader.readByteArray("jobBytes");
+                jobBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -756,7 +744,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 10:
-                jobId = reader.readIgniteUuid("jobId");
+                jobId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -764,7 +752,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 11:
-                ldrParticipants = reader.readMap("ldrParticipants", MessageCollectionItemType.UUID, IGNITE_UUID, false);
+                ldrParticipants = reader.readMap(MessageCollectionItemType.UUID, IGNITE_UUID, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -772,7 +760,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 12:
-                part = reader.readInt("part");
+                part = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -780,7 +768,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 13:
-                sesAttrsBytes = reader.readByteArray("sesAttrsBytes");
+                sesAttrsBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -788,7 +776,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 14:
-                sesFullSup = reader.readBoolean("sesFullSup");
+                sesFullSup = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -796,7 +784,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 15:
-                sesId = reader.readIgniteUuid("sesId");
+                sesId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -804,7 +792,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 16:
-                siblingsBytes = reader.readByteArray("siblingsBytes");
+                siblingsBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -812,7 +800,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 17:
-                startTaskTime = reader.readLong("startTaskTime");
+                startTaskTime = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -820,7 +808,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 18:
-                taskClsName = reader.readString("taskClsName");
+                taskClsName = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -828,7 +816,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 19:
-                taskName = reader.readString("taskName");
+                taskName = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -836,7 +824,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 20:
-                timeout = reader.readLong("timeout");
+                timeout = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -844,7 +832,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 21:
-                top = reader.readCollection("top", MessageCollectionItemType.UUID);
+                top = reader.readCollection(MessageCollectionItemType.UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -852,7 +840,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 22:
-                topPredBytes = reader.readByteArray("topPredBytes");
+                topPredBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -860,7 +848,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 23:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -868,7 +856,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
                 reader.incrementState();
 
             case 24:
-                userVer = reader.readString("userVer");
+                userVer = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -877,7 +865,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
 
         }
 
-        return reader.afterMessageRead(GridJobExecuteRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */

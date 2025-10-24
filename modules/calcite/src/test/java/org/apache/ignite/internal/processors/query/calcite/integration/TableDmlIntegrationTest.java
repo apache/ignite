@@ -498,7 +498,7 @@ public class TableDmlIntegrationTest extends AbstractBasicIntegrationTransaction
 
     /** */
     @Test
-    public void testDefaultNullValue() {
+    public void testInsertDefaultNullValue() {
         checkDefaultValue("TINYINT", null, null);
         checkDefaultValue("SMALLINT", null, null);
         checkDefaultValue("INTEGER", null, null);

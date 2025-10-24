@@ -35,9 +35,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * @see InitMessage
  */
 public class SingleNodeMessage<R extends Serializable> implements Message {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
     /** Initial channel message type (value is {@code 176}). */
     public static final short TYPE_CODE = 176;
 
@@ -83,25 +80,25 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeUuid("processId", processId))
+                if (!writer.writeUuid(processId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeInt("type", type))
+                if (!writer.writeInt(type))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeByteArray("data", U.toBytes(resp)))
+                if (!writer.writeByteArray(U.toBytes(resp)))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByteArray("err", U.toBytes(err)))
+                if (!writer.writeByteArray(U.toBytes(err)))
                     return false;
 
                 writer.incrementState();
@@ -114,12 +111,9 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                processId = reader.readUuid("processId");
+                processId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -127,7 +121,7 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
                 reader.incrementState();
 
             case 1:
-                type = reader.readInt("type");
+                type = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -135,7 +129,7 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
                 reader.incrementState();
 
             case 2:
-                byte[] dataBytes = reader.readByteArray("data");
+                byte[] dataBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -145,7 +139,7 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
                 reader.incrementState();
 
             case 3:
-                byte[] errBytes = reader.readByteArray("err");
+                byte[] errBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -155,17 +149,12 @@ public class SingleNodeMessage<R extends Serializable> implements Message {
                 reader.incrementState();
         }
 
-        return reader.afterMessageRead(SingleNodeMessage.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return TYPE_CODE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 
     /** @return Process id. */

@@ -35,7 +35,7 @@ import static org.junit.Assert.assertNotNull;
 /**
  * Custom discovery SPI allowing to block custom messages transfer between nodes.
  */
-public class BlockTcpDiscoverySpi extends TcpDiscoverySpi {
+public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
     /** Closure. */
     private volatile IgniteBiClosure<ClusterNode, DiscoveryCustomMessage, Void> clo;
 

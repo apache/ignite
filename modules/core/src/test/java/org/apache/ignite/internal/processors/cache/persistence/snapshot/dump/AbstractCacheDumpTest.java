@@ -32,8 +32,10 @@ import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
@@ -193,6 +195,38 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration[] ccfgs = {
+            new CacheConfiguration<>()
+                .setName(DEFAULT_CACHE_NAME)
+                .setBackups(backups)
+                .setDataRegionName(backups > 0 ? CUSTOM_STORAGE : null)
+                .setAtomicityMode(mode)
+                .setWriteSynchronizationMode(FULL_SYNC)
+                .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
+            new CacheConfiguration<>()
+                .setGroupName(GRP)
+                .setName(CACHE_0)
+                .setBackups(backups)
+                .setDataRegionName(backups > 0 ? CUSTOM_STORAGE : null)
+                .setAtomicityMode(mode)
+                .setWriteSynchronizationMode(FULL_SYNC)
+                .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
+            new CacheConfiguration<>()
+                .setGroupName(GRP)
+                .setName(CACHE_1)
+                .setBackups(backups)
+                .setDataRegionName(backups > 0 ? CUSTOM_STORAGE : null)
+                .setAtomicityMode(mode)
+                .setWriteSynchronizationMode(FULL_SYNC)
+                .setAffinity(new RendezvousAffinityFunction().setPartitions(20))};
+
+        String storagePath = backups > 0 ? CUSTOM_STORAGE : (nodes > 1 ? DFLT_STORAGE : null);
+
+        if (storagePath != null) {
+            for (CacheConfiguration ccfg : ccfgs)
+                ccfg.setStoragePaths(storagePath);
+        }
+
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setSnapshotThreadPoolSize(snpPoolSz)
             .setDataStorageConfiguration(new DataStorageConfiguration()
@@ -203,32 +237,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 .setDataRegionConfigurations(new DataRegionConfiguration()
                     .setName(CUSTOM_STORAGE)))
             .setCacheConfiguration(
-                new CacheConfiguration<>()
-                    .setName(DEFAULT_CACHE_NAME)
-                    .setBackups(backups)
-                    .setDataRegionName(backups > 0 ? CUSTOM_STORAGE : null)
-                    .setStoragePath(backups > 0 ? CUSTOM_STORAGE : (nodes > 1 ? DFLT_STORAGE : null))
-                    .setAtomicityMode(mode)
-                    .setWriteSynchronizationMode(FULL_SYNC)
-                    .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
-                new CacheConfiguration<>()
-                    .setGroupName(GRP)
-                    .setName(CACHE_0)
-                    .setBackups(backups)
-                    .setDataRegionName(backups > 0 ? CUSTOM_STORAGE : null)
-                    .setStoragePath(backups > 0 ? CUSTOM_STORAGE : (nodes > 1 ? DFLT_STORAGE : null))
-                    .setAtomicityMode(mode)
-                    .setWriteSynchronizationMode(FULL_SYNC)
-                    .setAffinity(new RendezvousAffinityFunction().setPartitions(20)),
-                new CacheConfiguration<>()
-                    .setGroupName(GRP)
-                    .setName(CACHE_1)
-                    .setBackups(backups)
-                    .setDataRegionName(backups > 0 ? CUSTOM_STORAGE : null)
-                    .setStoragePath(backups > 0 ? CUSTOM_STORAGE : (nodes > 1 ? DFLT_STORAGE : null))
-                    .setAtomicityMode(mode)
-                    .setWriteSynchronizationMode(FULL_SYNC)
-                    .setAffinity(new RendezvousAffinityFunction().setPartitions(20))
+                ccfgs
             );
 
         if (encrypted)
@@ -244,6 +253,8 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
         cli = startClientGrid(nodes);
 
         ign.cluster().state(ClusterState.ACTIVE);
+
+        createDataStructures();
 
         putData(cli.cache(DEFAULT_CACHE_NAME), cli.cache(CACHE_0), cli.cache(CACHE_1));
 
@@ -384,6 +395,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                 false,
                 false,
                 cacheGrpNames,
+                null,
                 skipCopies,
                 null
             ),
@@ -514,7 +526,7 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     /** */
     void createDump(IgniteEx ign, String name, @Nullable Collection<String> cacheGrpNames, boolean comprParts) {
         ign.context().cache().context().snapshotMgr()
-            .createSnapshot(name, null, cacheGrpNames, false, onlyPrimary, true, comprParts, encrypted).get();
+            .createSnapshot(name, null, cacheGrpNames, false, onlyPrimary, true, comprParts, encrypted, false).get();
     }
 
     /** */
@@ -723,5 +735,19 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
             assertTrue(cacheCfgCb);
             assertTrue(stopped);
         }
+    }
+
+    /**
+     * Creates some data structures in cluster.
+     * Cache group filter must exclude ds groups from dump.
+     */
+    private void createDataStructures() {
+        IgniteCountDownLatch latch = cli.countDownLatch("testSeq", 2, true, true);
+
+        latch.countDown();
+
+        IgniteAtomicSequence seq = cli.atomicSequence("testSeq", 0, true);
+
+        seq.incrementAndGet();
     }
 }

@@ -1528,11 +1528,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         assert msg != null;
 
         if (log.isDebugEnabled()) {
-            log.debug("Received activation response [requestId=" + msg.getRequestId() +
+            log.debug("Received activation response [requestId=" + msg.requestId() +
                 ", nodeId=" + nodeId + "]");
         }
 
-        UUID reqId = msg.getRequestId();
+        UUID reqId = msg.requestId();
 
         final GridChangeGlobalStateFuture fut = stateChangeFut.get();
 
@@ -1674,12 +1674,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
 
         return exchActs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onExchangeFinishedOnCoordinator(IgniteInternalFuture exchangeFuture,
-        boolean hasMovingPartitions) {
-        // no-op
     }
 
     /** {@inheritDoc} */

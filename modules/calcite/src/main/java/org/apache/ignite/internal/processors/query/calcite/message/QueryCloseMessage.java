@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.internal.Order;
 
 /**
  *
  */
 public class QueryCloseMessage implements CalciteMessage {
     /** */
+    @Order(value = 0, method = "queryId")
     private UUID qryId;
 
     /** */
@@ -46,47 +45,11 @@ public class QueryCloseMessage implements CalciteMessage {
         return qryId;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeUuid("queryId", qryId))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                qryId = reader.readUuid("queryId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(QueryCloseMessage.class);
+    /**
+     * @param qryId New query ID.
+     */
+    public void queryId(UUID qryId) {
+        this.qryId = qryId;
     }
 
     /** {@inheritDoc} */

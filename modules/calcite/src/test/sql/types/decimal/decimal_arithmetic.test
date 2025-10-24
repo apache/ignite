@@ -9,11 +9,23 @@ PRAGMA enable_verification
 query II
 SELECT -('0.1'::DECIMAL), -('-0.1'::DECIMAL)
 ----
+0	0
+
+# negate
+query II
+SELECT -('0.1'::DECIMAL(1,1)), -('-0.1'::DECIMAL(1,1))
+----
 -0.1	0.1
 
 # unary +
 query II
 SELECT +('0.1'::DECIMAL), +('-0.1'::DECIMAL)
+----
+0	0
+
+# unary +
+query II
+SELECT +('0.1'::DECIMAL(1,1)), +('-0.1'::DECIMAL(1,1))
 ----
 0.1	-0.1
 
@@ -21,11 +33,23 @@ SELECT +('0.1'::DECIMAL), +('-0.1'::DECIMAL)
 query I
 SELECT '0.1'::DECIMAL + '0.1'::DECIMAL
 ----
+0
+
+# addition
+query I
+SELECT '0.1'::DECIMAL(1,1) + '0.1'::DECIMAL(1,1)
+----
 0.2
 
 # addition with non-decimal
 query I
 SELECT '0.1'::DECIMAL + 1::INTEGER
+----
+1
+
+# addition with non-decimal
+query I
+SELECT '0.1'::DECIMAL(1,1) + 1::INTEGER
 ----
 1.1
 
@@ -107,12 +131,24 @@ INSERT INTO decimals VALUES ('0.1'), ('0.2');
 query II
 SELECT d + '0.1'::DECIMAL, d + 10000 FROM decimals ORDER BY d;
 ----
+0.10	10000.1
+0.20	10000.2
+
+query II
+SELECT d + '0.1'::DECIMAL(1,1), d + 10000 FROM decimals ORDER BY d;
+----
 0.2	10000.1
 0.3	10000.2
 
 # multiplication
 query I
 SELECT '0.1'::DECIMAL * '10.0'::DECIMAL
+----
+0
+
+# multiplication
+query I
+SELECT '0.1'::DECIMAL(1,1) * '10.0'::DECIMAL
 ----
 1.0
 
@@ -122,13 +158,13 @@ SELECT typeof('0.1'::DECIMAL(2,1) * '10.0'::DECIMAL(3,1))
 DECIMAL(5, 2)
 
 query I
-SELECT '0.1'::DECIMAL * '0.1'::DECIMAL
+SELECT '0.1'::DECIMAL(1,1) * '0.1'::DECIMAL(1,1)
 ----
 0.01
 
 # multiplication with non-decimal
 query I
-SELECT '0.1'::DECIMAL * 10::INTEGER
+SELECT '0.1'::DECIMAL(1,1) * 10::INTEGER
 ----
 1.0
 
@@ -152,10 +188,10 @@ SELECT ('18.25'::DECIMAL(4,2) * '17.25'::DECIMAL(4,2))::VARCHAR
 
 # different types
 query IIII
-SELECT '0.001'::DECIMAL * 100::TINYINT,
-       '0.001'::DECIMAL * 10000::SMALLINT,
-       '0.001'::DECIMAL * 1000000::INTEGER,
-       '0.001'::DECIMAL * 100000000::BIGINT
+SELECT '0.001'::DECIMAL(3,3) * 100::TINYINT,
+       '0.001'::DECIMAL(3,3) * 10000::SMALLINT,
+       '0.001'::DECIMAL(3,3) * 1000000::INTEGER,
+       '0.001'::DECIMAL(3,3) * 100000000::BIGINT
 ----
 0.100
 10.000

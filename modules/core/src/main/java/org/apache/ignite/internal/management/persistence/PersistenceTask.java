@@ -24,9 +24,11 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -130,7 +132,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             List<File> allCacheDirs = cacheProc.cacheDescriptors()
                 .values()
                 .stream()
-                .map(desc -> ft.cacheStorage(desc.cacheConfiguration()))
+                .flatMap(desc -> Arrays.stream(ft.cacheStorages(desc.cacheConfiguration())))
                 .distinct()
                 .collect(Collectors.toList());
 
@@ -141,8 +143,8 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
         private PersistenceTaskResult backupCaches(List<File> cacheDirs) {
             PersistenceTaskResult res = new PersistenceTaskResult(true);
 
-            List<String> backupCompletedCaches = new ArrayList<>();
-            List<String> backupFailedCaches = new ArrayList<>();
+            Set<String> backupCompletedCaches = new HashSet<>();
+            Set<String> backupFailedCaches = new HashSet<>();
 
             for (File cacheDir : cacheDirs) {
                 String dir = cacheDir.getName();
@@ -232,7 +234,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
                     try {
                         pageStore.cleanupPersistentSpace(cacheDescr.cacheConfiguration());
 
-                        cleanedCaches.add(ft.cacheStorage(cacheDescr.cacheConfiguration()).getName());
+                        cleanedCaches.add(ft.defaultCacheStorage(cacheDescr.cacheConfiguration()).getName());
                     }
                     catch (IgniteCheckedException e) {
                         failedToCleanCaches.add(name);
@@ -272,7 +274,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             List<String> allCacheDirs = cacheProc.cacheDescriptors()
                 .values()
                 .stream()
-                .map(desc -> ft.cacheStorage(desc.cacheConfiguration()).getName())
+                .map(desc -> ft.defaultCacheStorage(desc.cacheConfiguration()).getName())
                 .collect(Collectors.toList());
 
             try {
@@ -310,7 +312,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
                 mntcReg.unregisterMaintenanceTask(CORRUPTED_DATA_FILES_MNTC_TASK_NAME);
 
                 res.handledCaches(
-                    corruptedCacheDirectories(corruptedTask).stream().map(File::getName).collect(Collectors.toList())
+                    corruptedCacheDirectories(corruptedTask).stream().map(File::getName).collect(Collectors.toSet())
                 );
 
                 res.maintenanceTaskCompleted(true);
@@ -332,7 +334,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
             if (task == null)
                 return res;
 
-            List<String> corruptedCacheNames = corruptedCacheDirectories(task).stream().map(File::getName).collect(Collectors.toList());
+            Set<String> corruptedCacheNames = corruptedCacheDirectories(task).stream().map(File::getName).collect(Collectors.toSet());
 
             Map<String, IgniteBiTuple<Boolean, Boolean>> cachesInfo = new HashMap<>();
 
@@ -400,7 +402,7 @@ public class PersistenceTask extends VisorOneNodeTask<PersistenceTaskArg, Persis
                 .filter(s ->
                     CU.isPersistentCache(cacheProc.cacheDescriptor(s).cacheConfiguration(), dsCfg))
                 .map(s -> cacheProc.cacheDescriptor(s).cacheConfiguration())
-                .map(cfg -> ft.cacheStorage(cfg))
+                .flatMap(cfg -> Arrays.stream(ft.cacheStorages(cfg)))
                 .distinct()
                 .collect(Collectors.toList());
         }

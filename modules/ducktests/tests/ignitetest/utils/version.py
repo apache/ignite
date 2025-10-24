@@ -17,7 +17,7 @@
 Module contains ignite version utility class.
 """
 import re
-from distutils.version import LooseVersion
+from looseversion import LooseVersion
 
 from ignitetest import __version__
 

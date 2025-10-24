@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.runtime.CalciteException;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.validate.SqlValidatorException;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteCache;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFun
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.SupplierX;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
@@ -82,10 +84,10 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
         lst.add(F.asList("DECIMAL(5,4)", BigDecimal.valueOf(1.4999d), "DECIMAL(2,1)", BigDecimal.valueOf(1.5)));
         lst.add(F.asList("DECIMAL(5,4)", BigDecimal.valueOf(-1.4999d), "DECIMAL(2,1)", BigDecimal.valueOf(-1.5)));
 
-        lst.add(F.asList("DECIMAL", new BigDecimal("-9223372036854775808.4"), "BIGINT", -9223372036854775808L));
-        lst.add(F.asList("DECIMAL", new BigDecimal("-9223372036854775808.5"), "BIGINT", overflowErr));
-        lst.add(F.asList("DECIMAL", new BigDecimal("9223372036854775807.4"), "BIGINT", 9223372036854775807L));
-        lst.add(F.asList("DECIMAL", new BigDecimal("9223372036854775807.5"), "BIGINT", overflowErr));
+        lst.add(F.asList("DECIMAL(20,1)", new BigDecimal("-9223372036854775808.4"), "BIGINT", -9223372036854775808L));
+        lst.add(F.asList("DECIMAL(20,1)", new BigDecimal("-9223372036854775808.5"), "BIGINT", overflowErr));
+        lst.add(F.asList("DECIMAL(20,1)", new BigDecimal("9223372036854775807.4"), "BIGINT", 9223372036854775807L));
+        lst.add(F.asList("DECIMAL(20,1)", new BigDecimal("9223372036854775807.5"), "BIGINT", overflowErr));
 
         lst.add(F.asList("DOUBLE", -2147483648.4d, "INT", -2147483648));
         lst.add(F.asList("DOUBLE", -2147483648.5d, "INT", overflowErr));
@@ -287,11 +289,18 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             .returns(new Object[]{null})
             .check();
 
-        assertThrows("SELECT avg(uid) from t", UnsupportedOperationException.class,
-            "AVG() is not supported for type 'UUID'.");
+        assertThrows("SELECT avg(uid) from t", SqlValidatorException.class,
+            "Cannot apply 'AVG' to arguments of type");
 
-        assertThrows("SELECT sum(uid) from t", UnsupportedOperationException.class,
-            "SUM() is not supported for type 'UUID'.");
+        assertThrows("SELECT sum(uid) from t", SqlValidatorException.class,
+            "Cannot apply 'SUM' to arguments of type");
+
+        assertThrows("SELECT bitand(uid, 1) from t", SqlValidatorException.class,
+            "Cannot apply 'BITAND' to arguments of type");
+        assertThrows("SELECT bitor(uid, 1) from t", SqlValidatorException.class,
+            "Cannot apply 'BITOR' to arguments of type");
+        assertThrows("SELECT bitxor(uid, 1) from t", SqlValidatorException.class,
+            "Cannot apply 'BITXOR' to arguments of type");
     }
 
     /**
@@ -527,9 +536,9 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
 
         assertQuery("SELECT * FROM t")
             .returns(0, new BigDecimal("0.000"), new BigDecimal("0"), new BigDecimal("0"))
-            .returns(1, new BigDecimal("1.100"), new BigDecimal("1"), new BigDecimal("1.1"))
-            .returns(2, new BigDecimal("2.123"), new BigDecimal("2"), new BigDecimal("2.123"))
-            .returns(3, new BigDecimal("3.123"), new BigDecimal("3"), new BigDecimal("3.123456"))
+            .returns(1, new BigDecimal("1.100"), new BigDecimal("1"), new BigDecimal("1"))
+            .returns(2, new BigDecimal("2.123"), new BigDecimal("2"), new BigDecimal("2"))
+            .returns(3, new BigDecimal("3.123"), new BigDecimal("3"), new BigDecimal("3"))
             .returns(4, new BigDecimal("4.000"), new BigDecimal("4"), new BigDecimal("4"))
             .returns(5, new BigDecimal("5.000"), new BigDecimal("5"), new BigDecimal("5"))
             .returns(6, new BigDecimal("6.000"), new BigDecimal("6"), new BigDecimal("6"))
@@ -666,6 +675,17 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
             .returns((byte)5, (short)5, 5, 5L, BigDecimal.valueOf(5), 5f, 5d)
             .returns((byte)6, (short)6, 6, 6L, BigDecimal.valueOf(6), 6f, 6d)
             .returns((byte)7, (short)7, 7, 7L, BigDecimal.valueOf(7), 7f, 7d)
+            .check();
+    }
+
+    /** */
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-25749")
+    @Test
+    public void testCharLiteralsInUnion() {
+        assumeTrue(sqlTxMode == SqlTransactionMode.NONE);
+
+        assertQuery("SELECT * FROM (SELECT 'word' i UNION ALL SELECT 'w' i) t1 WHERE i='w'")
+            .returns("w")
             .check();
     }
 
@@ -1065,6 +1085,24 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
         assertQuery("SELECT CAST('-128.4' AS TINYINT)").returns((byte)-128).check();
         assertThrows("SELECT CAST('-128.5' AS TINYINT)", IgniteSQLException.class, "TINYINT overflow");
         assertThrows("SELECT CAST('-128.9' AS TINYINT)", IgniteSQLException.class, "TINYINT overflow");
+    }
+
+    /** */
+    @Test
+    public void testCharToVarcharConversion() {
+        assumeNoTransactions();
+
+        assertQuery("SELECT 'aa' UNION ALL SELECT 'a'")
+            .returns("a").returns("aa")
+            .check();
+
+        assertQuery("SELECT i, TYPEOF(i) FROM (SELECT 'a' i UNION ALL SELECT 'aa' i) t1 WHERE i='a'")
+            .returns("a", "VARCHAR(2)")
+            .check();
+
+        assertQuery("SELECT COALESCE('a', 'aa')")
+            .returns("a")
+            .check();
     }
 
     /** */

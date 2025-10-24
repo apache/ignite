@@ -15,23 +15,35 @@ DECIMAL(32767, 0)
 query II
 SELECT '0.1'::DECIMAL::VARCHAR, '922337203685478.758'::DECIMAL::VARCHAR;
 ----
+0	922337203685478
+
+# test basic string conversions
+query II
+SELECT '0.1'::DECIMAL(1,1)::VARCHAR, '922337203685478.758'::DECIMAL(18,3)::VARCHAR;
+----
 0.1	922337203685478.758
 
 # negative values
 query II
 SELECT '-0.1'::DECIMAL::VARCHAR, '-922337203685478.758'::DECIMAL::VARCHAR;
 ----
+0	-922337203685478
+
+# negative values
+query II
+SELECT '-0.1'::DECIMAL(1,1)::VARCHAR, '-922337203685478.758'::DECIMAL(18,3)::VARCHAR;
+----
 -0.1	-922337203685478.758
 
 # some more difficult string conversions
 query III
-SELECT '   7   '::DECIMAL::VARCHAR, '9.'::DECIMAL::VARCHAR, '.1'::DECIMAL::VARCHAR;
+SELECT '   7   '::DECIMAL::VARCHAR, '9.'::DECIMAL::VARCHAR, '.1'::DECIMAL(1,1)::VARCHAR;
 ----
 7	9	0.1
 
 # trailing decimals get truncated
 query II
-SELECT '0.123456789'::DECIMAL::VARCHAR, '-0.123456789'::DECIMAL::VARCHAR;
+SELECT '0.123456789'::DECIMAL(9,9)::VARCHAR, '-0.123456789'::DECIMAL(9,9)::VARCHAR;
 ----
 0.123456789	-0.123456789
 
@@ -67,6 +79,18 @@ SELECT '-1'::DECIMAL(3, 3)::VARCHAR;
 # repeat the same cast many times
 query I
 select '0.1'::decimal::decimal::decimal;
+----
+0
+
+# repeat the same cast many times
+query I
+select '0.1'::decimal::decimal(1,1)::decimal;
+----
+0
+
+# repeat the same cast many times
+query I
+select '0.1'::decimal(1,1)::decimal(1,1)::decimal(1,1);
 ----
 0.1
 
@@ -118,7 +142,7 @@ SELECT '100.100'::DECIMAL(10,0)::VARCHAR
 100
 
 query R
-SELECT '100.100'::DECIMAL::VARCHAR
+SELECT '100.100'::DECIMAL(6,3)::VARCHAR
 ----
 100.100
 

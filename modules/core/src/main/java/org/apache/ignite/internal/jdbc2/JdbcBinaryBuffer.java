@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Objects;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 
@@ -195,7 +195,7 @@ public class JdbcBinaryBuffer {
 
         int size = Math.min(resLen, len - pos);
 
-        U.arrayCopy(arr, bufOff, resBuf, resOff, size);
+        GridUnsafe.arrayCopy(arr, bufOff, resBuf, resOff, size);
 
         return size;
     }
@@ -217,7 +217,7 @@ public class JdbcBinaryBuffer {
 
         updateLength(Math.max(pos + inpLen, len));
 
-        U.arrayCopy(inpBuf, inpOff, arr, pos, inpLen);
+        GridUnsafe.arrayCopy(inpBuf, inpOff, arr, pos, inpLen);
     }
 
     /**
@@ -294,7 +294,7 @@ public class JdbcBinaryBuffer {
     private void reallocate(int newCapacity) {
         byte[] newBuf = new byte[newCapacity];
 
-        U.arrayCopy(arr, off, newBuf, 0, len);
+        GridUnsafe.arrayCopy(arr, off, newBuf, 0, len);
 
         arr = newBuf;
         off = 0;

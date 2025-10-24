@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
@@ -102,10 +101,10 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     protected byte flags;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     protected GridDhtAtomicAbstractUpdateRequest() {
-        // N-op.
+        // No-op.
     }
 
     /**
@@ -272,11 +271,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         return ctx.atomicMessageLogger();
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        cleanup();
-    }
-
     /**
      * @param key Key to add.
      * @param val Value, {@code null} if should be removed.
@@ -362,12 +356,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      * @return Keys size.
      */
     public abstract int nearSize();
-
-    /**
-     * @param key Key to check.
-     * @return {@code true} if request keys contain key.
-     */
-    public abstract boolean hasKey(KeyCacheObject key);
 
     /**
      * @param idx Key index.
@@ -499,49 +487,49 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeByte(flags))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeLong("futId", futId))
+                if (!writer.writeLong(futId))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeLong("nearFutId", nearFutId))
+                if (!writer.writeLong(nearFutId))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeUuid("nearNodeId", nearNodeId))
+                if (!writer.writeUuid(nearNodeId))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
+                if (!writer.writeByte(syncMode != null ? (byte)syncMode.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeInt(taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeMessage("writeVer", writeVer))
+                if (!writer.writeMessage(writeVer))
                     return false;
 
                 writer.incrementState();
@@ -555,15 +543,12 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 4:
-                flags = reader.readByte("flags");
+                flags = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -571,7 +556,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
                 reader.incrementState();
 
             case 5:
-                futId = reader.readLong("futId");
+                futId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -579,7 +564,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
                 reader.incrementState();
 
             case 6:
-                nearFutId = reader.readLong("nearFutId");
+                nearFutId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -587,7 +572,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
                 reader.incrementState();
 
             case 7:
-                nearNodeId = reader.readUuid("nearNodeId");
+                nearNodeId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -597,7 +582,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
             case 8:
                 byte syncModeOrd;
 
-                syncModeOrd = reader.readByte("syncMode");
+                syncModeOrd = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -607,7 +592,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
                 reader.incrementState();
 
             case 9:
-                taskNameHash = reader.readInt("taskNameHash");
+                taskNameHash = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -615,7 +600,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
                 reader.incrementState();
 
             case 10:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -623,7 +608,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
                 reader.incrementState();
 
             case 11:
-                writeVer = reader.readMessage("writeVer");
+                writeVer = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -632,7 +617,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
         }
 
-        return reader.afterMessageRead(GridDhtAtomicAbstractUpdateRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */

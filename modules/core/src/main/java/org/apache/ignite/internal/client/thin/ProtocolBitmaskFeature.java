@@ -20,8 +20,12 @@ package org.apache.ignite.internal.client.thin;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.EnumSet;
+import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientServices;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 
 /**
  * Defines supported bitmask features for thin client.
@@ -87,7 +91,25 @@ public enum ProtocolBitmaskFeature {
     TX_AWARE_QUERIES(18),
 
     /** Force deactivation flag. See {@link org.apache.ignite.client.ClientCluster#state(ClusterState, boolean)}. */
-    FORCE_DEACTIVATION_FLAG(19);
+    FORCE_DEACTIVATION_FLAG(19),
+
+    /**
+     * Cache storages.
+     *
+     * @see ClientCacheConfiguration#setStoragePaths(String...)
+     * @see ClientCacheConfiguration#setIndexPath(String)
+     */
+    CACHE_STORAGES(20),
+
+    /**
+     * Internal operation.
+     * Support of specifying {@code sql} flag on cache creation.
+     * When {@code sql} flag is {@code true} Ignite treats cache as created via SQL DDL: {@code CREATE TABLE}.
+     * Set this flag required when creating caches during dump restoration and similar processes.
+     *
+     * @see GridCacheProcessor#dynamicStartCache(CacheConfiguration, String, NearCacheConfiguration, boolean, boolean, boolean)
+     */
+    SQL_CACHE_CREATION(21);
 
     /** */
     private static final EnumSet<ProtocolBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

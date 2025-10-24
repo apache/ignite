@@ -43,6 +43,8 @@ import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.util.SqlOperatorTables;
+import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.ignite.IgniteLogger;
@@ -88,12 +90,18 @@ public final class BaseQueryContext extends AbstractQueryContext {
 
         props.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(),
             String.valueOf(FRAMEWORK_CONFIG.getParserConfig().caseSensitive()));
-        props.setProperty(CalciteConnectionProperty.CONFORMANCE.camelName(),
-            String.valueOf(FRAMEWORK_CONFIG.getParserConfig().conformance()));
         props.setProperty(CalciteConnectionProperty.MATERIALIZATIONS_ENABLED.camelName(),
             String.valueOf(true));
 
-        CALCITE_CONNECTION_CONFIG = new CalciteConnectionConfigImpl(props);
+        CALCITE_CONNECTION_CONFIG = new CalciteConnectionConfigImpl(props) {
+            /**
+             * Might be set by property {@link CalciteConnectionProperty#CONFORMANCE}.
+             * But will try to cast interface {@link SqlConformance} to enum {@link SqlConformanceEnum}.
+             */
+            @Override public SqlConformance conformance() {
+                return FRAMEWORK_CONFIG.getParserConfig().conformance();
+            }
+        };
 
         EMPTY_CONTEXT = builder().build();
 

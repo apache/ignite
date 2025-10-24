@@ -36,9 +36,12 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature;
 import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
+import org.apache.ignite.internal.util.typedef.T2;
+
 import static java.util.Optional.ofNullable;
 import static org.apache.ignite.internal.processors.platform.client.ClientProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE;
 
@@ -139,6 +142,12 @@ public class ClientCacheConfigurationSerializer {
     /** */
     private static final short EXPIRY_POLICY = 407;
 
+    /** */
+    private static final short STORAGE_PATH = 408;
+
+    /** */
+    private static final short IDX_PATH = 409;
+
     /**
      * Writes the cache configuration.
      * @param writer Writer.
@@ -211,6 +220,11 @@ public class ClientCacheConfigurationSerializer {
 
         if (protocolCtx.isFeatureSupported(ClientProtocolVersionFeature.EXPIRY_POLICY))
             PlatformConfigurationUtils.writeExpiryPolicyFactory(writer, cfg.getExpiryPolicyFactory());
+
+        if (protocolCtx.isFeatureSupported(ClientBitmaskFeature.CACHE_STORAGES)) {
+            writer.writeStringArray(cfg.getStoragePaths());
+            writer.writeString(cfg.getIndexPath());
+        }
 
         // Write length (so that part of the config can be skipped).
         writer.writeInt(pos, writer.out().position() - pos - 4);
@@ -294,7 +308,9 @@ public class ClientCacheConfigurationSerializer {
      * @param protocolCtx Client protocol context.
      * @return Configuration.
      */
-    static CacheConfiguration read(BinaryRawReader reader, ClientProtocolContext protocolCtx) {
+    static T2<CacheConfiguration, Boolean> read(BinaryRawReader reader, ClientProtocolContext protocolCtx) {
+        boolean sql = protocolCtx.isFeatureSupported(ClientBitmaskFeature.SQL_CACHE_CREATION) && reader.readBoolean();
+
         reader.readInt();  // Skip length.
 
         short propCnt = reader.readShort();
@@ -447,13 +463,21 @@ public class ClientCacheConfigurationSerializer {
                         cfg.setQueryEntities(entities);
                     }
                     break;
+
+                case STORAGE_PATH:
+                    cfg.setStoragePaths(reader.readStringArray());
+                    break;
+
+                case IDX_PATH:
+                    cfg.setIndexPath(reader.readString());
+                    break;
             }
         }
 
         if (cfg.getCacheMode() == null)
             throw new ClientException("Unsupported cache mode");
 
-        return cfg;
+        return new T2<>(cfg, sql);
     }
 
     /**

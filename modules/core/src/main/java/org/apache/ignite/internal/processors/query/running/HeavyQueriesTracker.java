@@ -109,7 +109,7 @@ public final class HeavyQueriesTracker {
 
         timeout = ctx.config().getSqlConfiguration().getLongQueryWarningTimeout();
 
-        IgniteThread thread = new IgniteThread(checkWorker);
+        IgniteThread thread = U.newThread(checkWorker);
 
         thread.setDaemon(true);
         thread.start();
@@ -143,9 +143,7 @@ public final class HeavyQueriesTracker {
     public void stopTracking(TrackableQuery qryInfo, @Nullable Throwable err) {
         assert qryInfo != null;
 
-        qrys.remove(qryInfo);
-
-        if (qryInfo.time() > timeout) {
+        if (qrys.remove(qryInfo) != null && qryInfo.time() > timeout) {
             if (err == null)
                 LT.warn(log, LONG_QUERY_FINISHED_MSG + qryInfo.queryInfo(null));
             else

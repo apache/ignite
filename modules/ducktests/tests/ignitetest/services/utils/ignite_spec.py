@@ -33,7 +33,7 @@ from ignitetest.services.utils.config_template import IgniteClientConfigTemplate
 from ignitetest.services.utils.jvm_utils import create_jvm_settings, merge_jvm_settings
 from ignitetest.services.utils.path import get_home_dir, IgnitePathAware
 from ignitetest.services.utils.ssl.ssl_params import is_ssl_enabled
-from ignitetest.services.utils.metrics.metrics import is_opencensus_metrics_enabled, configure_opencensus_metrics,\
+from ignitetest.services.utils.metrics.metrics import is_opencensus_metrics_enabled, configure_opencensus_metrics, \
     is_jmx_metrics_enabled, configure_jmx_metrics
 from ignitetest.services.utils.jmx_remote.jmx_remote_params import get_jmx_remote_params
 from ignitetest.utils.ignite_test import JFR_ENABLED, SAFEPOINT_LOGS_ENABLED
@@ -205,6 +205,9 @@ class IgniteSpec(metaclass=ABCMeta):
 
         return [os.path.join(project_dir, module_path) for module_path in module_libs]
 
+    def extensions_home(self):
+        return os.path.join(self.service.install_root, "ignite-extensions")
+
     def _module_libs(self, module_name):
         """
         Get list of paths to be added to classpath for the passed module for current spec.
@@ -212,7 +215,12 @@ class IgniteSpec(metaclass=ABCMeta):
         if module_name == "ducktests":
             return self.__get_module_libs(self.__home(str(DEV_BRANCH)), module_name, is_dev=True)
 
-        return self.__get_module_libs(self.__home(), module_name, self.service.config.version.is_dev)
+        if module_name.endswith("-ext") and self.service.config.version.is_dev:
+            home = self.extensions_home()
+        else:
+            home = self.__home()
+
+        return self.__get_module_libs(home, module_name, self.service.config.version.is_dev)
 
     @abstractmethod
     def command(self, node):

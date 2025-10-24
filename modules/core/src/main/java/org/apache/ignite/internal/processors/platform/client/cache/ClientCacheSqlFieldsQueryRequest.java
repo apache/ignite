@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeatur
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.internal.processors.platform.client.tx.ClientTxAwareRequest;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -167,13 +166,8 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheQueryRequest im
 
             SecurityException securityEx = X.cause(e, SecurityException.class);
 
-            if (securityEx != null) {
-                throw new IgniteClientException(
-                    ClientStatus.SECURITY_VIOLATION,
-                    "Client is not authorized to perform this operation",
-                    securityEx
-                );
-            }
+            if (securityEx != null)
+                throw IgniteClientException.wrapAuthorizationExeption(securityEx);
 
             throw e;
         }

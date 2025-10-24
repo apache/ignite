@@ -17,39 +17,42 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Class to pass to remote nodes transaction changes.
  *
  * @see TransactionConfiguration#setTxAwareQueriesEnabled(boolean)
  * @see ExecutionContext#transactionChanges(Collection)
- * @see ExecutionContext#transactionChanges(int, int[], Function)
+ * @see ExecutionContext#transactionChanges(int, int[], Function, Comparator)
  * @see QueryStartRequest#queryTransactionEntries()
  */
 public class QueryTxEntry implements CalciteMessage {
     /** Cache id. */
+    @Order(0)
     private int cacheId;
 
     /** Entry key. */
+    @Order(1)
     private KeyCacheObject key;
 
     /** Entry value. */
+    @Order(value = 2, method = "value")
     private CacheObject val;
 
     /** Entry version. */
+    @Order(value = 3, method = "version")
     private GridCacheVersion ver;
 
     /**
@@ -77,9 +80,23 @@ public class QueryTxEntry implements CalciteMessage {
         return cacheId;
     }
 
+    /**
+     * @param cacheId New cache id.
+     */
+    public void cacheId(int cacheId) {
+        this.cacheId = cacheId;
+    }
+
     /** @return Entry key. */
     public KeyCacheObject key() {
         return key;
+    }
+
+    /**
+     * @param key New entry key.
+     */
+    public void key(KeyCacheObject key) {
+        this.key = key;
     }
 
     /** @return Entry value. */
@@ -87,9 +104,23 @@ public class QueryTxEntry implements CalciteMessage {
         return val;
     }
 
+    /**
+     * @param val New entry value.
+     */
+    public void value(CacheObject val) {
+        this.val = val;
+    }
+
     /** @return Entry version. */
     public GridCacheVersion version() {
         return ver;
+    }
+
+    /**
+     * @param ver New entry version.
+     */
+    public void version(GridCacheVersion ver) {
+        this.ver = ver;
     }
 
     /** */
@@ -110,97 +141,10 @@ public class QueryTxEntry implements CalciteMessage {
 
         if (val != null)
             val.finishUnmarshal(coctx, ldr);
-
     }
 
     /** {@inheritDoc} */
     @Override public MessageType type() {
         return MessageType.QUERY_TX_ENTRY;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt("cacheId", cacheId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeMessage("key", key))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeMessage("val", val))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeMessage("ver", ver))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                cacheId = reader.readInt("cacheId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                key = reader.readMessage("key");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                val = reader.readMessage("val");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                ver = reader.readMessage("ver");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(QueryTxEntry.class);
     }
 }

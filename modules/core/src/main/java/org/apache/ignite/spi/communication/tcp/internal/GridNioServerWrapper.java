@@ -50,6 +50,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.codegen.HandshakeWaitMessageSerializer;
+import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.GridManager;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
@@ -85,6 +87,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFormatter;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.ExponentialBackoffTimeoutStrategy;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -105,6 +108,7 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONN_IDX_META;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONSISTENT_ID_META;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.handshakeTimeoutException;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.isRecoverableException;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.nodeAddresses;
@@ -806,8 +810,21 @@ public class GridNioServerWrapper {
                         get().register(directType, supplier);
                     }
 
+                    @Override public void register(short directType, Supplier<Message> supplier,
+                        MessageSerializer serializer) throws IgniteException {
+                        get().register(directType, supplier, serializer);
+                    }
+
                     @Nullable @Override public Message create(short type) {
                         return get().create(type);
+                    }
+
+                    @Override public MessageSerializer serializer(short type) {
+                        // Enable sending wait message for a communication peer while context isn't initialized.
+                        if (impl == null && type == HANDSHAKE_WAIT_MSG_TYPE)
+                            return new HandshakeWaitMessageSerializer();
+
+                        return get().serializer(type);
                     }
 
                     private MessageFactory get() {
@@ -838,9 +855,7 @@ public class GridNioServerWrapper {
 
                         assert formatter != null;
 
-                        ConnectionKey key = ses.meta(CONN_IDX_META);
-
-                        return key != null ? formatter.reader(key.nodeId(), msgFactory) : null;
+                        return formatter.reader(msgFactory);
                     }
                 };
 
@@ -850,6 +865,10 @@ public class GridNioServerWrapper {
                     private MessageFormatter formatter;
 
                     @Override public MessageWriter writer(GridNioSession ses) throws IgniteCheckedException {
+                        // Enable sending wait message for a communication peer while context isn't initialized.
+                        if (!stateProvider.spiContextAvailable())
+                            return new DirectMessageWriter(msgFactory);
+
                         final IgniteSpiContext ctx = stateProvider.getSpiContextWithoutInitialLatch();
 
                         if (formatter == null || context != ctx) {
@@ -860,9 +879,7 @@ public class GridNioServerWrapper {
 
                         assert formatter != null;
 
-                        ConnectionKey key = ses.meta(CONN_IDX_META);
-
-                        return key != null ? formatter.writer(key.nodeId()) : null;
+                        return formatter.writer(msgFactory);
                     }
                 };
 
@@ -923,7 +940,8 @@ public class GridNioServerWrapper {
                     .skipRecoveryPredicate(skipRecoveryPred)
                     .messageQueueSizeListener(queueSizeMonitor)
                     .tracing(tracing)
-                    .readWriteSelectorsAssign(cfg.usePairedConnections());
+                    .readWriteSelectorsAssign(cfg.usePairedConnections())
+                    .messageFactory(msgFactory);
 
                 if (metricMgr != null) {
                     builder.workerListener(workersRegistry)
@@ -1189,7 +1207,7 @@ public class GridNioServerWrapper {
         handshakeTimeoutExecutorService.schedule(timeoutObj, timeout, TimeUnit.MILLISECONDS);
 
         try {
-            return tcpHandshakeExecutor.tcpHandshake(ch, rmtNodeId, sslMeta, msg);
+            return tcpHandshakeExecutor.tcpHandshake(ch, rmtNodeId, sslMeta, msg, stateProvider.getSpiContext());
         }
         finally {
             if (!timeoutObj.cancel())

@@ -18,23 +18,21 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
 abstract class AbstractSnapshotMessage implements Message {
     /** Unique message ID. */
+    @Order(0)
     private String id;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     protected AbstractSnapshotMessage() {
         // No-op.
@@ -56,49 +54,11 @@ abstract class AbstractSnapshotMessage implements Message {
         return id;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        if (writer.state() == 0) {
-            if (!writer.writeString("id", id))
-                return false;
-
-            writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        if (reader.state() == 0) {
-            id = reader.readString("id");
-
-            if (!reader.isLastRead())
-                return false;
-
-            reader.incrementState();
-        }
-
-        return reader.afterMessageRead(AbstractSnapshotMessage.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
+    /**
+     * @param id Unique message ID.
+     */
+    public void id(String id) {
+        this.id = id;
     }
 
     /** {@inheritDoc} */

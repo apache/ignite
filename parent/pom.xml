@@ -86,7 +86,7 @@
         <jetbrains.annotations.version>16.0.3</jetbrains.annotations.version>
         <jetty.version>11.0.24</jetty.version>
         <jetty-jakarta-servlet-api.version>5.0.2</jetty-jakarta-servlet-api.version>
-        <jmh.version>1.36</jmh.version>
+        <jmh.version>1.37</jmh.version>
         <jna.version>4.5.2</jna.version>
         <jnr.posix.version>3.1.15</jnr.posix.version>
         <jotm.version>2.3.1-M1</jotm.version>
@@ -97,7 +97,7 @@
         <lz4.version>1.8.0</lz4.version>
         <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
         <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
-        <maven.flatten.plugin.version>1.2.7</maven.flatten.plugin.version>
+        <maven.flatten.plugin.version>1.7.1</maven.flatten.plugin.version>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
         <maven.model.version>3.8.4</maven.model.version>
         <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
@@ -113,7 +113,7 @@
         <zookeeper.version>3.8.4</zookeeper.version>
         <zstd.version>1.5.5-5</zstd.version>
         <opencensus.version>0.31.1</opencensus.version>
-        <commons.lang3.version>3.9</commons.lang3.version>
+        <commons.lang3.version>3.18.0</commons.lang3.version>
         <ignite-kafka-ext.version>1.0.0</ignite-kafka-ext.version>
 
         <!-- Maven plugins versions -->
@@ -1078,6 +1078,9 @@
                                 --add-opens=java.base/java.security=ALL-UNNAMED
                                 --add-opens=java.management/sun.management=ALL-UNNAMED
                                 --add-opens java.desktop/java.awt.font=ALL-UNNAMED
+                                --add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED
+                                --add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED
+                                --add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
                             </argLine>
                         </configuration>
                     </plugin>

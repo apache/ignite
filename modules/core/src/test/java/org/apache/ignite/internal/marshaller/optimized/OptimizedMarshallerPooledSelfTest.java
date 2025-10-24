@@ -19,6 +19,7 @@ package org.apache.ignite.internal.marshaller.optimized;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 /**
@@ -28,7 +29,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 public class OptimizedMarshallerPooledSelfTest extends OptimizedMarshallerSelfTest {
     /** {@inheritDoc} */
     @Override protected Marshaller marshaller() throws IgniteCheckedException {
-        OptimizedMarshaller m = initTestMarshallerContext(new OptimizedMarshaller(false));
+        OptimizedMarshaller m = initTestMarshallerContext(Marshallers.optimized(false));
 
         m.setPoolSize(8);
 
@@ -38,6 +39,6 @@ public class OptimizedMarshallerPooledSelfTest extends OptimizedMarshallerSelfTe
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         // Reset static registry.
-        new OptimizedMarshaller().setPoolSize(0);
+        Marshallers.optimized().setPoolSize(0);
     }
 }

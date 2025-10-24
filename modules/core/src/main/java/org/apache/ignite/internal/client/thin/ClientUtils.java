@@ -57,9 +57,11 @@ import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.CACHE_STORAGES;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.EXPIRY_POLICY;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.QUERY_ENTITY_PRECISION_AND_SCALE;
 import static org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy.convertDuration;
@@ -239,8 +241,11 @@ public final class ClientUtils {
     }
 
     /** Serialize configuration to stream. */
-    void cacheConfiguration(ClientCacheConfiguration cfg, BinaryOutputStream out, ProtocolContext protocolCtx) {
+    void cacheConfiguration(ClientCacheConfiguration cfg, boolean sql, BinaryOutputStream out, ProtocolContext protocolCtx) {
         try (BinaryWriterEx writer = BinaryUtils.writer(marsh.context(), out, null)) {
+            if (protocolCtx.isFeatureSupported(ProtocolBitmaskFeature.SQL_CACHE_CREATION))
+                out.writeBoolean(sql);
+
             int origPos = out.position();
 
             writer.writeInt(0); // configuration length is to be assigned in the end
@@ -365,6 +370,13 @@ public final class ClientUtils {
                 throw new ClientProtocolError(String.format("Expire policies are not supported by the server " +
                     "version %s, required version %s", protocolCtx.version(), EXPIRY_POLICY.verIntroduced()));
             }
+
+            if (protocolCtx.isFeatureSupported(CACHE_STORAGES)) {
+                itemWriter.accept(CfgItem.STORAGE_PATH, w -> w.writeStringArray(cfg.getStoragePaths()));
+                itemWriter.accept(CfgItem.IDX_PATH, w -> w.writeString(cfg.getIndexPath()));
+            }
+            else if (!F.isEmpty(cfg.getStoragePaths()) || !F.isEmpty(cfg.getIndexPath()))
+                throw new ClientProtocolError("Cache storages are not supported by the server");
 
             writer.writeInt(origPos, out.position() - origPos - 4); // configuration length
             writer.writeInt(origPos + 4, propCnt.get()); // properties count
@@ -496,7 +508,13 @@ public final class ClientUtils {
                 .setExpiryPolicy(!protocolCtx.isFeatureSupported(EXPIRY_POLICY) ?
                         null : reader.readBoolean() ?
                         new PlatformExpiryPolicy(reader.readLong(), reader.readLong(), reader.readLong()) : null
-                );
+                )
+                .setStoragePaths(!protocolCtx.isFeatureSupported(CACHE_STORAGES)
+                    ? null
+                    : reader.readStringArray())
+                .setIndexPath(!protocolCtx.isFeatureSupported(CACHE_STORAGES)
+                    ? null
+                    : reader.readString());
         }
     }
 
@@ -765,7 +783,13 @@ public final class ClientUtils {
         QUERY_ENTITIES(200),
 
         /** Expire policy. */
-        EXPIRE_POLICY(407);
+        EXPIRE_POLICY(407),
+
+        /** Storage path. */
+        STORAGE_PATH(408),
+
+        /** Index path. */
+        IDX_PATH(409);
 
         /** Code. */
         private final short code;

@@ -112,6 +112,23 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
                 int compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4L);
 
+                if (compactTs < 0) {
+                    // For page containing fragmented row data timestamps stored in the row's head page are used.
+                    // Fragment page (other than the tail one) contains link to tail page. Tail page contains link to
+                    // head page. So head page is found no more than in two hops.
+                    sampleTrackingIdx = -compactTs;
+
+                    compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4L);
+
+                    if (compactTs < 0) {
+                        sampleTrackingIdx = -compactTs;
+
+                        compactTs = GridUnsafe.getIntVolatile(null, trackingArrPtr + sampleTrackingIdx * 4L);
+
+                        assert compactTs >= 0 : "[compactTs=" + compactTs + "]";
+                    }
+                }
+
                 if (compactTs != 0) {
                     // We chose data page with at least one touch.
                     if (compactTs < lruCompactTs) {
@@ -147,7 +164,7 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
 
         int ts = GridUnsafe.getIntVolatile(null, trackingArrPtr + trackingIdx * 4L);
 
-        return ts != 0;
+        return ts > 0;
     }
 
     /** {@inheritDoc} */
@@ -155,5 +172,26 @@ public class RandomLruPageEvictionTracker extends PageAbstractEvictionTracker {
         int pageIdx = PageIdUtils.pageIndex(pageId);
 
         GridUnsafe.putIntVolatile(null, trackingArrPtr + trackingIdx(pageIdx) * 4L, 0);
+    }
+
+    /**
+     * Link two pages containing fragments of row.
+     * <p>
+     * Link is stored as a negated page tracking index.
+     *
+     * @param pageTrackingIdx     Page tracking index.
+     * @param nextPageTrackingIdx Tracking index of page to link to.
+     */
+    @Override protected void linkFragmentPages(int pageTrackingIdx, int nextPageTrackingIdx) {
+        GridUnsafe.putIntVolatile(null, trackingArrPtr + pageTrackingIdx * 4L, -nextPageTrackingIdx);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int getFragmentLink(int pageTrackingIdx) {
+        int link = GridUnsafe.getIntVolatile(null, trackingArrPtr + pageTrackingIdx * 4L);
+
+        assert link <= 0 : "[link=" + link + "]";
+
+        return -link;
     }
 }

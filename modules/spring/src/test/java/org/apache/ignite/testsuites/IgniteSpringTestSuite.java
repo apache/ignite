@@ -21,6 +21,7 @@ import org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactorySelfTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactorySelfTest;
 import org.apache.ignite.cache.store.jdbc.CachePojoStoreXmlSelfTest;
 import org.apache.ignite.cache.store.jdbc.CachePojoStoreXmlWithSqlEscapeSelfTest;
+import org.apache.ignite.cdc.CdcCommandLineStartupTest;
 import org.apache.ignite.cdc.CdcConfigurationTest;
 import org.apache.ignite.cluster.ClusterStateXmlPropertiesTest;
 import org.apache.ignite.encryption.SpringEncryptedCacheRestartClientTest;
@@ -87,6 +88,7 @@ import org.junit.runners.Suite;
 
     // CDC tests.
     CdcConfigurationTest.class,
+    CdcCommandLineStartupTest.class,
 
     SqlPlanHistoryConfigTest.class,
 })

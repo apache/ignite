@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.UUID;
@@ -35,9 +34,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * Deployment request.
  */
 public class GridDeploymentRequest implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Response topic. Response should be sent back to this topic. */
     @GridDirectTransient
     private Object resTopic;
@@ -60,8 +56,7 @@ public class GridDeploymentRequest implements Message {
     private Collection<UUID> nodeIds;
 
     /**
-     * No-op constructor to support {@link Externalizable} interface.
-     * This constructor is not meant to be used for other purposes.
+     * Default constructor.
      */
     public GridDeploymentRequest() {
         // No-op.
@@ -160,11 +155,6 @@ public class GridDeploymentRequest implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -177,31 +167,31 @@ public class GridDeploymentRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeBoolean("isUndeploy", isUndeploy))
+                if (!writer.writeBoolean(isUndeploy))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeIgniteUuid("ldrId", ldrId))
+                if (!writer.writeIgniteUuid(ldrId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeCollection("nodeIds", nodeIds, MessageCollectionItemType.UUID))
+                if (!writer.writeCollection(nodeIds, MessageCollectionItemType.UUID))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByteArray("resTopicBytes", resTopicBytes))
+                if (!writer.writeByteArray(resTopicBytes))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeString("rsrcName", rsrcName))
+                if (!writer.writeString(rsrcName))
                     return false;
 
                 writer.incrementState();
@@ -215,12 +205,9 @@ public class GridDeploymentRequest implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                isUndeploy = reader.readBoolean("isUndeploy");
+                isUndeploy = reader.readBoolean();
 
                 if (!reader.isLastRead())
                     return false;
@@ -228,7 +215,7 @@ public class GridDeploymentRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                ldrId = reader.readIgniteUuid("ldrId");
+                ldrId = reader.readIgniteUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -236,7 +223,7 @@ public class GridDeploymentRequest implements Message {
                 reader.incrementState();
 
             case 2:
-                nodeIds = reader.readCollection("nodeIds", MessageCollectionItemType.UUID);
+                nodeIds = reader.readCollection(MessageCollectionItemType.UUID);
 
                 if (!reader.isLastRead())
                     return false;
@@ -244,7 +231,7 @@ public class GridDeploymentRequest implements Message {
                 reader.incrementState();
 
             case 3:
-                resTopicBytes = reader.readByteArray("resTopicBytes");
+                resTopicBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -252,7 +239,7 @@ public class GridDeploymentRequest implements Message {
                 reader.incrementState();
 
             case 4:
-                rsrcName = reader.readString("rsrcName");
+                rsrcName = reader.readString();
 
                 if (!reader.isLastRead())
                     return false;
@@ -261,7 +248,7 @@ public class GridDeploymentRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(GridDeploymentRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */

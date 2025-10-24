@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
@@ -84,10 +85,9 @@ public class GridDirectParser implements GridNioParser {
             boolean finished = false;
 
             if (msg != null && buf.hasRemaining()) {
-                if (reader != null)
-                    reader.setCurrentReadClass(msg.getClass());
+                MessageSerializer msgSer = msgFactory.serializer(msg.directType());
 
-                finished = msg.readFrom(buf, reader);
+                finished = msgSer.readFrom(msg, buf, reader);
             }
 
             if (finished) {

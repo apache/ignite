@@ -104,19 +104,19 @@ public class QueryStartResponse implements MarshalableMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("errBytes", errBytes))
+                if (!writer.writeByteArray(errBytes))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong("fragmentId", fragmentId))
+                if (!writer.writeLong(fragmentId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeUuid("queryId", queryId))
+                if (!writer.writeUuid(queryId))
                     return false;
 
                 writer.incrementState();
@@ -130,12 +130,9 @@ public class QueryStartResponse implements MarshalableMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                errBytes = reader.readByteArray("errBytes");
+                errBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -143,7 +140,7 @@ public class QueryStartResponse implements MarshalableMessage {
                 reader.incrementState();
 
             case 1:
-                fragmentId = reader.readLong("fragmentId");
+                fragmentId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -151,7 +148,7 @@ public class QueryStartResponse implements MarshalableMessage {
                 reader.incrementState();
 
             case 2:
-                queryId = reader.readUuid("queryId");
+                queryId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -160,7 +157,7 @@ public class QueryStartResponse implements MarshalableMessage {
 
         }
 
-        return reader.afterMessageRead(QueryStartResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */

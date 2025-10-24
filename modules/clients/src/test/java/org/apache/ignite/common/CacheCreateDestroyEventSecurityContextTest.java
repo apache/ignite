@@ -28,14 +28,9 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.lang.RunnableX;
-import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.junit.Test;
 
 import static java.util.Collections.singletonList;
@@ -95,23 +90,6 @@ public class CacheCreateDestroyEventSecurityContextTest extends AbstractEventSec
 
             checkCacheEvents(() -> cli.cluster().state(INACTIVE), EVT_CACHE_STOPPED);
             checkCacheEvents(() -> cli.cluster().state(ACTIVE), EVT_CACHE_STARTED);
-        }
-    }
-
-    /** Tests cache create/destroy event security context in case operation is initiated from the {@link GridClient}. */
-    @Test
-    public void testGridClient() throws Exception {
-        operationInitiatorLogin = GRID_CLIENT_LOGIN;
-
-        GridClientConfiguration cfg = new GridClientConfiguration()
-            .setServers(singletonList("127.0.0.1:11211"))
-            .setSecurityCredentialsProvider(new SecurityCredentialsBasicProvider(new SecurityCredentials(operationInitiatorLogin, "")));
-
-        grid("crd").createCache(cacheConfiguration());
-
-        try (GridClient cli = GridClientFactory.start(cfg)) {
-            checkCacheEvents(() -> cli.state().state(INACTIVE, true), EVT_CACHE_STOPPED);
-            checkCacheEvents(() -> cli.state().state(ACTIVE, true), EVT_CACHE_STARTED);
         }
     }
 

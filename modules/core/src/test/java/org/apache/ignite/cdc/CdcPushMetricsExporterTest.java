@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cdc.CdcMain;
 import org.apache.ignite.internal.processors.metric.PushMetricsExporterAdapter;
 import org.apache.ignite.metric.MetricRegistry;
@@ -86,6 +87,9 @@ public class CdcPushMetricsExporterTest extends AbstractCdcTest {
     @Override protected MetricExporterSpi[] metricExporters() {
         PushMetricsExporterAdapter pushMetricsExporter = new PushMetricsExporterAdapter() {
             @Override public void export() {
+                assertNotNull((((IgniteEx)ignite()).context().security()));
+                assertFalse((((IgniteEx)ignite()).context().security().enabled()));
+
                 metricsExported.set(true);
             }
         };

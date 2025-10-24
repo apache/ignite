@@ -17,8 +17,14 @@
 
 package org.apache.ignite;
 
+import java.io.Serializable;
+import org.apache.ignite.internal.util.GridLogThrottle;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
+import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.util.CommonUtils.DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD;
+import static org.apache.ignite.internal.util.GridLogThrottle.DFLT_LOG_THROTTLE_CAPACITY;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_INCLUDE_SENSITIVE;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_MAX_LENGTH;
@@ -28,6 +34,9 @@ import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_
  * These properties and variables can be used to affect the behavior of Ignite.
  */
 public class IgniteCommonsSystemProperties {
+    /** Default value of {@link IgniteCommonsSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
+    public static final boolean DFLT_IGNITE_USE_BINARY_ARRAYS = false;
+
     /**
      * Setting to {@code true} enables writing sensitive information in {@code toString()} output.
      */
@@ -46,6 +55,103 @@ public class IgniteCommonsSystemProperties {
     @SystemProperty(value = "Number of collection (map, array) elements to output",
         type = Integer.class, defaults = "" + DFLT_TO_STRING_COLLECTION_LIMIT)
     public static final String IGNITE_TO_STRING_COLLECTION_LIMIT = "IGNITE_TO_STRING_COLLECTION_LIMIT";
+
+    /**
+     * When unsafe memory copy if performed below this threshold, Ignite will do it on per-byte basis instead of
+     * calling to Unsafe.copyMemory().
+     * <p>
+     * Defaults to 0, meaning that threshold is disabled.
+     */
+    @SystemProperty(value = "When unsafe memory copy if performed below this threshold, Ignite will do it " +
+        "on per-byte basis instead of calling to Unsafe.copyMemory(). 0 disables threshold",
+        type = Long.class, defaults = "" + DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD)
+    public static final String IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD = "IGNITE_MEMORY_PER_BYTE_COPY_THRESHOLD";
+
+    /**
+     * Whether Ignite can access unaligned memory addresses.
+     * <p>
+     * Defaults to {@code false}, meaning that unaligned access will be performed only on x86 architecture.
+     */
+    @SystemProperty("Whether Ignite can access unaligned memory addresses. Defaults to false, " +
+        "meaning that unaligned access will be performed only on x86 architecture")
+    public static final String IGNITE_MEMORY_UNALIGNED_ACCESS = "IGNITE_MEMORY_UNALIGNED_ACCESS";
+
+    /**
+     * System property to specify how often in milliseconds marshal buffers
+     * should be rechecked and potentially trimmed. Default value is {@code 10,000ms}.
+     */
+    @SystemProperty(value = "How often in milliseconds marshal buffers should be rechecked and potentially trimmed",
+        type = Long.class, defaults = "" + DFLT_MARSHAL_BUFFERS_RECHECK)
+    public static final String IGNITE_MARSHAL_BUFFERS_RECHECK = "IGNITE_MARSHAL_BUFFERS_RECHECK";
+
+    /**
+     * System property to specify per thread binary allocator chunk pool size. Default value is {@code 32}.
+     */
+    @SystemProperty(value = "Per thread binary allocator chunk pool size",
+        type = Integer.class, defaults = "" + DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE)
+    public static final String IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE = "IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE";
+
+    /**
+     * Manages {@code OptimizedMarshaller} behavior of {@code serialVersionUID} computation for
+     * {@link Serializable} classes.
+     */
+    @SystemProperty("Manages OptimizedMarshaller behavior of serialVersionUID computation " +
+        "for Serializable classes")
+    public static final String IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID =
+        "IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID";
+
+    /**
+     * When set to {@code true}, warnings that are intended for development environments and not for production
+     * (such as coding mistakes in code using Ignite) will not be logged.
+     */
+    @SystemProperty("Enables development environments warnings")
+    public static final String IGNITE_DEV_ONLY_LOGGING_DISABLED = "IGNITE_DEV_ONLY_LOGGING_DISABLED";
+
+    /** Max amount of remembered errors for {@link GridLogThrottle}. */
+    @SystemProperty(value = "Max amount of remembered errors for GridLogThrottle", type = Integer.class,
+        defaults = "" + DFLT_LOG_THROTTLE_CAPACITY)
+    public static final String IGNITE_LOG_THROTTLE_CAPACITY = "IGNITE_LOG_THROTTLE_CAPACITY";
+
+    /** Defines Ignite installation folder. */
+    @SystemProperty(value = "Defines Ignite installation folder", type = String.class, defaults = "")
+    public static final String IGNITE_HOME = "IGNITE_HOME";
+
+    /**
+     * Manages type of serialization mechanism for {@link String} that is marshalled/unmarshalled by BinaryMarshaller.
+     * Should be used for cases when a String contains a surrogate symbol without its pair one. This is frequently used
+     * in algorithms that encrypts data in String format.
+     */
+    @SystemProperty("Manages type of serialization mechanism for String that is " +
+        "marshalled/unmarshalled by BinaryMarshaller. Should be used for cases when a String contains a surrogate " +
+        "symbol without its pair one. This is frequently used in algorithms that encrypts data in String format")
+    public static final String IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2 =
+        "IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2";
+
+    /**
+     * Enables storage of typed arrays.
+     * The default value is {@code BinaryUtils#DFLT_IGNITE_USE_BINARY_ARRAYS}.
+     */
+    @SystemProperty(value = "Flag to enable store of array in binary format and keep component type",
+        defaults = "" + DFLT_IGNITE_USE_BINARY_ARRAYS)
+    public static final String IGNITE_USE_BINARY_ARRAYS = "IGNITE_USE_BINARY_ARRAYS";
+
+    /**
+     * When set to {@code true} fields are written by BinaryMarshaller in sorted order. Otherwise
+     * the natural order is used.
+     * <p>
+     * NOTICE: Should be the default in Apache Ignite 3.0
+     */
+    @SystemProperty("Enables fields to be written by BinaryMarshaller in sorted order. " +
+        "By default, the natural order is used")
+    public static final String IGNITE_BINARY_SORT_OBJECT_FIELDS = "IGNITE_BINARY_SORT_OBJECT_FIELDS";
+
+    /**
+     * Flag that will force Ignite to fill memory block with some recognisable pattern right before
+     * this memory block is released. This will help to recognize cases when already released memory is accessed.
+     */
+    @SystemProperty("Force Ignite to fill memory block with some recognisable pattern right before this " +
+        "memory block is released. This will help to recognize cases when already released memory is accessed")
+    public static final String IGNITE_OFFHEAP_SAFE_RELEASE = "IGNITE_OFFHEAP_SAFE_RELEASE";
 
     /**
      * @param enumCls Enum type.

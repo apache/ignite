@@ -18,11 +18,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Message indicating a failure occurred during processing snapshot files request.
@@ -31,14 +28,12 @@ public class SnapshotFilesFailureMessage extends AbstractSnapshotMessage {
     /** Snapshot response message type (value is {@code 179}). */
     public static final short TYPE_CODE = 179;
 
-    /** Serialization version. */
-    private static final long serialVersionUID = 0L;
-
     /** Exception message which is occurred during snapshot request processing. */
+    @Order(value = 1, method = "errorMessage")
     private String errMsg;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public SnapshotFilesFailureMessage() {
         // No-op.
@@ -63,58 +58,9 @@ public class SnapshotFilesFailureMessage extends AbstractSnapshotMessage {
 
     /**
      * @param errMsg Response error message.
-     * @return {@code this} for chaining.
      */
-    public SnapshotFilesFailureMessage errorMessage(String errMsg) {
+    public void errorMessage(String errMsg) {
         this.errMsg = errMsg;
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        if (writer.state() == 1) {
-            if (!writer.writeString("errMsg", errMsg))
-                return false;
-
-            writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        if (reader.state() == 1) {
-            errMsg = reader.readString("errMsg");
-
-            if (!reader.isLastRead())
-                return false;
-
-            reader.incrementState();
-        }
-
-        return reader.afterMessageRead(SnapshotFilesFailureMessage.class);
     }
 
     /** {@inheritDoc} */

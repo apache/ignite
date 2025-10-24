@@ -18,16 +18,22 @@
 package org.apache.ignite.internal.processors.cache.persistence.filename;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.ObjIntConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -36,7 +42,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Test cases when {@link CacheConfiguration#setStoragePath(String)} used to set custom data region storage path.
+ * Test cases when {@link CacheConfiguration#setStoragePaths(String...)} used to set custom data region storage path.
  */
 @RunWith(Parameterized.class)
 public abstract class AbstractDataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
@@ -46,6 +52,9 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     /** Second custom storage path. */
     static final String STORAGE_PATH_2 = "storage2";
 
+    /** Custom indexes path. */
+    static final String IDX_PATH = "idxs";
+
     /** */
     static final String SNP_PATH = "ex_snapshots";
 
@@ -53,13 +62,51 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     protected static final int PARTS_CNT = 15;
 
     /** */
-    @Parameterized.Parameter()
-    public boolean useAbsStoragePath;
+    protected static final int GRID_CNT = 3;
 
     /** */
-    @Parameterized.Parameters(name = "useAbsStoragePath={0}")
-    public static Object[] params() {
-        return new Object[]{true, false};
+    @Parameterized.Parameter()
+    public PathMode pathMode;
+
+    /** */
+    @Parameterized.Parameter(1)
+    public boolean severalCacheStorages;
+
+    /** */
+    @Parameterized.Parameter(2)
+    public boolean idxStorage;
+
+    /** */
+    @Parameterized.Parameters(name = "path={0},severalCacheStorages={1},idxStorage={2}")
+    public static List<Object[]> params() {
+        List<Object[]> res = new ArrayList<>();
+
+        for (PathMode absPathMode : PathMode.values()) {
+            for (boolean severalCacheStorages : new boolean[]{true, false}) {
+                for (boolean idxStorage : new boolean[]{true, false})
+                    res.add(new Object[]{absPathMode, severalCacheStorages, idxStorage});
+            }
+        }
+
+        return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        DataStorageConfiguration dsCfg = dataStorageConfiguration();
+
+        dsCfg.getDefaultDataRegionConfiguration()
+            .setPersistenceEnabled(true);
+
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        return cfg
+            .setConsistentId(consId(cfg))
+            .setDataStorageConfiguration(dsCfg)
+            .setCacheConfiguration(ccfgs())
+            .setWorkDirectory(pathMode == PathMode.SEPARATE_ROOT
+                ? new File(U.defaultWorkDirectory(), consId(cfg)).getAbsolutePath()
+                : null);
     }
 
     /** {@inheritDoc} */
@@ -70,12 +117,22 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
 
         cleanPersistenceDir();
 
-        if (useAbsStoragePath)
+        if (pathMode == PathMode.ABS) {
             U.delete(new File(storagePath(STORAGE_PATH)).getParentFile());
-        else {
+            U.delete(new File(storagePath(STORAGE_PATH_2)).getParentFile());
+            U.delete(new File(storagePath(IDX_PATH)).getParentFile());
+        }
+        else if (pathMode == PathMode.RELATIVE) {
             U.delete(new File(U.defaultWorkDirectory(), STORAGE_PATH));
             U.delete(new File(U.defaultWorkDirectory(), STORAGE_PATH_2));
+            U.delete(new File(U.defaultWorkDirectory(), IDX_PATH));
         }
+        else if (pathMode == PathMode.SEPARATE_ROOT) {
+            for (File f : new File(U.defaultWorkDirectory()).listFiles(f -> !f.getName().equals("log")))
+                U.delete(f);
+        }
+        else
+            throw new IllegalStateException("Unknown path mode");
 
         U.delete(new File(U.defaultWorkDirectory(), SNP_PATH));
     }
@@ -85,9 +142,8 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
      * @param path Snapshot path.
      */
     void restoreAndCheck(String name, String path) throws Exception {
-        List<NodeFileTree> fts = IntStream.range(0, 3)
-            .mapToObj(this::grid)
-            .map(ign -> ign.context().pdsFolderResolver().fileTree())
+        List<NodeFileTree> fts = IgnitionEx.allGrids().stream()
+            .map(ign -> ((IgniteEx)ign).context().pdsFolderResolver().fileTree())
             .collect(Collectors.toList());
 
         stopAllGrids();
@@ -99,7 +155,7 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
             ft.extraStorages().values().forEach(U::delete);
         });
 
-        U.delete(F.first(fts).db());
+        fts.forEach(ft -> U.delete(ft.db()));
 
         IgniteEx srv = startAndActivate();
 
@@ -108,11 +164,14 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
         for (CacheConfiguration<?, ?> ccfg : ccfgs())
             grid(0).destroyCache(ccfg.getName());
 
+        awaitPartitionMapExchange();
+
         assertTrue(GridTestUtils.waitForCondition(() -> {
             for (NodeFileTree ft : fts) {
                 for (CacheConfiguration<?, ?> ccfg : ccfgs()) {
-                    if (!F.isEmpty(ft.cacheStorage(ccfg).listFiles()))
-                        return false;
+                    Stream<File> cacheFiles = Arrays.stream(ft.cacheStorages(ccfg)).flatMap(dir -> Arrays.stream(dir.listFiles()));
+
+                    return cacheFiles.findAny().isEmpty();
                 }
             }
 
@@ -150,7 +209,7 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
 
     /** */
     IgniteEx startAndActivate() throws Exception {
-        IgniteEx srv = startGrids(3);
+        IgniteEx srv = startGrids(GRID_CNT);
 
         srv.cluster().state(ClusterState.ACTIVE);
 
@@ -165,17 +224,38 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     }
 
     /** */
-    CacheConfiguration<?, ?> ccfg(String name, String grp, String storagePath) {
-        return new CacheConfiguration<>(name)
+    CacheConfiguration<?, ?> ccfg(String name, String grp, String... storagePath) {
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(name)
             .setGroupName(grp)
-            .setStoragePath(storagePath)
             .setAffinity(new RendezvousAffinityFunction().setPartitions(PARTS_CNT));
+
+        if (!F.isEmpty(storagePath))
+            ccfg.setStoragePaths(storagePath);
+
+        if (idxStorage)
+            ccfg.setIndexPath(storagePath(IDX_PATH));
+
+        return ccfg;
+    }
+
+    /** */
+    String[] storagePaths(String... storagePath) {
+        if (severalCacheStorages) {
+            String[] res = new String[storagePath.length];
+
+            for (int i = 0; i < storagePath.length; i++)
+                res[i] = storagePath(storagePath[i]);
+
+            return res;
+        }
+
+        return new String[] {storagePath(storagePath[0])};
     }
 
     /** */
     String storagePath(String storagePath) {
         try {
-            return useAbsStoragePath ? new File(U.defaultWorkDirectory(), "abs/" + storagePath).getAbsolutePath() : storagePath;
+            return pathMode == PathMode.ABS ? new File(U.defaultWorkDirectory(), "abs/" + storagePath).getAbsolutePath() : storagePath;
         }
         catch (IgniteCheckedException e) {
             throw new RuntimeException(e);
@@ -185,6 +265,26 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     /** @param fts Nodes file trees. */
     abstract void checkFileTrees(List<NodeFileTree> fts) throws IgniteCheckedException;
 
+    /** Data storage configuration. */
+    abstract DataStorageConfiguration dataStorageConfiguration();
+
     /** Cache configs. */
     abstract CacheConfiguration[] ccfgs();
+
+    /** */
+    public enum PathMode {
+        /** Absolute path for custom directories. */
+        ABS,
+
+        /** Relative path for custom directories. Same root. */
+        RELATIVE,
+
+        /** Relative path for custom directories. Separate root for each node. */
+        SEPARATE_ROOT
+    }
+
+    /** */
+    static String consId(IgniteConfiguration cfg) {
+        return U.maskForFileName(cfg.getIgniteInstanceName());
+    }
 }

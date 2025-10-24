@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.GridMarshallerTestInheritedBean;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -53,7 +54,7 @@ public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     private OptimizedMarshaller marshaller() {
         U.clearClassCache();
 
-        OptimizedMarshaller marsh = new OptimizedMarshaller();
+        OptimizedMarshaller marsh = Marshallers.optimized();
 
         marsh.setContext(new MarshallerContextTestImpl());
 

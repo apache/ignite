@@ -245,10 +245,10 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                 if (!CU.isPersistentCache(gctx.config(), cctx.kernalContext().config().getDataStorageConfiguration()))
                     throw new IgniteCheckedException("In-memory cache groups are not allowed to be snapshot: " + grpId);
 
-                // Create cache group snapshot directory on start in a single thread.
-                U.ensureDirectory(sft.tempFileTree().cacheStorage(gctx.config()),
-                    "directory for snapshotting cache group",
-                    log);
+                for (File cs : sft.tempFileTree().cacheStorages(gctx.config())) {
+                    // Create cache group snapshot directory on start in a single thread.
+                    U.ensureDirectory(cs, "directory for snapshotting cache group", log);
+                }
             }
 
             if (withMetaStorage) {
@@ -537,7 +537,7 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
         if (gctx == null)
             throw new IgniteCheckedException("Cache group context has not found due to the cache group is stopped.");
 
-        return gctx.config().getStoragePath();
+        return FileTreeUtils.partitionStorage(gctx.config(), grpAndPart.getPartitionId());
     }
 
     /** {@inheritDoc} */
@@ -629,12 +629,12 @@ class SnapshotFutureTask extends AbstractCreateSnapshotFutureTask implements Che
                 if (sent || fromTemp)
                     return;
 
-                File cacheWorkDir = sft.tempFileTree().cacheStorage(ccfg);
+                File cfgTmpRoot = sft.tempFileTree().cacheConfigurationFile(ccfg).getParentFile();
 
-                if (!U.mkdirs(cacheWorkDir))
-                    throw new IOException("Unable to create temp directory to copy original configuration file: " + cacheWorkDir);
+                if (!U.mkdirs(cfgTmpRoot))
+                    throw new IOException("Unable to create temp directory to copy original configuration file: " + cfgTmpRoot);
 
-                File newCcfgFile = new File(cacheWorkDir, ccfgFile.getName());
+                File newCcfgFile = new File(cfgTmpRoot, ccfgFile.getName());
                 newCcfgFile.createNewFile();
 
                 copy(ioFactory, ccfgFile, newCcfgFile, ccfgFile.length());

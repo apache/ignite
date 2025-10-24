@@ -17,44 +17,40 @@
 
 package org.apache.ignite.spi.communication.tcp.messages;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
 /**
  * Handshake message.
  */
-@IgniteCodeGeneratingFail
 public class HandshakeMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Message body size in bytes. */
-    private static final int MESSAGE_SIZE = 36;
+    private static final int MESSAGE_SIZE = 36 + 1; // additional byte for null flag of UUID value.
 
     /** Full message size (with message type) in bytes. */
     public static final int MESSAGE_FULL_SIZE = MESSAGE_SIZE + DIRECT_TYPE_SIZE;
 
     /** */
+    @Order(0)
     private UUID nodeId;
 
     /** */
+    @Order(value = 1, method = "received")
     private long rcvCnt;
 
     /** */
+    @Order(value = 2, method = "connectCount")
     private long connectCnt;
 
     /** */
+    @Order(value = 3, method = "connectionIndex")
     private int connIdx;
 
     /**
-     * Default constructor required by {@link Message}.
+     * Default constructor.
      */
     public HandshakeMessage() {
         // No-op.
@@ -105,57 +101,38 @@ public class HandshakeMessage implements Message {
     }
 
     /**
+     * @param connIdx Connection index.
+     */
+    public void connectionIndex(int connIdx) {
+        this.connIdx = connIdx;
+    }
+
+    /**
+     * @param connectCnt Connect count.
+     */
+    public void connectCount(long connectCnt) {
+        this.connectCnt = connectCnt;
+    }
+
+    /**
+     * @param rcvCnt Number of received messages.
+     */
+    public void received(long rcvCnt) {
+        this.rcvCnt = rcvCnt;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     */
+    public void nodeId(UUID nodeId) {
+        this.nodeId = nodeId;
+    }
+
+    /**
      * @return Message size in bytes.
      */
     public int getMessageSize() {
         return MESSAGE_FULL_SIZE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        if (buf.remaining() < MESSAGE_FULL_SIZE)
-            return false;
-
-        TcpCommunicationSpi.writeMessageType(buf, directType());
-
-        byte[] bytes = U.uuidToBytes(nodeId);
-
-        assert bytes.length == 16 : bytes.length;
-
-        buf.put(bytes);
-
-        buf.putLong(rcvCnt);
-
-        buf.putLong(connectCnt);
-
-        buf.putInt(connIdx);
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        if (buf.remaining() < MESSAGE_SIZE)
-            return false;
-
-        byte[] nodeIdBytes = new byte[NodeIdMessage.MESSAGE_SIZE];
-
-        buf.get(nodeIdBytes);
-
-        nodeId = U.bytesToUuid(nodeIdBytes, 0);
-
-        rcvCnt = buf.getLong();
-
-        connectCnt = buf.getLong();
-
-        connIdx = buf.getInt();
-
-        return true;
     }
 
     /** {@inheritDoc} */

@@ -52,10 +52,10 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -440,7 +440,15 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @see DataStorageConfiguration#setExtraStoragePaths(String[])
      */
     @IgniteExperimental
-    @Nullable private String storagePath;
+    @Nullable private String[] storagePaths;
+
+    /**
+     * Root directory where index file are stored.
+     * @see DataStorageConfiguration#setStoragePath(String)
+     * @see DataStorageConfiguration#setExtraStoragePaths(String[])
+     */
+    @IgniteExperimental
+    @Nullable private String idxPath;
 
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
@@ -540,7 +548,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         sqlOnheapCache = cc.isSqlOnheapCacheEnabled();
         sqlOnheapCacheMaxSize = cc.getSqlOnheapCacheMaxSize();
         evtsDisabled = cc.isEventsDisabled();
-        storagePath = cc.getStoragePath();
+        storagePaths = cc.getStoragePaths();
+        idxPath = cc.getIndexPath();
     }
 
     /**
@@ -2023,7 +2032,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                 qryEntities.add(newEntity);
 
             // Set key configuration if needed.
-            String affFieldName = BinaryContext.affinityFieldName(keyCls);
+            String affFieldName = CU.affinityFieldName(keyCls);
 
             if (affFieldName != null) {
                 CacheKeyConfiguration newKeyCfg = new CacheKeyConfiguration(newEntity.getKeyType(), affFieldName);
@@ -2470,20 +2479,42 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return A path to the root directory where the Persistent Store for cache group will persist data and indexes.
      */
     @IgniteExperimental
-    @Nullable public String getStoragePath() {
-        return storagePath;
+    @Nullable public String[] getStoragePaths() {
+        return storagePaths;
     }
 
     /**
      * Sets a path to the root directory where the Persistent Store will persist data.
      * By default, the Persistent Store's files are located under {@link DataStorageConfiguration#getStoragePath()}.
      *
-     * @param storagePath Persistence store path.
+     * @param storagePaths Persistence store path.
      * @return {@code this} for chaining.
      */
     @IgniteExperimental
-    public CacheConfiguration<K, V> setStoragePath(String storagePath) {
-        this.storagePath = storagePath;
+    public CacheConfiguration<K, V> setStoragePaths(String... storagePaths) {
+        this.storagePaths = storagePaths;
+
+        return this;
+    }
+
+    /**
+     * @return A path to the root directory where the Persistent Store for cache group will persist index.
+     */
+    @IgniteExperimental
+    @Nullable public String getIndexPath() {
+        return idxPath;
+    }
+
+    /**
+     * Sets a path to the root directory where the Persistent Store will persist index partition.
+     * By default, the Persistent Store's files are located under {@link DataStorageConfiguration#getStoragePath()}.
+     *
+     * @param idxPath Index path.
+     * @return {@code this} for chaining.
+     */
+    @IgniteExperimental
+    public CacheConfiguration<K, V> setIndexPath(String idxPath) {
+        this.idxPath = idxPath;
 
         return this;
     }

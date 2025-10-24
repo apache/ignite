@@ -22,11 +22,14 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.LoadAllWarmUpConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
@@ -34,9 +37,12 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static java.util.stream.Collectors.averagingInt;
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.util.IgniteUtils.doInParallel;
 
 /**
  * "Load all" warm-up strategy, which loads pages to persistent data region
@@ -99,11 +105,31 @@ public class LoadAllWarmUpStrategy implements WarmUpStrategy<LoadAllWarmUpConfig
                 loadDataInfo.keySet().stream().map(CacheGroupContext::cacheOrGroupName).collect(toList()) + ']');
         }
 
-        long loadedPageCnt = 0;
+        AtomicLong loadedPageCnt = new AtomicLong();
 
         for (Map.Entry<CacheGroupContext, List<LoadPartition>> e : loadDataInfo.entrySet()) {
             CacheGroupContext grp = e.getKey();
             List<LoadPartition> parts = e.getValue();
+
+            LoadPartition idxPart = parts.get(0);
+
+            int avgPartPagesCnt = parts.stream()
+                .filter(p -> p.part() != INDEX_PARTITION)
+                .map(LoadPartition::pages)
+                .collect(averagingInt(i -> i)).intValue();
+
+            if (avgPartPagesCnt != 0 && idxPart.pages() > avgPartPagesCnt) {
+                // Split index partition into chunks to balance threads load.  It's needed since
+                // index partition is usually much larger than the data one if indexing is enabled.
+                List<LoadPartition> newParts = new ArrayList<>(idxPart.pages() / avgPartPagesCnt + parts.size());
+
+                for (int i = 0; i < idxPart.pages(); i += avgPartPagesCnt)
+                    newParts.add(new LoadPartition(idxPart.part(), Math.min(idxPart.pages() - i, avgPartPagesCnt), i));
+
+                newParts.addAll(parts.subList(1, parts.size()));
+
+                parts = newParts;
+            }
 
             if (log.isInfoEnabled()) {
                 log.info("Start warm-up cache group, with estimated statistics [name=" + grp.cacheOrGroupName()
@@ -113,31 +139,42 @@ public class LoadAllWarmUpStrategy implements WarmUpStrategy<LoadAllWarmUpConfig
 
             PageMemoryEx pageMemEx = (PageMemoryEx)region.pageMemory();
 
-            for (LoadPartition part : parts) {
-                long pageId = pageMemEx.partitionMetaPageId(grp.groupId(), part.part());
+            GridKernalContext ctx = grp.shared().kernalContext();
 
-                for (int i = 0; i < part.pages(); i++, pageId++, loadedPageCnt++) {
-                    if (stop) {
-                        if (log.isInfoEnabled()) {
-                            log.info("Stop warm-up cache group with loaded statistics [name="
-                                + grp.cacheOrGroupName() + ", pageCnt=" + loadedPageCnt
-                                + ", remainingPageCnt=" + (availableLoadPageCnt - loadedPageCnt) + ']');
+            doInParallel(
+                U.availableThreadCount(ctx, GridIoPolicy.SYSTEM_POOL, 2),
+                ctx.pools().getSystemExecutorService(),
+                parts,
+                part -> {
+                    long pageId = pageMemEx.partitionMetaPageId(grp.groupId(), part.part());
+
+                    pageId += part.startPageIdx();
+
+                    for (int i = 0; i < part.pages(); i++, pageId++, loadedPageCnt.incrementAndGet()) {
+                        if (stop) {
+                            if (log.isInfoEnabled()) {
+                                log.info("Stop warm-up cache group with loaded statistics [name="
+                                    + grp.cacheOrGroupName() + ", pageCnt=" + loadedPageCnt.get()
+                                    + ", remainingPageCnt=" + (availableLoadPageCnt - loadedPageCnt.get()) + ']');
+                            }
+
+                            return null;
                         }
 
-                        return;
+                        long pagePtr = -1;
+
+                        try {
+                            pagePtr = pageMemEx.acquirePage(grp.groupId(), pageId);
+                        }
+                        finally {
+                            if (pagePtr != -1)
+                                pageMemEx.releasePage(grp.groupId(), pageId, pagePtr);
+                        }
                     }
 
-                    long pagePtr = -1;
-
-                    try {
-                        pagePtr = pageMemEx.acquirePage(grp.groupId(), pageId);
-                    }
-                    finally {
-                        if (pagePtr != -1)
-                            pageMemEx.releasePage(grp.groupId(), pageId, pagePtr);
-                    }
+                    return null;
                 }
-            }
+            );
         }
     }
 
@@ -194,14 +231,14 @@ public class LoadAllWarmUpStrategy implements WarmUpStrategy<LoadAllWarmUpConfig
             for (int j = -1; j < locParts.size() && availableLoadPageCnt > 0; j++) {
                 int p = j == -1 ? INDEX_PARTITION : locParts.get(j).id();
 
-                long partPageCnt = grp.shared().pageStore().pages(grp.groupId(), p);
+                int partPageCnt = grp.shared().pageStore().pages(grp.groupId(), p);
 
                 if (partPageCnt > 0) {
-                    long pageCnt = (availableLoadPageCnt - partPageCnt) >= 0 ? partPageCnt : availableLoadPageCnt;
+                    int pageCnt = (availableLoadPageCnt - partPageCnt) >= 0 ? partPageCnt : (int)availableLoadPageCnt;
 
                     availableLoadPageCnt -= pageCnt;
 
-                    loadableGrps.computeIfAbsent(grp, grpCtx -> new ArrayList<>()).add(new LoadPartition(p, pageCnt));
+                    loadableGrps.computeIfAbsent(grp, grpCtx -> new ArrayList<>()).add(new LoadPartition(p, pageCnt, 0));
                 }
             }
         }
@@ -217,20 +254,25 @@ public class LoadAllWarmUpStrategy implements WarmUpStrategy<LoadAllWarmUpConfig
         private final int part;
 
         /** Number of pages to load. */
-        private final long pages;
+        private final int pages;
+
+        /** Index of first page to load. */
+        private final int startPageIdx;
 
         /**
          * Constructor.
          *
          * @param part Partition id.
          * @param pages Number of pages to load.
+         * @param startPageIdx Index of first page to load.
          */
-        public LoadPartition(int part, long pages) {
+        public LoadPartition(int part, int pages, int startPageIdx) {
             assert part >= 0 : "Partition id cannot be negative.";
             assert pages > 0 : "Number of pages to load must be greater than zero.";
 
             this.part = part;
             this.pages = pages;
+            this.startPageIdx = startPageIdx;
         }
 
         /**
@@ -247,8 +289,17 @@ public class LoadAllWarmUpStrategy implements WarmUpStrategy<LoadAllWarmUpConfig
          *
          * @return Number of pages to load.
          */
-        public long pages() {
+        public int pages() {
             return pages;
+        }
+
+        /**
+         * Return index of first page to load.
+         *
+         * @return Index of first page to load.
+         */
+        public int startPageIdx() {
+            return startPageIdx;
         }
 
         /** {@inheritDoc} */

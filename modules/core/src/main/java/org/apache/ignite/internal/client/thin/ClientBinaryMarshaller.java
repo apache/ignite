@@ -24,6 +24,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
 
@@ -97,23 +98,22 @@ class ClientBinaryMarshaller {
 
     /** Create new marshaller implementation. */
     private GridBinaryMarshaller createImpl(BinaryConfiguration binCfg) {
-        IgniteConfiguration igniteCfg = new IgniteConfiguration();
-
         if (binCfg == null) {
             binCfg = new BinaryConfiguration();
 
             binCfg.setCompactFooter(false);
         }
 
-        igniteCfg.setBinaryConfiguration(binCfg);
-
-        BinaryContext ctx = new BinaryContext(metaHnd, igniteCfg, NullLogger.INSTANCE);
-
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(marshCtx);
 
-        ctx.configure(marsh, binCfg);
+        BinaryContext ctx = U.binaryContext(
+            metaHnd,
+            marsh,
+            new IgniteConfiguration().setBinaryConfiguration(binCfg),
+            NullLogger.INSTANCE
+        );
 
         ctx.registerUserTypesSchema();
 

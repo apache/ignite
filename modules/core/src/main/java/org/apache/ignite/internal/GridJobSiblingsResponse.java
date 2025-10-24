@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,9 +34,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridJobSiblingsResponse implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @GridDirectTransient
     private Collection<ComputeJobSibling> siblings;
 
@@ -45,7 +41,7 @@ public class GridJobSiblingsResponse implements Message {
     private byte[] siblingsBytes;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridJobSiblingsResponse() {
         // No-op.
@@ -79,11 +75,6 @@ public class GridJobSiblingsResponse implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
@@ -96,7 +87,7 @@ public class GridJobSiblingsResponse implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByteArray("siblingsBytes", siblingsBytes))
+                if (!writer.writeByteArray(siblingsBytes))
                     return false;
 
                 writer.incrementState();
@@ -110,12 +101,9 @@ public class GridJobSiblingsResponse implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                siblingsBytes = reader.readByteArray("siblingsBytes");
+                siblingsBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -124,7 +112,7 @@ public class GridJobSiblingsResponse implements Message {
 
         }
 
-        return reader.afterMessageRead(GridJobSiblingsResponse.class);
+        return true;
     }
 
     /** {@inheritDoc} */

@@ -23,6 +23,7 @@ import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -81,7 +82,7 @@ public class ClusterMetricsSnapshotSerializeCompatibilityTest extends GridCommon
     private OptimizedMarshaller marshaller() {
         U.clearClassCache();
 
-        OptimizedMarshaller marsh = new OptimizedMarshaller();
+        OptimizedMarshaller marsh = Marshallers.optimized();
 
         marsh.setContext(new MarshallerContextTestImpl());
 

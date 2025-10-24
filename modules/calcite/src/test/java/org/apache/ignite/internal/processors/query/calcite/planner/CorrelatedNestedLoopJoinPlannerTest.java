@@ -22,7 +22,9 @@ import java.util.function.Predicate;
 
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rex.RexFieldAccess;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.ExactBounds;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
@@ -32,6 +34,9 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.junit.Test;
+
+import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
+import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
 
 /**
  *
@@ -118,6 +123,36 @@ public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
             .and(hasChildThat(isInstanceOf(IgniteFilter.class)).negate());
 
         assertPlan(sql, publicSchema, check);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testJoinPushExpressionRule() throws Exception {
+        IgniteSchema publicSchema = createSchema(
+            createTable("EMP", 100, IgniteDistributions.broadcast(),
+                "ID", INTEGER, "NAME", VARCHAR, "DEPTNO", INTEGER),
+            createTable("DEPT", 10, IgniteDistributions.broadcast(),
+                "DEPTNO", INTEGER, "NAME", VARCHAR)
+        );
+
+        String sql = "select /*+ CNL_JOIN */ d.deptno, e.deptno " +
+            "from dept d, emp e " +
+            "where d.deptno + e.deptno = 2";
+
+        assertPlan(sql, publicSchema, isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
+            .and(cnlj -> "=(+($0, $1), 2)".equals(cnlj.getCondition().toString()))
+            .and(cnlj -> cnlj.getJoinType() == JoinRelType.INNER)
+            .and(cnlj -> cnlj.getVariablesSet().size() == 1)
+            .and(input(0, isTableScan("DEPT")
+                .and(t -> t.requiredColumns().equals(ImmutableBitSet.of(0)))
+            ))
+            .and(input(1, isTableScan("EMP")
+                .and(t -> t.requiredColumns().equals(ImmutableBitSet.of(2)))
+                .and(t -> "=(+($cor1.DEPTNO, $t0), 2)".equals(t.condition().toString()))
+            ))
+        );
     }
 
     /** */

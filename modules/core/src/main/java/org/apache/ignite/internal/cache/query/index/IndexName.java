@@ -85,4 +85,9 @@ public class IndexName {
     public String cacheName() {
         return cacheName;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return fullName();
+    }
 }

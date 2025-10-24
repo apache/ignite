@@ -42,9 +42,10 @@ import org.apache.ignite.compute.ComputeLoadBalancer;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.GridClosureCallMode;
-import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInternalWrapper;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -954,6 +955,16 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         return partId;
     }
 
+    /** @param ctx Binary context. */
+    public void onBinaryContextCreated(BinaryContext ctx) {
+        ctx.registerBinarilizableSystemClass(C1.class);
+        ctx.registerBinarilizableSystemClass(C1MLA.class);
+        ctx.registerBinarilizableSystemClass(C2.class);
+        ctx.registerBinarilizableSystemClass(C2MLA.class);
+        ctx.registerBinarilizableSystemClass(C4.class);
+        ctx.registerBinarilizableSystemClass(C4MLA.class);
+    }
+
     /**
      *
      */
@@ -1564,7 +1575,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      *
      */
     public static class C1<T, R> implements ComputeJob, Binarylizable, GridNoImplicitInjection,
-        GridInternalWrapper<IgniteClosure> {
+        IgniteInternalWrapper<IgniteClosure> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1619,7 +1630,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteClosure userObject() {
+        @Override public IgniteClosure delegate() {
             return job;
         }
 
@@ -1666,7 +1677,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      *
      */
     public static class C2<R> implements ComputeJob, Binarylizable, GridNoImplicitInjection,
-        GridInternalWrapper<Callable> {
+        IgniteInternalWrapper<Callable> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1714,7 +1725,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Callable userObject() {
+        @Override public Callable delegate() {
             return c;
         }
 
@@ -1758,7 +1769,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    public static class C4 implements ComputeJob, Binarylizable, GridNoImplicitInjection, GridInternalWrapper<Runnable> {
+    public static class C4 implements ComputeJob, Binarylizable, GridNoImplicitInjection, IgniteInternalWrapper<Runnable> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1803,7 +1814,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public Runnable userObject() {
+        @Override public Runnable delegate() {
             return r;
         }
 

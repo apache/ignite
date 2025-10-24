@@ -462,10 +462,10 @@ public class CacheGroupContext {
     }
 
     /**
-     * @return {@code True} if cache created by user.
+     * @return Cache type.
      */
-    public boolean userCache() {
-        return cacheType.userCache();
+    public CacheType cacheType() {
+        return cacheType;
     }
 
     /**
@@ -1342,6 +1342,11 @@ public class CacheGroupContext {
     /** */
     public boolean isPreparedToStop() {
         return preparedToStop;
+    }
+
+    /** */
+    public void applyRecoveryData(CacheGroupRecoveryState grpState) {
+        top.applyRecoveryData(grpState);
     }
 
     /**

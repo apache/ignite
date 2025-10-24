@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
@@ -35,51 +33,46 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionable;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Get response.
  */
 public class GridNearGetResponse extends GridCacheIdMessage implements GridCacheDeployable, GridCacheVersionable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Future ID. */
+    @Order(value = 4, method = "futureId")
     private IgniteUuid futId;
 
     /** Sub ID. */
+    @Order(5)
     private IgniteUuid miniId;
 
     /** Version. */
+    @Order(value = 6, method = "version")
     private GridCacheVersion ver;
 
     /** Result. */
     @GridToStringInclude
-    @GridDirectCollection(GridCacheEntryInfo.class)
+    @Order(7)
     private Collection<GridCacheEntryInfo> entries;
 
     /** Keys to retry due to ownership shift. */
     @GridToStringInclude
-    @GridDirectCollection(int.class)
+    @Order(value = 8, method = "invalidPartitions")
     private Collection<Integer> invalidParts = new GridLeanSet<>();
 
     /** Topology version if invalid partitions is not empty. */
+    @Order(value = 9, method = "topologyVersion")
     private AffinityTopologyVersion topVer;
 
-    /** Error. */
-    @GridDirectTransient
-    private IgniteCheckedException err;
-
-    /** Serialized error. */
-    private byte[] errBytes;
+    /** Error message. */
+    @Order(value = 10, method = "errorMessage")
+    private @Nullable ErrorMessage errMsg;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearGetResponse() {
         // No-op.
@@ -116,15 +109,36 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
     }
 
     /**
+     * @param futId Future ID.
+     */
+    public void futureId(IgniteUuid futId) {
+        this.futId = futId;
+    }
+
+    /**
      * @return Sub ID.
      */
     public IgniteUuid miniId() {
         return miniId;
     }
 
+    /**
+     * @param miniId Sub ID.
+     */
+    public void miniId(IgniteUuid miniId) {
+        this.miniId = miniId;
+    }
+
     /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return ver;
+    }
+
+    /**
+     * @param ver Version.
+     */
+    public void version(GridCacheVersion ver) {
+        this.ver = ver;
     }
 
     /**
@@ -149,6 +163,13 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
     }
 
     /**
+     * @param invalidParts Failed filter set.
+     */
+    public void invalidPartitions(Collection<Integer> invalidParts) {
+        this.invalidParts = invalidParts;
+    }
+
+    /**
      * @param invalidParts Partitions to retry due to ownership shift.
      * @param topVer Topology version.
      */
@@ -164,16 +185,38 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
         return topVer != null ? topVer : super.topologyVersion();
     }
 
+    /**
+     * @param topVer Topology version if this response has invalid partitions.
+     */
+    public void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
+    }
+
     /** {@inheritDoc} */
-    @Override public IgniteCheckedException error() {
-        return err;
+    @Override public @Nullable Throwable error() {
+        return ErrorMessage.error(errMsg);
     }
 
     /**
      * @param err Error.
      */
-    public void error(IgniteCheckedException err) {
-        this.err = err;
+    public void error(@Nullable Throwable err) {
+        if (err != null)
+            errMsg = new ErrorMessage(err);
+    }
+
+    /**
+     * @return Error message.
+     */
+    public @Nullable ErrorMessage errorMessage() {
+        return errMsg;
+    }
+
+    /**
+     * @param errMsg Error message.
+     */
+    public void errorMessage(@Nullable ErrorMessage errMsg) {
+        this.errMsg = errMsg;
     }
 
     /** {@inheritDoc}
@@ -187,9 +230,6 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
             for (GridCacheEntryInfo info : entries)
                 info.marshal(cctx);
         }
-
-        if (err != null && errBytes == null)
-            errBytes = U.marshal(ctx, err);
     }
 
     /** {@inheritDoc} */
@@ -202,148 +242,11 @@ public class GridNearGetResponse extends GridCacheIdMessage implements GridCache
             for (GridCacheEntryInfo info : entries)
                 info.unmarshal(cctx, ldr);
         }
-
-        if (errBytes != null && err == null)
-            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return addDepInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeCollection("entries", entries, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeByteArray("errBytes", errBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeIgniteUuid("futId", futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeCollection("invalidParts", invalidParts, MessageCollectionItemType.INT))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeIgniteUuid("miniId", miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeMessage("ver", ver))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                entries = reader.readCollection("entries", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                errBytes = reader.readByteArray("errBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                futId = reader.readIgniteUuid("futId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                invalidParts = reader.readCollection("invalidParts", MessageCollectionItemType.INT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                miniId = reader.readIgniteUuid("miniId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                topVer = reader.readAffinityTopologyVersion("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                ver = reader.readMessage("ver");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(GridNearGetResponse.class);
     }
 
     /** {@inheritDoc} */

@@ -702,10 +702,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
             }
         };
 
-        boolean loc = ctx.localNodeId().equals(taskNodeId);
-
         // 1. Create unique topic name.
-        Object topic = TOPIC_JOB_SIBLINGS.topic(ses.getId(), topicIdGen.getAndIncrement());
+        long topicId = topicIdGen.getAndIncrement();
+        Object topic = TOPIC_JOB_SIBLINGS.topic(ses.getId(), topicId);
 
         try {
             // 2. Register listener.
@@ -713,9 +712,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             // 3. Send message.
             ctx.io().sendToGridTopic(taskNode, TOPIC_JOB_SIBLINGS,
-                new GridJobSiblingsRequest(ses.getId(),
-                    loc ? topic : null,
-                    loc ? null : U.marshal(marsh, topic)),
+                new GridJobSiblingsRequest(ses.getId(), topicId),
                 SYSTEM_POOL);
 
             // 4. Listen to discovery events.

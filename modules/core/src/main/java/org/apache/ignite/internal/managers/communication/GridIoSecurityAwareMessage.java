@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -29,17 +28,13 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class GridIoSecurityAwareMessage extends GridIoMessage {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     public static final short TYPE_CODE = 174;
 
     /** Security subject id that will be used during message processing on an remote node. */
     private UUID secSubjId;
 
     /**
-     * No-op constructor to support {@link Externalizable} interface.
-     * This constructor is not meant to be used for other purposes.
+     * Default constructor.
      */
     public GridIoSecurityAwareMessage() {
         // No-op.
@@ -98,7 +93,7 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
 
         switch (writer.state()) {
             case 8:
-                if (!writer.writeUuid("secSubjId", secSubjId))
+                if (!writer.writeUuid(secSubjId))
                     return false;
 
                 writer.incrementState();
@@ -112,15 +107,12 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 8:
-                secSubjId = reader.readUuid("secSubjId");
+                secSubjId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -129,6 +121,6 @@ public class GridIoSecurityAwareMessage extends GridIoMessage {
 
         }
 
-        return reader.afterMessageRead(GridIoSecurityAwareMessage.class);
+        return true;
     }
 }

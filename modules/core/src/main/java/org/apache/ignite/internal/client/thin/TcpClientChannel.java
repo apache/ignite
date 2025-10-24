@@ -51,8 +51,6 @@ import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.ClientReconnectedException;
 import org.apache.ignite.client.events.ConnectionDescription;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
@@ -93,6 +91,7 @@ import static org.apache.ignite.internal.client.thin.ProtocolVersion.V1_7_0;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.AUTHORIZATION;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.BITMAP_FEATURES;
 import static org.apache.ignite.internal.client.thin.ProtocolVersionFeature.PARTITION_AWARENESS;
+import static org.apache.ignite.internal.processors.platform.client.ClientStatus.SECURITY_VIOLATION;
 
 /**
  * Implements {@link ClientChannel} over TCP.
@@ -570,14 +569,13 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             err = null;
             res = msgSize > hdrSize ? buf : null;
         }
-        else if (status == ClientStatus.SECURITY_VIOLATION) {
-            err = new ClientAuthorizationException();
-            res = null;
-        }
         else {
             String errMsg = ClientUtils.createBinaryReader(null, dataInput).readString();
 
-            err = new ClientServerError(errMsg, status, resId);
+            err = status == SECURITY_VIOLATION
+                ? new ClientAuthorizationException(errMsg)
+                : new ClientServerError(errMsg, status, resId);
+
             res = null;
         }
 
@@ -840,9 +838,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Send handshake request. */
     private void handshakeReq(ProtocolVersion proposedVer, String user, String pwd,
         Map<String, String> userAttrs) throws ClientConnectionException {
-        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), new IgniteConfiguration(), null);
-
-        try (BinaryWriterEx writer = BinaryUtils.writer(ctx, BinaryStreams.outputStream(32), null)) {
+        try (BinaryWriterEx writer = BinaryUtils.writer(U.binaryContext(null), BinaryStreams.outputStream(32), null)) {
             ProtocolContext protocolCtx = protocolContextFromVersion(proposedVer);
 
             writer.writeInt(0); // reserve an integer for the request size

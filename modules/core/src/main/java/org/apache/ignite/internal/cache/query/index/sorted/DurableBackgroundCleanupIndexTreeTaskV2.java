@@ -52,7 +52,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
@@ -259,7 +258,7 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
                         }
                     };
 
-                    new IgniteThread(w).start();
+                    U.newThread(w).start();
 
                     this.worker = w;
 

@@ -59,7 +59,7 @@ public class TimeCalculationExecutionTest extends AbstractExecutionTest {
 
         rootNode.hasNext();
 
-        srcNode.latch.await(1_000L, TimeUnit.MILLISECONDS);
+        assertTrue(srcNode.latch.await(1_000L, TimeUnit.MILLISECONDS));
 
         long execTime0 = rootNode.execTime();
         long idleTime0 = rootNode.idleTime();

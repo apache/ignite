@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -49,8 +46,6 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
      * @param part Partition.
      */
     public KeyCacheObjectImpl(Object val, byte[] valBytes, int part) {
-        assert val != null;
-
         this.val = val;
         this.valBytes = valBytes;
         this.part = part;
@@ -77,7 +72,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
+            valBytes = ctx.marshal(val);
 
         return valBytes;
     }
@@ -107,12 +102,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
+    @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
         return this;
     }
 
@@ -124,64 +114,9 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
     }
 
     /** {@inheritDoc} */
-    @Override public short directType() {
-        return 90;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 1:
-                part = reader.readInt("part");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(KeyCacheObjectImpl.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 1:
-                if (!writer.writeInt("part", part))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public void prepareMarshal(CacheObjectValueContext ctx) throws IgniteCheckedException {
         if (valBytes == null)
-            valBytes = ctx.kernalContext().cacheObjects().marshal(ctx, val);
+            valBytes = ctx.marshal(val);
     }
 
     /** {@inheritDoc} */
@@ -189,7 +124,7 @@ public class KeyCacheObjectImpl extends CacheObjectAdapter implements KeyCacheOb
         if (val == null) {
             assert valBytes != null;
 
-            val = ctx.kernalContext().cacheObjects().unmarshal(ctx, valBytes, ldr);
+            val = ctx.unmarshal(valBytes, ldr);
         }
     }
 

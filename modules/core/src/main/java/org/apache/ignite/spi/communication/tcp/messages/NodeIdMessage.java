@@ -17,32 +17,25 @@
 
 package org.apache.ignite.spi.communication.tcp.messages;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 
 /**
  * Node ID message.
  */
-@IgniteCodeGeneratingFail
 public class NodeIdMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Message body size (with message type) in bytes. */
-    static final int MESSAGE_SIZE = 16;
+    static final int MESSAGE_SIZE = 1 + 16;  // null flag, UUID value.
 
     /** Full message size (with message type) in bytes. */
     public static final int MESSAGE_FULL_SIZE = MESSAGE_SIZE + DIRECT_TYPE_SIZE;
 
     /** */
-    private byte[] nodeIdBytes;
+    @Order(0)
+    private UUID nodeId;
 
     /** */
     public NodeIdMessage() {
@@ -55,47 +48,21 @@ public class NodeIdMessage implements Message {
     public NodeIdMessage(UUID nodeId) {
         assert nodeId != null;
 
-        nodeIdBytes = U.uuidToBytes(nodeId);
-
-        assert nodeIdBytes.length == MESSAGE_SIZE : "Node ID size must be " + MESSAGE_SIZE;
+        this.nodeId = nodeId;
     }
 
     /**
      * @return Node ID bytes.
      */
-    public byte[] nodeIdBytes() {
-        return nodeIdBytes;
+    public UUID nodeId() {
+        return nodeId;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        assert nodeIdBytes.length == MESSAGE_SIZE;
-
-        if (buf.remaining() < MESSAGE_FULL_SIZE)
-            return false;
-
-        TcpCommunicationSpi.writeMessageType(buf, directType());
-
-        buf.put(nodeIdBytes);
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        if (buf.remaining() < MESSAGE_SIZE)
-            return false;
-
-        nodeIdBytes = new byte[MESSAGE_SIZE];
-
-        buf.get(nodeIdBytes);
-
-        return true;
+    /**
+     * @param nodeId Node ID bytes.
+     */
+    public void nodeId(UUID nodeId) {
+        this.nodeId = nodeId;
     }
 
     /** {@inheritDoc} */

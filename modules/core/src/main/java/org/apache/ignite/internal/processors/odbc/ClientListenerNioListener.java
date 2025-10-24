@@ -23,13 +23,12 @@ import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -42,7 +41,6 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
@@ -271,7 +269,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
                 ", resp=" + resp.status() + ']');
         }
 
-        GridNioFuture<?> fut = ses.send(parser.encode(resp));
+        IgniteInternalFuture<?> fut = ses.send(parser.encode(resp));
 
         fut.listen(() -> {
             if (fut.error() == null)
@@ -357,15 +355,11 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<Clie
      * @param msg Message bytes.
      */
     private void onHandshake(GridNioSession ses, ClientMessage msg) {
-        BinaryContext ctx = new BinaryContext(BinaryUtils.cachingMetadataHandler(), new IgniteConfiguration(), null);
-
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(new MarshallerContextImpl(null, null));
 
-        ctx.configure(marsh);
-
-        BinaryReaderEx reader = BinaryUtils.reader(ctx, BinaryStreams.inputStream(msg.payload()), null, true);
+        BinaryReaderEx reader = BinaryUtils.reader(U.binaryContext(marsh), BinaryStreams.inputStream(msg.payload()), null, true);
 
         byte cmd = reader.readByte();
 

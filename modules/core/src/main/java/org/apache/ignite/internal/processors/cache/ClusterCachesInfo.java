@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.File;
 import java.io.Serializable;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
@@ -172,6 +173,9 @@ public class ClusterCachesInfo {
 
     /** Flag that caches were already filtered out. */
     private final AtomicBoolean alreadyFiltered = new AtomicBoolean();
+
+    /** */
+    @Nullable private volatile ClusterCacheGroupRecoveryData clusterCacheGrpRecoveryData;
 
     /**
      * @param ctx Context.
@@ -1201,14 +1205,19 @@ public class ClusterCachesInfo {
         if (!CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration()))
             return false;
 
-        String cacheDir = ctx.pdsFolderResolver().fileTree().cacheStorage(ccfg).getName();
+        for (File cacheStorage : ctx.pdsFolderResolver().fileTree().cacheStorages(ccfg)) {
+            String cacheDir = cacheStorage.getName();
 
-        try {
-            return !cacheDir.endsWith(CU.cacheOrGroupName(ccfg));
+            try {
+                if (!cacheDir.endsWith(CU.cacheOrGroupName(ccfg)))
+                    return true;
+            }
+            catch (InvalidPathException ignored) {
+                return true;
+            }
         }
-        catch (InvalidPathException ignored) {
-            return true;
-        }
+
+        return false;
     }
 
     /**
@@ -1478,7 +1487,9 @@ public class ClusterCachesInfo {
             templates,
             cacheGrps,
             ctx.discovery().clientNodesMap(),
-            restarting);
+            restarting,
+            clusterCacheGrpRecoveryData
+        );
     }
 
     /**
@@ -1710,6 +1721,8 @@ public class ClusterCachesInfo {
                 grpData.config().getNodeFilter(),
                 grpData.config().getCacheMode());
         }
+
+        clusterCacheGrpRecoveryData = cachesData.clusterCacheGroupRecoveryData();
     }
 
     /**
@@ -2192,6 +2205,8 @@ public class ClusterCachesInfo {
     private String processJoiningNode(CacheJoinNodeDiscoveryData joinData, UUID nodeId, boolean locJoin) {
         registerNewCacheTemplates(joinData, nodeId);
 
+        processJoiningNodeClusterCacheGroupRecoveryData(joinData.clusterCacheGroupRecoveryData());
+
         Map<DynamicCacheDescriptor, QuerySchemaPatch> patchesToApply = new HashMap<>();
 
         boolean hasSchemaPatchConflict = false;
@@ -2594,7 +2609,11 @@ public class ClusterCachesInfo {
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg,
             "storagePath", "Storage path",
-            cfg.getStoragePath(), startCfg.getStoragePath(), true);
+            cfg.getStoragePaths(), startCfg.getStoragePaths(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg,
+            "indexPath", "Index path",
+            cfg.getIndexPath(), startCfg.getIndexPath(), true);
     }
 
     /**
@@ -2793,6 +2812,32 @@ public class ClusterCachesInfo {
      */
     public void removeRestartingCaches() {
         restartingCaches.clear();
+    }
+
+    /** */
+    @Nullable public ClusterCacheGroupRecoveryData clusterCacheGroupRecoveryData() {
+        return clusterCacheGrpRecoveryData;
+    }
+
+    /** */
+    public void clusterCacheGroupRecoveryData(ClusterCacheGroupRecoveryData data) {
+        clusterCacheGrpRecoveryData = data;
+    }
+
+    /** */
+    private void processJoiningNodeClusterCacheGroupRecoveryData(ClusterCacheGroupRecoveryData joiningNodeData) {
+        if (joiningNodeData == null)
+            return;
+
+        DiscoveryDataClusterState clusterState = ctx.state().clusterState();
+
+        if (clusterState.transition() || clusterState.state().active())
+            return;
+
+        ClusterCacheGroupRecoveryData locData = clusterCacheGrpRecoveryData;
+
+        if (locData == null || joiningNodeData.isMoreRelevantThan(locData))
+            clusterCacheGrpRecoveryData = joiningNodeData;
     }
 
     /**

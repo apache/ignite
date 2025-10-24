@@ -112,7 +112,6 @@ import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.IgniteConfigurationIterable;
 import org.apache.ignite.internal.managers.systemview.walker.ConfigurationViewWalker;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProviderImpl;
 import org.apache.ignite.internal.processors.GridProcessor;
@@ -205,6 +204,7 @@ import org.apache.ignite.marshaller.IgniteMarshallerClassFilter;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.IgnitePlugin;
@@ -1416,8 +1416,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         Marshaller marsh = ctx.marshaller();
 
         marsh.setContext(ctx.marshallerContext());
-
-        MarshallerUtils.setNodeName(marsh, ctx.igniteInstanceName());
+        marsh.nodeName(ctx.igniteInstanceName());
     }
 
     /** */
@@ -1535,7 +1534,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         add(ATTR_BUILD_DATE, BUILD_TSTAMP_STR);
         add(ATTR_MARSHALLER, ctx.marshaller().getClass().getName());
         add(ATTR_MARSHALLER_USE_DFLT_SUID,
-            getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, OptimizedMarshaller.USE_DFLT_SUID));
+            getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, Marshallers.USE_DFLT_SUID));
         add(ATTR_LATE_AFFINITY_ASSIGNMENT, cfg.isLateAffinityAssignment());
 
         add(ATTR_MARSHALLER_COMPACT_FOOTER, cfg.getBinaryConfiguration() == null ?

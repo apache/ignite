@@ -73,4 +73,14 @@ public class FairFifoPageEvictionTracker extends PageAbstractEvictionTracker {
     @Override protected synchronized boolean checkTouch(long pageId) {
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override protected void linkFragmentPages(int pageTrackingIdx, int nextPageTrackingIdx) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int getFragmentLink(int pageTrackingIdx) {
+        return 0;
+    }
 }

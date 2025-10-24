@@ -23,11 +23,11 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.client.thin.ClientClusterImpl;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
-import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.management.api.NativeCommand;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class SetStateCommand implements LocalCommand<SetStateCommandArg, Boolean> {
+public class SetStateCommand implements NativeCommand<SetStateCommandArg, Boolean> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Change cluster state";

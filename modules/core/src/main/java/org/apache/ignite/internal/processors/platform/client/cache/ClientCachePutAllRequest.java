@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -43,10 +42,15 @@ public class ClientCachePutAllRequest extends ClientCacheDataRequest implements 
 
         int cnt = reader.readInt();
 
-        map = new LinkedHashMap<>(cnt);
+        Object[] keys = new Object[cnt];
+        Object[] vals = new Object[cnt];
 
-        for (int i = 0; i < cnt; i++)
-            map.put(reader.readObjectDetached(), reader.readObjectDetached());
+        for (int i = 0; i < cnt; i++) {
+            keys[i] = reader.readObjectDetached();
+            vals[i] = reader.readObjectDetached();
+        }
+
+        map = new ImmutableArrayMap<>(keys, vals);
     }
 
     /** {@inheritDoc} */
