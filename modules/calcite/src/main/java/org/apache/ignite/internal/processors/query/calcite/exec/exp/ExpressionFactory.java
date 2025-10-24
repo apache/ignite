@@ -61,7 +61,6 @@ public interface ExpressionFactory<Row> {
      * @param left Collations of left row.
      * @param right Collations of right row.
      * @param allowNulls Matching null fields. Usually, NULL <> NULL in SQL. Except IS DISTINCT / IS NOT DISTINCT.
-     *                   If {@code null}, ignored.
      * @return Rows comparator.
      */
     Comparator<Row> comparator(
