@@ -27,8 +27,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
-import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
-import org.apache.ignite.internal.processors.query.schema.SchemaSqlViewManager;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -61,9 +59,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
         super(ctx);
     }
 
-    /** Rolling upgrade disabled flag. */
-    private volatile boolean disabled;
-
     /** Last joining node. */
     private ClusterNode lastJoiningNode = null;
 
@@ -76,24 +71,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(new DistributedMetastorageLifecycleListener() {
-            @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
-                synchronized (lock) {
-                    try {
-                        disabled = metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY) != null;
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-                }
-
-                metastorage.listen(ROLLING_UPGRADE_VERSIONS_KEY::equals,
-                    (key, oldVal, newVal) -> {
-                    synchronized (lock) {
-                        disabled = newVal == null;
-                    }
-                });
-            }
-
             @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
                 RollingUpgradeProcessor.this.metastorage = metastorage;
             }
@@ -106,14 +83,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
             lastJoiningNode = node;
 
             lastJoiningNodeTimestamp = U.currentTimeMillis();
-
-            IgnitePair<IgniteProductVersion> minMaxVerPair = minMaxVersionSupplier.get();
-
-            IgniteProductVersion ringMinVer = minMaxVerPair.get1();
-
-            if (disabled && !ringMinVer.equals(node.version()))
-                return new IgniteNodeValidationResult(node.id(), "Rolling upgrade is disabled. " +
-                        "Allowed version for joining: " + ringMinVer.major() + "." + ringMinVer.minor() + "." + ringMinVer.maintenance());
         }
         return null;
     }
@@ -135,16 +104,19 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
 
         IgnitePair<IgniteProductVersion> newPair = F.pair(curVer, target);
 
-        synchronized (lock) {
-            if (!metastorage.compareAndSet(ROLLING_UPGRADE_VERSIONS_KEY, null, newPair))
-                throw new IgniteCheckedException("Rolling upgrade is already enabled with a different target version: "
-                    + metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY));
+        if (!metastorage.compareAndSet(ROLLING_UPGRADE_VERSIONS_KEY, null, newPair)) {
+            IgnitePair<IgniteProductVersion> existingVerPair = metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
 
-            if (log.isInfoEnabled())
-                log.info("Rolling upgrade enabled [current=" + curVer + ", target=" + target + ']');
+            String errMsg = "Rolling upgrade is already enabled with a different current and target version: " +
+                existingVerPair.get1() + " , " + existingVerPair.get2();
 
-            disabled = false;
+            log.warning(errMsg);
+
+            throw new IgniteCheckedException(errMsg);
         }
+
+        if (log.isInfoEnabled())
+            log.info("Rolling upgrade enabled [current=" + curVer + ", target=" + target + ']');
     }
 
     /**
@@ -155,13 +127,13 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     public void disable() throws IgniteCheckedException {
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
 
-        synchronized (lock) {
-            if (disabled) {
-                if (log.isInfoEnabled())
-                    log.info("Rolling upgrade is already disabled");
-                return;
-            }
+        if (metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY) == null) {
+            if (log.isInfoEnabled())
+                log.info("Rolling upgrade is already disabled");
+            return;
+        }
 
+        synchronized (lock) {
             if (lastJoiningNode != null && U.currentTimeMillis() - lastJoiningNodeTimestamp > JOINING_TIMEOUT)
                 lastJoiningNode = null;
 
@@ -182,9 +154,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
                 throw new IgniteCheckedException(msg);
             }
 
-            metastorage.removeAsync(ROLLING_UPGRADE_VERSIONS_KEY);
-
-            disabled = true;
+            metastorage.remove(ROLLING_UPGRADE_VERSIONS_KEY);
 
             if (log.isInfoEnabled())
                 log.info("Rolling upgrade disabled");
@@ -217,7 +187,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
 
     /** Сhecks whether the cluster is in the rolling upgrade mode. */
     public boolean enabled() {
-        return !disabled;
+        return versions() != null;
     }
 
     /**
