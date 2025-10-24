@@ -34,21 +34,18 @@ public class CalciteErrorMessage extends ErrorMessage implements CalciteMessage 
     private long fragmentId;
 
     /** */
-    @Order(3)
-    private ErrorMessage errMsg;
-
-    /** */
     public CalciteErrorMessage() {
         // No-op.
     }
 
     /** */
     public CalciteErrorMessage(UUID queryId, long fragmentId, Throwable err) {
+        super(err);
+
         assert err != null;
 
         this.queryId = queryId;
         this.fragmentId = fragmentId;
-        errMsg = new ErrorMessage(err);
     }
 
     /**
@@ -73,13 +70,6 @@ public class CalciteErrorMessage extends ErrorMessage implements CalciteMessage 
     /** */
     public void fragmentId(long fragmentId) {
         this.fragmentId = fragmentId;
-    }
-
-    /**
-     * @return Marshaled Throwable.
-     */
-    public Throwable error() {
-        return errMsg.toThrowable();
     }
 
     /** {@inheritDoc} */
