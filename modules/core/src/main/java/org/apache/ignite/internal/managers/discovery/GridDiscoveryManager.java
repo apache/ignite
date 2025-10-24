@@ -311,9 +311,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Local node compatibility consistent ID. */
     private Serializable consistentId;
 
-    /** Data center ID. */
-    private final String dcId = IgniteSystemProperties.getString(IGNITE_DATA_CENTER_ID);
-
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
@@ -488,6 +485,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     @Override public void start() throws IgniteCheckedException {
         ctx.addNodeAttribute(ATTR_OFFHEAP_SIZE, requiredOffheap());
         ctx.addNodeAttribute(ATTR_DATA_REGIONS_OFFHEAP_SIZE, configuredOffheap());
+
+        // TODO When exposing to public interfaces, replace the retrieval in IgniteClusterNode implementations.
+        String dcId = IgniteSystemProperties.getString(IGNITE_DATA_CENTER_ID);
 
         if (dcId != null)
             ctx.addNodeAttribute(ATTR_DATA_CENTER_ID, dcId);
@@ -2256,11 +2256,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     public void consistentId(final Serializable consistentId) {
         this.consistentId = consistentId;
-    }
-
-    /** @return Data center ID. */
-    @Nullable public String dataCenterId() {
-        return dcId;
     }
 
     /** @return Topology version. */
