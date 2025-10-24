@@ -70,14 +70,14 @@ public class SnapshotChecker {
     }
 
     /** */
-    public CompletableFuture<IncrementalSnapshotVerificationTaskResult> checkIncrementalSnapshot(
+    public CompletableFuture<IncrementalSnapshotVerifyResult> checkIncrementalSnapshot(
         SnapshotFileTree sft,
         int incIdx
     ) {
         assert incIdx > 0;
 
         return CompletableFuture.supplyAsync(
-            new IncrementalSnapshotVerificationTask(kctx.grid(), log, sft, incIdx),
+            new IncrementalSnapshotVerify(kctx.grid(), log, sft, incIdx),
             executor
         );
     }
@@ -86,7 +86,7 @@ public class SnapshotChecker {
     public IdleVerifyResult reduceIncrementalResults(
         SnapshotFileTree sft,
         int incIdx,
-        Map<ClusterNode, IncrementalSnapshotVerificationTaskResult> results,
+        Map<ClusterNode, IncrementalSnapshotVerifyResult> results,
         Map<ClusterNode, Exception> operationErrors
     ) {
         if (!operationErrors.isEmpty())
@@ -94,8 +94,8 @@ public class SnapshotChecker {
 
         IdleVerifyResult.Builder bldr = IdleVerifyResult.builder();
 
-        for (Map.Entry<ClusterNode, IncrementalSnapshotVerificationTaskResult> nodeRes: results.entrySet()) {
-            IncrementalSnapshotVerificationTaskResult res = nodeRes.getValue();
+        for (Map.Entry<ClusterNode, IncrementalSnapshotVerifyResult> nodeRes: results.entrySet()) {
+            IncrementalSnapshotVerifyResult res = nodeRes.getValue();
 
             if (!F.isEmpty(res.partiallyCommittedTxs()))
                 bldr.addPartiallyCommited(nodeRes.getKey(), res.partiallyCommittedTxs());
