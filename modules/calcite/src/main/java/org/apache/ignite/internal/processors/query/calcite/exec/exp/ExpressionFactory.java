@@ -33,7 +33,6 @@ import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Expression factory.
@@ -68,7 +67,7 @@ public interface ExpressionFactory<Row> {
     Comparator<Row> comparator(
         List<RelFieldCollation> left,
         List<RelFieldCollation> right,
-        @Nullable ImmutableBitSet allowNulls
+        ImmutableBitSet allowNulls
     );
 
     /**

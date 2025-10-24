@@ -80,7 +80,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Implements rex expression into a function object. Uses JaninoRexCompiler under the hood.
@@ -202,7 +201,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     @Override public Comparator<Row> comparator(
         List<RelFieldCollation> left,
         List<RelFieldCollation> right,
-        @Nullable ImmutableBitSet allowNulls
+        ImmutableBitSet allowNulls
     ) {
         if (F.isEmpty(left) || F.isEmpty(right) || left.size() != right.size())
             throw new IllegalArgumentException("Both inputs should be non-empty and have the same size: left="
@@ -234,7 +233,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                     Object c2 = hnd.get(rIdx, o2);
 
                     if (c1 == null && c2 == null && !hasNulls) {
-                        hasNulls = allowNulls == null || !allowNulls.get(i);
+                        hasNulls = !allowNulls.get(i);
 
                         continue;
                     }
