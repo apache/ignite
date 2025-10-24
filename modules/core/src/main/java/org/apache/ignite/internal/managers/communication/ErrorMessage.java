@@ -62,7 +62,7 @@ public class ErrorMessage implements Message {
     }
 
     /**
-     * Gets serialized bytes of the error. Should be called only once.
+     * Provides serialized bytes of the error. Should be called only once.
      *
      * @return Serialized error.
      * @see MessageWriter
@@ -80,7 +80,7 @@ public class ErrorMessage implements Message {
     }
 
     /**
-     * Serializes the error from {@code errBytes}. Should be called only once.
+     * Deserializes the error from {@code errBytes}. Should be called only once.
      *
      * @param errBytes Serialized error.
      * @see MessageWriter
