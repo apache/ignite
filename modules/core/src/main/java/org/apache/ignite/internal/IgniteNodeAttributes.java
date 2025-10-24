@@ -196,6 +196,9 @@ public final class IgniteNodeAttributes {
     /** Supported features. */
     public static final String ATTR_IGNITE_FEATURES = ATTR_PREFIX + ".features";
 
+    /** Data center ID. */
+    public static final String ATTR_DATA_CENTER_ID = ATTR_PREFIX + ".datacenter.id";
+
     /**
      * Enforces singleton.
      */

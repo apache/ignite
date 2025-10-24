@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -49,6 +48,7 @@ import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_CENTER_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 
@@ -628,7 +628,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         else
             consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
 
-        dcId = (String)attrs.get(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
+        dcId = (String)attrs.get(ATTR_DATA_CENTER_ID);
     }
 
     /** {@inheritDoc} */
