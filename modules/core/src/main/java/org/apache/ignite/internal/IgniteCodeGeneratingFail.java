@@ -24,9 +24,11 @@ import java.lang.annotation.Target;
 
 /**
  * Annotates fields that code generator should not be override.
+ * Deprecated, see {@link MessageProcessor} and {@link MessageSerializerGenerator} for details.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
+@Deprecated
 public @interface IgniteCodeGeneratingFail {
     // No-op.
 }

@@ -38,6 +38,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -45,7 +46,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -2260,7 +2260,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             TestRestoreConnectedSpi.startTest = false;
 
             for (int i = 1; i < 5; i++) {
-                TestRestoreConnectedSpi spi = new TestRestoreConnectedSpi(3);
+                TestRestoreConnectedSpi spi = new TestRestoreConnectedSpi(() ->
+                    discoMap.get(getTestIgniteInstanceName(3)).locNode.discoveryPort()
+                );
 
                 spi.setConnectionRecoveryTimeout(0);
 
@@ -2435,33 +2437,36 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         private long sleepEndTime;
 
         /** */
-        private long errNodeOrder;
+        private final Supplier<Integer> errPortSupplier;
 
         /** */
-        private ClusterNode errNext;
+        private int errNextPort;
 
-        /**
-         * @param errNodeOrder
-         */
-        TestRestoreConnectedSpi(long errNodeOrder) {
-            this.errNodeOrder = errNodeOrder;
+        /** */
+        TestRestoreConnectedSpi(Supplier<Integer> errPortSupplier) {
+            this.errPortSupplier = errPortSupplier;
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(ClusterNode node,
+        @Override protected void writeToSocket(
             Socket sock,
             OutputStream out,
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
-            if (startTest && !(msg instanceof TcpDiscoveryConnectionCheckMessage)) {
-                if (node.order() == errNodeOrder) {
-                    log.info("Fail write on message send [node=" + node.id() + ", msg=" + msg + ']');
+            // Test relies on an error in this thread only.
+            boolean ringMsgWorkerThread = Thread.currentThread().getName().startsWith("tcp-disco-msg-worker");
+
+            if (startTest && !(msg instanceof TcpDiscoveryConnectionCheckMessage) && ringMsgWorkerThread) {
+                int errPort = errPortSupplier.get();
+
+                if (sock.getPort() == errPort) {
+                    log.info("Fail write on message send [port=" + errPort + ", msg=" + msg + ']');
 
                     throw new SocketTimeoutException();
                 }
-                else if (locNode.order() == errNodeOrder) {
+                else if (locNode.discoveryPort() == errPort) {
                     if (sleepEndTime == 0) {
-                        errNext = node;
+                        errNextPort = sock.getPort();
 
                         sleepEndTime = System.currentTimeMillis() + 3000;
                     }
@@ -2482,8 +2487,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                         log.info("Stop sleep on message send: " + msg);
 
-                        if (node.equals(errNext)) {
-                            log.info("Fail write after sleep [node=" + node.id() + ", msg=" + msg + ']');
+                        if (sock.getPort() == errNextPort) {
+                            log.info("Fail write after sleep [port=" + sock.getPort() + ", msg=" + msg + ']');
 
                             throw new SocketTimeoutException();
                         }
@@ -2491,7 +2496,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }
             }
 
-            super.writeToSocket(node, sock, out, msg, timeout);
+            super.writeToSocket(sock, out, msg, timeout);
         }
     }
 

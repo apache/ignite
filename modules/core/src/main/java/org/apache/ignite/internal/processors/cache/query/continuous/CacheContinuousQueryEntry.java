@@ -361,11 +361,6 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public void prepare(GridDeploymentInfo depInfo) {
         this.depInfo = depInfo;
     }
@@ -417,19 +412,19 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMessage(isFiltered() ? null : key))
+                if (!writer.writeKeyCacheObject(isFiltered() ? null : key))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage(isFiltered() ? null : newVal))
+                if (!writer.writeCacheObject(isFiltered() ? null : newVal))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMessage(isFiltered() ? null : oldVal))
+                if (!writer.writeCacheObject(isFiltered() ? null : oldVal))
                     return false;
 
                 writer.incrementState();
@@ -495,7 +490,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 reader.incrementState();
 
             case 4:
-                key = reader.readMessage();
+                key = reader.readKeyCacheObject();
 
                 if (!reader.isLastRead())
                     return false;
@@ -503,7 +498,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 reader.incrementState();
 
             case 5:
-                newVal = reader.readMessage();
+                newVal = reader.readCacheObject();
 
                 if (!reader.isLastRead())
                     return false;
@@ -511,7 +506,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 reader.incrementState();
 
             case 6:
-                oldVal = reader.readMessage();
+                oldVal = reader.readCacheObject();
 
                 if (!reader.isLastRead())
                     return false;

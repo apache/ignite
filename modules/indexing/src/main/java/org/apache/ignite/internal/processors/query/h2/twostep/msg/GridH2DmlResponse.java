@@ -224,9 +224,5 @@ public class GridH2DmlResponse implements Message, GridCacheQueryMarshallable {
         return -56;
     }
 
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op
-    }
 }
 

@@ -813,11 +813,11 @@ public class QueryEntity implements Serializable {
      */
     private static void processAnnotationsInClass(boolean key, Class<?> cls, QueryEntityTypeDescriptor type,
         @Nullable QueryEntityClassProperty parent) {
-        if (U.isJdk(cls) || QueryUtils.isGeometryClass(cls)) {
+        if (U.isJdk(cls) || U.isGeometryClass(cls)) {
             if (parent == null && !key && QueryUtils.isSqlType(cls)) { // We have to index primitive _val.
                 String idxName = cls.getSimpleName() + "_" + QueryUtils.VAL_FIELD_NAME + "_idx";
 
-                type.addIndex(idxName, QueryUtils.isGeometryClass(cls) ?
+                type.addIndex(idxName, U.isGeometryClass(cls) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, QueryIndex.DFLT_INLINE_SIZE);
 
                 type.addFieldToIndex(idxName, QueryUtils.VAL_FIELD_NAME, 0, false);
@@ -896,7 +896,7 @@ public class QueryEntity implements Serializable {
                 if (cls != curCls)
                     idxName = cls.getSimpleName() + "_" + idxName;
 
-                desc.addIndex(idxName, QueryUtils.isGeometryClass(prop.type()) ?
+                desc.addIndex(idxName, U.isGeometryClass(prop.type()) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, sqlAnn.inlineSize());
 
                 desc.addFieldToIndex(idxName, prop.fullName(), 0, sqlAnn.descending());

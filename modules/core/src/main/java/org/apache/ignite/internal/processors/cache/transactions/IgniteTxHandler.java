@@ -271,11 +271,11 @@ public class IgniteTxHandler {
      * @param msg Finish message signed with incremental snapshot ID.
      */
     private void setIncrementalSnapshotIdIfRequired(IncrementalSnapshotAwareMessage msg) {
-        if (msg.txInrementalSnapshotId() != null) {
+        if (msg.txIncrementalSnapshotId() != null) {
             IgniteInternalTx tx = findTransactionByMessage(msg.payload());
 
             if (tx != null)
-                tx.incrementalSnapshotId(msg.txInrementalSnapshotId());
+                tx.incrementalSnapshotId(msg.txIncrementalSnapshotId());
         }
     }
 
@@ -1228,7 +1228,7 @@ public class IgniteTxHandler {
                     req.txState(nearTx.txState());
 
                 if (dhtTx != null && !F.isEmpty(dhtTx.invalidPartitions()))
-                    res.invalidPartitionsByCacheId(dhtTx.invalidPartitions());
+                    res.invalidPartitions(CU.convertInvalidPartitions(dhtTx.invalidPartitions()));
 
                 if (req.onePhaseCommit()) {
                     assert req.last();
@@ -1856,7 +1856,7 @@ public class IgniteTxHandler {
                 tx.state(PREPARED);
             }
 
-            res.invalidPartitionsByCacheId(tx.invalidPartitions());
+            res.invalidPartitions(CU.convertInvalidPartitions(tx.invalidPartitions()));
 
             if (tx.empty() && req.last()) {
                 tx.skipCompletedVersions(req.skipCompletedVersion());

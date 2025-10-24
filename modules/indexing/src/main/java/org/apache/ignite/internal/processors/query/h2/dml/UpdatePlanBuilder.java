@@ -30,7 +30,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
@@ -676,7 +675,7 @@ public final class UpdatePlanBuilder {
 
                     BinaryObjectBuilder builder = cctx.grid().binary().builder(bin);
 
-                    BinaryObjectBuilders.prepareAffinityField(builder, cctx.cacheObjectContext());
+                    U.prepareAffinityField(builder, cctx.cacheObjectContext());
 
                     return builder;
                 }
@@ -689,7 +688,7 @@ public final class UpdatePlanBuilder {
                 @Override public Object apply(List<?> arg) {
                     BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
 
-                    BinaryObjectBuilders.prepareAffinityField(builder, cctx.cacheObjectContext());
+                    U.prepareAffinityField(builder, cctx.cacheObjectContext());
 
                     return builder;
                 }

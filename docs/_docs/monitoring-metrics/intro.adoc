@@ -19,7 +19,7 @@ This chapter covers monitoring and metrics for Ignite. We'll start with an overv
 == Overview
 The basic task of monitoring in Ignite involves metrics. You have several approaches for accessing metrics:
 
--  via link:monitoring-metrics/metrics[JMX]
+-  via link:monitoring-metrics/new-metrics-system#jmx[JMX]
 -  Programmatically
 -  link:monitoring-metrics/system-views[System views]
 

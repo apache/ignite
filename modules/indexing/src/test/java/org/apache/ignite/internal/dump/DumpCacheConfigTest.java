@@ -20,20 +20,35 @@ package org.apache.ignite.internal.dump;
 import java.io.File;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cdc.TypeMapping;
+import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.dump.DumpConsumer;
 import org.apache.ignite.dump.DumpEntry;
 import org.apache.ignite.dump.DumpReader;
 import org.apache.ignite.dump.DumpReaderConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.cdc.CdcUtils;
+import org.apache.ignite.internal.client.thin.ClientBinary;
+import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.TestDumpConsumer;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.client.Config.SERVER;
 import static org.apache.ignite.internal.cdc.SqlCdcTest.executeSql;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.DMP_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.KEYS_CNT;
@@ -42,9 +57,90 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.d
 public class DumpCacheConfigTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        stopAllGrids();
+
         cleanPersistenceDir();
 
         super.beforeTest();
+    }
+
+    /**
+     * Checks that when pass SQL flag to {@link TcpIgniteClient#createCache(ClientCacheConfiguration, boolean)} table
+     * will be standart SQL table which can be modified and dropped with SQL DDL.
+     */
+    @Test
+    public void testSQLTableRecreateFromDump() throws Exception {
+        IgniteEx srv = startGrid(1);
+
+        executeSql(srv, "CREATE TABLE T1(ID INT, NAME VARCHAR, PRIMARY KEY (ID)) WITH \"CACHE_NAME=T1\"");
+
+        for (int i = 0; i < KEYS_CNT; i++)
+            executeSql(srv, "INSERT INTO T1 VALUES(?, ?)", i, "Name-" + i);
+
+        srv.snapshot().createDump(DMP_NAME, null).get(10_000L);
+
+        String cacheName = F.first(srv.cacheNames());
+
+        executeSql(srv, "DROP TABLE T1");
+
+        stopAllGrids();
+        cleanPersistenceDir(true);
+
+        srv = startGrid(1);
+
+        DumpConsumer cnsmr = new DumpConsumer() {
+            /** */
+            IgniteClient thin;
+
+            @Override public void start() {
+                thin = Ignition.startClient(new ClientConfiguration().setAddresses(SERVER));
+            }
+
+            @Override public void onMappings(Iterator<TypeMapping> mappings) {
+                // No-op.
+            }
+
+            @Override public void onTypes(Iterator<BinaryType> types) {
+                BinaryContext bctx = ((ClientBinary)thin.binary()).binaryContext();
+
+                types.forEachRemaining(t -> CdcUtils.registerBinaryMeta(bctx, log, ((BinaryTypeImpl)t).metadata()));
+            }
+
+            @Override public void onCacheConfigs(Iterator<StoredCacheData> caches) {
+                caches.forEachRemaining(d ->
+                    ((TcpIgniteClient)thin).createCache(clientCacheConfig(d.config(), d.queryEntities()), d.sql()));
+            }
+
+            @Override public void onPartition(int grp, int part, Iterator<DumpEntry> data) {
+                while (data.hasNext()) {
+                    DumpEntry e = data.next();
+                    thin.cache(cacheName).put(e.key(), e.value());
+                }
+            }
+
+            @Override public void stop() {
+                U.closeQuiet(thin);
+            }
+        };
+
+        new DumpReader(
+            new DumpReaderConfiguration(
+                null,
+                new File(sharedFileTree(srv.configuration()).snapshotsRoot(), DMP_NAME).getAbsolutePath(),
+                null,
+                cnsmr
+            ),
+            log
+        ).run();
+
+        List<List<?>> data = executeSql(srv, "SELECT ID, NAME FROM T1");
+
+        assertEquals(KEYS_CNT, data.size());
+
+        for (List<?> row : data)
+            assertEquals("Name-" + row.get(0), row.get(1));
+
+        executeSql(srv, "DROP TABLE T1");
     }
 
     /** */
@@ -146,5 +242,29 @@ public class DumpCacheConfigTest extends GridCommonAbstractTest {
         assertEquals(first ? KEYS_CNT : (KEYS_CNT * 2), cnt.get());
 
         cnsmr.check();
+    }
+
+    /** */
+    private ClientCacheConfiguration clientCacheConfig(CacheConfiguration<?, ?> ccfg, Collection<QueryEntity> qes) {
+        ClientCacheConfiguration cliCfg = new ClientCacheConfiguration()
+            .setName(ccfg.getName())
+            .setAtomicityMode(ccfg.getAtomicityMode())
+            .setBackups(ccfg.getBackups())
+            .setCacheMode(ccfg.getCacheMode())
+            .setCopyOnRead(ccfg.isCopyOnRead())
+            .setDataRegionName(ccfg.getDataRegionName())
+            .setGroupName(ccfg.getGroupName())
+            .setQueryDetailMetricsSize(ccfg.getQueryDetailMetricsSize())
+            .setQueryParallelism(ccfg.getQueryParallelism())
+            .setSqlEscapeAll(ccfg.isSqlEscapeAll())
+            .setSqlIndexMaxInlineSize(ccfg.getSqlIndexMaxInlineSize())
+            .setSqlSchema(ccfg.getSqlSchema())
+            .setWriteSynchronizationMode(ccfg.getWriteSynchronizationMode())
+            .setKeyConfiguration(ccfg.getKeyConfiguration());
+
+        if (qes != null)
+            cliCfg.setQueryEntities(qes.toArray(new QueryEntity[0]));
+
+        return cliCfg;
     }
 }

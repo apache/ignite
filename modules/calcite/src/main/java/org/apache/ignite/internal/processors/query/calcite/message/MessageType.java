@@ -18,9 +18,13 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.function.Supplier;
+import org.apache.ignite.internal.codegen.FragmentDescriptionSerializer;
+import org.apache.ignite.internal.codegen.QueryCloseMessageSerializer;
+import org.apache.ignite.internal.codegen.QueryTxEntrySerializer;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 
 /**
  *
@@ -45,7 +49,7 @@ public enum MessageType {
     QUERY_INBOX_CANCEL_MESSAGE(305, InboxCloseMessage::new),
 
     /** */
-    QUERY_CLOSE_MESSAGE(306, QueryCloseMessage::new),
+    QUERY_CLOSE_MESSAGE(306, QueryCloseMessage::new, new QueryCloseMessageSerializer()),
 
     /** */
     GENERIC_VALUE_MESSAGE(307, GenericValueMessage::new),
@@ -57,10 +61,10 @@ public enum MessageType {
     COLOCATION_GROUP(351, ColocationGroup::new),
 
     /** */
-    FRAGMENT_DESCRIPTION(352, FragmentDescription::new),
+    FRAGMENT_DESCRIPTION(352, FragmentDescription::new, new FragmentDescriptionSerializer()),
 
     /** */
-    QUERY_TX_ENTRY(353, QueryTxEntry::new);
+    QUERY_TX_ENTRY(353, QueryTxEntry::new, new QueryTxEntrySerializer());
 
     /** */
     private final int directType;
@@ -68,12 +72,27 @@ public enum MessageType {
     /** */
     private final Supplier<CalciteMessage> factory;
 
+    /** */
+    private MessageSerializer serializer;
+
     /**
      * @param directType Message direct type.
+     * @param factory Message factory.
      */
     MessageType(int directType, Supplier<CalciteMessage> factory) {
         this.directType = directType;
         this.factory = factory;
+    }
+
+    /**
+     * @param directType Message direct type.
+     * @param factory Message factory.
+     * @param serializer Message serializer.
+     */
+    MessageType(int directType, Supplier<CalciteMessage> factory, MessageSerializer serializer) {
+        this.directType = directType;
+        this.factory = factory;
+        this.serializer = serializer;
     }
 
     /**
@@ -88,5 +107,12 @@ public enum MessageType {
      */
     public Supplier<CalciteMessage> factory() {
         return factory;
+    }
+
+    /**
+     * @return Message serializer.
+     */
+    public MessageSerializer serializer() {
+        return serializer;
     }
 }

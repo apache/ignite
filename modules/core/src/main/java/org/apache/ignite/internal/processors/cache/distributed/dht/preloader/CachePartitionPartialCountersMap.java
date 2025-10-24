@@ -21,13 +21,18 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
-public class CachePartitionPartialCountersMap implements Serializable {
+public class CachePartitionPartialCountersMap implements Serializable, Message {
+    /** */
+    public static final short TYPE_CODE = 500;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,19 +40,23 @@ public class CachePartitionPartialCountersMap implements Serializable {
     public static final CachePartitionPartialCountersMap EMPTY = new CachePartitionPartialCountersMap();
 
     /** */
+    @Order(value = 0, method = "partitionIds")
     private int[] partIds;
 
     /** */
+    @Order(value = 1, method = "initialUpdateCounters")
     private long[] initialUpdCntrs;
 
     /** */
+    @Order(value = 2, method = "updateCounters")
     private long[] updCntrs;
 
     /** */
+    @Order(value = 3, method = "currentIndex")
     private int curIdx;
 
     /** */
-    private CachePartitionPartialCountersMap() {
+    public CachePartitionPartialCountersMap() {
         this(0);
     }
 
@@ -225,5 +234,66 @@ public class CachePartitionPartialCountersMap implements Serializable {
         sb.append("}");
 
         return sb.toString();
+    }
+
+    /**
+     * @return Partition IDs.
+     */
+    public int[] partitionIds() {
+        return partIds;
+    }
+
+    /**
+     * @param partIds Partition IDs.
+     */
+    public void partitionIds(int[] partIds) {
+        this.partIds = partIds;
+    }
+
+    /**
+     * @return Partition initial update counters.
+     */
+    public long[] initialUpdateCounters() {
+        return initialUpdCntrs;
+    }
+
+    /**
+     * @param initialUpdCntrs Partition initial update counters.
+     */
+    public void initialUpdateCounters(long[] initialUpdCntrs) {
+        this.initialUpdCntrs = initialUpdCntrs;
+    }
+
+    /**
+     * @return Partition update counters.
+     */
+    public long[] updateCounters() {
+        return updCntrs;
+    }
+
+    /**
+     * @param updCntrs Partition update counters.
+     */
+    public void updateCounters(long[] updCntrs) {
+        this.updCntrs = updCntrs;
+    }
+
+    /**
+     * @return Current index.
+     */
+    public int currentIndex() {
+        return curIdx;
+    }
+
+    /**
+     * @param curIdx Current index.
+     */
+    public void currentIndex(int curIdx) {
+        this.curIdx = curIdx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return TYPE_CODE;
     }
 }
