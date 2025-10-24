@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -241,20 +240,13 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** */
     protected List<List<?>> sql(IgniteEx ignite, String sql, Object... params) {
-        // {@code sql} can contain more than one query.
-        List<FieldsQueryCursor<List<?>>> allCurs = queryProcessor(ignite).query(queryContext(), "PUBLIC", sql, params);
+        List<FieldsQueryCursor<List<?>>> cur = queryProcessor(ignite).query(queryContext(), "PUBLIC", sql, params);
 
-        if (allCurs.size() > 1) {
-            log.warning("The query statement '" + sql + "' contains " + allCurs.size() + " actual queries. " +
-                "All the cursors are fetched, but only the last result is returned.");
+        assert cur.size() == 1 : "The query: '" + sql + "' has produced " + cur.size() + " cursors while exactly one is allowed.";
+
+        try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
+            return srvCursor.getAll();
         }
-
-        List<List<?>> res = Collections.emptyList();
-
-        for (FieldsQueryCursor<List<?>> cur : allCurs)
-            res = cur.getAll();
-
-        return res;
     }
 
     /** */
