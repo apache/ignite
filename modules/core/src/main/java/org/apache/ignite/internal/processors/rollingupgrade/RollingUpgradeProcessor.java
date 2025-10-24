@@ -52,13 +52,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     /** Min max version of nodes in cluster supplier. */
     private Supplier<IgnitePair<IgniteProductVersion>> minMaxVersionSupplier;
 
-    /**
-     * @param ctx Context.
-     */
-    public RollingUpgradeProcessor(GridKernalContext ctx) {
-        super(ctx);
-    }
-
     /** Last joining node. */
     private ClusterNode lastJoiningNode = null;
 
@@ -67,6 +60,13 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
 
     /** */
     private final Object lock = new Object();
+
+    /**
+     * @param ctx Context.
+     */
+    public RollingUpgradeProcessor(GridKernalContext ctx) {
+        super(ctx);
+    }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
