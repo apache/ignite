@@ -62,6 +62,7 @@ import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlConformance;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -79,7 +80,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.IgniteMethod;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -202,7 +202,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     @Override public Comparator<Row> comparator(
         List<RelFieldCollation> left,
         List<RelFieldCollation> right,
-        @Nullable IgniteBiPredicate<Integer, Integer> nullsMatch
+        @Nullable ImmutableBitSet allowNulls
     ) {
         if (F.isEmpty(left) || F.isEmpty(right) || left.size() != right.size())
             throw new IllegalArgumentException("Both inputs should be non-empty and have the same size: left="
@@ -222,7 +222,6 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                 RowHandler<Row> hnd = ctx.rowHandler();
 
                 boolean hasNulls = false;
-                boolean nullsMatched = nullsMatch != null;
 
                 for (int i = 0; i < left.size(); i++) {
                     RelFieldCollation leftField = left.get(i);
@@ -234,11 +233,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                     Object c1 = hnd.get(lIdx, o1);
                     Object c2 = hnd.get(rIdx, o2);
 
-                    if (c1 == null && c2 == null) {
-                        hasNulls = true;
-
-                        if (nullsMatched && nullsMatch != null && !nullsMatch.apply(lIdx, rIdx))
-                            nullsMatched = false;
+                    if (c1 == null && c2 == null && !hasNulls) {
+                        hasNulls = allowNulls == null || !allowNulls.get(i);
 
                         continue;
                     }
@@ -255,7 +251,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
                 // If compared rows contain NULLs, they shouldn't be treated as equals, since NULL <> NULL in SQL.
                 // Except cases with IS DISTINCT / IS NOT DISTINCT.
-                return !hasNulls || nullsMatched ? 0 : 1;
+                return hasNulls ? 1 : 0;
             }
         };
     }

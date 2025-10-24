@@ -49,9 +49,9 @@ public class MergeJoinConverterRule extends AbstractIgniteJoinConverterRule {
 
     /** {@inheritDoc} */
     @Override public boolean matchesJoin(RelOptRuleCall call) {
-        LogicalJoin logicaJoin = call.rel(0);
+        LogicalJoin logicalJoin = call.rel(0);
 
-        IgniteJoinInfo info = IgniteJoinInfo.of(logicaJoin);
+        IgniteJoinInfo info = IgniteJoinInfo.of(logicalJoin);
 
         return info.isEqui() && !F.isEmpty(info.pairs());
     }
@@ -73,7 +73,7 @@ public class MergeJoinConverterRule extends AbstractIgniteJoinConverterRule {
         RelNode left = convert(rel.getLeft(), leftInTraits);
         RelNode right = convert(rel.getRight(), rightInTraits);
 
-        return new IgniteMergeJoin(cluster, outTraits, left, right, rel.getCondition(), joinInfo.matchingNulls(),
+        return new IgniteMergeJoin(cluster, outTraits, left, right, rel.getCondition(), joinInfo.allowNulls(),
             rel.getVariablesSet(), rel.getJoinType());
     }
 }

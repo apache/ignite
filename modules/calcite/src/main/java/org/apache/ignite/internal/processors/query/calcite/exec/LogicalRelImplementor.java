@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.BiPredicate;
@@ -117,7 +116,6 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils.combinedRowType;
@@ -302,56 +300,39 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
 
         List<IntPair> joinPairs = rel.analyzeCondition().pairs();
         int pairsCnt = joinPairs.size();
-        int matchingNullsCnt = rel.matchingNulls().isEmpty() ? 0 : rel.matchingNulls().cardinality();
 
-        Comparator<Row> comp;
+        List<RelFieldCollation> leftCollations = rel.leftCollation().getFieldCollations();
+        List<RelFieldCollation> rightCollations = rel.rightCollation().getFieldCollations();
 
-        List<RelFieldCollation> leftCollations = rel.leftCollation().getFieldCollations().subList(0, pairsCnt);
-        List<RelFieldCollation> rightCollations = rel.rightCollation().getFieldCollations().subList(0, pairsCnt);
+        ImmutableBitSet allowNulls = rel.allowNulls();
+        ImmutableBitSet.Builder collsAllowNullsBuilder = ImmutableBitSet.builder();
+        int lastCollField = -1;
 
-        // No conditions like 'IS NOT DISTINCT' or all the conditions are.
-        if (matchingNullsCnt == 0 || matchingNullsCnt == pairsCnt) {
-            boolean nullsMatch = !rel.matchingNulls().isEmpty();
+        for (int c = 0; c < Math.min(leftCollations.size(), rightCollations.size()); ++c) {
+            RelFieldCollation leftColl = leftCollations.get(c);
+            RelFieldCollation rightColl = rightCollations.get(c);
+            collsAllowNullsBuilder.set(c);
 
-            comp = expressionFactory.comparator(
-                leftCollations,
-                rightCollations,
-                matchingNullsCnt == 0 ? null : (lidx, ridx) -> nullsMatch
-            );
-        }
-        else {
-            // Maps collations order on join info's pairs order.
-            Map<IntPair, Integer> collsToPairIdxMap = U.newHashMap(pairsCnt);
+            for (int p = 0; p < pairsCnt; ++p) {
+                IntPair pair = joinPairs.get(p);
 
-            for (int c = 0; c < pairsCnt; ++c) {
-                RelFieldCollation leftColl = leftCollations.get(c);
-                RelFieldCollation rightColl = rightCollations.get(c);
+                if (pair.source == leftColl.getFieldIndex() && pair.target == rightColl.getFieldIndex()) {
+                    lastCollField = c;
 
-                for (int p = 0; p < pairsCnt; ++p) {
-                    IntPair pair = joinPairs.get(p);
-
-                    if (pair.source == leftColl.getFieldIndex() && pair.target == rightColl.getFieldIndex()) {
-                        collsToPairIdxMap.put(pair, p);
+                    if (!allowNulls.get(p)) {
+                        collsAllowNullsBuilder.clear(c);
 
                         break;
                     }
                 }
             }
-
-            assert collsToPairIdxMap.size() == pairsCnt;
-
-            comp = expressionFactory.comparator(
-                leftCollations,
-                rightCollations,
-                (lidx, ridx) -> {
-                    Integer pairIdx = collsToPairIdxMap.get(new IntPair(lidx, ridx));
-
-                    assert pairIdx != null;
-
-                    return rel.matchingNulls().get(pairIdx);
-                }
-            );
         }
+
+        Comparator<Row> comp = expressionFactory.comparator(
+            leftCollations.subList(0, lastCollField + 1),
+            rightCollations.subList(0, lastCollField + 1),
+            collsAllowNullsBuilder.build()
+        );
 
         Node<Row> node = MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, comp, hasExchange(rel));
 

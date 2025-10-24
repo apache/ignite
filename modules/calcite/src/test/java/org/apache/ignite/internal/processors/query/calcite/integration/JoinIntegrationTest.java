@@ -93,6 +93,13 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
             "and t1.c2 = t2.c1")
             .returns(3, null, 3, null)
             .check();
+        assertQuery("select t1.c2, t1.c3, t2.c2, t2.c3 from t1 join t2 " +
+            "on t1.c2 is not distinct from t2.c2 and t1.c2 = t2.c2 and t1.c3 = t2.c3 and t1.c3 is not distinct from t2.c3")
+            .returns(1, 1, 1, 1)
+            .returns(2, 2, 2, 2)
+            .returns(3, 3, 3, 3)
+            .returns(4, 4, 4, 4)
+            .check();
 
         // Two 'IS NOT DISTINCT's.
         assertQuery("select t1.c2, t1.c3, t2.c2, t2.c3 from t1 join t2 on t1.c3 is not distinct from t2.c3 - 1 " +

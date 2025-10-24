@@ -65,7 +65,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
     private final RelCollation rightCollation;
 
     /** Mathing null conditions like 'IS NOT DISTINCT'. */
-    private final ImmutableBitSet matchingNulls;
+    private final ImmutableBitSet allowNulls;
 
     /** */
     public IgniteMergeJoin(
@@ -74,11 +74,11 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
         RelNode left,
         RelNode right,
         RexNode condition,
-        @Nullable ImmutableBitSet matchingNulls,
+        @Nullable ImmutableBitSet allowNulls,
         Set<CorrelationId> variablesSet,
         JoinRelType joinType
     ) {
-        this(cluster, traitSet, left, right, condition, matchingNulls, variablesSet, joinType,
+        this(cluster, traitSet, left, right, condition, allowNulls, variablesSet, joinType,
             left.getTraitSet().getCollation(), right.getTraitSet().getCollation());
     }
 
@@ -90,7 +90,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
             input.getInputs().get(0),
             input.getInputs().get(1),
             input.getExpression("condition"),
-            null,
+            input.getBitSet("allowNulls"),
             ImmutableSet.copyOf(Commons.transform(input.getIntegerList("variablesSet"), CorrelationId::new)),
             input.getEnum("joinType", JoinRelType.class),
             ((RelInputEx)input).getCollation("leftCollation"),
@@ -105,7 +105,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
         RelNode left,
         RelNode right,
         RexNode condition,
-        @Nullable ImmutableBitSet matchingNulls,
+        @Nullable ImmutableBitSet allowNulls,
         Set<CorrelationId> variablesSet,
         JoinRelType joinType,
         RelCollation leftCollation,
@@ -115,13 +115,13 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
 
         this.leftCollation = leftCollation;
         this.rightCollation = rightCollation;
-        this.matchingNulls = matchingNulls == null ? ImmutableBitSet.of() : matchingNulls;
+        this.allowNulls = allowNulls == null ? ImmutableBitSet.of() : allowNulls;
     }
 
     /** {@inheritDoc} */
     @Override public Join copy(RelTraitSet traitSet, RexNode condition, RelNode left, RelNode right,
         JoinRelType joinType, boolean semiJoinDone) {
-        return new IgniteMergeJoin(getCluster(), traitSet, left, right, condition, matchingNulls, variablesSet, joinType,
+        return new IgniteMergeJoin(getCluster(), traitSet, left, right, condition, allowNulls, variablesSet, joinType,
             left.getTraitSet().getCollation(), right.getTraitSet().getCollation());
     }
 
@@ -132,7 +132,7 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
 
     /** {@inheritDoc} */
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
-        return new IgniteMergeJoin(cluster, getTraitSet(), inputs.get(0), inputs.get(1), getCondition(), matchingNulls,
+        return new IgniteMergeJoin(cluster, getTraitSet(), inputs.get(0), inputs.get(1), getCondition(), allowNulls,
             getVariablesSet(), getJoinType(), leftCollation, rightCollation);
     }
 
@@ -277,7 +277,8 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
     @Override public RelWriter explainTerms(RelWriter pw) {
         return super.explainTerms(pw)
             .item("leftCollation", leftCollation)
-            .item("rightCollation", rightCollation);
+            .item("rightCollation", rightCollation)
+            .item("allowNulls", allowNulls);
     }
 
     /**
@@ -297,8 +298,8 @@ public class IgniteMergeJoin extends AbstractIgniteJoin {
     /**
      * @return Matching null conditions.
      */
-    public ImmutableBitSet matchingNulls() {
-        return matchingNulls;
+    public ImmutableBitSet allowNulls() {
+        return allowNulls;
     }
 
     /** Creates pair with default collation for parent and simple yet sufficient collation for children nodes. */

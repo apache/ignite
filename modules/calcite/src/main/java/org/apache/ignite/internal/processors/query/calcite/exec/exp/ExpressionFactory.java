@@ -23,17 +23,16 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AccumulatorWrapper;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -62,14 +61,14 @@ public interface ExpressionFactory<Row> {
      *
      * @param left Collations of left row.
      * @param right Collations of right row.
-     * @param nullsMatch Provider of matching null conditions based on left column idx and right column idx.
-     *                   If {@code null}, ignored. Usually, NULL <> NULL in SQL. Except IS DISTINCT / IS NOT DISTINCT.
+     * @param allowNulls Matching null fields. Usually, NULL <> NULL in SQL. Except IS DISTINCT / IS NOT DISTINCT.
+     *                   If {@code null}, ignored.
      * @return Rows comparator.
      */
     Comparator<Row> comparator(
         List<RelFieldCollation> left,
         List<RelFieldCollation> right,
-        @Nullable IgniteBiPredicate<Integer, Integer> nullsMatch
+        @Nullable ImmutableBitSet allowNulls
     );
 
     /**

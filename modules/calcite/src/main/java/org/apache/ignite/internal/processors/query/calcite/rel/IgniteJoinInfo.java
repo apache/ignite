@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.rel;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.plan.RelOptUtil;
@@ -31,56 +30,47 @@ import org.apache.calcite.util.ImmutableIntList;
 /** Extended {@link JoinInfo}. */
 public class IgniteJoinInfo extends JoinInfo {
     /** Conditions with mathing nulls. It usually means presence of 'IS DISTINCT' / 'IS NOT DISTINCT'. */
-    private final ImmutableBitSet matchingNulls;
+    private final ImmutableBitSet allowNulls;
 
     /** */
     protected IgniteJoinInfo(
         ImmutableIntList leftKeys,
         ImmutableIntList rightKeys,
-        ImmutableBitSet matchingNulls,
+        ImmutableBitSet allowNulls,
         ImmutableList<RexNode> nonEquis
     ) {
         super(leftKeys, rightKeys, nonEquis);
 
-        this.matchingNulls = matchingNulls;
-    }
-
-    /** */
-    public static IgniteJoinInfo of(ImmutableIntList leftKeys, ImmutableIntList rightKeys) {
-        return new IgniteJoinInfo(leftKeys, rightKeys, ImmutableBitSet.of(), ImmutableList.of());
+        this.allowNulls = allowNulls;
     }
 
     /** */
     public static IgniteJoinInfo of(Join join) {
         List<Integer> leftKeys = new ArrayList<>();
         List<Integer> rightKeys = new ArrayList<>();
-        List<Boolean> filteredNulls = new ArrayList<>();
+        List<Boolean> skipNulls = new ArrayList<>();
         List<RexNode> nonEquis = new ArrayList<>();
 
         RelOptUtil.splitJoinCondition(join.getLeft(), join.getRight(), join.getCondition(), leftKeys, rightKeys,
-            filteredNulls, nonEquis);
+            skipNulls, nonEquis);
 
-        Collection<Integer> matchingNulls = null;
+        ImmutableBitSet.Builder allowNulls = ImmutableBitSet.builder();
 
-        for (int i = 0; i < filteredNulls.size(); ++i) {
-            if (!filteredNulls.get(i)) {
-                if (matchingNulls == null)
-                    matchingNulls = new ArrayList<>(filteredNulls.size());
-
-                matchingNulls.add(i);
-            }
+        for (int i = 0; i < skipNulls.size(); ++i) {
+            if (!skipNulls.get(i))
+                allowNulls.set(i);
         }
 
         return new IgniteJoinInfo(
-            ImmutableIntList.of(leftKeys.stream().mapToInt(i -> i).toArray()),
-            ImmutableIntList.of(rightKeys.stream().mapToInt(i -> i).toArray()),
-            matchingNulls == null ? ImmutableBitSet.of() : ImmutableBitSet.of(matchingNulls),
+            ImmutableIntList.copyOf(leftKeys),
+            ImmutableIntList.copyOf(rightKeys),
+            allowNulls == null ? ImmutableBitSet.of() : ImmutableBitSet.of(allowNulls.build()),
             ImmutableList.copyOf(nonEquis)
         );
     }
 
     /** */
-    public ImmutableBitSet matchingNulls() {
-        return matchingNulls;
+    public ImmutableBitSet allowNulls() {
+        return allowNulls;
     }
 }
