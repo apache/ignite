@@ -19,13 +19,10 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * List of transaction locks for particular key.
@@ -33,7 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public class TxLockList implements Message {
     /** Tx locks. */
     @GridToStringInclude
-    @GridDirectCollection(value = TxLock.class)
+    @Order(value = 0, method = "transactionLocks")
     private List<TxLock> txLocks = new ArrayList<>();
 
     /**
@@ -46,8 +43,15 @@ public class TxLockList implements Message {
     /**
      * @return Lock list.
      */
-    public List<TxLock> txLocks() {
+    public List<TxLock> transactionLocks() {
         return txLocks;
+    }
+
+    /**
+     * @param txLocks Lock list.
+     */
+    public void transactionLocks(List<TxLock> txLocks) {
+        this.txLocks = txLocks;
     }
 
     /**
@@ -70,45 +74,7 @@ public class TxLockList implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(MessageWriter writer) {
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeCollection(txLocks, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(MessageReader reader) {
-        switch (reader.state()) {
-            case 0:
-                txLocks = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return -26;
     }
-
 }

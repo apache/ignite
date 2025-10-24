@@ -241,8 +241,11 @@ public final class ClientUtils {
     }
 
     /** Serialize configuration to stream. */
-    void cacheConfiguration(ClientCacheConfiguration cfg, BinaryOutputStream out, ProtocolContext protocolCtx) {
+    void cacheConfiguration(ClientCacheConfiguration cfg, boolean sql, BinaryOutputStream out, ProtocolContext protocolCtx) {
         try (BinaryWriterEx writer = BinaryUtils.writer(marsh.context(), out, null)) {
+            if (protocolCtx.isFeatureSupported(ProtocolBitmaskFeature.SQL_CACHE_CREATION))
+                out.writeBoolean(sql);
+
             int origPos = out.position();
 
             writer.writeInt(0); // configuration length is to be assigned in the end

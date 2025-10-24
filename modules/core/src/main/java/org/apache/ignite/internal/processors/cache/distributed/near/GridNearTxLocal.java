@@ -3381,6 +3381,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         fut.prepare();
 
+        // In case of one phase commit move state one step forward to prohibit tx rollback on timeout after send message
+        // to remote node.
+        if (onePhaseCommit)
+            state(PREPARED);
+
         return fut;
     }
 

@@ -1205,8 +1205,8 @@ public class GridCacheContext<K, V> implements Externalizable {
             return false;
 
         for (CacheEntryPredicate p0 : p) {
-            if ((p0 instanceof CacheEntrySerializablePredicate) &&
-                ((CacheEntrySerializablePredicate)p0).predicate() instanceof CacheEntryPredicateNoValue)
+            if ((p0 instanceof CacheEntryPredicateAdapter) &&
+                ((CacheEntryPredicateAdapter)p0).type() == CacheEntryPredicateAdapter.PredicateType.HAS_NO_VALUE)
                 return true;
         }
 
@@ -1217,14 +1217,14 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return No value filter.
      */
     public CacheEntryPredicate noVal() {
-        return new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue());
+        return new CacheEntryPredicateAdapter(CacheEntryPredicateAdapter.PredicateType.HAS_NO_VALUE);
     }
 
     /**
      * @return Has value filter.
      */
     public CacheEntryPredicate hasVal() {
-        return new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue());
+        return new CacheEntryPredicateAdapter(CacheEntryPredicateAdapter.PredicateType.HAS_VALUE);
     }
 
     /**
@@ -1232,7 +1232,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Predicate that checks for value.
      */
     public CacheEntryPredicate equalsVal(V val) {
-        return new CacheEntryPredicateContainsValue(toCacheObject(val));
+        return new CacheEntryPredicateAdapter(toCacheObject(val));
     }
 
     /**

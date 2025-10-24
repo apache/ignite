@@ -1245,8 +1245,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                         // returned value if any.
                                         entry.resetFromPrimary(newVal, lockVer, dhtVer, node.id(), topVer);
 
-                                        entry.readyNearLock(lockVer, mappedVer, res.committedVersions(),
-                                            res.rolledbackVersions(), res.pending());
+                                        entry.readyNearLock(lockVer, mappedVer, F.emptyIfNull(res.committedVersions()),
+                                            F.emptyIfNull(res.rolledbackVersions()), res.pending());
 
                                         if (inTx() && implicitTx() && tx.onePhaseCommit()) {
                                             boolean pass = res.filterResult(i);
@@ -1671,8 +1671,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
                         entry.readyNearLock(lockVer,
                             mappedVer,
-                            res.committedVersions(),
-                            res.rolledbackVersions(),
+                            F.emptyIfNull(res.committedVersions()),
+                            F.emptyIfNull(res.rolledbackVersions()),
                             res.pending());
 
                         if (retval) {
