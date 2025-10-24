@@ -74,11 +74,8 @@ public class MdcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, L
     /** */
     private static final long serialVersionUID = 1L;
 
-    /** Number of data centers. */
-    private final int dcsNum;
-
-    /** Number of copies of each partition, including primary. */
-    private final int primaryAndBackups;
+    /** */
+    private final int partCopiesPerDc;
 
     /** Map is used to optimize the time it takes to perform a partition assignment procedure. */
     private final Map<String, Integer> partsDistrMap;
@@ -88,9 +85,8 @@ public class MdcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, L
      * @param backups Number of backups.
      */
     public MdcAffinityBackupFilter(int dcsNum, int backups) {
-        this.dcsNum = dcsNum;
         partsDistrMap = new HashMap<>(dcsNum + 1);
-        primaryAndBackups = backups + 1;
+        partCopiesPerDc = (backups + 1) / dcsNum;
     }
 
     /**
@@ -108,9 +104,9 @@ public class MdcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, L
             partsDistrMap.put(previouslySelected.get(0).dataCenterId(), 1);
         }
 
+        boolean res = false;
         String candidateDcId = candidate.dataCenterId();
         Integer candDcPartsCopies = partsDistrMap.get(candidateDcId);
-        boolean res = false;
 
         if (candDcPartsCopies == null || candDcPartsCopies == -1) {
             partsDistrMap.put(candidateDcId, 1);
@@ -118,8 +114,6 @@ public class MdcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, L
             res = true;
         }
         else {
-            int partCopiesPerDc = primaryAndBackups / dcsNum;
-
             if (candDcPartsCopies < partCopiesPerDc) {
                 partsDistrMap.put(candidateDcId, candDcPartsCopies + 1);
 
