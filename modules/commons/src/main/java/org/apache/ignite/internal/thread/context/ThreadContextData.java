@@ -62,7 +62,7 @@ class ThreadContextData {
         ThreadContextSnapshot snapshot = ThreadContextSnapshot.emptySnapshot();
 
         for (ScopedAttributeValueStack<?> attrVals : attrs)
-            snapshot = attrVals.exportTo(snapshot);
+            snapshot = attrVals.exportTopTo(snapshot);
 
         return snapshot;
     }
@@ -73,13 +73,18 @@ class ThreadContextData {
             return;
 
         for (int id = attrReg.size() - 1; id >= 0; id--) {
-            if (!snapshot.isEmpty() && snapshot.attribute().id() == id) {
-                put(snapshot.attribute(), snapshot.attributeValue());
+            ThreadContextAttribute<Object> attr = attrReg.attribute(id);
+            Object attrVal;
+
+            if (!snapshot.isEmpty() && snapshot.attributeId() == id) {
+                attrVal = snapshot.attributeValue();
 
                 snapshot = snapshot.previous();
             }
             else
-                attributeValues(id).restoreInitial(activeScopeDepth);
+                attrVal = attr.initialValue();
+
+            put(attr, attrVal);
         }
     }
 
@@ -107,13 +112,13 @@ class ThreadContextData {
     /** */
     private <T> ScopedAttributeValueStack<T> attributeValues(int id) {
         if (attrs.length <= id)
-            fetchRegisteredAttibutes();
+            fetchRegisteredAttributes();
 
         return (ScopedAttributeValueStack<T>)attrs[id];
     }
 
     /** */
-    private void fetchRegisteredAttibutes() {
+    private void fetchRegisteredAttributes() {
         ScopedAttributeValueStack<?>[] upd = new ScopedAttributeValueStack[attrReg.size()];
 
         if (attrs.length != 0)

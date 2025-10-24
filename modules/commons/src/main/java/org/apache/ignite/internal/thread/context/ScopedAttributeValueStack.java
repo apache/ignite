@@ -66,18 +66,10 @@ class ScopedAttributeValueStack<T> {
     }
 
     /** */
-    ThreadContextSnapshot exportTo(ThreadContextSnapshot snapshot) {
+    ThreadContextSnapshot exportTopTo(ThreadContextSnapshot snapshot) {
         T val = peek();
 
         return val == attr.initialValue() ? snapshot : snapshot.withAttribute(attr, val);
-    }
-
-    /** */
-    void restoreInitial(int scopeDepth) {
-        if (isEmpty() || scopedVals.peek().value() == attr.initialValue())
-            return;
-
-        scopedVals.push(new ScopedAttributeValue<>(scopeDepth, attr.initialValue()));
     }
 
     /** */
