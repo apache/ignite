@@ -21,7 +21,6 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
@@ -46,8 +45,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,12 +53,11 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgniteDiagnosticMessage implements Message {
     /** */
-    private static final int REQUEST_FLAG_MASK = 0x01;
+    @Order(value = 0, method = "request")
+    private boolean req;
 
     /** */
-    private byte flags;
-
-    /** */
+    @Order(value = 1, method = "futureId")
     private long futId;
 
     /** */
@@ -81,7 +77,8 @@ public class IgniteDiagnosticMessage implements Message {
      * @return Request message.
      * @throws IgniteCheckedException If failed.
      */
-    public static IgniteDiagnosticMessage createRequest(Marshaller marsh,
+    public static IgniteDiagnosticMessage createRequest(
+        Marshaller marsh,
         CompoundInfo info,
         long futId
     ) throws IgniteCheckedException {
@@ -91,7 +88,7 @@ public class IgniteDiagnosticMessage implements Message {
 
         msg.futId = futId;
         msg.bytes = cBytes;
-        msg.flags |= REQUEST_FLAG_MASK;
+        msg.req = true;
 
         return msg;
     }
@@ -130,80 +127,21 @@ public class IgniteDiagnosticMessage implements Message {
         return futId;
     }
 
+    /** */
+    public void futureId(long futId) {
+        this.futId = futId;
+    }
+
     /**
      * @return {@code True} if this is request message.
      */
     public boolean request() {
-        return (flags & REQUEST_FLAG_MASK) != 0;
+        return req;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByteArray(bytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByte(flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeLong(futId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                bytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                flags = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                futId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
+    /** */
+    public void request(boolean request) {
+        this.req = request;
     }
 
     /** {@inheritDoc} */
@@ -214,7 +152,7 @@ public class IgniteDiagnosticMessage implements Message {
     /**
      *
      */
-    public abstract static class DiagnosticBaseInfo {
+    public abstract static class DiagnosticBaseInfo implements Externalizable {
         /**
          * @param other Another info of the same type.
          */
@@ -232,7 +170,7 @@ public class IgniteDiagnosticMessage implements Message {
     /**
      *
      */
-    public static final class TxEntriesInfo extends DiagnosticBaseInfo implements Externalizable {
+    public static final class TxEntriesInfo extends DiagnosticBaseInfo {
         /** */
         private static final long serialVersionUID = 0L;
 
