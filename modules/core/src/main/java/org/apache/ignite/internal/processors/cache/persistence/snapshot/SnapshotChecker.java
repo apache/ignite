@@ -164,8 +164,8 @@ public class SnapshotChecker {
     ) {
         // The handlers use or may use the same snapshot pool. If it is configured with 1 thread, launching waiting task in
         // the same pool might block it.
-        return CompletableFuture.supplyAsync(() ->
-            new SnapshotHandlerRestoreTask(kctx.grid(), log, sft, grps, check).execute()
+        return CompletableFuture.supplyAsync(
+            new SnapshotHandlerRestoreTask(kctx.grid(), log, sft, grps, check)
         );
     }
 
@@ -189,18 +189,5 @@ public class SnapshotChecker {
                 throw new IgniteException(e);
             }
         }, executor);
-    }
-
-    /**
-     * Checks results of all the snapshot validation handlres.
-     * @param snpName Snapshot name.
-     * @param results Results: checking node -> snapshot part's consistend id -> custom handler name -> handler result.
-     * @see #invokeCustomHandlers(SnapshotMetadata, SnapshotFileTree, Collection, boolean)
-     */
-    public void checkCustomHandlersResults(
-        String snpName,
-        Map<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> results
-    ) {
-        new SnapshotHandlerRestoreTask(kctx.grid(), log, null, null, true).reduce(snpName, results);
     }
 }
