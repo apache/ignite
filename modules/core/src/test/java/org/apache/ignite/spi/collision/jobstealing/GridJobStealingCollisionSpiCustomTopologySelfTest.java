@@ -92,7 +92,7 @@ public class GridJobStealingCollisionSpiCustomTopologySelfTest extends
 
         ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
 
-        metrics.setCurrentWaitingJobs(2);
+        metrics.currentWaitingJobs(2);
 
         rmtNode1.setMetrics(metrics);
         rmtNode2.setMetrics(metrics);
