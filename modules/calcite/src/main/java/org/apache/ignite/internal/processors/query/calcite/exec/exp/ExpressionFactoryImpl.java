@@ -254,6 +254,35 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         if (BinaryUtils.isBinaryObjectImpl(o1))
             return compareBinary(o1, o2, nullComparison);
 
+        if (o1 instanceof Collection || o2 instanceof Collection) {
+            if (o1 == o2)
+                return 0;
+            if (o1 == null || o2 == null)
+                return nullComparison;
+
+            if (o1 instanceof Collection && !(o2 instanceof Collection))
+                return 1;
+            if (o2 instanceof Collection && !(o1 instanceof Collection))
+                return -1;
+
+            Iterator it1 = ((Iterable)o1).iterator();
+            Iterator it2 = ((Iterable)o2).iterator();
+
+            while (true) {
+                if (!it1.hasNext() && it2.hasNext())
+                    return -1;
+                if (it1.hasNext() && !it2.hasNext())
+                    return 1;
+                if (!it1.hasNext() && !it2.hasNext())
+                    return 0;
+
+                int cmp = compare(it1.next(), it2.next(), nullComparison);
+
+                if (cmp != 0)
+                    return cmp;
+            }
+        }
+
         final Comparable c1 = (Comparable)o1;
         final Comparable c2 = (Comparable)o2;
         return RelFieldCollation.compare(c1, c2, nullComparison);
