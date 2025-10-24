@@ -57,7 +57,10 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
         "metrics",
         "caches",
         "sql.queries",
-        "nodes");
+        "nodes",
+        "cacheGroupPageLists",
+        "dataRegionPageLists",
+        "partitionStates");
 
     /** */
     private static final int VALID_VIEWS_CNT = 10;
