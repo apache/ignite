@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -63,10 +61,6 @@ public class CacheObjectImpl extends CacheObjectAdapter {
         cpy = cpy && needCopy(ctx);
 
         try {
-            GridKernalContext kernalCtx = ctx.kernalContext();
-
-            IgniteCacheObjectProcessor proc = ctx.kernalContext().cacheObjects();
-
             if (cpy) {
                 if (valBytes == null) {
                     assert val != null;
@@ -77,11 +71,11 @@ public class CacheObjectImpl extends CacheObjectAdapter {
                 if (ldr == null) {
                     if (val != null)
                         ldr = val.getClass().getClassLoader();
-                    else if (kernalCtx.config().isPeerClassLoadingEnabled())
-                        ldr = kernalCtx.cache().context().deploy().globalLoader();
+                    else if (ctx.isPeerClassLoadingEnabled())
+                        ldr = ctx.globalLoader();
                 }
 
-                return (T)proc.unmarshal(ctx, valBytes, ldr);
+                return (T)ctx.unmarshal(valBytes, ldr);
             }
 
             if (val != null)
@@ -89,8 +83,8 @@ public class CacheObjectImpl extends CacheObjectAdapter {
 
             assert valBytes != null;
 
-            Object val = valueFromValueBytes(ctx, kernalCtx.config().isPeerClassLoadingEnabled() ?
-                kernalCtx.cache().context().deploy().globalLoader() : null);
+            Object val = valueFromValueBytes(ctx, ctx.isPeerClassLoadingEnabled() ?
+                ctx.globalLoader() : null);
 
             if (ctx.storeValue())
                 this.val = val;
@@ -143,5 +137,10 @@ public class CacheObjectImpl extends CacheObjectAdapter {
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean postWriteRequired() {
+        return false;
     }
 }

@@ -23,8 +23,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.security.AccessControlException;
 import java.util.UUID;
-import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalWrapper;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
@@ -33,7 +33,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Abstract security aware Externalizable.
  */
-public abstract class AbstractSecurityAwareExternalizable<T> implements Externalizable, GridInternalWrapper<T> {
+public abstract class AbstractSecurityAwareExternalizable<T> implements Externalizable, IgniteInternalWrapper<T> {
     /** Security subject id. */
     protected UUID subjectId;
 
@@ -71,7 +71,7 @@ public abstract class AbstractSecurityAwareExternalizable<T> implements External
     }
 
     /** {@inheritDoc} */
-    @Override public T userObject() {
+    @Override public T delegate() {
         return original;
     }
 

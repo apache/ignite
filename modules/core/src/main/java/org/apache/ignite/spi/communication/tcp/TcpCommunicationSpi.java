@@ -19,7 +19,6 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.util.BitSet;
 import java.util.Collection;
@@ -94,6 +93,7 @@ import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.NOOP;
 import static org.apache.ignite.spi.communication.tcp.internal.TcpConnectionIndexAwareMessage.UNDEFINED_CONNECTION_INDEX;
 
@@ -374,6 +374,17 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         this.lsnr = lsnr;
     }
 
+    /**
+     * @param metricName Metric name.
+     * @return {@code True} if the metric name is a pure TCP Communication metric. {@code False} if is other metric or
+     * metric of other TCP Communication component.
+     */
+    public static boolean isCommunicationMetrics(String metricName) {
+        return metricName.startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR)
+            && !metricName.startsWith(ConnectionClientPool.SHARED_METRICS_REGISTRY_NAME + SEPARATOR)
+            && !metricName.equals(ConnectionClientPool.SHARED_METRICS_REGISTRY_NAME);
+    }
+
     /** {@inheritDoc} */
     @Override public int getSentMessagesCount() {
         // Listener could be not initialized yet, but discovery thread could try to aggregate metrics.
@@ -597,7 +608,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         }
 
         if (cfg.connectionsPerNode() > 1)
-            connPlc = new RoundRobinConnectionPolicy(cfg);
+            connPlc = new RoundRobinConnectionPolicy(cfg.connectionsPerNode());
         else
             connPlc = new FirstConnectionPolicy();
 
@@ -684,7 +695,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             this,
             stateProvider,
             nioSrvWrapper,
-            getName()
+            getName(),
+            ((IgniteEx)ignite).context().metric()
         ));
 
         this.srvLsnr.setClientPool(clientPool);
@@ -807,6 +819,11 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         ((CommunicationDiscoveryEventListener)discoLsnr).metricsListener(metricsLsnr);
 
         ctxInitLatch.countDown();
+    }
+
+    /** @return {@code true} if {@code IgniteSpiContext} is initialized. */
+    public boolean spiContextInitialized() {
+        return ctxInitLatch.getCount() == 0;
     }
 
     /** {@inheritDoc} */
@@ -1154,17 +1171,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpCommunicationSpi.class, this);
-    }
-
-    /**
-     * Write message type to byte buffer.
-     *
-     * @param buf Byte buffer.
-     * @param type Message type.
-     */
-    public static void writeMessageType(ByteBuffer buf, short type) {
-        buf.put((byte)(type & 0xFF));
-        buf.put((byte)((type >> 8) & 0xFF));
     }
 
     /**

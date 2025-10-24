@@ -17,20 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -38,13 +34,15 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /** Near node ID. */
+    @Order(18)
     private UUID nearNodeId;
 
     /** Mini future ID. */
+    @Order(19)
     private int miniId;
 
     /** */
-    @GridDirectCollection(PartitionUpdateCountersMessage.class)
+    @Order(value = 20, method = "updateCounters")
     private Collection<PartitionUpdateCountersMessage> updCntrs;
 
     /**
@@ -64,14 +62,12 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param commitVer Commit version.
      * @param commit Commit flag.
      * @param invalidate Invalidate flag.
-     * @param sys System flag.
      * @param plc IO policy.
      * @param sysInvalidate System invalidation flag.
      * @param syncMode Write synchronization mode.
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
-     * @param txSize Expected transaction size.
      * @param taskNameHash Task name hash.
      * @param addDepInfo Deployment info flag.
      * @param retVal Need return value
@@ -88,14 +84,12 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         long threadId,
         boolean commit,
         boolean invalidate,
-        boolean sys,
         byte plc,
         boolean sysInvalidate,
         CacheWriteSynchronizationMode syncMode,
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        int txSize,
         int taskNameHash,
         boolean addDepInfo,
         boolean retVal,
@@ -110,14 +104,12 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             threadId,
             commit,
             invalidate,
-            sys,
             plc,
             syncMode,
             baseVer,
             committedVers,
             rolledbackVers,
             taskNameHash,
-            txSize,
             addDepInfo);
 
         assert miniId != 0;
@@ -140,10 +132,24 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     }
 
     /**
+     * @param miniId Mini ID.
+     */
+    public void miniId(int miniId) {
+        this.miniId = miniId;
+    }
+
+    /**
      * @return Near node ID.
      */
     public UUID nearNodeId() {
         return nearNodeId;
+    }
+
+    /**
+     * @param nearNodeId Near node ID.
+     */
+    public void nearNodeId(UUID nearNodeId) {
+        this.nearNodeId = nearNodeId;
     }
 
     /**
@@ -209,79 +215,11 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         return updCntrs;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 20:
-                if (!writer.writeInt(miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 21:
-                if (!writer.writeUuid(nearNodeId))
-                    return false;
-
-                writer.incrementState();
-
-            case 22:
-                if (!writer.writeCollection(updCntrs, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 20:
-                miniId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 21:
-                nearNodeId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 22:
-                updCntrs = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
+    /**
+     * @param updCntrs Partition counters update deferred until transaction commit.
+     */
+    public void updateCounters(Collection<PartitionUpdateCountersMessage> updCntrs) {
+        this.updCntrs = updCntrs;
     }
 
     /** {@inheritDoc} */

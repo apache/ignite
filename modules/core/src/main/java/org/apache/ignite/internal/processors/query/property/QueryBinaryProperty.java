@@ -25,6 +25,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryFieldEx;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
@@ -206,8 +207,12 @@ public class QueryBinaryProperty implements GridQueryProperty {
 
         BinaryField field0 = field;
 
-        if (field0 == null && !fieldTaken) {
-            BinaryType type = obj instanceof BinaryObjectEx ? ((BinaryObjectEx)obj).rawType() : obj.type();
+        assert obj instanceof BinaryObjectEx : "Unexpected object class " + obj.getClass().getName();
+        assert field0 == null || field0 instanceof BinaryFieldEx : "Unexpected field class " + field0.getClass().getName();
+
+        if ((field0 == null && !fieldTaken) ||
+            (field0 != null && ((BinaryObjectEx)obj).typeId() != ((BinaryFieldEx)field0).enclosingTypeId())) {
+            BinaryType type = ((BinaryObjectEx)obj).rawType();
 
             if (type != null) {
                 field0 = type.field(propName);

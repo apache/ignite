@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
@@ -71,6 +72,9 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     /** Node attributes. */
     private Map<String, Object> attrs;
 
+    /** Data Center ID. */
+    private String dcId;
+
     /** Internal discovery addresses as strings. */
     private Collection<String> addrs;
 
@@ -103,6 +107,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
 
     /**
      * @param id Node ID.
+     * @param dcId Data Center ID.
      * @param addrs Node addresses.
      * @param hostNames Node host names.
      * @param ver Node version.
@@ -114,6 +119,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
      */
     public ZookeeperClusterNode(
         UUID id,
+        String dcId,
         Collection<String> addrs,
         Collection<String> hostNames,
         IgniteProductVersion ver,
@@ -128,6 +134,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
 
         this.id = id;
         this.ver = ver;
+        this.dcId = dcId;
         this.attrs = Collections.unmodifiableMap(attrs);
         this.addrs = addrs;
         this.hostNames = hostNames;
@@ -231,6 +238,11 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     @Override public Map<String, Object> attributes() {
         // Even though discovery SPI removes this attribute after authentication, keep this check for safety.
         return F.view(attrs, new SecurityCredentialsAttrFilterPredicate());
+    }
+
+    /** {{@inheritDoc} */
+    @Override public @Nullable String dataCenterId() {
+        return dcId;
     }
 
     /** {@inheritDoc} */
@@ -349,6 +361,8 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
 
         if (mtr != null)
             metrics = ClusterMetricsSnapshot.deserialize(mtr, 0);
+
+        dcId = (String)attrs.get(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
     }
 
     /** {@inheritDoc} */
@@ -380,6 +394,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     /** {@inheritDoc} */
     @Override public String toString() {
         return "ZookeeperClusterNode [id=" + id +
+            ", dataCenterId=" + dcId +
             ", addrs=" + addrs +
             ", order=" + order +
             ", loc=" + loc +

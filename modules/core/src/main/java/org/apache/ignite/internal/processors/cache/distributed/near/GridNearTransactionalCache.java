@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -228,8 +228,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 req.version(),
                                 req.version(),
                                 null,
-                                req.committedVersions(),
-                                req.rolledbackVersions(),
+                                F.emptyIfNull(req.committedVersions()),
+                                F.emptyIfNull(req.rolledbackVersions()),
                                 /*system invalidate*/false);
 
                             // Note that we don't reorder completed versions here,
@@ -451,7 +451,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();
 
-                GridDistributedUnlockRequest req = mapping.getValue();
+                GridNearUnlockRequest req = mapping.getValue();
 
                 if (n.isLocal())
                     dht.removeLocks(ctx.nodeId(), req.version(), locKeys, true);
@@ -560,7 +560,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();
 
-                GridDistributedUnlockRequest req = mapping.getValue();
+                GridNearUnlockRequest req = mapping.getValue();
 
                 if (!F.isEmpty(req.keys())) {
                     req.completedVersions(committed, rolledback);

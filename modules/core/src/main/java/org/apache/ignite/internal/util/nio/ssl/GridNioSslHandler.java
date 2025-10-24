@@ -29,10 +29,9 @@ import javax.net.ssl.SSLSession;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.nio.GridNioEmbeddedFuture;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.GridNioException;
-import org.apache.ignite.internal.util.nio.GridNioFuture;
-import org.apache.ignite.internal.util.nio.GridNioFutureImpl;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -220,7 +219,7 @@ class GridNioSslHandler extends ReentrantLock {
                         if (!initHandshakeComplete) {
                             initHandshakeComplete = true;
 
-                            GridNioFutureImpl<?> fut = ses.removeMeta(HANDSHAKE_FUT_META_KEY);
+                            GridFutureAdapter<?> fut = ses.removeMeta(HANDSHAKE_FUT_META_KEY);
 
                             if (fut != null)
                                 fut.onDone();
@@ -422,10 +421,10 @@ class GridNioSslHandler extends ReentrantLock {
      * @param ackC Closure invoked when message ACK is received.
      * @return Write future.
      */
-    GridNioFuture<?> deferredWrite(ByteBuffer buf, IgniteInClosure<IgniteException> ackC) {
+    IgniteInternalFuture<?> deferredWrite(ByteBuffer buf, IgniteInClosure<IgniteException> ackC) {
         assert isHeldByCurrentThread();
 
-        GridNioEmbeddedFuture<Object> fut = new GridNioEmbeddedFuture<>();
+        GridFutureAdapter<Object> fut = new GridFutureAdapter<>();
 
         ByteBuffer cp = copy(buf);
 
@@ -446,7 +445,19 @@ class GridNioSslHandler extends ReentrantLock {
         while (!deferredWriteQueue.isEmpty()) {
             WriteRequest req = deferredWriteQueue.poll();
 
-            req.future().onDone((GridNioFuture<Object>)parent.proceedSessionWrite(ses, req.buffer(), true, req.ackC));
+            GridFutureAdapter<Object> fut0 = req.future();
+
+            IgniteInternalFuture<Object> delegate = (IgniteInternalFuture<Object>)parent.proceedSessionWrite(ses, req.buffer(),
+                true, req.ackC);
+
+            delegate.listen(fut -> {
+                try {
+                    fut0.onDone(fut.get());
+                }
+                catch (IgniteCheckedException e) {
+                    fut0.onDone(e);
+                }
+            });
         }
     }
 
@@ -486,7 +497,7 @@ class GridNioSslHandler extends ReentrantLock {
      * @return Write future.
      * @throws GridNioException If send failed.
      */
-    GridNioFuture<?> writeNetBuffer(IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
+    IgniteInternalFuture<?> writeNetBuffer(IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
         assert isHeldByCurrentThread();
 
         ByteBuffer cp = copy(outNetBuf);
@@ -694,7 +705,7 @@ class GridNioSslHandler extends ReentrantLock {
      */
     private static class WriteRequest {
         /** Future that should be completed. */
-        private final GridNioEmbeddedFuture<Object> fut;
+        private final GridFutureAdapter<Object> fut;
 
         /** Buffer needed to be written. */
         private final ByteBuffer buf;
@@ -709,7 +720,7 @@ class GridNioSslHandler extends ReentrantLock {
          * @param buf Buffer to write.
          * @param ackC Closure invoked when message ACK is received.
          */
-        private WriteRequest(GridNioEmbeddedFuture<Object> fut,
+        private WriteRequest(GridFutureAdapter<Object> fut,
             ByteBuffer buf,
             IgniteInClosure<IgniteException> ackC) {
             this.fut = fut;
@@ -720,7 +731,7 @@ class GridNioSslHandler extends ReentrantLock {
         /**
          * @return Future.
          */
-        public GridNioEmbeddedFuture<Object> future() {
+        public GridFutureAdapter<Object> future() {
             return fut;
         }
 
