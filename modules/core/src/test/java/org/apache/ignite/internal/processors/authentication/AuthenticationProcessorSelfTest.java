@@ -32,8 +32,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
-import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.thread.context.Scope;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.security.AuthenticationContext;
@@ -556,7 +556,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /** Test the ability to obtain the security context ot an authenticated user on the remote server node. */
     @Test
     public void testRemoteNodeSecurityContext() throws Exception {
-        try (OperationSecurityContext ignored = grid(CLI_NODE).context().security().withContext(secCtxDflt)) {
+        try (Scope ignored = grid(CLI_NODE).context().security().withContext(secCtxDflt)) {
             grid(CLI_NODE).context().security().createUser("test", "pwd".toCharArray());
         }
 
@@ -565,7 +565,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         for (int i = 1; i < NODES_COUNT; i++) {
             IgniteSecurity security = ignite(i).context().security();
 
-            try (OperationSecurityContext ignored = security.withContext(subj.id())) {
+            try (Scope ignored = security.withContext(subj.id())) {
                 SecuritySubject rmtSubj = security.securityContext().subject();
 
                 assertEquals(subj.id(), rmtSubj.id());
@@ -646,14 +646,14 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      * @return Holder of current security contexts. If closed, all security context will bew restored.
      */
     public static AutoCloseable withSecurityContextOnAllNodes(SecurityContext ctx) {
-        List<OperationSecurityContext> oldSecCtxs = new ArrayList<>();
+        List<Scope> oldSecCtxs = new ArrayList<>();
 
         for (Ignite node : G.allGrids())
             oldSecCtxs.add(((IgniteEx)node).context().security().withContext(ctx));
 
         return new AutoCloseable() {
-            @Override public void close() throws Exception {
-                oldSecCtxs.forEach(OperationSecurityContext::close);
+            @Override public void close() {
+                oldSecCtxs.forEach(Scope::close);
             }
         };
     }
