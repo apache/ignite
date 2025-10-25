@@ -103,3 +103,15 @@ CREATE INDEX l_rd ON lineitem (L_RECEIPTDATE ASC);
 CREATE INDEX l_ok ON lineitem (L_ORDERKEY ASC);
 CREATE INDEX l_pk_sk ON lineitem (L_PARTKEY ASC, L_SUPPKEY ASC);
 CREATE INDEX l_sk_pk ON lineitem (L_SUPPKEY ASC, L_PARTKEY ASC);
+
+CREATE OR REPLACE VIEW revenue0 AS
+SELECT
+    l_suppkey AS supplier_no,
+    SUM(l_extendedprice * (1 - l_discount)) AS total_revenue
+FROM
+    lineitem
+WHERE
+    l_shipdate >= DATE '1996-01-01'
+    AND l_shipdate < TIMESTAMPADD(MONTH, 3, DATE '1996-01-01')
+GROUP BY
+    l_suppkey;
