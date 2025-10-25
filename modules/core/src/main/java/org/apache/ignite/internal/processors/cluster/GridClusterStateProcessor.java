@@ -1378,7 +1378,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Override public void onStateChangeError(Map<UUID, Exception> errs, StateChangeRequest req) {
+    @Override public void onStateChangeError(Map<UUID, Throwable> errs, StateChangeRequest req) {
         assert !F.isEmpty(errs);
 
         // Revert caches start if activation request fail.
@@ -1408,7 +1408,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (fut != null) {
             IgniteCheckedException e = new IgniteCheckedException("Failed to " + prettyStr(req.state()), null, false);
 
-            for (Map.Entry<UUID, Exception> entry : errs.entrySet())
+            for (Map.Entry<UUID, Throwable> entry : errs.entrySet())
                 e.addSuppressed(entry.getValue());
 
             fut.onDone(e);

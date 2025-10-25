@@ -5354,7 +5354,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Integer partId = (Integer)filter.get(PartitionStateViewWalker.PARTITION_ID_FILTER);
 
         return () -> F.concat(F.concat(F.iterator(filteredMap(cacheGrps, cacheGrpId).values(),
-            grp -> F.iterator(filteredMap(grp.topology().partitionMap(false), nodeId).entrySet(),
+            grp -> F.iterator(filteredMap(grp.topology().partitionMap(false).map(), nodeId).entrySet(),
                 nodeToParts -> F.iterator(filteredMap(nodeToParts.getValue().map(),
                     partId == null || partId < 0 ? null : partId).entrySet(),
                     partToStates -> new PartitionStateView(
