@@ -263,6 +263,33 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                     new CacheOperationContext(
                         skipStore,
                         false,
+                        false,
+                        null,
+                        false,
+                        null,
+                        false,
+                        null,
+                        null));
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalCache<K, V> withSkipReadThrough() {
+        CacheOperationContext prev = gate.enter(opCtx);
+
+        try {
+            if (opCtx != null && opCtx.skipReadThrough())
+                return this;
+
+            return new GridCacheProxyImpl<>(ctx, delegate,
+                opCtx != null ? opCtx.withSkipReadThrough() :
+                    new CacheOperationContext(
+                        false,
+                        true,
+                        false,
                         null,
                         false,
                         null,
@@ -284,6 +311,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
             (GridCacheAdapter<K1, V1>)delegate,
             opCtx != null ? opCtx.keepBinary() :
                 new CacheOperationContext(false,
+                    false,
                     true,
                     null,
                     false,
@@ -1535,6 +1563,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
                     new CacheOperationContext(
                         false,
                         false,
+                        false,
                         plc,
                         false,
                         null,
@@ -1554,6 +1583,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         try {
             return new GridCacheProxyImpl<>(ctx, delegate,
                 new CacheOperationContext(
+                    false,
                     false,
                     false,
                     null,

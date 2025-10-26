@@ -48,6 +48,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
+import static org.apache.ignite.internal.processors.query.QueryUtils.cacheForDML;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.ERROR;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_CACHE_UPDATES;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_CACHE_UPDATE;
@@ -237,7 +238,7 @@ public class DmlBatchSender {
         Map<Object, EntryProcessorResult<Boolean>> res;
 
         try {
-            res = cctx.cache().invokeAll(batch.rowProcessors());
+            res = cacheForDML(cctx.cache()).invokeAll(batch.rowProcessors());
         }
         catch (IgniteCheckedException e) {
             for (Integer rowNum : batch.rowNumbers().values()) {

@@ -87,7 +87,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         int taskNameHash,
-        byte flags,
+        short flags,
         boolean addDepInfo
     ) {
         super(cacheId,
