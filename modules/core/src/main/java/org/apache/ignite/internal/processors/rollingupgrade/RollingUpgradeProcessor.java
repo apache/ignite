@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
@@ -95,6 +96,9 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
      */
     public void enable(IgniteProductVersion target) throws IgniteCheckedException {
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
+
+        if (!(ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi))
+            throw new IgniteCheckedException("Rolling upgrade is supported only with TCP discovery SPI.");
 
         String curBuildVer = ctx.discovery().localNode().attribute(ATTR_BUILD_VER);
         IgniteProductVersion curVer = IgniteProductVersion.fromString(curBuildVer);
