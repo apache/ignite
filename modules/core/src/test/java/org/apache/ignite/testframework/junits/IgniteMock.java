@@ -18,6 +18,7 @@
 package org.apache.ignite.testframework.junits;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -148,6 +149,10 @@ public class IgniteMock implements IgniteEx {
             kernalCtx = new StandaloneGridKernalContext(new GridTestLog4jLogger(), null) {
                 @Override public GridInternalSubscriptionProcessor internalSubscriptionProcessor() {
                     return new GridInternalSubscriptionProcessor(this);
+                }
+
+                @Override public Map<String, Object> nodeAttributes() {
+                    return Collections.emptyMap();
                 }
             };
         }
