@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
+import java.nio.ByteBuffer;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
@@ -32,6 +33,8 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -53,9 +56,11 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
     /** Previous value. */
     @GridToStringInclude
+    @Order(value = 14, method = "prevValue")
     protected CacheObject prevVal;
 
     /** Partition. */
+    @Order(value = 15, method = "updateCounter")
     protected long updateCntr;
 
     /**
@@ -254,6 +259,20 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         return updateCntr;
     }
 
+    /**
+     * @return Update counter.
+     */
+    public long updateCounter() {
+        return updateCntr;
+    }
+
+    /**
+     * @param updateCntr Update counter.
+     */
+    public void updateCounter(long updateCntr) {
+        this.updateCntr = updateCntr;
+    }
+
     /** {@inheritDoc} */
     @Override public KeyCacheObject nearKey(int idx) {
         assert idx == 0 : idx;
@@ -388,6 +407,95 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         finishUnmarshalObject(val, cctx, ldr);
 
         finishUnmarshalObject(prevVal, cctx, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!super.writeTo(buf, writer))
+            return false;
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 12:
+                if (!writer.writeKeyCacheObject(key))
+                    return false;
+
+                writer.incrementState();
+
+            case 13:
+                if (!writer.writeCacheObject(prevVal))
+                    return false;
+
+                writer.incrementState();
+
+            case 14:
+                if (!writer.writeLong(updateCntr))
+                    return false;
+
+                writer.incrementState();
+
+            case 15:
+                if (!writer.writeCacheObject(val))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
+            case 12:
+                key = reader.readKeyCacheObject();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 13:
+                prevVal = reader.readCacheObject();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 14:
+                updateCntr = reader.readLong();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 15:
+                val = reader.readCacheObject();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return true;
     }
 
     /**
