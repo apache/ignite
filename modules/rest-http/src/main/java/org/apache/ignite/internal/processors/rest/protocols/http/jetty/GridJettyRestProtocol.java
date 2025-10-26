@@ -93,6 +93,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     @Override public void start(GridRestProtocolHandler hnd) throws IgniteCheckedException {
         assert ctx.config().getConnectorConfiguration() != null;
 
+        if (U.resolveIgniteUrl("libs/ignite-json") == null)
+            log.warning("Can't find ignite-json module in classpath, which is required for REST API functionality.");
+
         String jettyHost = System.getProperty(IGNITE_JETTY_HOST, ctx.config().getLocalHost());
 
         try {
