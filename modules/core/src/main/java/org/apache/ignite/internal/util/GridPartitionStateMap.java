@@ -251,7 +251,7 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
      * @param states Encoded states in bits.
      */
     public void states(BitSet states) {
-        this.states = states;
+        this.states = states != null ? states : new BitSet();
     }
 
     /** {@inheritDoc} */

@@ -220,7 +220,10 @@ public class GridDhtPartitionFullMap
      * @param map Full partition map.
      */
     public void map(Map<UUID, GridDhtPartitionMap> map) {
-        this.map = map;
+        this.map = new HashMap<>();
+
+        if (map != null)
+            this.map.putAll(map);
     }
 
     /** {@inheritDoc} */
@@ -240,7 +243,12 @@ public class GridDhtPartitionFullMap
         nodeOrder = in.readLong();
         updateSeq = in.readLong();
 
-        map = U.readMap(in);
+        map = new HashMap<>();
+
+        Map<UUID, GridDhtPartitionMap> map0 = U.readMap(in);
+
+        if (map0 != null)
+            map.putAll(map0);
     }
 
     /** {@inheritDoc} */

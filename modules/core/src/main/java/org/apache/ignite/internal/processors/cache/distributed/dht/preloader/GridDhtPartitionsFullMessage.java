@@ -41,6 +41,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.stream.Collectors.toMap;
+
 /**
  * Information about partitions of all nodes in topology. <br> Is sent by topology coordinator: when all {@link
  * GridDhtPartitionsSingleMessage}s were received. <br> May be also compacted as part of {@link
@@ -82,12 +84,17 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Order(value = 12, method = "topologyVersion")
     private AffinityTopologyVersion topVer;
 
-    /** Exceptions. */
+    /**
+     * Used as a stub for serialization {@link #errsMap}.
+     * All logic resides within getter and setter methods.
+     */
     @Order(value = 13, method = "errors")
     @GridToStringInclude
+    @SuppressWarnings("unused")
     private Map<UUID, ErrorMessage> errs;
 
-    /** */
+    /** Exceptions. */
+    @GridToStringInclude
     private Map<UUID, Throwable> errsMap;
 
     /** */
@@ -168,7 +175,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         cp.partsToReload = partsToReload;
         cp.partsSizes = partsSizes;
         cp.topVer = topVer;
-        cp.errs = errs;
+        cp.errsMap = errsMap;
         cp.resTopVer = resTopVer;
         cp.joinedNodeAff = joinedNodeAff;
         cp.idealAffDiff = idealAffDiff;
@@ -437,10 +444,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @return Errors map.
      */
     @Nullable public Map<UUID, Throwable> errorsMap() {
-        if (errsMap == null && errs != null)
-            errsMap = errs.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().toThrowable()));
-
         return errsMap;
     }
 
@@ -449,29 +452,30 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      */
     public void errorsMap(Map<UUID, Exception> errsMap) {
         this.errsMap = new HashMap<>(errsMap);
-
-        errs = new HashMap<>(errsMap.entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, entry -> new ErrorMessage(entry.getValue()))));
     }
 
     /**
-     * @return Exceptions.
+     * Use only for serialization {@link #errsMap}.
+     *
+     * @return Errors map.
      */
     public Map<UUID, ErrorMessage> errors() {
-        return errs;
+        if (errsMap == null)
+            return null;
+
+        return errsMap.entrySet().stream()
+            .collect(toMap(Map.Entry::getKey, entry -> new ErrorMessage(entry.getValue())));
     }
 
     /**
-     * @param errs Exceptions.
+     * Use only for deserialization {@link #errsMap}.
+     *
+     * @param errs Errors map.
      */
     public void errors(Map<UUID, ErrorMessage> errs) {
-        this.errs = errs;
-
-        if (errs == null)
-            errsMap = null;
-        else
-            errsMap = errs.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().toThrowable()));
+        errsMap = errs != null
+                ? errs.entrySet().stream().collect(toMap(Map.Entry::getKey, entry -> entry.getValue().toThrowable()))
+                : null;
     }
 
     /**
@@ -559,8 +563,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         if (partsToReload == null)
             partsToReload = new IgniteDhtPartitionsToReloadMap();
 
-        if (errs == null)
-            errs = new HashMap<>();
+        if (errsMap == null)
+            errsMap = new HashMap<>();
     }
 
     /** {@inheritDoc} */
