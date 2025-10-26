@@ -50,7 +50,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     @Nullable private volatile DistributedMetaStorage metastorage;
 
     /** Min max version of nodes in cluster supplier. */
-    private Supplier<IgnitePair<IgniteProductVersion>> minMaxVersionSupplier;
+    private Supplier<IgnitePair<IgniteProductVersion>>  minMaxVersionSupplier;
 
     /** Last joining node. */
     private ClusterNode lastJoiningNode = null;
@@ -136,14 +136,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
         synchronized (lock) {
             if (lastJoiningNode != null && U.currentTimeMillis() - lastJoiningNodeTimestamp > JOINING_TIMEOUT)
                 lastJoiningNode = null;
-
-            if (minMaxVersionSupplier == null) {
-                if (log.isDebugEnabled())
-                    log.debug("Using local node version as min/max version");
-
-                IgniteProductVersion curVer = IgniteProductVersion.fromString(ctx.discovery().localNode().attribute(ATTR_BUILD_VER));
-                minMaxVersionSupplier = () -> F.pair(curVer, curVer);
-            }
 
             IgnitePair<IgniteProductVersion> minMaxVerPair = minMaxVersionSupplier.get();
 
