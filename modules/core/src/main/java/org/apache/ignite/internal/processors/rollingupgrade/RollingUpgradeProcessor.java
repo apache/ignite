@@ -92,6 +92,9 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If versions are incorrect or metastorage is not available.
      */
     public void enable(IgniteProductVersion target) throws IgniteCheckedException {
+        if (!U.isLocalNodeCoordinator(ctx.discovery()))
+            throw new IgniteCheckedException("Rolling upgrade can be enabled only on coordinator node");
+
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
 
         if (!(ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi))
@@ -126,6 +129,9 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If metastorage is not available.
      */
     public void disable() throws IgniteCheckedException {
+        if (!U.isLocalNodeCoordinator(ctx.discovery()))
+            throw new IgniteCheckedException("Rolling upgrade can be disabled only on coordinator node");
+
         A.notNull(metastorage, "Metastorage not ready. Node not started?");
 
         if (metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY) == null) {
