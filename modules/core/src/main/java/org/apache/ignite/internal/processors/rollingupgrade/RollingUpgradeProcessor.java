@@ -289,32 +289,18 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      * @throws IgniteCheckedException If versions are incorrect.
      */
     private boolean checkVersionsForEnabling(IgniteProductVersion cur, IgniteProductVersion target) throws IgniteCheckedException {
-        if (cur.major() != target.major()) {
-            String errMsg = "Major versions are different.";
-
-            log.warning(errMsg);
-
-            throw new IgniteCheckedException(errMsg);
-        }
+        if (cur.major() != target.major())
+            throw new IgniteCheckedException("Major versions are different.");
 
         if (cur.minor() != target.minor()) {
             if (target.minor() == cur.minor() + 1 && target.maintenance() == 0)
                 return true;
 
-            String errMsg = "Minor version can only be incremented by 1.";
-
-            log.warning(errMsg);
-
-            throw new IgniteCheckedException(errMsg);
+            throw new IgniteCheckedException("Minor version can only be incremented by 1.");
         }
 
-        if (cur.maintenance() + 1 != target.maintenance()) {
-            String errMsg = "Patch version can only be incremented by 1.";
-
-            log.warning(errMsg);
-
-            throw new IgniteCheckedException(errMsg);
-        }
+        if (cur.maintenance() + 1 != target.maintenance())
+            throw new IgniteCheckedException("Patch version can only be incremented by 1.");
 
         return true;
     }
