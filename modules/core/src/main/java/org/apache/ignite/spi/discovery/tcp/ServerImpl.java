@@ -2999,7 +2999,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             });
 
             if (spi.ignite() instanceof IgniteEx)
-                ((IgniteEx)spi.ignite()).context().rollingUpgrade().minMaxVersionCallback(ring::minMaxNodeVersions);
+                ((IgniteEx)spi.ignite()).context().rollingUpgrade().ring(ring);
         }
 
         /**

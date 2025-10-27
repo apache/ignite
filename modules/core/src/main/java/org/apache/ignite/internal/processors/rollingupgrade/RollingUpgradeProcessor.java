@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.rollingupgrade;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
@@ -27,20 +26,23 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMetaStorage;
+import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
 
 /** Rolling upgrade processor. Manages current and target versions of cluster. */
-public class RollingUpgradeProcessor extends GridProcessorAdapter {
+public class RollingUpgradeProcessor extends GridProcessorAdapter implements DiscoveryNodeValidationProcessor {
     /** Key for the distributed property that holds current and target versions. */
     private static final String ROLLING_UPGRADE_VERSIONS_KEY = IGNITE_INTERNAL_KEY_PREFIX + "rolling.upgrade.versions";
 
@@ -48,7 +50,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     @Nullable private volatile DistributedMetaStorage metastorage;
 
     /** Min max version of nodes in cluster supplier. */
-    private Supplier<IgnitePair<IgniteProductVersion>>  minMaxVersionSupplier;
+    private TcpDiscoveryNodesRing ring;
 
     /** Last joining node. */
     private ClusterNode lastJoiningNode;
@@ -98,7 +100,45 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
 
             lastJoiningNodeTimestamp = U.currentTimeMillis();
         }
-        return null;
+
+        ClusterNode locNode = ctx.discovery().localNode();
+
+        String locBuildVer = locNode.attribute(ATTR_BUILD_VER);
+        String rmtBuildVer = node.attribute(ATTR_BUILD_VER);
+
+        IgniteProductVersion rmtVer = IgniteProductVersion.fromString(rmtBuildVer);
+
+        IgnitePair<IgniteProductVersion> pair = verPair;
+
+        if (pair == null)
+            pair = F.pair(IgniteProductVersion.fromString(locBuildVer), null);
+
+        IgniteProductVersion curVer = pair.get1();
+        IgniteProductVersion targetVer = pair.get2();
+
+        if (validateVersionsForJoining(rmtVer, curVer) || validateVersionsForJoining(rmtVer, targetVer))
+            return null;
+
+        String errMsg = "Remote node rejected due to incompatible version for cluster join.\n"
+            + "Remote node info:\n"
+            + "  - Version     : " + rmtBuildVer + "\n"
+            + "  - Addresses   : " + U.addressesAsString(node) + "\n"
+            + "  - Node ID     : " + node.id() + "\n"
+            + "Local node info:\n"
+            + "  - Version     : " + locBuildVer + "\n"
+            + "  - Addresses   : " + U.addressesAsString(locNode) + "\n"
+            + "  - Node ID     : " + locNode.id() + "\n"
+            + "Allowed versions for joining: \n"
+            + " - " + curVer.major() + "." + curVer.minor() + "." + curVer.maintenance()
+            + (targetVer == null || targetVer.equals(curVer) ? "" :
+            "\n - " + targetVer.major() + "." + targetVer.minor() + "." + targetVer.maintenance());
+
+        LT.warn(log, errMsg);
+
+        if (log.isDebugEnabled())
+            log.debug(errMsg);
+
+        return new IgniteNodeValidationResult(node.id(), errMsg);
     }
 
     /**
@@ -126,7 +166,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
         String curBuildVer = ctx.discovery().localNode().attribute(ATTR_BUILD_VER);
         IgniteProductVersion curVer = IgniteProductVersion.fromString(curBuildVer);
 
-        if (!checkVersions(curVer, target))
+        if (!checkVersionsForEnabling(curVer, target))
             return;
 
         IgnitePair<IgniteProductVersion> newPair = F.pair(curVer, target);
@@ -167,7 +207,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
         if (verPair == null)
             throw new IgniteCheckedException("Rolling upgrade is already disabled");
 
-        IgnitePair<IgniteProductVersion> minMaxVerPair = minMaxVersionSupplier.get();
+        IgnitePair<IgniteProductVersion> minMaxVerPair = ring.minMaxNodeVersions();
 
         Set<IgniteProductVersion> vers = new HashSet<>();
 
@@ -179,12 +219,14 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException("Can't disable rolling upgrade with different versions in cluster: " + vers);
 
         synchronized (lock) {
-            if (lastJoiningNode != null
-                && U.currentTimeMillis() - lastJoiningNodeTimestamp > ((TcpDiscoverySpi)ctx.config().getDiscoverySpi()).getJoinTimeout())
-                lastJoiningNode = null;
+            if (lastJoiningNode != null) {
+                if (ring.node(lastJoiningNode.id()) != null
+                || U.currentTimeMillis() - lastJoiningNodeTimestamp > ((TcpDiscoverySpi)ctx.config().getDiscoverySpi()).getJoinTimeout())
+                    lastJoiningNode = null;
+            }
 
             if (lastJoiningNode != null)
-                vers.add(lastJoiningNode.version());
+                vers.add(IgniteProductVersion.fromString(lastJoiningNode.attribute(ATTR_BUILD_VER)));
 
             if (vers.size() > 1)
                 throw new IgniteCheckedException("Can't disable rolling upgrade with different versions in cluster: " + vers);
@@ -213,12 +255,27 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
      *     or {@code null} if rolling upgrade is not active.
      */
     public IgnitePair<IgniteProductVersion> versions() {
+        if (ctx.clientNode()) {
+            try {
+                return metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
+            }
+            catch (IgniteCheckedException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return verPair;
     }
 
     /** Checks whether the cluster is in the rolling upgrade mode. */
     public boolean enabled() {
         return versions() != null;
+    }
+
+    /**
+     * @param minMaxVersionSupplier Min max versions of nodes in cluster supplier.
+     */
+    public void ring(TcpDiscoveryNodesRing ring) {
+        this.ring = ring;
     }
 
     /**
@@ -229,7 +286,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
      * @return {@code false} if there is no need to update versions {@code true} otherwise.
      * @throws IgniteCheckedException If versions are incorrect.
      */
-    private boolean checkVersions(IgniteProductVersion cur, IgniteProductVersion target) throws IgniteCheckedException {
+    private boolean checkVersionsForEnabling(IgniteProductVersion cur, IgniteProductVersion target) throws IgniteCheckedException {
         if (cur.major() != target.major()) {
             String errMsg = "Major versions are different.";
 
@@ -260,10 +317,11 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
         return true;
     }
 
-    /**
-     * @param minMaxVersionSupplier Min max versions of nodes in cluster supplier.
-     */
-    public void minMaxVersionCallback(Supplier<IgnitePair<IgniteProductVersion>> minMaxVersionSupplier) {
-        this.minMaxVersionSupplier = minMaxVersionSupplier;
+    /** Checks if versions have same major, minor and maintenance versions. */
+    private boolean validateVersionsForJoining(IgniteProductVersion ver1, IgniteProductVersion ver2) {
+        if (ver1 == null || ver2 == null)
+            return false;
+
+        return ver1.major() == ver2.major() && ver1.minor() == ver2.minor() && ver1.maintenance() == ver2.maintenance();
     }
 }

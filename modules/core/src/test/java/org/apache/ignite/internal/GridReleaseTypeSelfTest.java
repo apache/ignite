@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.function.ThrowableSupplier;
 import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -141,6 +142,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testForwardRollingUpgrade() throws Exception {
+        cleanPersistenceDir();
         IgniteEx ign0 = startGrid(0, "2.18.0", false);
         IgniteEx ign1 = startGrid(1, "2.18.0", isClient);
         IgniteEx ign2 = startGrid(2, "2.18.0", isClient);
@@ -150,6 +152,11 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         assertRemoteRejected(() -> startGrid(3, "2.18.1", isClient));
 
         configureRollingUpgradeVersion(ign0, "2.18.1");
+
+        for (int i = 0; i < 3; i++) {
+            int finalI = i;
+            assertTrue(waitForCondition(() -> grid(finalI).context().rollingUpgrade().enabled(), getTestTimeout()));
+        }
 
         ign2.close();
 
@@ -163,7 +170,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertClusterSize(2);
 
-        startGrid(1, "2.18.1", false);
+        startGrid(1, "2.18.1", isClient);
 
         assertClusterSize(3);
 
@@ -175,15 +182,64 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertClusterSize(3);
 
-        grid(0).context().rollingUpgrade().disable();
+        if (isClient) {
+            if (persistence)
+                grid(0).context().rollingUpgrade().disable();
+            else
+                assertDisablingFails(grid(0), "Rolling upgrade is already disabled");
+        }
+        else
+            grid(2).context().rollingUpgrade().disable();
 
-        assertFalse(grid(0).context().rollingUpgrade().enabled());
-
-        grid(0).context().rollingUpgrade().disable();
-
-        assertFalse(grid(0).context().rollingUpgrade().enabled());
+        for (int i = 0; i < 3; i++)
+            if (!grid(i).localNode().isClient())
+                assertFalse(grid(i).context().rollingUpgrade().enabled());
 
         assertRemoteRejected(() -> startGrid(3, "2.18.0", isClient));
+    }
+
+    /** */
+    @Test
+    public void testJoiningNodeFailed() throws Exception {
+        int joinTimeout = 15_000;
+
+        IgniteEx ign0 = startGrid(0, "2.18.0", false,
+            cfg -> {
+                ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(joinTimeout);
+                return cfg;
+            });
+
+        configureRollingUpgradeVersion(ign0, "2.18.1");
+
+        RunnableX runnableX = () -> startGrid(1, "2.18.1", false,
+            cfg -> {
+                TcpDiscoverySpi oldSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
+
+                TcpDiscoverySpi newSpi = new TcpDiscoverySpi() {
+                    @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
+                        super.setNodeAttributes(attrs, ver);
+
+                        attrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, nodeVer);
+                        attrs.put(IgniteNodeAttributes.ATTR_MARSHALLER, "null");
+                    }
+                };
+
+                newSpi.setIpFinder(oldSpi.getIpFinder());
+
+                return cfg.setDiscoverySpi(newSpi);
+            });
+
+        Throwable e = assertThrows(log, runnableX, IgniteException.class, null);
+
+        assertTrue(X.hasCause(e, "Local node's marshaller differs from remote node's marshaller", IgniteSpiException.class));
+
+        assertDisablingFails(ign0, "Can't disable rolling upgrade with different versions in cluster");
+
+        doSleep(joinTimeout);
+
+        ign0.context().rollingUpgrade().disable();
+
+        assertFalse(ign0.context().rollingUpgrade().enabled());
     }
 
     /** */
@@ -286,6 +342,21 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         assertTrue(e.getMessage().contains(errMsg));
     }
 
+    /**
+     * Checks that disabling rolling upgrade fails with expected error message.
+     *
+     * @param ex Ex.
+     * @param errMsg Expected error message.
+     */
+    private void assertDisablingFails(IgniteEx ex, String errMsg) {
+        Throwable e = assertThrows(log,
+            () -> ex.context().rollingUpgrade().disable(),
+            IgniteException.class,
+            null);
+
+        assertTrue(e.getMessage().contains(errMsg));
+    }
+
     /** Tests that starting a node with rejected version fails with remote rejection. */
     private void testConflictVersions(String acceptedVer, String rejVer, boolean isClient) {
         ThrowableSupplier<IgniteEx, Exception> sup = () -> {
@@ -337,11 +408,15 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         String rollUpVerCheck) throws Exception {
         IgniteEx grid = startGrid(0, acceptedVer1, false);
 
-        configureRollingUpgradeVersion(grid, rollUpVerCheck);
+        if (rollUpVerCheck != null)
+            configureRollingUpgradeVersion(grid, rollUpVerCheck);
 
         startGrid(1, acceptedVer2, isClient);
 
         assertClusterSize(2);
+
+        if (rollUpVerCheck != null)
+            grid.context().rollingUpgrade().disable();
 
         stopAllGrids();
 
@@ -359,12 +434,16 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     ) throws Exception {
         IgniteEx grid = startGrid(0, acceptedVer1, false);
 
-        configureRollingUpgradeVersion(grid, rollUpVerCheck);
+        if (rollUpVerCheck != null)
+            configureRollingUpgradeVersion(grid, rollUpVerCheck);
 
         startGrid(1, acceptedVer2, isClient);
         startGrid(2, acceptedVer3, isClient);
 
         assertClusterSize(3);
+
+        if (rollUpVerCheck != null)
+            grid.context().rollingUpgrade().disable();
 
         stopAllGrids();
 
