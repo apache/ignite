@@ -110,11 +110,9 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
         startGrid(0);
 
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
-        startClientGrid();
-
         IgniteEx client = startClientGrid("client");
 
-        waitForTopology(3);
+        waitForTopology(2);
 
         client.cluster().state(ClusterState.ACTIVE);
 
