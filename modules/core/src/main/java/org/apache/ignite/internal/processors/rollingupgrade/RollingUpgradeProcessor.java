@@ -259,7 +259,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     }
 
     /**
-     * @param minMaxVersionSupplier Min max versions of nodes in cluster supplier.
+     * @param ring TCP discovery nodes ring.
      */
     public void ring(TcpDiscoveryNodesRing ring) {
         this.ring = ring;
