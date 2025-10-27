@@ -58,7 +58,7 @@ import org.apache.ignite.lang.IgniteExperimental;
  * 
  * CacheConfiguration cacheCfg = new CacheConfiguration("example-cache")
  *     .setTopologyValidator(mdcValidator)
- *	   // other cache properties.
+ *     // other cache properties.
  * </pre>
  *
  * <p><strong>Note:</strong> This class is marked with the {@link IgniteExperimental} annotation and may change in future releases.</p>
