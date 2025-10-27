@@ -216,8 +216,9 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
         synchronized (lock) {
             if (lastJoiningNode != null) {
-                if (ring.node(lastJoiningNode.id()) != null
-                || U.currentTimeMillis() - lastJoiningNodeTimestamp > ((TcpDiscoverySpi)ctx.config().getDiscoverySpi()).getJoinTimeout())
+                long timeout = ((TcpDiscoverySpi)ctx.config().getDiscoverySpi()).getJoinTimeout();
+
+                if (ring.node(lastJoiningNode.id()) != null || U.currentTimeMillis() - lastJoiningNodeTimestamp > timeout)
                     lastJoiningNode = null;
             }
 
