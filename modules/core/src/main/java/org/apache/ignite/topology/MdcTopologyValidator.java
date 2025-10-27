@@ -64,9 +64,8 @@ public class MdcTopologyValidator implements TopologyValidator {
     @Override public boolean validate(Collection<ClusterNode> nodes) {
         Stream<ClusterNode> servers = nodes.stream().filter(node -> !node.isClient());
 
-        if (mainDc != null) {
+        if (mainDc != null)
             return servers.anyMatch(n -> n.dataCenterId() != null && n.dataCenterId().equals(mainDc));
-        }
 
         long visible = servers.map(ClusterNode::dataCenterId).count();
         int half = dcs.size() / 2;
