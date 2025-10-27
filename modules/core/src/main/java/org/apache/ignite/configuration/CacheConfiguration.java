@@ -2221,6 +2221,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setTopologyValidator(TopologyValidator topValidator) {
+        try {
+            topValidator.checkConfiguration();
+        }
+        catch (Exception e) {
+            throw new CacheException(e);
+        }
+
         this.topValidator = topValidator;
 
         return this;

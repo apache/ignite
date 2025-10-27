@@ -79,18 +79,21 @@ public class MdcTopologyValidator implements TopologyValidator {
 
     /** @param datacenters Datacenters.*/
     public void setDatacenters(Set<String> datacenters) {
-        if (mainDc != null && datacenters.size() % 2 == 1)
-            throw new IllegalArgumentException("Datacenters count must be even when main datacenter is set.");
-
         dcs = datacenters;
     }
 
     /** @param mainDatacenter Main datacenter.*/
     public void setMainDatacenter(String mainDatacenter) {
-        if (mainDatacenter != null && dcs != null && dcs.size() % 2 == 1)
-            throw new IllegalArgumentException("Datacenters count must be even when main datacenter is set.");
-
         mainDc = mainDatacenter;
+    }
+
+    /** */
+    @Override public void checkConfiguration() {
+        if (dcs == null && mainDc == null)
+            throw new IllegalStateException("Missing datacenters or main datacenter.");
+
+        if (mainDc != null && dcs != null && dcs.size() % 2 == 1)
+            throw new IllegalStateException("Datacenters count must be even when main datacenter is set.");
     }
 
     /** {@inheritDoc} */

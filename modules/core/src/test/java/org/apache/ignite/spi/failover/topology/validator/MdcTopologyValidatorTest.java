@@ -19,6 +19,7 @@ package org.apache.ignite.spi.failover.topology.validator;
 
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -76,25 +77,26 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testEvenDcWithPrimary1() {
+    public void testEmptyConfig() {
         MdcTopologyValidator topValidator = new MdcTopologyValidator();
 
-        topValidator.setDatacenters(Set.of(DC_ID_0, DC_ID_1, DC_ID_2));
         GridTestUtils.assertThrows(log,
-            () -> topValidator.setMainDatacenter(DC_ID_1),
-            IgniteException.class,
-            "Datacenters count must be even when main datacenter is set.");
+            () -> createClusterWithCache(topValidator, false),
+            CacheException.class,
+            "Missing datacenters or main datacenter");
     }
 
     /** */
     @Test
-    public void testEvenDcWithPrimary2() {
+    public void testOddDcsWithMain() {
         MdcTopologyValidator topValidator = new MdcTopologyValidator();
 
+        topValidator.setDatacenters(Set.of(DC_ID_0, DC_ID_1, DC_ID_2));
         topValidator.setMainDatacenter(DC_ID_1);
+
         GridTestUtils.assertThrows(log,
-            () -> topValidator.setDatacenters(Set.of(DC_ID_0, DC_ID_1, DC_ID_2)),
-            IgniteException.class,
+            () -> createClusterWithCache(topValidator, false),
+            CacheException.class,
             "Datacenters count must be even when main datacenter is set.");
     }
 
