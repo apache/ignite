@@ -49,7 +49,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
 
-    /** Min max version of nodes in cluster supplier. */
+    /** TCP discovery nodes ring. */
     private TcpDiscoveryNodesRing ring;
 
     /** Last joining node. */
