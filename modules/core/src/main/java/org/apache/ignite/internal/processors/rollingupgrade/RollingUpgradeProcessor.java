@@ -163,7 +163,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         String curBuildVer = ctx.discovery().localNode().attribute(ATTR_BUILD_VER);
         IgniteProductVersion curVer = IgniteProductVersion.fromString(curBuildVer);
 
-        if (checkVersionsForEnabling(curVer, target))
+        if (!checkVersionsForEnabling(curVer, target))
             return;
 
         IgnitePair<IgniteProductVersion> newPair = F.pair(curVer, target);
@@ -250,14 +250,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      *     or {@code null} if rolling upgrade is not active.
      */
     public IgnitePair<IgniteProductVersion> versions() {
-        if (ctx.clientNode()) {
-            try {
-                return metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
-            }
-            catch (IgniteCheckedException e) {
-                throw new RuntimeException(e);
-            }
-        }
         return verPair;
     }
 

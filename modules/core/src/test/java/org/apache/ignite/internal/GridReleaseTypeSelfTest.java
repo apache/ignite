@@ -185,8 +185,6 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         if (isClient) {
             if (persistence)
                 grid(0).context().rollingUpgrade().disable();
-            else
-                assertDisablingFails(grid(0), "Rolling upgrade is already disabled");
         }
         else
             grid(2).context().rollingUpgrade().disable();
