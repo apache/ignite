@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.CONCURRENT_UPDATE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
+import static org.apache.ignite.internal.processors.query.QueryUtils.cacheForDML;
 
 /**
  *
@@ -218,7 +219,7 @@ public class ModifyNode<Row> extends AbstractNode<Row> implements SingleNode<Row
         GridCacheProxyImpl<Object, Object> cache
     ) throws IgniteCheckedException {
         Map<Object, EntryProcessor<Object, Object, Long>> map = invokeMap(tuples);
-        Map<Object, EntryProcessorResult<Long>> res = cache.invokeAll(map);
+        Map<Object, EntryProcessorResult<Long>> res = cacheForDML(cache).invokeAll(map);
 
         long updated = res.values().stream().mapToLong(EntryProcessorResult::get).sum();
 

@@ -360,6 +360,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             null,
             false,
             /*skip store*/false,
+            /*Skip read-through*/false,
             false
         ).get().get(keyValue(false));
     }
