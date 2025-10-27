@@ -18,8 +18,8 @@
 package org.apache.ignite.topology;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.TopologyValidator;
@@ -39,13 +39,13 @@ public class MdcTopologyValidator implements TopologyValidator {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private List<String> dcs;
+    private Set<String> dcs;
 
     /** */
     private String mainDc;
 
     /** @param datacenters Datacenters.*/
-    public void setDatacenters(List<String> datacenters) {
+    public void setDatacenters(Set<String> datacenters) {
         if (mainDc != null && datacenters.size() % 2 == 1)
             throw new IllegalArgumentException("Datacenters count must be even when main datacenter is set.");
 
