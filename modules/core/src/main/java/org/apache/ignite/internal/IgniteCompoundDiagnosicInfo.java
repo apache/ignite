@@ -46,6 +46,7 @@ public final class IgniteCompoundDiagnosicInfo implements Message {
     private final Set<IgniteDiagnosticMessage.DiagnosticBaseInfo> info = new LinkedHashSet<>();
 
     /** {@code info} serialization call holder. */
+    @Order(1)
     private Collection<byte[]> infosBytes;
 
     /** Local message related to remote info. */
