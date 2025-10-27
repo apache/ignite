@@ -169,7 +169,7 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
 
         topValidator.setDatacenters(List.of());
 
-        IgniteCache<Object, Object> cache = createCache(topValidator);
+        IgniteCache<Object, Object> cache = createClusterWithCache(topValidator, false);
 
         cache.put(KEY, VAL);
         assertEquals(VAL, cache.get(KEY));
@@ -195,7 +195,7 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
         topValidator.setDatacenters(List.of(DC_ID_0, DC_ID_1, DC_ID_2, "DC4"));
         topValidator.setPrimaryDatacenter(DC_ID_1);
 
-        IgniteCache<Object, Object> cache = createCache(topValidator);
+        IgniteCache<Object, Object> cache = createClusterWithCache(topValidator, true);
 
         cache.put(KEY, VAL);
         assertEquals(VAL, cache.get(KEY));
@@ -217,7 +217,7 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
 
         topValidator.setDatacenters(List.of(DC_ID_0, DC_ID_1, DC_ID_2));
 
-        IgniteCache<Object, Object> cache = createCache(topValidator);
+        IgniteCache<Object, Object> cache = createClusterWithCache(topValidator, true);
 
         cache.put(KEY, VAL);
         assertEquals(VAL, cache.get(KEY));
@@ -235,14 +235,20 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private IgniteCache<Object, Object> createCache(TopologyValidator topValidator) throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
+    private IgniteCache<Object, Object> createClusterWithCache(TopologyValidator topValidator, boolean setDc) throws Exception {
+        if (setDc)
+            System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
+
         IgniteEx srv0 = startGrid(0);
 
-        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
+        if (setDc)
+            System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
+
         startGrid(1);
 
-        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_2);
+        if (setDc)
+            System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_2);
+
         startGrid(2);
 
         waitForTopology(3);
