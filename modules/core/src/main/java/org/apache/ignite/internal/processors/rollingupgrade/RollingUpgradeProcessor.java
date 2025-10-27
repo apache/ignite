@@ -168,8 +168,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         String curBuildVer = ctx.discovery().localNode().attribute(ATTR_BUILD_VER);
         IgniteProductVersion curVer = IgniteProductVersion.fromString(curBuildVer);
 
-        if (!checkVersionsForEnabling(curVer, target))
-            return;
+        checkVersionsForEnabling(curVer, target);
 
         IgnitePair<IgniteProductVersion> newPair = F.pair(curVer, target);
 
@@ -288,21 +287,19 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      * @return {@code false} if there is no need to update versions {@code true} otherwise.
      * @throws IgniteCheckedException If versions are incorrect.
      */
-    private boolean checkVersionsForEnabling(IgniteProductVersion cur, IgniteProductVersion target) throws IgniteCheckedException {
+    private void checkVersionsForEnabling(IgniteProductVersion cur, IgniteProductVersion target) throws IgniteCheckedException {
         if (cur.major() != target.major())
             throw new IgniteCheckedException("Major versions are different.");
 
         if (cur.minor() != target.minor()) {
             if (target.minor() == cur.minor() + 1 && target.maintenance() == 0)
-                return true;
+                return;
 
             throw new IgniteCheckedException("Minor version can only be incremented by 1.");
         }
 
         if (cur.maintenance() + 1 != target.maintenance())
             throw new IgniteCheckedException("Patch version can only be incremented by 1.");
-
-        return true;
     }
 
     /** Checks if versions have same major, minor and maintenance versions. */
