@@ -1115,6 +1115,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             synchronized (stateMux) {
                 boolean escape = cacheInfo.config().isSqlEscapeAll();
 
+                log.error("TEST | GridQueryProcessor.onCacheStart0(), creating cache: " + cacheName + ", schema: " + schemaName);
+
                 T3<Collection<QueryTypeCandidate>, Map<String, QueryTypeDescriptorImpl>, Map<String, QueryTypeDescriptorImpl>>
                     candRes = createQueryCandidates(cacheName, schemaName, cacheInfo, schema.entities(), escape);
 
@@ -1433,6 +1435,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (!F.isEmpty(entities)) {
             for (QueryEntity qryEntity : entities) {
+                log.error("TEST | GridQueryProcessor.createQueryCandidates(), entity: " + qryEntity);
+
                 QueryTypeCandidate cand = QueryUtils.typeForQueryEntity(
                     ctx,
                     cacheName,
