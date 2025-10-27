@@ -81,7 +81,7 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
 
         topValidator.setDatacenters(List.of(DC_ID_0, DC_ID_1, DC_ID_2));
         GridTestUtils.assertThrows(log,
-            () -> topValidator.setPrimaryDatacenter(DC_ID_1),
+            () -> topValidator.setMainDatacenter(DC_ID_1),
             IgniteException.class,
             "Datacenters count must be even when primary datacenter is set.");
     }
@@ -91,7 +91,7 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
     public void testEvenDcWithPrimary2() {
         MdcTopologyValidator topValidator = new MdcTopologyValidator();
 
-        topValidator.setPrimaryDatacenter(DC_ID_1);
+        topValidator.setMainDatacenter(DC_ID_1);
         GridTestUtils.assertThrows(log,
             () -> topValidator.setDatacenters(List.of(DC_ID_0, DC_ID_1, DC_ID_2)),
             IgniteException.class,
@@ -103,7 +103,7 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
     public void testClientDoesNotAffectValidation() throws Exception {
         MdcTopologyValidator topValidator = new MdcTopologyValidator();
 
-        topValidator.setPrimaryDatacenter(DC_ID_1);
+        topValidator.setMainDatacenter(DC_ID_1);
         topValidator.setDatacenters(List.of(DC_ID_0, DC_ID_1));
 
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
@@ -138,7 +138,7 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
 
         MdcTopologyValidator topValidator = new MdcTopologyValidator();
 
-        topValidator.setPrimaryDatacenter(DC_ID_1);
+        topValidator.setMainDatacenter(DC_ID_1);
         topValidator.setDatacenters(List.of(DC_ID_0, DC_ID_1));
 
         CacheConfiguration<Object, Object> cfgCache1 = new CacheConfiguration<>(DEFAULT_CACHE_NAME).setTopologyValidator(topValidator);
@@ -149,7 +149,7 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
 
         srv0.destroyCache(cfgCache1.getName());
 
-        topValidator.setPrimaryDatacenter(DC_ID_0); // Changed
+        topValidator.setMainDatacenter(DC_ID_0); // Changed
 
         CacheConfiguration<Object, Object> cfgCache2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME).setTopologyValidator(topValidator);
 
@@ -193,7 +193,7 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
         MdcTopologyValidator topValidator = new MdcTopologyValidator();
 
         topValidator.setDatacenters(List.of(DC_ID_0, DC_ID_1, DC_ID_2, "DC4"));
-        topValidator.setPrimaryDatacenter(DC_ID_1);
+        topValidator.setMainDatacenter(DC_ID_1);
 
         IgniteCache<Object, Object> cache = createClusterWithCache(topValidator, true);
 
