@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.rollingupgrade;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -58,7 +59,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     /** Last joining node timestamp. */
     private long lastJoiningNodeTimestamp;
 
-    /** */
+    /** Lock for synchronization between tcp-disco-msg-worker thread and management operations. */
     private final Object lock = new Object();
 
     /** Pair with current and target versions. */
@@ -83,7 +84,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
                     verPair = metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
                 }
                 catch (IgniteCheckedException e) {
-                    throw new RuntimeException(e);
+                    throw new IgniteException(e);
                 }
 
                 metastorage.listen(ROLLING_UPGRADE_VERSIONS_KEY::equals, (key, oldVal, newVal) -> {
