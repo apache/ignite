@@ -38,13 +38,16 @@ import org.apache.ignite.lang.IgniteExperimental;
  *         data modification operations in the cluster segment that contain a majority of datacenters. 
  *         Any segment containing a minority of datacenters is considered as invalid with only read operations available.</li>
  *     <li><strong>Main Datacenter validation:</strong> When an even number of datacenters are defined, a main datacenter
- *         should be specified. The cluster segment remains write-accessible as long as the main datacenter is visible from all nodes of that segment.</li>
+ *         should be specified. The cluster segment remains write-accessible as long as the main datacenter is visible from
+ *         all nodes of that segment.</li>
  * </ul>
  *
  * <p><strong>Usage Requirements:</strong></p>
  * <ul>
- *     <li>If number of datacenters is even, specify a main datacenter via {@link #setMainDatacenter(String)}. Set of datacenters could be left null.</li>	
- *     <li>If number of datacenters is odd, set of datacenter IDs must be specified via {@link #setDatacenters(Set)}. Main datacenter setting is ignored and could be left null.</li>
+ *     <li>If number of datacenters is even, specify a main datacenter via {@link #setMainDatacenter(String)}.
+ *     Set of datacenters could be left null.</li>
+ *     <li>If number of datacenters is odd, set of datacenter IDs must be specified via {@link #setDatacenters(Set)}.
+ *     Main datacenter setting is ignored and could be left null.</li>
  *     
  * </ul>
  *
