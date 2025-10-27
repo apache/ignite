@@ -76,4 +76,9 @@ public class CalciteErrorMessage extends ErrorMessage implements CalciteMessage 
     @Override public MessageType type() {
         return MessageType.QUERY_ERROR_MESSAGE;
     }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return MessageType.QUERY_ERROR_MESSAGE.directType();
+    }
 }
