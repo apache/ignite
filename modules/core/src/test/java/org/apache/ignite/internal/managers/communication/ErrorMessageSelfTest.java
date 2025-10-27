@@ -36,7 +36,7 @@ public class ErrorMessageSelfTest {
 
         ErrorMessage msg0 = new ErrorMessage(e);
         
-        assertSame(e, msg0.toThrowable());
+        assertSame(e, msg0.error());
 
         byte[] errBytes = msg0.errorBytes();
 
@@ -45,7 +45,7 @@ public class ErrorMessageSelfTest {
         ErrorMessage msg1 = new ErrorMessage();
         msg1.errorBytes(errBytes);
         
-        Throwable t = msg1.toThrowable();
+        Throwable t = msg1.error();
         
         assertNotNull(t);
         assertTrue(X.hasCause(t, "Test exception", IgniteException.class));
@@ -55,14 +55,14 @@ public class ErrorMessageSelfTest {
     /** */
     @Test
     public void testNull() {
-        assertNull(new ErrorMessage(null).toThrowable());
+        assertNull(new ErrorMessage(null).error());
         assertNull(new ErrorMessage(null).errorBytes());
 
         ErrorMessage msg = new ErrorMessage();
         
         msg.errorBytes(null);
         
-        assertNull(msg.toThrowable());
+        assertNull(msg.error());
         assertNull(msg.errorBytes());
     }
 }

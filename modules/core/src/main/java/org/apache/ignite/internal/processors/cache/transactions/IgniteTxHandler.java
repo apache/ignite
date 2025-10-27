@@ -1789,6 +1789,7 @@ public class IgniteTxHandler {
 
                                 if (cacheCtx.readThroughConfigured() &&
                                     !entry.skipStore() &&
+                                    !entry.skipReadThrough() &&
                                     entry.op() == TRANSFORM &&
                                     entry.oldValueOnPrimary() &&
                                     !entry.hasValue()) {

@@ -111,11 +111,10 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryEnsureDelivery;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
-import static org.apache.ignite.IgniteCommonsSystemProperties.getString;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_CENTER_ID;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_CENTER_ID;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
 
 /**
@@ -1170,7 +1169,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         locNode = new TcpDiscoveryNode(
             ignite.configuration().getNodeId(),
-            getString(IGNITE_DATA_CENTER_ID),
+            //TODO remove usage of internal API when an alternative from public API is available
+            (String)((IgniteEx)ignite).context().nodeAttributes().get(ATTR_DATA_CENTER_ID),
             addrs.get1(),
             addrs.get2(),
             srvPort,
