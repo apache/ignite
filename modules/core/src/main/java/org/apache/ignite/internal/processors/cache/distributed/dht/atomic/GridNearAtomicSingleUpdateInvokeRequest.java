@@ -91,7 +91,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         GridCacheOperation op,
         @Nullable Object[] invokeArgs,
         int taskNameHash,
-        byte flags,
+        short flags,
         boolean addDepInfo
     ) {
         super(

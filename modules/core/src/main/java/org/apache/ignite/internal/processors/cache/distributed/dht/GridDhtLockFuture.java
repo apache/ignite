@@ -184,6 +184,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     /** Skip store flag. */
     private final boolean skipStore;
 
+    /** Skip read-through cache store flag. */
+    private final boolean skipReadThrough;
+
     /** Keep binary. */
     private final boolean keepBinary;
 
@@ -215,6 +218,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         long createTtl,
         long accessTtl,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary) {
         super(CU.boolReducer());
 
@@ -234,6 +238,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
+        this.skipReadThrough = skipReadThrough;
         this.keepBinary = keepBinary;
 
         if (tx != null)
@@ -916,6 +921,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             inTx() ? tx.taskNameHash() : 0,
                             read ? accessTtl : -1L,
                             skipStore,
+                            skipReadThrough,
                             cctx.store().configured(),
                             keepBinary,
                             cctx.deploymentEnabled(),
@@ -1047,7 +1053,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      *
      */
     private void loadMissingFromStore() {
-        if (!skipStore && (read || cctx.loadPreviousValue()) && cctx.readThrough() && (needReturnVal || read)) {
+        if (!skipStore && !skipReadThrough
+            && (read || cctx.loadPreviousValue()) && cctx.readThrough() && (needReturnVal || read)) {
             final Map<KeyCacheObject, GridDhtCacheEntry> loadMap = new LinkedHashMap<>();
 
             final GridCacheVersion ver = version();

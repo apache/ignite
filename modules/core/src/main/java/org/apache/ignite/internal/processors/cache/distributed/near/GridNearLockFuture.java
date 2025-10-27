@@ -157,6 +157,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
     /** Skip store flag. */
     private final boolean skipStore;
 
+    /** Skip read-through cache store flag. */
+    private final boolean skipReadThrough;
+
     /** Mappings to proceed. */
     @GridToStringExclude
     private Queue<GridNearLockMapping> mappings;
@@ -193,6 +196,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         long createTtl,
         long accessTtl,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary,
         boolean recovery
     ) {
@@ -210,6 +214,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
+        this.skipReadThrough = skipReadThrough;
         this.keepBinary = keepBinary;
         this.recovery = recovery;
 
@@ -1064,6 +1069,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                                 read ? createTtl : -1L,
                                                 read ? accessTtl : -1L,
                                                 skipStore,
+                                                skipReadThrough,
                                                 keepBinary,
                                                 clientFirst,
                                                 true,
