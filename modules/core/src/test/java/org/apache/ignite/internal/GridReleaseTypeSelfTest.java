@@ -182,16 +182,15 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertClusterSize(3);
 
-        if (isClient) {
-            if (persistence)
-                grid(0).context().rollingUpgrade().disable();
-        }
+        if (isClient)
+            grid(0).context().rollingUpgrade().disable();
         else
             grid(2).context().rollingUpgrade().disable();
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 3; i++) {
             if (!grid(i).localNode().isClient())
                 assertFalse(grid(i).context().rollingUpgrade().enabled());
+        }
 
         assertRemoteRejected(() -> startGrid(3, "2.18.0", isClient));
     }
