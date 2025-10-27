@@ -22,25 +22,39 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
-public class CachePartitionFullCountersMap implements Serializable {
+public class CachePartitionFullCountersMap implements Serializable, Message {
+    /** Type code. */
+    public static final short TYPE_CODE = 506;
+
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private long[] initialUpdCntrs;
+    @Order(value = 0, method = "initialUpdateCounters")
+    private long[] initUpdCntrs;
 
     /** */
+    @Order(value = 1, method = "updateCounters")
     private long[] updCntrs;
+
+    /**
+     * Default constructor.
+     */
+    public CachePartitionFullCountersMap() {
+        // No-op.
+    }
 
     /**
      * @param other Map to copy.
      */
     public CachePartitionFullCountersMap(CachePartitionFullCountersMap other) {
-        initialUpdCntrs = Arrays.copyOf(other.initialUpdCntrs, other.initialUpdCntrs.length);
+        initUpdCntrs = Arrays.copyOf(other.initUpdCntrs, other.initUpdCntrs.length);
         updCntrs = Arrays.copyOf(other.updCntrs, other.updCntrs.length);
     }
 
@@ -48,7 +62,7 @@ public class CachePartitionFullCountersMap implements Serializable {
      * @param partsCnt Total number of partitions.
      */
     public CachePartitionFullCountersMap(int partsCnt) {
-        initialUpdCntrs = new long[partsCnt];
+        initUpdCntrs = new long[partsCnt];
         updCntrs = new long[partsCnt];
     }
 
@@ -59,7 +73,7 @@ public class CachePartitionFullCountersMap implements Serializable {
      * @return Initial update counter for the partition with the given ID.
      */
     public long initialUpdateCounter(int p) {
-        return initialUpdCntrs[p];
+        return initUpdCntrs[p];
     }
 
     /**
@@ -76,10 +90,10 @@ public class CachePartitionFullCountersMap implements Serializable {
      * Sets an initial update counter by the partition ID.
      *
      * @param p Partition ID.
-     * @param initialUpdCntr Initial update counter to set.
+     * @param initUpdCntr Initial update counter to set.
      */
-    public void initialUpdateCounter(int p, long initialUpdCntr) {
-        initialUpdCntrs[p] = initialUpdCntr;
+    public void initialUpdateCounter(int p, long initUpdCntr) {
+        initUpdCntrs[p] = initUpdCntr;
     }
 
     /**
@@ -108,7 +122,40 @@ public class CachePartitionFullCountersMap implements Serializable {
      * Clears full counters map.
      */
     public void clear() {
-        Arrays.fill(initialUpdCntrs, 0);
+        Arrays.fill(initUpdCntrs, 0);
         Arrays.fill(updCntrs, 0);
+    }
+
+    /**
+     * @return Initial update counters.
+     */
+    public long[] initialUpdateCounters() {
+        return initUpdCntrs;
+    }
+
+    /**
+     * @param initUpdCntrs Initial update counters.
+     */
+    public void initialUpdateCounters(long[] initUpdCntrs) {
+        this.initUpdCntrs = initUpdCntrs;
+    }
+
+    /**
+     * @return Update counters.
+     */
+    public long[] updateCounters() {
+        return updCntrs;
+    }
+
+    /**
+     * @param updCntrs Update counters.
+     */
+    public void updateCounters(long[] updCntrs) {
+        this.updCntrs = updCntrs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return TYPE_CODE;
     }
 }

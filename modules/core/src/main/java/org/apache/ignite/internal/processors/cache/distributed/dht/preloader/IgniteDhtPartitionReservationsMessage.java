@@ -13,77 +13,50 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
  */
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- * Partition counters map.
- */
-public class IgniteDhtPartitionCountersMap implements Serializable, Message {
+/** Message for storing GroupPartitionIdMessage and their respective history counter values. */
+public class IgniteDhtPartitionReservationsMessage implements Message, Serializable {
     /** Type code. */
-    public static final short TYPE_CODE = 507;
+    public static final short TYPE_CODE = 509;
 
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Mapping between GroupPartitionIdMessage objects and their respective history counter values. */
     @Order(0)
-    private Map<Integer, CachePartitionFullCountersMap> map;
+    private Map<GroupPartitionIdMessage, Long> map;
 
-    /**
-     * @return {@code True} if map is empty.
-     */
-    public synchronized boolean empty() {
-        return map == null || map.isEmpty();
+    /** Default constructor. */
+    public IgniteDhtPartitionReservationsMessage() {
+        // No-op.
     }
 
     /**
-     * @param cacheId Cache ID.
-     * @param cntrMap Counters map.
+     * @param map Map.
      */
-    public synchronized void putIfAbsent(int cacheId, CachePartitionFullCountersMap cntrMap) {
-        if (map == null)
-            map = new HashMap<>();
-
-        if (!map.containsKey(cacheId))
-            map.put(cacheId, cntrMap);
+    public IgniteDhtPartitionReservationsMessage(Map<GroupPartitionIdMessage, Long> map) {
+        this.map = map;
     }
 
     /**
-     * @param cacheId Cache ID.
-     * @return Counters map.
+     * @return Map.
      */
-    public synchronized CachePartitionFullCountersMap get(int cacheId) {
-        if (map == null)
-            return null;
-
-        CachePartitionFullCountersMap cntrMap = map.get(cacheId);
-
-        if (cntrMap == null)
-            return null;
-
-        return cntrMap;
-    }
-
-    /**
-     * @return Partition counters map.
-     */
-    public Map<Integer, CachePartitionFullCountersMap> map() {
+    public Map<GroupPartitionIdMessage, Long> map() {
         return map;
     }
 
     /**
-     * @param map Partition counters map.
+     * @param map Map.
      */
-    public void map(Map<Integer, CachePartitionFullCountersMap> map) {
+    public void map(Map<GroupPartitionIdMessage, Long> map) {
         this.map = map;
     }
 

@@ -25,14 +25,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
+public class IgniteDhtPartitionHistorySuppliersMap implements Serializable, Message {
+    /** Type code. */
+    public static final short TYPE_CODE = 510;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,7 +44,8 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
     private static final IgniteDhtPartitionHistorySuppliersMap EMPTY = new IgniteDhtPartitionHistorySuppliersMap();
 
     /** */
-    private Map<UUID, Map<T2<Integer, Integer>, Long>> map;
+    @Order(0)
+    private Map<UUID, IgniteDhtPartitionReservationsMessage> map;
 
     /**
      * @return Empty map.
@@ -61,10 +66,10 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
 
         List<UUID> suppliers = new ArrayList<>();
 
-        for (Map.Entry<UUID, Map<T2<Integer, Integer>, Long>> e : map.entrySet()) {
+        for (Map.Entry<UUID, IgniteDhtPartitionReservationsMessage> e : map.entrySet()) {
             UUID supplierNode = e.getKey();
 
-            Long historyCounter = e.getValue().get(new T2<>(grpId, partId));
+            Long historyCounter = e.getValue().map().get(new GroupPartitionIdMessage(grpId, partId));
 
             if (historyCounter != null && historyCounter <= cntrSince)
                 suppliers.add(supplierNode);
@@ -77,11 +82,13 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
      * @param nodeId Node ID to check.
      * @return Reservations for the given node.
      */
-    @Nullable public synchronized Map<T2<Integer, Integer>, Long> getReservations(UUID nodeId) {
+    @Nullable public synchronized Map<GroupPartitionIdMessage, Long> getReservations(UUID nodeId) {
         if (map == null)
             return null;
 
-        return map.get(nodeId);
+        IgniteDhtPartitionReservationsMessage msg = map.get(nodeId);
+
+        return msg != null ? msg.map() : null;
     }
 
     /**
@@ -94,15 +101,18 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
         if (map == null)
             map = new HashMap<>();
 
-        Map<T2<Integer, Integer>, Long> nodeMap = map.get(nodeId);
+        IgniteDhtPartitionReservationsMessage nodeMap = map.get(nodeId);
 
         if (nodeMap == null) {
-            nodeMap = new HashMap<>();
+            nodeMap = new IgniteDhtPartitionReservationsMessage(new HashMap<>());
 
             map.put(nodeId, nodeMap);
         }
 
-        nodeMap.put(new T2<>(grpId, partId), cntr);
+        if (nodeMap.map() == null)
+            nodeMap.map(new HashMap<>());
+
+        nodeMap.map().put(new GroupPartitionIdMessage(grpId, partId), cntr);
     }
 
     /**
@@ -119,8 +129,27 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
         map = that.map;
     }
 
+    /**
+     * @return Map.
+     */
+    public Map<UUID, IgniteDhtPartitionReservationsMessage> map() {
+        return map;
+    }
+
+    /**
+     * @param map Map.
+     */
+    public void map(Map<UUID, IgniteDhtPartitionReservationsMessage> map) {
+        this.map = map;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteDhtPartitionHistorySuppliersMap.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return TYPE_CODE;
     }
 }
