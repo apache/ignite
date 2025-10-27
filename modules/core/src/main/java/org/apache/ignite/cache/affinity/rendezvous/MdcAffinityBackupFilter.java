@@ -106,6 +106,10 @@ public class MdcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, L
 
         boolean res = false;
         String candidateDcId = candidate.dataCenterId();
+
+        if (candidateDcId == null)
+            throw new IllegalStateException("Data center ID is not specified for the node: " + candidate);
+
         Integer candDcPartsCopies = partsDistrMap.get(candidateDcId);
 
         if (candDcPartsCopies == null || candDcPartsCopies == -1) {

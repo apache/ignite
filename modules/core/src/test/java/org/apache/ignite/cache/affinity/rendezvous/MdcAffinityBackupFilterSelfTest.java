@@ -33,8 +33,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /**
- * Verifies behaviour of {@link MdcAffinityBackupFilter} - guarantees that each DC has at least one copy of every partition,
- * distribution uniformity.
+ * Verifies behaviour of {@link MdcAffinityBackupFilter} - guarantees that each DC has at least one copy of every partition.
+ * Verified distribution uniformity in each DC separately.
  */
 public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
     /** */
