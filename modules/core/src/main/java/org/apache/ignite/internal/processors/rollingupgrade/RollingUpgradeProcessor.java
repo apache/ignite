@@ -51,7 +51,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
     private Supplier<IgnitePair<IgniteProductVersion>>  minMaxVersionSupplier;
 
     /** Last joining node. */
-    private ClusterNode lastJoiningNode = null;
+    private ClusterNode lastJoiningNode;
 
     /** Last joining node timestamp. */
     private long lastJoiningNodeTimestamp;
