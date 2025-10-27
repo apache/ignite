@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteDiagnosticPrepareContext.CompoundInfo;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -53,15 +52,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgniteDiagnosticMessage implements Message {
     /** */
-    @Order(value = 0, method = "request")
-    private boolean req;
+    @Order(value = 0, method = "infoResponse")
+    private @Nullable String infoResp;
 
     /** */
     @Order(value = 1, method = "futureId")
     private long futId;
 
     /** */
-    private byte[] bytes;
+    @Order(2)
+    private IgniteCompoundDiagnosicInfo compoundInfo;
 
     /**
      * Required by {@link GridIoMessageFactory}.
@@ -79,45 +79,29 @@ public class IgniteDiagnosticMessage implements Message {
      */
     public static IgniteDiagnosticMessage createRequest(
         Marshaller marsh,
-        CompoundInfo info,
+        IgniteCompoundDiagnosicInfo info,
         long futId
     ) throws IgniteCheckedException {
-        byte[] cBytes = U.marshal(marsh, info);
-
         IgniteDiagnosticMessage msg = new IgniteDiagnosticMessage();
 
         msg.futId = futId;
-        msg.bytes = cBytes;
-        msg.req = true;
+        msg.compoundInfo = info;
 
         return msg;
     }
 
     /**
-     * @param resBytes Marshalled result.
+     * @param diagnosticInfo Diagnostic info result.
      * @param futId Future ID.
      * @return Response message.
      */
-    public static IgniteDiagnosticMessage createResponse(byte[] resBytes, long futId) {
+    public static IgniteDiagnosticMessage createResponse(String diagnosticInfo, long futId) {
         IgniteDiagnosticMessage msg = new IgniteDiagnosticMessage();
 
         msg.futId = futId;
-        msg.bytes = resBytes;
+        msg.infoResp = diagnosticInfo;
 
         return msg;
-    }
-
-    /**
-     * @param marsh Marshaller.
-     * @return Unmarshalled payload.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Nullable public <T> T unmarshal(Marshaller marsh)
-        throws IgniteCheckedException {
-        if (bytes == null)
-            return null;
-
-        return U.unmarshal(marsh, bytes, null);
     }
 
     /**
@@ -136,12 +120,27 @@ public class IgniteDiagnosticMessage implements Message {
      * @return {@code True} if this is request message.
      */
     public boolean request() {
-        return req;
+        return infoResp != null;
     }
 
     /** */
-    public void request(boolean request) {
-        this.req = request;
+    public @Nullable String infoResponse() {
+        return infoResp;
+    }
+
+    /** */
+    public void infoResponse(@Nullable String infoResp) {
+        this.infoResp = infoResp;
+    }
+
+    /** */
+    public IgniteCompoundDiagnosicInfo compoundInfo() {
+        return compoundInfo;
+    }
+
+    /** */
+    public void compoundInfo(IgniteCompoundDiagnosicInfo compoundInfo) {
+        this.compoundInfo = compoundInfo;
     }
 
     /** {@inheritDoc} */
@@ -269,7 +268,7 @@ public class IgniteDiagnosticMessage implements Message {
     /**
      *
      */
-    public static final class ExchangeInfo extends DiagnosticBaseInfo implements Externalizable {
+    public static final class ExchangeInfo extends DiagnosticBaseInfo {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -337,7 +336,7 @@ public class IgniteDiagnosticMessage implements Message {
     /**
      *
      */
-    public static final class TxInfo extends DiagnosticBaseInfo implements Externalizable {
+    public static final class TxInfo extends DiagnosticBaseInfo {
         /** */
         private static final long serialVersionUID = 0L;
 
