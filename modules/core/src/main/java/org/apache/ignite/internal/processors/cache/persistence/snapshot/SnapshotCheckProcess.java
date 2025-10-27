@@ -172,7 +172,7 @@ public class SnapshotCheckProcess {
         Map<UUID, Throwable> errors,
         GridFutureAdapter<SnapshotPartitionsVerifyTaskResult> fut
     ) {
-        Map<ClusterNode, IncrementalSnapshotVerificationTaskResult> perNodeResults = new HashMap<>(results.size(), 1.0f);
+        Map<ClusterNode, IncrementalSnapshotVerifyResult> perNodeResults = new HashMap<>(results.size(), 1.0f);
 
         for (Map.Entry<UUID, SnapshotCheckResponse> resEntry : results.entrySet()) {
             UUID nodeId = resEntry.getKey();
@@ -322,7 +322,7 @@ public class SnapshotCheckProcess {
 
         CompletableFuture<SnapshotCheckResponse> resFut = new CompletableFuture<>();
 
-        CompletableFuture<IncrementalSnapshotVerificationTaskResult> workingFut = snpChecker.checkIncrementalSnapshot(
+        CompletableFuture<IncrementalSnapshotVerifyResult> workingFut = snpChecker.checkIncrementalSnapshot(
             ctx.locFileTree.get(meta.consistentId()), ctx.req.incrementalIndex());
 
         workingFut.whenComplete((res, err) -> {

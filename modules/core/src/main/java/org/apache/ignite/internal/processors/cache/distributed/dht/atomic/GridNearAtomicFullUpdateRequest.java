@@ -140,7 +140,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         @Nullable Object[] invokeArgs,
         @Nullable CacheEntryPredicate[] filter,
         int taskNameHash,
-        byte flags,
+        short flags,
         boolean addDepInfo,
         int maxEntryCnt
     ) {

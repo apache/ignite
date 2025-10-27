@@ -69,7 +69,7 @@ public class GridNearAtomicSingleUpdateFilterRequest extends GridNearAtomicSingl
         GridCacheOperation op,
         @Nullable CacheEntryPredicate[] filter,
         int taskNameHash,
-        byte flags,
+        short flags,
         boolean addDepInfo
     ) {
         super(
