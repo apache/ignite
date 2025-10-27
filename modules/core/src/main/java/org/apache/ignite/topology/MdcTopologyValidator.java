@@ -97,7 +97,7 @@ public class MdcTopologyValidator implements TopologyValidator {
         if (mainDc != null)
             return servers.anyMatch(n -> n.dataCenterId() != null && n.dataCenterId().equals(mainDc));
 
-        long visible = servers.map(ClusterNode::dataCenterId).count();
+        long visible = servers.map(ClusterNode::dataCenterId).distinct().count();
         int half = dcs.size() / 2;
 
         return visible > half;

@@ -235,6 +235,46 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testBigCluster() throws Exception {
+        MdcTopologyValidator topValidator = new MdcTopologyValidator();
+
+        topValidator.setDatacenters(Set.of(DC_ID_0, DC_ID_1, DC_ID_2));
+
+        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
+
+        startGrid(0);
+
+        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
+
+        IgniteEx srv = startGrid(1);
+        startGrid(10);
+        startGrid(11);
+        startGrid(12);
+
+        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_2);
+
+        startGrid(2);
+
+        waitForTopology(6);
+
+        srv.cluster().state(ClusterState.ACTIVE);
+
+        CacheConfiguration<Object, Object> cfgCache = new CacheConfiguration<>("cache").setTopologyValidator(topValidator);
+
+        IgniteCache<Object, Object> cache = srv.createCache(cfgCache);
+
+        cache.put(KEY, VAL);
+        assertEquals(VAL, cache.get(KEY));
+
+        stopGrid(0);
+        stopGrid(2);
+
+        // Checking case when 4 nodes are alive, but only at single DC
+        GridTestUtils.assertThrows(log, () -> cache.put(KEY, VAL + 2), IgniteException.class, "cache topology is not valid");
+    }
+
+    /** */
     private IgniteCache<Object, Object> createClusterWithCache(TopologyValidator topValidator, boolean setDc) throws Exception {
         if (setDc)
             System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
