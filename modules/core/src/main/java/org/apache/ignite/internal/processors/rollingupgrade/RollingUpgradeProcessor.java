@@ -216,7 +216,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter {
         return verPair;
     }
 
-    /** Сhecks whether the cluster is in the rolling upgrade mode. */
+    /** Checks whether the cluster is in the rolling upgrade mode. */
     public boolean enabled() {
         return versions() != null;
     }
