@@ -717,11 +717,14 @@ public class QueryUtils {
 
     /** Extracts type from {@code typeStr} including component types if the type is a collection or a map. Splits with ':'. */
     public static List<Class<?>> parseFieldType(
-        String typeStr,
-        @Nullable Class<?> dfltType,
+        @Nullable String typeStr,
+        @Nullable Class<?> dfltType1,
         boolean includePrimitives,
         boolean box
     ) {
+        if (F.isEmpty(typeStr))
+            return Collections.singletonList(dfltType1);
+
         int idx;
         List<String> res = null;
 
