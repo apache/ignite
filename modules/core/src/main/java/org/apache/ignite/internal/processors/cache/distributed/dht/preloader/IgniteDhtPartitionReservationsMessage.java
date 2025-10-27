@@ -17,18 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Serializable;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Message for storing GroupPartitionIdMessage and their respective history counter values. */
-public class IgniteDhtPartitionReservationsMessage implements Message, Serializable {
+public class IgniteDhtPartitionReservationsMessage implements Message {
     /** Type code. */
     public static final short TYPE_CODE = 509;
-
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** Mapping between GroupPartitionIdMessage objects and their respective history counter values. */
     @Order(0)

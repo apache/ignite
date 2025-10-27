@@ -18,7 +18,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,12 +32,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class IgniteDhtPartitionHistorySuppliersMap implements Serializable, Message {
+public class IgniteDhtPartitionHistorySuppliersMap implements Message {
     /** Type code. */
     public static final short TYPE_CODE = 510;
-
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** */
     private static final IgniteDhtPartitionHistorySuppliersMap EMPTY = new IgniteDhtPartitionHistorySuppliersMap();

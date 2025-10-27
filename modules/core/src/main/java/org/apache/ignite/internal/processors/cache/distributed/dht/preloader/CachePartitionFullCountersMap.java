@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -28,12 +27,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  *
  */
-public class CachePartitionFullCountersMap implements Serializable, Message {
+public class CachePartitionFullCountersMap implements Message {
     /** Type code. */
     public static final short TYPE_CODE = 506;
-
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** */
     @Order(value = 0, method = "initialUpdateCounters")

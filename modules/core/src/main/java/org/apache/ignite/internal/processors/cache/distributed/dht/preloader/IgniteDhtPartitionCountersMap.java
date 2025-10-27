@@ -18,7 +18,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
@@ -27,12 +26,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /**
  * Partition counters map.
  */
-public class IgniteDhtPartitionCountersMap implements Serializable, Message {
+public class IgniteDhtPartitionCountersMap implements Message {
     /** Type code. */
     public static final short TYPE_CODE = 507;
-
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** */
     @Order(0)
