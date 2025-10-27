@@ -600,8 +600,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         boolean loc = ctx.localNodeId().equals(taskNode.id()) && !ctx.config().isMarshalLocalJobs();
 
-        GridTaskSessionRequest req = new GridTaskSessionRequest(ses.getId(), ses.getJobId(),
-            loc ? null : U.marshal(marsh, attrs), attrs);
+        GridTaskSessionRequest req = new GridTaskSessionRequest(ses.getId(), ses.getJobId(), attrs);
+
+        if (!loc)
+            req.marshalAttributes(marsh);
 
         Object topic = TOPIC_TASK.topic(ses.getJobId(), ctx.discovery().localNode().id());
 
@@ -1756,7 +1758,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         }
 
         try {
-            GridTaskSessionImpl ses = ctx.session().getSession(req.getSessionId());
+            GridTaskSessionImpl ses = ctx.session().getSession(req.sessionId());
 
             if (ses == null) {
                 if (log.isDebugEnabled())
@@ -1767,9 +1769,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             boolean loc = ctx.localNodeId().equals(nodeId) && !ctx.config().isMarshalLocalJobs();
 
-            Map<?, ?> attrs = loc ? req.getAttributes() :
-                (Map<?, ?>)U.unmarshal(marsh, req.getAttributesBytes(),
-                    U.resolveClassLoader(ses.getClassLoader(), ctx.config()));
+            if (!loc)
+                req.unmarshalAttributes(marsh, U.resolveClassLoader(ses.getClassLoader(), ctx.config()));
+
+            Map<?, ?> attrs = req.attributes();
 
             if (ctx.event().isRecordable(EVT_TASK_SESSION_ATTR_SET)) {
                 Event evt = new TaskEvent(
@@ -1789,7 +1792,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 ses.setInternal(attrs);
             }
 
-            onChangeTaskAttributes(req.getSessionId(), req.getJobId(), attrs);
+            onChangeTaskAttributes(req.sessionId(), req.jobId(), attrs);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to deserialize session attributes.", e);

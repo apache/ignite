@@ -99,6 +99,7 @@ import org.apache.ignite.internal.codegen.GridQueryNextPageRequestSerializer;
 import org.apache.ignite.internal.codegen.GridQueryNextPageResponseSerializer;
 import org.apache.ignite.internal.codegen.GridTaskCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridTaskResultRequestSerializer;
+import org.apache.ignite.internal.codegen.GridTaskSessionRequestSerializer;
 import org.apache.ignite.internal.codegen.HandshakeMessageSerializer;
 import org.apache.ignite.internal.codegen.HandshakeWaitMessageSerializer;
 import org.apache.ignite.internal.codegen.IgniteDhtDemandedPartitionsMapSerializer;
@@ -302,7 +303,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)3, GridJobSiblingsRequest::new, new GridJobSiblingsRequestSerializer());
         factory.register((short)4, GridJobSiblingsResponse::new);
         factory.register((short)5, GridTaskCancelRequest::new, new GridTaskCancelRequestSerializer());
-        factory.register((short)6, GridTaskSessionRequest::new);
+        factory.register((short)6, GridTaskSessionRequest::new, new GridTaskSessionRequestSerializer());
         factory.register((short)7, GridCheckpointRequest::new, new GridCheckpointRequestSerializer());
         factory.register((short)8, GridIoMessage::new);
         factory.register((short)9, GridIoUserMessage::new);
