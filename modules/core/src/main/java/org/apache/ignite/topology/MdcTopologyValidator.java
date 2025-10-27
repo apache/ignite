@@ -26,16 +26,43 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /**
- * Multi-Datacenter topology validator.
- * Performs data protection in case of DC failure.
- * Covered DCs MUST be specified via {@link MdcTopologyValidator#setDatacenters}
- * and main DC MAY be specified via {@link MdcTopologyValidator#setMainDatacenter} in case of even DC count.
- * When main datacenter is specified Topology Validator keeps cluster write accessed while main DC is visible,
- * otherwise DC majority check is used.
- * For example, when you have 2N+1 DCs (3, 5 ,...) topology validator will keep cluster write accessed while 2N/2+1 (2, 3, ...)
- * DCs are visible. In case you have 2N DCs (2, 4, ...) it's impossible to use majority pattern, so topology validator
- * will keep cluster write accessed while the main DC is visible.
- * */
+ * Multi-Datacenter Topology Validator.
+ *
+ * <p>This class is used to validate the cluster topology in a multi-datacenter (MDC) environment 
+ * by enforcing rules based on the visibility of datacenters.
+ * It provides protection against split-brain scenarios during datacenter failures or unavailability due to network issues.</p>
+ *
+ * <p>The validator supports two modes of operation:</p>
+ * <ul>
+ *     <li><strong>Majority-based validation:</strong> When an odd number of datacenters are defined, the validator enables 
+ *         data modification operations in the cluster segment that contain a majority of datacenters. 
+ *         Any segment containing a minority of datacenters is considered as invalid with only read operations available.</li>
+ *     <li><strong>Main Datacenter validation:</strong> When an even number of datacenters are defined, a main datacenter
+ *         should be specified. The cluster segment remains write-accessible as long as the main datacenter is visible from all nodes of that segment.</li>
+ * </ul>
+ *
+ * <p><strong>Usage Requirements:</strong></p>
+ * <ul>
+ *     <li>If number of datacenters is even, specify a main datacenter via {@link #setMainDatacenter(String)}. Set of datacenters could be left null.</li>	
+ *     <li>If number of datacenters is odd, set of datacenter IDs must be specified via {@link #setDatacenters(Set)}. Main datacenter setting is ignored and could be left null.</li>
+ *     
+ * </ul>
+ *
+ * <p><strong>Example:</strong></p>
+ * <pre>
+ * MdcTopologyValidator mdcValidator = new MdcTopologyValidator();
+ * mdcValidator.setDatacenters(Set.of("DC1", "DC2", "DC3"));
+ * 
+ * CacheConfiguration cacheCfg = new CacheConfiguration("example-cache")
+ *     .setTopologyValidator(mdcValidator)
+ *	   // other cache properties.
+ * </pre>
+ *
+ * <p><strong>Note:</strong> This class is marked with the {@link IgniteExperimental} annotation and may change in future releases.</p>
+ *
+ * @see TopologyValidator
+ * @since Apache Ignite 2.18
+ */
 @IgniteExperimental
 public class MdcTopologyValidator implements TopologyValidator {
     /** */
