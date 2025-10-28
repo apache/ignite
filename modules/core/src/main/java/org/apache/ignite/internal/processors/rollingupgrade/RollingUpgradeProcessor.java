@@ -94,7 +94,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         });
     }
 
-    /** {@inheritDoc} */
+    /** {@inheritDoc} The joining node is stored to verify later whether it successfully connected to the ring or failed to join. */
     @Override public @Nullable IgniteNodeValidationResult validateNode(ClusterNode node) {
         synchronized (lock) {
             lastJoiningNode = node;
