@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.communication;
 
 import java.lang.reflect.Array;
+import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 import org.apache.ignite.IgniteException;
@@ -45,12 +46,22 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
     private static final MessageSerializer DEFAULT_SERIALIZER = new MessageSerializer() {
         /** {@inheritDoc} */
         @Override public boolean writeTo(Message msg, MessageWriter writer) {
-            return msg.writeTo(((DirectMessageWriter)writer).getBuffer(), writer);
+            ByteBuffer buf = null;
+
+            if (writer instanceof DirectMessageWriter)
+                buf = ((DirectMessageWriter)writer).getBuffer();
+
+            return msg.writeTo(buf, writer);
         }
 
         /** {@inheritDoc} */
         @Override public boolean readFrom(Message msg, MessageReader reader) {
-            return msg.readFrom(((DirectMessageReader)reader).getBuffer(), reader);
+            ByteBuffer buf = null;
+
+            if (reader instanceof DirectMessageReader)
+                buf = ((DirectMessageReader)reader).getBuffer();
+
+            return msg.readFrom(buf, reader);
         }
     };
 
