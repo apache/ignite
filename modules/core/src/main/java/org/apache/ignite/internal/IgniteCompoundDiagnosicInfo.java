@@ -93,7 +93,7 @@ public final class IgniteCompoundDiagnosicInfo implements Message {
         catch (Exception e) {
             ctx.cluster().diagnosticLog().error("Failed to execute diagnostic message closure: " + e, e);
 
-            return new String("Failed to execute diagnostic message closure: " + e);
+            return "Failed to execute diagnostic message closure: " + e;
         }
     }
 
@@ -166,8 +166,8 @@ public final class IgniteCompoundDiagnosicInfo implements Message {
     }
 
     /** Serealizes {@code info}. */
-    public Collection<byte[]> infosBytes() {
-        Collection<byte[]> res = new ArrayList<>(infosBytes.size());
+    public @Nullable Collection<byte[]> infosBytes() {
+        Collection<byte[]> res = new ArrayList<>(info.size());
 
         try {
             for (IgniteDiagnosticMessage.DiagnosticBaseInfo i : info)

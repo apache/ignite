@@ -42,7 +42,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.jetbrains.annotations.Nullable;
@@ -71,17 +70,12 @@ public class IgniteDiagnosticMessage implements Message {
     }
 
     /**
-     * @param marsh Marshaller.
      * @param info Compound info.
      * @param futId Future ID.
      * @return Request message.
      * @throws IgniteCheckedException If failed.
      */
-    public static IgniteDiagnosticMessage createRequest(
-        Marshaller marsh,
-        IgniteCompoundDiagnosicInfo info,
-        long futId
-    ) throws IgniteCheckedException {
+    public static IgniteDiagnosticMessage createRequest(IgniteCompoundDiagnosicInfo info, long futId) throws IgniteCheckedException {
         IgniteDiagnosticMessage msg = new IgniteDiagnosticMessage();
 
         msg.futId = futId;
@@ -120,7 +114,7 @@ public class IgniteDiagnosticMessage implements Message {
      * @return {@code True} if this is request message.
      */
     public boolean request() {
-        return infoResp != null;
+        return infoResp == null;
     }
 
     /** */

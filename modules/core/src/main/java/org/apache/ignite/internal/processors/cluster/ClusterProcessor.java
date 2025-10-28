@@ -71,7 +71,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.mxbean.IgniteClusterMXBean;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -157,9 +156,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     private final Map<UUID, byte[]> allNodesMetrics = new ConcurrentHashMap<>();
 
     /** */
-    private final JdkMarshaller marsh;
-
-    /** */
     private DiscoveryMetricsProvider metricsProvider;
 
     /** */
@@ -187,7 +183,6 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
         cluster = new IgniteClusterImpl(ctx);
         sndMetrics = !(ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi);
-        marsh = ctx.marshallerContext().jdkMarshaller();
     }
 
     /**
@@ -882,7 +877,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      */
     private IgniteInternalFuture<String> sendDiagnosticMessage(UUID nodeId, IgniteCompoundDiagnosicInfo info) {
         try {
-            IgniteDiagnosticMessage msg = IgniteDiagnosticMessage.createRequest(marsh, info, diagFutId.getAndIncrement());
+            IgniteDiagnosticMessage msg = IgniteDiagnosticMessage.createRequest(info, diagFutId.getAndIncrement());
 
             InternalDiagnosticFuture fut = new InternalDiagnosticFuture(nodeId, msg.futureId());
 
