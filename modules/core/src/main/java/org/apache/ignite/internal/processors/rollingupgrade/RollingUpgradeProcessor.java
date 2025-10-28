@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rollingupgrade;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -30,7 +31,6 @@ import org.apache.ignite.internal.processors.metastorage.ReadableDistributedMeta
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -117,7 +117,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         IgniteProductVersion curVer = pair.get1();
         IgniteProductVersion targetVer = pair.get2();
 
-        if (validateVersionsForJoining(rmtVer, curVer) || validateVersionsForJoining(rmtVer, targetVer))
+        if (Objects.equals(rmtVer, curVer) || Objects.equals(rmtVer, targetVer))
             return null;
 
         String errMsg = "Remote node rejected due to incompatible version for cluster join.\n"
@@ -308,19 +308,5 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
             throw new IgniteCheckedException("Patch version can only be incremented by 1.");
 
         return true;
-    }
-
-    /**
-     * Checks if versions have same major, minor and maintenance versions.
-     *
-     * @param rmtVer Remote node version.
-     * @param supportedVer Supported version: current or target.
-     * @return {@code true} if versions have same major, minor and maintenance versions.
-     */
-    private boolean validateVersionsForJoining(IgniteProductVersion rmtVer, IgniteProductVersion supportedVer) {
-        if (supportedVer == null)
-            return false;
-
-        return rmtVer.major() == supportedVer.major() && rmtVer.minor() == supportedVer.minor() && rmtVer.maintenance() == supportedVer.maintenance();
     }
 }
