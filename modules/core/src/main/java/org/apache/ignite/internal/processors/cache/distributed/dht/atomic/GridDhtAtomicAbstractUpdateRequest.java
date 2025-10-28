@@ -22,6 +22,7 @@ import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.CacheWriteSynchronizationModeMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -90,9 +91,11 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     protected int taskNameHash;
 
     /** Node ID. */
+    @GridDirectTransient
     protected UUID nodeId;
 
     /** On response flag. Access should be synced on future. */
+    @GridDirectTransient
     private boolean onRes;
 
     /** */
@@ -138,7 +141,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         this.nodeId = nodeId;
         this.futId = futId;
         this.writeVer = writeVer;
-        this.syncModeMsg = new CacheWriteSynchronizationModeMessage(syncMode);
+        syncModeMsg = new CacheWriteSynchronizationModeMessage(syncMode);
         this.topVer = topVer;
         this.taskNameHash = taskNameHash;
         this.addDepInfo = addDepInfo;
@@ -646,9 +649,8 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
             case 8:
                 syncModeMsg = reader.readMessage();
 
-                if (!reader.isLastRead()) {
+                if (!reader.isLastRead())
                     return false;
-                }
 
                 reader.incrementState();
 
