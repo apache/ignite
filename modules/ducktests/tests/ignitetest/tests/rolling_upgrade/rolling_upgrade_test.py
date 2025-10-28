@@ -21,9 +21,7 @@ from time import monotonic
 from ducktape.mark import defaults, matrix
 
 from ignitetest.services.ignite import IgniteService
-from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
-from ignitetest.tests.client_test import check_topology
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
@@ -40,7 +38,7 @@ class RollingUpgradeTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH))
     @defaults(init_version=[str(LATEST)], upgrade_version=[str(DEV_BRANCH)])
     @matrix(upgrade_coordinator=[True, False])
-    def test_rolling_upgrade(self, ignite_version, init_version, upgrade_version, upgrade_coordinator):
+    def test_rolling_upgrade(self, ignite_version, init_version, upgrade_version, upgrade_coordinator: bool):
         self.logger.info(f"Initiating Rolling Upgrade test from {init_version} to {upgrade_version} "
                          f"starting from coordinator [{upgrade_coordinator}]")
 
@@ -69,7 +67,8 @@ class RollingUpgradeTest(IgniteTest):
 
         results['Ignite cluster start time (s)'] = round(monotonic() - start, 1)
 
-        check_topology(ControlUtility(ignites), RU_NUM_NODES)
+        ignites.await_event(f"Topology snapshot [ver={RU_NUM_NODES}", ignites.startup_timeout_sec,
+                            from_the_beginning=True)
 
         self.logger.info(f"Initial cluster is up [nodes={RU_NUM_NODES}].")
 
@@ -95,7 +94,8 @@ class RollingUpgradeTest(IgniteTest):
 
             exp_topology = RU_NUM_NODES + 2 * ignite_upgraded
 
-            check_topology(ControlUtility(ignites), exp_topology)
+            ignites.await_event(f"Topology snapshot [ver={exp_topology}", ignites.startup_timeout_sec,
+                                from_the_beginning=True)
 
         results['Ignite cluster upgrade time (s)'] = round(monotonic() - start, 1)
 
