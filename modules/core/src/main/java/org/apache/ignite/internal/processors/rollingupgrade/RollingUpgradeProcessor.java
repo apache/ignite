@@ -130,10 +130,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
             + "  - Version     : " + locBuildVer + "\n"
             + "  - Addresses   : " + U.addressesAsString(locNode) + "\n"
             + "  - Node ID     : " + locNode.id() + "\n"
-            + "Allowed versions for joining: \n"
-            + " - " + curVer.major() + "." + curVer.minor() + "." + curVer.maintenance()
-            + (targetVer == null || targetVer.equals(curVer) ? "" :
-            "\n - " + targetVer.major() + "." + targetVer.minor() + "." + targetVer.maintenance());
+            + "Allowed versions for joining: " + curVer + (targetVer == null ? "" : ", " + targetVer);
 
         LT.warn(log, errMsg);
 
