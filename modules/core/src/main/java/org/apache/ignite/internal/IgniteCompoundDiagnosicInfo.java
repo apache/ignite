@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -153,8 +154,11 @@ public final class IgniteCompoundDiagnosicInfo implements Message {
     }
 
     /** Deserealizes {@code info}. */
-    public void infosBytes(Collection<byte[]> infosBytes) {
+    public void infosBytes(@Nullable Collection<byte[]> infosBytes) {
         info.clear();
+
+        if (F.isEmpty(infosBytes))
+            return;
 
         try {
             for (byte[] bytes : infosBytes)
@@ -167,6 +171,9 @@ public final class IgniteCompoundDiagnosicInfo implements Message {
 
     /** Serealizes {@code info}. */
     public @Nullable Collection<byte[]> infosBytes() {
+        if (info.isEmpty())
+            return null;
+
         Collection<byte[]> res = new ArrayList<>(info.size());
 
         try {
