@@ -147,8 +147,14 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      * This method can only be called on coordinator node with {@link TcpDiscoverySpi}.
      *
      * @param target Target version.
-     * @throws IgniteCheckedException If current and target versions are not compatible
-     * or if node is not coordinator or if discovery SPI is not {@link TcpDiscoverySpi} or metastorage is not ready.
+     * @throws IgniteCheckedException If:
+     *     <ul>
+     *         <li>The current and target versions are incompatible;</li>
+     *         <li>The local node is not a coordinator;</li>
+     *         <li>The discovery SPI is not {@link TcpDiscoverySpi};</li>
+     *         <li>The distributed metastorage is not ready;</li>
+     *         <li>{@link TcpDiscoveryNodesRing} was not provided.</li>
+     *     </ul>
      */
     public void enable(IgniteProductVersion target) throws IgniteCheckedException {
         if (ring == null)
