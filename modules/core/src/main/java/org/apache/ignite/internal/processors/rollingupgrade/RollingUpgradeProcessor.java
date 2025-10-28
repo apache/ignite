@@ -63,7 +63,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     private final Object lock = new Object();
 
     /** Pair with current and target versions. */
-    private volatile IgnitePair<IgniteProductVersion> verPair;
+    private volatile IgnitePair<IgniteProductVersion> rollUpVers;
 
     /**
      * @param ctx Context.
@@ -81,7 +81,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
             @Override public void onReadyForRead(ReadableDistributedMetaStorage metastorage) {
                 try {
-                    verPair = metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
+                    rollUpVers = metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -89,7 +89,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
                 // Keep the current and target version pair in sync with metastorage updates, e.g., to handle coordinator changes.
                 metastorage.listen(ROLLING_UPGRADE_VERSIONS_KEY::equals, (key, oldVal, newVal) -> {
-                    verPair = (IgnitePair<IgniteProductVersion>)newVal;
+                    rollUpVers = (IgnitePair<IgniteProductVersion>)newVal;
                 });
             }
         });
@@ -110,7 +110,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
         IgniteProductVersion rmtVer = IgniteProductVersion.fromString(rmtBuildVer);
 
-        IgnitePair<IgniteProductVersion> pair = verPair;
+        IgnitePair<IgniteProductVersion> pair = rollUpVers;
 
         if (pair == null)
             pair = F.pair(IgniteProductVersion.fromString(locBuildVer), null);
@@ -188,7 +188,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
                 oldVerPair.get1() + " , " + oldVerPair.get2());
         }
 
-        verPair = newPair;
+        rollUpVers = newPair;
 
         if (log.isInfoEnabled())
             log.info("Rolling upgrade enabled [current=" + curVer + ", target=" + target + ']');
@@ -208,7 +208,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         if (metastorage == null)
             throw new IgniteCheckedException("Meta storage is not ready.");
 
-        if (verPair == null)
+        if (rollUpVers == null)
             return;
 
         IgnitePair<IgniteProductVersion> minMaxVerPair = ring.minMaxNodeVersions();
@@ -236,7 +236,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
             if (vers.size() > 1)
                 throw new IgniteCheckedException("Can't disable rolling upgrade with different versions in cluster: " + vers);
 
-            verPair = null;
+            rollUpVers = null;
         }
 
         metastorage.remove(ROLLING_UPGRADE_VERSIONS_KEY);
@@ -259,7 +259,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      *     or {@code null} if rolling upgrade is not active.
      */
     public IgnitePair<IgniteProductVersion> versions() {
-        return verPair;
+        return rollUpVers;
     }
 
     /** Checks whether the cluster is in the rolling upgrade mode. */
@@ -283,7 +283,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      * @throws IgniteCheckedException If versions are incorrect.
      */
     private boolean checkVersionsForEnabling(IgniteProductVersion cur, IgniteProductVersion target) throws IgniteCheckedException {
-        IgnitePair<IgniteProductVersion> oldVerPair = verPair;
+        IgnitePair<IgniteProductVersion> oldVerPair = rollUpVers;
         if (oldVerPair != null) {
             if (oldVerPair.get1().equals(cur) && oldVerPair.get2().equals(target))
                 return false;
