@@ -75,6 +75,7 @@ import org.apache.ignite.internal.codegen.GridDistributedTxFinishResponseSeriali
 import org.apache.ignite.internal.codegen.GridDistributedTxPrepareRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDistributedTxPrepareResponseSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
+import org.apache.ignite.internal.codegen.GridJobExecuteResponseSerializer;
 import org.apache.ignite.internal.codegen.GridJobSiblingsRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearAtomicCheckUpdateRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearAtomicSingleUpdateFilterRequestSerializer;

@@ -827,23 +827,13 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 if (res.getFakeException() != null)
                     jobRes.onResponse(null, res.getFakeException(), null, false);
                 else {
-                    ClassLoader clsLdr = dep.classLoader();
-
                     try {
                         boolean loc = ctx.localNodeId().equals(res.nodeId()) && !ctx.config().isMarshalLocalJobs();
 
-                        Object res0 = loc ? res.getJobResult() : U.unmarshal(marsh, res.getJobResultBytes(),
-                            U.resolveClassLoader(clsLdr, ctx.config()));
+                        if (!loc)
+                            msg.unmarshallUserData(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
-                        IgniteException ex = loc ? res.exception() :
-                            U.<IgniteException>unmarshal(marsh, res.getExceptionBytes(),
-                                U.resolveClassLoader(clsLdr, ctx.config()));
-
-                        Map<Object, Object> attrs = loc ? res.getJobAttributes() :
-                            U.<Map<Object, Object>>unmarshal(marsh, res.getJobAttributesBytes(),
-                                U.resolveClassLoader(clsLdr, ctx.config()));
-
-                        jobRes.onResponse(res0, ex, attrs, res.cancelled());
+                        jobRes.onResponse(res.getJobResult(), res.exception(), res.getJobAttributes(), res.cancelled());
 
                         if (loc)
                             ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobAfterSend.class);
@@ -1378,7 +1368,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 ctx.resource().invokeAnnotated(dep, res.getJob(), ComputeJobAfterSend.class);
 
                 GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(node.id(), ses.getId(),
-                    res.getJobContext().getJobId(), null, null, null, null, null, null, false, null);
+                    res.getJobContext().getJobId(), null, null, null, false, null);
 
                 fakeRes.setFakeException(new ClusterTopologyException("Failed to send job due to node failure: " + node));
 
@@ -1491,7 +1481,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             }
 
             GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(node.id(), ses.getId(),
-                res.getJobContext().getJobId(), null, null, null, null, null, null, false, null);
+                res.getJobContext().getJobId(), null, null, null, false, null);
 
             if (fakeErr == null)
                 fakeErr = U.convertException(e);
@@ -1523,7 +1513,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         // Artificial response in case if a job is waiting for a response from
                         // non-existent node.
                         GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(nodeId, ses.getId(),
-                            jr.getJobContext().getJobId(), null, null, null, null, null, null, false, null);
+                            jr.getJobContext().getJobId(), null, null, null, false, null);
 
                         fakeRes.setFakeException(new ClusterTopologyException("Node has left grid: " + nodeId));
 

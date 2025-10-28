@@ -980,12 +980,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                 ctx.localNodeId(),
                                 ses.getId(),
                                 ses.getJobId(),
-                                exBytes,
-                                loc ? ex : null,
-                                resBytes,
-                                loc ? res : null,
-                                attrBytes,
-                                loc ? attrs : null,
+                                ex,
+                                res,
+                                attrs,
                                 isCancelled(),
                                 retry ? ctx.cache().context().exchange().readyAffinityVersion() : null);
 

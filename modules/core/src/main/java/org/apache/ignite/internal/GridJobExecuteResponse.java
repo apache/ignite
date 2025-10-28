@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,7 +49,7 @@ public class GridJobExecuteResponse implements Message {
     private IgniteUuid jobId;
 
     /** */
-    @Order(value = 3, method = "exception")
+    @Order(value = 3, method = "exceptionMsg")
     private @Nullable ErrorMessage gridExMsg;
 
     /** Job result serialization call holder. */
@@ -86,11 +90,8 @@ public class GridJobExecuteResponse implements Message {
      * @param nodeId Sender node ID.
      * @param sesId Task session ID
      * @param jobId Job ID.
-     * @param gridExBytes Serialized grid exception.
      * @param gridEx Grid exception.
-     * @param resBytes Serialized result.
      * @param res Result.
-     * @param jobAttrsBytes Serialized job attributes.
      * @param jobAttrs Job attributes.
      * @param isCancelled Whether job was cancelled or not.
      * @param retry Topology version for that partitions haven't been reserved on the affinity node.
@@ -148,12 +149,12 @@ public class GridJobExecuteResponse implements Message {
      * @return Serialized job result.
      */
     @Nullable public byte[] jobResultBytes() {
-        // TODO:
+        return jobAttrsBytes;
     }
 
     /** */
     public void jobResultBytes(@Nullable byte[] resBytes) {
-        // TODO
+        jobAttrsBytes = resBytes;
     }
 
     /**
@@ -166,25 +167,30 @@ public class GridJobExecuteResponse implements Message {
     /**
      * @return Job exception.
      */
-    @Nullable public Throwable exception() {
-        return ErrorMessage.error(gridExMsg);
+    @Nullable public IgniteException exception() {
+        return (IgniteException)ErrorMessage.error(gridExMsg);
     }
 
     /** */
-    public void exception(@Nullable ErrorMessage gridExMsg) {
+    public void exceptionMsg(@Nullable ErrorMessage gridExMsg) {
         this.gridExMsg = gridExMsg;
+    }
+
+    /** */
+    public @Nullable ErrorMessage exceptionMsg() {
+        return gridExMsg;
     }
 
     /**
      * @return Serialized job attributes.
      */
     @Nullable public byte[] jobAttrubutesBytes() {
-        // TODO:
+        return jobAttrsBytes;
     }
 
     /** */
     public void jobAttrubutesBytes(@Nullable byte[] jobAttrsBytes) {
-        // TODO:
+        this.jobAttrsBytes = jobAttrsBytes;
     }
 
     /**
@@ -250,6 +256,30 @@ public class GridJobExecuteResponse implements Message {
     /** */
     public void retryTopologyVersion(AffinityTopologyVersion retry) {
         this.retry = retry;
+    }
+
+    /**
+     * Serializes non-{@link Serializable} user data to byte[] using the provided marshaller.
+     * Erases non-marshalled user data like {@link #getJobAttributes()} or {@link #getJobResult()}.
+     */
+    public void marshallUserData(Marshaller marshaller) throws IgniteCheckedException {
+        jobAttrsBytes = U.marshal(marshaller, jobAttrs);
+        jobAttrs = null;
+
+        resBytes = U.marshal(marshaller, res);
+        res = null;
+    }
+
+    /**
+     * Deserializes non-{@link Serializable} user data from byte[] using the provided marshaller and class loader.
+     * Erases marshalled user data like {@link #jobResultBytes()} ()} or {@link #jobResultBytes()}.
+     */
+    public void unmarshallUserData(Marshaller marshaller, ClassLoader clsLdr) throws IgniteCheckedException {
+        jobAttrs = U.unmarshal(marshaller, jobAttrsBytes, clsLdr);
+        jobAttrsBytes = null;
+
+        res = U.unmarshal(marshaller, resBytes, clsLdr);
+        resBytes = null;
     }
 
     /** {@inheritDoc} */
