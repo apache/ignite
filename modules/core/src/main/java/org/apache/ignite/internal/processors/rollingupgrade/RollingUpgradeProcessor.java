@@ -63,7 +63,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     private final Object lock = new Object();
 
     /** Pair with current and target versions. */
-    private volatile IgnitePair<IgniteProductVersion> verPair = null;
+    private volatile IgnitePair<IgniteProductVersion> verPair;
 
     /**
      * @param ctx Context.
