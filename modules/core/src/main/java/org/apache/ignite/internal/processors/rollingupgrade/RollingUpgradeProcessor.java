@@ -153,13 +153,13 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      */
     public void enable(IgniteProductVersion target) throws IgniteCheckedException {
         if (ring == null)
-            throw new IgniteCheckedException("TCP discovery nodes ring was not provided.");
+            throw new IgniteCheckedException("No TCP discovery node ring provided. Check that TCP discovery SPI is configured properly and try again");
 
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
             throw new IgniteCheckedException("Rolling upgrade can be enabled only on coordinator node");
 
         if (metastorage == null)
-            throw new IgniteCheckedException("Meta storage is not ready.");
+            throw new IgniteCheckedException("Metastorage is not ready yet. Try again later");
 
         if (!(ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi))
             throw new IgniteCheckedException("Rolling upgrade is supported only with TCP discovery SPI");
@@ -179,7 +179,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
                 return;
 
             if (oldVerPair == null)
-                throw new IgniteCheckedException("Could not enable rolling upgrade. Try again.");
+                throw new IgniteCheckedException("Could not enable rolling upgrade. Try again");
 
             throw new IgniteCheckedException("Rolling upgrade is already enabled with a different current and target version: " +
                 oldVerPair.get1() + " , " + oldVerPair.get2());
@@ -203,7 +203,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
             throw new IgniteCheckedException("Rolling upgrade can be disabled only on coordinator node");
 
         if (metastorage == null)
-            throw new IgniteCheckedException("Meta storage is not ready.");
+            throw new IgniteCheckedException("Meta storage is not ready. Try again");
 
         if (rollUpVers == null)
             return;
@@ -290,17 +290,17 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         }
 
         if (cur.major() != target.major())
-            throw new IgniteCheckedException("Major versions are different.");
+            throw new IgniteCheckedException("Major versions are different");
 
         if (cur.minor() != target.minor()) {
             if (target.minor() == cur.minor() + 1 && target.maintenance() == 0)
                 return true;
 
-            throw new IgniteCheckedException("Minor version can only be incremented by 1.");
+            throw new IgniteCheckedException("Minor version can only be incremented by 1");
         }
 
         if (cur.maintenance() + 1 != target.maintenance())
-            throw new IgniteCheckedException("Patch version can only be incremented by 1.");
+            throw new IgniteCheckedException("Patch version can only be incremented by 1");
 
         return true;
     }
