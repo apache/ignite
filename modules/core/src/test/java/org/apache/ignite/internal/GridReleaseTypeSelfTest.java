@@ -201,7 +201,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testJoiningNodeFailed() throws Exception {
-        int joinTimeout = 15_000;
+        int joinTimeout = 5_000;
 
         IgniteEx ign0 = startGrid(0, "2.18.0", false,
             cfg -> {
@@ -235,7 +235,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertDisablingFails(ign0, "Can't disable rolling upgrade with different versions in cluster");
 
-        doSleep(joinTimeout);
+        doSleep(joinTimeout * 3);
 
         ign0.context().rollingUpgrade().disable();
 
