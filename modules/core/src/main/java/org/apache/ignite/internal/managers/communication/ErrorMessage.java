@@ -75,7 +75,7 @@ public class ErrorMessage implements Message {
             return U.marshal(jdk(), err);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException("Unable to marshal the holding error.", e);
+            throw new IgniteException("Unable to marshal the error.", e);
         }
     }
 
