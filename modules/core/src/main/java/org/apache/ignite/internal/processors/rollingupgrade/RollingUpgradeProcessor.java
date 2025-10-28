@@ -112,11 +112,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
         IgnitePair<IgniteProductVersion> pair = rollUpVers;
 
-        if (pair == null)
-            pair = F.pair(IgniteProductVersion.fromString(locBuildVer), null);
-
-        IgniteProductVersion curVer = pair.get1();
-        IgniteProductVersion targetVer = pair.get2();
+        IgniteProductVersion curVer = pair == null ? IgniteProductVersion.fromString(locBuildVer) : pair.get1();
+        IgniteProductVersion targetVer = pair == null ? null : pair.get2();
 
         if (Objects.equals(rmtVer, curVer) || Objects.equals(rmtVer, targetVer))
             return null;
