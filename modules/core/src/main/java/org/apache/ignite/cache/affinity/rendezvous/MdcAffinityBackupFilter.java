@@ -17,10 +17,9 @@
 
 package org.apache.ignite.cache.affinity.rendezvous;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
@@ -77,16 +76,34 @@ public class MdcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, L
     /** */
     private final int partCopiesPerDc;
 
-    /** Map is used to optimize the time it takes to perform a partition assignment procedure. */
-    private final Map<String, Integer> partsDistrMap;
-
     /**
      * @param dcsNum Number of data centers.
      * @param backups Number of backups.
      */
     public MdcAffinityBackupFilter(int dcsNum, int backups) {
-        partsDistrMap = new HashMap<>(dcsNum + 1);
-        partCopiesPerDc = (backups + 1) / dcsNum;
+        if (dcsNum < 2) {
+            throw new IllegalArgumentException("MdcAffinityBackupFilter cannot be used in an environment with only one datacenter. " +
+                "Number of datacenters must be at least 2.");
+        }
+
+        int numCopies = backups + 1;
+
+        partCopiesPerDc = numCopies / dcsNum;
+        int remainder = numCopies % dcsNum;
+
+        if (remainder != 0) {
+            String suggestion = "recommended ";
+            if (numCopies - remainder <= 0)
+                suggestion += "value is " + (backups + (dcsNum - remainder));
+            else
+                suggestion += "values are " + (backups - remainder) + " and " + (backups + (dcsNum - remainder));
+            
+            throw new IllegalArgumentException("Number of copies is not completely divisible by number of datacenters, " +
+                "copies cannot be distributed evenly across DCs. " +
+                "Please adjust the number of backups, " + suggestion);
+        }
+
+
     }
 
     /**
@@ -98,33 +115,23 @@ public class MdcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, L
      *                           The primary is first.
      */
     @Override public boolean apply(ClusterNode candidate, List<ClusterNode> previouslySelected) {
-        if (previouslySelected.size() == 1) { //list contains only primary node, thus we started new assignment round.
-            partsDistrMap.replaceAll((e, v) -> -1);
-
-            partsDistrMap.put(previouslySelected.get(0).dataCenterId(), 1);
-        }
-
-        boolean res = false;
         String candidateDcId = candidate.dataCenterId();
+        int candDcCopiesAssigned = 0;
 
-        if (candidateDcId == null)
-            throw new IllegalStateException("Data center ID is not specified for the node: " + candidate);
+        for (int i = 0; i < previouslySelected.size(); i++) {
+            String prevDcId = previouslySelected.get(i).dataCenterId();
 
-        Integer candDcPartsCopies = partsDistrMap.get(candidateDcId);
+            if (prevDcId == null)
+                return false;
 
-        if (candDcPartsCopies == null || candDcPartsCopies == -1) {
-            partsDistrMap.put(candidateDcId, 1);
-
-            res = true;
-        }
-        else {
-            if (candDcPartsCopies < partCopiesPerDc) {
-                partsDistrMap.put(candidateDcId, candDcPartsCopies + 1);
-
-                res = true;
-            }
+            candDcCopiesAssigned += prevDcId.equals(candidateDcId) ? 1 : 0;
         }
 
-        return res;
+        return candDcCopiesAssigned < partCopiesPerDc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MdcAffinityBackupFilter.class, this);
     }
 }

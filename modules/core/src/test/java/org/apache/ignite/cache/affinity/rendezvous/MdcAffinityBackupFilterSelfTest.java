@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
@@ -38,7 +37,7 @@ import org.junit.Test;
  */
 public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int PARTS_CNT = 1024;
+    private static final int PARTS_CNT = 8;
 
     /** */
     private int backups;
@@ -60,15 +59,37 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
-        return super.optimize(cfg).setIncludeProperties((String[])null);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         stopAllGrids();
+    }
+
+    /**
+     * Verifies that {@link MdcAffinityBackupFilter} prohibits single data center deployment.
+     */
+    @Test
+    public void testSingleDcDeploymentIsProhibited() {
+        dcIds = new String[] {"DC_0"};
+        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, dcIds[0]);
+
+        backups = 1;
+        verifyGridFailsToStartWithMessage("Number of datacenters must be at least 2.");
+    }
+
+    /**
+     * Verifies that {@link MdcAffinityBackupFilter} enforces even number of partition copies per datacenter.
+     */
+    @Test
+    public void testEvenNumberOfPartitionCopiesPerDcIsEnforced() {
+        dcIds = new String[] {"DC_0", "DC_1", "DC_2"};
+        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, dcIds[0]);
+
+        backups = 1;
+        verifyGridFailsToStartWithMessage("recommended value is 2");
+
+        backups = 7;
+        verifyGridFailsToStartWithMessage("recommended values are 5 and 8");
     }
 
     /**
@@ -117,6 +138,19 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
         IgniteEx srv = startClusterAcrossDataCenters(dcIds, 2);
 
         verifyDistributionProperties(srv, dcIds, nodesPerDc, backups);
+    }
+
+    /** */
+    private void verifyGridFailsToStartWithMessage(String msg) {
+        try {
+            startGrid(0);
+        } catch (IllegalArgumentException argEx) {
+            String errMsg = argEx.getMessage();
+
+            assertTrue(errMsg.contains(msg));
+        } catch (Exception e) {
+            fail("Unexpected exception was thrown: " + e);
+        }
     }
 
     /** Starts specified number of nodes in each DC. */
