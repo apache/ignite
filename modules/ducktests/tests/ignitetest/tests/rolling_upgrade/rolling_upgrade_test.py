@@ -22,19 +22,17 @@ from ducktape.mark import defaults, matrix
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.tests.rebalance.util import NUM_NODES
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
-
-RU_NUM_NODES = 3
 
 
 class RollingUpgradeTest(IgniteTest):
     """
     Tests validates rolling upgrade
     """
-
-    @cluster(num_nodes=RU_NUM_NODES)
+    @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH))
     @defaults(init_version=[str(LATEST)], upgrade_version=[str(DEV_BRANCH)])
     @matrix(upgrade_coordinator=[True, False])
@@ -61,16 +59,16 @@ class RollingUpgradeTest(IgniteTest):
 
         start = monotonic()
 
-        ignites = IgniteService(self.test_context, ignite_cfg, num_nodes=RU_NUM_NODES)
+        ignites = IgniteService(self.test_context, ignite_cfg, num_nodes=self.test_context.expected_num_nodes)
 
         ignites.start()
 
         results['Ignite cluster start time (s)'] = round(monotonic() - start, 1)
 
-        ignites.await_event(f"Topology snapshot \\[ver={RU_NUM_NODES}", ignites.startup_timeout_sec,
-                            from_the_beginning=True)
+        ignites.await_event(f"Topology snapshot \\[ver={self.test_context.expected_num_nodes}",
+                            ignites.startup_timeout_sec, from_the_beginning=True)
 
-        self.logger.info(f"Initial cluster is up [nodes={RU_NUM_NODES}].")
+        self.logger.info(f"Initial cluster is up [nodes={self.test_context.expected_num_nodes}].")
 
         return ignites
 
@@ -92,7 +90,7 @@ class RollingUpgradeTest(IgniteTest):
 
             ignite_upgraded += 1
 
-            exp_topology = RU_NUM_NODES + 2 * ignite_upgraded
+            exp_topology = self.test_context.expected_num_nodes + 2 * ignite_upgraded
 
             ignites.await_event(f"Topology snapshot \\[ver={exp_topology}", ignites.startup_timeout_sec,
                                 from_the_beginning=True)
