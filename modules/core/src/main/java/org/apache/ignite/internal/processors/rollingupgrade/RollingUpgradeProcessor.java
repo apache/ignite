@@ -153,7 +153,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      */
     public void enable(IgniteProductVersion target) throws IgniteCheckedException {
         if (ring == null)
-            throw new IgniteCheckedException("No TCP discovery node ring provided. Check that TCP discovery SPI is configured properly and try again");
+            throw new IgniteCheckedException("No TCP discovery node ring provided. " +
+                "Check that TCP discovery SPI is configured properly and try again");
 
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
             throw new IgniteCheckedException("Rolling upgrade can be enabled only on coordinator node");
