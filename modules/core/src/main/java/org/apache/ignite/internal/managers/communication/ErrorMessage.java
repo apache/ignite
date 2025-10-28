@@ -98,7 +98,7 @@ public class ErrorMessage implements Message {
                     return U.marshal(jdk(), wrappedErr);
                 }
                 catch (Throwable ex) {
-                    throw new IgniteException("Unable to marshal the wrapping error.", wrappedErr);
+                    throw new IgniteException("Unable to marshal the wrapping error. Original message: " + err.getMessage(), ex);
                 }
             }
 
