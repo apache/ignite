@@ -95,13 +95,7 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Message {
         if (map == null)
             map = new HashMap<>();
 
-        PartitionReservationsMap nodeMap = map.get(nodeId);
-
-        if (nodeMap == null) {
-            nodeMap = new PartitionReservationsMap(new HashMap<>());
-
-            map.put(nodeId, nodeMap);
-        }
+        PartitionReservationsMap nodeMap = map.computeIfAbsent(nodeId, k -> new PartitionReservationsMap());
 
         nodeMap.put(new GroupPartitionIdPair(grpId, partId), cntr);
     }

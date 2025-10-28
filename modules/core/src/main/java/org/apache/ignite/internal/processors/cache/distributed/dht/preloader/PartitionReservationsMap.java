@@ -32,18 +32,6 @@ public class PartitionReservationsMap implements Message {
     @Order(0)
     private Map<GroupPartitionIdPair, Long> map;
 
-    /** Default constructor. */
-    public PartitionReservationsMap() {
-        // No-op.
-    }
-
-    /**
-     * @param map Map.
-     */
-    public PartitionReservationsMap(Map<GroupPartitionIdPair, Long> map) {
-        this.map = map;
-    }
-
     /**
      * @return Map.
      */
