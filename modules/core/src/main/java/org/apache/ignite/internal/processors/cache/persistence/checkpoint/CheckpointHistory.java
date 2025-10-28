@@ -39,7 +39,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.CacheState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry.GroupState;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.EarliestCheckpointMapSnapshot.GroupStateSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -647,16 +647,14 @@ public class CheckpointHistory {
     /**
      * Tries to search for a WAL pointer for the given partition counter start.
      *
-     * @param searchCntrMap Search map contains (Group Id, partition, counter).
+     * @param searchCntrMap Search map contains (Pair of group ID and partition ID, counter).
      * @return Map of group-partition on checkpoint entry or empty map if nothing found.
      */
-    public Map<GroupPartitionId, CheckpointEntry> searchCheckpointEntry(
-        Map<GroupPartitionIdMessage, Long> searchCntrMap
-    ) {
+    public Map<GroupPartitionId, CheckpointEntry> searchCheckpointEntry(Map<GroupPartitionIdPair, Long> searchCntrMap) {
         if (F.isEmpty(searchCntrMap))
             return Collections.emptyMap();
 
-        Map<GroupPartitionIdMessage, Long> modifiedSearchMap = new HashMap<>(searchCntrMap);
+        Map<GroupPartitionIdPair, Long> modifiedSearchMap = new HashMap<>(searchCntrMap);
 
         Map<GroupPartitionId, CheckpointEntry> res = new HashMap<>();
 
@@ -664,10 +662,10 @@ public class CheckpointHistory {
             try {
                 CheckpointEntry cpEntry = entry(cpTs);
 
-                Iterator<Map.Entry<GroupPartitionIdMessage, Long>> iter = modifiedSearchMap.entrySet().iterator();
+                Iterator<Map.Entry<GroupPartitionIdPair, Long>> iter = modifiedSearchMap.entrySet().iterator();
 
                 while (iter.hasNext()) {
-                    Map.Entry<GroupPartitionIdMessage, Long> entry = iter.next();
+                    Map.Entry<GroupPartitionIdPair, Long> entry = iter.next();
 
                     Long foundCntr = cpEntry.partitionCounter(wal, entry.getKey().groupId(), entry.getKey().partitionId());
 

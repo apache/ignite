@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -118,7 +118,7 @@ public class WalPreloadingConcurrentTest extends GridCommonAbstractTest {
 
                 while (!stop.get()) {
                     db.reserveHistoryForPreloading(Collections.singletonMap(
-                        new GroupPartitionIdMessage(cache.context().groupId(), randomPart),
+                        new GroupPartitionIdPair(cache.context().groupId(), randomPart),
                         0L
                     ));
                 }

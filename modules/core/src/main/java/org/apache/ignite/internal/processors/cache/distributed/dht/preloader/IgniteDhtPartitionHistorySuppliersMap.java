@@ -41,7 +41,7 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Message {
 
     /** */
     @Order(0)
-    private Map<UUID, IgniteDhtPartitionReservationsMessage> map;
+    private Map<UUID, PartitionReservationsMap> map;
 
     /**
      * @return Empty map.
@@ -62,10 +62,10 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Message {
 
         List<UUID> suppliers = new ArrayList<>();
 
-        for (Map.Entry<UUID, IgniteDhtPartitionReservationsMessage> e : map.entrySet()) {
+        for (Map.Entry<UUID, PartitionReservationsMap> e : map.entrySet()) {
             UUID supplierNode = e.getKey();
 
-            Long historyCounter = e.getValue().map().get(new GroupPartitionIdMessage(grpId, partId));
+            Long historyCounter = e.getValue().get(new GroupPartitionIdPair(grpId, partId));
 
             if (historyCounter != null && historyCounter <= cntrSince)
                 suppliers.add(supplierNode);
@@ -78,13 +78,11 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Message {
      * @param nodeId Node ID to check.
      * @return Reservations for the given node.
      */
-    @Nullable public synchronized Map<GroupPartitionIdMessage, Long> getReservations(UUID nodeId) {
+    @Nullable public synchronized PartitionReservationsMap getReservations(UUID nodeId) {
         if (map == null)
             return null;
 
-        IgniteDhtPartitionReservationsMessage msg = map.get(nodeId);
-
-        return msg != null ? msg.map() : null;
+        return map.get(nodeId);
     }
 
     /**
@@ -97,18 +95,15 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Message {
         if (map == null)
             map = new HashMap<>();
 
-        IgniteDhtPartitionReservationsMessage nodeMap = map.get(nodeId);
+        PartitionReservationsMap nodeMap = map.get(nodeId);
 
         if (nodeMap == null) {
-            nodeMap = new IgniteDhtPartitionReservationsMessage(new HashMap<>());
+            nodeMap = new PartitionReservationsMap(new HashMap<>());
 
             map.put(nodeId, nodeMap);
         }
 
-        if (nodeMap.map() == null)
-            nodeMap.map(new HashMap<>());
-
-        nodeMap.map().put(new GroupPartitionIdMessage(grpId, partId), cntr);
+        nodeMap.put(new GroupPartitionIdPair(grpId, partId), cntr);
     }
 
     /**
@@ -128,14 +123,14 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Message {
     /**
      * @return Map.
      */
-    public Map<UUID, IgniteDhtPartitionReservationsMessage> map() {
+    public Map<UUID, PartitionReservationsMap> map() {
         return map;
     }
 
     /**
      * @param map Map.
      */
-    public void map(Map<UUID, IgniteDhtPartitionReservationsMessage> map) {
+    public void map(Map<UUID, PartitionReservationsMap> map) {
         this.map = map;
     }
 

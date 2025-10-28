@@ -21,8 +21,8 @@ import java.util.Objects;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** Message for storing group ID and partition ID. */
-public class GroupPartitionIdMessage implements Message {
+/** Pair of group ID and partition ID. */
+public class GroupPartitionIdPair implements Message {
     /** Type code. */
     public static final short TYPE_CODE = 508;
 
@@ -35,7 +35,7 @@ public class GroupPartitionIdMessage implements Message {
     private int partId;
 
     /** Default constructor. */
-    public GroupPartitionIdMessage() {
+    public GroupPartitionIdPair() {
         // No-op.
     }
 
@@ -43,7 +43,7 @@ public class GroupPartitionIdMessage implements Message {
      * @param grpId Group ID.
      * @param partId Partition ID.
      */
-    public GroupPartitionIdMessage(int grpId, int partId) {
+    public GroupPartitionIdPair(int grpId, int partId) {
         this.grpId = grpId;
         this.partId = partId;
     }
@@ -89,7 +89,7 @@ public class GroupPartitionIdMessage implements Message {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        GroupPartitionIdMessage that = (GroupPartitionIdMessage)o;
+        GroupPartitionIdPair that = (GroupPartitionIdPair)o;
 
         return grpId == that.grpId && partId == that.partId;
     }

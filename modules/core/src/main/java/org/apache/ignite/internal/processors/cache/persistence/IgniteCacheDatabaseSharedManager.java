@@ -61,7 +61,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointMarkersStorage;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
 import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
@@ -1153,7 +1153,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param reservationMap Map contains of counters for partitions of groups.
      * @return True if successfully reserved.
      */
-    public boolean reserveHistoryForPreloading(Map<GroupPartitionIdMessage, Long> reservationMap) {
+    public boolean reserveHistoryForPreloading(Map<GroupPartitionIdPair, Long> reservationMap) {
         return false;
     }
 

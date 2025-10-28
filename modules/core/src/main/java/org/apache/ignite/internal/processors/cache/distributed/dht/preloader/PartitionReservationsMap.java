@@ -17,43 +17,67 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
-/** Message for storing GroupPartitionIdMessage and their respective history counter values. */
-public class IgniteDhtPartitionReservationsMessage implements Message {
+/** Map for storing GroupPartitionIdPair and their respective history counter values. */
+public class PartitionReservationsMap implements Message {
     /** Type code. */
     public static final short TYPE_CODE = 509;
 
-    /** Mapping between GroupPartitionIdMessage objects and their respective history counter values. */
+    /** Mapping between GroupPartitionIdPair objects and their respective history counter values. */
     @Order(0)
-    private Map<GroupPartitionIdMessage, Long> map;
+    private Map<GroupPartitionIdPair, Long> map;
 
     /** Default constructor. */
-    public IgniteDhtPartitionReservationsMessage() {
+    public PartitionReservationsMap() {
         // No-op.
     }
 
     /**
      * @param map Map.
      */
-    public IgniteDhtPartitionReservationsMessage(Map<GroupPartitionIdMessage, Long> map) {
+    public PartitionReservationsMap(Map<GroupPartitionIdPair, Long> map) {
         this.map = map;
     }
 
     /**
      * @return Map.
      */
-    public Map<GroupPartitionIdMessage, Long> map() {
+    public Map<GroupPartitionIdPair, Long> map() {
         return map;
     }
 
     /**
      * @param map Map.
      */
-    public void map(Map<GroupPartitionIdMessage, Long> map) {
+    public void map(Map<GroupPartitionIdPair, Long> map) {
         this.map = map;
+    }
+
+    /**
+     * @param pair Pair of group ID and partition ID.
+     * @return History counter for this pair or null.
+     */
+    public @Nullable Long get(GroupPartitionIdPair pair) {
+        if (map == null)
+            return null;
+
+        return map.get(pair);
+    }
+
+    /**
+     * @param pair Pair of group ID and partition ID.
+     * @param counter History counter for this pair.
+     */
+    public void put(GroupPartitionIdPair pair, Long counter) {
+        if (map == null)
+            map = new HashMap<>();
+
+        map.put(pair, counter);
     }
 
     /** {@inheritDoc} */

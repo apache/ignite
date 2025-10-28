@@ -2461,10 +2461,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             // Create and destroy caches and cache proxies.
             cctx.cache().onExchangeDone(this, err);
 
-            Map<GroupPartitionIdMessage, Long> locReserved = partHistSuppliers.getReservations(cctx.localNodeId());
+            PartitionReservationsMap locReserved = partHistSuppliers.getReservations(cctx.localNodeId());
 
             if (locReserved != null) {
-                boolean success = cctx.database().reserveHistoryForPreloading(locReserved);
+                boolean success = cctx.database().reserveHistoryForPreloading(locReserved.map());
 
                 if (!success) {
                     log.warning("Could not reserve history for historical rebalance " +
