@@ -2222,7 +2222,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setTopologyValidator(TopologyValidator topValidator) {
         try {
-            topValidator.checkConfiguration();
+            if (topValidator != null)
+                topValidator.checkConfiguration();
         }
         catch (Exception e) {
             throw new CacheException(e);
