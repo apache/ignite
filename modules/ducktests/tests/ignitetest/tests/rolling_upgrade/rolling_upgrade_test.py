@@ -94,7 +94,7 @@ class RollingUpgradeTest(IgniteTest):
 
             exp_topology = RU_NUM_NODES + 2 * ignite_upgraded
 
-            ignites.await_event(f"Topology snapshot [ver={exp_topology}", ignites.startup_timeout_sec,
+            ignites.await_event(f"Topology snapshot \\[ver={exp_topology}", ignites.startup_timeout_sec,
                                 from_the_beginning=True)
 
         results['Ignite cluster upgrade time (s)'] = round(monotonic() - start, 1)
