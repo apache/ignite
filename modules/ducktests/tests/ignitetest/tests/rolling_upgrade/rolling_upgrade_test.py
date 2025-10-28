@@ -67,7 +67,7 @@ class RollingUpgradeTest(IgniteTest):
 
         results['Ignite cluster start time (s)'] = round(monotonic() - start, 1)
 
-        ignites.await_event(f"Topology snapshot [ver={RU_NUM_NODES}", ignites.startup_timeout_sec,
+        ignites.await_event(f"Topology snapshot \\[ver={RU_NUM_NODES}", ignites.startup_timeout_sec,
                             from_the_beginning=True)
 
         self.logger.info(f"Initial cluster is up [nodes={RU_NUM_NODES}].")
