@@ -476,6 +476,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             statsPrinter.start();
         }
 
+        if (spi.ignite() instanceof IgniteEx) {
+            RollingUpgradeProcessor rollUpProc = ((IgniteEx)spi.ignite()).context().rollingUpgrade();
+            if (rollUpProc != null)
+                rollUpProc.ring(ring);
+        }
+
         joinTopology();
 
         if (locNode.order() == 1)
@@ -2998,12 +3004,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 runTasks();
             });
-
-            if (spi.ignite() instanceof IgniteEx) {
-                RollingUpgradeProcessor rollUpProc = ((IgniteEx)spi.ignite()).context().rollingUpgrade();
-                if (rollUpProc != null)
-                    rollUpProc.ring(ring);
-            }
         }
 
         /**
