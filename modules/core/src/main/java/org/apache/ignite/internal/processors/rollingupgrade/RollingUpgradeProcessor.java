@@ -62,8 +62,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     /** Lock for synchronization between tcp-disco-msg-worker thread and management operations. */
     private final Object lock = new Object();
 
-    /** Pair with current and target versions. */
-    private volatile IgnitePair<IgniteProductVersion> rollUpVers;
+    /** Pair with current and target versions. {@code null} when rolling upgrade is disabled. */
+    @Nullable private volatile IgnitePair<IgniteProductVersion> rollUpVers;
 
     /**
      * @param ctx Context.
