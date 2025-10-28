@@ -47,6 +47,9 @@ public class ErrorMessage implements Message {
     /** Original error. It is transient and necessary only to avoid duplicated serialization and deserializtion. */
     private @Nullable Throwable err;
 
+    /** If {@code true}, wraps possible serialization error. If {@code false}, will fail if a serialization error occures. */
+    private boolean catchSerializationErr;
+
     /**
      * Default constructor.
      */
@@ -56,9 +59,19 @@ public class ErrorMessage implements Message {
 
     /**
      * @param err Original error. Will be lazily serialized.
+     * @param catchSerializationErr If {@code true}, wraps possible serialization error. If {@code false}, will fail
+     *                              if a serialization error occures.
+     */
+    public ErrorMessage(@Nullable Throwable err, boolean catchSerializationErr) {
+        this.err = err;
+        this.catchSerializationErr = catchSerializationErr;
+    }
+
+    /**
+     * @param err Original error. Will be lazily serialized.
      */
     public ErrorMessage(@Nullable Throwable err) {
-        this.err = err;
+        this(err, false);
     }
 
     /**
@@ -74,8 +87,22 @@ public class ErrorMessage implements Message {
         try {
             return U.marshal(jdk(), err);
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Unable to marshal the holding error.", e);
+        catch (Throwable e) {
+            if (catchSerializationErr) {
+                IgniteCheckedException wrappedErr = new IgniteCheckedException(err.getMessage());
+
+                wrappedErr.setStackTrace(err.getStackTrace());
+                wrappedErr.addSuppressed(e);
+
+                try {
+                    return U.marshal(jdk(), wrappedErr);
+                }
+                catch (Throwable ex) {
+                    throw new IgniteException("Unable to marshal the wrapping error.", wrappedErr);
+                }
+            }
+
+            throw new IgniteException("Unable to marshal the error.", e);
         }
     }
 

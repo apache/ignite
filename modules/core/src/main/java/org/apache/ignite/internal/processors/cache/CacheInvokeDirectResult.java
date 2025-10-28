@@ -87,7 +87,7 @@ public class CacheInvokeDirectResult implements Message {
      */
     public CacheInvokeDirectResult(KeyCacheObject key, Throwable err) {
         this.key = key;
-        this.errMsg = new ErrorMessage(err);
+        errMsg = new ErrorMessage(err, true);
     }
 
     /**
