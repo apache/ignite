@@ -3000,9 +3000,9 @@ class ServerImpl extends TcpDiscoveryImpl {
             });
 
             if (spi.ignite() instanceof IgniteEx) {
-                RollingUpgradeProcessor rollingUpgradeProcessor = ((IgniteEx)spi.ignite()).context().rollingUpgrade();
-                if (rollingUpgradeProcessor != null)
-                    rollingUpgradeProcessor.ring(ring);
+                RollingUpgradeProcessor rollUpProc = ((IgniteEx)spi.ignite()).context().rollingUpgrade();
+                if (rollUpProc != null)
+                    rollUpProc.ring(ring);
             }
         }
 
