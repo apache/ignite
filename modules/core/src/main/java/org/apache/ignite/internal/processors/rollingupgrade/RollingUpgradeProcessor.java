@@ -310,11 +310,17 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         return true;
     }
 
-    /** Checks if versions have same major, minor and maintenance versions. */
-    private boolean validateVersionsForJoining(IgniteProductVersion ver1, IgniteProductVersion ver2) {
-        if (ver1 == null || ver2 == null)
+    /**
+     * Checks if versions have same major, minor and maintenance versions.
+     *
+     * @param rmtVer Remote node version.
+     * @param supportedVer Supported version: current or target.
+     * @return {@code true} if versions have same major, minor and maintenance versions.
+     */
+    private boolean validateVersionsForJoining(IgniteProductVersion rmtVer, IgniteProductVersion supportedVer) {
+        if (supportedVer == null)
             return false;
 
-        return ver1.major() == ver2.major() && ver1.minor() == ver2.minor() && ver1.maintenance() == ver2.maintenance();
+        return rmtVer.major() == supportedVer.major() && rmtVer.minor() == supportedVer.minor() && rmtVer.maintenance() == supportedVer.maintenance();
     }
 }
