@@ -148,14 +148,14 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      *
      * @param target Target version.
      * @throws IgniteCheckedException If current and target versions are not compatible
-     * or if node is not coordinator or if discovery SPI is not {@link TcpDiscoverySpi}.
-     * @throws NullPointerException If metastorage is not available.
+     * or if node is not coordinator or if discovery SPI is not {@link TcpDiscoverySpi} or metastorage is not ready.
      */
     public void enable(IgniteProductVersion target) throws IgniteCheckedException {
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
             throw new IgniteCheckedException("Rolling upgrade can be enabled only on coordinator node");
 
-        A.notNull(metastorage, "Metastorage not ready. Node not started?");
+        if (metastorage == null)
+            throw new IgniteCheckedException("Meta storage is not ready.");
 
         if (!(ctx.config().getDiscoverySpi() instanceof TcpDiscoverySpi))
             throw new IgniteCheckedException("Rolling upgrade is supported only with TCP discovery SPI");
@@ -191,14 +191,15 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      * Disables rolling upgrade.
      * This method can only be called on coordinator node.
      *
-     * @throws IgniteCheckedException If cluster has two or more nodes with different versions or if node is not coordinator.
-     * @throws NullPointerException If metastorage is not available.
+     * @throws IgniteCheckedException If cluster has two or more nodes with different versions or if node is not coordinator
+     * or metastorage is not ready.
      */
     public void disable() throws IgniteCheckedException {
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
             throw new IgniteCheckedException("Rolling upgrade can be disabled only on coordinator node");
 
-        A.notNull(metastorage, "Metastorage not ready. Node not started?");
+        if (metastorage == null)
+            throw new IgniteCheckedException("Meta storage is not ready.");
 
         if (verPair == null)
             return;
