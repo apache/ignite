@@ -87,6 +87,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
                     throw new IgniteException(e);
                 }
 
+                // Keep the current and target version pair in sync with metastorage updates, e.g., to handle coordinator changes.
                 metastorage.listen(ROLLING_UPGRADE_VERSIONS_KEY::equals, (key, oldVal, newVal) -> {
                     verPair = (IgnitePair<IgniteProductVersion>)newVal;
                 });
