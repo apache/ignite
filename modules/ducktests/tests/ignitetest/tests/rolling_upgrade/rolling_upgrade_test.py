@@ -28,35 +28,34 @@ from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
-RU_NUM_NODES=3
+RU_NUM_NODES = 3
 
 
 class RollingUpgradeTest(IgniteTest):
     """
     Tests validates rolling upgrade
     """
+
     @cluster(num_nodes=RU_NUM_NODES)
     @ignite_versions(str(DEV_BRANCH))
     @defaults(init_version=[str(LATEST)], upgrade_version=[str(DEV_BRANCH)])
     @matrix(upgrade_coordinator=[True, False])
     def test_rolling_upgrade(self, ignite_version, init_version, upgrade_version, upgrade_coordinator):
+        self.logger.info(f"Initiating Rolling Upgrade test from {init_version} to {upgrade_version} "
+                         f"starting from coordinator [{upgrade_coordinator}]")
+
         results = {}
 
         ignites = self.start_ignite_cluster(init_version, results)
 
-        check_topology(ControlUtility(ignites[0]), RU_NUM_NODES)
-
         self.upgrade_ignite_cluster(ignites, upgrade_version, upgrade_coordinator, results)
 
-        for ignite in ignites:
-            ignite.stop()
+        ignites.stop()
 
         return results
 
     def start_ignite_cluster(self, ignite_version: str, results):
         self.logger.info("Cluster start-up.")
-
-        ignites = []
 
         ignite_cfg = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
@@ -64,38 +63,37 @@ class RollingUpgradeTest(IgniteTest):
 
         start = monotonic()
 
-        for i in range(RU_NUM_NODES):
-            ignite = IgniteService(self.test_context, ignite_cfg, num_nodes=1)
+        ignites = IgniteService(self.test_context, ignite_cfg, num_nodes=RU_NUM_NODES)
 
-            ignite.start()
-
-            ignites.append(ignite)
+        ignites.start()
 
         results['Ignite cluster start time (s)'] = round(monotonic() - start, 1)
+
+        check_topology(ControlUtility(ignites), RU_NUM_NODES)
 
         self.logger.info(f"Initial cluster is up [nodes={RU_NUM_NODES}].")
 
         return ignites
 
-    def upgrade_ignite_cluster(self, ignites: list, upgrade_version: str, upgrade_coordinator: bool, results):
+    def upgrade_ignite_cluster(self, ignites: IgniteService, upgrade_version: str, upgrade_coordinator: bool, results):
         self.logger.info(f"Starting rolling upgrade.")
+
+        ignites.config = IgniteConfiguration(version=IgniteVersion(upgrade_version))
+
+        ignite_upgraded = 0
 
         start = monotonic()
 
-        nodes_upgraded = 0
+        for ignite in ignites.nodes if upgrade_coordinator else reversed(ignites.nodes):
+            self.logger.debug(f"Updating {ignites.who_am_i(ignite)}")
 
-        for ignite in ignites if upgrade_coordinator else reversed(ignites):
-            self.logger.debug(f"Updating {ignite.who_am_i()}")
+            ignites.stop_node(ignite)
 
-            ignite.config = IgniteConfiguration(version=IgniteVersion(upgrade_version))
+            ignites.start_node(ignite, clean=False)
 
-            ignite.stop()
+            ignite_upgraded += 1
 
-            ignite.start(clean=False)
-
-            nodes_upgraded += 1
-
-            exp_topology = RU_NUM_NODES + 2 * nodes_upgraded
+            exp_topology = RU_NUM_NODES + 2 * ignite_upgraded
 
             check_topology(ControlUtility(ignite), exp_topology)
 
