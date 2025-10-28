@@ -60,6 +60,8 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
     }
 
     /** {@inheritDoc} */
@@ -100,6 +102,59 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
             "Datacenters count must be even when main datacenter is set.");
     }
 
+    /** Checks 1DC case with MdcTopologyValidator usage */
+    @Test
+    public void testEmptyDc() {
+        MdcTopologyValidator topValidator = new MdcTopologyValidator();
+
+        topValidator.setDatacenters(Set.of());
+
+        GridTestUtils.assertThrows(log,
+            () -> createClusterWithCache(topValidator, false),
+            CacheException.class,
+            "Missing datacenters");
+    }
+
+    /** */
+    @Test
+    public void testNodeWitoutDCWithMajority() throws Exception {
+        MdcTopologyValidator topValidator = new MdcTopologyValidator();
+
+        topValidator.setDatacenters(Set.of(DC_ID_0, DC_ID_1, DC_ID_2));
+
+        IgniteEx srv = startGrid(0);
+
+        waitForTopology(1);
+
+        srv.cluster().state(ClusterState.ACTIVE);
+
+        CacheConfiguration<Object, Object> cfgCache = new CacheConfiguration<>("cache").setTopologyValidator(topValidator);
+
+        IgniteCache cache = srv.createCache(cfgCache);
+
+        GridTestUtils.assertThrows(log, () -> cache.put(KEY, VAL), IgniteException.class, "cache topology is not valid");
+    }
+
+    /** */
+    @Test
+    public void testNodeWitoutDCWithMain() throws Exception {
+        MdcTopologyValidator topValidator = new MdcTopologyValidator();
+
+        topValidator.setMainDatacenter(DC_ID_1);
+
+        IgniteEx srv = startGrid(0);
+
+        waitForTopology(1);
+
+        srv.cluster().state(ClusterState.ACTIVE);
+
+        CacheConfiguration<Object, Object> cfgCache = new CacheConfiguration<>("cache").setTopologyValidator(topValidator);
+
+        IgniteCache cache = srv.createCache(cfgCache);
+
+        GridTestUtils.assertThrows(log, () -> cache.put(KEY, VAL), IgniteException.class, "cache topology is not valid");
+    }
+
     /** */
     @Test
     public void testClientDoesNotAffectValidation() throws Exception {
@@ -128,6 +183,7 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testTopologyValidatorEqualityCheck() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
         IgniteEx srv0 = startGrid(0);
 
         startGrid(1);
@@ -160,31 +216,6 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
         waitForTopology(2);
 
         GridTestUtils.assertThrows(log, () -> startGrid(1), IgniteCheckedException.class, "Cache topology validator mismatch");
-    }
-
-    /** Checks 1DC case with MdcTopologyValidator usage */
-    @Test
-    public void testEmptyDc() throws Exception {
-        MdcTopologyValidator topValidator = new MdcTopologyValidator();
-
-        topValidator.setDatacenters(Set.of());
-
-        IgniteCache<Object, Object> cache = createClusterWithCache(topValidator, false);
-
-        cache.put(KEY, VAL);
-        assertEquals(VAL, cache.get(KEY));
-
-        int randomNode = ThreadLocalRandom.current().nextInt(1, 3);
-
-        stopGrid(randomNode);
-
-        cache.put(KEY, VAL + 1);
-        assertEquals(VAL + 1, cache.get(KEY));
-
-        stopGrid(randomNode == 1 ? 2 : 1);
-
-        cache.put(KEY, VAL + 2);
-        assertEquals(VAL + 2, cache.get(KEY));
     }
 
     /** */

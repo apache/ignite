@@ -92,6 +92,9 @@ public class MdcTopologyValidator implements TopologyValidator {
         if (dcs == null && mainDc == null)
             throw new IllegalStateException("Missing datacenters or main datacenter.");
 
+        if (dcs != null && dcs.isEmpty())
+            throw new IllegalStateException("Missing datacenters.");
+
         if (mainDc != null && dcs != null && dcs.size() % 2 == 1)
             throw new IllegalStateException("Datacenters count must be even when main datacenter is set.");
     }
@@ -101,7 +104,7 @@ public class MdcTopologyValidator implements TopologyValidator {
         Stream<ClusterNode> servers = nodes.stream().filter(node -> !node.isClient());
 
         if (mainDc != null)
-            return servers.anyMatch(n -> n.dataCenterId().equals(mainDc));
+            return servers.anyMatch(n -> n.dataCenterId() != null && n.dataCenterId().equals(mainDc));
 
         long visible = servers.map(ClusterNode::dataCenterId).distinct().count();
         int half = dcs.size() / 2;
