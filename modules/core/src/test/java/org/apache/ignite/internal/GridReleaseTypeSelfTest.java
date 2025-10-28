@@ -53,16 +53,19 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** */
     private String nodeVer;
 
-    /** Is client. */
+    /**
+     * Indicates whether the tested node is started as a client.
+     * This flag is used to run all test cases for both client and server node configurations.
+     */
     @Parameterized.Parameter
-    public boolean isClient;
+    public boolean client;
 
     /** Persistence. */
     @Parameterized.Parameter(1)
     public boolean persistence;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "isClient={0}, persistence={1}")
+    @Parameterized.Parameters(name = "client={0}, persistence={1}")
     public static Collection<?> parameters() {
         return GridTestUtils.cartesianProduct(List.of(false, true), List.of(false, true));
     }
@@ -102,41 +105,41 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testTwoConflictVersions() {
-        testConflictVersions("2.18.0", "2.16.0", isClient);
-        testConflictVersions("2.21.0", "2.23.1", isClient);
-        testConflictVersions("2.20.1", "2.20.2", isClient);
+        testConflictVersions("2.18.0", "2.16.0", client);
+        testConflictVersions("2.21.0", "2.23.1", client);
+        testConflictVersions("2.20.1", "2.20.2", client);
     }
 
     /** */
     @Test
     public void testThreeConflictVersions() throws Exception {
-        testConflictVersionsWithRollingUpgrade("2.18.0", "2.18.1", "2.18.2", isClient, "2.18.1");
+        testConflictVersionsWithRollingUpgrade("2.18.0", "2.18.1", "2.18.2", client, "2.18.1");
 
-        testConflictVersionsWithRollingUpgrade("2.18.0", "2.18.1", "2.17.2", isClient, "2.18.1");
+        testConflictVersionsWithRollingUpgrade("2.18.0", "2.18.1", "2.17.2", client, "2.18.1");
 
-        testConflictVersionsWithRollingUpgrade("2.18.1", "2.19.0", "2.19.1", isClient, "2.19.0");
+        testConflictVersionsWithRollingUpgrade("2.18.1", "2.19.0", "2.19.1", client, "2.19.0");
 
-        testConflictVersionsWithRollingUpgrade("2.18.1", "2.18.2", "2.18.0", isClient, "2.18.2");
+        testConflictVersionsWithRollingUpgrade("2.18.1", "2.18.2", "2.18.0", client, "2.18.2");
     }
 
     /** */
     @Test
     public void testTwoCompatibleVersions() throws Exception {
-        testCompatibleVersions("2.18.0", "2.18.0", isClient, null);
-        testCompatibleVersions("2.19.2", "2.19.2", isClient, null);
+        testCompatibleVersions("2.18.0", "2.18.0", client, null);
+        testCompatibleVersions("2.19.2", "2.19.2", client, null);
 
-        testCompatibleVersions("2.18.0", "2.18.1", isClient, "2.18.1");
-        testCompatibleVersions("2.18.2", "2.19.0", isClient, "2.19.0");
+        testCompatibleVersions("2.18.0", "2.18.1", client, "2.18.1");
+        testCompatibleVersions("2.18.2", "2.19.0", client, "2.19.0");
     }
 
     /** */
     @Test
     public void testThreeCompatibleVersions() throws Exception {
-        testCompatibleVersions("2.18.0", "2.18.0", "2.18.0", isClient, null);
-        testCompatibleVersions("2.18.2", "2.18.2", "2.18.2", isClient, null);
+        testCompatibleVersions("2.18.0", "2.18.0", "2.18.0", client, null);
+        testCompatibleVersions("2.18.2", "2.18.2", "2.18.2", client, null);
 
-        testCompatibleVersions("2.18.0", "2.18.1", "2.18.1", isClient, "2.18.1");
-        testCompatibleVersions("2.18.1", "2.19.0", "2.18.1", isClient, "2.19.0");
+        testCompatibleVersions("2.18.0", "2.18.1", "2.18.1", client, "2.18.1");
+        testCompatibleVersions("2.18.1", "2.19.0", "2.18.1", client, "2.19.0");
     }
 
     /** */
@@ -144,12 +147,12 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     public void testForwardRollingUpgrade() throws Exception {
         cleanPersistenceDir();
         IgniteEx ign0 = startGrid(0, "2.18.0", false);
-        IgniteEx ign1 = startGrid(1, "2.18.0", isClient);
-        IgniteEx ign2 = startGrid(2, "2.18.0", isClient);
+        IgniteEx ign1 = startGrid(1, "2.18.0", client);
+        IgniteEx ign2 = startGrid(2, "2.18.0", client);
 
         assertClusterSize(3);
 
-        assertRemoteRejected(() -> startGrid(3, "2.18.1", isClient));
+        assertRemoteRejected(() -> startGrid(3, "2.18.1", client));
 
         configureRollingUpgradeVersion(ign0, "2.18.1");
 
@@ -162,7 +165,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertClusterSize(2);
 
-        startGrid(2, "2.18.1", isClient);
+        startGrid(2, "2.18.1", client);
 
         assertClusterSize(3);
 
@@ -170,7 +173,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertClusterSize(2);
 
-        startGrid(1, "2.18.1", isClient);
+        startGrid(1, "2.18.1", client);
 
         assertClusterSize(3);
 
@@ -182,7 +185,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertClusterSize(3);
 
-        if (isClient)
+        if (client)
             grid(0).context().rollingUpgrade().disable();
         else
             grid(2).context().rollingUpgrade().disable();
@@ -192,7 +195,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
                 assertFalse(grid(i).context().rollingUpgrade().enabled());
         }
 
-        assertRemoteRejected(() -> startGrid(3, "2.18.0", isClient));
+        assertRemoteRejected(() -> startGrid(3, "2.18.0", client));
     }
 
     /** */
@@ -256,12 +259,12 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertClusterSize(1);
 
-        startGrid(0, "2.18.0", isClient);
-        startGrid(1, "2.19.0", isClient);
+        startGrid(0, "2.18.0", client);
+        startGrid(1, "2.19.0", client);
 
         assertClusterSize(3);
 
-        assertRemoteRejected(() -> startGrid(4, "2.20.0", isClient));
+        assertRemoteRejected(() -> startGrid(4, "2.20.0", client));
 
         assertClusterSize(3);
     }
@@ -301,7 +304,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     @Test
     public void testRollingUpgradeProcessorVersionCheck() throws Exception {
         IgniteEx grid0 = startGrid(0, "2.18.0", false);
-        startGrid(1, "2.18.0", isClient);
+        startGrid(1, "2.18.0", client);
 
         assertClusterSize(2);
 
@@ -355,11 +358,11 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     }
 
     /** Tests that starting a node with rejected version fails with remote rejection. */
-    private void testConflictVersions(String acceptedVer, String rejVer, boolean isClient) {
+    private void testConflictVersions(String acceptedVer, String rejVer, boolean client) {
         ThrowableSupplier<IgniteEx, Exception> sup = () -> {
             IgniteEx ign = startGrid(0, acceptedVer, false);
 
-            startGrid(1, rejVer, isClient);
+            startGrid(1, rejVer, client);
 
             return ign;
         };
@@ -371,15 +374,15 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
     /** Checks that the third grid is not compatible when rolling upgrade version is set. */
     private void testConflictVersionsWithRollingUpgrade(String acceptedVer1, String acceptedVer2, String rejVer,
-        boolean isClient, String rollUpVer) throws Exception {
+        boolean client, String rollUpVer) throws Exception {
         ThrowableSupplier<IgniteEx, Exception> sup = () -> {
             IgniteEx ign = startGrid(0, acceptedVer1, false);
 
             configureRollingUpgradeVersion(ign, rollUpVer);
 
-            startGrid(1, acceptedVer2, isClient);
+            startGrid(1, acceptedVer2, client);
 
-            startGrid(2, rejVer, isClient);
+            startGrid(2, rejVer, client);
 
             return ign;
         };
@@ -401,14 +404,14 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** Tests two compatible grids. */
     private void testCompatibleVersions(String acceptedVer1,
         String acceptedVer2,
-        boolean isClient,
+        boolean client,
         String rollUpVerCheck) throws Exception {
         IgniteEx grid = startGrid(0, acceptedVer1, false);
 
         if (rollUpVerCheck != null)
             configureRollingUpgradeVersion(grid, rollUpVerCheck);
 
-        startGrid(1, acceptedVer2, isClient);
+        startGrid(1, acceptedVer2, client);
 
         assertClusterSize(2);
 
@@ -426,7 +429,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         String acceptedVer1,
         String acceptedVer2,
         String acceptedVer3,
-        boolean isClient,
+        boolean client,
         String rollUpVerCheck
     ) throws Exception {
         IgniteEx grid = startGrid(0, acceptedVer1, false);
@@ -434,8 +437,8 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         if (rollUpVerCheck != null)
             configureRollingUpgradeVersion(grid, rollUpVerCheck);
 
-        startGrid(1, acceptedVer2, isClient);
-        startGrid(2, acceptedVer3, isClient);
+        startGrid(1, acceptedVer2, client);
+        startGrid(2, acceptedVer3, client);
 
         assertClusterSize(3);
 
