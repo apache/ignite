@@ -51,7 +51,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     @Nullable private volatile DistributedMetaStorage metastorage;
 
     /** TCP discovery nodes ring. */
-    private TcpDiscoveryNodesRing ring;
+    private volatile TcpDiscoveryNodesRing ring;
 
     /** Last joining node. */
     private ClusterNode lastJoiningNode;

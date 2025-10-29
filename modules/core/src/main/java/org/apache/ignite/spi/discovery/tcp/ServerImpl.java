@@ -476,11 +476,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             statsPrinter.start();
         }
 
-        if (spi.ignite() instanceof IgniteEx) {
-            RollingUpgradeProcessor rollUpProc = ((IgniteEx)spi.ignite()).context().rollingUpgrade();
-            if (rollUpProc != null)
-                rollUpProc.ring(ring);
-        }
+        spi.onRingInitialized(ring);
 
         joinTopology();
 

@@ -61,6 +61,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
+import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -97,6 +98,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder;
@@ -2090,6 +2092,17 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             dataBag = dataPacket.unmarshalJoiningNodeDataSilently(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
 
         exchange.onExchange(dataBag);
+    }
+
+    /**
+     * @param ring TCP discovery nodes ring.
+     */
+    void onRingInitialized(TcpDiscoveryNodesRing ring) {
+        if (ignite() instanceof IgniteEx) {
+            RollingUpgradeProcessor rollUpProc = ((IgniteEx)ignite()).context().rollingUpgrade();
+            if (rollUpProc != null)
+                rollUpProc.ring(ring);
+        }
     }
 
     /** {@inheritDoc} */
