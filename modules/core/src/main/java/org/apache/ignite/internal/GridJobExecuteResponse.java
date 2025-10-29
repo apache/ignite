@@ -267,20 +267,17 @@ public class GridJobExecuteResponse implements Message {
      * Serializes non-{@link Serializable} user data to byte[] using the provided marshaller.
      * Erases non-marshalled user data like {@link #getJobAttributes()} or {@link #getJobResult()}.
      */
-    public void marshallUserData(Marshaller marsh) throws IgniteCheckedException {
+    public void marshallUserData(Marshaller marsh) {
         try {
             resBytes = U.marshal(marsh, res);
         }
         catch (IgniteCheckedException e) {
             resBytes = null;
 
-            if (gridEx == null)
-                gridEx = U.convertException(e);
-            else {
+            if (gridEx != null)
                 e.addSuppressed(gridEx);
 
-                gridEx = e;
-            }
+            gridEx = U.convertException(e);
 
             logError("Failed to serialize job response [nodeId=" + taskNode.id() +
                 ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job +
@@ -293,10 +290,10 @@ public class GridJobExecuteResponse implements Message {
         catch (IgniteCheckedException e) {
             jobAttrsBytes = null;
 
-            if (ex != null)
-                ex.addSuppressed(e);
-            else
-                ex = U.convertException(e);
+            if (gridEx != null)
+                e.addSuppressed(gridEx);
+
+            gridEx = U.convertException(e);
 
             logError("Failed to serialize job attributes [nodeId=" + taskNode.id() +
                 ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job +
