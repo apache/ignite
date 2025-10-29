@@ -32,6 +32,11 @@ import org.apache.ignite.lang.IgniteExperimental;
  * by enforcing rules based on the visibility of datacenters.
  * It provides protection against split-brain scenarios during datacenter failures or unavailability due to network issues.</p>
  *
+ * <p>
+ * In order to use MdcTopologyValidator one has to specify datacenter ID attribute on each server node.
+ * Datacenter ID is an arbitrary string that can be set with {@link IgniteSystemProperties#IGNITE_DATA_CENTER_ID} system property on the node startup.
+ * All server nodes belonging to the same datacenter should specify the same datacenter ID, and nodes in different datacenters should have different datacenter IDs.
+ * </p>
  * <p>The validator supports two modes of operation:</p>
  * <ul>
  *     <li><strong>Majority-based validation:</strong> When an odd number of datacenters are defined, the validator enables 
