@@ -415,9 +415,6 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertClusterSize(2);
 
-        if (rollUpVerCheck != null)
-            grid.context().rollingUpgrade().disable();
-
         stopAllGrids();
 
         if (persistence)
@@ -441,9 +438,6 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         startGrid(2, acceptedVer3, client);
 
         assertClusterSize(3);
-
-        if (rollUpVerCheck != null)
-            grid.context().rollingUpgrade().disable();
 
         stopAllGrids();
 
