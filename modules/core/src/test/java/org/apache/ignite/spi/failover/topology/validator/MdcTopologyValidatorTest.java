@@ -301,7 +301,7 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
         stopGrid(0);
         stopGrid(2);
 
-        // Checking case when 4 nodes are alive, but only at single DC
+        // Checking case when 4 nodes are alive, but only in single DC
         GridTestUtils.assertThrows(log, () -> cache.put(KEY, VAL + 2), IgniteException.class, "cache topology is not valid");
     }
 
