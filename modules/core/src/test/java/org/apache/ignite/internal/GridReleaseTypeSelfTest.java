@@ -362,7 +362,15 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         ThrowableSupplier<IgniteEx, Exception> sup = () -> {
             IgniteEx ign = startGrid(0, acceptedVer, false);
 
-            startGrid(1, rejVer, client);
+            startGrid(1, rejVer, client, cfg -> {
+                TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
+
+                // Decrease network timeout to reduce waiting time for node failure
+                // after it has been rejected by the coordinator due to version conflict.
+                spi.setNetworkTimeout(1_000);
+
+                return cfg;
+            });
 
             return ign;
         };
