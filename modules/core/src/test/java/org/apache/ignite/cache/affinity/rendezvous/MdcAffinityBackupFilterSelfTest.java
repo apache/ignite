@@ -33,6 +33,8 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+
 /**
  * Verifies behaviour of {@link MdcAffinityBackupFilter} - guarantees that each DC has at least one copy of every partition.
  * Verified distribution uniformity in each DC separately.
@@ -75,7 +77,10 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSingleDcDeploymentIsProhibited() {
-        verifyMdcAffinityBackupFilterValidation(1, 1, "Number of datacenters must be at least 2.");
+        assertThrows(null,
+            () -> new MdcAffinityBackupFilter(1, 1),
+            IllegalArgumentException.class,
+            "Number of datacenters must be at least 2.");
     }
 
     /**
@@ -83,20 +88,15 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testUniformNumberOfPartitionCopiesPerDcIsEnforced() {
-        verifyMdcAffinityBackupFilterValidation(3, 1, "recommended value is 2");
+        assertThrows(null,
+            () -> new MdcAffinityBackupFilter(3, 1),
+            IllegalArgumentException.class,
+            "recommended value is 2");
 
-        verifyMdcAffinityBackupFilterValidation(3, 7, "recommended values are 5 and 8");
-    }
-
-    /** */
-    private void verifyMdcAffinityBackupFilterValidation(int dcsNum, int backups, String msg) {
-        try {
-            new MdcAffinityBackupFilter(dcsNum, backups);
-        } catch (IllegalArgumentException argEx) {
-            String errMsg = argEx.getMessage();
-
-            assertTrue(errMsg.contains(msg));
-        }
+        assertThrows(null,
+            () -> new MdcAffinityBackupFilter(3, 7),
+            IllegalArgumentException.class,
+            "recommended values are 5 and 8");
     }
 
     /**
