@@ -122,8 +122,6 @@ public class GridTaskResultResponse implements Message {
      * @param res Task result.
      */
     public void marshalResult(GridKernalContext ctx, @Nullable Object res) throws IgniteCheckedException {
-        this.res = res;
-
         resBytes = U.marshal(ctx, res);
     }
 
