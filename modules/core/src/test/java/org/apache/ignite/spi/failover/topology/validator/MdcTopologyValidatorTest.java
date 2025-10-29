@@ -220,7 +220,7 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testMainDc() throws Exception {
+    public void testMainDcBasedValidator() throws Exception {
         MdcTopologyValidator topValidator = new MdcTopologyValidator();
 
         topValidator.setDatacenters(Set.of(DC_ID_0, DC_ID_1, DC_ID_2, "DC4"));
