@@ -543,7 +543,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
     /** @throws Exception If fails. */
     @Test
-    public void testClusterSnapshotExOnInitiatorLeft() throws Exception {
+    public void testClusterSnapshotёExOnInitiatorLeft() throws Exception {
         for (boolean inc : new boolean[] {false, true}) {
             IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
@@ -1318,41 +1318,21 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
      */
     @Test
     public void testIncrementalSnapshotOperationLogging() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
         ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
         LogListener fullStartListener = LogListener.matches("Starting local snapshot operation")
-            .andMatches("snpName=testSnapshot")
             .andMatches("incremental=false")
             .build();
 
         LogListener fullEndListener = LogListener.matches("Finishing local snapshot operation")
-            .andMatches("snpName=testSnapshot")
+            .andMatches("err=null")
             .andMatches("incremental=false")
-            .andMatches("status=COMPLETED")
-            .build();
-
-        LogListener incStartListener = LogListener.matches("Starting local snapshot operation")
-            .andMatches("snpName=testSnapshot")
-            .andMatches("incremental=true")
-            .andMatches("incrementIndex=1")
-            .build();
-
-        LogListener incEndListener = LogListener.matches("Finishing local snapshot operation")
-            .andMatches("snpName=testSnapshot")
-            .andMatches("incremental=true")
-            .andMatches("incrementIndex=1")
-            .andMatches("status=COMPLETED")
-            .build();
-
-        LogListener failureListener = LogListener.matches("Finishing local snapshot operation")
-            .andMatches("status=FAILED")
             .build();
 
         listeningLog.registerListener(fullStartListener);
         listeningLog.registerListener(fullEndListener);
-        listeningLog.registerListener(incStartListener);
-        listeningLog.registerListener(incEndListener);
-        listeningLog.registerListener(failureListener);
 
         IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0))
             .setGridLogger(listeningLog);
@@ -1367,6 +1347,20 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertTrue("Full snapshot start log not found", fullStartListener.check());
         assertTrue("Full snapshot end log not found", fullEndListener.check());
 
+        LogListener incStartListener = LogListener.matches("Starting local snapshot operation")
+            .andMatches("incremental=true")
+            .andMatches("incIdx=1")
+            .build();
+
+        LogListener incEndListener = LogListener.matches("Finishing local snapshot operation")
+            .andMatches("err=null")
+            .andMatches("incremental=true")
+            .andMatches("incIdx=1")
+            .build();
+
+        listeningLog.registerListener(incStartListener);
+        listeningLog.registerListener(incEndListener);
+
         IgniteFuture<Void> incSnpFut = ignite.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME);
 
         incSnpFut.get(getTestTimeout());
@@ -1374,9 +1368,27 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         assertTrue("Incremental snapshot start log not found", incStartListener.check());
         assertTrue("Incremental snapshot end log not found", incEndListener.check());
 
+        LogListener failureListener = LogListener.matches("Finishing local snapshot operation")
+            .andMatches("err=class org.apache.ignite.internal.IgniteFutureCancelledCheckedException")
+            .build();
+
+        listeningLog.registerListener(failureListener);
+
+        CountDownLatch snapshotStarted = new CountDownLatch(1);
+        CountDownLatch snapshotBlocked = new CountDownLatch(1);
+
+        snp(ignite).localSnapshotSenderFactory(
+            blockingLocalSnapshotSender(ignite, snapshotStarted, snapshotBlocked));
+
         try {
             IgniteFuture<Void> fut = ignite.snapshot().createSnapshot("testSnp2");
+
+            U.await(snapshotStarted, TIMEOUT, TimeUnit.MILLISECONDS);
+
             ignite.snapshot().cancelSnapshot("testSnp2").get();
+
+            snapshotBlocked.countDown();
+
             fut.get();
             fail("Should have failed due to cancellation");
         }

@@ -778,12 +778,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
 
-        if (log.isInfoEnabled()) {
-            log.info("Starting local snapshot operation [snpName=" + req.snapshotName() +
-                ", incremental=" + req.incremental() +
-                (req.incremental() ? (", incrementIndex=" + req.incrementIndex()) : "") +
-                ", reqId=" + req.requestId() + ']');
-        }
+        if (log.isInfoEnabled())
+            log.info("Starting local snapshot operation [req=" + req + ']');
 
         Set<UUID> leftNodes = new HashSet<>(req.nodes());
         leftNodes.removeAll(F.viewReadOnly(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE), node2id()));
@@ -1243,14 +1239,6 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (snpReq == null || !Objects.equals(req.requestId(), snpReq.requestId()))
             return new GridFinishedFuture<>();
 
-        if (log.isInfoEnabled()) {
-            log.info("Finishing local snapshot operation [snpName=" + req.snapshotName() +
-                ", incremental=" + req.incremental() +
-                (req.incremental() ? (", incrementIndex=" + req.incrementIndex()) : "") +
-                ", reqId=" + req.requestId() +
-                ", status=" + (req.error() == null ? "COMPLETED" : "FAILED") + ']');
-        }
-
         IgniteInternalFuture<?> prepFut = req.incremental() ? wrapMsgsFut : new GridFinishedFuture<>();
 
         if (cctx.kernalContext().clientNode())
@@ -1289,6 +1277,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         enableIncrementalSnapshotsCreation(grpIds);
                     }
                 }
+
+                if (log.isInfoEnabled())
+                    log.info("Finishing local snapshot operation [req=" + req + ']');
             }
             catch (Exception e) {
                 throw F.wrap(e);
