@@ -137,7 +137,7 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testNodeWitoutDCWithMain() throws Exception {
+    public void testNodeWithoutDcSpecifiedWithMainBasedValidator() throws Exception {
         MdcTopologyValidator topValidator = new MdcTopologyValidator();
 
         topValidator.setMainDatacenter(DC_ID_1);
