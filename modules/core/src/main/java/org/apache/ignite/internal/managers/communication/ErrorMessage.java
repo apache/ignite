@@ -36,6 +36,7 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
  * <p>Because raw serialization of throwables is prohibited, you should use this message when it is necessary
  * to transfer some error as part of some message. See {@link MessageProcessor} for details.
  * <p>Currently, under the hood marshalling and unmarshalling is performed by {@link JdkMarshaller}.
+ * <p>If the message serialization fails, wraps this error with own one.
  */
 @SuppressWarnings({"NullableProblems", "unused"})
 public class ErrorMessage implements Message {
@@ -74,8 +75,22 @@ public class ErrorMessage implements Message {
         try {
             return U.marshal(jdk(), err);
         }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Unable to marshal the holding error.", e);
+        catch (IgniteCheckedException e0) {
+            IgniteCheckedException wrappedErr = new IgniteCheckedException(err.getMessage());
+
+            wrappedErr.setStackTrace(err.getStackTrace());
+            wrappedErr.addSuppressed(e0);
+
+            try {
+                return U.marshal(jdk(), wrappedErr);
+            }
+            catch (IgniteCheckedException e1) {
+                IgniteException marshErr = new IgniteException("Unable to marshal the wrapping error.", e1);
+
+                marshErr.addSuppressed(wrappedErr);
+
+                throw marshErr;
+            }
         }
     }
 
