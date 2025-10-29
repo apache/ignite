@@ -40,7 +40,10 @@ public interface MessageReader {
      *
      * @param buf Byte buffer.
      */
-    public void setBuffer(ByteBuffer buf);
+    @Deprecated
+    public default void setBuffer(ByteBuffer buf) {
+        // No-op.
+    }
 
     /**
      * Reads {@code byte} value.

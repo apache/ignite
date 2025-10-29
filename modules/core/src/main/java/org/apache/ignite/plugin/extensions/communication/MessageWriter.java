@@ -40,7 +40,10 @@ public interface MessageWriter {
      *
      * @param buf Byte buffer.
      */
-    public void setBuffer(ByteBuffer buf);
+    @Deprecated
+    public default void setBuffer(ByteBuffer buf) {
+        // No-op.
+    }
 
     /**
      * Writes message header.
