@@ -145,7 +145,7 @@ public class MdcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, L
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return super.hashCode();
+        return Integer.hashCode(partCopiesPerDc);
     }
 
     /** {@inheritDoc} */
