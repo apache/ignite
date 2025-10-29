@@ -260,8 +260,8 @@ public class SnapshotCheckProcess {
             fut.onDone(new SnapshotPartitionsVerifyTaskResult(ctx.clusterMetas, null));
         }
         catch (Throwable err) {
-            if (err instanceof Exception)
-                log.warning("The snapshot operation will be aborted due to a handler error [snapshot=" + ctx.req.snapshotName() + "].", err);
+            log.warning("The snapshot operation will be aborted due to a handler error " +
+                "[snapshot=" + ctx.req.snapshotName() + "].", err);
 
             fut.onDone(err);
         }
