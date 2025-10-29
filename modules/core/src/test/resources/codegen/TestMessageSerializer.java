@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.codegen;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.TestMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -33,10 +32,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class TestMessageSerializer implements MessageSerializer {
     /** */
-    @Override public boolean writeTo(Message m, ByteBuffer buf, MessageWriter writer) {
+    @Override public boolean writeTo(Message m, MessageWriter writer) {
         TestMessage msg = (TestMessage)m;
-
-        writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
@@ -141,10 +138,8 @@ public class TestMessageSerializer implements MessageSerializer {
     }
 
     /** */
-    @Override public boolean readFrom(Message m, ByteBuffer buf, MessageReader reader) {
+    @Override public boolean readFrom(Message m, MessageReader reader) {
         TestMessage msg = (TestMessage)m;
-
-        reader.setBuffer(buf);
 
         switch (reader.state()) {
             case 0:
