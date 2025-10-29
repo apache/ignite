@@ -23,11 +23,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -37,13 +39,16 @@ import org.junit.Test;
  */
 public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int PARTS_CNT = 8;
+    private static final int PARTS_CNT = 1024;
 
     /** */
     private int backups;
 
     /** */
     private String[] dcIds;
+
+    /** */
+    private IgniteBiPredicate<ClusterNode, List<ClusterNode>> filter;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -53,7 +58,7 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
             .setBackups(backups)
             .setAffinity(
                 new RendezvousAffinityFunction(false, PARTS_CNT)
-                    .setAffinityBackupFilter(new MdcAffinityBackupFilter(dcIds.length, backups))));
+                    .setAffinityBackupFilter(filter)));
 
         return cfg;
     }
@@ -70,26 +75,28 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSingleDcDeploymentIsProhibited() {
-        dcIds = new String[] {"DC_0"};
-        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, dcIds[0]);
-
-        backups = 1;
-        verifyGridFailsToStartWithMessage("Number of datacenters must be at least 2.");
+        verifyMdcAffinityBackupFilterValidation(1, 1, "Number of datacenters must be at least 2.");
     }
 
     /**
      * Verifies that {@link MdcAffinityBackupFilter} enforces even number of partition copies per datacenter.
      */
     @Test
-    public void testEvenNumberOfPartitionCopiesPerDcIsEnforced() {
-        dcIds = new String[] {"DC_0", "DC_1", "DC_2"};
-        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, dcIds[0]);
+    public void testUniformNumberOfPartitionCopiesPerDcIsEnforced() {
+        verifyMdcAffinityBackupFilterValidation(3, 1, "recommended value is 2");
 
-        backups = 1;
-        verifyGridFailsToStartWithMessage("recommended value is 2");
+        verifyMdcAffinityBackupFilterValidation(3, 7, "recommended values are 5 and 8");
+    }
 
-        backups = 7;
-        verifyGridFailsToStartWithMessage("recommended values are 5 and 8");
+    /** */
+    private void verifyMdcAffinityBackupFilterValidation(int dcsNum, int backups, String msg) {
+        try {
+            new MdcAffinityBackupFilter(dcsNum, backups);
+        } catch (IllegalArgumentException argEx) {
+            String errMsg = argEx.getMessage();
+
+            assertTrue(errMsg.contains(msg));
+        }
     }
 
     /**
@@ -104,6 +111,7 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
         dcIds = new String[] {"DC_0", "DC_1"};
         int nodesPerDc = 4;
         backups = 3;
+        filter = new MdcAffinityBackupFilter(dcIds.length, backups);
 
         IgniteEx srv = startClusterAcrossDataCenters(dcIds, nodesPerDc);
 
@@ -134,22 +142,50 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
         dcIds = new String[] {"DC_0", "DC_1", "DC_2"};
         int nodesPerDc = 2;
         backups = 5;
+        filter = new MdcAffinityBackupFilter(dcIds.length, backups);
 
         IgniteEx srv = startClusterAcrossDataCenters(dcIds, 2);
 
         verifyDistributionProperties(srv, dcIds, nodesPerDc, backups);
     }
 
-    /** */
-    private void verifyGridFailsToStartWithMessage(String msg) {
-        try {
-            startGrid(0);
-        } catch (IllegalArgumentException argEx) {
-            String errMsg = argEx.getMessage();
+    /**
+     * Verifies that node is prohibited from joining cluster if its affinityBackupFilter configuration differs
+     * from the one specified in the cluster.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testAffinityFilterConfigurationValidation() throws Exception {
+        dcIds = new String[] {"DC_0", "DC_1"};
+        backups = 3;
+        filter = new MdcAffinityBackupFilter(dcIds.length, backups);
+        startGrid(0);
 
-            assertTrue(errMsg.contains(msg));
-        } catch (Exception e) {
-            fail("Unexpected exception was thrown: " + e);
+        filter = new ClusterNodeAttributeAffinityBackupFilter("DC_ID");
+        try {
+            startGrid(1);
+
+            fail("Expected exception was not thrown.");
+        } catch (IgniteCheckedException e) {
+            String errMsg = e.getMessage();
+
+            assertNotNull(errMsg);
+
+            assertTrue(errMsg.contains("Affinity backup filter class mismatch"));
+        }
+
+        filter = new MdcAffinityBackupFilter(dcIds.length, backups + dcIds.length);
+        try {
+            startGrid(1);
+
+            fail("Expected exception was not thrown.");
+        } catch (IgniteCheckedException e) {
+            String errMsg = e.getMessage();
+
+            assertNotNull(errMsg);
+
+            assertTrue(errMsg.contains("Affinity backup filter mismatch"));
         }
     }
 

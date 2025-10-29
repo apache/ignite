@@ -29,7 +29,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_ATOMICITY_MODE;
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_MODE;
 
@@ -150,6 +152,24 @@ public class GridCacheAttributes implements Serializable {
 
         return aff instanceof RendezvousAffinityFunction
             && !((RendezvousAffinityFunction)aff).isExcludeNeighbors();
+    }
+
+    /**
+     * @return Affinity backup filter class name.
+     */
+    public @Nullable String affinityBackupFilterClass() {
+        AffinityFunction aff = ccfg.getAffinity();
+
+        return aff instanceof RendezvousAffinityFunction ? className(((RendezvousAffinityFunction)aff).getAffinityBackupFilter()) : null;
+    }
+
+    /**
+     * @return Affinity backup filter.
+     */
+    public @Nullable IgniteBiPredicate<?, ?> affinityBackupFilter() {
+        AffinityFunction aff = ccfg.getAffinity();
+
+        return (aff instanceof RendezvousAffinityFunction) ? ((RendezvousAffinityFunction)aff).getAffinityBackupFilter() : null;
     }
 
     /**

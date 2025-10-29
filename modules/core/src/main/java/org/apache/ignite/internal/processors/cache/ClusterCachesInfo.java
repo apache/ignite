@@ -434,6 +434,12 @@ public class ClusterCachesInfo {
             "Affinity partitions count", locAttr.affinityPartitionsCount(),
             rmtAttr.affinityPartitionsCount(), true);
 
+        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityBackupFilterClass", "Affinity backup filter class",
+            locAttr.affinityBackupFilterClass(), rmtAttr.affinityBackupFilterClass(), true);
+
+        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityBackupFilter", "Affinity backup filter",
+            locAttr.affinityBackupFilter(), rmtAttr.affinityBackupFilter(), true);
+
         CU.validateKeyConfigiration(rmtAttr.groupName(), rmtAttr.cacheName(), rmt, rmtAttr.configuration().getKeyConfiguration(),
             locAttr.configuration().getKeyConfiguration(), log, true);
 

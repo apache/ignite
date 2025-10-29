@@ -131,6 +131,24 @@ public class MdcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, L
     }
 
     /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (!(o instanceof MdcAffinityBackupFilter))
+            return false;
+
+        MdcAffinityBackupFilter filter = (MdcAffinityBackupFilter)o;
+
+        return partCopiesPerDc == filter.partCopiesPerDc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return super.hashCode();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MdcAffinityBackupFilter.class, this);
     }
