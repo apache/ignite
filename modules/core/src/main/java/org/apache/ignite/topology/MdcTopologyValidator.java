@@ -96,7 +96,7 @@ public class MdcTopologyValidator implements TopologyValidator {
             throw new IllegalStateException("Please provide a non-empty set of datacenters.");
 
         if (mainDc != null && dcs != null && dcs.size() % 2 == 1)
-            throw new IllegalStateException("Datacenters count must be even when main datacenter is set.");
+            throw new IllegalStateException("Uneven number of datacenters cannot be used along with main datacenter. Please remove main datacenter setting or specify even number of datacenters.");
     }
 
     /** {@inheritDoc} */
