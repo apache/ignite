@@ -251,7 +251,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      *     </ul>
      *     or {@code null} if rolling upgrade is not active.
      */
-    public IgnitePair<IgniteProductVersion> versions() {
+    @Nullable public IgnitePair<IgniteProductVersion> versions() {
         return rollUpVers;
     }
 
