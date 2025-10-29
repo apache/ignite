@@ -235,7 +235,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         metastorage.remove(ROLLING_UPGRADE_VERSIONS_KEY);
 
         if (log.isInfoEnabled())
-            log.info("Rolling upgrade disabled. Current version of nodes in cluster: " + vers.stream().findAny().get());
+            log.info("Rolling upgrade disabled. Current version of nodes in cluster: " + minMaxVerPair.get1());
     }
 
     /**
