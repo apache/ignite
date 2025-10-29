@@ -35,8 +35,10 @@ import org.apache.ignite.lang.IgniteExperimental;
  *
  * <p>
  * In order to use MdcTopologyValidator one has to specify datacenter ID attribute on each server node.
- * Datacenter ID is an arbitrary string that can be set with {@link IgniteSystemProperties#IGNITE_DATA_CENTER_ID} system property on the node startup.
- * All server nodes belonging to the same datacenter should specify the same datacenter ID, and nodes in different datacenters should have different datacenter IDs.
+ * Datacenter ID is an arbitrary string that can be set with {@link IgniteSystemProperties#IGNITE_DATA_CENTER_ID}
+ * system property on the node startup.
+ * All server nodes belonging to the same datacenter should specify the same datacenter ID, and nodes in different datacenters
+ * should have different datacenter IDs.
  * </p>
  * <p>The validator supports two modes of operation:</p>
  * <ul>
@@ -102,7 +104,8 @@ public class MdcTopologyValidator implements TopologyValidator {
             throw new IllegalStateException("Please provide a non-empty set of datacenters.");
 
         if (mainDc != null && dcs != null && dcs.size() % 2 == 1)
-            throw new IllegalStateException("Uneven number of datacenters cannot be used along with main datacenter. Please remove main datacenter setting or specify even number of datacenters.");
+            throw new IllegalStateException("Uneven number of datacenters cannot be used along with main datacenter. " +
+                "Please remove main datacenter setting or specify even number of datacenters.");
     }
 
     /** {@inheritDoc} */
