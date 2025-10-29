@@ -54,7 +54,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
@@ -1617,7 +1616,7 @@ public class GridNioServer<T> {
                 else {
                     MessageSerializer msgSer = messageFactory().serializer(msg.directType());
 
-                    ((DirectMessageWriter)writer).setBuffer(buf);
+                    writer.setBuffer(buf);
 
                     finished = msgSer.writeTo(msg, writer);
                 }
@@ -1818,7 +1817,7 @@ public class GridNioServer<T> {
                 else {
                     MessageSerializer msgSer = msgFactory.serializer(msg.directType());
 
-                    ((DirectMessageWriter)writer).setBuffer(buf);
+                    writer.setBuffer(buf);
 
                     finished = msgSer.writeTo(msg, writer);
                 }

@@ -26,8 +26,6 @@ import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.codegen.RecoveryLastReceivedMessageSerializer;
-import org.apache.ignite.internal.direct.DirectMessageReader;
-import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -173,7 +171,7 @@ public class TcpHandshakeExecutor {
             buf.position(DIRECT_TYPE_SIZE);
 
             NodeIdMessage nodeIdMsg = new NodeIdMessage();
-            ((DirectMessageReader)reader).setBuffer(buf);
+            reader.setBuffer(buf);
 
             msgFactory.serializer(nodeIdMsg.directType()).readFrom(nodeIdMsg, reader);
             reader.reset();
@@ -192,7 +190,7 @@ public class TcpHandshakeExecutor {
                     .order(ByteOrder.LITTLE_ENDIAN)
                     .put(U.IGNITE_HEADER);
 
-            ((DirectMessageWriter)writer).setBuffer(buf);
+            writer.setBuffer(buf);
 
             msgFactory.serializer(msg.directType()).writeTo(msg, writer);
 
@@ -244,7 +242,7 @@ public class TcpHandshakeExecutor {
 
                 buf.position(readPos);
 
-                ((DirectMessageReader)reader).setBuffer(buf);
+                reader.setBuffer(buf);
 
                 fininshed = msgSer.readFrom(msg, reader);
 
