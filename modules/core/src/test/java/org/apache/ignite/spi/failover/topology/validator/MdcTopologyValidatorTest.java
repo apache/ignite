@@ -85,7 +85,7 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(log,
             () -> createClusterWithCache(topValidator, false),
             CacheException.class,
-            "Missing datacenters or main datacenter");
+            "Either set of datacenters or main datacenter should be specified.");
     }
 
     /** */
@@ -99,7 +99,7 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(log,
             () -> createClusterWithCache(topValidator, false),
             CacheException.class,
-            "Datacenters count must be even when main datacenter is set.");
+            "Uneven number of datacenters cannot be used along with main datacenter.");
     }
 
     /** Checks 1DC case with MdcTopologyValidator usage.*/
@@ -112,7 +112,7 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrows(log,
             () -> createClusterWithCache(topValidator, false),
             CacheException.class,
-            "Missing datacenters");
+            "Please provide a non-empty set of datacenters.");
     }
 
     /** */
