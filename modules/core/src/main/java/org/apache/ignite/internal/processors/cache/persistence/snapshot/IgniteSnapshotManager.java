@@ -1667,7 +1667,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
      *         hashes of {@link IdleVerifyResult} also contains the snapshot metadata distribution across the cluster.
      */
-    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable String snpPath) {
+    public IgniteInternalFuture<SnapshotPartitionsVerifyResult> checkSnapshot(String name, @Nullable String snpPath) {
         return checkSnapshot(name, snpPath, -1);
     }
 
@@ -1680,7 +1680,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
      *         hashes of {@link IdleVerifyResult} also contains the snapshot metadata distribution across the cluster.
      */
-    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(String name, @Nullable String snpPath, int incIdx) {
+    public IgniteInternalFuture<SnapshotPartitionsVerifyResult> checkSnapshot(String name, @Nullable String snpPath, int incIdx) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
 
@@ -1711,7 +1711,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return Future with the result of execution snapshot partitions verify task, which besides calculating partition
      *         hashes of {@link IdleVerifyResult} also contains the snapshot metadata distribution across the cluster.
      */
-    public IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> checkSnapshot(
+    public IgniteInternalFuture<SnapshotPartitionsVerifyResult> checkSnapshot(
         String name,
         @Nullable String snpPath,
         @Nullable Collection<String> grps,
@@ -1730,7 +1730,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 ", incIdx=" + incIdx + ", grps=" + grps + ", validateParts=" + check + ']');
         }
 
-        IgniteInternalFuture<SnapshotPartitionsVerifyTaskResult> res = checkSnpProc.start(
+        IgniteInternalFuture<SnapshotPartitionsVerifyResult> res = checkSnpProc.start(
             name, snpPath, grps, check, incIdx, includeCustomHandlers);
 
         res.listen(lsnr -> {

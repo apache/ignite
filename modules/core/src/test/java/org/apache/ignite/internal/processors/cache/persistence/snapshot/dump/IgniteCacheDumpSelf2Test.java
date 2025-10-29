@@ -81,7 +81,7 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyResult;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.AbstractCacheDumpTest.TestDumpConsumer;
 import org.apache.ignite.internal.processors.cache.version.CacheVersionConflictResolver;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -300,7 +300,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
 
         ign = startGrid(nodes + 1);
 
-        SnapshotPartitionsVerifyTaskResult res =
+        SnapshotPartitionsVerifyResult res =
             ign.context().cache().context().snapshotMgr().checkSnapshot(DMP_NAME, null).get(getTestTimeout());
 
         if (errorType == 0) {

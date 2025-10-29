@@ -127,6 +127,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         final CacheEntryPredicate[] filter,
         int taskNameHash,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary,
         boolean recovery,
         int remapCnt,
@@ -143,6 +144,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             filter,
             taskNameHash,
             skipStore,
+            skipReadThrough,
             keepBinary,
             recovery,
             remapCnt,
@@ -332,7 +334,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         if (errors != null) {
             assert errors.errorMessage() != null;
 
-            completeFuture(null, errors.errorMessage().toThrowable(), res.futureId());
+            completeFuture(null, errors.errorMessage().error(), res.futureId());
 
             return;
         }
@@ -991,14 +993,15 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             PrimaryRequestState mapped = pendingMappings.get(nodeId);
 
             if (mapped == null) {
-                byte flags = GridNearAtomicAbstractUpdateRequest.flags(nearEnabled,
+                short flags = GridNearAtomicAbstractUpdateRequest.flags(nearEnabled,
                     topLocked,
                     retval,
                     mappingKnown,
                     needPrimaryRes,
                     skipStore,
                     keepBinary,
-                    recovery);
+                    recovery,
+                    skipReadThrough);
 
                 GridNearAtomicFullUpdateRequest req = new GridNearAtomicFullUpdateRequest(
                     cctx.cacheId(),
@@ -1104,14 +1107,15 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
         boolean needPrimaryRes = !mappingKnown || primary.isLocal() || nodes.size() == 1 || nearEnabled;
 
-        byte flags = GridNearAtomicAbstractUpdateRequest.flags(nearEnabled,
+        short flags = GridNearAtomicAbstractUpdateRequest.flags(nearEnabled,
             topLocked,
             retval,
             mappingKnown,
             needPrimaryRes,
             skipStore,
             keepBinary,
-            recovery);
+            recovery,
+            skipReadThrough);
 
         GridNearAtomicFullUpdateRequest req = new GridNearAtomicFullUpdateRequest(
             cctx.cacheId(),

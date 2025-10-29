@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
@@ -36,7 +37,7 @@ public class AbstractMultiEngineIntegrationTest extends AbstractBasicIntegration
 
     /** */
     @Parameterized.Parameters(name = "Query engine={0}")
-    public static Iterable<Object> params() {
+    public static Collection<?> params() {
         return Arrays.asList(CalciteQueryEngineConfiguration.ENGINE_NAME, IndexingQueryEngineConfiguration.ENGINE_NAME);
     }
 
