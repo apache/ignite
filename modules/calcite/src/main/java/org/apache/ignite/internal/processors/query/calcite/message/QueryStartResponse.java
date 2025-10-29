@@ -27,8 +27,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public class QueryStartResponse implements CalciteMessage {
     /** */
-    @Order(0)
-    private UUID queryId;
+    @Order(value = 0, method = "queryId")
+    private UUID qryId;
 
     /** */
     @Order(1)
@@ -42,8 +42,8 @@ public class QueryStartResponse implements CalciteMessage {
     public QueryStartResponse() {}
 
     /** */
-    public QueryStartResponse(UUID queryId, long fragmentId, @Nullable Throwable error) {
-        this.queryId = queryId;
+    public QueryStartResponse(UUID qryId, long fragmentId, @Nullable Throwable error) {
+        this.qryId = qryId;
         this.fragmentId = fragmentId;
 
         if (error != null)
@@ -54,12 +54,12 @@ public class QueryStartResponse implements CalciteMessage {
      * @return Query ID.
      */
     public UUID queryId() {
-        return queryId;
+        return qryId;
     }
 
     /** */
     public void queryId(UUID qryId) {
-        queryId = qryId;
+        this.qryId = qryId;
     }
 
     /**
