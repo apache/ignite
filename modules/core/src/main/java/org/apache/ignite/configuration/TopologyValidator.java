@@ -61,9 +61,4 @@ public interface TopologyValidator extends Serializable {
      * @return {@code true} in case topology is valid for specific cache, otherwise {@code false}
      */
     public boolean validate(Collection<ClusterNode> nodes);
-
-    /**
-     * Checks topology validator's configuration.
-     */
-    public default void checkConfiguration() {}
 }

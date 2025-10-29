@@ -88,7 +88,7 @@ public class MdcTopologyValidator implements TopologyValidator {
     }
 
     /** */
-    @Override public void checkConfiguration() {
+    public void checkConfiguration() {
         if (dcs == null && mainDc == null)
             throw new IllegalStateException("Missing datacenters or main datacenter.");
 
