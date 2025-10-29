@@ -102,7 +102,7 @@ public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
             "Datacenters count must be even when main datacenter is set.");
     }
 
-    /** Checks 1DC case with MdcTopologyValidator usage */
+    /** Checks 1DC case with MdcTopologyValidator usage.*/
     @Test
     public void testEmptyDc() {
         MdcTopologyValidator topValidator = new MdcTopologyValidator();
