@@ -224,7 +224,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
             if (lastJoiningNode != null) {
                 long timeout = ((TcpDiscoverySpi)ctx.config().getDiscoverySpi()).getJoinTimeout() * 3;
 
-                if (ring.node(lastJoiningNode.id()) != null && timeout > 0 && U.currentTimeMillis() - lastJoiningNodeTimestamp > timeout)
+                if (timeout > 0 && ring.node(lastJoiningNode.id()) != null && U.currentTimeMillis() - lastJoiningNodeTimestamp > timeout)
                     lastJoiningNode = null;
             }
 
