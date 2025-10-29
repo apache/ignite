@@ -898,63 +898,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                     }
                     else {
                         try {
-                            byte[] resBytes = null;
-                            byte[] exBytes = null;
-                            byte[] attrBytes = null;
-
                             boolean loc = ctx.localNodeId().equals(sndNode.id()) && !ctx.config().isMarshalLocalJobs();
 
                             Map<Object, Object> attrs = jobCtx.getAttributes();
-
-                            // Try to serialize response, and if exception - return to client.
-                            if (!loc) {
-                                try {
-                                    resBytes = U.marshal(marsh, res);
-                                }
-                                catch (IgniteCheckedException e) {
-                                    resBytes = U.marshal(marsh, null);
-
-                                    if (ex != null)
-                                        ex.addSuppressed(e);
-                                    else
-                                        ex = U.convertException(e);
-
-                                    logError("Failed to serialize job response [nodeId=" + taskNode.id() +
-                                        ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job +
-                                        ", resCls=" + (res == null ? null : res.getClass()) + ']', e);
-                                }
-
-                                try {
-                                    attrBytes = U.marshal(marsh, attrs);
-                                }
-                                catch (IgniteCheckedException e) {
-                                    attrBytes = U.marshal(marsh, Collections.emptyMap());
-
-                                    if (ex != null)
-                                        ex.addSuppressed(e);
-                                    else
-                                        ex = U.convertException(e);
-
-                                    logError("Failed to serialize job attributes [nodeId=" + taskNode.id() +
-                                        ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job +
-                                        ", attrs=" + attrs + ']', e);
-                                }
-
-                                try {
-                                    exBytes = U.marshal(marsh, ex);
-                                }
-                                catch (IgniteCheckedException e) {
-                                    String msg = "Failed to serialize job exception [nodeId=" + taskNode.id() +
-                                        ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job +
-                                        ", msg=\"" + e.getMessage() + "\"]";
-
-                                    ex = new IgniteException(msg);
-
-                                    logError(msg, e);
-
-                                    exBytes = U.marshal(marsh, ex);
-                                }
-                            }
 
                             if (ex != null) {
                                 status = FAILED;
@@ -986,6 +932,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                 isCancelled(),
                                 retry ? ctx.cache().context().exchange().readyAffinityVersion() : null);
 
+                            if (!loc)
+                                jobRes.marshallUserData(marsh);
+
                             long timeout = ses.getEndTime() - U.currentTimeMillis();
 
                             if (timeout <= 0)
@@ -1006,9 +955,10 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                             }
                             else if (ctx.localNodeId().equals(sndNode.id()))
                                 ctx.task().processJobExecuteResponse(ctx.localNodeId(), jobRes);
-                            else
+                            else {
                                 // Send response to common topic as unordered message.
                                 ctx.io().sendToGridTopic(sndNode, TOPIC_TASK, jobRes, internal ? MANAGEMENT_POOL : SYSTEM_POOL);
+                            }
                         }
                         catch (IgniteCheckedException e) {
                             // Log and invoke the master-leave callback.

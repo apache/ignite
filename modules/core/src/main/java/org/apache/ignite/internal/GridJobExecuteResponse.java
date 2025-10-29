@@ -49,6 +49,12 @@ public class GridJobExecuteResponse implements Message {
     private IgniteUuid jobId;
 
     /** */
+    private IgniteException gridEx;
+
+    /**
+     * Serialization call holder for {@code gridEx}. Works with {@link #marshallUserData(Marshaller)}.
+     * Wraps also possible serialization error.
+     */
     @Order(value = 3, method = "exceptionMsg")
     private @Nullable ErrorMessage gridExMsg;
 
@@ -117,8 +123,7 @@ public class GridJobExecuteResponse implements Message {
         this.isCancelled = isCancelled;
         this.retry = retry;
 
-        if (gridEx != null)
-            gridExMsg = new ErrorMessage(gridEx);
+        this.gridEx = gridEx;
     }
 
     /**
@@ -168,17 +173,17 @@ public class GridJobExecuteResponse implements Message {
      * @return Job exception.
      */
     @Nullable public IgniteException exception() {
-        return (IgniteException)ErrorMessage.error(gridExMsg);
+        return gridEx;
     }
 
     /** */
     public void exceptionMsg(@Nullable ErrorMessage gridExMsg) {
-        this.gridExMsg = gridExMsg;
+        gridEx = gridExMsg == null ? null : (IgniteException)gridExMsg.error();
     }
 
     /** */
     public @Nullable ErrorMessage exceptionMsg() {
-        return gridExMsg;
+        return gridEx == null ? null : new ErrorMessage(gridEx);
     }
 
     /**
@@ -262,12 +267,41 @@ public class GridJobExecuteResponse implements Message {
      * Serializes non-{@link Serializable} user data to byte[] using the provided marshaller.
      * Erases non-marshalled user data like {@link #getJobAttributes()} or {@link #getJobResult()}.
      */
-    public void marshallUserData(Marshaller marshaller) throws IgniteCheckedException {
-        jobAttrsBytes = U.marshal(marshaller, jobAttrs);
-        jobAttrs = null;
+    public void marshallUserData(Marshaller marsh) throws IgniteCheckedException {
+        try {
+            resBytes = U.marshal(marsh, res);
+        }
+        catch (IgniteCheckedException e) {
+            resBytes = null;
 
-        resBytes = U.marshal(marshaller, res);
-        res = null;
+            if (gridEx == null)
+                gridEx = U.convertException(e);
+            else {
+                e.addSuppressed(gridEx);
+
+                gridEx = e;
+            }
+
+            logError("Failed to serialize job response [nodeId=" + taskNode.id() +
+                ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job +
+                ", resCls=" + (res == null ? null : res.getClass()) + ']', e);
+        }
+
+        try {
+            jobAttrsBytes = U.marshal(marsh, jobAttrs);
+        }
+        catch (IgniteCheckedException e) {
+            jobAttrsBytes = null;
+
+            if (ex != null)
+                ex.addSuppressed(e);
+            else
+                ex = U.convertException(e);
+
+            logError("Failed to serialize job attributes [nodeId=" + taskNode.id() +
+                ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job +
+                ", attrs=" + attrs + ']', e);
+        }
     }
 
     /**
