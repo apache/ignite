@@ -93,7 +93,7 @@ public class MdcTopologyValidator implements TopologyValidator {
             throw new IllegalStateException("Either set of datacenters or main datacenter should be specified.");
 
         if (dcs != null && dcs.isEmpty())
-            throw new IllegalStateException("Missing datacenters.");
+            throw new IllegalStateException("Please provide a non-empty set of datacenters.");
 
         if (mainDc != null && dcs != null && dcs.size() % 2 == 1)
             throw new IllegalStateException("Datacenters count must be even when main datacenter is set.");
