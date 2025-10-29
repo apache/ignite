@@ -31,7 +31,7 @@ public class IgniteDhtPartitionCountersMap implements Message {
     public static final short TYPE_CODE = 507;
 
     /** */
-    @Order(0)
+    @Order(value = 0, method = "partitionCounters")
     private Map<Integer, CachePartitionFullCountersMap> map;
 
     /**
@@ -72,14 +72,14 @@ public class IgniteDhtPartitionCountersMap implements Message {
     /**
      * @return Partition counters map.
      */
-    public Map<Integer, CachePartitionFullCountersMap> map() {
+    public Map<Integer, CachePartitionFullCountersMap> partitionCounters() {
         return map;
     }
 
     /**
      * @param map Partition counters map.
      */
-    public void map(Map<Integer, CachePartitionFullCountersMap> map) {
+    public void partitionCounters(Map<Integer, CachePartitionFullCountersMap> map) {
         this.map = map;
     }
 
