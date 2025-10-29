@@ -354,6 +354,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 true,
                 false,
                 false,
+                false,
                 false
             ).get();
         }
@@ -834,6 +835,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
                 true,
                 false,
                 false,
+                false,
                 false
             ).get();
 
@@ -924,10 +926,10 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
         String zipDump = "zipDump";
 
         ign.context().cache().context().snapshotMgr()
-            .createSnapshot(rawDump, null, null, false, true, true, false, false, false).get();
+            .createSnapshot(rawDump, null, null, false, true, true, false, false, false, false).get();
 
         ign.context().cache().context().snapshotMgr()
-            .createSnapshot(zipDump, null, null, false, true, true, true, false, false).get();
+            .createSnapshot(zipDump, null, null, false, true, true, true, false, false, false).get();
 
         assertEquals("The check procedure has finished, no conflicts have been found.\n\n", invokeCheckCommand(ign, rawDump));
 
@@ -1083,7 +1085,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     public void testCreateEncryptedFail() throws Exception {
         BiConsumer<IgniteEx, String> check = (ign, msg) -> assertThrows(null, () -> {
             ign.context().cache().context().snapshotMgr()
-                .createSnapshot(DMP_NAME, null, null, false, false, true, false, true, false).get(getTestTimeout());
+                .createSnapshot(DMP_NAME, null, null, false, false, true, false, true, false, false).get(getTestTimeout());
         }, IgniteException.class, msg);
 
         try (IgniteEx srv = startGrid()) {
@@ -1113,7 +1115,7 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
             });
 
             srv.context().cache().context().snapshotMgr()
-                .createSnapshot(DMP_NAME, null, null, false, false, true, false, true, false).get(getTestTimeout());
+                .createSnapshot(DMP_NAME, null, null, false, false, true, false, true, false, false).get(getTestTimeout());
 
             dumpDir = snapshotFileTree(srv, DMP_NAME).root();
         }
