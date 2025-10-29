@@ -148,14 +148,9 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      *         <li>The local node is not a coordinator;</li>
      *         <li>The discovery SPI is not {@link TcpDiscoverySpi};</li>
      *         <li>The distributed metastorage is not ready;</li>
-     *         <li>{@link TcpDiscoveryNodesRing} was not provided.</li>
      *     </ul>
      */
     public void enable(IgniteProductVersion target) throws IgniteCheckedException {
-        if (ring == null)
-            throw new IgniteCheckedException("No TCP discovery node ring provided. " +
-                "Check that TCP discovery SPI is configured properly and try again");
-
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
             throw new IgniteCheckedException("Rolling upgrade can be enabled only on coordinator node");
 
