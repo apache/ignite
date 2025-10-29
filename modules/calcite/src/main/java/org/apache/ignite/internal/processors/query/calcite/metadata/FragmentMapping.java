@@ -36,21 +36,21 @@ import org.jetbrains.annotations.NotNull;
  */
 public class FragmentMapping implements CalciteMessage {
     /** */
-    @Order(0)
-    private List<ColocationGroup> colocationGroups;
+    @Order(value = 0, method = "colocationGroups")
+    private List<ColocationGroup> colocationGrps;
 
     /** */
     public FragmentMapping() {
     }
 
     /** */
-    private FragmentMapping(ColocationGroup colocationGroup) {
-        this(F.asList(colocationGroup));
+    private FragmentMapping(ColocationGroup colocationGrp) {
+        this(F.asList(colocationGrp));
     }
 
     /** */
-    private FragmentMapping(List<ColocationGroup> colocationGroups) {
-        this.colocationGroups = colocationGroups;
+    private FragmentMapping(List<ColocationGroup> colocationGrps) {
+        this.colocationGrps = colocationGrps;
     }
 
     /** */
@@ -64,14 +64,14 @@ public class FragmentMapping implements CalciteMessage {
     }
 
     /** */
-    public static FragmentMapping create(long sourceId) {
-        return new FragmentMapping(ColocationGroup.forSourceId(sourceId));
+    public static FragmentMapping create(long srcId) {
+        return new FragmentMapping(ColocationGroup.forSourceId(srcId));
     }
 
     /** */
-    public static FragmentMapping create(long sourceId, ColocationGroup group) {
+    public static FragmentMapping create(long srcId, ColocationGroup grp) {
         try {
-            return new FragmentMapping(ColocationGroup.forSourceId(sourceId).colocate(group));
+            return new FragmentMapping(ColocationGroup.forSourceId(srcId).colocate(grp));
         }
         catch (ColocationMappingException e) {
             throw new AssertionError(e); // Cannot happen
@@ -80,20 +80,20 @@ public class FragmentMapping implements CalciteMessage {
 
     /** */
     public boolean colocated() {
-        return colocationGroups.isEmpty() || colocationGroups.size() == 1;
+        return colocationGrps.isEmpty() || colocationGrps.size() == 1;
     }
 
     /** */
     public FragmentMapping combine(FragmentMapping other) {
-        return new FragmentMapping(Commons.combine(colocationGroups, other.colocationGroups));
+        return new FragmentMapping(Commons.combine(colocationGrps, other.colocationGrps));
     }
 
     /** */
     public FragmentMapping colocate(FragmentMapping other) throws ColocationMappingException {
         assert colocated() && other.colocated();
 
-        ColocationGroup first = F.first(colocationGroups);
-        ColocationGroup second = F.first(other.colocationGroups);
+        ColocationGroup first = F.first(colocationGrps);
+        ColocationGroup second = F.first(other.colocationGrps);
 
         if (first == null && second == null)
             return this;
@@ -105,38 +105,38 @@ public class FragmentMapping implements CalciteMessage {
 
     /** */
     public FragmentMapping local(UUID nodeId) throws ColocationMappingException {
-        if (colocationGroups.isEmpty())
+        if (colocationGrps.isEmpty())
             return create(nodeId).colocate(this);
 
-        return new FragmentMapping(Commons.transform(colocationGroups, c -> c.local(nodeId)));
+        return new FragmentMapping(Commons.transform(colocationGrps, c -> c.local(nodeId)));
     }
 
     /** */
     public List<UUID> nodeIds() {
-        return colocationGroups.stream()
+        return colocationGrps.stream()
             .flatMap(g -> g.nodeIds().stream())
             .distinct().collect(Collectors.toList());
     }
 
     /** */
     public List<ColocationGroup> colocationGroups() {
-        return colocationGroups == null ? Collections.emptyList() : Collections.unmodifiableList(colocationGroups);
+        return colocationGrps == null ? Collections.emptyList() : Collections.unmodifiableList(colocationGrps);
     }
 
     /** */
     public void colocationGroups(List<ColocationGroup> colocationGrps) {
-        colocationGroups = colocationGrps;
+        this.colocationGrps = colocationGrps;
     }
 
     /** */
-    public FragmentMapping finalizeMapping(Supplier<List<UUID>> nodesSource) {
-        if (colocationGroups.isEmpty())
+    public FragmentMapping finalizeMapping(Supplier<List<UUID>> nodesSrc) {
+        if (colocationGrps.isEmpty())
             return this;
 
-        List<ColocationGroup> colocationGrps = this.colocationGroups;
+        List<ColocationGroup> colocationGrps = this.colocationGrps;
 
         colocationGrps = Commons.transform(colocationGrps, ColocationGroup::finalizeMapping);
-        List<UUID> nodes = nodeIds(), nodes0 = nodes.isEmpty() ? nodesSource.get() : nodes;
+        List<UUID> nodes = nodeIds(), nodes0 = nodes.isEmpty() ? nodesSrc.get() : nodes;
         colocationGrps = Commons.transform(colocationGrps, g -> g.mapToNodes(nodes0));
 
         return new FragmentMapping(colocationGrps);
@@ -144,7 +144,7 @@ public class FragmentMapping implements CalciteMessage {
 
     /** */
     public FragmentMapping filterByPartitions(int[] parts) throws ColocationMappingException {
-        List<ColocationGroup> colocationGrps = this.colocationGroups;
+        List<ColocationGroup> colocationGrps = this.colocationGrps;
 
         if (!F.isEmpty(parts) && colocationGrps.size() > 1)
             throw new ColocationMappingException("Execution of non-collocated query with partition parameter is not possible");
@@ -155,15 +155,15 @@ public class FragmentMapping implements CalciteMessage {
     }
 
     /** */
-    public @NotNull ColocationGroup findGroup(long sourceId) {
-        List<ColocationGroup> grps = colocationGroups.stream()
-            .filter(c -> c.belongs(sourceId))
+    public @NotNull ColocationGroup findGroup(long srcId) {
+        List<ColocationGroup> grps = colocationGrps.stream()
+            .filter(c -> c.belongs(srcId))
             .collect(Collectors.toList());
 
         if (grps.isEmpty())
-            throw new IllegalStateException("Failed to find group with given id. [sourceId=" + sourceId + "]");
+            throw new IllegalStateException("Failed to find group with given id. [sourceId=" + srcId + "]");
         else if (grps.size() > 1)
-            throw new IllegalStateException("Multiple groups with the same id found. [sourceId=" + sourceId + "]");
+            throw new IllegalStateException("Multiple groups with the same id found. [sourceId=" + srcId + "]");
 
         return F.first(grps);
     }
@@ -174,7 +174,7 @@ public class FragmentMapping implements CalciteMessage {
 
         srcIds.forEach(srcId -> explicitMappingGrps.add(findGroup(srcId)));
 
-        return new FragmentMapping(Commons.transform(colocationGroups,
+        return new FragmentMapping(Commons.transform(colocationGrps,
             g -> explicitMappingGrps.contains(g) ? g.explicitMapping() : g));
     }
 

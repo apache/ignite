@@ -43,8 +43,8 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public class ColocationGroup implements CalciteMessage {
     /** */
-    @Order(0)
-    private long[] sourceIds;
+    @Order(value = 0, method = "sourceIds")
+    private long[] srcIds;
 
     /** */
     @Order(1)
@@ -74,8 +74,8 @@ public class ColocationGroup implements CalciteMessage {
     }
 
     /** */
-    public static ColocationGroup forSourceId(long sourceId) {
-        return new ColocationGroup(new long[] {sourceId}, null, null);
+    public static ColocationGroup forSourceId(long srcId) {
+        return new ColocationGroup(new long[] {srcId}, null, null);
     }
 
     /** */
@@ -87,7 +87,7 @@ public class ColocationGroup implements CalciteMessage {
                     .collect(Collectors.toList());
         }
 
-        return new ColocationGroup(sourceIds == null ? null : Arrays.copyOf(sourceIds, sourceIds.length),
+        return new ColocationGroup(srcIds == null ? null : Arrays.copyOf(srcIds, srcIds.length),
             Collections.singletonList(nodeId), locAssignments);
     }
 
@@ -96,15 +96,15 @@ public class ColocationGroup implements CalciteMessage {
     }
 
     /** */
-    private ColocationGroup(long[] sourceIds, List<UUID> nodeIds, List<List<UUID>> assignments) {
-        this.sourceIds = sourceIds;
+    private ColocationGroup(long[] srcIds, List<UUID> nodeIds, List<List<UUID>> assignments) {
+        this.srcIds = srcIds;
         this.nodeIds = nodeIds;
         this.assignments = assignments;
     }
 
     /** */
-    private ColocationGroup(long[] sourceIds, List<UUID> nodeIds, List<List<UUID>> assignments, boolean primaryAssignment) {
-        this(sourceIds, nodeIds, assignments);
+    private ColocationGroup(long[] srcIds, List<UUID> nodeIds, List<List<UUID>> assignments, boolean primaryAssignment) {
+        this(srcIds, nodeIds, assignments);
 
         this.primaryAssignment = primaryAssignment;
     }
@@ -123,12 +123,12 @@ public class ColocationGroup implements CalciteMessage {
 
     /** */
     public long[] sourceIds() {
-        return sourceIds;
+        return srcIds;
     }
 
     /** */
-    public void sourceIds(long[] sourceIds) {
-        this.sourceIds = sourceIds;
+    public void sourceIds(long[] srcIds) {
+        this.srcIds = srcIds;
     }
 
     /**
@@ -146,12 +146,12 @@ public class ColocationGroup implements CalciteMessage {
     }
 
     /** */
-    public boolean belongs(long sourceId) {
-        if (sourceIds == null)
+    public boolean belongs(long srcId) {
+        if (srcIds == null)
             return false;
 
-        for (long i : sourceIds) {
-            if (i == sourceId)
+        for (long i : srcIds) {
+            if (i == srcId)
                 return true;
         }
 
@@ -167,10 +167,10 @@ public class ColocationGroup implements CalciteMessage {
      */
     public ColocationGroup colocate(ColocationGroup other) throws ColocationMappingException {
         long[] srcIds;
-        if (sourceIds == null || other.sourceIds == null)
-            srcIds = U.firstNotNull(sourceIds, other.sourceIds);
+        if (this.srcIds == null || other.srcIds == null)
+            srcIds = U.firstNotNull(this.srcIds, other.srcIds);
         else
-            srcIds = LongStream.concat(Arrays.stream(sourceIds), Arrays.stream(other.sourceIds)).distinct().toArray();
+            srcIds = LongStream.concat(Arrays.stream(this.srcIds), Arrays.stream(other.srcIds)).distinct().toArray();
 
         List<UUID> nodeIds;
         if (this.nodeIds == null || other.nodeIds == null)
@@ -251,7 +251,7 @@ public class ColocationGroup implements CalciteMessage {
             assignments.add(first != null ? Collections.singletonList(first) : Collections.emptyList());
         }
 
-        return new ColocationGroup(sourceIds, new ArrayList<>(nodes), assignments, primaryAssignment);
+        return new ColocationGroup(srcIds, new ArrayList<>(nodes), assignments, primaryAssignment);
     }
 
     /** */
@@ -260,7 +260,7 @@ public class ColocationGroup implements CalciteMessage {
             return this;
 
         // Make a shallow copy without cacheAssignment flag.
-        return new ColocationGroup(sourceIds, nodeIds, assignments, false);
+        return new ColocationGroup(srcIds, nodeIds, assignments, false);
     }
 
     /** */
@@ -287,7 +287,7 @@ public class ColocationGroup implements CalciteMessage {
                     assignments.add(Collections.emptyList());
             }
 
-            return new ColocationGroup(sourceIds, new ArrayList<>(nodes), assignments);
+            return new ColocationGroup(srcIds, new ArrayList<>(nodes), assignments);
         }
 
         return this;
@@ -295,7 +295,7 @@ public class ColocationGroup implements CalciteMessage {
 
     /** */
     public ColocationGroup mapToNodes(List<UUID> nodeIds) {
-        return !F.isEmpty(this.nodeIds) ? this : new ColocationGroup(sourceIds, nodeIds, null);
+        return !F.isEmpty(this.nodeIds) ? this : new ColocationGroup(srcIds, nodeIds, null);
     }
 
     /**
