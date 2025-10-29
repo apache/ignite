@@ -215,7 +215,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     }
 
     /**
-     * @return Key to update
+     * @return Key to update.
      */
     public KeyCacheObject key() {
         return key;
@@ -285,7 +285,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     }
 
     /**
-     * @return Cache object value
+     * @return Cache object value.
      */
     public CacheObject value() {
         return val;
