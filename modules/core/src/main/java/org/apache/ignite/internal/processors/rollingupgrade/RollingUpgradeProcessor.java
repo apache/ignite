@@ -206,12 +206,9 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
         IgnitePair<IgniteProductVersion> minMaxVerPair = ring.minMaxNodeVersions();
 
-        Set<IgniteProductVersion> vers = new HashSet<>();
-
-        vers.add(minMaxVerPair.get1());
-
-        if (vers.add(minMaxVerPair.get2()))
-            throw new IgniteCheckedException("Can't disable rolling upgrade with different versions in cluster: " + vers);
+        if (!minMaxVerPair.get1().equals(minMaxVerPair.get2()))
+            throw new IgniteCheckedException("Can't disable rolling upgrade with different versions in cluster: "
+                + minMaxVerPair.get1() + ", " + minMaxVerPair.get2());
 
         synchronized (lock) {
             if (lastJoiningNode != null) {
@@ -221,11 +218,13 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
                     lastJoiningNode = null;
             }
 
-            if (lastJoiningNode != null)
-                vers.add(IgniteProductVersion.fromString(lastJoiningNode.attribute(ATTR_BUILD_VER)));
+            if (lastJoiningNode != null) {
+                IgniteProductVersion lastJoiningNodeVer = IgniteProductVersion.fromString(lastJoiningNode.attribute(ATTR_BUILD_VER));
 
-            if (vers.size() > 1)
-                throw new IgniteCheckedException("Can't disable rolling upgrade with different versions in cluster: " + vers);
+                if (!minMaxVerPair.get1().equals(lastJoiningNodeVer))
+                    throw new IgniteCheckedException("Can't disable rolling upgrade with different versions in cluster: "
+                        + minMaxVerPair.get1() + ", " + lastJoiningNodeVer);
+            }
 
             rollUpVers = null;
         }
