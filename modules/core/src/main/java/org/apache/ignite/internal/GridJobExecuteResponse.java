@@ -22,9 +22,12 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -267,38 +270,47 @@ public class GridJobExecuteResponse implements Message {
      * Serializes non-{@link Serializable} user data to byte[] using the provided marshaller.
      * Erases non-marshalled user data like {@link #getJobAttributes()} or {@link #getJobResult()}.
      */
-    public void marshallUserData(Marshaller marsh) {
-        try {
-            resBytes = U.marshal(marsh, res);
+    public void marshallUserData(Marshaller marsh, @Nullable IgniteLogger log) {
+        if (res != null) {
+            try {
+                resBytes = U.marshal(marsh, res);
+            }
+            catch (IgniteCheckedException e) {
+                resBytes = null;
+
+                String msg = "Failed to serialize job response [nodeId=" + nodeId +
+                    ", ses=" + sesId + ", jobId=" + jobId +
+                    ", resCls=" + (res == null ? null : res.getClass()) + ']';
+
+                wrapSerializationError(e, msg, log);
+            }
         }
-        catch (IgniteCheckedException e) {
-            resBytes = null;
 
-            if (gridEx != null)
-                e.addSuppressed(gridEx);
+        if (!F.isEmpty(jobAttrs)) {
+            try {
+                jobAttrsBytes = U.marshal(marsh, jobAttrs);
+            }
+            catch (IgniteCheckedException e) {
+                jobAttrsBytes = null;
 
-            gridEx = U.convertException(e);
+                String msg = "Failed to serialize job attributes [nodeId=" + nodeId +
+                    ", ses=" + sesId + ", jobId=" + jobId +
+                    ", attrs=" + jobAttrs + ']';
 
-            logError("Failed to serialize job response [nodeId=" + taskNode.id() +
-                ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job +
-                ", resCls=" + (res == null ? null : res.getClass()) + ']', e);
+                wrapSerializationError(e, msg, log);
+            }
         }
+    }
 
-        try {
-            jobAttrsBytes = U.marshal(marsh, jobAttrs);
-        }
-        catch (IgniteCheckedException e) {
-            jobAttrsBytes = null;
+    /** */
+    private void wrapSerializationError(IgniteCheckedException e, String msg, @Nullable IgniteLogger log) {
+        if (gridEx != null)
+            e.addSuppressed(gridEx);
 
-            if (gridEx != null)
-                e.addSuppressed(gridEx);
+        gridEx = U.convertException(e);
 
-            gridEx = U.convertException(e);
-
-            logError("Failed to serialize job attributes [nodeId=" + taskNode.id() +
-                ", ses=" + ses + ", jobId=" + ses.getJobId() + ", job=" + job +
-                ", attrs=" + attrs + ']', e);
-        }
+        if (log != null && (log.isDebugEnabled() || !X.hasCause(e, NodeStoppingException.class)))
+            U.error(log, msg, e);
     }
 
     /**

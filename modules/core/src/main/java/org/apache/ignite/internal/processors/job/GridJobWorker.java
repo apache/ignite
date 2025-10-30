@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.job;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -933,7 +932,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                 retry ? ctx.cache().context().exchange().readyAffinityVersion() : null);
 
                             if (!loc)
-                                jobRes.marshallUserData(marsh);
+                                jobRes.marshallUserData(marsh, log);
 
                             long timeout = ses.getEndTime() - U.currentTimeMillis();
 
