@@ -210,9 +210,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
         vers.add(minMaxVerPair.get1());
 
-        vers.add(minMaxVerPair.get2());
-
-        if (vers.size() > 1)
+        if (vers.add(minMaxVerPair.get2()))
             throw new IgniteCheckedException("Can't disable rolling upgrade with different versions in cluster: " + vers);
 
         synchronized (lock) {
