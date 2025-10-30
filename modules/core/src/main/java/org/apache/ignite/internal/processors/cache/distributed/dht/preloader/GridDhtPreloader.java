@@ -25,6 +25,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
@@ -235,14 +236,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     List<UUID> nodeIds = exchFut.partitionHistorySupplier(grp.groupId(), p, part.initialUpdateCounter());
 
                     if (!F.isEmpty(nodeIds)) {
-                        if (sameDcNodeIds != null) {
-                            List<UUID> nodeIds0 = new ArrayList<>(nodeIds);
-
-                            nodeIds0.retainAll(sameDcNodeIds);
-
-                            if (!F.isEmpty(nodeIds0))
-                                nodeIds = nodeIds0;
-                        }
+                        if (sameDcNodeIds != null)
+                            nodeIds = retainNodesNotEmpty(nodeIds, sameDcNodeIds::contains);
 
                         histSupplier = ctx.discovery().node(nodeIds.get(p % nodeIds.size()));
                     }
@@ -276,14 +271,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     });
 
                     if (!picked.isEmpty()) {
-                        if (dcId != null) {
-                            List<ClusterNode> picked0 = new ArrayList<>(picked);
-
-                            picked0.removeIf(n -> !Objects.equals(dcId, n.dataCenterId()));
-
-                            if (!F.isEmpty(picked0))
-                                picked = picked0;
-                        }
+                        if (dcId != null)
+                            picked = retainNodesNotEmpty(picked, n -> Objects.equals(dcId, n.dataCenterId()));
 
                         ClusterNode n = picked.get(p % picked.size());
 
@@ -326,6 +315,20 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         }
 
         return assignments;
+    }
+
+    /**
+     * Retains nodes which satisfy filter. Returns original list if result set is empty.
+     */
+    private <T> List<T> retainNodesNotEmpty(List<T> nodes, Predicate<T> filter) {
+        List<T> nodes0 = new ArrayList<>(nodes.size());
+
+        for (T node : nodes) {
+            if (filter.test(node))
+                nodes0.add(node);
+        }
+
+        return !F.isEmpty(nodes0) ? nodes0 : nodes;
     }
 
     /** {@inheritDoc} */
