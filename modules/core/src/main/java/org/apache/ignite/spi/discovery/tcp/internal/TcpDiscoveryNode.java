@@ -48,6 +48,7 @@ import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_CENTER_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 
@@ -590,7 +591,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         out.writeLong(intOrder);
         out.writeObject(ver);
         U.writeUuid(out, clientRouterNodeId);
-        out.writeObject(dcId);
     }
 
     /** {@inheritDoc} */
@@ -628,7 +628,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         else
             consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
 
-        dcId = (String)in.readObject();
+        dcId = (String)attrs.get(ATTR_DATA_CENTER_ID);
     }
 
     /** {@inheritDoc} */

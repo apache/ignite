@@ -40,6 +40,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_CENTER_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 
@@ -340,8 +341,6 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
             mtr = ClusterMetricsSnapshot.serialize(metrics);
 
         U.writeByteArray(out, mtr);
-
-        out.writeObject(dcId);
     }
 
     /** {@inheritDoc} */
@@ -363,7 +362,7 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
         if (mtr != null)
             metrics = ClusterMetricsSnapshot.deserialize(mtr, 0);
 
-        dcId = (String)in.readObject();
+        dcId = (String)attrs.get(ATTR_DATA_CENTER_ID);
     }
 
     /** {@inheritDoc} */

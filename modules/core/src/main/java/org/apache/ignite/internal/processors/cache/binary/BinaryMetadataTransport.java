@@ -842,20 +842,16 @@ final class BinaryMetadataTransport {
 
             MetadataResponseMessage resp = new MetadataResponseMessage(typeId);
 
-            byte[] binMetaBytes = null;
-
             if (metaVerInfo != null) {
                 try {
-                    binMetaBytes = U.marshal(ctx, metaVerInfo);
+                    metaVerInfo.marshalMetadata();
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to marshal binary metadata for [typeId=" + typeId + ']', e);
-
-                    resp.markErrorOnRequest();
                 }
             }
 
-            resp.binaryMetadataBytes(binMetaBytes);
+            resp.metadataVersionInfo(metaVerInfo);
 
             try {
                 ioMgr.sendToGridTopic(nodeId, GridTopic.TOPIC_METADATA_REQ, resp, SYSTEM_POOL);
@@ -882,21 +878,23 @@ final class BinaryMetadataTransport {
 
             int typeId = msg0.typeId();
 
-            byte[] binMetaBytes = msg0.binaryMetadataBytes();
-
             ClientMetadataRequestFuture fut = clientReqSyncMap.get(typeId);
 
             if (fut == null)
                 return;
 
-            if (msg0.metadataNotFound()) {
+            BinaryMetadataVersionInfo metaVerInfo = msg0.metadataVersionInfo();
+
+            if (metaVerInfo == null) {
                 fut.onDone(MetadataUpdateResult.createSuccessfulResult(-1));
 
                 return;
             }
 
             try {
-                casBinaryMetadata(typeId, U.unmarshal(ctx, binMetaBytes, U.resolveClassLoader(ctx.config())));
+                metaVerInfo.unmarshalMetadata();
+
+                casBinaryMetadata(typeId, metaVerInfo);
 
                 fut.onDone(MetadataUpdateResult.createSuccessfulResult(-1));
             }

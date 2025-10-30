@@ -22,6 +22,8 @@ import java.nio.ByteBuffer;
 import java.util.function.Supplier;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.direct.DirectMessageReader;
+import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -43,12 +45,22 @@ public class IgniteMessageFactoryImpl implements MessageFactory {
     /** Delegate serialization to {@code Message} methods. */
     private static final MessageSerializer DEFAULT_SERIALIZER = new MessageSerializer() {
         /** {@inheritDoc} */
-        @Override public boolean writeTo(Message msg, ByteBuffer buf, MessageWriter writer) {
+        @Override public boolean writeTo(Message msg, MessageWriter writer) {
+            ByteBuffer buf = null;
+
+            if (writer instanceof DirectMessageWriter)
+                buf = ((DirectMessageWriter)writer).getBuffer();
+
             return msg.writeTo(buf, writer);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean readFrom(Message msg, ByteBuffer buf, MessageReader reader) {
+        @Override public boolean readFrom(Message msg, MessageReader reader) {
+            ByteBuffer buf = null;
+
+            if (reader instanceof DirectMessageReader)
+                buf = ((DirectMessageReader)reader).getBuffer();
+
             return msg.readFrom(buf, reader);
         }
     };

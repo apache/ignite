@@ -171,8 +171,9 @@ public class TcpHandshakeExecutor {
             buf.position(DIRECT_TYPE_SIZE);
 
             NodeIdMessage nodeIdMsg = new NodeIdMessage();
+            reader.setBuffer(buf);
 
-            msgFactory.serializer(nodeIdMsg.directType()).readFrom(nodeIdMsg, buf, reader);
+            msgFactory.serializer(nodeIdMsg.directType()).readFrom(nodeIdMsg, reader);
             reader.reset();
 
             return nodeIdMsg.nodeId();
@@ -189,7 +190,9 @@ public class TcpHandshakeExecutor {
                     .order(ByteOrder.LITTLE_ENDIAN)
                     .put(U.IGNITE_HEADER);
 
-            msgFactory.serializer(msg.directType()).writeTo(msg, buf, writer);
+            writer.setBuffer(buf);
+
+            msgFactory.serializer(msg.directType()).writeTo(msg, writer);
 
             buf.flip();
 
@@ -239,7 +242,9 @@ public class TcpHandshakeExecutor {
 
                 buf.position(readPos);
 
-                fininshed = msgSer.readFrom(msg, buf, reader);
+                reader.setBuffer(buf);
+
+                fininshed = msgSer.readFrom(msg, reader);
 
                 readPos = buf.position();
             }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
@@ -43,9 +42,6 @@ import static org.junit.Assert.assertEquals;
 
 /** */
 public abstract class AbstractCommunicationMessageSerializationTest {
-    /** */
-    private static final ByteBuffer TEST_BYTE_BUFFER = ByteBuffer.allocate(1024);
-
     /** */
     @Test
     public void testMessageSerializationAndDeserializationConsistency() throws Exception {
@@ -100,13 +96,13 @@ public abstract class AbstractCommunicationMessageSerializationTest {
 
         initializeMessage(msg);
 
-        while (!msgFactory.serializer(msgType).writeTo(msg, TEST_BYTE_BUFFER, writer)) {
+        while (!msgFactory.serializer(msgType).writeTo(msg, writer)) {
             // No-op.
         }
 
         msg = msgFactory.create(msgType);
 
-        while (!msgFactory.serializer(msgType).readFrom(msg, TEST_BYTE_BUFFER, reader)) {
+        while (!msgFactory.serializer(msgType).readFrom(msg, reader)) {
             // No-op.
         }
 
@@ -152,9 +148,6 @@ public abstract class AbstractCommunicationMessageSerializationTest {
 
             return false;
         }
-
-        /** {@inheritDoc} */
-        @Override public void setBuffer(ByteBuffer buf) {}
 
         /** {@inheritDoc} */
         @Override public boolean writeHeader(short type) {
@@ -369,11 +362,6 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         private void readField(Class<?> type) {
             if (position++ < capacity)
                 readFields.add(type);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setBuffer(ByteBuffer buf) {
-            // No-op.
         }
 
         /** {@inheritDoc} */
