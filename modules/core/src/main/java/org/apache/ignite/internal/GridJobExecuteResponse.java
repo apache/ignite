@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Serializable;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -267,8 +266,8 @@ public class GridJobExecuteResponse implements Message {
     }
 
     /**
-     * Serializes non-{@link Serializable} user data to byte[] using the provided marshaller.
-     * Erases non-marshalled user data like {@link #getJobAttributes()} or {@link #getJobResult()}.
+     * Serializes user data to byte[] with provided marshaller.
+     * Erases non-marshalled data like {@link #getJobAttributes()} or {@link #getJobResult()}.
      */
     public void marshallUserData(Marshaller marsh, @Nullable IgniteLogger log) {
         if (res != null) {
@@ -306,6 +305,24 @@ public class GridJobExecuteResponse implements Message {
         }
     }
 
+    /**
+     * Deserializes user data from byte[] with provided marshaller and class loader.
+     * Erases marshalled data like {@link #jobAttrubutesBytes()} or {@link #jobResultBytes()}.
+     */
+    public void unmarshallUserData(Marshaller marshaller, ClassLoader clsLdr) throws IgniteCheckedException {
+        if (jobAttrsBytes != null) {
+            jobAttrs = U.unmarshal(marshaller, jobAttrsBytes, clsLdr);
+
+            jobAttrsBytes = null;
+        }
+
+        if (resBytes != null) {
+            res = U.unmarshal(marshaller, resBytes, clsLdr);
+
+            resBytes = null;
+        }
+    }
+
     /** */
     private void wrapSerializationError(IgniteCheckedException e, String msg, @Nullable IgniteLogger log) {
         if (gridEx != null)
@@ -315,22 +332,6 @@ public class GridJobExecuteResponse implements Message {
 
         if (log != null && (log.isDebugEnabled() || !X.hasCause(e, NodeStoppingException.class)))
             U.error(log, msg, e);
-    }
-
-    /**
-     * Deserializes non-{@link Serializable} user data from byte[] using the provided marshaller and class loader.
-     * Erases marshalled user data like {@link #jobResultBytes()} ()} or {@link #jobResultBytes()}.
-     */
-    public void unmarshallUserData(Marshaller marshaller, ClassLoader clsLdr) throws IgniteCheckedException {
-        if (jobAttrsBytes != null) {
-            jobAttrs = U.unmarshal(marshaller, jobAttrsBytes, clsLdr);
-            jobAttrsBytes = null;
-        }
-
-        if (resBytes != null) {
-            res = U.unmarshal(marshaller, resBytes, clsLdr);
-            resBytes = null;
-        }
     }
 
     /** {@inheritDoc} */
