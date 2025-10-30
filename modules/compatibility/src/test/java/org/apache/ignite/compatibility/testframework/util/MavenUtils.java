@@ -192,40 +192,7 @@ public class MavenUtils {
     }
 
     /**
-     * Adds escape characters to path elements that contain spaces.
-     *
-     * @param path Original path with unescaped elements.
-     * @return Path with escaped elements.
-     */
-    public static String escapeSpaceCharsInPath(String path) {
-        int startBSlashIdx = path.indexOf('\\');
-        int endBSlashIdx = path.indexOf('\\', startBSlashIdx + 1);
-
-        if (endBSlashIdx < 0)
-            return path;
-
-        StringBuilder res = new StringBuilder(path.substring(0, startBSlashIdx));
-
-        while (endBSlashIdx > 0) {
-            String substring = path.substring(startBSlashIdx + 1, endBSlashIdx);
-
-            if (substring.contains(" "))
-                res.append("\\\"").append(substring).append("\"");
-            else
-                res.append("\\").append(substring);
-
-            startBSlashIdx = endBSlashIdx;
-            endBSlashIdx = path.indexOf('\\', startBSlashIdx + 1);
-        }
-
-        res.append("\\")
-            .append(path.substring(startBSlashIdx + 1));
-
-        return res.toString();
-    }
-
-    /**
-     * Executes given command in operation system.
+     * Executes given command in operating system.
      *
      * @param cmd Command to execute.
      * @return Output of result of executed command.
@@ -236,7 +203,7 @@ public class MavenUtils {
         pb.redirectErrorStream(true);
 
         pb.command(U.isWindows() ?
-            new String[] {"cmd", "/c", escapeSpaceCharsInPath(cmd)} :
+            new String[] {"cmd", "/c", cmd} :
             new String[] {"/bin/bash", "-c", cmd});
 
         final Process p = pb.start();
@@ -273,10 +240,46 @@ public class MavenUtils {
     }
 
     /**
+     * Adds escape characters to path elements that contain spaces.
+     *
+     * @param path Original path with unescaped elements.
+     * @return Path with escaped elements.
+     */
+    public static String escapeSpaceCharsInPath(String path) {
+        int startBSlashIdx = path.indexOf('\\');
+        int endBSlashIdx = path.indexOf('\\', startBSlashIdx + 1);
+
+        if (endBSlashIdx < 0)
+            return path;
+
+        StringBuilder res = new StringBuilder(path.substring(0, startBSlashIdx));
+
+        while (endBSlashIdx > 0) {
+            String substring = path.substring(startBSlashIdx + 1, endBSlashIdx);
+
+            if (substring.contains(" "))
+                res.append("\\\"").append(substring).append("\"");
+            else
+                res.append("\\").append(substring);
+
+            startBSlashIdx = endBSlashIdx;
+            endBSlashIdx = path.indexOf('\\', startBSlashIdx + 1);
+        }
+
+        res.append("\\")
+            .append(path.substring(startBSlashIdx + 1));
+
+        return res.toString();
+    }
+
+    /**
      * @return Maven executable command.
      */
     private static String buildMvnCommand() {
         String mvnCmd = resolveMavenApplicationPath();
+
+        if (U.isWindows())
+            mvnCmd = escapeSpaceCharsInPath(mvnCmd);
 
         Path mvnSettingsFilePath = resolveMavenSettingsFilePath();
 
