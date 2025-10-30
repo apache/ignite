@@ -234,7 +234,7 @@ public class GridCacheReturn implements Message {
         KeyCacheObject key,
         @Nullable Object key0,
         @Nullable Object res,
-        @Nullable Throwable err,
+        @Nullable Exception err,
         boolean keepBinary) {
         assert v == null || v instanceof Map : v;
         assert key != null;

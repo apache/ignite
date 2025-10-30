@@ -17,37 +17,45 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
+import java.nio.ByteBuffer;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class CacheInvokeDirectResult implements Message {
-    /** Cache key. */
-    @Order(0)
+public class CacheInvokeDirectResult implements Message, Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private KeyCacheObject key;
 
     /** */
     @GridToStringInclude
-    private Object unprepareRes;
+    private transient Object unprepareRes;
 
-    /** Result. */
+    /** */
     @GridToStringInclude
-    @Order(value = 1, method = "result")
     private CacheObject res;
 
-    /** Error message. */
+    /** */
     @GridToStringInclude(sensitive = true)
-    @Order(value = 2, method = "errorMessage")
-    private ErrorMessage errMsg;
+    @GridDirectTransient
+    private Exception err;
+
+    /** */
+    private byte[] errBytes;
 
     /**
      * Default constructor.
@@ -85,9 +93,9 @@ public class CacheInvokeDirectResult implements Message {
      * @param key Key.
      * @param err Exception thrown by {@link EntryProcessor#process(MutableEntry, Object...)}.
      */
-    public CacheInvokeDirectResult(KeyCacheObject key, Throwable err) {
+    public CacheInvokeDirectResult(KeyCacheObject key, Exception err) {
         this.key = key;
-        errMsg = new ErrorMessage(err);
+        this.err = err;
     }
 
     /**
@@ -98,13 +106,6 @@ public class CacheInvokeDirectResult implements Message {
     }
 
     /**
-     * @param key Key.
-     */
-    public void key(KeyCacheObject key) {
-        this.key = key;
-    }
-
-    /**
      * @return Result.
      */
     public CacheObject result() {
@@ -112,39 +113,33 @@ public class CacheInvokeDirectResult implements Message {
     }
 
     /**
-     * @param res Result.
-     */
-    public void result(CacheObject res) {
-        this.res = res;
-    }
-
-    /**
      * @return Error.
      */
-    @Nullable public Throwable error() {
-        return ErrorMessage.error(errMsg);
-    }
-
-    /**
-     * @return Error message.
-     */
-    public ErrorMessage errorMessage() {
-        return errMsg;
-    }
-
-    /**
-     * @param errMsg Error message.
-     */
-    public void errorMessage(ErrorMessage errMsg) {
-        this.errMsg = errMsg;
+    @Nullable public Exception error() {
+        return err;
     }
 
     /**
      * @param ctx Cache context.
      * @throws IgniteCheckedException If failed.
      */
-    public void prepareMarshal(GridCacheContext<?, ?> ctx) throws IgniteCheckedException {
+    public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
         key.prepareMarshal(ctx.cacheObjectContext());
+
+        if (err != null && errBytes == null) {
+            try {
+                errBytes = U.marshal(ctx.marshaller(), err);
+            }
+            catch (IgniteCheckedException e) {
+                // Try send exception even if it's unable to marshal.
+                IgniteCheckedException exc = new IgniteCheckedException(err.getMessage());
+
+                exc.setStackTrace(err.getStackTrace());
+                exc.addSuppressed(e);
+
+                errBytes = U.marshal(ctx.marshaller(), exc);
+            }
+        }
 
         assert unprepareRes == null : "marshalResult() was not called for the result: " + this;
 
@@ -157,7 +152,7 @@ public class CacheInvokeDirectResult implements Message {
      *
      * @param ctx Cache context.
      */
-    public void marshalResult(GridCacheContext<?, ?> ctx) {
+    public void marshalResult(GridCacheContext ctx) {
         try {
             if (unprepareRes != null)
                 res = ctx.toCacheObject(unprepareRes);
@@ -172,8 +167,11 @@ public class CacheInvokeDirectResult implements Message {
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */
-    public void finishUnmarshal(GridCacheContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
+    public void finishUnmarshal(GridCacheContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         key.finishUnmarshal(ctx.cacheObjectContext(), ldr);
+
+        if (errBytes != null && err == null)
+            err = U.unmarshal(ctx.marshaller(), errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (res != null)
             res.finishUnmarshal(ctx.cacheObjectContext(), ldr);
@@ -182,6 +180,75 @@ public class CacheInvokeDirectResult implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return 93;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 0:
+                if (!writer.writeByteArray(errBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeKeyCacheObject(key))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeCacheObject(res))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        switch (reader.state()) {
+            case 0:
+                errBytes = reader.readByteArray();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 1:
+                key = reader.readKeyCacheObject();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                res = reader.readCacheObject();
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */

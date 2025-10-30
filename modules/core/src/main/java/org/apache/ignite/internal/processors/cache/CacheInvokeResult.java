@@ -43,7 +43,7 @@ public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externaliz
     private T res;
 
     /** */
-    private Throwable err;
+    private Exception err;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -76,7 +76,7 @@ public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externaliz
     /**
      * Entry processor error;
      */
-    public Throwable error() {
+    public Exception error() {
         return err;
     }
 
@@ -86,7 +86,7 @@ public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externaliz
      * @param err Exception thrown by {@link EntryProcessor#process(MutableEntry, Object...)}.
      * @return New instance.
      */
-    public static <T> CacheInvokeResult<T> fromError(Throwable err) {
+    public static <T> CacheInvokeResult<T> fromError(Exception err) {
         assert err != null;
 
         CacheInvokeResult<T> res = new CacheInvokeResult<>();
