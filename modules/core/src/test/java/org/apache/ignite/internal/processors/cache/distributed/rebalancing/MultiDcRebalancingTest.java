@@ -36,6 +36,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -171,21 +172,15 @@ public class MultiDcRebalancingTest extends GridCommonAbstractTest {
 
     /** */
     private void waitRebalanceFinished(IgniteEx ignite) throws Exception {
-        for (int i = 0; i < 10; i++) {
+        assertTrue(GridTestUtils.waitForCondition(() -> {
             IgniteInternalFuture<Boolean> fut = ignite.cachex(DEFAULT_CACHE_NAME).context().preloader().rebalanceFuture();
 
             GridDhtPartitionDemander.RebalanceFuture rebFut = (GridDhtPartitionDemander.RebalanceFuture)fut;
 
-            if (!rebFut.isInitial() && rebFut.topologyVersion().topologyVersion() == ignite.cluster().topologyVersion()) {
-                assertTrue(fut.get());
+            return (!rebFut.isInitial() && rebFut.topologyVersion().topologyVersion() == ignite.cluster().topologyVersion());
+        }, 1000));
 
-                return;
-            }
-
-            doSleep(100);
-        }
-
-        fail("Failed to wait for rebalance future");
+        assertTrue(ignite.cachex(DEFAULT_CACHE_NAME).context().preloader().rebalanceFuture().get());
     }
 
     /** */
