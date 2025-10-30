@@ -17,12 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -50,8 +53,14 @@ public class CacheMdcGetTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
             .setCommunicationSpi(new TestRecordingCommunicationSpi());
+
+        // Enforce different mac adresses to emulate distributed environment by default.
+        cfg.setUserAttributes(Collections.singletonMap(
+            IgniteNodeAttributes.ATTR_MACS_OVERRIDE, UUID.randomUUID().toString()));
+
+        return cfg;
     }
 
     /** */
