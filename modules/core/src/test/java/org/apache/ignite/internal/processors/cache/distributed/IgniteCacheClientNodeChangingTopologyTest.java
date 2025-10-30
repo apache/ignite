@@ -573,6 +573,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         ignite3.close();
 
+        awaitPartitionMapExchange();
+
         for (int i = 0; i < 100; i++)
             map.put(i, i + 1);
 
