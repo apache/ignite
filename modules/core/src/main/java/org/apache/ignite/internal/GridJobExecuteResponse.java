@@ -157,12 +157,12 @@ public class GridJobExecuteResponse implements Message {
      * @return Serialized job result.
      */
     @Nullable public byte[] jobResultBytes() {
-        return jobAttrsBytes;
+        return resBytes;
     }
 
     /** */
     public void jobResultBytes(@Nullable byte[] resBytes) {
-        jobAttrsBytes = resBytes;
+        this.resBytes = resBytes;
     }
 
     /**
