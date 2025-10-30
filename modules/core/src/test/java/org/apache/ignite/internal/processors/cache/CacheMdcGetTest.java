@@ -53,8 +53,9 @@ public class CacheMdcGetTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
-            .setCommunicationSpi(new TestRecordingCommunicationSpi());
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         // Enforce different mac adresses to emulate distributed environment by default.
         cfg.setUserAttributes(Collections.singletonMap(
