@@ -108,7 +108,7 @@ public class ErrorMessage implements Message {
                 err = U.unmarshal(jdk(), errBytes, U.gridClassLoader());
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal error data bytes.", e);
+                err = new IgniteException("Failed to unmarshal error data bytes.", e);
             }
         }
     }
