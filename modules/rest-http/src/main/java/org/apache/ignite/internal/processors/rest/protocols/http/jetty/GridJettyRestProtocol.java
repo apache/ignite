@@ -49,6 +49,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 import org.jetbrains.annotations.Nullable;
 import org.xml.sax.SAXException;
 
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_HOST;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_LOG_NO_OVERRIDE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
@@ -70,6 +71,9 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             System.setProperty("org.eclipse.jetty.util.component.LEVEL", "OFF");
         }
     }
+
+    /** Object mapper class name. */
+    private static final String JACKSON_DATABIND_OBJECT_MAPPER = "com.fasterxml.jackson.databind.ObjectMapper";
 
     /** Jetty handler. */
     private GridJettyRestHandler jettyHnd;
@@ -93,8 +97,10 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     @Override public void start(GridRestProtocolHandler hnd) throws IgniteCheckedException {
         assert ctx.config().getConnectorConfiguration() != null;
 
-        if (U.resolveIgniteUrl("libs/ignite-json") == null)
-            log.warning("Can't find ignite-json module in classpath, which is required for REST API functionality.");
+        if (!checkJacksonEnabled())
+            throw new IgniteCheckedException("Can't find ignite-json module in classpath, which is required for REST API " +
+                "functionality. Copy ignite-json module from " + IGNITE_HOME + "/libs/optional/ to " + IGNITE_HOME +
+                "/libs folder.");
 
         String jettyHost = System.getProperty(IGNITE_JETTY_HOST, ctx.config().getLocalHost());
 
@@ -331,6 +337,20 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         else
             throw new IgniteCheckedException("Error in jetty configuration [connectorsFound=" +
                 httpSrv.getConnectors().length + "connectorsExpected=1]");
+    }
+
+    /**
+     * Check if ignite-json module enabled.
+     */
+    public static boolean checkJacksonEnabled() {
+        try {
+            Class.forName(JACKSON_DATABIND_OBJECT_MAPPER);
+
+            return true;
+        }
+        catch (Exception e) {
+            return false;
+        }
     }
 
     /**
