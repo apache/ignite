@@ -831,7 +831,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         boolean loc = ctx.localNodeId().equals(res.nodeId()) && !ctx.config().isMarshalLocalJobs();
 
                         if (!loc)
-                            msg.unmarshallUserData(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                            res.unmarshallUserData(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
                         jobRes.onResponse(res.getJobResult(), res.exception(), res.getJobAttributes(), res.cancelled());
 
