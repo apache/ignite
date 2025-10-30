@@ -342,7 +342,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     /**
      * Check if ignite-json module enabled.
      */
-    public static boolean checkJacksonEnabled() {
+    private static boolean checkJacksonEnabled() {
         try {
             Class.forName(JACKSON_DATABIND_OBJECT_MAPPER);
 
