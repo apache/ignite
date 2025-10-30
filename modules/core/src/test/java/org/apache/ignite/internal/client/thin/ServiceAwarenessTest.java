@@ -24,9 +24,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -75,11 +77,17 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Checks the service awareness feature of the thin client.
  */
 public class ServiceAwarenessTest extends AbstractThinClientTest {
+    /** */
+    private static final String ATTR_NODE_IDX = "test.node.idx";
+
     /** Node-filter service name. */
     private static final String SRV_NAME = "node_filtered_svc";
 
     /** Number of grids at the test start. */
-    private static final int GRIDS = 4;
+    private static final int BASE_NODES_CNT = 4;
+
+    /** */
+    private static final int TOP_UPD_NODES_CNT = 3;
 
     /** Number of node instances with the initial service deployment. */
     private static final int INIT_SRVC_NODES_CNT = 2;
@@ -90,11 +98,18 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     /** */
     private static ListeningTestLogger clientLogLsnr;
 
+    /** */
+    private final UUID[] nodeIds = new UUID[BASE_NODES_CNT + TOP_UPD_NODES_CNT];
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        int nodeIdx = getTestIgniteInstanceIndex(igniteInstanceName);
+
         cfg.setDiscoverySpi(new TestBlockingDiscoverySpi());
+        cfg.setNodeId(nodeIds[nodeIdx]);
+        cfg.setUserAttributes(Collections.singletonMap(ATTR_NODE_IDX, nodeIdx));
 
         return cfg;
     }
@@ -147,7 +162,10 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        startGrids(GRIDS);
+        for (int i = 0; i < nodeIds.length; i++)
+            nodeIds[i] = UUID.randomUUID();
+
+        startGrids(BASE_NODES_CNT);
 
         grid(1).services().deploy(serviceCfg());
     }
@@ -160,7 +178,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         // Service topology on the client.
         Set<UUID> srvcTopOnClient = new GridConcurrentHashSet<>();
 
-        addSrvcTopUpdateClientLogLsnr(srvcTopOnClient::addAll);
+        registerServiceTopologyUpdateListener(srvcTopOnClient::addAll);
 
         AtomicBoolean svcRunFlag = new AtomicBoolean(true);
 
@@ -180,13 +198,13 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
             // Delays service redeployment and the service topology update on the server side.
             testDisco.toBlock.add(ServiceClusterDeploymentResultBatch.class);
 
-            startGrid(GRIDS);
+            startGrid(BASE_NODES_CNT);
 
             waitForCondition(() -> testDisco.blocked.size() == 1, getTestTimeout());
 
             // Ensure all the nodes have started but the service topology hasn't updated yet.
             for (Ignite ig : G.allGrids()) {
-                assertEquals(ig.cluster().nodes().size(), GRIDS + 1);
+                assertEquals(ig.cluster().nodes().size(), BASE_NODES_CNT + 1);
 
                 // Ensure there are still SRVC_FILTERED_NOIDES_CNT nodes with the service instance.
                 assertEquals(((IgniteEx)ig).context().service().serviceTopology(SRV_NAME, 0).size(),
@@ -195,7 +213,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
             // Ensure the client's topology is not updated.
             assertTrue(srvcTopOnClient.size() == INIT_SRVC_NODES_CNT
-                && !srvcTopOnClient.contains(grid(GRIDS).localNode().id()));
+                && !srvcTopOnClient.contains(grid(BASE_NODES_CNT).localNode().id()));
 
             testDisco.release();
 
@@ -216,7 +234,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
             waitForCondition(() -> srvcTopOnClient.size() == 3 && srvcTopOnClient.contains(grid(1).localNode().id())
                 && srvcTopOnClient.contains(grid(2).localNode().id())
-                && srvcTopOnClient.contains(grid(GRIDS).localNode().id()), getTestTimeout());
+                && srvcTopOnClient.contains(grid(BASE_NODES_CNT).localNode().id()), getTestTimeout());
         }
         finally {
             svcRunFlag.set(false);
@@ -228,7 +246,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      */
     @Test
     public void testNodesJoinSingleThreaded() throws Exception {
-        doTestClusterTopChangesWhileServiceCalling(3, true, false);
+        doTestClusterTopChangesWhileServiceCalling(false, 1);
     }
 
     /**
@@ -236,7 +254,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      */
     @Test
     public void testNodesJoinMultiThreaded() throws Exception {
-        doTestClusterTopChangesWhileServiceCalling(3, true, true);
+        doTestClusterTopChangesWhileServiceCalling(false, 4);
     }
 
     /**
@@ -244,7 +262,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      */
     @Test
     public void testNodesLeaveSingleThreaded() throws Exception {
-        doTestClusterTopChangesWhileServiceCalling(3, false, false);
+        doTestClusterTopChangesWhileServiceCalling(true, 1);
     }
 
     /**
@@ -252,7 +270,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      */
     @Test
     public void testNodesLeaveMultiThreaded() throws Exception {
-        doTestClusterTopChangesWhileServiceCalling(3, false, true);
+        doTestClusterTopChangesWhileServiceCalling(true, 4);
     }
 
     /**
@@ -265,7 +283,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
             Set<UUID> srvcTopOnClient = new GridConcurrentHashSet<>();
 
-            addSrvcTopUpdateClientLogLsnr(srvcTopOnClient::addAll);
+            registerServiceTopologyUpdateListener(srvcTopOnClient::addAll);
 
             ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
@@ -306,7 +324,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
             Set<UUID> srvcTopOnClient = new GridConcurrentHashSet<>();
 
-            addSrvcTopUpdateClientLogLsnr(srvcTopOnClient::addAll);
+            registerServiceTopologyUpdateListener(srvcTopOnClient::addAll);
 
             ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
@@ -341,7 +359,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
             waitForCondition(() -> {
                 svc.testMethod();
 
-                return srvcTopOnClient.size() == GRIDS;
+                return srvcTopOnClient.size() == BASE_NODES_CNT;
             }, getTestTimeout());
 
             for (Ignite ig : G.allGrids())
@@ -350,94 +368,75 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     }
 
     /** */
-    private void doTestClusterTopChangesWhileServiceCalling(
-        int nodesCnt,
-        boolean addNodes,
-        boolean multiThreaded)
-        throws Exception {
-        assert nodesCnt > 0;
-
-        Set<UUID> newNodesUUIDs = new GridConcurrentHashSet<>();
+    private void doTestClusterTopChangesWhileServiceCalling(boolean shrinkTop, int svcInvokeThreads) throws Exception {
+        Set<UUID> expInitSvcTop = shrinkTop ? nodeIds(1, 2, 4, 5, 6) : nodeIds(1, 2);
+        Set<UUID> expUpdSvcTop = shrinkTop ? nodeIds(1, 2) : nodeIds(1, 2, 4, 5, 6);
 
         // Start additional nodes to stop them.
-        if (!addNodes) {
-            startGridsMultiThreaded(GRIDS, nodesCnt);
-
-            for (int i = GRIDS; i < GRIDS + nodesCnt; ++i)
-                newNodesUUIDs.add(grid(i).localNode().id());
-        }
+        if (shrinkTop)
+            startGridsMultiThreaded(BASE_NODES_CNT, TOP_UPD_NODES_CNT);
 
         // Service topology on the clients.
-        Set<UUID> srvcTopOnClient = new GridConcurrentHashSet<>();
+        AtomicReference<Set<UUID>> actualSvcTop = new AtomicReference<>();
 
-        addSrvcTopUpdateClientLogLsnr(srvcTopOnClient::addAll);
+        registerServiceTopologyUpdateListener(actualSvcTop::set);
 
-        AtomicBoolean changeClusterTop = new AtomicBoolean();
-        AtomicBoolean stopFlag = new AtomicBoolean();
+        AtomicBoolean isTestStopped = new AtomicBoolean();
 
         try (IgniteClient client = startClient()) {
             ServicesTest.TestServiceInterface svc = client.services().serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
 
             ((GridTestLog4jLogger)log).setLevel(Level.DEBUG);
 
-            IgniteInternalFuture<?> runFut = runMultiThreadedAsync(() -> {
-                do {
-                    try {
-                        svc.testMethod();
+            IgniteInternalFuture<?> svcInvokeFut = runMultiThreadedAsync(
+                () -> {
+                    do {
+                        try {
+                            svc.testMethod();
+                        }
+                        catch (Exception e) {
+                            String errMsg = e.getMessage();
+
+                            // TODO: IGNITE-20802 : Exception should not occur.
+                            // Client doesn't retry service invocation if the redirected-to service instance node leaves cluster.
+                            assertTrue(shrinkTop
+                                && (errMsg.contains("Node has left grid") || errMsg.contains("Failed to send job due to node failure"))
+                                && expInitSvcTop.stream().anyMatch(id -> errMsg.contains(id.toString())));
+                        }
                     }
-                    catch (ClientException e) {
-                        String m = e.getMessage();
+                    while (!isTestStopped.get());
+                },
+                svcInvokeThreads,
+                "ServiceTestLoader"
+            );
 
-                        // TODO: IGNITE-20802 : Exception should not occur.
-                        // Client doesn't retry service invocation if the redirected-to service instance node leaves cluster.
-                        if (addNodes || (!m.contains("Node has left grid") && !m.contains("Failed to send job due to node failure"))
-                            || newNodesUUIDs.stream().noneMatch(nid -> m.contains(nid.toString())))
-                            throw e;
-                    }
-                }
-                while (!stopFlag.get());
-            }, multiThreaded ? 4 : 1, "ServiceTestLoader");
+            assertTrue(waitForCondition(() -> expInitSvcTop.equals(actualSvcTop.get()), getTestTimeout()));
 
-            while (!stopFlag.get()) {
-                // Wait until the initial topology is received.
-                if (srvcTopOnClient.size() == (addNodes ? INIT_SRVC_NODES_CNT : INIT_SRVC_NODES_CNT + nodesCnt)
-                    && changeClusterTop.compareAndSet(false, true)) {
-                    srvcTopOnClient.clear();
+            Collection<IgniteInternalFuture<?>> topUpdFuts = ConcurrentHashMap.newKeySet();
 
-                    for (int i = 0; i < nodesCnt; ++i) {
-                        int nodeIdx = GRIDS + i;
+            for (int i = 0; i < TOP_UPD_NODES_CNT; ++i) {
+                int nodeIdx = BASE_NODES_CNT + i;
 
-                        runAsync(() -> {
-                            try {
-                                if (addNodes)
-                                    newNodesUUIDs.add(startGrid(nodeIdx).localNode().id());
-                                else
-                                    stopGrid(nodeIdx);
-                            }
-                            catch (Exception e) {
-                                log.error("Unable to start or stop test grid.", e);
-
-                                stopFlag.set(true);
-                            }
-                        });
-                    }
-                }
-
-                // Stop if new excepted service topology received.
-                if (srvcTopOnClient.size() == (addNodes ? INIT_SRVC_NODES_CNT + nodesCnt : INIT_SRVC_NODES_CNT))
-                    stopFlag.set(true);
-
-                Thread.sleep(10);
+                topUpdFuts.add(runAsync(() -> {
+                    if (shrinkTop)
+                        stopGrid(nodeIdx);
+                    else
+                        startGrid(nodeIdx);
+                }));
             }
 
-            runFut.get();
+            assertTrue(waitForCondition(() -> expUpdSvcTop.equals(actualSvcTop.get()), getTestTimeout()));
+
+            for (IgniteInternalFuture<?> topUpdFut : topUpdFuts)
+                topUpdFut.get(getTestTimeout());
+
+            isTestStopped.set(true);
+
+            svcInvokeFut.get(getTestTimeout());
         }
-
-        // The initial nodes must always persist it the service topology.
-        assertTrue(srvcTopOnClient.contains(grid(1).localNode().id())
-            && srvcTopOnClient.contains(grid(2).localNode().id()));
-
-        assertEquals(addNodes ? nodesCnt : 0, newNodesUUIDs.stream().filter(srvcTopOnClient::contains).count());
+        finally {
+            isTestStopped.set(true);
+        }
     }
 
     /**
@@ -502,7 +501,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
             ? top
             : grp.stream().filter(nid -> new TestNodeFilter().apply(grid(0).cluster().node(nid))).collect(Collectors.toSet());
 
-        addSrvcTopUpdateClientLogLsnr(uuids -> {
+        registerServiceTopologyUpdateListener(uuids -> {
             // Reset counters on the first topology update.
             if (top.isEmpty())
                 redirectCnt.set(0);
@@ -590,7 +589,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     }
 
     /** Extracts ids of received service instance nodes from the client log. */
-    private static void addSrvcTopUpdateClientLogLsnr(Consumer<Set<UUID>> srvTopConsumer) {
+    private static void registerServiceTopologyUpdateListener(Consumer<Set<UUID>> srvTopConsumer) {
         clientLogLsnr.registerListener(s -> {
             if (s.contains("Topology of service '" + SRV_NAME + "' has been updated. The service instance nodes: ")) {
                 String nodes = s.substring(s.lastIndexOf(": [") + 3, s.length() - 2);
@@ -612,6 +611,11 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
             getClientConfiguration(grid(0)));
     }
 
+    /** */
+    private Set<UUID> nodeIds(int... nodeIdxs) {
+        return Arrays.stream(nodeIdxs).mapToObj(idx -> nodeIds[idx]).collect(Collectors.toSet());
+    }
+
     /**
      * Accepts nodes with the name index equal to 1, 2 or >= GRIDS.
      */
@@ -621,21 +625,9 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            String nodeName = node.attribute("org.apache.ignite.ignite.name");
+            int nodeIdx = node.attribute(ATTR_NODE_IDX);
 
-            if (F.isEmpty(nodeName))
-                return false;
-
-            int nodeIdx = -1;
-
-            try {
-                nodeIdx = Integer.parseInt(nodeName.substring(nodeName.length() - 1));
-            }
-            catch (Exception e) {
-                // No-op.
-            }
-
-            return nodeIdx == 1 || nodeIdx == 2 || nodeIdx >= GRIDS;
+            return nodeIdx == 1 || nodeIdx == 2 || nodeIdx >= BASE_NODES_CNT;
         }
     }
 
