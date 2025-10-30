@@ -2098,11 +2098,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @param ring TCP discovery nodes ring.
      */
     void onRingInitialized(TcpDiscoveryNodesRing ring) {
-        if (ignite() instanceof IgniteEx) {
-            RollingUpgradeProcessor rollUpProc = ((IgniteEx)ignite()).context().rollingUpgrade();
-            if (rollUpProc != null)
-                rollUpProc.ring(ring);
-        }
+        if (ignite() instanceof IgniteEx)
+            ((IgniteEx)ignite()).context().rollingUpgrade().ring(ring);
     }
 
     /** {@inheritDoc} */
