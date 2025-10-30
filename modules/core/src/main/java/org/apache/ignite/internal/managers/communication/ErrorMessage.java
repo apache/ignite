@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.MessageProcessor;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -101,7 +102,7 @@ public class ErrorMessage implements Message {
      * @see MessageWriter
      */
     public void errorBytes(@Nullable byte[] errBytes) {
-        if (errBytes == null)
+        if (F.isEmpty(errBytes))
             err = null;
         else {
             try {
