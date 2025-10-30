@@ -20,11 +20,13 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -34,6 +36,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /** */
 @RunWith(Parameterized.class)
@@ -71,6 +75,8 @@ public class CacheMdcGetTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
     }
 
     /** {@inheritDoc} */
@@ -93,32 +99,41 @@ public class CacheMdcGetTest extends GridCommonAbstractTest {
 
         boolean bool = rnd.nextBoolean();
 
+        int nodes = 20;
+
+        for (int i = 0; i < nodes; i += 2) {
+            System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, bool ? DC_ID_0 : DC_ID_1);
+
+            startGrid(i);
+
+            System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, bool ? DC_ID_1 : DC_ID_0);
+
+            startGrid(i + 1);
+        }
+
+        awaitPartitionMapExchange();
+
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, bool ? DC_ID_0 : DC_ID_1);
-
-        startGrid(0);
-
-        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, bool ? DC_ID_1 : DC_ID_0);
-
-        startGrid(1);
-
-        waitForTopology(2);
-
-        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
 
         IgniteEx client = startClientGrid();
 
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        ccfg.setBackups(1);
         ccfg.setAtomicityMode(atomicityMode);
+        ccfg.setCacheMode(CacheMode.REPLICATED);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         IgniteCache<Object, Object> cache = client.createCache(ccfg);
 
         cache.put(KEY, VAL);
 
-        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(bool ? grid(0) : grid(1));
+        for (int i = 0; i < nodes; i++) {
+            if (Objects.equals(grid(i).localNode().dataCenterId(), DC_ID_1)) {
+                TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(i));
 
-        spi.blockMessages((n, msg) -> true);
+                spi.blockMessages((n, msg) -> true);
+            }
+        }
 
         assertEquals(VAL, cache.get(KEY));
     }
