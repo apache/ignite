@@ -257,12 +257,12 @@ public class GridJobExecuteResponse implements Message {
      * @return Topology version for that specified partitions haven't been reserved
      *          on the affinity node.
      */
-    public AffinityTopologyVersion retryTopologyVersion() {
-        return retry != null ? retry : AffinityTopologyVersion.NONE;
+    public @Nullable AffinityTopologyVersion retryTopologyVersion() {
+        return retry;
     }
 
     /** */
-    public void retryTopologyVersion(AffinityTopologyVersion retry) {
+    public void retryTopologyVersion(@Nullable AffinityTopologyVersion retry) {
         this.retry = retry;
     }
 
@@ -284,6 +284,8 @@ public class GridJobExecuteResponse implements Message {
 
                 wrapSerializationError(e, msg, log);
             }
+
+            res = null;
         }
 
         if (!F.isEmpty(jobAttrs)) {
@@ -299,6 +301,8 @@ public class GridJobExecuteResponse implements Message {
 
                 wrapSerializationError(e, msg, log);
             }
+
+            jobAttrs = null;
         }
     }
 
@@ -318,11 +322,15 @@ public class GridJobExecuteResponse implements Message {
      * Erases marshalled user data like {@link #jobResultBytes()} ()} or {@link #jobResultBytes()}.
      */
     public void unmarshallUserData(Marshaller marshaller, ClassLoader clsLdr) throws IgniteCheckedException {
-        jobAttrs = U.unmarshal(marshaller, jobAttrsBytes, clsLdr);
-        jobAttrsBytes = null;
+        if (jobAttrsBytes != null) {
+            jobAttrs = U.unmarshal(marshaller, jobAttrsBytes, clsLdr);
+            jobAttrsBytes = null;
+        }
 
-        res = U.unmarshal(marshaller, resBytes, clsLdr);
-        resBytes = null;
+        if (resBytes != null) {
+            res = U.unmarshal(marshaller, resBytes, clsLdr);
+            resBytes = null;
+        }
     }
 
     /** {@inheritDoc} */
