@@ -21,12 +21,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.MessageProcessor;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.marshaller.Marshallers.jdk;
@@ -36,17 +33,15 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
  * <p>Because raw serialization of throwables is prohibited, you should use this message when it is necessary
  * to transfer some error as part of some message. See {@link MessageProcessor} for details.
  * <p>Currently, under the hood marshalling and unmarshalling is performed by {@link JdkMarshaller}.
- * <p>If the message serialization fails, wraps this error with own one.
  */
-@SuppressWarnings({"NullableProblems", "unused"})
+@SuppressWarnings({"AssignmentOrReturnOfFieldWithMutableType", "NullableProblems"})
 public class ErrorMessage implements Message {
-    /** Serialization and deserealization call holder. */
+    /** Serialized form of throwable. */
     @Order(value = 0, method = "errorBytes")
-    @GridToStringExclude
     private @Nullable byte[] errBytes;
 
     /** Original error. It is transient and necessary only to avoid duplicated serialization and deserializtion. */
-    private @Nullable Throwable err;
+    private volatile @Nullable Throwable err;
 
     /**
      * Default constructor.
@@ -63,58 +58,48 @@ public class ErrorMessage implements Message {
     }
 
     /**
-     * Provides serialized bytes of the error. Should be called only once.
-     *
-     * @return Serialized error.
-     * @see MessageWriter
+     * @return Serialized form of throwable.
      */
     public @Nullable byte[] errorBytes() {
-        if (err == null)
-            return null;
-
         try {
-            return U.marshal(jdk(), err);
+            if (errBytes == null && err != null)
+                errBytes = U.marshal(jdk(), err);
+
+            return errBytes;
         }
-        catch (IgniteCheckedException e0) {
-            IgniteCheckedException wrappedErr = new IgniteCheckedException(err.getMessage());
-
-            wrappedErr.setStackTrace(err.getStackTrace());
-            wrappedErr.addSuppressed(e0);
-
-            try {
-                return U.marshal(jdk(), wrappedErr);
-            }
-            catch (IgniteCheckedException e1) {
-                IgniteException marshErr = new IgniteException("Unable to marshal the wrapping error.", e1);
-
-                marshErr.addSuppressed(wrappedErr);
-
-                throw marshErr;
-            }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
     /**
-     * Deserializes the error from {@code errBytes}. Should be called only once.
-     *
-     * @param errBytes Serialized error.
-     * @see MessageWriter
+     * @param errBytes New serialized form of throwable.
      */
     public void errorBytes(@Nullable byte[] errBytes) {
-        if (errBytes == null)
-            err = null;
-        else {
-            try {
-                err = U.unmarshal(jdk(), errBytes, U.gridClassLoader());
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal error data bytes.", e);
-            }
-        }
+        this.errBytes = errBytes;
     }
 
-    /** */
+    /**
+     * @return Original {@link Throwable}.
+     */
     public @Nullable Throwable error() {
+        if (err != null)
+            return err;
+
+        synchronized (this) {
+            if (err == null && errBytes != null) {
+                try {
+                    err = U.unmarshal(jdk(), errBytes, U.gridClassLoader());
+
+                    // It is not required anymore.
+                    errBytes = null;
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+        }
+
         return err;
     }
 
@@ -131,10 +116,5 @@ public class ErrorMessage implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return -100;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(ErrorMessage.class, this);
     }
 }
