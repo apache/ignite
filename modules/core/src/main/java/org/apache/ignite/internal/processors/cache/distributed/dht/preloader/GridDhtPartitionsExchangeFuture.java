@@ -4654,7 +4654,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
 
         try {
-            Map<Integer, Map<Integer, Long>> partsSizes = msg.partitionSizes(cctx);
+            Map<Integer, PartitionSizesMap> partsSizes = msg.partitionSizes();
 
             doInParallel(
                 parallelismLvl,
@@ -4665,11 +4665,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
                     if (grp != null) {
+                        PartitionSizesMap sizesMap = partsSizes.get(grpId);
+
                         grp.topology().update(resTopVer,
                             msg.partitions().get(grpId),
                             cntrMap,
                             msg.partsToReload(cctx.localNodeId(), grpId),
-                            partsSizes.getOrDefault(grpId, Collections.emptyMap()),
+                            sizesMap != null ? sizesMap.partitionSizes() : Collections.emptyMap(),
                             null,
                             this,
                             msg.lostPartitions(grpId));
