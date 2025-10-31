@@ -162,6 +162,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             false,
             false,
             false,
+            false,
             new DelegateSnapshotSender(log, mgr.snapshotExecutorService(), mgr.localSnapshotSenderFactory().apply(sft)) {
                 @Override public void sendPart0(File from, File to, @Nullable String storagePath, GroupPartitionId pair, Long length) {
                     try {
