@@ -70,6 +70,14 @@ public class ColocationGroup implements CalciteMessage {
 
     /** */
     public static ColocationGroup forAssignments(List<List<UUID>> assignments) {
+        return new ColocationGroup(null, null, assignments, false);
+    }
+
+    /**
+     * Creates colocation group with assignments equal to cache assignments (i.e. cache assignments on remote nodes
+     * can be used for the same topology).
+     */
+    public static ColocationGroup forCacheAssignments(List<List<UUID>> assignments) {
         return new ColocationGroup(null, null, assignments, true);
     }
 
