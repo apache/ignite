@@ -19,8 +19,12 @@ package org.apache.ignite.cache.affinity.rendezvous;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -41,7 +45,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
  */
 public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int PARTS_CNT = 1024;
+    private static final int PARTS_CNT = 512;
 
     /** */
     private int backups;
@@ -189,6 +193,29 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Verifies that distribution of partitions in one datacenter
+     * doesn't change if nodes leave in another or if the other DC goes down completely.
+     * In other words, no rebalance is triggered in one dc if some topology changes happen in another.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testNoRebalanceInOneDcIfTopologyChangesInAnother() throws Exception {
+        dcIds = new String[] {"DC_0", "DC_1"};
+        int nodesPerDc = 3;
+        backups = 3;
+        filter = new MdcAffinityBackupFilter(dcIds.length, backups);
+        Predicate<ClusterNode> dc1NodesFilter = node -> "DC_1".equals(node.dataCenterId());
+
+        IgniteEx srv = startClusterAcrossDataCenters(dcIds, nodesPerDc);
+        awaitPartitionMapExchange();
+        Map<Integer, Set<UUID>> oldDistribution = affinityForPartitions(srv.getOrCreateCache(DEFAULT_CACHE_NAME), dc1NodesFilter);
+
+        for (int srvIdx = 0; srvIdx < 3; srvIdx++)
+            oldDistribution = verifyNoRebalancing(srvIdx, srv, oldDistribution, dc1NodesFilter);
+    }
+
     /** Starts specified number of nodes in each DC. */
     private IgniteEx startClusterAcrossDataCenters(String[] dcIds, int nodesPerDc) throws Exception {
         int nodeIdx = 0;
@@ -202,6 +229,51 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
         }
 
         return lastNode;
+    }
+
+    /** */
+    private Map<Integer, Set<UUID>> verifyNoRebalancing(int srvIdx, IgniteEx srv, Map<Integer, Set<UUID>> oldDistribution, Predicate<ClusterNode> dc1NodesFilter) throws InterruptedException {
+        stopGrid(srvIdx);
+        awaitPartitionMapExchange();
+        IgniteCache<Integer, Integer> cache = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        Map<Integer, Set<UUID>> newDistribution = affinityForPartitions(cache, dc1NodesFilter);
+
+        assertEquals(
+            String.format("Affinity distribution changed after server node %d was stopped", srvIdx),
+            oldDistribution,
+            newDistribution);
+
+        return newDistribution;
+    }
+
+    /** */
+    private Map<Integer, Set<UUID>> affinityForPartitions(IgniteCache<Integer, Integer> cache, Predicate<ClusterNode> dcFilter) {
+        Map<Integer, Set<UUID>> result = new HashMap<>(PARTS_CNT);
+        Affinity<Integer> aff = affinity(cache);
+
+        for (int i = 0; i < PARTS_CNT; i++) {
+            int j = i;
+
+            aff.mapKeyToPrimaryAndBackups(i)
+                .stream()
+                .filter(dcFilter)
+                .forEach(
+                    node -> result.compute(j,
+                        (k, v) -> {
+                            if (v == null) {
+                                Set<UUID> s = new HashSet<>();
+                                s.add(node.id());
+                                return s;
+                            }
+                            else {
+                                v.add(node.id());
+                                return v;
+                            }
+                        }));
+        }
+
+        return result;
     }
 
     /**

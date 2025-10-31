@@ -106,14 +106,7 @@ public class MdcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, L
 
     }
 
-    /**
-     * Defines a predicate which returns {@code true} if a node is acceptable for a backup
-     * or {@code false} otherwise.
-     * An acceptable node is the one that belongs to a data center that has some additional copies of partition to assign to.
-     * @param candidate A node that is a candidate for becoming a backup node for a partition.
-     * @param previouslySelected A list of primary/backup nodes already chosen for a partition.
-     *                           The primary is first.
-     */
+    /** {@inheritDoc} */
     @Override public boolean apply(ClusterNode candidate, List<ClusterNode> previouslySelected) {
         String candidateDcId = candidate.dataCenterId();
         int candDcCopiesAssigned = 0;
