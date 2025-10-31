@@ -17,18 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -39,14 +30,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteDiagnosticMessage.DiagnosticBaseInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.ExchangeInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.TxEntriesInfo;
 import static org.apache.ignite.internal.IgniteDiagnosticMessage.TxInfo;
-import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpCommunicationInfo;
-import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpExchangeInfo;
-import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpNodeBasicInfo;
-import static org.apache.ignite.internal.IgniteDiagnosticMessage.dumpPendingCacheMessages;
 
 /**
  * Groups diagnostic closures by node/closure type.
@@ -56,7 +42,7 @@ public class IgniteDiagnosticPrepareContext {
     private final UUID locNodeId;
 
     /** */
-    private final Map<UUID, CompoundInfo> info = new HashMap<>();
+    private final Map<UUID, IgniteCompoundDiagnosicInfo> info = new HashMap<>();
 
     /**
      * @param nodeId Local node ID.
@@ -106,11 +92,11 @@ public class IgniteDiagnosticPrepareContext {
      * @param nodeId Remote node ID.
      * @return Compound info.
      */
-    private CompoundInfo compoundInfo(UUID nodeId) {
-        CompoundInfo compoundInfo = info.get(nodeId);
+    private IgniteCompoundDiagnosicInfo compoundInfo(UUID nodeId) {
+        IgniteCompoundDiagnosicInfo compoundInfo = info.get(nodeId);
 
         if (compoundInfo == null)
-            info.put(nodeId, compoundInfo = new CompoundInfo(locNodeId));
+            info.put(nodeId, compoundInfo = new IgniteCompoundDiagnosicInfo(locNodeId));
 
         return compoundInfo;
     }
@@ -127,7 +113,7 @@ public class IgniteDiagnosticPrepareContext {
      * @param lsnr Optional listener (used in test).
      */
     public void send(GridKernalContext ctx, @Nullable IgniteInClosure<IgniteInternalFuture<String>> lsnr) {
-        for (Map.Entry<UUID, CompoundInfo> entry : info.entrySet()) {
+        for (Map.Entry<UUID, IgniteCompoundDiagnosicInfo> entry : info.entrySet()) {
             IgniteInternalFuture<String> fut = ctx.cluster().requestDiagnosticInfo(entry.getKey(), entry.getValue());
 
             if (lsnr != null)
@@ -155,134 +141,5 @@ public class IgniteDiagnosticPrepareContext {
                 }
             }
         });
-    }
-
-    /**
-     *
-     */
-    public static final class CompoundInfo implements Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** ID of node sent info. */
-        private UUID nodeId;
-
-        /** Info to send on remote node. */
-        private Set<DiagnosticBaseInfo> info = new LinkedHashSet<>();
-
-        /** Local message related to remote info. */
-        private transient Map<Object, List<String>> msgs = new LinkedHashMap<>();
-
-        /** Empty constructor required by {@link Externalizable}. */
-        public CompoundInfo() {
-            // No-op.
-        }
-
-        /**
-         * @param nodeId ID of node sent info.
-         */
-        CompoundInfo(UUID nodeId) {
-            this.nodeId = nodeId;
-        }
-
-        /**
-         * @param ctx Grid context.
-         * @return Diagnostic info.
-         */
-        public final IgniteDiagnosticInfo diagnosticInfo(GridKernalContext ctx) {
-            try {
-                IgniteInternalFuture<String> commInfo = dumpCommunicationInfo(ctx, nodeId);
-
-                StringBuilder sb = new StringBuilder();
-
-                dumpNodeBasicInfo(sb, ctx);
-
-                sb.append(U.nl());
-
-                dumpExchangeInfo(sb, ctx);
-
-                sb.append(U.nl());
-
-                dumpPendingCacheMessages(sb, ctx);
-
-                sb.append(commInfo.get(10_000));
-
-                moreInfo(sb, ctx);
-
-                return new IgniteDiagnosticInfo(sb.toString());
-            }
-            catch (Exception e) {
-                ctx.cluster().diagnosticLog().error("Failed to execute diagnostic message closure: " + e, e);
-
-                return new IgniteDiagnosticInfo("Failed to execute diagnostic message closure: " + e);
-            }
-        }
-
-        /**
-         * @param sb String builder.
-         * @param ctx Grid context.
-         */
-        private void moreInfo(StringBuilder sb, GridKernalContext ctx) {
-            for (DiagnosticBaseInfo baseInfo : info) {
-                try {
-                    baseInfo.appendInfo(sb, ctx);
-                }
-                catch (Exception e) {
-                    ctx.cluster().diagnosticLog().error(
-                        "Failed to populate diagnostic with additional information: " + e, e);
-
-                    sb.append(U.nl()).append("Failed to populate diagnostic with additional information: ").append(e);
-                }
-            }
-        }
-
-        /**
-         * @return Initial message.
-         */
-        public String message() {
-            StringBuilder sb = new StringBuilder();
-
-            for (List<String> msgs0 : msgs.values()) {
-                for (String msg : msgs0) {
-                    if (sb.length() > 0)
-                        sb.append('\n');
-
-                    sb.append(msg);
-                }
-            }
-
-            return sb.toString();
-        }
-
-        /**
-         * @param msg Message.
-         * @param baseInfo Info or {@code null} if only basic info is needed.
-         */
-        public void add(String msg, @Nullable DiagnosticBaseInfo baseInfo) {
-            Object key = baseInfo != null ? baseInfo : getClass();
-
-            msgs.computeIfAbsent(key, k -> new ArrayList<>()).add(msg);
-
-            if (baseInfo != null) {
-                if (!info.add(baseInfo) && baseInfo instanceof TxEntriesInfo) {
-                    for (DiagnosticBaseInfo baseInfo0 : info) {
-                        if (baseInfo0.equals(baseInfo))
-                            baseInfo0.merge(baseInfo);
-                    }
-                }
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(nodeId);
-            U.writeCollection(out, info);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            nodeId = (UUID)in.readObject();
-            info = U.readLinkedSet(in);
-        }
     }
 }
