@@ -180,7 +180,15 @@ public class GridJobExecuteResponse implements Message {
 
     /** */
     public void exceptionMsg(@Nullable ErrorMessage gridExMsg) {
-        gridEx = gridExMsg == null ? null : (IgniteException)gridExMsg.error();
+        if(gridExMsg == null){
+            gridEx = null;
+
+            return;
+        }
+
+        Throwable t = gridExMsg.error();
+
+        gridEx = t instanceof IgniteException ? (IgniteException)t : new IgniteException(t);
     }
 
     /** */
