@@ -180,7 +180,7 @@ public class GridJobExecuteResponse implements Message {
 
     /** */
     public void exceptionMsg(@Nullable ErrorMessage gridExMsg) {
-        if(gridExMsg == null){
+        if (gridExMsg == null) {
             gridEx = null;
 
             return;
