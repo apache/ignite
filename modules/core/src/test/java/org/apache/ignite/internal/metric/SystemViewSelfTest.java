@@ -831,7 +831,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testNodes() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, "DCO");
+        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, "DC0");
 
         try (IgniteEx g1 = startGrid(0)) {
             SystemView<ClusterNodeView> views = g1.context().systemView().view(NODES_SYS_VIEW);
@@ -968,6 +968,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         assertEquals(isLoc, view.isLocal());
         assertEquals(node.isClient(), view.isClient());
         assertEquals(node.dataCenterId(), view.dataCenterId());
+        assertEquals("DC0", view.dataCenterId());
     }
 
     /** */
