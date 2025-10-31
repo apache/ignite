@@ -854,7 +854,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
 
         if (!qry.isExchangeWithInitNodeStarted(ectx.fragmentId())) {
             try {
-                messageService().send(origNodeId, new QueryStartResponse(qry.id(), ectx.fragmentId()));
+                messageService().send(origNodeId, new QueryStartResponse(qry.id(), ectx.fragmentId(), null));
             }
             catch (IgniteCheckedException e) {
                 IgniteException wrpEx = new IgniteException("Failed to send reply. [nodeId=" + origNodeId + ']', e);
