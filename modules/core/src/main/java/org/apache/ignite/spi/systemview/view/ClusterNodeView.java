@@ -113,7 +113,7 @@ public class ClusterNodeView {
      * @return Data center ID.
      * @see ClusterNode#dataCenterId()
      */
-    @Order(3)
+    @Order(8)
     public String dataCenterId() {
         return n.dataCenterId();
     }
