@@ -659,7 +659,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             commWorker,
             ignite.configuration(),
             this.srvLsnr,
-            getName(),
+            igniteInstanceName,
             getWorkersRegistry(ignite),
             ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().metric() : null,
             this::createTcpClient,
