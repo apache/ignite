@@ -95,16 +95,26 @@ public class ClusterNodeView {
      * @return {@code True} if node local.
      * @see ClusterNode#isLocal()
      */
+    @Order(7)
     public boolean isLocal() {
         return n.isLocal();
     }
 
     /**
      * @return {@code True} if node is client.
-     * @see ClusterNode#isClient() ()
+     * @see ClusterNode#isClient()
      */
     @Order(3)
     public boolean isClient() {
         return n.isClient();
+    }
+
+    /**
+     * @return Data center ID.
+     * @see ClusterNode#dataCenterId()
+     */
+    @Order(3)
+    public String dataCenterId() {
+        return n.dataCenterId();
     }
 }

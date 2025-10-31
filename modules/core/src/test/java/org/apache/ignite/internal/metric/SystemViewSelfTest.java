@@ -56,6 +56,7 @@ import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -830,6 +831,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testNodes() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, "DCO");
+
         try (IgniteEx g1 = startGrid(0)) {
             SystemView<ClusterNodeView> views = g1.context().systemView().view(NODES_SYS_VIEW);
 
@@ -840,10 +843,12 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
                 checkViewsState(views, g1.localNode(), g2.localNode());
                 checkViewsState(g2.context().systemView().view(NODES_SYS_VIEW), g2.localNode(), g1.localNode());
-
             }
 
             assertEquals(1, views.size());
+        }
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
         }
     }
 
@@ -962,6 +967,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
         assertEquals(node.version().toString(), view.version());
         assertEquals(isLoc, view.isLocal());
         assertEquals(node.isClient(), view.isClient());
+        assertEquals(node.dataCenterId(), view.dataCenterId());
     }
 
     /** */
