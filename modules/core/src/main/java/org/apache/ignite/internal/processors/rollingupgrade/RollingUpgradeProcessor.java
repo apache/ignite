@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.rollingupgrade;
 
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
