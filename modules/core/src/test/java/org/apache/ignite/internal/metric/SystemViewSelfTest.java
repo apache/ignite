@@ -56,7 +56,6 @@ import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -144,12 +143,14 @@ import org.apache.ignite.spi.systemview.view.datastructures.ReentrantLockView;
 import org.apache.ignite.spi.systemview.view.datastructures.SemaphoreView;
 import org.apache.ignite.spi.systemview.view.datastructures.SetView;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_CENTER_ID;
 import static org.apache.ignite.configuration.AtomicConfiguration.DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE;
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.IgniteKernal.CFG_VIEW;
@@ -830,9 +831,8 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    @WithSystemProperty(key = IGNITE_DATA_CENTER_ID, value = "DC0")
     public void testNodes() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, "DC0");
-
         try (IgniteEx g1 = startGrid(0)) {
             SystemView<ClusterNodeView> views = g1.context().systemView().view(NODES_SYS_VIEW);
 
@@ -846,9 +846,6 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             }
 
             assertEquals(1, views.size());
-        }
-        finally {
-            System.clearProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
         }
     }
 
