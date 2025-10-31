@@ -4250,7 +4250,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** If {@code true} then data structures caches will be included in dump. */
         private final boolean inclDs;
 
-        /** If {@code true} then data structures caches will be included in dump. */
+        /** If {@code true} then only cache config and metadata included in snapshot. */
         private final boolean configOnly;
 
         /** Auto-injected grid instance. */

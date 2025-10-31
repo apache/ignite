@@ -1263,6 +1263,40 @@ public class IgniteCacheDumpSelf2Test extends GridCommonAbstractTest {
     }
 
     /** */
+    @Test
+    public void testConfigOnlySnapshotThrows() throws Exception {
+        try (IgniteEx ign = startGrid(0)) {
+            ign.cluster().state(ClusterState.ACTIVE);
+
+            IgniteCache<Integer, Integer> c = ign.createCache(DEFAULT_CACHE_NAME);
+
+            IntStream.range(0, 10).forEach(i -> c.put(i, i));
+
+            IgniteSnapshotManager snpMgr = ign.context().cache().context().snapshotMgr();
+
+            assertThrows(
+                null,
+                () -> {
+                    snpMgr.createSnapshot(
+                        DMP_NAME,
+                        null,
+                        null,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        false,
+                        true
+                    );
+                },
+                IgniteException.class,
+                "Config only supported only for dump"
+            );
+        }
+    }
+
+    /** */
     public class TestCacheConflictResolutionManager<K, V> extends GridCacheManagerAdapter<K, V>
         implements CacheConflictResolutionManager<K, V> {
 
