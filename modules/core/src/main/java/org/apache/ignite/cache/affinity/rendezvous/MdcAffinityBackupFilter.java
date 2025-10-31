@@ -102,8 +102,6 @@ public class MdcAffinityBackupFilter implements IgniteBiPredicate<ClusterNode, L
                 "copies cannot be distributed evenly across DCs. " +
                 "Please adjust the number of backups, " + suggestion);
         }
-
-
     }
 
     /** {@inheritDoc} */

@@ -171,7 +171,8 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
             startGrid(1);
 
             fail("Expected exception was not thrown.");
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             String errMsg = e.getMessage();
 
             assertNotNull(errMsg);
@@ -184,7 +185,8 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
             startGrid(1);
 
             fail("Expected exception was not thrown.");
-        } catch (IgniteCheckedException e) {
+        }
+        catch (IgniteCheckedException e) {
             String errMsg = e.getMessage();
 
             assertNotNull(errMsg);
@@ -232,7 +234,12 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private Map<Integer, Set<UUID>> verifyNoRebalancing(int srvIdx, IgniteEx srv, Map<Integer, Set<UUID>> oldDistribution, Predicate<ClusterNode> dc1NodesFilter) throws InterruptedException {
+    private Map<Integer, Set<UUID>> verifyNoRebalancing(
+        int srvIdx,
+        IgniteEx srv,
+        Map<Integer, Set<UUID>> oldDistribution,
+        Predicate<ClusterNode> dc1NodesFilter
+    ) throws InterruptedException {
         stopGrid(srvIdx);
         awaitPartitionMapExchange();
         IgniteCache<Integer, Integer> cache = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
@@ -255,6 +262,7 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < PARTS_CNT; i++) {
             int j = i;
 
+            // For each partition, collect UUID of all its affinity nodes passing the provided filter.
             aff.mapKeyToPrimaryAndBackups(i)
                 .stream()
                 .filter(dcFilter)
