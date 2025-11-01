@@ -2227,7 +2227,7 @@ public class GridCacheContext<K, V> implements Externalizable {
                 if (locMacs.equals(node.attribute(ATTR_MACS)))
                     return node;
                 else if (localNode().dataCenterId() != null) {
-                    if (node.dataCenterId().equals(localNode().dataCenterId()))
+                    if (localNode().dataCenterId().equals(node.dataCenterId()))
                         return node;
                 }
 
