@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.jetbrains.annotations.Nullable;
@@ -76,7 +77,10 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
-        ring = ((TcpDiscoverySpi)ctx.config().getDiscoverySpi()).discoveryRing();
+        DiscoverySpi spi = ctx.config().getDiscoverySpi();
+
+        if (spi instanceof TcpDiscoverySpi)
+            ring = ((TcpDiscoverySpi)spi).discoveryRing();
 
         startLatch.countDown();
     }
