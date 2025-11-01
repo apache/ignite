@@ -2464,7 +2464,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             PartitionReservationsMap locReserved = partHistSuppliers.getReservations(cctx.localNodeId());
 
             if (locReserved != null) {
-                boolean success = cctx.database().reserveHistoryForPreloading(locReserved.map());
+                boolean success = cctx.database().reserveHistoryForPreloading(locReserved.reservations());
 
                 if (!success) {
                     log.warning("Could not reserve history for historical rebalance " +

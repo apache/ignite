@@ -40,7 +40,7 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Message {
     private static final IgniteDhtPartitionHistorySuppliersMap EMPTY = new IgniteDhtPartitionHistorySuppliersMap();
 
     /** */
-    @Order(0)
+    @Order(value = 0, method = "historySuppliers")
     private Map<UUID, PartitionReservationsMap> map;
 
     /**
@@ -115,16 +115,16 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Message {
     }
 
     /**
-     * @return Map.
+     * @return Partition history suppliers map.
      */
-    public Map<UUID, PartitionReservationsMap> map() {
+    public Map<UUID, PartitionReservationsMap> historySuppliers() {
         return map;
     }
 
     /**
-     * @param map Map.
+     * @param map Partition history suppliers map.
      */
-    public void map(Map<UUID, PartitionReservationsMap> map) {
+    public void historySuppliers(Map<UUID, PartitionReservationsMap> map) {
         this.map = map;
     }
 
