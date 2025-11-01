@@ -399,7 +399,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         // DDL with explicit schema.
         sql("create table my_schema.my_table (f1 int, f2 varchar) with cache_name=\"my_cache0\"");
 
-        checkSize(cache, "my_schema");
+        insertAndCheckSize(cache, "my_schema");
 
         // Cache without SQL configuration.
         cache = client.getOrCreateCache("my_cache1");
@@ -407,7 +407,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         // DDL with implicit PUBLIC schema.
         sql("create table my_table (f1 int, f2 varchar) with cache_name=\"my_cache1\"");
 
-        checkSize(cache, "public");
+        insertAndCheckSize(cache, "public");
 
         // Cache with defined schema.
         cache = client.getOrCreateCache(new CacheConfiguration<>("my_cache2").setSqlSchema("my_schema2"));
@@ -415,7 +415,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         // DDL with explicit correct schema.
         sql("create table my_schema2.my_table (f1 int, f2 varchar) with cache_name=\"my_cache2\"");
 
-        checkSize(cache, "my_schema2");
+        insertAndCheckSize(cache, "my_schema2");
 
         // Cache with defined schema.
         cache = client.getOrCreateCache(new CacheConfiguration<>("my_cache3").setSqlSchema("my_schema3"));
@@ -432,10 +432,10 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         assertThrows("create table my_table2 (f1 int, f2 varchar) with cache_name=\"my_cache3\"",
             IgniteSQLException.class, "Invalid schema: PUBLIC");
 
-        // DDL woth implicit cache schema.
+        // DDL with implicit cache schema.
         cache.query(new SqlFieldsQuery("create table my_table (f1 int, f2 varchar) with cache_name=\"my_cache3\""));
 
-        checkSize(cache, "my_schema3");
+        insertAndCheckSize(cache, "my_schema3");
 
         // Cache with defined SQL functions, schema is defined by cache name.
         cache = client.getOrCreateCache(new CacheConfiguration<>("my_cache4").setSqlFunctionClasses(getClass()));
@@ -447,7 +447,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
         // DDL with explicit correct schema.
         sql("create table \"my_cache4\".my_table (f1 int, f2 varchar) with cache_name=\"my_cache4\"");
 
-        checkSize(cache, "\"my_cache4\"");
+        insertAndCheckSize(cache, "\"my_cache4\"");
 
         // Cache with defined query entities.
         client.getOrCreateCache(new CacheConfiguration<>("my_cache5")
@@ -465,7 +465,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
     }
 
     /** */
-    private void checkSize(IgniteCache<?, ?> cache, String schema) {
+    private void insertAndCheckSize(IgniteCache<?, ?> cache, String schema) {
         sql("insert into " + schema + ".my_table(f1, f2) values (1, '1'),(2, '2')");
 
         assertThat(sql("select * from " + schema + ".my_table"), hasSize(2));
