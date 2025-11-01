@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import org.apache.ignite.spi.discovery.AbstractDiscoverySelfTest;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
@@ -33,7 +34,11 @@ public class TcpDiscoverySpiSelfTest extends AbstractDiscoverySelfTest<TcpDiscov
 
     /** {@inheritDoc} */
     @Override protected DiscoverySpi getSpi(int idx) {
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
+        TcpDiscoverySpi spi = new TcpDiscoverySpi() {
+            @Override void onRingInitialized(TcpDiscoveryNodesRing ring) {
+                // No-op.
+            }
+        };
 
         spi.setMetricsProvider(createMetricsProvider());
         spi.setIpFinder(ipFinder);
