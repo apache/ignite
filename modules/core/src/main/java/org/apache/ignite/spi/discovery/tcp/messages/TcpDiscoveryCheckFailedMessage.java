@@ -65,7 +65,7 @@ public class TcpDiscoveryCheckFailedMessage extends TcpDiscoveryAbstractMessage 
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -1000;
+        return 0;
     }
 
     /** {@inheritDoc} */
