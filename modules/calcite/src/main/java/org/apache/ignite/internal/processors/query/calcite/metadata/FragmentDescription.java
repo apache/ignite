@@ -119,14 +119,8 @@ public class FragmentDescription implements MarshalableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) {
-        if (mapping != null)
-            mapping.prepareMarshal(ctx);
-
-        if (target != null) {
+        if (target != null)
             target = target.explicitMapping();
-
-            target.prepareMarshal(ctx);
-        }
 
         if (remoteSources0 == null && remoteSources != null) {
             remoteSources0 = U.newHashMap(remoteSources.size());
@@ -138,12 +132,6 @@ public class FragmentDescription implements MarshalableMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) {
-        if (mapping != null)
-            mapping.prepareUnmarshal(ctx);
-
-        if (target != null)
-            target.prepareUnmarshal(ctx);
-
         if (remoteSources == null && remoteSources0 != null) {
             remoteSources = U.newHashMap(remoteSources0.size());
 
