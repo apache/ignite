@@ -46,7 +46,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecordSerializationTest;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecordTest;
 import org.apache.ignite.internal.processors.cache.CacheLocalGetSerializationTest;
 import org.apache.ignite.internal.processors.cache.CacheLockCandidatesThreadTest;
-import org.apache.ignite.internal.processors.cache.CacheMdcGetTest;
+import org.apache.ignite.internal.processors.cache.MdcCacheReadRequestsRoutingTest ;
 import org.apache.ignite.internal.processors.cache.GridLongRunningInitNewCrdFutureDiagnosticsTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClassNameConflictTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClientRequestsMappingOnMissTest;
