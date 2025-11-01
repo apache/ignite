@@ -221,6 +221,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.singleton;
 import static java.util.Optional.ofNullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_CENTER_ID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -236,6 +237,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_DATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_CENTER_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
@@ -1464,7 +1466,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 String name = sysEntry.getKey();
 
                 if (incProps == null || U.containsStringArray(incProps, name, true) ||
-                    U.isVisorNodeStartProperty(name) || U.isSystemRequiredProperty(name))
+                    U.isVisorNodeStartProperty(name) || U.isVisorRequiredProperty(name))
                     ctx.addNodeAttribute(name, sysEntry.getValue());
             }
 
@@ -1483,7 +1485,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 String key = (String)e.getKey();
 
                 if (incProps == null || U.containsStringArray(incProps, key, true) ||
-                    U.isSystemRequiredProperty(key)) {
+                    U.isVisorRequiredProperty(key)) {
                     Object val = ctx.nodeAttribute(key);
 
                     if (val != null && !val.equals(e.getValue()))
@@ -1605,6 +1607,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         // Save transactions configuration.
         add(ATTR_TX_SERIALIZABLE_ENABLED, cfg.getTransactionConfiguration().isTxSerializableEnabled());
         add(ATTR_TX_AWARE_QUERIES_ENABLED, cfg.getTransactionConfiguration().isTxAwareQueriesEnabled());
+
+        if (IgniteSystemProperties.getString(IGNITE_DATA_CENTER_ID) != null)
+            add(ATTR_DATA_CENTER_ID, IgniteSystemProperties.getString(IGNITE_DATA_CENTER_ID));
+        else if (userAttrs != null && userAttrs.get(IGNITE_DATA_CENTER_ID) != null)
+            add(ATTR_DATA_CENTER_ID, (Serializable)userAttrs.get(IGNITE_DATA_CENTER_ID));
 
         // Stick in SPI versions and classes attributes.
         addSpiAttributes(cfg.getCollisionSpi());

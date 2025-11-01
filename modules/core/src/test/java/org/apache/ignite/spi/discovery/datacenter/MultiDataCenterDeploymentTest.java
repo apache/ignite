@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
@@ -70,7 +71,7 @@ public class MultiDataCenterDeploymentTest extends GridCommonAbstractTest {
         assertNotNull("Data Center ID of the node should not be null", dcId);
         assertEquals(DC_ID_0, dcId);
 
-        String dcIdFromAttr = testGrid.localNode().attribute(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
+        String dcIdFromAttr = testGrid.localNode().attribute(IgniteNodeAttributes.ATTR_DATA_CENTER_ID);
         assertNotNull("Data Center ID of the node should not be null", dcIdFromAttr);
         assertEquals(DC_ID_0, dcIdFromAttr);
     }

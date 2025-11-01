@@ -22,8 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
@@ -184,7 +184,7 @@ public interface ClusterNode extends BaselineNode {
      */
     @IgniteExperimental
     @Nullable public default String dataCenterId() {
-        return attribute(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
+        return attribute(IgniteNodeAttributes.ATTR_DATA_CENTER_ID);
     }
 
     /**

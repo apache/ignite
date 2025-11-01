@@ -50,7 +50,9 @@ import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_REBALANCING_CANCELLATION_OPTIMIZATION;
@@ -320,13 +322,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /**
      * Retains nodes which satisfy filter. Returns original list if result set is empty.
      */
-    private <T> List<T> retainNodesNotEmpty(List<T> nodes, Predicate<T> filter) {
-        List<T> nodes0 = new ArrayList<>(nodes.size());
-
-        for (T node : nodes) {
-            if (filter.test(node))
-                nodes0.add(node);
-        }
+    private <T> List<T> retainNodesNotEmpty(List<T> nodes, IgnitePredicate<T> filter) {
+        List<T> nodes0 = U.arrayList(nodes, filter);
 
         return !F.isEmpty(nodes0) ? nodes0 : nodes;
     }
