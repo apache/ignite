@@ -409,8 +409,11 @@ public class ClusterCachesInfo {
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cachePreloadMode",
             "Cache preload mode", locAttr.cacheRebalanceMode(), rmtAttr.cacheRebalanceMode(), true);
 
-        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "topologyValidator",
-            "Cache topology validator", locAttr.topologyValidatorClassName(), rmtAttr.topologyValidatorClassName(), true);
+        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "topologyValidatorClass",
+            "Cache topology validator class", locAttr.topologyValidatorClassName(), rmtAttr.topologyValidatorClassName(), true);
+
+        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "topologyValidator", "Cache topology validator",
+            locAttr.configuration().getTopologyValidator(), rmtAttr.configuration().getTopologyValidator(), true);
 
         ClusterNode rmtNode = ctx.discovery().node(rmt);
 
@@ -2576,8 +2579,11 @@ public class ClusterCachesInfo {
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "dataRegionName", "Data region",
             cfg.getDataRegionName(), startCfg.getDataRegionName(), true);
 
-        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "topologyValidator", "Topology validator",
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "topologyValidatorClass", "Topology validator class",
             attr1.topologyValidatorClassName(), attr2.topologyValidatorClassName(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "topologyValidator", "Topology validator",
+            cfg.getTopologyValidator(), startCfg.getTopologyValidator(), true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "partitionLossPolicy", "Partition Loss Policy",
             cfg.getPartitionLossPolicy(), startCfg.getPartitionLossPolicy(), true);

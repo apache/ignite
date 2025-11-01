@@ -112,10 +112,19 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         SnapshotMetadata meta = opCtx.metadata();
 
-        Map<Integer, Set<Integer>> grps = F.isEmpty(opCtx.groups())
-            ? new HashMap<>(meta.partitions())
-            : opCtx.groups().stream().map(CU::cacheId)
-                .collect(Collectors.toMap(Function.identity(), grpId -> meta.partitions().getOrDefault(grpId, Collections.emptySet())));
+        Map<Integer, Set<Integer>> grps;
+
+        if (F.isEmpty(opCtx.groups()))
+            grps = new HashMap<>(meta.partitions());
+        else {
+            grps = opCtx.groups().stream()
+                .map(CU::cacheId)
+                .filter(meta.partitions()::containsKey) // Filter out groups for which there are no partitions in snapshot.
+                .collect(Collectors.toMap(
+                    Function.identity(),
+                    grpId -> meta.partitions().get(grpId))
+                );
+        }
 
         if (type() == SnapshotHandlerType.CREATE) {
             grps.entrySet().removeIf(e -> {

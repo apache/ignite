@@ -63,6 +63,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
+import org.apache.ignite.topology.MdcTopologyValidator;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
@@ -2221,6 +2222,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setTopologyValidator(TopologyValidator topValidator) {
+        try {
+            if (topValidator instanceof MdcTopologyValidator)
+                ((MdcTopologyValidator)topValidator).checkConfiguration();
+        }
+        catch (Exception e) {
+            throw new CacheException(e);
+        }
+
         this.topValidator = topValidator;
 
         return this;
