@@ -54,6 +54,8 @@ public class MultiDataCenterDeploymentTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
     }
 
     /**

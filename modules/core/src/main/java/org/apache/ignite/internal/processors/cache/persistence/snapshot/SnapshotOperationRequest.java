@@ -82,6 +82,9 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
     /** If {@code true} then content of dump encrypted. */
     private final boolean encrypt;
 
+    /** If {@code true} then only cache config and metadata included in snapshot. */
+    private final boolean configOnly;
+
     /**
      * @param reqId Request ID.
      * @param opNodeId Operational node ID.
@@ -95,6 +98,7 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
      * @param dump If {@code true} then create dump.
      * @param compress If {@code true} then compress partition files.
      * @param encrypt If {@code true} then content of dump encrypted.
+     * @param configOnly If {@code true} then only cache config and metadata included in snapshot.
      */
     public SnapshotOperationRequest(
         UUID reqId,
@@ -108,7 +112,8 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
         boolean onlyPrimary,
         boolean dump,
         boolean compress,
-        boolean encrypt
+        boolean encrypt,
+        boolean configOnly
     ) {
         super(reqId, snpName, snpPath, grps, incIdx, nodes);
 
@@ -119,6 +124,7 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
         this.dump = dump;
         this.compress = compress;
         this.encrypt = encrypt;
+        this.configOnly = configOnly;
     }
 
     /**
@@ -170,6 +176,11 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
     /** @return If {@code true} then content of dump encrypted. */
     public boolean encrypt() {
         return encrypt;
+    }
+
+    /** @return If {@code true} then only cache config and metadata included in snapshot. */
+    public boolean configOnly() {
+        return configOnly;
     }
 
     /**
