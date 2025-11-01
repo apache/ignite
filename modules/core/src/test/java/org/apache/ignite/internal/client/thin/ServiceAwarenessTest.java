@@ -98,18 +98,12 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     /** */
     private static ListeningTestLogger clientLogLsnr;
 
-    /** */
-    private final UUID[] nodeIds = new UUID[BASE_NODES_CNT + TOP_UPD_NODES_CNT];
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        int nodeIdx = getTestIgniteInstanceIndex(igniteInstanceName);
-
         cfg.setDiscoverySpi(new TestBlockingDiscoverySpi());
-        cfg.setNodeId(nodeIds[nodeIdx]);
-        cfg.setUserAttributes(Collections.singletonMap(ATTR_NODE_IDX, nodeIdx));
+        cfg.setUserAttributes(Collections.singletonMap(ATTR_NODE_IDX, getTestIgniteInstanceIndex(igniteInstanceName)));
 
         return cfg;
     }
@@ -161,9 +155,6 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
-
-        for (int i = 0; i < nodeIds.length; i++)
-            nodeIds[i] = UUID.randomUUID();
 
         startGrids(BASE_NODES_CNT);
 
@@ -369,19 +360,22 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
     /** */
     private void doTestClusterTopChangesWhileServiceCalling(boolean shrinkTop, int svcInvokeThreads) throws Exception {
-        Set<UUID> expInitSvcTop = shrinkTop ? nodeIds(1, 2, 4, 5, 6) : nodeIds(1, 2);
-        Set<UUID> expUpdSvcTop = shrinkTop ? nodeIds(1, 2) : nodeIds(1, 2, 4, 5, 6);
-
         // Start additional nodes to stop them.
-        if (shrinkTop)
-            startGridsMultiThreaded(BASE_NODES_CNT, TOP_UPD_NODES_CNT);
+        if (shrinkTop) {
+            for (int nodeIdx = BASE_NODES_CNT; nodeIdx < BASE_NODES_CNT + TOP_UPD_NODES_CNT; nodeIdx++)
+                startGrid(nodeIdx);
+        }
 
-        // Service topology on the clients.
-        AtomicReference<Set<UUID>> actualSvcTop = new AtomicReference<>();
+        Set<UUID> expInitSvcTop = resolveServiceTopology();
 
-        registerServiceTopologyUpdateListener(actualSvcTop::set);
+        assertEquals(shrinkTop ? 5 : 2, expInitSvcTop.size());
 
-        AtomicBoolean isTestStopped = new AtomicBoolean();
+        // Last detected service topology on the client side.
+        AtomicReference<Set<UUID>> svcTop = new AtomicReference<>();
+
+        registerServiceTopologyUpdateListener(svcTop::set);
+
+        AtomicBoolean stopFlag = new AtomicBoolean();
 
         try (IgniteClient client = startClient()) {
             ServicesTest.TestServiceInterface svc = client.services().serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
@@ -404,13 +398,13 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
                                 && expInitSvcTop.stream().anyMatch(id -> errMsg.contains(id.toString())));
                         }
                     }
-                    while (!isTestStopped.get());
+                    while (!stopFlag.get());
                 },
                 svcInvokeThreads,
                 "ServiceTestLoader"
             );
 
-            assertTrue(waitForCondition(() -> expInitSvcTop.equals(actualSvcTop.get()), getTestTimeout()));
+            assertTrue(waitForCondition(() -> expInitSvcTop.equals(svcTop.get()), getTestTimeout()));
 
             Collection<IgniteInternalFuture<?>> topUpdFuts = ConcurrentHashMap.newKeySet();
 
@@ -425,17 +419,21 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
                 }));
             }
 
-            assertTrue(waitForCondition(() -> expUpdSvcTop.equals(actualSvcTop.get()), getTestTimeout()));
-
             for (IgniteInternalFuture<?> topUpdFut : topUpdFuts)
                 topUpdFut.get(getTestTimeout());
 
-            isTestStopped.set(true);
+            Set<UUID> expUpdSvcTop = resolveServiceTopology();
+
+            assertEquals(shrinkTop ? 2 : 5, expUpdSvcTop.size());
+
+            assertTrue(waitForCondition(() -> expUpdSvcTop.equals(svcTop.get()), getTestTimeout()));
+
+            stopFlag.set(true);
 
             svcInvokeFut.get(getTestTimeout());
         }
         finally {
-            isTestStopped.set(true);
+            stopFlag.set(true);
         }
     }
 
@@ -612,8 +610,12 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     }
 
     /** */
-    private Set<UUID> nodeIds(int... nodeIdxs) {
-        return Arrays.stream(nodeIdxs).mapToObj(idx -> nodeIds[idx]).collect(Collectors.toSet());
+    private static Set<UUID> resolveServiceTopology() {
+        return G.allGrids().stream()
+            .map(g -> g.cluster().localNode())
+            .filter(TestNodeFilter::test)
+            .map(ClusterNode::id)
+            .collect(Collectors.toSet());
     }
 
     /**
@@ -625,6 +627,11 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
+            return test(node);
+        }
+
+        /** */
+        static boolean test(ClusterNode node) {
             int nodeIdx = node.attribute(ATTR_NODE_IDX);
 
             return nodeIdx == 1 || nodeIdx == 2 || nodeIdx >= BASE_NODES_CNT;
