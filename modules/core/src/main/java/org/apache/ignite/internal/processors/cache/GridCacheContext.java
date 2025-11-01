@@ -2226,6 +2226,10 @@ public class GridCacheContext<K, V> implements Externalizable {
             if ((canRemap || discovery().alive(node)) && !invalidNodes.contains(node)) {
                 if (locMacs.equals(node.attribute(ATTR_MACS)))
                     return node;
+                else if (localNode().dataCenterId() != null) {
+                    if (localNode().dataCenterId().equals(node.dataCenterId()))
+                        return node;
+                }
 
                 if (r >= 0 || n0 == null)
                     n0 = node;

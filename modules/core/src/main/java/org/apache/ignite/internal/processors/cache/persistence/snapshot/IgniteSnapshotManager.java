@@ -976,6 +976,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!isPersistenceEnabled(cctx.gridConfig()) && req.snapshotPath() == null)
             ft.mkdirSnapshotsRoot();
 
+        if (req.configOnly() && !req.dump())
+            throw new IgniteException("Config only flag supported only for dump");
+
         Map<Integer, Set<Integer>> parts = new HashMap<>();
 
         // Prepare collection of pairs group and appropriate cache partition to be snapshot.
@@ -988,7 +991,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             AffinityTopologyVersion topVer = grpCtx.affinity().lastVersion();
 
-            if (req.onlyPrimary()) {
+            if (req.onlyPrimary() && !req.configOnly()) {
                 Set<Integer> include = new HashSet<>(grpCtx.affinity().primaryPartitions(cctx.localNodeId(), topVer));
 
                 include.remove(INDEX_PARTITION);
@@ -1012,6 +1015,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             req.dump(),
             req.compress(),
             req.encrypt(),
+            req.configOnly(),
             locSndrFactory.apply(req.snapshotFileTree())
         );
 
@@ -1639,7 +1643,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Void> createDump(String name, @Nullable Collection<String> cacheGrpNames) {
-        return createSnapshot(name, null, cacheGrpNames, false, false, true, false, false, false);
+        return createSnapshot(name, null, cacheGrpNames, false, false, true, false, false, false, false);
     }
 
     /**
@@ -1882,7 +1886,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean incremental,
         boolean onlyPrimary
     ) {
-        return createSnapshot(name, snpPath, null, incremental, onlyPrimary, false, false, false, false);
+        return createSnapshot(name, snpPath, null, incremental, onlyPrimary, false, false, false, false, false);
     }
 
     /**
@@ -1902,6 +1906,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param compress If {@code true} then compress partition files.
      * @param encrypt If {@code true} then content of dump encrypted.
      * @param inclDs If {@code true} then data structures caches will be included in dump.
+     * @param configOnly If {@code true} then only cache config and metadata included in snapshot.
      * @return Future which will be completed when a process ends.
      */
     public IgniteFutureImpl<Void> createSnapshot(
@@ -1913,7 +1918,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean dump,
         boolean compress,
         boolean encrypt,
-        boolean inclDs
+        boolean inclDs,
+        boolean configOnly
     ) {
         A.notNullOrEmpty(name, "Snapshot name cannot be null or empty.");
         A.ensure(U.alphanumericUnderscore(name), "Snapshot name must satisfy the following name pattern: a-zA-Z0-9_");
@@ -1922,6 +1928,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         A.ensure(!(cacheGrpNames != null && !dump), "Cache group names filter supported only for dump");
         A.ensure(!compress || dump, "Compression is supported only for dumps");
         A.ensure(!inclDs || dump, "Data structures can't be written into snapshot");
+        A.ensure(!configOnly || dump, "Config only supported only for dump");
 
         try {
             cctx.kernalContext().security().authorize(ADMIN_SNAPSHOT);
@@ -1951,7 +1958,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             dump,
                             compress,
                             encrypt,
-                            inclDs
+                            inclDs,
+                            configOnly
                         ),
                         options(Collections.singletonList(crd)).withFailoverDisabled()
                     ));
@@ -2072,7 +2080,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     onlyPrimary,
                     dump,
                     compress,
-                    encrypt
+                    encrypt,
+                    configOnly
             );
 
             startSnpProc.start(snpFut0.rqId, snpOpReq);
@@ -2363,6 +2372,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param dump {@code true} if cache group dump must be created.
      * @param compress If {@code true} then compress partition files.
      * @param encrypt If {@code true} then content of dump encrypted.
+     * @param configOnly If {@code true} then only cache config and metadata included in snapshot.
      * @param snpSndr Factory which produces snapshot receiver instance.
      * @return Snapshot operation task which should be registered on checkpoint to run.
      */
@@ -2375,6 +2385,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         boolean dump,
         boolean compress,
         boolean encrypt,
+        boolean configOnly,
         SnapshotSender snpSndr
     ) {
         AbstractSnapshotFutureTask<?> task = registerTask(sft.name(), dump
@@ -2387,7 +2398,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 snpSndr,
                 parts,
                 compress,
-                encrypt
+                encrypt,
+                configOnly
             )
             : new SnapshotFutureTask(
                 cctx,
@@ -4238,6 +4250,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         /** If {@code true} then data structures caches will be included in dump. */
         private final boolean inclDs;
 
+        /** If {@code true} then only cache config and metadata included in snapshot. */
+        private final boolean configOnly;
+
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
         private transient IgniteEx ignite;
@@ -4251,6 +4266,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
          * @param comprParts If {@code true} then compress partition files.
          * @param encrypt If {@code true} then content of dump encrypted.
          * @param inclDs If {@code true} then data structures caches will be included in dump.
+         * @param configOnly If {@code true} then only cache config and metadata included in snapshot.
          */
         public CreateSnapshotCallable(
             String snpName,
@@ -4260,7 +4276,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             boolean dump,
             boolean comprParts,
             boolean encrypt,
-            boolean inclDs
+            boolean inclDs,
+            boolean configOnly
         ) {
             this.snpName = snpName;
             this.cacheGrpNames = cacheGrpNames;
@@ -4270,6 +4287,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             this.comprParts = comprParts;
             this.encrypt = encrypt;
             this.inclDs = inclDs;
+            this.configOnly = configOnly;
         }
 
         /** {@inheritDoc} */
@@ -4286,7 +4304,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     dump,
                     comprParts,
                     encrypt,
-                    inclDs
+                    inclDs,
+                    configOnly
                 ).get();
             }
 

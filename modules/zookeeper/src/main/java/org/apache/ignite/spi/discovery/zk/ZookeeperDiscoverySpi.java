@@ -65,7 +65,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_CENTER_ID;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
 
 /**
@@ -532,8 +531,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
 
         ZookeeperClusterNode locNode = new ZookeeperClusterNode(
             cfg.getNodeId(),
-            //TODO remove usage of internal API when an alternative from public API is available
-            (String)((IgniteEx)ignite).context().nodeAttributes().get(ATTR_DATA_CENTER_ID),
             addrs.get1(),
             addrs.get2(),
             locNodeVer,
