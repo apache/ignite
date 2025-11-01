@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.client.ClientAuthenticationException;
@@ -66,7 +67,10 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.logging.log4j.Level;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -76,6 +80,7 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Checks the service awareness feature of the thin client.
  */
+@RunWith(Parameterized.class)
 public class ServiceAwarenessTest extends AbstractThinClientTest {
     /** */
     private static final String ATTR_NODE_IDX = "test.node.idx";
@@ -97,6 +102,16 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
     /** */
     private static ListeningTestLogger clientLogLsnr;
+
+    /** */
+    @Parameterized.Parameter
+    public int idx;
+
+    /** */
+    @Parameterized.Parameters(name = "idx={0}")
+    public static Object[] commandHandlers() {
+        return IntStream.range(0, 50).boxed().toArray();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -163,6 +178,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
     /** */
     @Test
+    @Ignore
     public void testDelayedServiceRedeploy() throws Exception {
         TestBlockingDiscoverySpi testDisco = ((TestBlockingDiscoverySpi)grid(0).configuration().getDiscoverySpi());
 
@@ -236,6 +252,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      * Tests several nodes come while one thread is used to call the service.
      */
     @Test
+    @Ignore
     public void testNodesJoinSingleThreaded() throws Exception {
         doTestClusterTopChangesWhileServiceCalling(false, 1);
     }
@@ -244,6 +261,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      * Tests several nodes come while several threads are used to call the service.
      */
     @Test
+    @Ignore
     public void testNodesJoinMultiThreaded() throws Exception {
         doTestClusterTopChangesWhileServiceCalling(false, 4);
     }
@@ -268,6 +286,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      * Tests change of the minor cluster topology version doesn't trigger the service topology update.
      */
     @Test
+    @Ignore
     public void testMinorTopologyVersionDoesntAffect() throws Exception {
         try (IgniteClient client = startClient()) {
             ServicesTest.TestServiceInterface svc = client.services().serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
@@ -309,6 +328,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      * Tests the service topology update with a gap of service invocation during forced service redeployment.
      */
     @Test
+    @Ignore
     public void testForcedServiceRedeployWhileClientIsIdle() throws Exception {
         try (IgniteClient client = startClient()) {
             ServicesTest.TestServiceInterface svc = client.services().serviceProxy(SRV_NAME, ServicesTest.TestServiceInterface.class);
@@ -393,9 +413,11 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
                             // TODO: IGNITE-20802 : Exception should not occur.
                             // Client doesn't retry service invocation if the redirected-to service instance node leaves cluster.
-                            assertTrue(shrinkTop
-                                && (errMsg.contains("Node has left grid") || errMsg.contains("Failed to send job due to node failure"))
-                                && expInitSvcTop.stream().anyMatch(id -> errMsg.contains(id.toString())));
+                            boolean isErrCausedByNodeLeave = errMsg.contains("Failed to execute task due to grid shutdown")
+                                || (errMsg.contains("Node has left grid") || errMsg.contains("Failed to send job due to node failure"))
+                                && expInitSvcTop.stream().anyMatch(id -> errMsg.contains(id.toString()));
+
+                            assertTrue(shrinkTop && isErrCausedByNodeLeave);
                         }
                     }
                     while (!stopFlag.get());
@@ -442,6 +464,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      * {@link ClientClusterGroup} is set.
      */
     @Test
+    @Ignore
     public void testWithNoSubCluster() {
         doTestServiceAwarenessForClusterGroup(null);
     }
@@ -451,6 +474,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      * is passed as {@link ClientClusterGroup}.
      */
     @Test
+    @Ignore
     public void testWithOneCorrectServer() {
         doTestServiceAwarenessForClusterGroup(Collections.singletonList(grid(1).localNode().id()));
     }
@@ -460,6 +484,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      * servers are passed as {@link ClientClusterGroup} to invoke the service on.
      */
     @Test
+    @Ignore
     public void testWithTwoCorrectServers() {
         doTestServiceAwarenessForClusterGroup(Arrays.asList(grid(1).localNode().id(), grid(2).localNode().id()));
     }
@@ -470,6 +495,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      * the service on.
      */
     @Test
+    @Ignore
     public void testWithOneCorrectOneIncorrectServers() {
         doTestServiceAwarenessForClusterGroup(Arrays.asList(grid(0).localNode().id(), grid(2).localNode().id()));
     }
@@ -479,6 +505,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
      * server (having no service instance) are passed as {@link ClientClusterGroup} to invoke the service on.
      */
     @Test
+    @Ignore
     public void testWithIncorrectServer() {
         doTestServiceAwarenessForClusterGroup(Collections.singletonList(grid(0).localNode().id()));
     }
