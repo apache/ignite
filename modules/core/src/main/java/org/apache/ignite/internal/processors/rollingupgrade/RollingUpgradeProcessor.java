@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.rollingupgrade;
 
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -60,6 +61,9 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     /** Lock for synchronization between tcp-disco-msg-worker thread and management operations. */
     private final Object lock = new Object();
 
+    /** */
+    private final CountDownLatch startLatch = new CountDownLatch(1);
+
     /** Pair with current and target versions. {@code null} when rolling upgrade is disabled. */
     @Nullable private volatile IgnitePair<IgniteProductVersion> rollUpVers;
 
@@ -68,6 +72,13 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      */
     public RollingUpgradeProcessor(GridKernalContext ctx) {
         super(ctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        ring = ((TcpDiscoverySpi)ctx.config().getDiscoverySpi()).discoveryRing();
+
+        startLatch.countDown();
     }
 
     /** {@inheritDoc} */
@@ -149,6 +160,9 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      *     </ul>
      */
     public void enable(IgniteProductVersion target) throws IgniteCheckedException {
+        if (startLatch.getCount() > 0)
+            throw new IgniteCheckedException("Cannot enable rolling upgrade: processor has not been started yet");
+
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
             throw new IgniteCheckedException("Rolling upgrade can be enabled only on coordinator node");
 
@@ -253,13 +267,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
     /** Checks whether the cluster is in the rolling upgrade mode. */
     public boolean enabled() {
         return versions() != null;
-    }
-
-    /**
-     * @param ring TCP discovery nodes ring.
-     */
-    public void ring(TcpDiscoveryNodesRing ring) {
-        this.ring = ring;
     }
 
     /**

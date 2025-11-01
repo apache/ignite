@@ -475,8 +475,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             statsPrinter.start();
         }
 
-        spi.onRingInitialized(ring);
-
         joinTopology();
 
         if (locNode.order() == 1)

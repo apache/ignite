@@ -505,6 +505,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         return getNode(id);
     }
 
+    /**
+     * @return TCP discovery nodes ring.
+     */
+    @Nullable public TcpDiscoveryNodesRing discoveryRing() {
+        if (impl instanceof ServerImpl)
+            return ((ServerImpl)impl).ring();
+
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean pingNode(UUID nodeId) {
         return impl.pingNode(nodeId);
@@ -2091,14 +2101,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             dataBag = dataPacket.unmarshalJoiningNodeDataSilently(marshaller(), clsLdr, locNode.clientRouterNodeId() != null, log);
 
         exchange.onExchange(dataBag);
-    }
-
-    /**
-     * @param ring TCP discovery nodes ring.
-     */
-    void onRingInitialized(TcpDiscoveryNodesRing ring) {
-        if (ignite() instanceof IgniteEx)
-            ((IgniteEx)ignite()).context().rollingUpgrade().ring(ring);
     }
 
     /** {@inheritDoc} */
