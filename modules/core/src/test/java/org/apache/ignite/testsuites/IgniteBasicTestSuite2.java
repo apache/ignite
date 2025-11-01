@@ -229,7 +229,7 @@ import org.junit.runners.Suite;
     PeriodicHistogramMetricImplTest.class,
 
     FreeListCutTailDifferentGcTest.class,
-    CacheMdcGetTest.class,
+    MdcCacheReadRequestsRoutingTest .class,
 })
 public class IgniteBasicTestSuite2 {
 }
