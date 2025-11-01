@@ -128,7 +128,7 @@ public class MdcCacheReadRequestsRoutingTest extends GridCommonAbstractTest {
         cache.put(KEY, VAL);
 
         for (int i = 0; i < nodes; i++) {
-            if (Objects.equals(grid(i).localNode().dataCenterId(), DC_ID_1)) {
+            if (Objects.equals(grid(i).localNode().dataCenterId(), bool ? DC_ID_1 : DC_ID_0)) {
                 TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(grid(i));
 
                 spi.blockMessages((n, msg) -> true);
