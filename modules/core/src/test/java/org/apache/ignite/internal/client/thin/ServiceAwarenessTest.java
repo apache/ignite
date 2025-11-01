@@ -376,9 +376,8 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
             }, getTestTimeout(), 50));
         }
 
-        Set<UUID> expInitSvcTop = shrinkTop ? nodeIds(BASE_NODES_CNT + TOP_UPD_NODES_CNT) : nodeIds(TOP_UPD_NODES_CNT);
-        Set<UUID> expUpdSvcTop = new GridConcurrentHashSet<>(shrinkTop ? nodeIds(TOP_UPD_NODES_CNT)
-            : nodeIds(BASE_NODES_CNT + TOP_UPD_NODES_CNT));
+        Set<UUID> expInitSvcTop = shrinkTop ? serviceNodeIds(BASE_NODES_CNT + TOP_UPD_NODES_CNT) : serviceNodeIds(TOP_UPD_NODES_CNT);
+        Set<UUID> expUpdSvcTop = shrinkTop ? serviceNodeIds(TOP_UPD_NODES_CNT) : serviceNodeIds(BASE_NODES_CNT + TOP_UPD_NODES_CNT);
 
         // Service topology on the clients.
         AtomicReference<Set<UUID>> actualSvcTop = new AtomicReference<>();
@@ -616,7 +615,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
     }
 
     /** */
-    private Set<UUID> nodeIds(int maxNodeIdExcluded) {
+    private Set<UUID> serviceNodeIds(int maxNodeIdExcluded) {
         return IntStream.range(0, maxNodeIdExcluded).filter(TestNodeFilter::test).mapToObj(idx -> grid(idx).localNode().id())
             .collect(Collectors.toSet());
     }
