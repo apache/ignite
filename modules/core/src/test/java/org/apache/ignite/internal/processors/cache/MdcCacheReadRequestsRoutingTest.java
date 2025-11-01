@@ -55,12 +55,14 @@ public class MdcCacheReadRequestsRoutingTest extends GridCommonAbstractTest {
     private static final String VAL = "val";
 
     /** */
-    @Parameterized.Parameters(name = "atomicity={0}")
+    @Parameterized.Parameters(name = "atomicity={0}, replicated={1}")
     public static Iterable<Object[]> data() {
         List<Object[]> res = new ArrayList<>();
 
         for (CacheAtomicityMode mode : CacheAtomicityMode.values()) {
-            res.add(new Object[] {mode});
+            for (boolean replicated : new boolean[] {true, false}) {
+                res.add(new Object[] {mode, replicated});
+            }
         }
 
         return res;
@@ -69,6 +71,10 @@ public class MdcCacheReadRequestsRoutingTest extends GridCommonAbstractTest {
     /** */
     @Parameterized.Parameter()
     public CacheAtomicityMode atomicityMode;
+
+    /** */
+    @Parameterized.Parameter(1)
+    public boolean replicated;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -94,7 +100,7 @@ public class MdcCacheReadRequestsRoutingTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testReadFromReplicatedCache() throws Exception {
+    public void testReadFromCache() throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         boolean bool = rnd.nextBoolean();
@@ -120,7 +126,12 @@ public class MdcCacheReadRequestsRoutingTest extends GridCommonAbstractTest {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode);
-        ccfg.setCacheMode(CacheMode.REPLICATED);
+
+        if (replicated)
+            ccfg.setCacheMode(CacheMode.REPLICATED);
+        else
+            ccfg.setBackups(rnd.nextInt(nodes / 2 + 1 /*at least one in every DC*/, nodes /*less than all nodes*/));
+
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         IgniteCache<Object, Object> cache = client.createCache(ccfg);
