@@ -241,11 +241,15 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
         Ignite ldr = clientLdr ? cli : srvr;
 
+        log.error("TEST | step 1");
+
         GridMetricManager metricsMgr = ((IgniteEx)ldr).context().metric();
         MetricRegistryImpl mreg0 = metricsMgr.registry(ConnectionClientPool.SHARED_METRICS_REGISTRY_NAME);
 
         assertEquals(connsPerNode, mreg0.<IntMetric>findMetric(ConnectionClientPool.METRIC_NAME_POOL_SIZE).value());
         assertEquals(pairedConns, mreg0.<BooleanGauge>findMetric(ConnectionClientPool.METRIC_NAME_PAIRED_CONNS).value());
+
+        log.error("TEST | step 2");
 
         AtomicBoolean runFlag = new AtomicBoolean(true);
         AtomicLong loadCnt = new AtomicLong(preloadCnt);
@@ -256,6 +260,8 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, () -> msg, loadCnt);
 
         assertTrue(waitForCondition(() -> loadCnt.get() <= 0 || !runFlag.get(), getTestTimeout(), 25));
+
+        log.error("TEST | step 3");
 
         long loadMillis1 = System.currentTimeMillis() - loadMillis0;
 
@@ -277,21 +283,33 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             assertTrue(waitForCondition(() -> connsPerNode == mreg.<IntMetric>findMetric(METRIC_NAME_CUR_CNT).value(),
                 getTestTimeout(), checkPeriod));
 
+            log.error("TEST | step 4, node order=" + node.cluster().localNode().order());
+
             // Connections should not be idle under a heavy load.
             assertTrue(waitForCondition(() -> mreg.<LongMetric>findMetric(METRIC_NAME_MAX_NET_IDLE_TIME).value() < 50,
                 getTestTimeout(), checkPeriod));
 
+            log.error("TEST | step 5, node order=" + node.cluster().localNode().order());
+
             assertTrue(waitForCondition(() -> mreg.<LongMetric>findMetric(METRIC_NAME_AVG_LIFE_TIME).value() > loadMillis1,
                 getTestTimeout(), checkPeriod));
+
+            log.error("TEST | step 6, node order=" + node.cluster().localNode().order());
 
             // Default connection idle and write timeouts are large enough. Connections should not be failed/deleted.
             assertEquals(0, mreg.<LongMetric>findMetric(METRIC_NAME_REMOVED_CNT).value());
 
+            log.error("TEST | step 7, node order=" + node.cluster().localNode().order());
+
             assertEquals(node.cluster().localNode().consistentId().toString(), mreg.findMetric(METRIC_NAME_CONSIST_ID).getAsString());
+
+            log.error("TEST | step 8, node order=" + node.cluster().localNode().order());
         }
 
         // Current connection implementations are async.
         assertEquals(true, mreg0.<BooleanGauge>findMetric(ConnectionClientPool.METRIC_NAME_ASYNC_CONNS).value());
+
+        log.error("TEST | step 9");
 
         dumpMetrics(ldr);
 
@@ -306,6 +324,10 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
             UUID nodeId = node.cluster().localNode().id();
 
+            long nodeOrder = node.cluster().localNode().order();
+
+            log.error("TEST | step 10, node order=" + nodeOrder);
+
             assertTrue(G.stop(node.name(), true));
 
             assertTrue(waitForCondition(() -> {
@@ -313,13 +335,21 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
                 return mreg == null || !mreg.iterator().hasNext();
             }, getTestTimeout()));
+
+            log.error("TEST | step 11, node order=" + nodeOrder);
         }
+
+        log.error("TEST | step 12");
 
         runFlag.set(false);
         loadFut.get(getTestTimeout());
 
+        log.error("TEST | step 13");
+
         // Ensure that all the possible nodes are stopped.
         assertTrue(waitForCondition(() -> ldr.cluster().nodes().size() == (clientLdr ? 2 : 1), getTestTimeout()));
+
+        log.error("TEST | step 14");
     }
 
     /** Simulates delay/concurrency of connections acquire. */
