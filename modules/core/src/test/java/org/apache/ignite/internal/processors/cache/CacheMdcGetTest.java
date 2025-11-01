@@ -94,7 +94,7 @@ public class MdcCacheReadRequestsRoutingTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void test() throws Exception {
+    public void testReadFromReplicatedCache() throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         boolean bool = rnd.nextBoolean();
