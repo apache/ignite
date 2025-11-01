@@ -41,7 +41,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /** */
 @RunWith(Parameterized.class)
-public class CacheMdcGetTest extends GridCommonAbstractTest {
+public class MdcCacheReadRequestsRoutingTest extends GridCommonAbstractTest {
     /** */
     private static final String DC_ID_0 = "DC0";
 
