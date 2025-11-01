@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Set;
 import org.apache.ignite.Ignite;
@@ -265,10 +264,10 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeToSocket(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (!blockMsgs)
-                super.writeToSocket(sock, out, msg, timeout);
+                super.writeToSocket(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */

@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.Socket;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -400,13 +399,13 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
         private final AtomicInteger failReconReq = new AtomicInteger();
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeToSocket(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
 
-            if (!onMessage(sock, msg))
+            if (!onMessage(ses.socket(), msg))
                 return;
 
-            super.writeToSocket(sock, out, msg, timeout);
+            super.writeToSocket(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */

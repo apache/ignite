@@ -75,6 +75,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
+import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.systemview.walker.ClusterNodeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.NodeAttributeViewWalker;
@@ -121,6 +122,8 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -347,6 +350,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         DiscoverySpi spi = getSpi();
 
         spi.setNodeAttributes(ctx.nodeAttributes(), VER);
+
+        MessageFactory msgFactory = new IgniteMessageFactoryImpl(
+            new MessageFactoryProvider[] {new DiscoveryMessageFactory()});
+
+        spi.setMessageFactory(msgFactory);
     }
 
     /**

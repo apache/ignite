@@ -18,10 +18,8 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -212,8 +210,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
     class TestTcpDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
         @Override protected void writeToSocket(
-            Socket sock,
-            OutputStream out,
+            TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout
         ) throws IOException, IgniteCheckedException {
@@ -228,10 +225,10 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
                         fail("Unexpected interrupt on nodeAddFinishedDelay");
                     }
 
-                super.writeToSocket(sock, out, msg, timeout);
+                super.writeToSocket(ses, msg, timeout);
             }
             else
-                super.writeToSocket(sock, out, msg, timeout);
+                super.writeToSocket(ses, msg, timeout);
         }
 
         /**

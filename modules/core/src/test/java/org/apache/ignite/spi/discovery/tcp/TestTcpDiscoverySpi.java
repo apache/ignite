@@ -18,8 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.Socket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
@@ -48,7 +46,7 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
     private IgniteDiscoverySpiInternalListener internalLsnr;
 
     /** {@inheritDoc} */
-    @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
+    @Override protected void writeToSocket(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
         IgniteCheckedException {
         if (msg instanceof TcpDiscoveryPingResponse && ignorePingResponse)
             return;
@@ -61,7 +59,7 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
                 internalLsnr.beforeReconnect(locNode, log);
         }
 
-        super.writeToSocket(sock, out, msg, timeout);
+        super.writeToSocket(ses, msg, timeout);
     }
 
     /** {@inheritDoc} */

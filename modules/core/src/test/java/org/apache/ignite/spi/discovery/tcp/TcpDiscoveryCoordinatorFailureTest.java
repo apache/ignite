@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Collections;
@@ -287,24 +286,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected void writeToSocket(
-            Socket sock,
-            TcpDiscoveryAbstractMessage msg,
-            byte[] data,
-            long timeout
-        ) throws IOException {
-            if (isDrop(msg)) {
-                // Replace logic routine message with a stub to update last-sent-time to avoid segmentation on
-                // connRecoveryTimeout.
-                msg = new TcpDiscoveryConnectionCheckMessage(locNode);
-            }
-
-            super.writeToSocket(sock, msg, data, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(
-            Socket sock,
-            OutputStream out,
+            TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout
         ) throws IOException, IgniteCheckedException {
@@ -314,7 +296,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
                 msg = new TcpDiscoveryConnectionCheckMessage(locNode);
             }
 
-            super.writeToSocket(sock, out, msg, timeout);
+            super.writeToSocket(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */

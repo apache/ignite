@@ -21,7 +21,6 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
-import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -719,13 +718,13 @@ class ClientImpl extends TcpDiscoveryImpl {
             boolean openSock = false;
 
             Socket sock = null;
-            OutputStream out;
 
             try {
                 long tsNanos = System.nanoTime();
 
                 sock = spi.openSocket(addr, timeoutHelper);
-                out = spi.socketStream(sock);
+
+                TcpDiscoveryIoSession ses = new TcpDiscoveryIoSession(sock, spi);
 
                 openSock = true;
 
@@ -733,9 +732,9 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 req.client(true);
 
-                spi.writeToSocket(sock, out, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                spi.writeToSocket(ses, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
-                TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, ackTimeout0);
+                TcpDiscoveryHandshakeResponse res = spi.readMessage(ses, ackTimeout0);
 
                 UUID rmtNodeId = res.creatorNodeId();
 
@@ -788,7 +787,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (msg instanceof TraceableMessage)
                     tracing.messages().beforeSend((TraceableMessage)msg);
 
-                spi.writeToSocket(sock, out, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                spi.writeToSocket(ses, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 spi.stats.onMessageSent(msg, U.millisSinceNanos(tsNanos));
 
@@ -1173,14 +1172,13 @@ class ClientImpl extends TcpDiscoveryImpl {
                 }
 
                 Socket sock = sockStream.socket();
+                TcpDiscoveryIoSession ses = new TcpDiscoveryIoSession(sock, spi);
 
                 U.enhanceThreadName(U.id8(rmtNodeId)
                     + ' ' + sockStream.sock.getInetAddress().getHostAddress()
                     + ":" + sockStream.sock.getPort());
 
                 try {
-                    InputStream in = sockStream.stream();
-
                     assert sock.getKeepAlive() && sock.getTcpNoDelay() : "Socket wasn't configured properly:" +
                         " KeepAlive " + sock.getKeepAlive() +
                         " TcpNoDelay " + sock.getTcpNoDelay();
@@ -1189,7 +1187,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         TcpDiscoveryAbstractMessage msg;
 
                         try {
-                            msg = U.unmarshal(spi.marshaller(), in, U.resolveClassLoader(spi.ignite().configuration()));
+                            msg = spi.readMessage(ses, sock.getSoTimeout());
                         }
                         catch (IgniteCheckedException e) {
                             if (log.isDebugEnabled())
@@ -1267,6 +1265,9 @@ class ClientImpl extends TcpDiscoveryImpl {
         private Socket sock;
 
         /** */
+        private TcpDiscoveryIoSession ses;
+
+        /** */
         private boolean clientAck;
 
         /** */
@@ -1333,6 +1334,8 @@ class ClientImpl extends TcpDiscoveryImpl {
             synchronized (mux) {
                 this.sock = sock;
 
+                ses = new TcpDiscoveryIoSession(sock, spi);
+
                 this.clientAck = clientAck;
 
                 unackedMsg = null;
@@ -1387,11 +1390,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         msg.client(true);
 
                         try {
-                            spi.writeToSocket(
-                                sock,
-                                spi.socketStream(sock),
-                                msg,
-                                sockTimeout);
+                            spi.writeToSocket(ses, msg, sockTimeout);
                         }
                         catch (IOException | IgniteCheckedException e) {
                             if (log.isDebugEnabled()) {
@@ -1434,11 +1433,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         }
                     }
 
-                    spi.writeToSocket(
-                        sock,
-                        spi.socketStream(sock),
-                        msg,
-                        sockTimeout);
+                    spi.writeToSocket(ses, msg, sockTimeout);
 
                     IgniteUuid latencyCheckId = msg instanceof TcpDiscoveryRingLatencyCheckMessage ?
                         msg.id() : null;
@@ -1601,6 +1596,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     clientAck = joinRes.get2();
 
                     Socket sock = sockStream.socket();
+                    TcpDiscoveryIoSession ses = new TcpDiscoveryIoSession(sock, spi);
 
                     if (isInterrupted())
                         throw new InterruptedException();
@@ -1612,8 +1608,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         sock.setSoTimeout((int)spi.netTimeout);
 
-                        InputStream in = sockStream.stream();
-
                         assert sock.getKeepAlive() && sock.getTcpNoDelay() : "Socket wasn't configured properly:" +
                             " KeepAlive " + sock.getKeepAlive() +
                             " TcpNoDelay " + sock.getTcpNoDelay();
@@ -1621,8 +1615,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         List<TcpDiscoveryAbstractMessage> msgs = null;
 
                         while (!isInterrupted()) {
-                            TcpDiscoveryAbstractMessage msg = U.unmarshal(spi.marshaller(), in,
-                                U.resolveClassLoader(spi.ignite().configuration()));
+                            TcpDiscoveryAbstractMessage msg = spi.readMessage(ses, sock.getSoTimeout());
 
                             if (msg instanceof TcpDiscoveryClientReconnectMessage) {
                                 TcpDiscoveryClientReconnectMessage res = (TcpDiscoveryClientReconnectMessage)msg;

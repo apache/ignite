@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -199,10 +198,10 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeToSocket(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
-            if (sock.getPort() != FAIL_PORT)
-                super.writeToSocket(sock, out, msg, timeout);
+            if (ses.socket().getPort() != FAIL_PORT)
+                super.writeToSocket(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */

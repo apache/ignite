@@ -627,21 +627,21 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeToSocket(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             BiConsumer<Socket, TcpDiscoveryHandshakeRequest> hsRqLsnr;
             BiConsumer<Socket, TcpDiscoveryHandshakeResponse> hsRespLsnr;
 
             if (msg instanceof TcpDiscoveryHandshakeRequest && (hsRqLsnr = this.hsRqLsnr.get()) != null)
-                hsRqLsnr.accept(sock, (TcpDiscoveryHandshakeRequest)msg);
+                hsRqLsnr.accept(ses.socket(), (TcpDiscoveryHandshakeRequest)msg);
 
             if (msg instanceof TcpDiscoveryHandshakeResponse && (hsRespLsnr = this.hsRespLsnr.get()) != null)
-                hsRespLsnr.accept(sock, (TcpDiscoveryHandshakeResponse)msg);
+                hsRespLsnr.accept(ses.socket(), (TcpDiscoveryHandshakeResponse)msg);
 
-            if (dropMsg(sock))
+            if (dropMsg(ses.socket()))
                 return;
 
-            super.writeToSocket(sock, out, msg, timeout);
+            super.writeToSocket(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */
