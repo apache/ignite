@@ -57,7 +57,7 @@ public class GridJobExecuteResponse implements Message {
      * Serialization call holder for {@code gridEx}. Works with {@link #marshallUserData(Marshaller)}.
      * Wraps also possible serialization error.
      */
-    @Order(value = 3, method = "exceptionMsg")
+    @Order(value = 3, method = "exceptionMessage")
     private @Nullable ErrorMessage gridExMsg;
 
     /** Job result serialization call holder. */
@@ -124,7 +124,6 @@ public class GridJobExecuteResponse implements Message {
         this.jobAttrs = jobAttrs;
         this.isCancelled = isCancelled;
         this.retry = retry;
-
         this.gridEx = gridEx;
     }
 
@@ -179,7 +178,7 @@ public class GridJobExecuteResponse implements Message {
     }
 
     /** */
-    public void exceptionMsg(@Nullable ErrorMessage gridExMsg) {
+    public void exceptionMessage(@Nullable ErrorMessage gridExMsg) {
         if (gridExMsg == null) {
             gridEx = null;
 
@@ -192,7 +191,7 @@ public class GridJobExecuteResponse implements Message {
     }
 
     /** */
-    public @Nullable ErrorMessage exceptionMsg() {
+    public @Nullable ErrorMessage exceptionMessage() {
         return gridEx == null ? null : new ErrorMessage(gridEx);
     }
 
