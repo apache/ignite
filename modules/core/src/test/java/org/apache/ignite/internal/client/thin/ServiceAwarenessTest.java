@@ -393,9 +393,11 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
 
                             // TODO: IGNITE-20802 : Exception should not occur.
                             // Client doesn't retry service invocation if the redirected-to service instance node leaves cluster.
-                            assertTrue(shrinkTop
-                                && (errMsg.contains("Node has left grid") || errMsg.contains("Failed to send job due to node failure"))
-                                && expInitSvcTop.stream().anyMatch(id -> errMsg.contains(id.toString())));
+                            boolean isErrCausedByNodeLeave = errMsg.contains("Failed to execute task due to grid shutdown")
+                                || (errMsg.contains("Node has left grid") || errMsg.contains("Failed to send job due to node failure"))
+                                && expInitSvcTop.stream().anyMatch(id -> errMsg.contains(id.toString()));
+
+                            assertTrue(shrinkTop && isErrCausedByNodeLeave);
                         }
                     }
                     while (!stopFlag.get());
