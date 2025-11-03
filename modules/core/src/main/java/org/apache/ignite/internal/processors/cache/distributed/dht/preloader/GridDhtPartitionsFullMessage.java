@@ -365,10 +365,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @return Partition sizes map (grpId, (partId, partSize)).
      */
     public Map<Integer, PartitionSizesMap> partitionSizes() {
-        if (partsSizes == null)
-            return Collections.emptyMap();
-
-        return partsSizes;
+        return F.emptyIfNull(partsSizes);
     }
 
     /**

@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -57,7 +58,7 @@ public class IgniteDhtPartitionsToReloadMap implements Message {
         if (partsToReload == null)
             return Collections.emptySet();
 
-        return partsToReload.partitions();
+        return F.emptyIfNull(partsToReload.partitions());
     }
 
     /**

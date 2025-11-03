@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.util.Collections;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,7 +40,7 @@ public class PartitionSizesMap implements Message {
     /**
      * @param partsSizes Partition sizes map.
      */
-    public PartitionSizesMap(Map<Integer, Long> partsSizes) {
+    public PartitionSizesMap(@Nullable Map<Integer, Long> partsSizes) {
         this.partsSizes = partsSizes;
     }
 
@@ -49,7 +48,7 @@ public class PartitionSizesMap implements Message {
      * @return Partition sizes map.
      */
     public Map<Integer, Long> partitionSizes() {
-        return partsSizes != null ? partsSizes : Collections.emptyMap();
+        return F.emptyIfNull(partsSizes);
     }
 
     /**
@@ -60,30 +59,18 @@ public class PartitionSizesMap implements Message {
      * @return Partition sizes map.
      */
     public @Nullable Map<Integer, Long> partitionSizesMap() {
-        if (partsSizes == null)
-            return null;
-
-        return partsSizes.entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() != null ? e.getValue() : Long.MIN_VALUE));
+        return partsSizes == null ? null : F.viewReadOnly(partsSizes, v -> v != null ? v : Long.MIN_VALUE);
     }
 
     /**
      * Used only for deserialization.
+     * Since the code generation framework currently does not support null values for primitive wrappers,
+     * we use {@link Long#MIN_VALUE} instead of null.
      *
      * @param partsSizes Partition sizes map.
      */
     public void partitionSizesMap(@Nullable Map<Integer, Long> partsSizes) {
-        if (partsSizes == null)
-            this.partsSizes = partsSizes;
-        else
-            this.partsSizes = partsSizes.entrySet().stream()
-                .collect(Collectors.groupingBy(
-                    Map.Entry::getKey,
-                    Collectors.mapping(
-                        e -> e.getValue() != Long.MIN_VALUE ? e.getValue() : null,
-                        Collectors.reducing(null, (v1, v2) -> v1)
-                    )
-                ));
+        this.partsSizes = partsSizes == null ? null : F.viewReadOnly(partsSizes, v -> v != Long.MIN_VALUE ? v : null);
     }
 
     /** {@inheritDoc} */
