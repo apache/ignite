@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.cache.query.index;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.IndexQueryCriterion;
 import org.apache.ignite.events.CacheQueryReadEvent;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
@@ -45,7 +45,10 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IndexQueryDesc;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.schema.AbstractSchemaChangeListener;
+import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -65,8 +68,12 @@ public class IndexQueryProcessor {
     private final IndexProcessor idxProc;
 
     /** */
-    public IndexQueryProcessor(IndexProcessor idxProc) {
-        this.idxProc = idxProc;
+    private final GridConcurrentHashSet<Index> idxSet = new GridConcurrentHashSet<>();
+
+    /** */
+    public IndexQueryProcessor(GridKernalContext ctx) {
+        idxProc = ctx.indexProcessor();
+        ctx.internalSubscriptionProcessor().registerSchemaChangeListener(new IndexLifecycleListener());
     }
 
     /**
@@ -202,7 +209,7 @@ public class IndexQueryProcessor {
             critFlds = Collections.emptyMap();
 
         if (idxQryDesc.idxName() == null && !critFlds.isEmpty())
-            return indexByCriteria(cctx, critFlds, tableName);
+            return indexByCriteria(critFlds, tableName);
 
         // If index name isn't specified and criteria aren't set then use the PK index.
         String name = idxQryDesc.idxName() == null ? QueryUtils.PRIMARY_KEY_INDEX : idxQryDesc.idxName();
@@ -217,14 +224,14 @@ public class IndexQueryProcessor {
      * @throws IgniteCheckedException If index not found or specified index doesn't match query criteria.
      */
     private SortedSegmentedIndex indexByName(IndexName idxName, final Map<String, String> criteriaFlds) throws IgniteCheckedException {
-        SortedSegmentedIndex idx = assertSortedIndex(idxProc.index(idxName));
+        SortedSegmentedIndex idx = rawIndexByName(idxName);
 
         if (idx == null && !QueryUtils.PRIMARY_KEY_INDEX.equals(idxName.idxName())) {
             String normIdxName = QueryUtils.normalizeObjectName(idxName.idxName(), false);
 
             idxName = new IndexName(idxName.cacheName(), idxName.schemaName(), idxName.tableName(), normIdxName);
 
-            idx = assertSortedIndex(idxProc.index(idxName));
+            idx = rawIndexByName(idxName);
         }
 
         if (idx == null)
@@ -237,17 +244,25 @@ public class IndexQueryProcessor {
     }
 
     /**
+     *
+     */
+    private SortedSegmentedIndex rawIndexByName(IndexName idxName) throws IgniteCheckedException {
+        for (Index idx : idxSet) {
+            if (idxName.fullName().equals(idx.indexDefinition().idxName().fullName()))
+                return assertSortedIndex(idx);
+        }
+        return null;
+    }
+
+    /**
      * @return Index found by list of criteria fields.
      * @throws IgniteCheckedException if suitable index not found.
      */
     private SortedSegmentedIndex indexByCriteria(
-        GridCacheContext<?, ?> cctx,
         final Map<String, String> criteriaFlds,
         String tableName
     ) throws IgniteCheckedException {
-        Collection<Index> idxs = idxProc.indexes(cctx.name());
-
-        for (Index idx: idxs) {
+        for (Index idx : idxSet) {
             SortedSegmentedIndex sortedIdx = assertSortedIndex(idx);
 
             if (checkIndex(sortedIdx, tableName, criteriaFlds))
@@ -455,4 +470,27 @@ public class IndexQueryProcessor {
 
         return r.toString();
     }
+
+    /** */
+    private final class IndexLifecycleListener extends AbstractSchemaChangeListener {
+
+        /** */
+        @Override public void onIndexCreated(String schemaName, String tblName, String idxName,
+            IndexDescriptor idxDesc) {
+            idxSet.add(idxDesc.index());
+        }
+
+        /** */
+        @Override public void onIndexDropped(String schemaName, String tblName, String idxName) {
+            try {
+                IndexName name = new IndexName(null, schemaName, tblName, idxName);
+                Index idx = indexByName(name, Collections.emptyMap());
+                idxSet.remove(idx);
+            }
+            catch (IgniteCheckedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
 }

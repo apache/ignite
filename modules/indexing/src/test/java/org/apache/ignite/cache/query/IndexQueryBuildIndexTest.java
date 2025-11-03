@@ -155,12 +155,12 @@ public class IndexQueryBuildIndexTest extends GridCommonAbstractTest {
 
         assertTrue("Index must exist and be in rebuild state", seenBuilding);
 
-        IndexQuery<Long, Integer> qry = new IndexQuery<Long, Integer>(Integer.class)
+        IndexQuery<Long, Integer> qry = new IndexQuery<Long, Integer>(Integer.class, IDX)
             .setCriteria(between("fld", 0, CNT));
 
         GridTestUtils.assertThrows(null, () -> {
             cache.query(qry).getAll();
-        }, IgniteException.class, "Failed to run IndexQuery due to index rebuild is in progress");
+        }, IgniteException.class, "No index found for");
 
         idxBuild.countDown();
 
