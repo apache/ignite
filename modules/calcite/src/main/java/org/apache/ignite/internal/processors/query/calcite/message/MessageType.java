@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.function.Supplier;
+import org.apache.ignite.internal.codegen.CalciteErrorMessageSerializer;
 import org.apache.ignite.internal.codegen.ColocationGroupSerializer;
 import org.apache.ignite.internal.codegen.FragmentDescriptionSerializer;
 import org.apache.ignite.internal.codegen.FragmentMappingSerializer;
@@ -42,7 +43,7 @@ public enum MessageType {
     QUERY_START_RESPONSE(301, QueryStartResponse::new, new QueryStartResponseSerializer()),
 
     /** */
-    QUERY_ERROR_MESSAGE(302, ErrorMessage::new),
+    QUERY_ERROR_MESSAGE(302, CalciteErrorMessage::new, new CalciteErrorMessageSerializer()),
 
     /** */
     QUERY_BATCH_MESSAGE(303, QueryBatchMessage::new),

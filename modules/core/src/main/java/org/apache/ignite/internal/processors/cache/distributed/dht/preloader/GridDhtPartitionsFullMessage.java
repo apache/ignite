@@ -74,19 +74,11 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** Partitions update counters. */
     @GridToStringInclude
-    @GridDirectTransient
     private IgniteDhtPartitionCountersMap partCntrs;
-
-    /** Serialized partitions counters. */
-    private byte[] partCntrsBytes;
 
     /** Partitions history suppliers. */
     @GridToStringInclude
-    @GridDirectTransient
     private IgniteDhtPartitionHistorySuppliersMap partHistSuppliers;
-
-    /** Serialized partitions history suppliers. */
-    private byte[] partHistSuppliersBytes;
 
     /** Partitions that must be cleared and re-loaded. */
     @GridToStringInclude
@@ -179,9 +171,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         cp.dupPartsData = dupPartsData;
         cp.partsBytes = partsBytes;
         cp.partCntrs = partCntrs;
-        cp.partCntrsBytes = partCntrsBytes;
         cp.partHistSuppliers = partHistSuppliers;
-        cp.partHistSuppliersBytes = partHistSuppliersBytes;
         cp.partsToReload = partsToReload;
         cp.partsSizes = partsSizes;
         cp.topVer = topVer;
@@ -410,12 +400,10 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         boolean marshal = (!F.isEmpty(parts) && partsBytes == null) ||
-            (partCntrs != null && !partCntrs.empty() && partCntrsBytes == null) ||
-            (partHistSuppliers != null && partHistSuppliersBytes == null) ||
             (!F.isEmpty(errs) && errsBytes == null);
 
         if (marshal) {
@@ -426,12 +414,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
             if (!F.isEmpty(parts) && partsBytes == null)
                 objectsToMarshall.add(parts);
-
-            if (partCntrs != null && !partCntrs.empty() && partCntrsBytes == null)
-                objectsToMarshall.add(partCntrs);
-
-            if (partHistSuppliers != null && partHistSuppliersBytes == null)
-                objectsToMarshall.add(partHistSuppliers);
 
             if (!F.isEmpty(errs) && errsBytes == null)
                 objectsToMarshall.add(errs);
@@ -456,12 +438,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             if (!F.isEmpty(parts) && partsBytes == null)
                 partsBytes = iter.next();
 
-            if (partCntrs != null && !partCntrs.empty() && partCntrsBytes == null)
-                partCntrsBytes = iter.next();
-
-            if (partHistSuppliers != null && partHistSuppliersBytes == null)
-                partHistSuppliersBytes = iter.next();
-
             if (!F.isEmpty(errs) && errsBytes == null)
                 errsBytes = iter.next();
         }
@@ -482,7 +458,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         ClassLoader clsLdr = U.resolveClassLoader(ldr, ctx.gridConfig());
@@ -494,12 +470,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         if (partsBytes != null && parts == null)
             objectsToUnmarshall.add(partsBytes);
-
-        if (partCntrsBytes != null && partCntrs == null)
-            objectsToUnmarshall.add(partCntrsBytes);
-
-        if (partHistSuppliersBytes != null && partHistSuppliers == null)
-            objectsToUnmarshall.add(partHistSuppliersBytes);
 
         if (errsBytes != null && errs == null)
             objectsToUnmarshall.add(errsBytes);
@@ -549,12 +519,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 }
             }
         }
-
-        if (partCntrsBytes != null && partCntrs == null)
-            partCntrs = (IgniteDhtPartitionCountersMap)iter.next();
-
-        if (partHistSuppliersBytes != null && partHistSuppliers == null)
-            partHistSuppliers = (IgniteDhtPartitionHistorySuppliersMap)iter.next();
 
         if (errsBytes != null && errs == null)
             errs = (Map<UUID, Exception>)iter.next();
@@ -627,13 +591,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 writer.incrementState();
 
             case 12:
-                if (!writer.writeByteArray(partCntrsBytes))
+                if (!writer.writeMessage(partCntrs))
                     return false;
 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeByteArray(partHistSuppliersBytes))
+                if (!writer.writeMessage(partHistSuppliers))
                     return false;
 
                 writer.incrementState();
@@ -730,7 +694,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 12:
-                partCntrsBytes = reader.readByteArray();
+                partCntrs = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -738,7 +702,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 13:
-                partHistSuppliersBytes = reader.readByteArray();
+                partHistSuppliers = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -838,8 +802,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     public void cleanUp() {
         partsBytes = null;
         partCntrs = null;
-        partCntrsBytes = null;
-        partHistSuppliersBytes = null;
         errsBytes = null;
     }
 }

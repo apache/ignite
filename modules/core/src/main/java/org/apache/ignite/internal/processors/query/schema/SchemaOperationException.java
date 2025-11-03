@@ -63,6 +63,9 @@ public class SchemaOperationException extends IgniteCheckedException {
     /** Code: schema not found. */
     public static final int CODE_SCHEMA_NOT_FOUND = 11;
 
+    /** Code: schema not found. */
+    public static final int CODE_INVALID_SCHEMA = 12;
+
     /** Error code. */
     private final int code;
 
@@ -164,6 +167,9 @@ public class SchemaOperationException extends IgniteCheckedException {
 
             case CODE_SCHEMA_NOT_FOUND:
                 return "Schema doesn't exist: " + objName;
+
+            case CODE_INVALID_SCHEMA:
+                return "Invalid schema: " + objName;
 
             default:
                 assert false;

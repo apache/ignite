@@ -74,7 +74,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpIoTr
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.NoOpMemoryTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.PerformanceStatisticsIoTracker;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.QueryMemoryTracker;
-import org.apache.ignite.internal.processors.query.calcite.message.ErrorMessage;
+import org.apache.ignite.internal.processors.query.calcite.message.CalciteErrorMessage;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageService;
 import org.apache.ignite.internal.processors.query.calcite.message.MessageType;
 import org.apache.ignite.internal.processors.query.calcite.message.QueryStartRequest;
@@ -472,7 +472,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     @Override public void init() {
         messageService().register((n, m) -> onMessage(n, (QueryStartRequest)m), MessageType.QUERY_START_REQUEST);
         messageService().register((n, m) -> onMessage(n, (QueryStartResponse)m), MessageType.QUERY_START_RESPONSE);
-        messageService().register((n, m) -> onMessage(n, (ErrorMessage)m), MessageType.QUERY_ERROR_MESSAGE);
+        messageService().register((n, m) -> onMessage(n, (CalciteErrorMessage)m), MessageType.QUERY_ERROR_MESSAGE);
 
         eventManager().addDiscoveryEventListener(discoLsnr, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
 
@@ -945,7 +945,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
     }
 
     /** */
-    private void onMessage(UUID nodeId, ErrorMessage msg) {
+    private void onMessage(UUID nodeId, CalciteErrorMessage msg) {
         assert nodeId != null && msg != null;
 
         Query<?> qry = qryReg.query(msg.queryId());
