@@ -33,7 +33,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class IgniteDhtPartitionsToReloadMap implements Message {
     /** Type code. */
-    public static final short TYPE_CODE = 508;
+    public static final short TYPE_CODE = 513;
 
     /** */
     @Order(value = 0, method = "partitionsToReload")

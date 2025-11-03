@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /** Partition sizes map. */
 public class PartitionSizesMap implements Message {
     /** Type code. */
-    public static final short TYPE_CODE = 509;
+    public static final short TYPE_CODE = 514;
 
     /** Partition sizes map. */
     @Order(value = 0, method = "partitionSizesMap")
