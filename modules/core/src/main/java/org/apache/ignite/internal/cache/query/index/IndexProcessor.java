@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridAtomicLong;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -114,6 +115,10 @@ public class IndexProcessor extends GridProcessorAdapter {
 
     /** Exclusive lock for DDL operations. */
     private final ReentrantReadWriteLock ddlLock = new ReentrantReadWriteLock();
+
+    /** */
+    private final GridConcurrentHashSet<Index> fillingIdxs = new GridConcurrentHashSet<>();
+
 
     /**
      * @param ctx Kernal context.
@@ -214,6 +219,7 @@ public class IndexProcessor extends GridProcessorAdapter {
         IndexFactory dynamicFactory = (gcctx, indexDefinition) -> {
             Index idx = factory.createIndex(gcctx, indexDefinition);
 
+            fillingIdxs.add(idx);
             idx.markIndexRebuild(true);
 
             return idx;
@@ -227,6 +233,7 @@ public class IndexProcessor extends GridProcessorAdapter {
                 idx.onUpdate(null, row, false);
         });
 
+        fillingIdxs.remove(idx);
         idx.markIndexRebuild(false);
 
         return idx;
@@ -417,6 +424,11 @@ public class IndexProcessor extends GridProcessorAdapter {
         finally {
             ddlLock.readLock().unlock();
         }
+    }
+
+    /** */
+    public boolean isFilling(Index idx) {
+        return fillingIdxs.contains(idx);
     }
 
     /**

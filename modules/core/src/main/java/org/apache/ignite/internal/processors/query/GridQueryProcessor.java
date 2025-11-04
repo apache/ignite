@@ -336,7 +336,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         idxProc = ctx.indexProcessor();
 
-        idxQryPrc = new IndexQueryProcessor(ctx);
+        idxQryPrc = new IndexQueryProcessor(idxProc);
 
         valCtx = new CacheQueryObjectValueContext(ctx);
 
