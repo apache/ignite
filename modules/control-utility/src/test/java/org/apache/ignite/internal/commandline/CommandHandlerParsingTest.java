@@ -76,6 +76,7 @@ import org.apache.ignite.internal.management.meta.MetaUpdateCommand;
 import org.apache.ignite.internal.management.metric.MetricCommand;
 import org.apache.ignite.internal.management.performancestatistics.PerformanceStatisticsCommand;
 import org.apache.ignite.internal.management.property.PropertyCommand;
+import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotCommand;
 import org.apache.ignite.internal.management.snapshot.SnapshotRestoreCommand;
 import org.apache.ignite.internal.management.tx.TxCommand;
@@ -1391,6 +1392,7 @@ public class CommandHandlerParsingTest {
             cmd == MetaCommand.class ||
             cmd == WarmUpCommand.class ||
             cmd == PropertyCommand.class ||
+            cmd == RollingUpgradeCommand.class ||
             cmd == SystemViewCommand.class ||
             cmd == MetricCommand.class ||
             cmd == DefragmentationCommand.class ||
