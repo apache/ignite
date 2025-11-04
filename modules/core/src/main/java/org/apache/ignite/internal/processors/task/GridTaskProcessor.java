@@ -1057,7 +1057,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         lock.readLock();
 
         try {
-            GridTaskWorker<?, ?> task = tasks.get(msg.getSessionId());
+            GridTaskWorker<?, ?> task = tasks.get(msg.sessionId());
 
             if (stopping && !waiting) {
                 U.warn(log, "Received job execution response while stopping grid (will ignore): " + msg
