@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import java.io.BufferedOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -126,22 +125,10 @@ public class TcpDiscoveryIoSession {
     }
 
     /** */
-    void writeMessage(TcpDiscoveryAbstractMessage msg, byte[] data) throws IOException {
-        OutputStream out = new BufferedOutputStream(sock.getOutputStream(), sendBuf.limit());
-
-        byte mode = msg instanceof Message ? MESSAGE_SERIALIZATION : JAVA_SERIALIZATION;
-
-        out.write(mode);
-        out.write(data);
-
-        out.flush();
-    }
-
-    /** */
     void writeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
-        if (!(msg instanceof Message)) {
-            OutputStream out = new BufferedOutputStream(sock.getOutputStream(), sendBuf.limit());
+        OutputStream out = sock.getOutputStream();
 
+        if (!(msg instanceof Message)) {
             out.write(JAVA_SERIALIZATION);
 
             U.marshal(spi.marshaller(), msg, out);
@@ -156,9 +143,8 @@ public class TcpDiscoveryIoSession {
             msgWriter.reset();
             msgWriter.setBuffer(sendBuf);
 
-            msgWriter.writeByte(MESSAGE_SERIALIZATION);
+            out.write(MESSAGE_SERIALIZATION);
 
-            OutputStream out = sock.getOutputStream();
             boolean finished;
 
             do {
@@ -209,10 +195,20 @@ public class TcpDiscoveryIoSession {
 
             boolean finish;
 
+            int pos = 0;
+
             do {
+                rcvBuf.put((byte)in.read());
+
+                rcvBuf.position(pos);
+                rcvBuf.limit(pos + 1);
+
                 finish = msgSer.readFrom(msg, msgReader);
 
-                rcvBuf.clear();
+                rcvBuf.limit(rcvBuf.capacity());
+                pos = rcvBuf.position();
+
+                // TODO: big message.
 
             } while (!finish);
 
