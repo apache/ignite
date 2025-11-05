@@ -4654,7 +4654,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
 
         try {
-            Map<Integer, PartitionSizesMap> partsSizes = msg.partitionSizes();
+            Map<Integer, PartitionSizesMap> partsSizes = F.emptyIfNull(msg.partitionSizes());
 
             doInParallel(
                 parallelismLvl,

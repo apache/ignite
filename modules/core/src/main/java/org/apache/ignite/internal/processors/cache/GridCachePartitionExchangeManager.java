@@ -1772,7 +1772,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 boolean updated = false;
 
-                Map<Integer, PartitionSizesMap> partsSizes = msg.partitionSizes();
+                Map<Integer, PartitionSizesMap> partsSizes = F.emptyIfNull(msg.partitionSizes());
 
                 for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
                     Integer grpId = entry.getKey();

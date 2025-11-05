@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,7 +30,7 @@ public class PartitionSizesMap implements Message {
     public static final short TYPE_CODE = 514;
 
     /** Partition sizes map. */
-    @Order(value = 0, method = "partitionSizesMap")
+    @Order(value = 0, method = "partitionSizes")
     private @Nullable Map<Integer, Long> partsSizes;
 
     /** Default constructor. */
@@ -48,29 +49,18 @@ public class PartitionSizesMap implements Message {
      * @return Partition sizes map.
      */
     public Map<Integer, Long> partitionSizes() {
-        return F.emptyIfNull(partsSizes);
+        return partsSizes == null
+            ? Collections.emptyMap()
+            : partsSizes.entrySet().stream()
+                .filter(e -> e.getValue() != null)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     /**
-     * Used only for serialization.
-     * Since the code generation framework currently does not support null values for primitive wrappers,
-     * we use {@link Long#MIN_VALUE} instead of null.
-     *
-     * @return Partition sizes map.
-     */
-    public @Nullable Map<Integer, Long> partitionSizesMap() {
-        return partsSizes == null ? null : F.viewReadOnly(partsSizes, v -> v != null ? v : Long.MIN_VALUE);
-    }
-
-    /**
-     * Used only for deserialization.
-     * Since the code generation framework currently does not support null values for primitive wrappers,
-     * we use {@link Long#MIN_VALUE} instead of null.
-     *
      * @param partsSizes Partition sizes map.
      */
-    public void partitionSizesMap(@Nullable Map<Integer, Long> partsSizes) {
-        this.partsSizes = partsSizes == null ? null : F.viewReadOnly(partsSizes, v -> v != Long.MIN_VALUE ? v : null);
+    public void partitionSizes(Map<Integer, Long> partsSizes) {
+        this.partsSizes = partsSizes;
     }
 
     /** {@inheritDoc} */
