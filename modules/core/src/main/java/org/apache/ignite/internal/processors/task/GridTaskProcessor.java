@@ -1412,11 +1412,12 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
                     boolean loc = ctx.localNodeId().equals(nodeId);
 
-                    ctx.io().sendToCustomTopic(nodeId, topic,
-                        new GridJobSiblingsResponse(
-                            loc ? siblings : null,
-                            loc ? null : U.marshal(marsh, siblings)),
-                        SYSTEM_POOL);
+                    GridJobSiblingsResponse resp = new GridJobSiblingsResponse(siblings);
+
+                    if (!loc)
+                        resp.marshalSiblings(marsh);
+
+                    ctx.io().sendToCustomTopic(nodeId, topic, resp, SYSTEM_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send job sibling response.", e);

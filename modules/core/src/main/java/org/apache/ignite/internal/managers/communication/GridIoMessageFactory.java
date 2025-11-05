@@ -78,6 +78,7 @@ import org.apache.ignite.internal.codegen.GridDistributedTxPrepareResponseSerial
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
 import org.apache.ignite.internal.codegen.GridJobExecuteResponseSerializer;
 import org.apache.ignite.internal.codegen.GridJobSiblingsRequestSerializer;
+import org.apache.ignite.internal.codegen.GridJobSiblingsResponseSerializer;
 import org.apache.ignite.internal.codegen.GridNearAtomicCheckUpdateRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearAtomicSingleUpdateFilterRequestSerializer;
 import org.apache.ignite.internal.codegen.GridNearAtomicSingleUpdateRequestSerializer;
@@ -313,7 +314,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)1, GridJobExecuteRequest::new);
         factory.register((short)2, GridJobExecuteResponse::new, new GridJobExecuteResponseSerializer());
         factory.register((short)3, GridJobSiblingsRequest::new, new GridJobSiblingsRequestSerializer());
-        factory.register((short)4, GridJobSiblingsResponse::new);
+        factory.register((short)4, GridJobSiblingsResponse::new, new GridJobSiblingsResponseSerializer());
         factory.register((short)5, GridTaskCancelRequest::new, new GridTaskCancelRequestSerializer());
         factory.register((short)6, GridTaskSessionRequest::new, new GridTaskSessionRequestSerializer());
         factory.register((short)7, GridCheckpointRequest::new, new GridCheckpointRequestSerializer());
