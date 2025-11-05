@@ -66,7 +66,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_CANCELLED;
@@ -114,9 +113,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
     /** */
     private final Object taskTopic;
-
-    /** */
-    private byte[] jobBytes;
 
     /** Task originating node. */
     private final ClusterNode taskNode;
@@ -197,7 +193,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param createTime Create time.
      * @param ses Grid task session.
      * @param jobCtx Job context.
-     * @param jobBytes Grid job bytes.
      * @param job Job.
      * @param taskNode Grid task node.
      * @param internal Whether or not task was marked with {@link GridInternal}
@@ -215,7 +210,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         long createTime,
         GridJobSessionImpl ses,
         GridJobContextImpl jobCtx,
-        byte[] jobBytes,
         ComputeJob job,
         ClusterNode taskNode,
         boolean internal,
@@ -241,7 +235,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         this.dep = dep;
         this.ses = ses;
         this.jobCtx = jobCtx;
-        this.jobBytes = jobBytes;
         this.taskNode = taskNode;
         this.internal = internal;
         this.holdLsnr = holdLsnr;
@@ -480,20 +473,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         IgniteException ex = null;
 
         try {
-            if (job == null) {
-                MarshallerUtils.jobSenderVersion(taskNode.version());
-
-                try {
-                    job = U.unmarshal(marsh, jobBytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
-                }
-                finally {
-                    MarshallerUtils.jobSenderVersion(null);
-                }
-
-                // No need to hold reference any more.
-                jobBytes = null;
-            }
-
             // Inject resources.
             ctx.resource().inject(dep, taskCls, job, ses, jobCtx);
 
