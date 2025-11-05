@@ -41,6 +41,7 @@ public class RollingUpgradeCommand extends CommandRegistryImpl {
         /** */
         private static final long serialVersionUID = 0;
 
+        /** {@inheritDoc} */
         @Override protected void writeExternalData(ObjectOutput out) throws IOException {
             // No-op.
         }
