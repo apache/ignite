@@ -122,4 +122,22 @@ public class ClusterNodeAttributeColocatedBackupFilter implements IgniteBiPredic
 
         return primaryAttrVal.equals(candidateAttrVal);
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (o == this)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        ClusterNodeAttributeColocatedBackupFilter other = (ClusterNodeAttributeColocatedBackupFilter)o;
+
+        return attrName.equals(other.attrName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return attrName.hashCode();
+    }
 }

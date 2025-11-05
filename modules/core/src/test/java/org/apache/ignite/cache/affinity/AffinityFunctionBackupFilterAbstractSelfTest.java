@@ -82,6 +82,11 @@ public abstract class AffinityFunctionBackupFilterAbstractSelfTest extends GridC
 
                 return backupAssignedAttr.get(nodeAttrVal).equals(0);
             }
+
+            /** {@inheritDoc} */
+            @Override public boolean equals(Object obj) {
+                return true;
+            }
         };
 
     /**
