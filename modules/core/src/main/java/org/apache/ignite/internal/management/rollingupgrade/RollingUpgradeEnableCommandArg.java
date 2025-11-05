@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** Rolling upgrade enable command argument. */
@@ -31,7 +30,6 @@ public class RollingUpgradeEnableCommandArg extends RollingUpgradeCommandArg {
 
     /** Target version. */
     @Argument(description = "Target Ignite version", example = "2.18.0")
-    @Positional
     private String targetVersion;
 
     /** */

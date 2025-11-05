@@ -372,10 +372,10 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
     control.(sh|bat) --property set --name <property_name> --val <property_value>
 
   Enable rolling upgrade:
-    control.(sh|bat) --rolling-upgrade enable 2.18.0
+      control.(sh|bat) --rolling-upgrade enable --target-version 2.18.0
 
-    Parameters:
-      2.18.0  - Target Ignite version.
+      Parameters:
+        --target-version 2.18.0  - Target Ignite version.
 
   Disable rolling upgrade:
     control.(sh|bat) --rolling-upgrade disable
