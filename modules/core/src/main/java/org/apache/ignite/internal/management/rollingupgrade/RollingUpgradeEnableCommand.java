@@ -21,10 +21,12 @@ import java.util.Collection;
 import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.lang.IgniteExperimental;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
 
 /** Command to enable rolling upgrade. */
+@IgniteExperimental
 public class RollingUpgradeEnableCommand implements ComputeCommand<RollingUpgradeCommandArg, RollingUpgradeTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
