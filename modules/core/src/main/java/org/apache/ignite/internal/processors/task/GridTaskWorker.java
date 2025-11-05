@@ -757,7 +757,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         return;
                     }
 
-                    jobRes = this.jobRes.get(res.getJobId());
+                    jobRes = this.jobRes.get(res.jobId());
 
                     if (jobRes == null) {
                         if (log.isDebugEnabled())
@@ -782,7 +782,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         continue;
                     }
 
-                    if (!jobRes.getNode().id().equals(res.getNodeId())) {
+                    if (!jobRes.getNode().id().equals(res.nodeId())) {
                         if (log.isDebugEnabled())
                             log.debug("Ignoring stale response as job was already resent to other node [res=" + res +
                                 ", jobRes=" + jobRes + ']');
@@ -821,29 +821,19 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
                     // We don't keep reference to job if results are not cached.
                     if (!resCache)
-                        this.jobRes.remove(res.getJobId());
+                        this.jobRes.remove(res.jobId());
                 }
 
                 if (res.getFakeException() != null)
                     jobRes.onResponse(null, res.getFakeException(), null, false);
                 else {
-                    ClassLoader clsLdr = dep.classLoader();
-
                     try {
-                        boolean loc = ctx.localNodeId().equals(res.getNodeId()) && !ctx.config().isMarshalLocalJobs();
+                        boolean loc = ctx.localNodeId().equals(res.nodeId()) && !ctx.config().isMarshalLocalJobs();
 
-                        Object res0 = loc ? res.getJobResult() : U.unmarshal(marsh, res.getJobResultBytes(),
-                            U.resolveClassLoader(clsLdr, ctx.config()));
+                        if (!loc)
+                            res.unmarshallUserData(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
-                        IgniteException ex = loc ? res.getException() :
-                            U.<IgniteException>unmarshal(marsh, res.getExceptionBytes(),
-                                U.resolveClassLoader(clsLdr, ctx.config()));
-
-                        Map<Object, Object> attrs = loc ? res.getJobAttributes() :
-                            U.<Map<Object, Object>>unmarshal(marsh, res.getJobAttributesBytes(),
-                                U.resolveClassLoader(clsLdr, ctx.config()));
-
-                        jobRes.onResponse(res0, ex, attrs, res.isCancelled());
+                        jobRes.onResponse(res.getJobResult(), res.exception(), res.getJobAttributes(), res.cancelled());
 
                         if (loc)
                             ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobAfterSend.class);
@@ -894,7 +884,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         assert affCacheIds != null;
                         retry = true;
 
-                        mapTopVer = U.max(res.getRetryTopologyVersion(), ctx.cache().context().exchange().readyAffinityVersion());
+                        mapTopVer = U.max(res.retryTopologyVersion(), ctx.cache().context().exchange().readyAffinityVersion());
                         affFut = ctx.cache().context().exchange().lastTopologyFuture();
 
                         if (affFut != null && !affFut.isDone()) {
@@ -1270,7 +1260,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
             if (!resCache) {
                 // Store result back in map before sending.
-                this.jobRes.put(res.getJobId(), jobRes);
+                this.jobRes.put(res.jobId(), jobRes);
             }
         }
 
@@ -1378,7 +1368,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 ctx.resource().invokeAnnotated(dep, res.getJob(), ComputeJobAfterSend.class);
 
                 GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(node.id(), ses.getId(),
-                    res.getJobContext().getJobId(), null, null, null, null, null, null, false, null);
+                    res.getJobContext().getJobId(), null, null, null, false, null);
 
                 fakeRes.setFakeException(new ClusterTopologyException("Failed to send job due to node failure: " + node));
 
@@ -1491,7 +1481,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             }
 
             GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(node.id(), ses.getId(),
-                res.getJobContext().getJobId(), null, null, null, null, null, null, false, null);
+                res.getJobContext().getJobId(), null, null, null, false, null);
 
             if (fakeErr == null)
                 fakeErr = U.convertException(e);
@@ -1523,7 +1513,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         // Artificial response in case if a job is waiting for a response from
                         // non-existent node.
                         GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(nodeId, ses.getId(),
-                            jr.getJobContext().getJobId(), null, null, null, null, null, null, false, null);
+                            jr.getJobContext().getJobId(), null, null, null, false, null);
 
                         fakeRes.setFakeException(new ClusterTopologyException("Node has left grid: " + nodeId));
 
