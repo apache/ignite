@@ -21,25 +21,23 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.lang.IgnitePair;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.lang.IgniteProductVersion;
 
 /** Task to manage rolling upgrade. */
 @GridInternal
-public class RollingUpgradeTask extends VisorOneNodeTask<RollingUpgradeCommandArg, String> {
+public class RollingUpgradeTask extends VisorOneNodeTask<RollingUpgradeCommandArg, RollingUpgradeTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<RollingUpgradeCommandArg, String> job(RollingUpgradeCommandArg arg) {
+    @Override protected VisorJob<RollingUpgradeCommandArg, RollingUpgradeTaskResult> job(RollingUpgradeCommandArg arg) {
         return new RollingUpgradeJob(arg, debug);
     }
 
     /** */
-    private static class RollingUpgradeJob extends VisorJob<RollingUpgradeCommandArg, String> {
+    private static class RollingUpgradeJob extends VisorJob<RollingUpgradeCommandArg, RollingUpgradeTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -49,7 +47,7 @@ public class RollingUpgradeTask extends VisorOneNodeTask<RollingUpgradeCommandAr
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(RollingUpgradeCommandArg arg) throws IgniteException {
+        @Override protected RollingUpgradeTaskResult run(RollingUpgradeCommandArg arg) throws IgniteException {
             RollingUpgradeProcessor proc = ignite.context().rollingUpgrade();
 
             try {
@@ -58,30 +56,32 @@ public class RollingUpgradeTask extends VisorOneNodeTask<RollingUpgradeCommandAr
                 else if (arg instanceof RollingUpgradeDisableCommandArg)
                     return disableRollingUpgrade(proc);
 
-                throw new IllegalArgumentException("Unknown operation: " + arg.getClass().getSimpleName());
+                return new RollingUpgradeTaskResult(proc.enabled(),
+                    proc.versions(),
+                    new IllegalArgumentException("Unknown operation: " + arg.getClass().getSimpleName()));
             }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
+            catch (Throwable e) {
+                return new RollingUpgradeTaskResult(proc.enabled(), proc.versions(), e);
             }
         }
 
         /** */
-        private String enableRollingUpgrade(RollingUpgradeProcessor proc, RollingUpgradeEnableCommandArg arg)
-            throws IgniteCheckedException {
+        private RollingUpgradeTaskResult enableRollingUpgrade(
+            RollingUpgradeProcessor proc,
+            RollingUpgradeEnableCommandArg arg
+        ) throws IgniteCheckedException {
             IgniteProductVersion target = IgniteProductVersion.fromString(arg.targetVersion());
 
             proc.enable(target);
 
-            IgnitePair<IgniteProductVersion> cur = proc.versions();
-
-            return "Rolling upgrade enabled [currentVersion=" + cur.get1() + ", targetVersion=" + cur.get2() + ']';
+            return new RollingUpgradeTaskResult(proc.enabled(), proc.versions(), null);
         }
 
         /** */
-        private String disableRollingUpgrade(RollingUpgradeProcessor proc) throws IgniteCheckedException {
+        private RollingUpgradeTaskResult disableRollingUpgrade(RollingUpgradeProcessor proc) throws IgniteCheckedException {
             proc.disable();
 
-            return "Rolling upgrade disabled";
+            return new RollingUpgradeTaskResult(proc.enabled(), proc.versions(), null);
         }
     }
 }

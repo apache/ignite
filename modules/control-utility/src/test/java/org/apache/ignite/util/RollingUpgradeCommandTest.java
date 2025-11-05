@@ -18,6 +18,7 @@
 package org.apache.ignite.util;
 
 import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeCommand;
+import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeTaskResult;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.junit.Test;
@@ -42,34 +43,47 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         int res = execute(ROLLING_UPGRADE, DISABLE);
 
         assertEquals(EXIT_CODE_OK, res);
-        assertEquals("Rolling upgrade disabled", lastOperationResult);
+
+        RollingUpgradeTaskResult result = (RollingUpgradeTaskResult) lastOperationResult;
+
+        assertNotNull(result);
+        assertNull(result.exception());
+        assertFalse(result.enabled());
 
         IgniteProductVersion curVer = IgniteProductVersion.fromString(crd.localNode().attribute(ATTR_BUILD_VER));
 
         String targetVerStr = curVer.major() + "." + (curVer.minor() + 1) + ".0";
-
-        res = execute(ROLLING_UPGRADE, ENABLE, targetVerStr);
-        assertEquals(EXIT_CODE_OK, res);
-
-        assertTrue(crd.context().rollingUpgrade().enabled());
-
         IgniteProductVersion targetVer = IgniteProductVersion.fromString(targetVerStr);
 
-        IgnitePair<IgniteProductVersion> versions = crd.context().rollingUpgrade().versions();
+        res = execute(ROLLING_UPGRADE, ENABLE, targetVerStr);
+
+        assertEquals(EXIT_CODE_OK, res);
+
+        result = (RollingUpgradeTaskResult) lastOperationResult;
+
+        assertNotNull(result);
+        assertNull(result.exception());
+        assertTrue(result.enabled());
+
+        IgnitePair<IgniteProductVersion> versions = result.rollUpVers();
 
         assertNotNull(versions);
-
         assertEquals(curVer, versions.get1());
         assertEquals(targetVer, versions.get2());
 
-        assertEquals(
-            "Rolling upgrade enabled [currentVersion=" + curVer + ", targetVersion=" + targetVer + ']',
-            lastOperationResult
-        );
+        assertTrue(crd.context().rollingUpgrade().enabled());
 
         res = execute(ROLLING_UPGRADE, DISABLE);
 
         assertEquals(EXIT_CODE_OK, res);
-        assertEquals("Rolling upgrade disabled", lastOperationResult);
+
+        result = (RollingUpgradeTaskResult) lastOperationResult;
+
+        assertNotNull(result);
+        assertFalse(result.enabled());
+        assertNull(result.exception());
+        assertNull(result.rollUpVers());
+
+        assertFalse(crd.context().rollingUpgrade().enabled());
     }
 }

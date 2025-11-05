@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.management.rollingupgrade;
 
 import java.util.Collection;
+import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
 
 /** Command to disable rolling upgrade mode. */
-public class RollingUpgradeDisableCommand implements ComputeCommand<RollingUpgradeCommandArg, String> {
+public class RollingUpgradeDisableCommand implements ComputeCommand<RollingUpgradeCommandArg, RollingUpgradeTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Disable rolling upgrade";
@@ -38,6 +39,16 @@ public class RollingUpgradeDisableCommand implements ComputeCommand<RollingUpgra
     /** {@inheritDoc} */
     @Override public Class<RollingUpgradeTask> taskClass() {
         return RollingUpgradeTask.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(RollingUpgradeCommandArg arg, RollingUpgradeTaskResult res, Consumer<String> printer) {
+        if (res.exception() != null) {
+            printer.accept("Failed to disable rolling upgrade: " + res.exception().getMessage());
+            return;
+        }
+
+        printer.accept("Rolling upgrade disabled");
     }
 
     /** {@inheritDoc} */
