@@ -18,9 +18,11 @@
 package org.apache.ignite.util;
 
 import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeCommand;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 
 /** Tests {@link RollingUpgradeCommand} command. */
@@ -42,12 +44,28 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         assertEquals(EXIT_CODE_OK, res);
         assertEquals("Rolling upgrade disabled", lastOperationResult);
 
-        IgniteProductVersion curVer = crd.version();
+        IgniteProductVersion curVer = IgniteProductVersion.fromString(crd.localNode().attribute(ATTR_BUILD_VER));
 
-        res = execute(ROLLING_UPGRADE, ENABLE, curVer.major() + "." + (curVer.minor() + 1) + ".0");
+        String targetVerStr = curVer.major() + "." + (curVer.minor() + 1) + ".0";
+
+        res = execute(ROLLING_UPGRADE, ENABLE, targetVerStr);
         assertEquals(EXIT_CODE_OK, res);
 
         assertTrue(crd.context().rollingUpgrade().enabled());
+
+        IgniteProductVersion targetVer = IgniteProductVersion.fromString(targetVerStr);
+
+        IgnitePair<IgniteProductVersion> versions = crd.context().rollingUpgrade().versions();
+
+        assertNotNull(versions);
+
+        assertEquals(curVer, versions.get1());
+        assertEquals(targetVer, versions.get2());
+
+        assertEquals(
+            "Rolling upgrade enabled [currentVersion=" + curVer + ", targetVersion=" + targetVer + ']',
+            lastOperationResult
+        );
 
         res = execute(ROLLING_UPGRADE, DISABLE);
 
