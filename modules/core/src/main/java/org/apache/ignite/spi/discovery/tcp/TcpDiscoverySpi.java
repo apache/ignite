@@ -97,6 +97,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder;
@@ -502,6 +503,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             return ((ServerImpl)impl).getNode0(id);
 
         return getNode(id);
+    }
+
+    /**
+     * @return TCP discovery nodes ring.
+     */
+    @Nullable public TcpDiscoveryNodesRing discoveryRing() {
+        if (impl instanceof ServerImpl)
+            return ((ServerImpl)impl).ring();
+
+        return null;
     }
 
     /** {@inheritDoc} */
