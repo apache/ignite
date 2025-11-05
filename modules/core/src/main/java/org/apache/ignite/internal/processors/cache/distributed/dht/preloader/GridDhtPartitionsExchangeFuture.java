@@ -3311,14 +3311,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (partMap == null)
                 continue;
 
-            Map<Integer, Long> partsSizes = singleMsg.partitionSizes(top.groupId());
+            Map<Integer, Long> grpPartSizes = singleMsg.partitionSizes(top.groupId());
 
             for (Map.Entry<Integer, GridDhtPartitionState> e0 : partMap.entrySet()) {
                 int p = e0.getKey();
                 GridDhtPartitionState state = e0.getValue();
 
                 if (state == GridDhtPartitionState.OWNING) {
-                    Long size = partsSizes.get(p);
+                    Long size = grpPartSizes.get(p);
 
                     if (size != null)
                         partSizes.put(p, size);
