@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
 
+/** */
 public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
@@ -50,14 +51,17 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
         // No-op.
     }
 
+    /** */
     public boolean enabled() {
         return enabled;
     }
 
+    /** */
     public Throwable exception() {
         return exception;
     }
 
+    /** */
     public IgnitePair<IgniteProductVersion> rollUpVers() {
         return rollUpVers;
     }

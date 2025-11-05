@@ -44,7 +44,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
 
         assertEquals(EXIT_CODE_OK, res);
 
-        RollingUpgradeTaskResult result = (RollingUpgradeTaskResult) lastOperationResult;
+        RollingUpgradeTaskResult result = (RollingUpgradeTaskResult)lastOperationResult;
 
         assertNotNull(result);
         assertNull(result.exception());
@@ -59,7 +59,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
 
         assertEquals(EXIT_CODE_OK, res);
 
-        result = (RollingUpgradeTaskResult) lastOperationResult;
+        result = (RollingUpgradeTaskResult)lastOperationResult;
 
         assertNotNull(result);
         assertNull(result.exception());
@@ -77,7 +77,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
 
         assertEquals(EXIT_CODE_OK, res);
 
-        result = (RollingUpgradeTaskResult) lastOperationResult;
+        result = (RollingUpgradeTaskResult)lastOperationResult;
 
         assertNotNull(result);
         assertFalse(result.enabled());
