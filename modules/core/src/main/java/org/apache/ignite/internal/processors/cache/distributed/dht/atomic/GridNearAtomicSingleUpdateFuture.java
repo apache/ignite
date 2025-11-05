@@ -29,6 +29,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -206,9 +207,9 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         UpdateErrors errors = res.errors();
 
         if (errors != null) {
-            assert errors.errorMessage() != null;
+            assert ErrorMessage.error(errors.errorMessage()) != null;
 
-            completeFuture(null, errors.errorMessage().error(), res.futureId());
+            completeFuture(null, errors.error(), res.futureId());
 
             return;
         }

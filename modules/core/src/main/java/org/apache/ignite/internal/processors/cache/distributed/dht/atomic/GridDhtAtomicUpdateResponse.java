@@ -117,12 +117,12 @@ public class GridDhtAtomicUpdateResponse extends GridCacheIdMessage implements G
         if (errs == null)
             errs = new UpdateErrors();
 
-        errs.errorMessage(new ErrorMessage(err));
+        errs.error(err);
     }
 
     /** {@inheritDoc} */
     @Override public Throwable error() {
-        return errs != null ? errs.errorMessage().error() : null;
+        return errs != null ? ErrorMessage.error(errs.errorMessage()) : null;
     }
 
     /**
