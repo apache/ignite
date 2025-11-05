@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.util.Collections;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -48,12 +46,8 @@ public class PartitionSizesMap implements Message {
     /**
      * @return Partition sizes map.
      */
-    public Map<Integer, Long> partitionSizes() {
-        return partsSizes == null
-            ? Collections.emptyMap()
-            : partsSizes.entrySet().stream()
-                .filter(e -> e.getValue() != null)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    public @Nullable Map<Integer, Long> partitionSizes() {
+        return partsSizes;
     }
 
     /**

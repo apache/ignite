@@ -3311,12 +3311,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (partMap == null)
                 continue;
 
+            Map<Integer, Long> partsSizes = singleMsg.partitionSizes(top.groupId());
+
             for (Map.Entry<Integer, GridDhtPartitionState> e0 : partMap.entrySet()) {
                 int p = e0.getKey();
                 GridDhtPartitionState state = e0.getValue();
 
-                if (state == GridDhtPartitionState.OWNING)
-                    partSizes.put(p, singleMsg.partitionSizes(top.groupId()).get(p));
+                if (state == GridDhtPartitionState.OWNING) {
+                    Long size = partsSizes.get(p);
+
+                    if (size != null)
+                        partSizes.put(p, size);
+                }
             }
         }
 
@@ -4671,7 +4677,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                             msg.partitions().get(grpId),
                             cntrMap,
                             msg.partsToReload(cctx.localNodeId(), grpId),
-                            sizesMap != null ? sizesMap.partitionSizes() : Collections.emptyMap(),
+                            sizesMap != null ? F.emptyIfNull(sizesMap.partitionSizes()) : Collections.emptyMap(),
                             null,
                             this,
                             msg.lostPartitions(grpId));

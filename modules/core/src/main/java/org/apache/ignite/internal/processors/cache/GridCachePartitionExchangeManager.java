@@ -1788,7 +1788,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             entry.getValue(),
                             null,
                             msg.partsToReload(cctx.localNodeId(), grpId),
-                            sizesMap != null ? sizesMap.partitionSizes() : Collections.emptyMap(),
+                            sizesMap != null ? F.emptyIfNull(sizesMap.partitionSizes()) : Collections.emptyMap(),
                             msg.topologyVersion(),
                             null,
                             null);
