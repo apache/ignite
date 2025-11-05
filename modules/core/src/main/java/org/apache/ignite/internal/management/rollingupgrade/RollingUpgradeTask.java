@@ -33,7 +33,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 /** Task to manage rolling upgrade. */
 @GridInternal
 public class RollingUpgradeTask extends VisorOneNodeTask<RollingUpgradeCommandArg, String> {
-    /** Serial version uid. */
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
