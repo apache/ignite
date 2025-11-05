@@ -29,7 +29,7 @@ public class PartitionSizesMap implements Message {
 
     /** Partition sizes map. */
     @Order(value = 0, method = "partitionSizes")
-    private @Nullable Map<Integer, Long> partsSizes;
+    private @Nullable Map<Integer, Long> partSizes;
 
     /** Default constructor. */
     public PartitionSizesMap() {
@@ -37,24 +37,24 @@ public class PartitionSizesMap implements Message {
     }
 
     /**
-     * @param partsSizes Partition sizes map.
+     * @param partSizes Partition sizes map.
      */
-    public PartitionSizesMap(@Nullable Map<Integer, Long> partsSizes) {
-        this.partsSizes = partsSizes;
+    public PartitionSizesMap(@Nullable Map<Integer, Long> partSizes) {
+        this.partSizes = partSizes;
     }
 
     /**
      * @return Partition sizes map.
      */
     public @Nullable Map<Integer, Long> partitionSizes() {
-        return partsSizes;
+        return partSizes;
     }
 
     /**
-     * @param partsSizes Partition sizes map.
+     * @param partSizes Partition sizes map.
      */
-    public void partitionSizes(Map<Integer, Long> partsSizes) {
-        this.partsSizes = partsSizes;
+    public void partitionSizes(Map<Integer, Long> partSizes) {
+        this.partSizes = partSizes;
     }
 
     /** {@inheritDoc} */
