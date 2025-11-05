@@ -22,7 +22,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 
 /** Tests {@link RollingUpgradeCommand} command. */
 public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassAbstractTest {
@@ -41,24 +40,18 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         int res = execute(ROLLING_UPGRADE, DISABLE);
 
         assertEquals(EXIT_CODE_OK, res);
-        assertEquals("Rolling upgrade disabled.", lastOperationResult);
+        assertEquals("Rolling upgrade disabled", lastOperationResult);
 
         IgniteProductVersion curVer = crd.version();
 
-        IgniteProductVersion nextVer = new IgniteProductVersion(curVer.major(),
-            (byte)(curVer.minor() + 1),
-            (byte)0,
-            curVer.revisionTimestamp(),
-            curVer.revisionHash());
+        res = execute(ROLLING_UPGRADE, ENABLE, curVer.major() + "." + (curVer.minor() + 1) + ".0");
+        assertEquals(EXIT_CODE_OK, res);
 
-        res = execute(ROLLING_UPGRADE, ENABLE, nextVer.toString());
-
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, res);
-        assertEquals(null, lastOperationResult);
+        assertTrue(crd.context().rollingUpgrade().enabled());
 
         res = execute(ROLLING_UPGRADE, DISABLE);
 
         assertEquals(EXIT_CODE_OK, res);
-        assertEquals("Rolling upgrade disabled.", lastOperationResult);
+        assertEquals("Rolling upgrade disabled", lastOperationResult);
     }
 }
