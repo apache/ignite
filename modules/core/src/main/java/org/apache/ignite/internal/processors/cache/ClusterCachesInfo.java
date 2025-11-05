@@ -445,7 +445,8 @@ public class ClusterCachesInfo {
                 CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityBackupFilter", "Affinity backup filter",
                     locAttr.affinityBackupFilter(), rmtAttr.affinityBackupFilter(), true);
             }
-        } else {
+        }
+        else {
             // If both filter classes are null, this check won't fail.
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityBackupFilterClass", "Affinity backup filter class",
                 locAttr.affinityBackupFilterClass(), rmtAttr.affinityBackupFilterClass(), true);
