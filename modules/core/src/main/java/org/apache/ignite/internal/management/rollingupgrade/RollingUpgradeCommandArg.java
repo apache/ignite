@@ -17,15 +17,23 @@
 
 package org.apache.ignite.internal.management.rollingupgrade;
 
-import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
-/** Rolling upgrade commands. */
-public class RollingUpgradeCommand extends CommandRegistryImpl {
+/** Base rolling upgrade command argument. */
+public class RollingUpgradeCommandArg extends IgniteDataTransferObject {
     /** */
-    public RollingUpgradeCommand() {
-        super(
-            new RollingUpgradeEnableCommand(),
-            new RollingUpgradeDisableCommand()
-        );
+    private static final long serialVersionUID = 0;
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
+        // No-op.
     }
 }

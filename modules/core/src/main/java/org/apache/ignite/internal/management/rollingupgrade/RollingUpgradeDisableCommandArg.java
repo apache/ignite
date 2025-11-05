@@ -17,15 +17,8 @@
 
 package org.apache.ignite.internal.management.rollingupgrade;
 
-import org.apache.ignite.internal.management.api.CommandRegistryImpl;
-
-/** Rolling upgrade commands. */
-public class RollingUpgradeCommand extends CommandRegistryImpl {
+/** Rolling upgrade disable command argument. */
+public class RollingUpgradeDisableCommandArg extends RollingUpgradeCommandArg {
     /** */
-    public RollingUpgradeCommand() {
-        super(
-            new RollingUpgradeEnableCommand(),
-            new RollingUpgradeDisableCommand()
-        );
-    }
+    private static final long serialVersionUID = 0;
 }

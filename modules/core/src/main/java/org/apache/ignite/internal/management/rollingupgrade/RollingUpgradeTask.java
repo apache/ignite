@@ -19,9 +19,6 @@ package org.apache.ignite.internal.management.rollingupgrade;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeCommand.RollingUpgradeCommandArg;
-import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeCommand.RollingUpgradeDisableCommandArg;
-import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeCommand.RollingUpgradeEnableCommandArg;
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.IgnitePair;

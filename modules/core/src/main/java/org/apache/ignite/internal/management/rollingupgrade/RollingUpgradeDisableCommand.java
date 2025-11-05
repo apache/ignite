@@ -20,10 +20,8 @@ package org.apache.ignite.internal.management.rollingupgrade;
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
-import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeCommand.RollingUpgradeDisableCommandArg;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
-import static org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeCommand.RollingUpgradeCommandArg;
 
 /** Command to disable rolling upgrade mode. */
 public class RollingUpgradeDisableCommand implements ComputeCommand<RollingUpgradeCommandArg, String> {
