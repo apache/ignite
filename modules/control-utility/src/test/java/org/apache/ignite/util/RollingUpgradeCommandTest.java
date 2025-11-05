@@ -38,6 +38,9 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
     public static final String ROLLING_UPGRADE = "--rolling-upgrade";
 
     /** */
+    public static final String TARGET_VERSION = "--target-version";
+
+    /** */
     @Test
     public void testCommands() {
         int res = execute(ROLLING_UPGRADE, DISABLE);
@@ -55,7 +58,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         String targetVerStr = curVer.major() + "." + (curVer.minor() + 1) + ".0";
         IgniteProductVersion targetVer = IgniteProductVersion.fromString(targetVerStr);
 
-        res = execute(ROLLING_UPGRADE, ENABLE, targetVerStr);
+        res = execute(ROLLING_UPGRADE, ENABLE, TARGET_VERSION, targetVerStr);
 
         assertEquals(EXIT_CODE_OK, res);
 
