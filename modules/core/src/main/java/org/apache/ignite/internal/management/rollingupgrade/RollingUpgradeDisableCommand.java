@@ -22,30 +22,31 @@ import java.util.function.Consumer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.lang.IgniteExperimental;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
 
 /** Command to disable rolling upgrade mode. */
 @IgniteExperimental
-public class RollingUpgradeDisableCommand implements ComputeCommand<RollingUpgradeCommandArg, RollingUpgradeTaskResult> {
+public class RollingUpgradeDisableCommand implements ComputeCommand<NoArg, RollingUpgradeTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Disable rolling upgrade";
     }
 
     /** {@inheritDoc} */
-    @Override public Class<RollingUpgradeDisableCommandArg> argClass() {
-        return RollingUpgradeDisableCommandArg.class;
+    @Override public Class<NoArg> argClass() {
+        return NoArg.class;
     }
 
     /** {@inheritDoc} */
-    @Override public Class<RollingUpgradeTask> taskClass() {
-        return RollingUpgradeTask.class;
+    @Override public Class<RollingUpgradeDisableTask> taskClass() {
+        return RollingUpgradeDisableTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(RollingUpgradeCommandArg arg, RollingUpgradeTaskResult res, Consumer<String> printer) {
+    @Override public void printResult(NoArg arg, RollingUpgradeTaskResult res, Consumer<String> printer) {
         if (res.exception() != null) {
             printer.accept("Failed to disable rolling upgrade: " + res.exception().getMessage());
             return;
@@ -55,7 +56,7 @@ public class RollingUpgradeDisableCommand implements ComputeCommand<RollingUpgra
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, RollingUpgradeCommandArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, NoArg arg) {
         Collection<ClusterNode> coordinator = coordinatorOrNull(nodes);
 
         if (coordinator == null)

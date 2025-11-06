@@ -28,7 +28,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.coordinator
 
 /** Command to enable rolling upgrade. */
 @IgniteExperimental
-public class RollingUpgradeEnableCommand implements ComputeCommand<RollingUpgradeCommandArg, RollingUpgradeTaskResult> {
+public class RollingUpgradeEnableCommand implements ComputeCommand<RollingUpgradeEnableCommandArg, RollingUpgradeTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Enable rolling upgrade";
@@ -40,12 +40,12 @@ public class RollingUpgradeEnableCommand implements ComputeCommand<RollingUpgrad
     }
 
     /** {@inheritDoc} */
-    @Override public Class<RollingUpgradeTask> taskClass() {
-        return RollingUpgradeTask.class;
+    @Override public Class<RollingUpgradeEnableTask> taskClass() {
+        return RollingUpgradeEnableTask.class;
     }
 
     /** {@inheritDoc} */
-    @Override public void printResult(RollingUpgradeCommandArg arg, RollingUpgradeTaskResult res, Consumer<String> printer) {
+    @Override public void printResult(RollingUpgradeEnableCommandArg arg, RollingUpgradeTaskResult res, Consumer<String> printer) {
         if (res.exception() != null) {
             printer.accept("Failed to enable rolling upgrade: " + res.exception().getMessage());
             return;
@@ -56,7 +56,7 @@ public class RollingUpgradeEnableCommand implements ComputeCommand<RollingUpgrad
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, RollingUpgradeCommandArg arg) {
+    @Override public Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, RollingUpgradeEnableCommandArg arg) {
         Collection<ClusterNode> coordinator = coordinatorOrNull(nodes);
 
         if (coordinator == null)

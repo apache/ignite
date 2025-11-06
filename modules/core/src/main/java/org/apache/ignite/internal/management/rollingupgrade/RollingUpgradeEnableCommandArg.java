@@ -20,11 +20,12 @@ package org.apache.ignite.internal.management.rollingupgrade;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** Rolling upgrade enable command argument. */
-public class RollingUpgradeEnableCommandArg extends RollingUpgradeCommandArg {
+public class RollingUpgradeEnableCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 
