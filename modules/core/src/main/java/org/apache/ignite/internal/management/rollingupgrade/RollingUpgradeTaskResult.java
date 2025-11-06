@@ -85,7 +85,7 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeObject(curVer);
         out.writeObject(targetVer);
-        U.writeString(out,errMsg);
+        U.writeString(out, errMsg);
     }
 
     /** {@inheritDoc} */
