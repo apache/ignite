@@ -70,7 +70,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         taskRes = (RollingUpgradeTaskResult)lastOperationResult;
 
         assertNull(taskRes.errorMessage());
-        assertNull(taskRes.currentVersion());
+        assertEquals(curVer, taskRes.currentVersion());
         assertNull(taskRes.targetVersion());
 
         assertFalse(crd.context().rollingUpgrade().enabled());
@@ -79,12 +79,14 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
     /** */
     @Test
     public void testDoubleDisable() {
+        IgniteProductVersion curVer = IgniteProductVersion.fromString(crd.localNode().attribute(ATTR_BUILD_VER));
+
         int res = execute(ROLLING_UPGRADE, DISABLE);
 
         assertEquals(EXIT_CODE_OK, res);
         RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult)lastOperationResult;
 
-        assertNull(taskRes.currentVersion());
+        assertEquals(curVer, taskRes.currentVersion());
         assertNull(taskRes.targetVersion());
         assertNull(taskRes.errorMessage());
 
@@ -94,7 +96,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         taskRes = (RollingUpgradeTaskResult)lastOperationResult;
 
         assertNull(taskRes.errorMessage());
-        assertNull(taskRes.currentVersion());
+        assertEquals(curVer, taskRes.currentVersion());
         assertNull(taskRes.targetVersion());
 
         assertFalse(crd.context().rollingUpgrade().enabled());

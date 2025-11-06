@@ -57,7 +57,9 @@ public class RollingUpgradeDisableTask extends VisorOneNodeTask<NoArg, RollingUp
             try {
                 proc.disable();
 
-                return new RollingUpgradeTaskResult(ignite.localNode().attribute(ATTR_BUILD_VER), null, null);
+                String buildVer = ignite.localNode().attribute(ATTR_BUILD_VER);
+
+                return new RollingUpgradeTaskResult(IgniteProductVersion.fromString(buildVer), null, null);
             }
             catch (IgniteCheckedException e) {
                 IgnitePair<IgniteProductVersion> rollUpVers = proc.versions();
