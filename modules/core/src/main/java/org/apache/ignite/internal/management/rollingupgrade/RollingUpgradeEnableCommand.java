@@ -36,7 +36,8 @@ public class RollingUpgradeEnableCommand implements ComputeCommand<RollingUpgrad
 
     /** {@inheritDoc} */
     @Override public String confirmationPrompt(RollingUpgradeEnableCommandArg arg) {
-        return "Warning: you are responsible for upgrading nodes manually. "
+        return "Warning: the command will enable rolling upgrade mode. "
+            + "It allows cluster with mixed-version nodes. You are responsible for upgrading nodes manually. "
             + "This mode can be disabled only when all nodes (including client nodes) run the same version.";
     }
 
