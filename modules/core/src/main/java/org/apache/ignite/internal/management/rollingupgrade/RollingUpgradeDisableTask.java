@@ -68,7 +68,7 @@ public class RollingUpgradeDisableTask extends VisorOneNodeTask<NoArg, RollingUp
                 return new RollingUpgradeTaskResult(proc.enabled(),
                     rollUpVers == null ? null : rollUpVers.get1(),
                     rollUpVers == null ? null : rollUpVers.get2(),
-                    e);
+                    e.getMessage());
             }
         }
     }

@@ -17,10 +17,8 @@
 
 package org.apache.ignite.util;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeCommand;
 import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeTaskResult;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.junit.Test;
 
@@ -56,7 +54,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult)lastOperationResult;
 
         assertNotNull(taskRes);
-        assertNull(taskRes.exception());
+        assertNull(taskRes.errorMessage());
         assertTrue(taskRes.enabled());
 
         assertEquals(curVer, taskRes.currentVersion());
@@ -72,7 +70,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
 
         assertNotNull(taskRes);
         assertFalse(taskRes.enabled());
-        assertNull(taskRes.exception());
+        assertNull(taskRes.errorMessage());
         assertNull(taskRes.currentVersion());
         assertNull(taskRes.targetVersion());
 
@@ -89,7 +87,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
 
         assertNotNull(taskRes);
         assertFalse(taskRes.enabled());
-        assertNull(taskRes.exception());
+        assertNull(taskRes.errorMessage());
 
         res = execute(ROLLING_UPGRADE, DISABLE);
 
@@ -98,7 +96,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
 
         assertNotNull(taskRes);
         assertFalse(taskRes.enabled());
-        assertNull(taskRes.exception());
+        assertNull(taskRes.errorMessage());
         assertNull(taskRes.currentVersion());
         assertNull(taskRes.targetVersion());
         assertFalse(crd.context().rollingUpgrade().enabled());
@@ -122,10 +120,8 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult)lastOperationResult;
 
         assertNotNull(taskRes);
-        assertNotNull(taskRes.exception());
-        assertTrue(X.hasCause(taskRes.exception(),
-            "Rolling upgrade is already enabled with a different current and target version",
-            IgniteCheckedException.class));
+        assertNotNull(taskRes.errorMessage());
+        assertTrue(taskRes.errorMessage().contains("Rolling upgrade is already enabled with a different current and target version"));
         assertTrue(taskRes.enabled());
         assertEquals(targetVer, taskRes.targetVersion());
 

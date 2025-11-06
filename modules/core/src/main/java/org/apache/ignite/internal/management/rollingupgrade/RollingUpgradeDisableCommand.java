@@ -47,8 +47,8 @@ public class RollingUpgradeDisableCommand implements ComputeCommand<NoArg, Rolli
 
     /** {@inheritDoc} */
     @Override public void printResult(NoArg arg, RollingUpgradeTaskResult res, Consumer<String> printer) {
-        if (res.exception() != null) {
-            printer.accept("Failed to disable rolling upgrade: " + res.exception().getMessage());
+        if (res.errorMessage() != null) {
+            printer.accept("Failed to disable rolling upgrade: " + res.errorMessage());
             return;
         }
 

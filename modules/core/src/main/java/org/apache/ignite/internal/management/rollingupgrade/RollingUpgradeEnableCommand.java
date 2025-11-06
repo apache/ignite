@@ -52,8 +52,8 @@ public class RollingUpgradeEnableCommand implements ComputeCommand<RollingUpgrad
 
     /** {@inheritDoc} */
     @Override public void printResult(RollingUpgradeEnableCommandArg arg, RollingUpgradeTaskResult res, Consumer<String> printer) {
-        if (res.exception() != null) {
-            printer.accept("Failed to enable rolling upgrade: " + res.exception().getMessage());
+        if (res.errorMessage() != null) {
+            printer.accept("Failed to enable rolling upgrade: " + res.errorMessage());
             return;
         }
 

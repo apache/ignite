@@ -22,6 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 
 /** */
@@ -39,14 +40,14 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
     private IgniteProductVersion targetVer;
 
     /** */
-    private Throwable exception;
+    private String errMsg;
 
     /** */
-    public RollingUpgradeTaskResult(boolean enabled, IgniteProductVersion curVer, IgniteProductVersion targetVer, Throwable exception) {
+    public RollingUpgradeTaskResult(boolean enabled, IgniteProductVersion curVer, IgniteProductVersion targetVer, String errMsg) {
         this.enabled = enabled;
         this.curVer = curVer;
         this.targetVer = targetVer;
-        this.exception = exception;
+        this.errMsg = errMsg;
     }
 
     /** */
@@ -60,8 +61,8 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
     }
 
     /** */
-    public Throwable exception() {
-        return exception;
+    public String errorMessage() {
+        return errMsg;
     }
 
     /** */
@@ -90,8 +91,8 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
     }
 
     /** */
-    public void exception(Throwable e) {
-        this.exception = e;
+    public void errorMessage(String errMsg) {
+        this.errMsg = errMsg;
     }
 
     /** {@inheritDoc} */
@@ -99,7 +100,7 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
         out.writeBoolean(enabled);
         out.writeObject(curVer);
         out.writeObject(targetVer);
-        out.writeObject(exception);
+        U.writeString(out,errMsg);
     }
 
     /** {@inheritDoc} */
@@ -107,7 +108,7 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
         this.enabled = in.readBoolean();
         this.curVer = (IgniteProductVersion)in.readObject();
         this.targetVer = (IgniteProductVersion)in.readObject();
-        this.exception = (Throwable)in.readObject();
+        this.errMsg = U.readString(in);
     }
 
     /** {@inheritDoc} */
