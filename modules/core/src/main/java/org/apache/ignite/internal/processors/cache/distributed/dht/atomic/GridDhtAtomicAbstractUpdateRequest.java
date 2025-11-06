@@ -21,10 +21,8 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.CacheWriteSynchronizationModeMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
@@ -78,16 +76,12 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     @Order(value = 5, method = "writeVersion")
     protected GridCacheVersion writeVer;
 
-    /** Write synchronization mode wrapper message. */
-    @Order(value = 6, method = "writeSynchronizationModeMessage")
-    protected CacheWriteSynchronizationModeMessage syncModeMsg;
-
     /** Topology version. */
-    @Order(value = 7, method = "topologyVersion")
+    @Order(value = 6, method = "topologyVersion")
     protected AffinityTopologyVersion topVer;
 
     /** Task name hash. */
-    @Order(8)
+    @Order(7)
     protected int taskNameHash;
 
     /** Node ID. */
@@ -99,15 +93,15 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     private boolean onRes;
 
     /** */
-    @Order(9)
+    @Order(8)
     private UUID nearNodeId;
 
     /** */
-    @Order(value = 10, method = "nearFutureId")
+    @Order(value = 9, method = "nearFutureId")
     private long nearFutId;
 
     /** Additional flags. */
-    @Order(11)
+    @Order(10)
     protected byte flags;
 
     /**
@@ -127,7 +121,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         UUID nodeId,
         long futId,
         GridCacheVersion writeVer,
-        CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,
         int taskNameHash,
         boolean addDepInfo,
@@ -141,7 +134,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
         this.nodeId = nodeId;
         this.futId = futId;
         this.writeVer = writeVer;
-        syncModeMsg = new CacheWriteSynchronizationModeMessage(syncMode);
         this.topVer = topVer;
         this.taskNameHash = taskNameHash;
         this.addDepInfo = addDepInfo;
@@ -182,13 +174,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      */
     boolean replyWithoutDelay() {
         return isFlag(DHT_ATOMIC_REPLY_WITHOUT_DELAY);
-    }
-
-    /**
-     * @param replyWithoutDelay {@code True} if backups should reply immediately.
-     */
-    void replyWithoutDelay(boolean replyWithoutDelay) {
-        setFlag(replyWithoutDelay, DHT_ATOMIC_REPLY_WITHOUT_DELAY);
     }
 
     /**
@@ -298,14 +283,14 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     public abstract boolean forceTransformBackups();
 
     /** {@inheritDoc} */
-    @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+    @Override public IgniteLogger messageLogger(GridCacheSharedContext<?, ?> ctx) {
         return ctx.atomicMessageLogger();
     }
 
     /**
      * @param key Key to add.
      * @param val Value, {@code null} if should be removed.
-     * @param entryProcessor Entry processor.
+     * @param entryProc Entry processor.
      * @param ttl TTL (optional).
      * @param conflictExpireTime Conflict expire time (optional).
      * @param conflictVer Conflict version (optional).
@@ -316,7 +301,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      */
     public abstract void addWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProcessor,
+        EntryProcessor<Object, Object, Object> entryProc,
         long ttl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
@@ -328,13 +313,13 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     /**
      * @param key Key to add.
      * @param val Value, {@code null} if should be removed.
-     * @param entryProcessor Entry processor.
+     * @param entryProc Entry processor.
      * @param ttl TTL.
      * @param expireTime Expire time.
      */
     public abstract void addNearWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProcessor,
+        EntryProcessor<Object, Object, Object> entryProc,
         long ttl,
         long expireTime);
 
@@ -397,20 +382,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      */
     public void writeVersion(GridCacheVersion writeVer) {
         this.writeVer = writeVer;
-    }
-
-    /**
-     * @return The write mode synchronization wrapper message.
-     */
-    public final CacheWriteSynchronizationModeMessage writeSynchronizationModeMessage() {
-        return syncModeMsg;
-    }
-
-    /**
-     * @param writeSyncModeMsg Write syncronization mode wrapper message.
-     */
-    public void writeSynchronizationModeMessage(CacheWriteSynchronizationModeMessage writeSyncModeMsg) {
-        this.syncModeMsg = writeSyncModeMsg;
     }
 
     /**
@@ -578,24 +549,18 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeMessage(syncModeMsg))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
                 if (!writer.writeInt(taskNameHash))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 9:
                 if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
 
-            case 11:
+            case 10:
                 if (!writer.writeMessage(writeVer))
                     return false;
 
@@ -647,14 +612,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
                 reader.incrementState();
 
             case 8:
-                syncModeMsg = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
                 taskNameHash = reader.readInt();
 
                 if (!reader.isLastRead())
@@ -662,7 +619,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
                 reader.incrementState();
 
-            case 10:
+            case 9:
                 topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
@@ -670,7 +627,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
                 reader.incrementState();
 
-            case 11:
+            case 10:
                 writeVer = reader.readMessage();
 
                 if (!reader.isLastRead())

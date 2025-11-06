@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -43,21 +42,21 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdateRequest {
     /** Key to update. */
     @GridToStringInclude
-    @Order(12)
+    @Order(11)
     protected KeyCacheObject key;
 
     /** Value to update. */
     @GridToStringInclude
-    @Order(value = 13, method = "value")
+    @Order(value = 12, method = "value")
     protected CacheObject val;
 
     /** Previous value. */
     @GridToStringInclude
-    @Order(value = 14, method = "prevValue")
+    @Order(value = 13, method = "previousValue")
     protected CacheObject prevVal;
 
     /** Partition. */
-    @Order(value = 15, method = "updateCounter")
+    @Order(value = 14, method = "updateCounter")
     protected long updateCntr;
 
     /**
@@ -74,7 +73,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      * @param nodeId Node ID.
      * @param futId Future ID.
      * @param writeVer Write version for cache values.
-     * @param syncMode Cache write synchronization mode.
      * @param topVer Topology version.
      * @param taskNameHash Task name hash code.
      * @param addDepInfo Deployment info.
@@ -87,7 +85,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         UUID nodeId,
         long futId,
         GridCacheVersion writeVer,
-        CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,
         int taskNameHash,
         boolean addDepInfo,
@@ -99,7 +96,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
             nodeId,
             futId,
             writeVer,
-            syncMode,
             topVer,
             taskNameHash,
             addDepInfo,
@@ -111,7 +107,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /**
      * @param key Key to add.
      * @param val Value, {@code null} if should be removed.
-     * @param entryProcessor Entry processor.
+     * @param entryProc Entry processor.
      * @param ttl TTL (optional).
      * @param conflictExpireTime Conflict expire time (optional).
      * @param conflictVer Conflict version (optional).
@@ -122,7 +118,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      */
     @Override public void addWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProcessor,
+        EntryProcessor<Object, Object, Object> entryProc,
         long ttl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
@@ -130,7 +126,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         @Nullable CacheObject prevVal,
         long updateCntr,
         GridCacheOperation cacheOp) {
-        assert entryProcessor == null;
+        assert entryProc == null;
         assert ttl <= 0 : ttl;
         assert conflictExpireTime <= 0 : conflictExpireTime;
         assert conflictVer == null : conflictVer;
@@ -167,16 +163,16 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /**
      * @param key Key to add.
      * @param val Value, {@code null} if should be removed.
-     * @param entryProcessor Entry processor.
+     * @param entryProc Entry processor.
      * @param ttl TTL.
      * @param expireTime Expire time.
      */
     @Override public void addNearWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProcessor,
+        EntryProcessor<Object, Object, Object> entryProc,
         long ttl,
         long expireTime) {
-        assert entryProcessor == null;
+        assert entryProc == null;
         assert ttl <= 0 : ttl;
         assert key.partition() >= 0 : key;
 
@@ -335,9 +331,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override @Nullable public EntryProcessor<Object, Object, Object> nearEntryProcessor(int idx) {
-        assert idx == 0 : idx;
-
-        return null;
+        return entryProcessor(idx);
     }
 
     /** {@inheritDoc} */
@@ -356,9 +350,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public long nearTtl(int idx) {
-        assert idx == 0 : idx;
-
-        return CU.TTL_NOT_CHANGED;
+        return ttl(idx);
     }
 
     /** {@inheritDoc} */
@@ -370,9 +362,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public long nearExpireTime(int idx) {
-        assert idx == 0 : idx;
-
-        return CU.EXPIRE_TIME_CALCULATE;
+        return conflictExpireTime(idx);
     }
 
     /** {@inheritDoc} */
@@ -381,10 +371,10 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         prepareMarshalObject(key, cctx);
 
@@ -394,10 +384,10 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         finishUnmarshalObject(key, cctx, ldr);
 
@@ -411,7 +401,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      * @param ctx context
      * @throws IgniteCheckedException if error
      */
-    private void prepareMarshalObject(CacheObject obj, GridCacheContext ctx) throws IgniteCheckedException {
+    private void prepareMarshalObject(CacheObject obj, GridCacheContext<?, ?> ctx) throws IgniteCheckedException {
         if (obj != null)
             obj.prepareMarshal(ctx.cacheObjectContext());
     }
@@ -422,7 +412,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      * @param ldr class loader
      * @throws IgniteCheckedException if error
      */
-    private void finishUnmarshalObject(@Nullable CacheObject obj, GridCacheContext ctx,
+    private void finishUnmarshalObject(@Nullable CacheObject obj, GridCacheContext<?, ?> ctx,
         ClassLoader ldr) throws IgniteCheckedException {
         if (obj != null)
             obj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
