@@ -60,7 +60,7 @@ public class RollingUpgradeTask extends VisorOneNodeTask<RollingUpgradeCommandAr
                     proc.versions(),
                     new IllegalArgumentException("Unknown operation: " + arg.getClass().getSimpleName()));
             }
-            catch (Throwable e) {
+            catch (IgniteCheckedException e) {
                 return new RollingUpgradeTaskResult(proc.enabled(), proc.versions(), e);
             }
         }
