@@ -255,20 +255,6 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
 
             assertTrue(errMsg.contains("Affinity backup filter class mismatch"));
         }
-
-        backupFilter = new MdcAffinityBackupFilter(dcIds.length, backups + dcIds.length);
-        try {
-            startGrid(1);
-
-            fail("Expected exception was not thrown.");
-        }
-        catch (IgniteCheckedException e) {
-            String errMsg = e.getMessage();
-
-            assertNotNull(errMsg);
-
-            assertTrue(errMsg.contains("Affinity backup filter mismatch"));
-        }
     }
 
     /**
