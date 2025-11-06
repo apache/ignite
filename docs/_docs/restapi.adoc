@@ -22,8 +22,8 @@ Internally, Ignite uses Jetty to provide HTTP server features. See <<Configurati
 
 == Getting Started
 
-To enable HTTP connectivity, make sure that the `ignite-rest-http` module is enabled.
-If you use the binary distribution, copy the `ignite-rest-http` module from `IGNITE_HOME/libs/optional/` to the `IGNITE_HOME/libs` folder.
+To enable HTTP connectivity, make sure that the `ignite-rest-http` and `ignite-json` modules are enabled.
+If you use the binary distribution, copy the `ignite-rest-http` and `ignite-json` modules from `IGNITE_HOME/libs/optional/` to the `IGNITE_HOME/libs` folder.
 See link:setup#enabling-modules[Enabling modules] for details.
 
 Explicit configuration is not required; the connector starts up automatically and listens on port `8080`. You can check if it works with curl:
