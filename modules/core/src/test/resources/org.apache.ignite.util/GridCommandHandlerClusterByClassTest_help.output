@@ -372,14 +372,14 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
     control.(sh|bat) --property set --name <property_name> --val <property_value>
 
   [EXPERIMENTAL]
-  Enable rolling upgrade:
+  Enable rolling upgrade mode. It allows cluster with mixed-version nodes:
       control.(sh|bat) --rolling-upgrade enable target_version
 
       Parameters:
         target_version  - Target Ignite version.
 
   [EXPERIMENTAL]
-  Disable rolling upgrade. All nodes in the cluster must be running the same version:
+  Disable rolling upgrade mode. All nodes in the cluster must be running the same version:
     control.(sh|bat) --rolling-upgrade disable
 
   Print system view content:
