@@ -27,6 +27,8 @@ import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.lang.IgniteProductVersion;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
+
 /** Task to disable rolling upgrade. */
 @GridInternal
 public class RollingUpgradeDisableTask extends VisorOneNodeTask<NoArg, RollingUpgradeTaskResult> {
@@ -55,13 +57,7 @@ public class RollingUpgradeDisableTask extends VisorOneNodeTask<NoArg, RollingUp
             try {
                 proc.disable();
 
-                IgnitePair<IgniteProductVersion> rollUpVers = proc.versions();
-
-                return new RollingUpgradeTaskResult(
-                    rollUpVers == null ? null : rollUpVers.get1(),
-                    rollUpVers == null ? null : rollUpVers.get2(),
-                    null
-                );
+                return new RollingUpgradeTaskResult(ignite.localNode().attribute(ATTR_BUILD_VER), null, null);
             }
             catch (IgniteCheckedException e) {
                 IgnitePair<IgniteProductVersion> rollUpVers = proc.versions();

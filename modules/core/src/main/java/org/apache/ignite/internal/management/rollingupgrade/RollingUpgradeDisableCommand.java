@@ -52,7 +52,7 @@ public class RollingUpgradeDisableCommand implements ComputeCommand<NoArg, Rolli
             return;
         }
 
-        printer.accept("Rolling upgrade disabled");
+        printer.accept("Rolling upgrade disabled [currentVersion=" + res.currentVersion() + ']');
     }
 
     /** {@inheritDoc} */
