@@ -133,6 +133,8 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
     }
 
     /**
+     * For use only in GridNearTxFinishRequestSerializer.
+     *
      * @param miniId Mini future ID.
      */
     public void miniId(int miniId) {
