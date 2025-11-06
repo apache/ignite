@@ -76,13 +76,13 @@ public class TcpDiscoveryIoSession {
     /** */
     private final DirectMessageReader msgReader;
 
-    /** */
+    /** Buffered socket output stream. */
     private final OutputStream out;
 
-    /** */
+    /** Buffered socket input stream. */
     private final InputStream in;
 
-    /** */
+    /** Intermediate buffer for serializing discovery messages. */
     private final ByteBuffer msgBuf;
 
     /**
