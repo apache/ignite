@@ -93,6 +93,8 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
     }
 
     /**
