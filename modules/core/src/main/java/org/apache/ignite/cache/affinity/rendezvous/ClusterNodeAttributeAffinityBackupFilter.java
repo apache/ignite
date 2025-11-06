@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.affinity.rendezvous;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import org.apache.ignite.cluster.ClusterNode;
@@ -136,23 +135,5 @@ public class ClusterNodeAttributeAffinityBackupFilter implements IgniteBiPredica
      */
     public String[] getAttributeNames() {
         return attrNames.clone();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (o == this)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        ClusterNodeAttributeAffinityBackupFilter other = (ClusterNodeAttributeAffinityBackupFilter)o;
-
-        return Arrays.equals(attrNames, other.attrNames);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return Arrays.hashCode(attrNames);
     }
 }

@@ -434,23 +434,9 @@ public class ClusterCachesInfo {
             "Affinity partitions count", locAttr.affinityPartitionsCount(),
             rmtAttr.affinityPartitionsCount(), true);
 
-        if (locAttr.affinityBackupFilterClass() != null && rmtAttr.affinityBackupFilterClass() != null) {
-            // We should not check backups if filters are lambdas both on local and remote nodes as lambdas cannot be compared with equals.
-            if (U.lambdaEnclosingClassName(locAttr.affinityBackupFilterClass()) == null ||
-                U.lambdaEnclosingClassName(rmtAttr.affinityBackupFilterClass()) == null
-            ) {
-                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityBackupFilterClass", "Affinity backup filter class",
-                    locAttr.affinityBackupFilterClass(), rmtAttr.affinityBackupFilterClass(), true);
-
-                CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityBackupFilter", "Affinity backup filter",
-                    locAttr.affinityBackupFilter(), rmtAttr.affinityBackupFilter(), true);
-            }
-        }
-        else {
-            // If both filter classes are null, this check won't fail.
-            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityBackupFilterClass", "Affinity backup filter class",
-                locAttr.affinityBackupFilterClass(), rmtAttr.affinityBackupFilterClass(), true);
-        }
+        // TODO IGNITE-26967 - implement better validation of affinity backup filter
+        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityBackupFilterClass", "Affinity backup filter class",
+            locAttr.affinityBackupFilterClass(), rmtAttr.affinityBackupFilterClass(), true);
 
         CU.validateKeyConfigiration(rmtAttr.groupName(), rmtAttr.cacheName(), rmt, rmtAttr.configuration().getKeyConfiguration(),
             locAttr.configuration().getKeyConfiguration(), log, true);
