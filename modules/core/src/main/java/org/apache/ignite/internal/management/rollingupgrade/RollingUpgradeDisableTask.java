@@ -22,8 +22,10 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.lang.IgniteProductVersion;
 
 /** Task to disable rolling upgrade. */
 @GridInternal
@@ -53,10 +55,20 @@ public class RollingUpgradeDisableTask extends VisorOneNodeTask<NoArg, RollingUp
             try {
                 proc.disable();
 
-                return new RollingUpgradeTaskResult(proc.enabled(), proc.versions(), null);
+                IgnitePair<IgniteProductVersion> rollUpVers = proc.versions();
+
+                return new RollingUpgradeTaskResult(proc.enabled(),
+                    rollUpVers == null ? null : rollUpVers.get1(),
+                    rollUpVers == null ? null : rollUpVers.get2(),
+                    null);
             }
             catch (IgniteCheckedException e) {
-                return new RollingUpgradeTaskResult(proc.enabled(), proc.versions(), e);
+                IgnitePair<IgniteProductVersion> rollUpVers = proc.versions();
+
+                return new RollingUpgradeTaskResult(proc.enabled(),
+                    rollUpVers == null ? null : rollUpVers.get1(),
+                    rollUpVers == null ? null : rollUpVers.get2(),
+                    e);
             }
         }
     }

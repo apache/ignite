@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
 
@@ -34,16 +33,20 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
     private boolean enabled;
 
     /** */
-    private IgnitePair<IgniteProductVersion> rollUpVers;
+    private IgniteProductVersion curVer;
+
+    /** */
+    private IgniteProductVersion targetVer;
 
     /** */
     private Throwable exception;
 
     /** */
-    public RollingUpgradeTaskResult(boolean enabled, IgnitePair<IgniteProductVersion> rollUpVers, Throwable exception) {
+    public RollingUpgradeTaskResult(boolean enabled, IgniteProductVersion curVer, IgniteProductVersion targetVer, Throwable exception) {
         this.enabled = enabled;
+        this.curVer = curVer;
+        this.targetVer = targetVer;
         this.exception = exception;
-        this.rollUpVers = rollUpVers;
     }
 
     /** */
@@ -62,37 +65,49 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
     }
 
     /** */
-    public IgnitePair<IgniteProductVersion> rollUpVers() {
-        return rollUpVers;
+    public void enabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    /** */
+    public IgniteProductVersion currentVersion() {
+        return curVer;
+    }
+
+    /** */
+    public void currentVersion(IgniteProductVersion curVer) {
+        this.curVer = curVer;
+    }
+
+    /** */
+    public IgniteProductVersion targetVersion() {
+        return targetVer;
+    }
+
+    /** */
+    public void targetVersion(IgniteProductVersion targetVer) {
+        this.targetVer = targetVer;
+    }
+
+    /** */
+    public void exception(Throwable e) {
+        this.exception = e;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeBoolean(enabled);
-        out.writeObject(rollUpVers);
+        out.writeObject(curVer);
+        out.writeObject(targetVer);
         out.writeObject(exception);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         this.enabled = in.readBoolean();
-        this.rollUpVers = (IgnitePair<IgniteProductVersion>)in.readObject();
+        this.curVer = (IgniteProductVersion)in.readObject();
+        this.targetVer = (IgniteProductVersion)in.readObject();
         this.exception = (Throwable)in.readObject();
-    }
-
-    /** */
-    public void enabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    /** */
-    public void rollUpVers(IgnitePair<IgniteProductVersion> rollUpVers) {
-        this.rollUpVers = rollUpVers;
-    }
-
-    /** */
-    public void exception(Throwable e) {
-        this.exception = e;
     }
 
     /** {@inheritDoc} */

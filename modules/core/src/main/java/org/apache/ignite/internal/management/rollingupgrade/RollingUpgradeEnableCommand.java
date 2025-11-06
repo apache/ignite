@@ -52,7 +52,7 @@ public class RollingUpgradeEnableCommand implements ComputeCommand<RollingUpgrad
         }
 
         printer.accept("Rolling upgrade enabled "
-                + "[currentVersion=" + res.rollUpVers().get1() + ", targetVersion=" + res.rollUpVers().get2() + ']');
+                + "[currentVersion=" + res.currentVersion() + ", targetVersion=" + res.targetVersion() + ']');
     }
 
     /** {@inheritDoc} */

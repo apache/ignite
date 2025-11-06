@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -53,10 +54,20 @@ public class RollingUpgradeEnableTask extends VisorOneNodeTask<RollingUpgradeEna
             try {
                 proc.enable(IgniteProductVersion.fromString(arg.targetVersion()));
 
-                return new RollingUpgradeTaskResult(proc.enabled(), proc.versions(), null);
+                IgnitePair<IgniteProductVersion> rollUpVers = proc.versions();
+
+                return new RollingUpgradeTaskResult(proc.enabled(),
+                    rollUpVers == null ? null : rollUpVers.get1(),
+                    rollUpVers == null ? null : rollUpVers.get2(),
+                    null);
             }
             catch (IgniteCheckedException e) {
-                return new RollingUpgradeTaskResult(proc.enabled(), proc.versions(), e);
+                IgnitePair<IgniteProductVersion> rollUpVers = proc.versions();
+
+                return new RollingUpgradeTaskResult(proc.enabled(),
+                    rollUpVers == null ? null : rollUpVers.get1(),
+                    rollUpVers == null ? null : rollUpVers.get2(),
+                    e);
             }
         }
 

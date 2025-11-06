@@ -20,7 +20,6 @@ package org.apache.ignite.util;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeCommand;
 import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeTaskResult;
-import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.junit.Test;
@@ -60,11 +59,8 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         assertNull(taskRes.exception());
         assertTrue(taskRes.enabled());
 
-        IgnitePair<IgniteProductVersion> versions = taskRes.rollUpVers();
-
-        assertNotNull(versions);
-        assertEquals(curVer, versions.get1());
-        assertEquals(targetVer, versions.get2());
+        assertEquals(curVer, taskRes.currentVersion());
+        assertEquals(targetVer, taskRes.targetVersion());
 
         assertTrue(crd.context().rollingUpgrade().enabled());
 
@@ -77,7 +73,8 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         assertNotNull(taskRes);
         assertFalse(taskRes.enabled());
         assertNull(taskRes.exception());
-        assertNull(taskRes.rollUpVers());
+        assertNull(taskRes.currentVersion());
+        assertNull(taskRes.targetVersion());
 
         assertFalse(crd.context().rollingUpgrade().enabled());
     }
@@ -102,7 +99,8 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         assertNotNull(taskRes);
         assertFalse(taskRes.enabled());
         assertNull(taskRes.exception());
-        assertNull(taskRes.rollUpVers());
+        assertNull(taskRes.currentVersion());
+        assertNull(taskRes.targetVersion());
         assertFalse(crd.context().rollingUpgrade().enabled());
     }
 
@@ -129,7 +127,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
             "Rolling upgrade is already enabled with a different current and target version",
             IgniteCheckedException.class));
         assertTrue(taskRes.enabled());
-        assertEquals(targetVer, taskRes.rollUpVers().get2());
+        assertEquals(targetVer, taskRes.targetVersion());
 
         assertTrue(crd.context().rollingUpgrade().enabled());
     }
