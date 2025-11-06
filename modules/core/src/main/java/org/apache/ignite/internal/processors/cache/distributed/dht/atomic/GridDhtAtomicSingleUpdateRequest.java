@@ -308,14 +308,14 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /**
      * @return Previous value.
      */
-    public CacheObject prevValue() {
+    public CacheObject previousValue() {
         return prevVal;
     }
 
     /**
      * @param prevVal New previous value.
      */
-    public void prevValue(CacheObject prevVal) {
+    public void previousValue(CacheObject prevVal) {
         this.prevVal = prevVal;
     }
 
