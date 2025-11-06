@@ -136,6 +136,13 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param miniId Mini future ID.
      */
     public void miniId(int miniId) {
+        this.miniId = miniId;
+    }
+
+    /**
+     * @param miniId Mini future ID.
+     */
+    public void updateMiniId(int miniId) {
         assert miniId > 0;
 
         this.miniId = miniId;
