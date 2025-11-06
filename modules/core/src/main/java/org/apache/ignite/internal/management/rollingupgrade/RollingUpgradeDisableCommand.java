@@ -32,7 +32,7 @@ import static org.apache.ignite.internal.management.api.CommandUtils.coordinator
 public class RollingUpgradeDisableCommand implements ComputeCommand<NoArg, RollingUpgradeTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Disable rolling upgrade";
+        return "Disable rolling upgrade. All nodes in the cluster must be running the same version";
     }
 
     /** {@inheritDoc} */
