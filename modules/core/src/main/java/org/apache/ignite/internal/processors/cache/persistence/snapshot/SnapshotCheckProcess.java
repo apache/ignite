@@ -232,11 +232,37 @@ public class SnapshotCheckProcess {
                 });
             }
 
-            snpChecker.checkCustomHandlersResults(ctx.req.snapshotName(), reduced);
+            Map<String, List<SnapshotHandlerResult<?>>> clusterResults = new HashMap<>();
+            Collection<UUID> execNodes = new ArrayList<>(reduced.size());
+
+            // Checking node -> Map by consistend id.
+            for (Map.Entry<ClusterNode, Map<Object, Map<String, SnapshotHandlerResult<?>>>> nodeRes : reduced.entrySet()) {
+                // Consistent id -> Map by handler name.
+                for (Map.Entry<Object, Map<String, SnapshotHandlerResult<?>>> res : nodeRes.getValue().entrySet()) {
+                    // Depending on the job mapping, we can get several different results from one node.
+                    execNodes.add(nodeRes.getKey().id());
+
+                    Map<String, SnapshotHandlerResult<?>> nodeDataMap = res.getValue();
+
+                    assert nodeDataMap != null : "At least the default snapshot restore handler should have been executed ";
+
+                    for (Map.Entry<String, SnapshotHandlerResult<?>> entry : nodeDataMap.entrySet()) {
+                        String hndName = entry.getKey();
+
+                        clusterResults.computeIfAbsent(hndName, v -> new ArrayList<>()).add(entry.getValue());
+                    }
+                }
+            }
+
+            kctx.cache().context().snapshotMgr().handlers().completeAll(
+                SnapshotHandlerType.RESTORE, ctx.req.snapshotName(), clusterResults, execNodes, wrns -> {});
 
             fut.onDone(new SnapshotPartitionsVerifyResult(ctx.clusterMetas, null));
         }
         catch (Throwable err) {
+            log.warning("The snapshot operation will be aborted due to a handler error " +
+                "[snapshot=" + ctx.req.snapshotName() + "].", err);
+
             fut.onDone(err);
         }
     }
