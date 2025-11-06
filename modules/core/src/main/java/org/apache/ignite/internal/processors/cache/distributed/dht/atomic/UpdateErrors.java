@@ -60,12 +60,16 @@ public class UpdateErrors implements Message {
         errMsg = new ErrorMessage(err);
     }
 
-    /** Sets error. */
+    /**
+     * @param err Error.
+     */
     public void error(Throwable err) {
         errMsg = new ErrorMessage(err);
     }
 
-    /** Gets error. */
+    /**
+     * @return Error.
+     */
     public Throwable error() {
         return ErrorMessage.error(errMsg);
     }
