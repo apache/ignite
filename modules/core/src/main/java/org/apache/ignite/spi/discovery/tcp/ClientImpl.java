@@ -1170,13 +1170,14 @@ class ClientImpl extends TcpDiscoveryImpl {
                 }
 
                 Socket sock = sockStream.socket();
-                TcpDiscoveryIoSession ses = new TcpDiscoveryIoSession(sock, spi);
 
                 U.enhanceThreadName(U.id8(rmtNodeId)
                     + ' ' + sockStream.sock.getInetAddress().getHostAddress()
                     + ":" + sockStream.sock.getPort());
 
                 try {
+                    TcpDiscoveryIoSession ses = new TcpDiscoveryIoSession(sock, spi);
+
                     assert sock.getKeepAlive() && sock.getTcpNoDelay() : "Socket wasn't configured properly:" +
                         " KeepAlive " + sock.getKeepAlive() +
                         " TcpNoDelay " + sock.getTcpNoDelay();

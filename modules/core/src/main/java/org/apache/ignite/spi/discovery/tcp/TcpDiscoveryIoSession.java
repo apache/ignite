@@ -17,6 +17,9 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,12 +27,12 @@ import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -37,17 +40,29 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
 
 /**
- * Wrapper of Socket + reader/writer + setter for streams.
+ * Handles I/O operations between discovery nodes in the cluster. This class encapsulates the socket connection used
+ * by the {@link TcpDiscoverySpi} to exchange discovery protocol messages between nodes.
+ * <p>
+ * Currently, there are two modes for message serialization:
+ * <ul>
+ *     <li>Using {@link MessageSerializer} for messages implementing the {@link Message} interface.</li>
+ *     <li>Deprecated: Using {@link JdkMarshaller} for messages that have not yet been refactored.</li>
+ * </ul>
+ * A leading byte is used to distinguish between the modes. The byte will be removed in future.
  */
 public class TcpDiscoveryIoSession {
-    /** */
-    private static final int DEFAULT_BUFFER_SIZE = 8192;
+    /** Default size of buffer used for buffering socket in/out. */
+    private static final int DFLT_SOCK_BUFFER_SIZE = 8192;
 
-    /** TODO: remove these flags after refactoring all discovery messages. */
-    static final byte JAVA_SERIALIZATION = (byte)0;
+    /** Size for an intermediate buffer for serializing discovery messages. */
+    private static final int MSG_BUFFER_SIZE = 100;
 
-    /** */
-    static final byte MESSAGE_SERIALIZATION = (byte)1;
+    /** Leading byte for messages use {@link JdkMarshaller} for serialization. */
+    // TODO: remove these flags after refactoring all discovery messages.
+    static final byte JAVA_SERIALIZATION = (byte)1;
+
+    /** Leading byte for messages use {@link MessageSerializer} for serialization. */
+    static final byte MESSAGE_SERIALIZATION = (byte)2;
 
     /** */
     private final TcpDiscoverySpi spi;
@@ -62,71 +77,49 @@ public class TcpDiscoveryIoSession {
     private final DirectMessageReader msgReader;
 
     /** */
-    private final ByteBuffer sendBuf;
+    private final OutputStream out;
 
     /** */
-    private final ByteBuffer rcvBuf;
+    private final InputStream in;
 
     /** */
+    private final ByteBuffer msgBuf;
+
+    /**
+     * Creates a new discovery I/O session bound to the given socket.
+     *
+     * @param sock Socket connected to a remote discovery node.
+     * @param spi  Discovery SPI instance owning this session.
+     * @throws IgniteException If an I/O error occurs while initializing buffers.
+     */
     TcpDiscoveryIoSession(Socket sock, TcpDiscoverySpi spi) {
         this.sock = sock;
         this.spi = spi;
+
+        msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
 
         msgWriter = new DirectMessageWriter(spi.messageFactory());
         msgReader = new DirectMessageReader(spi.messageFactory(), null);
 
         try {
-            int sendBufSize = sock.getSendBufferSize() > 0 ? sock.getSendBufferSize() : DEFAULT_BUFFER_SIZE;
-            int rcvBufSize = sock.getReceiveBufferSize() > 0 ? sock.getReceiveBufferSize() : DEFAULT_BUFFER_SIZE;
+            int sendBufSize = sock.getSendBufferSize() > 0 ? sock.getSendBufferSize() : DFLT_SOCK_BUFFER_SIZE;
+            int rcvBufSize = sock.getReceiveBufferSize() > 0 ? sock.getReceiveBufferSize() : DFLT_SOCK_BUFFER_SIZE;
 
-            sendBuf = ByteBuffer.allocate(sendBufSize);
-            rcvBuf = ByteBuffer.allocate(rcvBufSize);
+            out = new BufferedOutputStream(sock.getOutputStream(), sendBufSize);
+            in = new BufferedInputStream(sock.getInputStream(), rcvBufSize);
         }
         catch (IOException e) {
             throw new IgniteException(e);
         }
     }
 
-    /** */
-    byte[] serializeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException {
-        if (!(msg instanceof Message))
-            return U.marshal(spi.marshaller(), msg);
-
-        Message m = (Message)msg;
-
-        MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
-
-        msgWriter.reset();
-        msgWriter.setBuffer(sendBuf);
-
-        byte[] serMsg = new byte[0];
-        int total = 0;
-        int pos = 0;
-
-        boolean finished;
-
-        do {
-            finished = msgSer.writeTo(m, msgWriter);
-
-            total += sendBuf.position();
-
-            serMsg = Arrays.copyOf(serMsg, total);
-
-            System.arraycopy(sendBuf.array(), 0, serMsg, pos, sendBuf.position());
-
-            pos = serMsg.length;
-
-            sendBuf.clear();
-        }
-        while (!finished);
-
-        return serMsg;
-    }
-
-    /** */
+    /**
+     * Writes a discovery message to the underlying socket output stream.
+     *
+     * @param msg Message to send to the remote node.
+     * @throws IgniteCheckedException If serialization fails.
+     */
     void writeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
-        OutputStream out = sock.getOutputStream();
-
         if (!(msg instanceof Message)) {
             out.write(JAVA_SERIALIZATION);
 
@@ -136,24 +129,9 @@ public class TcpDiscoveryIoSession {
         }
 
         try {
-            Message m = (Message)msg;
-            MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
-
-            msgWriter.reset();
-            msgWriter.setBuffer(sendBuf);
-
             out.write(MESSAGE_SERIALIZATION);
 
-            boolean finished;
-
-            do {
-                finished = msgSer.writeTo(m, msgWriter);
-
-                out.write(sendBuf.array(), 0, sendBuf.position());
-
-                sendBuf.clear();
-            }
-            while (!finished);
+            serializeMessage((Message)msg, out);
 
             out.flush();
         }
@@ -166,10 +144,14 @@ public class TcpDiscoveryIoSession {
         }
     }
 
-    /** */
+    /**
+     * Reads the next discovery message from the socket input stream.
+     *
+     * @param <T> Type of the expected message.
+     * @return Deserialized message instance.
+     * @throws IgniteCheckedException If deserialization fails.
+     */
     <T> T readMessage() throws IgniteCheckedException, IOException {
-        InputStream in = sock.getInputStream();
-
         byte serMode = (byte)in.read();
 
         if (JAVA_SERIALIZATION == serMode)
@@ -188,28 +170,24 @@ public class TcpDiscoveryIoSession {
             Message msg = spi.messageFactory().create(makeMessageType(b0, b1));
 
             msgReader.reset();
-            msgReader.setBuffer(rcvBuf);
+            msgReader.setBuffer(msgBuf);
 
             MessageSerializer msgSer = spi.messageFactory().serializer(msg.directType());
 
-            boolean finish;
-
-            int pos = 0;
+            boolean finished;
 
             do {
-                rcvBuf.put((byte)in.read());
+                msgBuf.clear();
 
-                rcvBuf.position(pos);
-                rcvBuf.limit(pos + 1);
+                int read = in.read(msgBuf.array(), 0, msgBuf.limit());
 
-                finish = msgSer.readFrom(msg, msgReader);
+                if (read == -1)
+                    throw new EOFException("Connection closed before message was fully read.");
 
-                rcvBuf.limit(rcvBuf.capacity());
-                pos = rcvBuf.position();
+                msgBuf.limit(read);
 
-                // TODO: big message.
-
-            } while (!finish);
+                finished = msgSer.readFrom(msg, msgReader);
+            } while (!finished);
 
             return (T)msg;
         }
@@ -222,9 +200,53 @@ public class TcpDiscoveryIoSession {
         }
     }
 
+    /**
+     * Serializes a discovery message into a byte array.
+     *
+     * @param msg Discovery message to serialize.
+     * @return Serialized byte array containing the message data.
+     * @throws IgniteCheckedException If serialization fails.
+     * @throws IOException If serialization fails.
+     */
+    byte[] serializeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
+        if (!(msg instanceof Message))
+            return U.marshal(spi.marshaller(), msg);
+
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            serializeMessage((Message)msg, out);
+
+            return out.toByteArray();
+        }
+    }
+
     /** @return Socket. */
     public Socket socket() {
         return sock;
+    }
+
+    /**
+     * Serializes a discovery message into given output stream.
+     *
+     * @param m Discovery message to serialize.
+     * @param out Output stream to write serialized message.
+     * @throws IOException If serialization fails.
+     */
+    private void serializeMessage(Message m, OutputStream out) throws IOException {
+        MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
+
+        msgWriter.reset();
+        msgWriter.setBuffer(msgBuf);
+
+        boolean finished;
+
+        do {
+            finished = msgSer.writeTo(m, msgWriter);
+
+            out.write(msgBuf.array(), 0, msgBuf.position());
+
+            msgBuf.clear();
+        }
+        while (!finished);
     }
 
     /**

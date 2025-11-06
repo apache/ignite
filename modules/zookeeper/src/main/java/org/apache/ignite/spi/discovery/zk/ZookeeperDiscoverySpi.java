@@ -39,7 +39,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
@@ -365,11 +364,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
 
         locNodeAttrs = attrs;
         locNodeVer = ver;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setMessageFactory(MessageFactory msgFactory) {
-        // No-op.
     }
 
     /** {@inheritDoc} */
