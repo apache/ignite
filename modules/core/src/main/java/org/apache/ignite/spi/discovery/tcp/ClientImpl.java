@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -111,6 +112,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryInfoRequest;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryInfoResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
@@ -728,6 +731,18 @@ class ClientImpl extends TcpDiscoveryImpl {
                 out = spi.socketStream(sock);
 
                 openSock = true;
+
+                TcpDiscoveryInfoRequest infoReq = new TcpDiscoveryInfoRequest(locNodeId);
+
+                spi.writeToSocket(sock, out, infoReq, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+
+                TcpDiscoveryInfoResponse infoRes = spi.readMessage(sock, null, ackTimeout0);
+
+                if (locNode.dataCenterId() != null && !Objects.equals(locNode.dataCenterId(), infoRes.node().dataCenterId()))
+                    return null;
+
+                sock = spi.openSocket(addr, timeoutHelper);
+                out = spi.socketStream(sock);
 
                 TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId);
 

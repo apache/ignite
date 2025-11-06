@@ -145,6 +145,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDummyWakeupMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryInfoRequest;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryInfoResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
@@ -6821,6 +6823,24 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 log.info("Finished writing ping response " + "[rmtNodeId=" + msg.creatorNodeId() +
                                     ", rmtAddr=" + rmtAddr + ", rmtPort=" + sock.getPort() + "]");
                             }
+                        }
+                        else if (log.isDebugEnabled())
+                            log.debug("Ignore ping request, node is stopping.");
+
+                        return;
+                    }
+                    else if (msg instanceof TcpDiscoveryInfoRequest) {
+                        if (!spi.isNodeStopping0()) {
+                            TcpDiscoveryInfoResponse res = new TcpDiscoveryInfoResponse(locNodeId);
+
+                            res.node(locNode);
+
+                            IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
+
+                            spi.writeToSocket(sock, spi.socketStream(sock), res, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+
+                            if (!(sock instanceof SSLSocket))
+                                sock.shutdownOutput();
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Ignore ping request, node is stopping.");
