@@ -22,6 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
+import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** Rolling upgrade enable command argument. */
@@ -30,7 +31,8 @@ public class RollingUpgradeEnableCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** Target version. */
-    @Argument(description = "Target Ignite version", example = "2.18.0")
+    @Positional
+    @Argument(description = "Target Ignite version")
     private String targetVersion;
 
     /** */

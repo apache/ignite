@@ -373,10 +373,10 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
 
   [EXPERIMENTAL]
   This command enables rolling upgrade mode. It allows cluster with mixed-version nodes. You are responsible for upgrading nodes manually. This mode can be disabled only when all nodes (including client nodes) run the same version:
-      control.(sh|bat) --rolling-upgrade enable --target-version 2.18.0
+      control.(sh|bat) --rolling-upgrade enable target_version
 
       Parameters:
-        --target-version 2.18.0  - Target Ignite version.
+        target_version  - Target Ignite version.
 
   [EXPERIMENTAL]
   Disable rolling upgrade. All nodes in the cluster must be running the same version:
