@@ -36,6 +36,13 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
     /** */
     public static final String ROLLING_UPGRADE = "--rolling-upgrade";
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        autoConfirmation = true;
+    }
+
     /** */
     @Test
     public void testEnableAndDisable() {
