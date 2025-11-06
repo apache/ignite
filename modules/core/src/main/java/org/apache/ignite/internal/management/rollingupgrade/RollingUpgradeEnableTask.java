@@ -56,7 +56,7 @@ public class RollingUpgradeEnableTask extends VisorOneNodeTask<RollingUpgradeEna
 
                 IgnitePair<IgniteProductVersion> rollUpVers = proc.versions();
 
-                return new RollingUpgradeTaskResult(proc.enabled(),
+                return new RollingUpgradeTaskResult(
                     rollUpVers == null ? null : rollUpVers.get1(),
                     rollUpVers == null ? null : rollUpVers.get2(),
                     null);
@@ -64,7 +64,7 @@ public class RollingUpgradeEnableTask extends VisorOneNodeTask<RollingUpgradeEna
             catch (IgniteCheckedException e) {
                 IgnitePair<IgniteProductVersion> rollUpVers = proc.versions();
 
-                return new RollingUpgradeTaskResult(proc.enabled(),
+                return new RollingUpgradeTaskResult(
                     rollUpVers == null ? null : rollUpVers.get1(),
                     rollUpVers == null ? null : rollUpVers.get2(),
                     e.getMessage());

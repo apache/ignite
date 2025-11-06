@@ -52,8 +52,6 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
 
         assertNotNull(taskRes);
         assertNull(taskRes.errorMessage());
-        assertTrue(taskRes.enabled());
-
         assertEquals(curVer, taskRes.currentVersion());
         assertEquals(targetVer, taskRes.targetVersion());
 
@@ -65,8 +63,6 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
 
         taskRes = (RollingUpgradeTaskResult)lastOperationResult;
 
-        assertNotNull(taskRes);
-        assertFalse(taskRes.enabled());
         assertNull(taskRes.errorMessage());
         assertNull(taskRes.currentVersion());
         assertNull(taskRes.targetVersion());
@@ -82,8 +78,9 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         assertEquals(EXIT_CODE_OK, res);
         RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult)lastOperationResult;
 
-        assertNotNull(taskRes);
-        assertFalse(taskRes.enabled());
+        assertNull(taskRes.currentVersion());
+        assertNull(taskRes.targetVersion());
+
         assertNull(taskRes.errorMessage());
 
         res = execute(ROLLING_UPGRADE, DISABLE);
@@ -91,8 +88,6 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         assertEquals(EXIT_CODE_OK, res);
         taskRes = (RollingUpgradeTaskResult)lastOperationResult;
 
-        assertNotNull(taskRes);
-        assertFalse(taskRes.enabled());
         assertNull(taskRes.errorMessage());
         assertNull(taskRes.currentVersion());
         assertNull(taskRes.targetVersion());
@@ -119,7 +114,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         assertNotNull(taskRes);
         assertNotNull(taskRes.errorMessage());
         assertTrue(taskRes.errorMessage().contains("Rolling upgrade is already enabled with a different current and target version"));
-        assertTrue(taskRes.enabled());
+        assertEquals(curVer, taskRes.currentVersion());
         assertEquals(targetVer, taskRes.targetVersion());
 
         assertTrue(crd.context().rollingUpgrade().enabled());

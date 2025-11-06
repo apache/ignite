@@ -31,9 +31,6 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private boolean enabled;
-
-    /** */
     private IgniteProductVersion curVer;
 
     /** */
@@ -43,8 +40,7 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
     private String errMsg;
 
     /** */
-    public RollingUpgradeTaskResult(boolean enabled, IgniteProductVersion curVer, IgniteProductVersion targetVer, String errMsg) {
-        this.enabled = enabled;
+    public RollingUpgradeTaskResult(IgniteProductVersion curVer, IgniteProductVersion targetVer, String errMsg) {
         this.curVer = curVer;
         this.targetVer = targetVer;
         this.errMsg = errMsg;
@@ -56,18 +52,8 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
     }
 
     /** */
-    public boolean enabled() {
-        return enabled;
-    }
-
-    /** */
     public String errorMessage() {
         return errMsg;
-    }
-
-    /** */
-    public void enabled(boolean enabled) {
-        this.enabled = enabled;
     }
 
     /** */
@@ -97,7 +83,6 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(enabled);
         out.writeObject(curVer);
         out.writeObject(targetVer);
         U.writeString(out,errMsg);
@@ -105,7 +90,6 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        this.enabled = in.readBoolean();
         this.curVer = (IgniteProductVersion)in.readObject();
         this.targetVer = (IgniteProductVersion)in.readObject();
         this.errMsg = U.readString(in);
