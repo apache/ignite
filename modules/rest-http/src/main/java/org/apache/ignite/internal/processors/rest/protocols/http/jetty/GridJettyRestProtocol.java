@@ -73,7 +73,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     }
 
     /** Object mapper class name. */
-    private static final String JACKSON_DATABIND_OBJECT_MAPPER = "com.fasterxml.jackson.databind.ObjectMapper";
+    private static final String IGNITE_OBJECT_MAPPER = "org.apache.ignite.internal.jackson.IgniteObjectMapper";
 
     /** Jetty handler. */
     private GridJettyRestHandler jettyHnd;
@@ -344,7 +344,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      */
     private static boolean checkJacksonEnabled() {
         try {
-            Class.forName(JACKSON_DATABIND_OBJECT_MAPPER);
+            Class.forName(IGNITE_OBJECT_MAPPER);
 
             return true;
         }
