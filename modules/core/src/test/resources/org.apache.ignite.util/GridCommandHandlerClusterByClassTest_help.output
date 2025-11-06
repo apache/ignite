@@ -379,7 +379,7 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
         --target-version 2.18.0  - Target Ignite version.
 
   [EXPERIMENTAL]
-  Disable rolling upgrade:
+  Disable rolling upgrade. All nodes in the cluster must be running the same version:
     control.(sh|bat) --rolling-upgrade disable
 
   Print system view content:
