@@ -59,7 +59,8 @@ public class RollingUpgradeEnableTask extends VisorOneNodeTask<RollingUpgradeEna
                 return new RollingUpgradeTaskResult(
                     rollUpVers == null ? null : rollUpVers.get1(),
                     rollUpVers == null ? null : rollUpVers.get2(),
-                    null);
+                    null
+                );
             }
             catch (IgniteCheckedException e) {
                 IgnitePair<IgniteProductVersion> rollUpVers = proc.versions();
@@ -67,7 +68,8 @@ public class RollingUpgradeEnableTask extends VisorOneNodeTask<RollingUpgradeEna
                 return new RollingUpgradeTaskResult(
                     rollUpVers == null ? null : rollUpVers.get1(),
                     rollUpVers == null ? null : rollUpVers.get2(),
-                    e.getMessage());
+                    e.getMessage()
+                );
             }
         }
 
