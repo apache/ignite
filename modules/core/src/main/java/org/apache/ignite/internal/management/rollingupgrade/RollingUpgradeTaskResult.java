@@ -52,11 +52,6 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
     }
 
     /** */
-    public String errorMessage() {
-        return errMsg;
-    }
-
-    /** */
     public IgniteProductVersion currentVersion() {
         return curVer;
     }
@@ -74,6 +69,11 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
     /** */
     public void targetVersion(IgniteProductVersion targetVer) {
         this.targetVer = targetVer;
+    }
+
+    /** */
+    public String errorMessage() {
+        return errMsg;
     }
 
     /** */

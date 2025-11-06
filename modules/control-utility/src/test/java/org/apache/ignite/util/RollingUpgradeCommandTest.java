@@ -50,7 +50,6 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
 
         RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult)lastOperationResult;
 
-        assertNotNull(taskRes);
         assertNull(taskRes.errorMessage());
         assertEquals(curVer, taskRes.currentVersion());
         assertEquals(targetVer, taskRes.targetVersion());
@@ -80,7 +79,6 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
 
         assertNull(taskRes.currentVersion());
         assertNull(taskRes.targetVersion());
-
         assertNull(taskRes.errorMessage());
 
         res = execute(ROLLING_UPGRADE, DISABLE);
@@ -91,6 +89,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         assertNull(taskRes.errorMessage());
         assertNull(taskRes.currentVersion());
         assertNull(taskRes.targetVersion());
+
         assertFalse(crd.context().rollingUpgrade().enabled());
     }
 
@@ -111,9 +110,9 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         assertEquals(EXIT_CODE_OK, res);
         RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult)lastOperationResult;
 
-        assertNotNull(taskRes);
         assertNotNull(taskRes.errorMessage());
         assertTrue(taskRes.errorMessage().contains("Rolling upgrade is already enabled with a different current and target version"));
+
         assertEquals(curVer, taskRes.currentVersion());
         assertEquals(targetVer, taskRes.targetVersion());
 
