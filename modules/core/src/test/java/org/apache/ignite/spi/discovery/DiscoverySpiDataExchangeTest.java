@@ -123,11 +123,6 @@ public class DiscoverySpiDataExchangeTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void setMessageFactory(MessageFactory msgFactory) {
-            delegate.setMessageFactory(msgFactory);
-        }
-
-        /** {@inheritDoc} */
         @Deprecated
         @Override public void setListener(@Nullable DiscoverySpiListener lsnr) {
             delegate.setListener(lsnr);

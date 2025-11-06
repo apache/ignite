@@ -24,7 +24,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiNoop;
@@ -68,11 +67,6 @@ public class StandaloneNoopDiscoverySpi extends IgniteSpiAdapter implements Disc
 
     /** {@inheritDoc} */
     @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
-
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setMessageFactory(MessageFactory msgFactory) {
 
     }
 

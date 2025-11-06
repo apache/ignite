@@ -24,7 +24,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.jetbrains.annotations.Nullable;
@@ -94,13 +93,6 @@ public interface DiscoverySpi extends IgniteSpi {
      * @param ver Product version.
      */
     public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver);
-
-    /**
-     * Sets {@link MessageFactory} used for serializing discovery messages.
-     *
-     * @param msgFactory Message factory.
-     */
-    public void setMessageFactory(MessageFactory msgFactory);
 
     /**
      * Sets a listener for discovery events. Refer to

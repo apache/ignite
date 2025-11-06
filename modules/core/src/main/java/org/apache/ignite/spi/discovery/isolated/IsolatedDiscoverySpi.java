@@ -34,7 +34,6 @@ import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -127,11 +126,6 @@ public class IsolatedDiscoverySpi extends IgniteSpiAdapter implements IgniteDisc
     /** {@inheritDoc} */
     @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
         locNode = new IsolatedNode(ignite.configuration().getNodeId(), attrs, ver);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setMessageFactory(MessageFactory msgFactory) {
-        // No-op.
     }
 
     /** {@inheritDoc} */

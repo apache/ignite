@@ -17,9 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.io.StreamCorruptedException;
 import java.net.InetSocketAddress;
@@ -2762,9 +2760,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         /** */
         private final Socket sock;
 
-        /** */
-        private final InputStream in;
-
         /**
          * @param sock Socket.
          * @throws IOException If failed to create stream.
@@ -2773,8 +2768,6 @@ class ClientImpl extends TcpDiscoveryImpl {
             assert sock != null;
 
             this.sock = sock;
-
-            this.in = new BufferedInputStream(sock.getInputStream());
         }
 
         /**
@@ -2783,13 +2776,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         Socket socket() {
             return sock;
 
-        }
-
-        /**
-         * @return Socket input stream.
-         */
-        InputStream stream() {
-            return in;
         }
 
         /** {@inheritDoc} */
