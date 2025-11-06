@@ -26,18 +26,12 @@ import org.apache.ignite.lang.IgniteExperimental;
 
 import static org.apache.ignite.internal.management.api.CommandUtils.coordinatorOrNull;
 
-/**
- * This command enables rolling upgrade mode. It allows cluster with mixed-version nodes.
- * You are responsible for upgrading nodes manually.
- * This mode can be disabled only when all nodes (including client nodes) run the same version.
- */
+/** Command to enable rolling upgrade. */
 @IgniteExperimental
 public class RollingUpgradeEnableCommand implements ComputeCommand<RollingUpgradeEnableCommandArg, RollingUpgradeTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
-        return "This command enables rolling upgrade mode. It allows cluster with mixed-version nodes. "
-            + "You are responsible for upgrading nodes manually. "
-            + "This mode can be disabled only when all nodes (including client nodes) run the same version";
+        return "Enable rolling upgrade";
     }
 
     /** {@inheritDoc} */
