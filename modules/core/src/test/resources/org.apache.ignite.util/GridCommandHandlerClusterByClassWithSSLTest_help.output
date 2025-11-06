@@ -373,7 +373,7 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
 
   [EXPERIMENTAL]
   Enable rolling upgrade:
-      control.(sh|bat) --rolling-upgrade enable --target-version 2.18.0
+      control.(sh|bat) --rolling-upgrade enable target_version
 
       Parameters:
         target_version  - Target Ignite version.
