@@ -37,9 +37,6 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
     public static final String ROLLING_UPGRADE = "--rolling-upgrade";
 
     /** */
-    public static final String TARGET_VERSION = "--target-version";
-
-    /** */
     @Test
     public void testEnableAndDisable() {
         IgniteProductVersion curVer = IgniteProductVersion.fromString(crd.localNode().attribute(ATTR_BUILD_VER));
@@ -47,7 +44,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         String targetVerStr = curVer.major() + "." + (curVer.minor() + 1) + ".0";
         IgniteProductVersion targetVer = IgniteProductVersion.fromString(targetVerStr);
 
-        int res = execute(ROLLING_UPGRADE, ENABLE, TARGET_VERSION, targetVerStr);
+        int res = execute(ROLLING_UPGRADE, ENABLE, targetVerStr);
 
         assertEquals(EXIT_CODE_OK, res);
 
@@ -110,11 +107,11 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         String targetVerStr = curVer.major() + "." + (curVer.minor() + 1) + ".0";
         IgniteProductVersion targetVer = IgniteProductVersion.fromString(targetVerStr);
 
-        execute(ROLLING_UPGRADE, ENABLE, TARGET_VERSION, targetVerStr);
+        execute(ROLLING_UPGRADE, ENABLE, targetVerStr);
 
         String anotherTargetVerStr = curVer.major() + "." + curVer.minor() + "." + (curVer.maintenance() + 1);
 
-        int res = execute(ROLLING_UPGRADE, ENABLE, TARGET_VERSION, anotherTargetVerStr);
+        int res = execute(ROLLING_UPGRADE, ENABLE, anotherTargetVerStr);
 
         assertEquals(EXIT_CODE_OK, res);
         RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult)lastOperationResult;
