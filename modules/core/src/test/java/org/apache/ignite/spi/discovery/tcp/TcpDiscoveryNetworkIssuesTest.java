@@ -538,9 +538,9 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         Object spis = GridTestUtils.getFieldValue(disco, GridManagerAdapter.class, "spis");
 
-        OutputStream out = GridTestUtils.getFieldValue(((Object[])spis)[0], "impl", "msgWorker", "out");
+        TcpDiscoveryIoSession ses = GridTestUtils.getFieldValue(((Object[])spis)[0], "impl", "msgWorker", "ses");
 
-        out.close();
+        ses.socket().getOutputStream().close();
     }
 
     /**

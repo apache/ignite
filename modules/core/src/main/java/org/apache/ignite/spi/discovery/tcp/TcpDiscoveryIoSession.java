@@ -94,34 +94,33 @@ public class TcpDiscoveryIoSession {
 
         Message m = (Message)msg;
 
-        ByteBuffer ser = ByteBuffer.allocate(sendBuf.limit());
-
         MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
 
         msgWriter.reset();
-        msgWriter.setBuffer(ser);
+        msgWriter.setBuffer(sendBuf);
 
-        byte[] bytes = new byte[ser.remaining()];
+        byte[] serMsg = new byte[0];
         int total = 0;
+        int pos = 0;
 
-        boolean finished = false;
+        boolean finished;
 
-        while (!finished) {
+        do {
             finished = msgSer.writeTo(m, msgWriter);
 
-            int chunkSize = sendBuf.position();
+            total += sendBuf.position();
 
-            if (total + chunkSize > bytes.length)
-                bytes = Arrays.copyOf(bytes, total + chunkSize);
+            serMsg = Arrays.copyOf(serMsg, total);
 
-            sendBuf.flip();
-            sendBuf.get(bytes, total, chunkSize);
-            total += chunkSize;
+            System.arraycopy(sendBuf.array(), 0, serMsg, pos, sendBuf.position());
+
+            pos = serMsg.length;
 
             sendBuf.clear();
         }
+        while (!finished);
 
-        return bytes;
+        return serMsg;
     }
 
     /** */

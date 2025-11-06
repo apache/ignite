@@ -7018,7 +7018,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     try {
                         SecurityUtils.serializeVersion(1);
 
-                        TcpDiscoveryAbstractMessage msg = spi.readMessage(ses, sockTimeout);
+                        // Use inifinite timeout for accepting new messages.
+                        TcpDiscoveryAbstractMessage msg = spi.readMessage(ses, 0);
 
                         msg.senderNodeId(nodeId);
 
