@@ -16,22 +16,13 @@
  */
 package org.apache.ignite.internal.managers.communication;
 
-import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class GridCacheOperationMessage implements Message {
+public class GridCacheOperationMessage extends EnumMessage<GridCacheOperation> {
     /** Type code. */
     public static final short TYPE_CODE = 504;
-
-    /** Cache oparation. */
-    @Nullable private GridCacheOperation cacheOperation;
-
-    /** Cache oparation code. */
-    @Order(0)
-    private byte code = -1;
 
     /** Constructor. */
     public GridCacheOperationMessage() {
@@ -39,17 +30,13 @@ public class GridCacheOperationMessage implements Message {
     }
 
     /** Constructor. */
-    public GridCacheOperationMessage(@Nullable GridCacheOperation cacheOperation) {
-        this.cacheOperation = cacheOperation;
-        code = encode(cacheOperation);
+    public GridCacheOperationMessage(@Nullable GridCacheOperation val) {
+        super(val);
     }
 
-    /** @param operation Cache operation to encode. */
-    private static byte encode(@Nullable GridCacheOperation operation) {
-        if (operation == null)
-            return -1;
-
-        switch (operation) {
+    /** {@inheritDoc} */
+    @Override protected byte code0(GridCacheOperation val) {
+        switch (val) {
             case READ: return 0;
             case CREATE: return 1;
             case UPDATE: return 2;
@@ -59,13 +46,12 @@ public class GridCacheOperationMessage implements Message {
             case NOOP: return 6;
         }
 
-        throw new IllegalArgumentException("Unknown cache operation: " + operation);
+        throw new IllegalArgumentException("Unknown cache operation: " + val);
     }
 
-    /** @param code Cache operation code to dencode to a cache operation value. */
-    @Nullable private static GridCacheOperation decode(byte code) {
+    /** {@inheritDoc} */
+    @Override protected GridCacheOperation value0(byte code) {
         switch (code) {
-            case -1: return null;
             case 0: return GridCacheOperation.READ;
             case 1: return GridCacheOperation.CREATE;
             case 2: return GridCacheOperation.UPDATE;
@@ -76,22 +62,6 @@ public class GridCacheOperationMessage implements Message {
         }
 
         throw new IllegalArgumentException("Unknown cache operation code: " + code);
-    }
-
-    /** @code Cache operation code. */
-    public void code(byte code) {
-        this.code = code;
-        cacheOperation = decode(code);
-    }
-
-    /** @return Cache operation code. */
-    public byte code() {
-        return code;
-    }
-
-    /** @return Cache operation value. */
-    @Nullable public GridCacheOperation value() {
-        return cacheOperation;
     }
 
     /** {@inheritDoc} */

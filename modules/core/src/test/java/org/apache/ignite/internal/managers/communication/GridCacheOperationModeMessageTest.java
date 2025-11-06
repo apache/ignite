@@ -21,8 +21,16 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.RELOAD;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -33,13 +41,13 @@ public class GridCacheOperationModeMessageTest {
     @Test
     public void testCacheOperationModeCode() {
         assertEquals(-1, new GridCacheOperationMessage(null).code());
-        assertEquals(0, new GridCacheOperationMessage(GridCacheOperation.READ).code());
-        assertEquals(1, new GridCacheOperationMessage(GridCacheOperation.CREATE).code());
-        assertEquals(2, new GridCacheOperationMessage(GridCacheOperation.UPDATE).code());
-        assertEquals(3, new GridCacheOperationMessage(GridCacheOperation.DELETE).code());
-        assertEquals(4, new GridCacheOperationMessage(GridCacheOperation.TRANSFORM).code());
-        assertEquals(5, new GridCacheOperationMessage(GridCacheOperation.RELOAD).code());
-        assertEquals(6, new GridCacheOperationMessage(GridCacheOperation.NOOP).code());
+        assertEquals(0, new GridCacheOperationMessage(READ).code());
+        assertEquals(1, new GridCacheOperationMessage(CREATE).code());
+        assertEquals(2, new GridCacheOperationMessage(UPDATE).code());
+        assertEquals(3, new GridCacheOperationMessage(DELETE).code());
+        assertEquals(4, new GridCacheOperationMessage(TRANSFORM).code());
+        assertEquals(5, new GridCacheOperationMessage(RELOAD).code());
+        assertEquals(6, new GridCacheOperationMessage(NOOP).code());
 
         for (GridCacheOperation op : GridCacheOperation.values()) {
             assertTrue(new GridCacheOperationMessage(op).code() >= 0);
@@ -56,25 +64,25 @@ public class GridCacheOperationModeMessageTest {
         assertNull(msg.value());
 
         msg.code((byte)0);
-        assertSame(GridCacheOperation.READ, msg.value());
+        assertSame(READ, msg.value());
 
         msg.code((byte)1);
-        assertSame(GridCacheOperation.CREATE, msg.value());
+        assertSame(CREATE, msg.value());
 
         msg.code((byte)2);
-        assertSame(GridCacheOperation.UPDATE, msg.value());
+        assertSame(UPDATE, msg.value());
 
         msg.code((byte)3);
-        assertSame(GridCacheOperation.DELETE, msg.value());
+        assertSame(DELETE, msg.value());
 
         msg.code((byte)4);
-        assertSame(GridCacheOperation.TRANSFORM, msg.value());
+        assertSame(TRANSFORM, msg.value());
 
         msg.code((byte)5);
-        assertSame(GridCacheOperation.RELOAD, msg.value());
+        assertSame(RELOAD, msg.value());
 
         msg.code((byte)6);
-        assertSame(GridCacheOperation.NOOP, msg.value());
+        assertSame(NOOP, msg.value());
 
         Throwable t = assertThrowsWithCause(() -> msg.code((byte)7), IllegalArgumentException.class);
         assertEquals("Unknown cache operation code: 7", t.getMessage());
@@ -93,5 +101,14 @@ public class GridCacheOperationModeMessageTest {
 
             assertEquals(msg.value(), newMsg.value());
         }
+    }
+
+    /** */
+    @Test
+    public void testIs() {
+        assertTrue(new GridCacheOperationMessage().is(null));
+        assertTrue(new GridCacheOperationMessage(null).is(null));
+        assertTrue(new GridCacheOperationMessage(READ).is(READ));
+        assertFalse(new GridCacheOperationMessage(READ).is(DELETE));
     }
 }
