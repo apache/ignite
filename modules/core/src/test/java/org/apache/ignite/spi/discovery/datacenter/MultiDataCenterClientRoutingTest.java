@@ -64,7 +64,7 @@ public class MultiDataCenterClientRoutingTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testReadFromCache() throws Exception {
+    public void testRouterId() throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         boolean bool = rnd.nextBoolean();
