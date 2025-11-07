@@ -38,6 +38,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -236,6 +237,7 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
+    @Ignore("https://issues.apache.org/jira/browse/IGNITE-26967")
     public void testAffinityFilterConfigurationValidation() throws Exception {
         dcIds = new String[] {"DC_0", "DC_1"};
         backups = 3;
@@ -254,6 +256,20 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
             assertNotNull(errMsg);
 
             assertTrue(errMsg.contains("Affinity backup filter class mismatch"));
+        }
+
+        backupFilter = new MdcAffinityBackupFilter(dcIds.length, backups + dcIds.length);
+        try {
+            startGrid(1);
+
+            fail("Expected exception was not thrown.");
+        }
+        catch (IgniteCheckedException e) {
+            String errMsg = e.getMessage();
+
+            assertNotNull(errMsg);
+
+            assertTrue(errMsg.contains("Affinity backup filter mismatch"));
         }
     }
 
