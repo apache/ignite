@@ -23,8 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -112,12 +110,7 @@ public class IndexProcessor extends GridProcessorAdapter {
     /**
      * Registry of all indexes. High key is a cache name, lower key is an unique index name.
      */
-    private final Map<String, Map<String, Index>> cacheToIdx = new ConcurrentHashMap<>();
-
-    /**
-     * Registry of all index definitions. Key is {@link Index#id()}, value is IndexDefinition used for creating index.
-     */
-    private final Map<UUID, IndexDefinition> idxDefs = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, Index>> cacheToIdx = new HashMap<>();
 
     /** Exclusive lock for DDL operations. */
     private final ReentrantReadWriteLock ddlLock = new ReentrantReadWriteLock();
@@ -242,7 +235,7 @@ public class IndexProcessor extends GridProcessorAdapter {
         try {
             String cacheName = definition.idxName().cacheName();
 
-            cacheToIdx.putIfAbsent(cacheName, new ConcurrentHashMap<>());
+            cacheToIdx.putIfAbsent(cacheName, new HashMap<>());
 
             String uniqIdxName = definition.idxName().fullName();
 
@@ -252,8 +245,6 @@ public class IndexProcessor extends GridProcessorAdapter {
             Index idx = factory.createIndex(cctx, definition);
 
             cacheToIdx.get(cacheName).put(uniqIdxName, idx);
-
-            idxDefs.put(idx.id(), definition);
 
             return idx;
 
@@ -283,7 +274,6 @@ public class IndexProcessor extends GridProcessorAdapter {
 
             if (idx != null) {
                 idx.destroy(softDelete);
-                idxDefs.remove(idx.id());
             }
 
         }
@@ -419,16 +409,6 @@ public class IndexProcessor extends GridProcessorAdapter {
         finally {
             ddlLock.readLock().unlock();
         }
-    }
-
-    /**
-     * Returns IndexDefinition used for creating index specified id.
-     *
-     * @param idxId UUID of index.
-     * @return IndexDefinition used for creating index with id {@code idxId}.
-     */
-    public IndexDefinition indexDefinition(UUID idxId) {
-        return idxDefs.get(idxId);
     }
 
     /**
@@ -638,7 +618,7 @@ public class IndexProcessor extends GridProcessorAdapter {
                 for (Index idx : idxs.values()) {
                     if (idx instanceof InlineIndex && !QueryUtils.PRIMARY_KEY_INDEX.equals(idx.name())) {
                         InlineIndex idx0 = (InlineIndex)idx;
-                        IndexDefinition idxDef = indexDefinition(idx.id());
+                        IndexDefinition idxDef = idx.indexDefinition();
                         IndexName idxName = idxDef.idxName();
 
                         map.put(

@@ -203,6 +203,6 @@ public class IndexDdlIntegrationTest extends AbstractDdlIntegrationTest {
 
     /** */
     private LinkedHashMap<String, IndexKeyDefinition> indexKeyDefinitions(Index idx) {
-        return grid(0).context().indexProcessor().indexDefinition(idx.id()).indexKeyDefinitions();
+        return idx.indexDefinition().indexKeyDefinitions();
     }
 }
