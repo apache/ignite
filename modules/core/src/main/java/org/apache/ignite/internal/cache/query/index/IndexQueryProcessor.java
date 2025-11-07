@@ -217,17 +217,17 @@ public class IndexQueryProcessor {
      * @throws IgniteCheckedException If index not found or specified index doesn't match query criteria.
      */
     private SortedSegmentedIndex indexByName(IndexName idxName, final Map<String, String> criteriaFlds) throws IgniteCheckedException {
-        SortedSegmentedIndex idx = assertSortedIndex(idxProc.index(idxName));
+        SortedSegmentedIndex idx = assertSortedIndex(idxProc.index(idxName, true));
 
         if (idx == null && !QueryUtils.PRIMARY_KEY_INDEX.equals(idxName.idxName())) {
             String normIdxName = QueryUtils.normalizeObjectName(idxName.idxName(), false);
 
             idxName = new IndexName(idxName.cacheName(), idxName.schemaName(), idxName.tableName(), normIdxName);
 
-            idx = assertSortedIndex(idxProc.index(idxName));
+            idx = assertSortedIndex(idxProc.index(idxName, true));
         }
 
-        if (idx == null || idxProc.isFilling(idx))
+        if (idx == null)
             throw new IgniteCheckedException("No index found for name: " + idxName.idxName());
 
         if (!checkIndex(idx, idxName.tableName(), criteriaFlds))
@@ -245,12 +245,12 @@ public class IndexQueryProcessor {
         final Map<String, String> criteriaFlds,
         String tableName
     ) throws IgniteCheckedException {
-        Collection<Index> idxs = idxProc.indexes(cctx.name());
+        Collection<Index> idxs = idxProc.indexes(cctx.name(), true);
 
         for (Index idx: idxs) {
             SortedSegmentedIndex sortedIdx = assertSortedIndex(idx);
 
-            if (checkIndex(sortedIdx, tableName, criteriaFlds) && !idxProc.isFilling(sortedIdx))
+            if (checkIndex(sortedIdx, tableName, criteriaFlds))
                 return sortedIdx;
         }
 

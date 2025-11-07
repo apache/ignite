@@ -32,7 +32,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.cache.query.index.Index;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -120,7 +120,7 @@ public class SqlQueryBuildIndexTest extends GridCommonAbstractTest {
     public void testConcurrentCreateIndex() throws Exception {
         persistenceEnabled = true;
 
-        Ignite crd = startGrids(3);
+        IgniteEx crd = startGrids(3);
 
         crd.cluster().state(ClusterState.ACTIVE);
 
@@ -130,7 +130,7 @@ public class SqlQueryBuildIndexTest extends GridCommonAbstractTest {
 
         CountDownLatch idxBuildGate = new CountDownLatch(1);
 
-        grid(0).context().pools().buildIndexExecutorService().execute(() -> {
+        crd.context().pools().buildIndexExecutorService().execute(() -> {
             try {
                 idxBuildGate.await();
             }
@@ -144,16 +144,13 @@ public class SqlQueryBuildIndexTest extends GridCommonAbstractTest {
             cache.query(ddl).getAll();
         }, 1);
 
-        IndexProcessor ip = grid(0).context().indexProcessor();
+        IndexProcessor ip = crd.context().indexProcessor();
 
         IndexName name = new IndexName(cache.getName(), CACHE, TBL.toUpperCase(), IDX);
 
-        boolean seenBuilding = GridTestUtils.waitForCondition(() -> {
-            Index idx = ip.index(name);
-            return idx != null && idx.rebuildInProgress();
-        }, 10_000);
+        boolean seenBuilding = GridTestUtils.waitForCondition(() -> ip.index(name) != null, 10_000);
 
-        assertTrue("Index must exist and be in rebuild state", seenBuilding);
+        assertTrue("Index must exist", seenBuilding);
 
         String sql = "SELECT id FROM " + TBL + " USE INDEX(" + IDX + ") " +
             "WHERE fld BETWEEN ? AND ? ORDER BY id";
@@ -168,10 +165,7 @@ public class SqlQueryBuildIndexTest extends GridCommonAbstractTest {
 
         crd.cache(CACHE).indexReadyFuture().get();
 
-        boolean done = GridTestUtils.waitForCondition(() -> {
-            Index idx = ip.index(name);
-            return idx != null && !idx.rebuildInProgress();
-        }, 20_000);
+        boolean done = GridTestUtils.waitForCondition(() -> ip.index(name, true) != null, 20_000);
 
         assertTrue("Build must finish", done);
 

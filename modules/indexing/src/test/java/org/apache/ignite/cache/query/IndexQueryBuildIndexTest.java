@@ -30,7 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.cache.query.index.Index;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.util.typedef.F;
@@ -116,7 +116,7 @@ public class IndexQueryBuildIndexTest extends GridCommonAbstractTest {
     public void testConcurrentCreateIndex() throws Exception {
         persistenceEnabled = true;
 
-        Ignite crd = startGrids(3);
+        IgniteEx crd = startGrids(3);
 
         crd.cluster().state(ClusterState.ACTIVE);
 
@@ -126,7 +126,7 @@ public class IndexQueryBuildIndexTest extends GridCommonAbstractTest {
 
         CountDownLatch idxBuild = new CountDownLatch(1);
 
-        grid(0).context().pools().buildIndexExecutorService().execute(() -> {
+        crd.context().pools().buildIndexExecutorService().execute(() -> {
             try {
                 idxBuild.await();
             }
@@ -141,19 +141,15 @@ public class IndexQueryBuildIndexTest extends GridCommonAbstractTest {
             cache.query(idxCreate).getAll();
         }, 1);
 
-        IndexProcessor ip = grid(0).context().indexProcessor();
+        IndexProcessor ip = crd.context().indexProcessor();
 
         IndexName name = new IndexName(
             cache.getName(), CACHE, TBL.toUpperCase(), IDX
         );
 
-        boolean seenBuilding = GridTestUtils.waitForCondition(() -> {
-            Index idx = ip.index(name);
+        boolean seenBuilding = GridTestUtils.waitForCondition(() -> ip.index(name) != null, 10_000);
 
-            return idx != null && idx.rebuildInProgress();
-        }, 10_000);
-
-        assertTrue("Index must exist and be in rebuild state", seenBuilding);
+        assertTrue("Index must exist", seenBuilding);
 
         IndexQuery<Long, Integer> qry = new IndexQuery<Long, Integer>(Integer.class, IDX)
             .setCriteria(between("fld", 0, CNT));
@@ -166,11 +162,7 @@ public class IndexQueryBuildIndexTest extends GridCommonAbstractTest {
 
         crd.cache(CACHE).indexReadyFuture().get();
 
-        boolean done = GridTestUtils.waitForCondition(() -> {
-            Index idx = ip.index(name);
-
-            return idx != null && !idx.rebuildInProgress();
-        }, 20_000);
+        boolean done = GridTestUtils.waitForCondition(() -> ip.index(name, true) != null, 20_000);
 
         assertTrue("Build must finish", done);
 

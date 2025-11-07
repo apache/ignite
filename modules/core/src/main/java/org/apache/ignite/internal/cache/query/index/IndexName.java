@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index;
 
+import java.util.Objects;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -89,5 +90,19 @@ public class IndexName {
     /** {@inheritDoc} */
     @Override public String toString() {
         return fullName();
+    }
+
+    /** */
+    @Override public boolean equals(Object o) {
+        if (!(o instanceof IndexName))
+            return false;
+        IndexName name = (IndexName)o;
+        return Objects.equals(schemaName, name.schemaName) && Objects.equals(tableName, name.tableName)
+            && Objects.equals(cacheName, name.cacheName) && Objects.equals(idxName, name.idxName);
+    }
+
+    /** */
+    @Override public int hashCode() {
+        return Objects.hash(schemaName, tableName, cacheName, idxName);
     }
 }

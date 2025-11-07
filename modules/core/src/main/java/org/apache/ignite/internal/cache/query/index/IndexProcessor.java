@@ -21,9 +21,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -63,7 +66,6 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToken;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridAtomicLong;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.collection.IntMap;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -116,9 +118,8 @@ public class IndexProcessor extends GridProcessorAdapter {
     /** Exclusive lock for DDL operations. */
     private final ReentrantReadWriteLock ddlLock = new ReentrantReadWriteLock();
 
-    /** */
-    private final GridConcurrentHashSet<Index> fillingIdxs = new GridConcurrentHashSet<>();
-
+    /** Set of index names currently in initial population (null if none). */
+    private @Nullable Set<IndexName> fillingIdxs;
 
     /**
      * @param ctx Kernal context.
@@ -219,24 +220,40 @@ public class IndexProcessor extends GridProcessorAdapter {
         IndexFactory dynamicFactory = (gcctx, indexDefinition) -> {
             Index idx = factory.createIndex(gcctx, indexDefinition);
 
-            fillingIdxs.add(idx);
-            idx.markIndexRebuild(true);
+            // Under lock.
+            if (fillingIdxs == null)
+                fillingIdxs = new HashSet<>();
+            fillingIdxs.add(idx.indexDefinition().idxName());
 
             return idx;
         };
 
         Index idx = createIndex(cctx, dynamicFactory, definition);
 
-        // Populate index with cache rows.
-        cacheVisitor.visit(row -> {
-            if (idx.canHandle(row))
-                idx.onUpdate(null, row, false);
-        });
+        try {
+            // Populate index with cache rows.
+            cacheVisitor.visit(row -> {
+                if (idx.canHandle(row))
+                    idx.onUpdate(null, row, false);
+            });
 
-        fillingIdxs.remove(idx);
-        idx.markIndexRebuild(false);
+            return idx;
+        }
+        finally {
+            ddlLock.writeLock().lock();
 
-        return idx;
+            try {
+                if (fillingIdxs != null) {
+                    fillingIdxs.remove(idx.indexDefinition().idxName());
+
+                    if (fillingIdxs.isEmpty())
+                        fillingIdxs = null;
+                }
+            }
+            finally {
+                ddlLock.writeLock().unlock();
+            }
+        }
     }
 
     /**
@@ -289,8 +306,18 @@ public class IndexProcessor extends GridProcessorAdapter {
 
             Index idx = idxs.remove(idxName.fullName());
 
-            if (idx != null)
+            if (idx != null) {
                 idx.destroy(softDelete);
+
+                if (fillingIdxs != null) {
+                    fillingIdxs.remove(idxName);
+
+                    if (fillingIdxs.isEmpty())
+                        fillingIdxs = null;
+                }
+
+            }
+
         }
         finally {
             ddlLock.writeLock().unlock();
@@ -388,16 +415,35 @@ public class IndexProcessor extends GridProcessorAdapter {
      * @return Collection of indexes for specified cache.
      */
     public Collection<Index> indexes(String cacheName) {
+        return indexes(cacheName, false);
+    }
+
+    /**
+     * Returns collection of indexes for specified cache.
+     *
+     * @param cacheName Cache name.
+     * @param skipFilling If {@code true}, indexes that are currently being initially populated are excluded
+     *     from the result; if {@code false}, all known indexes for the cache are returned.
+     * @return Collection of indexes for specified cache.
+     */
+
+    public Collection<Index> indexes(String cacheName, boolean skipFilling) {
         ddlLock.readLock().lock();
 
         try {
-            Map<String, Index> idxs = cacheToIdx.get(cacheName);
+            Map<String, Index> idxMap = cacheToIdx.get(cacheName);
 
-            if (idxs == null)
+            if (idxMap == null)
                 return Collections.emptyList();
 
-            return idxs.values();
+            Collection<Index> idxs = idxMap.values();
 
+            if (!skipFilling || fillingIdxs == null)
+                return idxs;
+
+            return idxs.stream().filter(idx ->
+                !fillingIdxs.contains(idx.indexDefinition().idxName())
+            ).collect(Collectors.toList());
         }
         finally {
             ddlLock.readLock().unlock();
@@ -411,9 +457,26 @@ public class IndexProcessor extends GridProcessorAdapter {
      * @return Index for specified index name or {@code null} if not found.
      */
     public @Nullable Index index(IndexName idxName) {
+        return index(idxName, false);
+    }
+
+    /**
+     * Returns index for specified name.
+     *
+     * @param idxName Index name.
+     * @param skipFilling If {@code true}, returns {@code null} when the index is currently being initially
+     *     populated and therefore should be skipped; if {@code false}, returns the index if present.
+     * @return Index for specified index name or {@code null} if not found (or skipped due to population when
+     *     {@code skipFilling} is {@code true}).
+     */
+
+    public @Nullable Index index(IndexName idxName, boolean skipFilling) {
         ddlLock.readLock().lock();
 
         try {
+            if (skipFilling && fillingIdxs != null && fillingIdxs.contains(idxName))
+                return null;
+
             Map<String, Index> idxs = cacheToIdx.get(idxName.cacheName());
 
             if (idxs == null)
@@ -424,11 +487,6 @@ public class IndexProcessor extends GridProcessorAdapter {
         finally {
             ddlLock.readLock().unlock();
         }
-    }
-
-    /** */
-    public boolean isFilling(Index idx) {
-        return fillingIdxs.contains(idx);
     }
 
     /**
