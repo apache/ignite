@@ -376,7 +376,7 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
       control.(sh|bat) --rolling-upgrade enable target_version
 
       Parameters:
-        target_version  - Target Ignite version.
+        target_version  - Target Ignite version. The target version can be one minor higher if its maintenance version is zero, or one maintenance version higher, but not both.
 
   [EXPERIMENTAL]
   Disable rolling upgrade mode. All nodes in the cluster must be running the same version:

@@ -32,7 +32,8 @@ public class RollingUpgradeEnableCommandArg extends IgniteDataTransferObject {
 
     /** Target version. */
     @Positional
-    @Argument(description = "Target Ignite version")
+    @Argument(description = "Target Ignite version. The target version can be one minor higher if its maintenance version is zero, "
+        + "or one maintenance version higher, but not both")
     private String targetVersion;
 
     /** */
