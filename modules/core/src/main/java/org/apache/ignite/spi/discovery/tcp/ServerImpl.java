@@ -6833,6 +6833,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (!spi.isNodeStopping0()) {
                             TcpDiscoveryInfoResponse res = new TcpDiscoveryInfoResponse(locNodeId);
 
+                            if (log.isInfoEnabled()) {
+                                log.info("Received info request from the remote node " +
+                                    "[rmtNodeId=" + msg.creatorNodeId() +
+                                    ", rmtAddr=" + rmtAddr + ", rmtPort=" + sock.getPort() + "]");
+                            }
+
                             res.node(locNode);
 
                             IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
@@ -6841,9 +6847,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             if (!(sock instanceof SSLSocket))
                                 sock.shutdownOutput();
+
+                            if (log.isInfoEnabled()) {
+                                log.info("Finished writing info response " + "[rmtNodeId=" + msg.creatorNodeId() +
+                                    ", rmtAddr=" + rmtAddr + ", rmtPort=" + sock.getPort() + "]");
+                            }
                         }
                         else if (log.isDebugEnabled())
-                            log.debug("Ignore ping request, node is stopping.");
+                            log.debug("Ignore info request, node is stopping.");
 
                         return;
                     }
