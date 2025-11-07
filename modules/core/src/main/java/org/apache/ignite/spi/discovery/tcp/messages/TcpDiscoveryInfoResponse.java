@@ -38,12 +38,12 @@ public class TcpDiscoveryInfoResponse extends TcpDiscoveryAbstractMessage {
         super(creatorNodeId);
     }
 
-    /** */
+    /** @return Node info */
     public TcpDiscoveryNode node() {
         return node;
     }
 
-    /** */
+    /** @param node Node info */
     public void node(TcpDiscoveryNode node) {
         this.node = node;
     }
