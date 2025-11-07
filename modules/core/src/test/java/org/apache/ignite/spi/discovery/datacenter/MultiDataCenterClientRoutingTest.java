@@ -20,7 +20,9 @@ package org.apache.ignite.spi.discovery.datacenter;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
@@ -95,5 +97,34 @@ public class MultiDataCenterClientRoutingTest extends GridCommonAbstractTest {
 
         assertTrue(routers.size() == 1);
         assertEquals(bool ? DC_ID_0 : DC_ID_1, routers.get(0).dataCenterId());
+    }
+
+    /** */
+    @Test
+    public void testConnectionRestriction() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
+
+        startGrid(0);
+
+        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        new Thread(() -> {
+            try {
+                startClientGrid();
+
+                latch.countDown();
+            }
+            catch (Exception e) {
+                fail();
+            }
+        }).start();
+
+        assertFalse(latch.await(10, TimeUnit.SECONDS));
+
+        startGrid(1);
+
+        latch.await();
     }
 }
