@@ -439,11 +439,11 @@ public class IndexProcessor extends GridProcessorAdapter {
             Collection<Index> idxs = idxMap.values();
 
             if (!skipFilling || fillingIdxs == null)
-                return idxs;
+                return new ArrayList<>(idxs);
 
             return idxs.stream().filter(idx ->
                 !fillingIdxs.contains(idx.indexDefinition().idxName())
-            ).collect(Collectors.toList());
+            ).collect(Collectors.toCollection(ArrayList::new));
         }
         finally {
             ddlLock.readLock().unlock();
