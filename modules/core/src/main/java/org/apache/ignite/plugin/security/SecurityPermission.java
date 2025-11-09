@@ -64,6 +64,12 @@ public enum SecurityPermission {
     /** Permission to perform administration of security access for users. */
     ADMIN_USER_ACCESS,
 
+    /** Rolling upgrade {@code enable} permission. */
+    ROLLING_UPGRADE_ENABLE,
+
+    /** Rolling upgrade {@code disable} permission. */
+    ROLLING_UPGRADE_DISABLE,
+
     /** Service deploy permission. */
     SERVICE_DEPLOY,
 

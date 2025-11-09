@@ -25,6 +25,9 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
+
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
 
 /** Task to enable rolling upgrade. */
 @GridInternal
@@ -45,6 +48,11 @@ public class RollingUpgradeEnableTask extends VisorOneNodeTask<RollingUpgradeEna
         /** */
         protected RollingUpgradeEnableJob(RollingUpgradeEnableCommandArg arg, boolean debug) {
             super(arg, debug);
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet requiredPermissions() {
+            return NO_PERMISSIONS;
         }
 
         /** {@inheritDoc} */

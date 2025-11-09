@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.security.datastreamer.closure.DataS
 import org.apache.ignite.internal.processors.security.events.EventsRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.maintenance.MaintenanceModeNodeSecurityTest;
 import org.apache.ignite.internal.processors.security.messaging.MessagingRemoteSecurityContextCheckTest;
+import org.apache.ignite.internal.processors.security.rollingupgrade.RollingUpgradePermissionCheckTest;
 import org.apache.ignite.internal.processors.security.sandbox.AccessToClassesInsideInternalPackageTest;
 import org.apache.ignite.internal.processors.security.sandbox.CacheSandboxTest;
 import org.apache.ignite.internal.processors.security.sandbox.CacheStoreFactorySandboxTest;
@@ -143,6 +144,7 @@ import org.junit.runners.Suite;
     NodeJoinPermissionsTest.class,
     ActivationOnJoinWithoutPermissionsWithPersistenceTest.class,
     SecurityContextInternalFuturePropagationTest.class,
+    RollingUpgradePermissionCheckTest.class
 })
 public class SecurityTestSuite {
     /** */
