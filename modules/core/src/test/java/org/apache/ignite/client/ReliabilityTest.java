@@ -67,6 +67,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import static java.util.Arrays.asList;
+import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_SAFE;
 import static org.apache.ignite.events.EventType.EVTS_CACHE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
@@ -127,6 +128,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
             final ClientCache<Integer, String> cache = client.getOrCreateCache(
                 new ClientCacheConfiguration()
                     .setName("testFailover")
+                    .setPartitionLossPolicy(READ_ONLY_SAFE)
                     .setCacheMode(CacheMode.REPLICATED)
                     .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             );
