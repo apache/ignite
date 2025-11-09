@@ -770,6 +770,8 @@ public class ReliabilityTest extends AbstractThinClientTest {
                 ));
             }
         }
+
+        U.sleep(5000);
     }
 
     /** {@inheritDoc} */
