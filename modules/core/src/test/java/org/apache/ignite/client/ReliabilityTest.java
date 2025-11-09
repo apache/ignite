@@ -45,11 +45,15 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
 import org.apache.ignite.internal.client.thin.ClientOperation;
 import org.apache.ignite.internal.client.thin.ClientServerError;
 import org.apache.ignite.internal.client.thin.ServicesTest;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.Service;
@@ -66,6 +70,7 @@ import static java.util.Arrays.asList;
 import static org.apache.ignite.events.EventType.EVTS_CACHE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * High Availability tests.
@@ -518,7 +523,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
             doSleep(throttlingPeriod);
 
             // Attempt to reconnect after throttlingPeriod should pass.
-            assertTrue(GridTestUtils.waitForCondition(() -> {
+            assertTrue(waitForCondition(() -> {
                 try {
                     cachePut(cache, 0, 0);
 
@@ -565,7 +570,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
 
             GridTestUtils.assertThrowsAnyCause(log, () -> cache.remove(0), ClientServerError.class, msg);
 
-            assertTrue(GridTestUtils.waitForCondition(failure::get, 1_000L));
+            assertTrue(waitForCondition(failure::get, 1_000L));
         }
     }
 
@@ -725,14 +730,15 @@ public class ReliabilityTest extends AbstractThinClientTest {
                     while (cluster.size() != cluster.getInitialSize())
                         cluster.restoreNode();
 
-                    awaitPartitionMapExchange(true, true, null);
+                    waitRebalanceFinished();
                 }
             }
-            catch (InterruptedException ignore) {
+            catch (InterruptedException | IgniteInterruptedCheckedException ignore) {
                 // No-op.
             }
-
-            stopFlag.set(true);
+            finally {
+                stopFlag.set(true);
+            }
         });
 
         // Use Ignite while nodes keep failing.
@@ -744,6 +750,23 @@ public class ReliabilityTest extends AbstractThinClientTest {
         }
         finally {
             stopFlag.set(true);
+        }
+    }
+
+    /** */
+    private void waitRebalanceFinished() throws IgniteInterruptedCheckedException, InterruptedException {
+        awaitPartitionMapExchange(true, true, null);
+
+        for (Ignite ignite : G.allGrids()) {
+            GridCacheProcessor cacheProc = ((IgniteEx)ignite).context().cache();
+
+            for (String cacheName : cacheProc.cacheNames()) {
+                assertTrue(waitForCondition(
+                    () -> cacheProc.internalCache(cacheName).context().topology().rebalanceFinished(
+                        cacheProc.context().exchange().readyAffinityVersion()
+                    ), 5000
+                ));
+            }
         }
     }
 
