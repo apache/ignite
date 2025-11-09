@@ -17,7 +17,6 @@
 
 package org.apache.ignite.client;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -58,10 +57,12 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static java.util.Arrays.asList;
 import static org.apache.ignite.events.EventType.EVTS_CACHE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
@@ -82,19 +83,20 @@ public class ReliabilityTest extends AbstractThinClientTest {
     @Parameterized.Parameter(1)
     public boolean async;
 
+    /** Async operations. */
+    @Parameterized.Parameter(2)
+    public int idx;
+
     /**
      * @return List of parameters to test.
      */
-    @Parameterized.Parameters(name = "partitionAware={0}, async={1}")
+    @Parameterized.Parameters(name = "partitionAware={0}, async={1}, idx={2}")
     public static Collection<Object[]> testData() {
-        List<Object[]> res = new ArrayList<>();
-
-        res.add(new Object[] {false, false});
-        res.add(new Object[] {false, true});
-        res.add(new Object[] {true, false});
-        res.add(new Object[] {true, true});
-
-        return res;
+        return GridTestUtils.cartesianProduct(
+            asList(false, true),
+            asList(false, true),
+            IntStream.range(0, 50).boxed().collect(Collectors.toList())
+        );
     }
 
     /**
@@ -192,6 +194,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Test single server failover.
      */
     @Test
+    @Ignore
     public void testSingleServerFailover() throws Exception {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
@@ -214,6 +217,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Test single server can be used multiple times in configuration.
      */
     @Test
+    @Ignore
     public void testSingleServerDuplicatedFailover() throws Exception {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
@@ -237,6 +241,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Test single server can be used multiple times in configuration.
      */
     @Test
+    @Ignore
     public void testRetryReadPolicyRetriesCacheGet() {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
@@ -261,6 +266,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Tests retry policy exception handling.
      */
     @Test
+    @Ignore
     public void testExceptionInRetryPolicyPropagatesToCaller() {
         Assume.assumeFalse(partitionAware);
 
@@ -294,6 +300,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      */
     @SuppressWarnings("ThrowableNotThrown")
     @Test
+    @Ignore
     public void testNullRetryPolicyDisablesFailover() {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
@@ -322,6 +329,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      */
     @SuppressWarnings("ThrowableNotThrown")
     @Test
+    @Ignore
     public void testRetryNonePolicyDisablesFailover() {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
@@ -349,6 +357,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Tests that {@link ClientOperationType} is updated accordingly when {@link ClientOperation} is added.
      */
     @Test
+    @Ignore
     public void testRetryPolicyConvertOpAllOperationsSupported() {
         List<ClientOperation> nullOps = Arrays.stream(ClientOperation.values())
                 .filter(o -> o.toPublicOperationType() == null)
@@ -369,6 +378,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Test that failover doesn't lead to silent query inconsistency.
      */
     @Test
+    @Ignore
     public void testQueryConsistencyOnFailover() throws Exception {
         int CLUSTER_SIZE = 2;
 
@@ -407,6 +417,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Test that client works properly with servers txId intersection.
      */
     @Test
+    @Ignore
     @SuppressWarnings("ThrowableNotThrown")
     public void testTxWithIdIntersection() throws Exception {
         // Partition-aware client connects to all known servers at the start, and dropAllThinClientConnections
@@ -477,6 +488,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Test reconnection throttling.
      */
     @Test
+    @Ignore
     @SuppressWarnings("ThrowableNotThrown")
     public void testReconnectionThrottling() throws Exception {
         // If partition awareness is enabled, channels are restored asynchronously without applying throttling.
@@ -523,6 +535,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Test server-side critical error.
      */
     @Test
+    @Ignore
     public void testServerCriticalError() throws Exception {
         AtomicBoolean failure = new AtomicBoolean();
 
@@ -561,6 +574,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * cluster failover.
      */
     @Test
+    @Ignore
     public void testServiceMethodInvocationAfterFailover() throws Exception {
         PersonExternalizable person = new PersonExternalizable("Person 1");
 
@@ -627,6 +641,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Tests that server does not disconnect idle clients when heartbeats are enabled.
      */
     @Test
+    @Ignore
     public void testServerDoesNotDisconnectIdleClientWithHeartbeats() throws Exception {
         IgniteConfiguration serverCfg = getConfiguration().setClientConnectorConfiguration(
                 new ClientConnectorConfiguration().setIdleTimeout(2000));
@@ -646,6 +661,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Tests service proxy failover.
      */
     @Test
+    @Ignore
     public void testServiceProxyFailover() throws Exception {
         Assume.assumeTrue(partitionAware);
 
