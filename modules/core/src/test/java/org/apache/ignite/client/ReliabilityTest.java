@@ -709,7 +709,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
                     while (cluster.size() != cluster.getInitialSize())
                         cluster.restoreNode();
 
-                    awaitPartitionMapExchange();
+                    awaitPartitionMapExchange(true, true, null);
                 }
             }
             catch (InterruptedException ignore) {
