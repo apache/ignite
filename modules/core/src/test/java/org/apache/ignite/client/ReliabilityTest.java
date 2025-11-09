@@ -19,6 +19,7 @@ package org.apache.ignite.client;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -161,10 +162,19 @@ public class ReliabilityTest extends AbstractThinClientTest {
                     try (QueryCursor<Cache.Entry<Integer, String>> cur = cache.query(qry)) {
                         List<Cache.Entry<Integer, String>> res = cur.getAll();
 
-                        assertEquals("Unexpected number of entries", data.size(), res.size());
-
                         Map<Integer, String> act = res.stream()
-                                .collect(Collectors.toMap(Cache.Entry::getKey, Cache.Entry::getValue));
+                            .collect(Collectors.toMap(Cache.Entry::getKey, Cache.Entry::getValue));
+
+                        Map<Integer, Object> failover = null;
+
+                        if (data.size() != res.size()) {
+                            failover = new HashMap<>();
+
+                            for (int i : data.keySet())
+                                failover.put(i, cluster.srvs.get(0).cache("testFailover").get(i));
+                        }
+
+                        assertEquals("Unexpected number of entries " + act + " " + failover, data.size(), res.size());
 
                         assertEquals("Unexpected entries", data, act);
                     }
@@ -770,8 +780,6 @@ public class ReliabilityTest extends AbstractThinClientTest {
                 ));
             }
         }
-
-        U.sleep(5000);
     }
 
     /** {@inheritDoc} */

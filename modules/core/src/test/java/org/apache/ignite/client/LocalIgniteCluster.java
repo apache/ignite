@@ -41,7 +41,7 @@ public class LocalIgniteCluster implements AutoCloseable {
     private static final Random rnd = new Random();
 
     /** Servers. */
-    private final List<Ignite> srvs = new ArrayList<>();
+    public final List<Ignite> srvs = new ArrayList<>();
 
     /** Configurations of the failed servers. */
     private final List<NodeConfiguration> failedCfgs = new ArrayList<>();
