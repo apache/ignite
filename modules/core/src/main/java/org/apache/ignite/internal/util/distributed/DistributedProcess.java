@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
@@ -150,6 +151,15 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 initCoordinator(p, topVer);
 
             try {
+                if (ctx.rollingUpgrade().enabled()) {
+                    p.resFut.onDone(new IgniteException("Failed to start distributed process: rolling upgrade is enabled"));
+
+                    if (!ctx.clientNode())
+                        sendSingleMessage(p);
+
+                    return;
+                }
+
                 IgniteInternalFuture<R> fut = exec.apply((I)msg.request());
 
                 fut.listen(() -> {
