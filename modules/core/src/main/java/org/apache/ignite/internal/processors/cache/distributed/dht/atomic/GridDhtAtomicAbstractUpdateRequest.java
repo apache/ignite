@@ -54,9 +54,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     static final int DHT_ATOMIC_HAS_RESULT_MASK = 0x08;
 
     /** */
-    private static final int DHT_ATOMIC_REPLY_WITHOUT_DELAY = 0x10;
-
-    /** */
     protected static final int DHT_ATOMIC_OBSOLETE_NEAR_KEY_FLAG_MASK = 0x20;
 
     /** Flag indicating transformation operation was performed. */
@@ -167,13 +164,6 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
         this.nearNodeId = nearNodeId;
         this.nearFutId = nearFutId;
-    }
-
-    /**
-     * @return {@code True} if backups should reply immediately.
-     */
-    boolean replyWithoutDelay() {
-        return isFlag(DHT_ATOMIC_REPLY_WITHOUT_DELAY);
     }
 
     /**
@@ -499,7 +489,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     }
 
     /**
-     * Reags flag mask.
+     * Reads flag mask.
      *
      * @param mask Mask to read.
      * @return Flag value.
@@ -642,20 +632,18 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        StringBuilder flags = new StringBuilder();
+        StringBuilder flagsStr = new StringBuilder();
 
         if (skipStore())
-            appendFlag(flags, "skipStore");
+            appendFlag(flagsStr, "skipStore");
         if (keepBinary())
-            appendFlag(flags, "keepBinary");
+            appendFlag(flagsStr, "keepBinary");
         if (isFlag(DHT_ATOMIC_NEAR_FLAG_MASK))
-            appendFlag(flags, "near");
+            appendFlag(flagsStr, "near");
         if (hasResult())
-            appendFlag(flags, "hasRes");
-        if (replyWithoutDelay())
-            appendFlag(flags, "resNoDelay");
+            appendFlag(flagsStr, "hasRes");
 
         return S.toString(GridDhtAtomicAbstractUpdateRequest.class, this,
-            "flags", flags.toString());
+            "flags", flagsStr.toString());
     }
 }
