@@ -233,7 +233,6 @@ class IgniteJmxMixin:
         """
         return self.jmx_client().find_mbean('.*group=Kernal.*name=IgniteKernal')
 
-    @memoize
     def disco_mbean(self):
         """
         :return: DiscoverySpi MBean.
