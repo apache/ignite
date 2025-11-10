@@ -19,6 +19,7 @@ Module contains in-memory rebalance tests.
 from ducktape.mark import defaults
 
 from ignitetest.services.ignite import IgniteService
+from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.tests.rebalance.util import start_ignite, get_result, TriggerEvent, NUM_NODES, \
     await_rebalance_start, BaseRebalanceTest
@@ -118,6 +119,10 @@ class RebalanceInMemoryTest(BaseRebalanceTest):
                                    modules=reb_params.modules)
 
             if upgrade_version is not None:
+                control_sh = ControlUtility(ignites)
+
+                control_sh.enable_rolling_upgrade(upgrade_version)
+
                 ignite.config._replace(version=upgrade_version)
 
             ignite.start()

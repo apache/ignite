@@ -204,6 +204,15 @@ class IgniteJmxMixin:
         """
         return next(self.kernal_mbean().LocalNodeId).strip()
 
+    def is_coordinator(self):
+        """
+        Check if the current node is the cluster coordinator.
+        """
+        disco_mbean = self.disco_mbean()
+        crd_id = next(disco_mbean.Coordinator).strip()
+
+        return self.node_id == crd_id
+
     def discovery_info(self):
         """
         :return: DiscoveryInfo instance.
