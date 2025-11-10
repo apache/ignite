@@ -20,8 +20,6 @@ and attributes.
 import os
 import re
 
-from ducktape.utils.util import wait_until
-
 from ignitetest.services.utils.decorators import memoize
 from ignitetest.services.utils.jvm_utils import java_version, java_major_version
 
@@ -210,9 +208,9 @@ class IgniteJmxMixin:
         """
         Check if the current node is the cluster coordinator.
         """
-        wait_until(lambda: next(self.disco_mbean().Coordinator, None) is not None, timeout_sec=10)
+        disco_mbean = self.disco_mbean()
 
-        crd_id = next(self.disco_mbean().Coordinator).strip()
+        crd_id = next(disco_mbean.Coordinator).strip()
         local_node_id = self.node_id()
 
         return local_node_id == crd_id
@@ -233,6 +231,7 @@ class IgniteJmxMixin:
         """
         return self.jmx_client().find_mbean('.*group=Kernal.*name=IgniteKernal')
 
+    @memoize
     def disco_mbean(self):
         """
         :return: DiscoverySpi MBean.
