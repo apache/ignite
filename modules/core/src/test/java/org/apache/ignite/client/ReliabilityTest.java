@@ -165,16 +165,33 @@ public class ReliabilityTest extends AbstractThinClientTest {
                         Map<Integer, String> act = res.stream()
                             .collect(Collectors.toMap(Cache.Entry::getKey, Cache.Entry::getValue));
 
-                        Map<Integer, Object> failover = null;
+                        Map<Integer, Object> failover0 = null;
+                        Map<Integer, Object> failover1 = null;
+                        Map<Integer, Object> failover2 = null;
 
                         if (data.size() != res.size()) {
-                            failover = new HashMap<>();
+                            synchronized (this) {
+                                failover0 = new HashMap<>();
+                                failover1 = new HashMap<>();
+                                failover2 = new HashMap<>();
 
-                            for (int i : data.keySet())
-                                failover.put(i, cluster.srvs.get(0).cache("testFailover").get(i));
+                                for (int i : data.keySet()) {
+                                    failover0.put(i, cluster.srvs.get(0).cache("testFailover").get(i));
+
+                                    if (cluster.srvs.get(1) != null)
+                                        failover1.put(i, cluster.srvs.get(1).cache("testFailover").get(i));
+
+                                    if (cluster.srvs.get(2) != null)
+                                        failover2.put(i, cluster.srvs.get(2).cache("testFailover").get(i));
+                                }
+                            }
                         }
 
-                        assertEquals("Unexpected number of entries " + act + " " + failover, data.size(), res.size());
+                        assertEquals(
+                            "Unexpected number of entries " + act + " " + failover0 + " " + failover1 + " " + failover2,
+                            data.size(),
+                            res.size()
+                        );
 
                         assertEquals("Unexpected entries", data, act);
                     }
@@ -736,11 +753,17 @@ public class ReliabilityTest extends AbstractThinClientTest {
         Future<?> topChangeFut = Executors.newSingleThreadExecutor().submit(() -> {
             try {
                 for (int i = 0; i < 5 && !stopFlag.get(); i++) {
-                    while (cluster.size() != 1)
-                        cluster.failNode();
+                    while (cluster.size() != 1) {
+                        synchronized (this) {
+                            cluster.failNode();
+                        }
+                    }
 
-                    while (cluster.size() != cluster.getInitialSize())
-                        cluster.restoreNode();
+                    while (cluster.size() != cluster.getInitialSize()) {
+                        synchronized (this) {
+                            cluster.restoreNode();
+                        }
+                    }
 
                     waitRebalanceFinished();
                 }
