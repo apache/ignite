@@ -20,6 +20,8 @@ and attributes.
 import os
 import re
 
+from ducktape.utils.util import wait_until
+
 from ignitetest.services.utils.decorators import memoize
 from ignitetest.services.utils.jvm_utils import java_version, java_major_version
 
@@ -209,6 +211,8 @@ class IgniteJmxMixin:
         Check if the current node is the cluster coordinator.
         """
         disco_mbean = self.disco_mbean()
+
+        wait_until(lambda: next(disco_mbean.Coordinator) is not None, timeout_sec=10)
 
         crd_id = next(disco_mbean.Coordinator).strip()
         local_node_id = self.node_id()
