@@ -6848,17 +6848,17 @@ class ServerImpl extends TcpDiscoveryImpl {
                         res.clientAck(true);
 
                         if (req.dcId() != null && !Objects.equals(req.dcId(), locNode.dataCenterId())) {
-                                Optional<TcpDiscoveryNode> dcNode = ring.serverNodes().stream()
-                                    .filter(node -> node.dataCenterId() != null && node.dataCenterId().equals(req.dcId()))
-                                    .findAny();
+                            Optional<TcpDiscoveryNode> dcNode = ring.serverNodes().stream()
+                                .filter(node -> node.dataCenterId() != null && node.dataCenterId().equals(req.dcId()))
+                                .findAny();
 
-                                if (dcNode.isPresent()) {
-                                    res.redirectAddresses(dcNode.get().socketAddresses());
+                            if (dcNode.isPresent()) {
+                                res.redirectAddresses(dcNode.get().socketAddresses());
 
-                                    spi.writeToSocket(sock, spi.socketStream(sock), res, spi.getEffectiveSocketTimeout(srvSock));
+                                spi.writeToSocket(sock, spi.socketStream(sock), res, spi.getEffectiveSocketTimeout(srvSock));
 
-                                    return;
-                                }
+                                return;
+                            }
                         }
                     }
                     else if (req.changeTopology()) {

@@ -633,6 +633,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         }
     }
 
+    /** */
     private T2<Boolean, T3<SocketStream, Integer, Boolean>> sendJoinRequests(
         boolean recon,
         Collection<InetSocketAddress> addrs
