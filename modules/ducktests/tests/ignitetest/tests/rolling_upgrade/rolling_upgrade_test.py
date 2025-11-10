@@ -47,7 +47,7 @@ class RollingUpgradeTest(IgniteTest):
 
         control_sh = ControlUtility(ignites)
 
-        control_sh.enable_rolling_upgrade(upgrade_version)
+        control_sh.enable_rolling_upgrade(IgniteVersion(upgrade_version).vstring)
 
         self.upgrade_ignite_cluster(ignites, upgrade_version, upgrade_coordinator, results)
 

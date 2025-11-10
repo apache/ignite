@@ -27,7 +27,7 @@ from ignitetest.tests.rebalance.util import NUM_NODES, start_ignite, TriggerEven
     get_result, check_type_of_rebalancing, await_rebalance_start, BaseRebalanceTest
 from ignitetest.tests.util import preload_data
 from ignitetest.utils import cluster, ignite_versions
-from ignitetest.utils.version import DEV_BRANCH, LATEST
+from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
 
 class RebalancePersistentTest(BaseRebalanceTest):
@@ -87,7 +87,7 @@ class RebalancePersistentTest(BaseRebalanceTest):
                                  num_nodes=1, modules=reb_params.modules)
 
         if upgrade_version is not None:
-            control_utility.enable_rolling_upgrade(upgrade_version)
+            control_utility.enable_rolling_upgrade(IgniteVersion(upgrade_version).vstring)
 
             new_node.config._replace(version=upgrade_version)
 
