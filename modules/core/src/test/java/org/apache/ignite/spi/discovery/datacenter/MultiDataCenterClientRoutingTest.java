@@ -20,9 +20,7 @@ package org.apache.ignite.spi.discovery.datacenter;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
@@ -66,7 +64,7 @@ public class MultiDataCenterClientRoutingTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testRouterId() throws Exception {
+    public void testConnectionToProperDc() throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         boolean bool = rnd.nextBoolean();
@@ -101,30 +99,41 @@ public class MultiDataCenterClientRoutingTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testConnectionRestriction() throws Exception {
+    public void testConnectionToAnyDcWhenNoOtherOption() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
 
         startGrid(0);
 
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
 
-        CountDownLatch latch = new CountDownLatch(1);
+        IgniteEx client = startClientGrid();
 
-        new Thread(() -> {
-            try {
-                startClientGrid();
+        UUID routerId = ((TcpDiscoveryNode)client.localNode()).clientRouterNodeId();
 
-                latch.countDown();
-            }
-            catch (Exception e) {
-                fail();
-            }
-        }).start();
+        List<ClusterNode> routers = client.cluster().nodes().stream()
+            .filter(node -> node.id().equals(routerId))
+            .collect(Collectors.toList());
 
-        assertFalse(latch.await(10, TimeUnit.SECONDS));
+        assertTrue(routers.size() == 1);
+        assertEquals(DC_ID_0, routers.get(0).dataCenterId());
+    }
 
-        startGrid(1);
+    /** */
+    @Test
+    public void testConnectionToUnconfiguredDcWhenNoOtherOption() throws Exception {
+        startGrid(0);
 
-        latch.await();
+        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
+
+        IgniteEx client = startClientGrid();
+
+        UUID routerId = ((TcpDiscoveryNode)client.localNode()).clientRouterNodeId();
+
+        List<ClusterNode> routers = client.cluster().nodes().stream()
+            .filter(node -> node.id().equals(routerId))
+            .collect(Collectors.toList());
+
+        assertTrue(routers.size() == 1);
+        assertNull(routers.get(0).dataCenterId());
     }
 }

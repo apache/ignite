@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.SortedMap;
@@ -145,8 +146,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDummyWakeupMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryInfoRequest;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryInfoResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
@@ -6829,35 +6828,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         return;
                     }
-                    else if (msg instanceof TcpDiscoveryInfoRequest) {
-                        if (!spi.isNodeStopping0()) {
-                            TcpDiscoveryInfoResponse res = new TcpDiscoveryInfoResponse(locNodeId);
-
-                            if (log.isInfoEnabled()) {
-                                log.info("Received info request from the remote node " +
-                                    "[rmtNodeId=" + msg.creatorNodeId() +
-                                    ", rmtAddr=" + rmtAddr + ", rmtPort=" + sock.getPort() + "]");
-                            }
-
-                            res.node(locNode);
-
-                            IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(spi, true);
-
-                            spi.writeToSocket(sock, spi.socketStream(sock), res, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
-
-                            if (!(sock instanceof SSLSocket))
-                                sock.shutdownOutput();
-
-                            if (log.isInfoEnabled()) {
-                                log.info("Finished writing info response " + "[rmtNodeId=" + msg.creatorNodeId() +
-                                    ", rmtAddr=" + rmtAddr + ", rmtPort=" + sock.getPort() + "]");
-                            }
-                        }
-                        else if (log.isDebugEnabled())
-                            log.debug("Ignore info request, node is stopping.");
-
-                        return;
-                    }
 
                     // Handshake.
                     TcpDiscoveryHandshakeRequest req = (TcpDiscoveryHandshakeRequest)msg;
@@ -6874,8 +6844,23 @@ class ServerImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryHandshakeResponse res =
                         new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
 
-                    if (req.client())
+                    if (req.client()) {
                         res.clientAck(true);
+
+                        if (req.dcId() != null && !Objects.equals(req.dcId(), locNode.dataCenterId())) {
+                                Optional<TcpDiscoveryNode> dcNode = ring.serverNodes().stream()
+                                    .filter(node -> node.dataCenterId() != null && node.dataCenterId().equals(req.dcId()))
+                                    .findAny();
+
+                                if (dcNode.isPresent()) {
+                                    res.redirectAddresses(dcNode.get().socketAddresses());
+
+                                    spi.writeToSocket(sock, spi.socketStream(sock), res, spi.getEffectiveSocketTimeout(srvSock));
+
+                                    return;
+                                }
+                        }
+                    }
                     else if (req.changeTopology()) {
                         // Node cannot connect to it's next (for local node it's previous).
                         // Need to check connectivity to it.

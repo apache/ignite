@@ -37,7 +37,7 @@ import org.apache.ignite.topology.MdcTopologyValidator;
 import org.junit.Test;
 
 /** */
-public class MdcTopologyValidatorTest extends GridCommonAbstractTest {
+public class MultiDataCenterTopologyValidatorTest extends GridCommonAbstractTest {
     /** */
     private static final String DC_ID_0 = "DC0";
 

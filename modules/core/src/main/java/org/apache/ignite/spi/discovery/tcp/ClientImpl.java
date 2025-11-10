@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
-import java.util.Objects;
 import java.util.Queue;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -112,8 +111,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryInfoRequest;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryInfoResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
@@ -609,52 +606,13 @@ class ClientImpl extends TcpDiscoveryImpl {
                     Collections.swap(addrs, idx, 0);
             }
 
-            Collection<InetSocketAddress> addrs0 = new ArrayList<>(addrs);
+            T2<Boolean, T3<SocketStream, Integer, Boolean>> waitAndRes = sendJoinRequests(prevAddr != null, addrs);
 
-            boolean wait = false;
+            boolean wait = waitAndRes.get1();
+            T3<SocketStream, Integer, Boolean> res = waitAndRes.get2();
 
-            for (int i = addrs.size() - 1; i >= 0; i--) {
-                if (Thread.currentThread().isInterrupted())
-                    throw new InterruptedException();
-
-                InetSocketAddress addr = addrs.get(i);
-
-                boolean recon = prevAddr != null;
-
-                T3<SocketStream, Integer, Boolean> sockAndRes = sendJoinRequest(recon, addr);
-
-                if (sockAndRes == null) {
-                    addrs.remove(i);
-
-                    continue;
-                }
-
-                assert sockAndRes.get1() != null && sockAndRes.get2() != null : sockAndRes;
-
-                Socket sock = sockAndRes.get1().socket();
-
-                if (log.isDebugEnabled())
-                    log.debug("Received response to join request [addr=" + addr + ", res=" + sockAndRes.get2() + ']');
-
-                switch (sockAndRes.get2()) {
-                    case RES_OK:
-                        return new T2<>(sockAndRes.get1(), sockAndRes.get3());
-
-                    case RES_CONTINUE_JOIN:
-                    case RES_WAIT:
-                        wait = true;
-
-                        U.closeQuiet(sock);
-
-                        break;
-
-                    default:
-                        if (log.isDebugEnabled())
-                            log.debug("Received unexpected response to join request: " + sockAndRes.get2());
-
-                        U.closeQuiet(sock);
-                }
-            }
+            if (res != null)
+                return new T2<>(waitAndRes.get2().get1(), waitAndRes.get2().get3());
 
             if (timeout > 0 && U.millisSinceNanos(startNanos) > timeout)
                 return null;
@@ -668,11 +626,52 @@ class ClientImpl extends TcpDiscoveryImpl {
             else if (addrs.isEmpty()) {
                 LT.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
                     "every " + spi.getReconnectDelay() + " ms; change 'reconnectDelay' to configure the frequency " +
-                    "of retries): " + toOrderedList(addrs0), true);
+                    "of retries): " + toOrderedList(addrs), true);
 
                 sleepEx(spi.getReconnectDelay(), beforeEachSleep, afterEachSleep);
             }
         }
+    }
+
+    private T2<Boolean, T3<SocketStream, Integer, Boolean>> sendJoinRequests(
+        boolean recon,
+        Collection<InetSocketAddress> addrs
+    ) throws InterruptedException {
+        for (InetSocketAddress addr : addrs) {
+            if (Thread.currentThread().isInterrupted())
+                throw new InterruptedException();
+
+            T3<SocketStream, Integer, Boolean> sockAndRes = sendJoinRequest(recon, addr);
+
+            if (sockAndRes == null)
+                continue;
+
+            assert sockAndRes.get1() != null && sockAndRes.get2() != null : sockAndRes;
+
+            Socket sock = sockAndRes.get1().socket();
+
+            if (log.isDebugEnabled())
+                log.debug("Received response to join request [addr=" + addr + ", res=" + sockAndRes.get2() + ']');
+
+            switch (sockAndRes.get2()) {
+                case RES_OK:
+                    return new T2<>(false, sockAndRes);
+
+                case RES_CONTINUE_JOIN:
+                case RES_WAIT:
+                    U.closeQuiet(sock);
+
+                    return new T2<>(true, null);
+
+                default:
+                    if (log.isDebugEnabled())
+                        log.debug("Received unexpected response to join request: " + sockAndRes.get2());
+
+                    U.closeQuiet(sock);
+            }
+        }
+
+        return new T2<>(false, null);
     }
 
     /** */
@@ -695,7 +694,7 @@ class ClientImpl extends TcpDiscoveryImpl {
      * @return Socket, connect response and client acknowledge support flag.
      */
     @Nullable private T3<SocketStream, Integer, Boolean> sendJoinRequest(boolean recon,
-        InetSocketAddress addr) {
+        InetSocketAddress addr) throws InterruptedException {
         assert addr != null;
 
         if (log.isDebugEnabled())
@@ -730,27 +729,22 @@ class ClientImpl extends TcpDiscoveryImpl {
                 sock = spi.openSocket(addr, timeoutHelper);
                 out = spi.socketStream(sock);
 
-                openSock = true;
-
-                TcpDiscoveryInfoRequest infoReq = new TcpDiscoveryInfoRequest(locNodeId);
-
-                spi.writeToSocket(sock, out, infoReq, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
-
-                TcpDiscoveryInfoResponse infoRes = spi.readMessage(sock, null, ackTimeout0);
-
-                if (locNode.dataCenterId() != null && !Objects.equals(locNode.dataCenterId(), infoRes.node().dataCenterId()))
-                    return null;
-
-                sock = spi.openSocket(addr, timeoutHelper);
-                out = spi.socketStream(sock);
-
                 TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId);
 
                 req.client(true);
+                req.dcId(locNode.dataCenterId());
 
                 spi.writeToSocket(sock, out, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, ackTimeout0);
+
+                if (res.redirectAddresses() != null) {
+                    T2<Boolean, T3<SocketStream, Integer, Boolean>> redirectedRes = sendJoinRequests(recon, res.redirectAddresses());
+
+                    U.closeQuiet(sock);
+
+                    return redirectedRes.get2();
+                }
 
                 UUID rmtNodeId = res.creatorNodeId();
 

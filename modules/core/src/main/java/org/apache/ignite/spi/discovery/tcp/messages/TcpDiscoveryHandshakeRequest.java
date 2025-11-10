@@ -30,6 +30,9 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
     /** */
     private UUID prevNodeId;
 
+    /** */
+    private String dcId;
+
     /**
      * Constructor.
      *
@@ -67,6 +70,16 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
         setFlag(CHANGE_TOPOLOGY_FLAG_POS, prevNodeId != null);
 
         this.prevNodeId = prevNodeId;
+    }
+
+    /** @return DataCenter id.*/
+    public String dcId() {
+        return dcId;
+    }
+
+    /** @param dcId DataCenter id.*/
+    public void dcId(String dcId) {
+        this.dcId = dcId;
     }
 
     /** {@inheritDoc} */
