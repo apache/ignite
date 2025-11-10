@@ -234,7 +234,7 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         setattr(node, "consistent_id", node.account.externally_routable_ip)
 
     def coordinator_node(self):
-        crd_node = next((node for node in self.nodes if node.is_coordinator), None)
+        crd_node = next((node for node in self.nodes if node.is_coordinator()), None)
 
         if not crd_node:
             node_ids = ', '.join(str(n) for n in self.nodes)
