@@ -236,7 +236,7 @@ class ControlUtility:
         Enable Rolling Upgrade with the target Ignite version.
         :param target_version: Target Ignite version.
         """
-        result = self.__run(f"--rolling-upgrade enable {target_version}", self._cluster.coordinator_node)
+        result = self.__run(f"--rolling-upgrade enable {target_version}", self._cluster.coordinator_node())
 
         assert "Rolling upgrade enabled" in result, f"Unexpected response: {result}"
 
@@ -246,7 +246,7 @@ class ControlUtility:
         """
         Disable Rolling Upgrade.
         """
-        result = self.__run(f"--rolling-upgrade disable", self._cluster.coordinator_node)
+        result = self.__run(f"--rolling-upgrade disable", self._cluster.coordinator_node())
 
         assert "Rolling upgrade disabled" in result, f"Unexpected response: {result}"
 

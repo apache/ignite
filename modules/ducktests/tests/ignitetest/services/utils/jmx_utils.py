@@ -209,9 +209,11 @@ class IgniteJmxMixin:
         Check if the current node is the cluster coordinator.
         """
         disco_mbean = self.disco_mbean()
-        crd_id = next(disco_mbean.Coordinator).strip()
 
-        return self.node_id == crd_id
+        crd_id = next(disco_mbean.Coordinator).strip()
+        local_node_id = self.node_id()
+
+        return local_node_id == crd_id
 
     def discovery_info(self):
         """
