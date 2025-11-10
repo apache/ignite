@@ -25,7 +25,7 @@ from ignitetest.tests.rebalance.util import start_ignite, get_result, TriggerEve
     await_rebalance_start, BaseRebalanceTest
 from ignitetest.tests.util import preload_data
 from ignitetest.utils import cluster, ignite_versions
-from ignitetest.utils.version import DEV_BRANCH, LATEST
+from ignitetest.utils.version import DEV_BRANCH, LATEST, IgniteVersion
 
 
 class RebalanceInMemoryTest(BaseRebalanceTest):
@@ -121,7 +121,7 @@ class RebalanceInMemoryTest(BaseRebalanceTest):
             if upgrade_version is not None:
                 control_sh = ControlUtility(ignites)
 
-                control_sh.enable_rolling_upgrade(upgrade_version)
+                control_sh.enable_rolling_upgrade(IgniteVersion(upgrade_version).vstring)
 
                 ignite.config._replace(version=upgrade_version)
 
