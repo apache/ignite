@@ -87,6 +87,8 @@ class RebalancePersistentTest(BaseRebalanceTest):
                                  num_nodes=1, modules=reb_params.modules)
 
         if upgrade_version is not None:
+            control_utility.enable_rolling_upgrade(upgrade_version)
+
             new_node.config._replace(version=upgrade_version)
 
         new_node.start()

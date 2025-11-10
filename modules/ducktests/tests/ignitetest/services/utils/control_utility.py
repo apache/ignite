@@ -231,6 +231,27 @@ class ControlUtility:
 
         return res
 
+    def enable_rolling_upgrade(self, target_version: str):
+        """
+        Enable Rolling Upgrade with the target Ignite version.
+        :param target_version: Target Ignite version.
+        """
+        result = self.__run(f"--rolling-upgrade enable {target_version}", self._cluster.coordinator_node)
+
+        assert "Rolling upgrade enabled" in result, f"Unexpected response: {result}"
+
+        return result
+
+    def disable_rolling_upgrade(self):
+        """
+        Disable Rolling Upgrade.
+        """
+        result = self.__run(f"--rolling-upgrade disable", self._cluster.coordinator_node)
+
+        assert "Rolling upgrade disabled" in result, f"Unexpected response: {result}"
+
+        return result
+
     def start_performance_statistics(self):
         """
         Start performance statistics collecting in the cluster.

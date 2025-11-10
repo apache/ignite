@@ -21,6 +21,7 @@ from time import monotonic
 from ducktape.mark import defaults, matrix
 
 from ignitetest.services.ignite import IgniteService
+from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.tests.rebalance.util import NUM_NODES
 from ignitetest.utils import cluster, ignite_versions
@@ -44,7 +45,13 @@ class RollingUpgradeTest(IgniteTest):
 
         ignites = self.start_ignite_cluster(init_version, results)
 
+        control_sh = ControlUtility(ignites)
+
+        control_sh.enable_rolling_upgrade(upgrade_version)
+
         self.upgrade_ignite_cluster(ignites, upgrade_version, upgrade_coordinator, results)
+
+        control_sh.disable_rolling_upgrade()
 
         ignites.stop()
 
