@@ -212,7 +212,7 @@ class IgniteJmxMixin:
         """
         disco_mbean = self.disco_mbean()
 
-        wait_until(lambda: next(disco_mbean.Coordinator) is not None, timeout_sec=10)
+        wait_until(lambda: next(disco_mbean.Coordinator, None) is not None, timeout_sec=10)
 
         crd_id = next(disco_mbean.Coordinator).strip()
         local_node_id = self.node_id()
