@@ -219,7 +219,6 @@ public class IndexProcessor extends GridProcessorAdapter {
         IndexFactory dynamicFactory = (gcctx, indexDefinition) -> {
             Index idx = factory.createIndex(gcctx, indexDefinition);
 
-            // Under lock.
             assert ddlLock.isWriteLockedByCurrentThread();
 
             if (fillingIdxs == null)
