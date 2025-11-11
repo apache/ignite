@@ -722,7 +722,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 sock = spi.openSocket(addr, timeoutHelper);
 
-                TcpDiscoveryIoSession ses = new TcpDiscoveryIoSession(sock, spi);
+                TcpDiscoveryIoSession ses = createSession(sock);
 
                 openSock = true;
 
@@ -1176,7 +1176,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     + ":" + sockStream.sock.getPort());
 
                 try {
-                    TcpDiscoveryIoSession ses = new TcpDiscoveryIoSession(sock, spi);
+                    TcpDiscoveryIoSession ses = createSession(sock);
 
                     assert sock.getKeepAlive() && sock.getTcpNoDelay() : "Socket wasn't configured properly:" +
                         " KeepAlive " + sock.getKeepAlive() +
@@ -1333,7 +1333,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             synchronized (mux) {
                 this.sock = sock;
 
-                ses = new TcpDiscoveryIoSession(sock, spi);
+                ses = createSession(sock);
 
                 this.clientAck = clientAck;
 
@@ -1595,7 +1595,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     clientAck = joinRes.get2();
 
                     Socket sock = sockStream.socket();
-                    TcpDiscoveryIoSession ses = new TcpDiscoveryIoSession(sock, spi);
+                    TcpDiscoveryIoSession ses = createSession(sock);
 
                     if (isInterrupted())
                         throw new InterruptedException();

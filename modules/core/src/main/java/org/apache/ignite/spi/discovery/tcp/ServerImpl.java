@@ -874,7 +874,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         openedSock = true;
 
-                        TcpDiscoveryIoSession ses = new TcpDiscoveryIoSession(sock, spi);
+                        TcpDiscoveryIoSession ses = createSession(sock);
 
                         spi.writeMessage(ses, new TcpDiscoveryPingRequest(locNodeId, clientNodeId),
                             timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
@@ -1467,7 +1467,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 long tsNanos = System.nanoTime();
 
                 sock = spi.openSocket(addr, timeoutHelper);
-                TcpDiscoveryIoSession ses = new TcpDiscoveryIoSession(sock, spi);
+                TcpDiscoveryIoSession ses = createSession(sock);
 
                 openSock = true;
 
@@ -3520,7 +3520,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             try {
                                 sock = spi.openSocket(addr, timeoutHelper);
 
-                                ses = new TcpDiscoveryIoSession(sock, spi);
+                                ses = createSession(sock);
 
                                 openSock = true;
 
@@ -6706,7 +6706,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             this.sock = sock;
 
-            ses = new TcpDiscoveryIoSession(sock, spi);
+            ses = createSession(sock);
 
             setPriority(spi.threadPri);
         }
@@ -7734,7 +7734,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             this.sock = sock;
             this.clientNodeId = clientNodeId;
 
-            ses = new TcpDiscoveryIoSession(sock, spi);
+            ses = createSession(sock);
 
             lastMetricsUpdateMsgTimeNanos = System.nanoTime();
         }
