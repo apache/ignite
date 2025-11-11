@@ -434,6 +434,8 @@ public class ClusterCachesInfo {
             "Affinity partitions count", locAttr.affinityPartitionsCount(),
             rmtAttr.affinityPartitionsCount(), true);
 
+        // TODO IGNITE-26967 - implement validation of affinity backup filter.
+
         CU.validateKeyConfigiration(rmtAttr.groupName(), rmtAttr.cacheName(), rmt, rmtAttr.configuration().getKeyConfiguration(),
             locAttr.configuration().getKeyConfiguration(), log, true);
 
