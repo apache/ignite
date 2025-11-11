@@ -695,11 +695,8 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
      * @param ldr Class loader.
      */
     public void finishUnmarshal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
-        assert jobBytes != null;
         assert top != null || topPredBytes != null;
-        assert siblingsBytes != null;
         assert sesAttrsBytes != null || !sesFullSup;
-        assert jobAttrsBytes != null;
 
         if (!dynamicSiblings && siblings == null)
             siblings = U.unmarshal(marsh, siblingsBytes, ldr);
