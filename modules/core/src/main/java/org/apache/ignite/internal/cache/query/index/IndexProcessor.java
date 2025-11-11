@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -221,16 +220,19 @@ public class IndexProcessor extends GridProcessorAdapter {
             Index idx = factory.createIndex(gcctx, indexDefinition);
 
             // Under lock.
+            assert ddlLock.isWriteLockedByCurrentThread();
+
             if (fillingIdxs == null)
                 fillingIdxs = new HashSet<>();
-            fillingIdxs.add(idx.indexDefinition().idxName());
+
+            fillingIdxs.add(indexDefinition.idxName());
 
             return idx;
         };
 
-        Index idx = createIndex(cctx, dynamicFactory, definition);
-
         try {
+            Index idx = createIndex(cctx, dynamicFactory, definition);
+
             // Populate index with cache rows.
             cacheVisitor.visit(row -> {
                 if (idx.canHandle(row))
@@ -244,7 +246,7 @@ public class IndexProcessor extends GridProcessorAdapter {
 
             try {
                 if (fillingIdxs != null) {
-                    fillingIdxs.remove(idx.indexDefinition().idxName());
+                    fillingIdxs.remove(definition.idxName());
 
                     if (fillingIdxs.isEmpty())
                         fillingIdxs = null;
@@ -436,14 +438,12 @@ public class IndexProcessor extends GridProcessorAdapter {
             if (idxMap == null)
                 return Collections.emptyList();
 
-            Collection<Index> idxs = idxMap.values();
+            List<Index> idxs = new ArrayList<>(idxMap.values());
 
-            if (!skipFilling || fillingIdxs == null)
-                return new ArrayList<>(idxs);
+            if (skipFilling && fillingIdxs != null)
+                idxs.removeIf(idx -> fillingIdxs.contains(idx.indexDefinition().idxName()));
 
-            return idxs.stream().filter(idx ->
-                !fillingIdxs.contains(idx.indexDefinition().idxName())
-            ).collect(Collectors.toCollection(ArrayList::new));
+            return idxs;
         }
         finally {
             ddlLock.readLock().unlock();

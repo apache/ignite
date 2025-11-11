@@ -455,5 +455,4 @@ public class IndexQueryProcessor {
 
         return r.toString();
     }
-
 }
