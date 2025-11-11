@@ -264,10 +264,10 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (!blockMsgs)
-                super.writeToSocket(ses, msg, timeout);
+                super.writeMessage(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */

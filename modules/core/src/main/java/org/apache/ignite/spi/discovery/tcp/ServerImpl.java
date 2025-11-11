@@ -876,7 +876,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         TcpDiscoveryIoSession ses = new TcpDiscoveryIoSession(sock, spi);
 
-                        spi.writeToSocket(ses, new TcpDiscoveryPingRequest(locNodeId, clientNodeId),
+                        spi.writeMessage(ses, new TcpDiscoveryPingRequest(locNodeId, clientNodeId),
                             timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                         TcpDiscoveryPingResponse res = spi.readMessage(ses, timeoutHelper.nextTimeoutChunk(spi.getAckTimeout()));
@@ -1474,7 +1474,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId);
 
                 // Handshake.
-                spi.writeToSocket(ses, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                spi.writeMessage(ses, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(ses, timeoutHelper.nextTimeoutChunk(ackTimeout0));
 
@@ -1508,7 +1508,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // Send message.
                 tsNanos = System.nanoTime();
 
-                spi.writeToSocket(ses, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                spi.writeMessage(ses, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 long tsNanos0 = System.nanoTime();
 
@@ -3538,7 +3538,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         "] with timeout " + timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
                                 }
 
-                                spi.writeToSocket(ses, hndMsg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                                spi.writeMessage(ses, hndMsg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                                 if (log.isDebugEnabled()) {
                                     log.debug("Reading handshake response with timeout " +
@@ -3744,7 +3744,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         timeoutHelper = serverOperationTimeoutHelper(sndState, lastRingMsgSentTime);
 
                                     try {
-                                        spi.writeToSocket(ses, pendingMsg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                                        spi.writeMessage(ses, pendingMsg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
                                     }
                                     finally {
                                         clearNodeAddedMessage(pendingMsg);
@@ -3795,7 +3795,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (latencyCheck && log.isInfoEnabled())
                                     log.info("Latency check message has been written to socket: " + msg.id());
 
-                                spi.writeToSocket(ses, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                                spi.writeMessage(ses, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                                 long tsNanos0 = System.nanoTime();
 
@@ -5564,7 +5564,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
                 else if (leftNode.equals(next) && sock != null) {
                     try {
-                        spi.writeToSocket(ses, msg, spi.failureDetectionTimeoutEnabled() ?
+                        spi.writeMessage(ses, msg, spi.failureDetectionTimeoutEnabled() ?
                             spi.failureDetectionTimeout() : spi.getSocketTimeout());
 
                         if (log.isDebugEnabled())
@@ -6802,7 +6802,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     res.clientExists(clientWorker.ping(timeoutHelper));
                             }
 
-                            spi.writeToSocket(ses, res, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                            spi.writeMessage(ses, res, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                             if (!(sock instanceof SSLSocket))
                                 sock.shutdownOutput();
@@ -6895,7 +6895,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             spi.getEffectiveSocketTimeout(srvSock) + " to " + rmtAddr + ":" + sock.getPort());
                     }
 
-                    spi.writeToSocket(ses, res, spi.getEffectiveSocketTimeout(srvSock));
+                    spi.writeMessage(ses, res, spi.getEffectiveSocketTimeout(srvSock));
 
                     // It can happen if a remote node is stopped and it has a loopback address in the list of addresses,
                     // the local node sends a handshake request message on the loopback address, so we get here.

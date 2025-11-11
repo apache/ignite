@@ -626,7 +626,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             BiConsumer<Socket, TcpDiscoveryHandshakeRequest> hsRqLsnr;
             BiConsumer<Socket, TcpDiscoveryHandshakeResponse> hsRespLsnr;
@@ -640,7 +640,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
             if (dropMsg(ses.socket()))
                 return;
 
-            super.writeToSocket(ses, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */

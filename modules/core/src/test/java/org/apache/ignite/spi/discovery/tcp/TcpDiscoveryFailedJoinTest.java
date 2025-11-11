@@ -198,10 +198,10 @@ public class TcpDiscoveryFailedJoinTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (ses.socket().getPort() != FAIL_PORT)
-                super.writeToSocket(ses, msg, timeout);
+                super.writeMessage(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */

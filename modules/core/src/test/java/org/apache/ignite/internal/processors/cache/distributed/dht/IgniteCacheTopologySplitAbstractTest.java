@@ -228,12 +228,12 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryIoSession ses,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             checkSegmented((InetSocketAddress)ses.socket().getRemoteSocketAddress(), timeout);
 
-            super.writeToSocket(ses, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */

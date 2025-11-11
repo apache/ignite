@@ -1729,7 +1729,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @throws IOException If IO failed or write timed out.
      * @throws IgniteCheckedException If marshalling failed.
      */
-    protected void writeToSocket(
+    protected void writeMessage(
         TcpDiscoveryIoSession ses,
         TcpDiscoveryAbstractMessage msg,
         long timeout

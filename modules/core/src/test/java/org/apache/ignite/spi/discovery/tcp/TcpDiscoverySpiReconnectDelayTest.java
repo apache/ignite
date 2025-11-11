@@ -399,13 +399,13 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
         private final AtomicInteger failReconReq = new AtomicInteger();
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
 
             if (!onMessage(ses.socket(), msg))
                 return;
 
-            super.writeToSocket(ses, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */

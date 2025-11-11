@@ -313,14 +313,14 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             assertNotFailedNode(ses.socket());
 
             if (isDrop(msg))
                 return;
 
-            super.writeToSocket(ses, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
 
         /**

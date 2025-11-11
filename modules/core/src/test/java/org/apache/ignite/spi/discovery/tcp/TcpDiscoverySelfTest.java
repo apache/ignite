@@ -2446,7 +2446,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
+        @Override protected void writeMessage(
             TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
@@ -2493,7 +2493,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }
             }
 
-            super.writeToSocket(ses, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
     }
 
@@ -2511,7 +2511,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         static volatile boolean checkClientNodeAddFinished;
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryIoSession ses,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryNodeAddedMessage) {
@@ -2533,7 +2533,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }
             }
 
-            super.writeToSocket(ses, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
 
         /**
@@ -2577,7 +2577,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         private volatile boolean failed;
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryIoSession ses,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             boolean add = msgIds.add(msg.id());
@@ -2588,7 +2588,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 failed = true;
             }
 
-            super.writeToSocket(ses, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
     }
 
@@ -2600,7 +2600,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         private volatile boolean stopBeforeSndAck;
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryIoSession ses,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (stopBeforeSndAck) {
@@ -2631,7 +2631,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 }
             }
 
-            super.writeToSocket(ses, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
     }
 
@@ -2662,7 +2662,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryIoSession ses,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (stop)
@@ -2708,7 +2708,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 return;
             }
 
-            super.writeToSocket(ses, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
     }
 
@@ -2723,7 +2723,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         private boolean stop;
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryCustomEventMessage && latch != null) {
                 log.info("Stop node on custom event: " + msg);
@@ -2736,7 +2736,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             if (stop)
                 return;
 
-            super.writeToSocket(ses, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
     }
 
@@ -2757,7 +2757,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         private boolean debug;
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                 if (nodeAdded1 != null) {
@@ -2785,7 +2785,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             if (debug && msg instanceof TcpDiscoveryCustomEventMessage)
                 log.info("--- Send custom event: " + msg);
 
-            super.writeToSocket(ses, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
     }
 
@@ -2813,7 +2813,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
 
             if (stop) {
@@ -2830,7 +2830,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             }
 
-            super.writeToSocket(ses, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
     }
 
@@ -2842,12 +2842,12 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         private volatile boolean stop;
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (stop)
                 throw new RuntimeException("Failing ring message worker explicitly");
 
-            super.writeToSocket(ses, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
 
             if (msg instanceof TcpDiscoveryNodeAddedMessage)
                 stop = true;

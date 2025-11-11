@@ -2572,7 +2572,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryIoSession ses,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             waitFor(writeLock);
@@ -2580,7 +2580,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
             if (!onMessage(ses.socket(), msg))
                 return;
 
-            super.writeToSocket(ses, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
 
             if (afterWrite != null)
                 afterWrite.apply(msg, ses.socket());

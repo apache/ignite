@@ -87,12 +87,12 @@ public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
     }
 
     /** {@inheritDoc} */
-    @Override protected void writeToSocket(TcpDiscoveryIoSession ses,
+    @Override protected void writeMessage(TcpDiscoveryIoSession ses,
         TcpDiscoveryAbstractMessage msg,
         long timeout) throws IOException, IgniteCheckedException {
         if (spiCtx != null)
             apply(spiCtx.localNode(), msg);
 
-        super.writeToSocket(ses, msg, timeout);
+        super.writeMessage(ses, msg, timeout);
     }
 }

@@ -302,13 +302,13 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg, long timeout)
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg, long timeout)
             throws IOException, IgniteCheckedException {
             if (!(msg instanceof TcpDiscoveryPingRequest)) {
                 if (cntConnCheckMsg && msg instanceof TcpDiscoveryConnectionCheckMessage)
                     connCheckStatusMsgCntSent++;
 
-                super.writeToSocket(ses, msg, timeout);
+                super.writeMessage(ses, msg, timeout);
 
                 return;
             }
@@ -328,7 +328,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
                 }
             }
             else
-                super.writeToSocket(ses, msg, timeout);
+                super.writeMessage(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */

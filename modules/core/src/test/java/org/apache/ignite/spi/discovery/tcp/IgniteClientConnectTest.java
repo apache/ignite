@@ -209,7 +209,7 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
      */
     class TestTcpDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
+        @Override protected void writeMessage(
             TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout
@@ -225,10 +225,10 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
                         fail("Unexpected interrupt on nodeAddFinishedDelay");
                     }
 
-                super.writeToSocket(ses, msg, timeout);
+                super.writeMessage(ses, msg, timeout);
             }
             else
-                super.writeToSocket(ses, msg, timeout);
+                super.writeMessage(ses, msg, timeout);
         }
 
         /**

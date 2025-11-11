@@ -74,7 +74,7 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         TcpDiscoverySpi testSpi = new TcpDiscoverySpi() {
-            @Override protected void writeToSocket(
+            @Override protected void writeMessage(
                 TcpDiscoveryIoSession ses,
                 TcpDiscoveryAbstractMessage msg,
                 long timeout
@@ -90,7 +90,7 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
                     }
                 }
 
-                super.writeToSocket(ses, msg, timeout);
+                super.writeMessage(ses, msg, timeout);
             }
         };
 

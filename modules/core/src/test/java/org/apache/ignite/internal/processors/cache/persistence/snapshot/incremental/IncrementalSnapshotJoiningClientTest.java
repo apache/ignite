@@ -218,7 +218,7 @@ public class IncrementalSnapshotJoiningClientTest extends AbstractIncrementalSna
     /** */
     private static class ClientBlockingDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
+        @Override protected void writeMessage(
             TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout
@@ -229,7 +229,7 @@ public class IncrementalSnapshotJoiningClientTest extends AbstractIncrementalSna
                 U.awaitQuiet(unblockClientJoinReq);
             }
 
-            super.writeToSocket(ses, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
     }
 

@@ -301,7 +301,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(
+        @Override protected void writeMessage(
             TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout
@@ -312,7 +312,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
                 msg = new TcpDiscoveryConnectionCheckMessage(locNode);
             }
 
-            super.writeToSocket(ses, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */

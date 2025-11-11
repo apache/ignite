@@ -46,7 +46,7 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
     private IgniteDiscoverySpiInternalListener internalLsnr;
 
     /** {@inheritDoc} */
-    @Override protected void writeToSocket(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
+    @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
         IgniteCheckedException {
         if (msg instanceof TcpDiscoveryPingResponse && ignorePingResponse)
             return;
@@ -59,7 +59,7 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
                 internalLsnr.beforeReconnect(locNode, log);
         }
 
-        super.writeToSocket(ses, msg, timeout);
+        super.writeMessage(ses, msg, timeout);
     }
 
     /** {@inheritDoc} */

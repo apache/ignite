@@ -730,7 +730,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 req.client(true);
 
-                spi.writeToSocket(ses, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                spi.writeMessage(ses, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(ses, ackTimeout0);
 
@@ -785,7 +785,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (msg instanceof TraceableMessage)
                     tracing.messages().beforeSend((TraceableMessage)msg);
 
-                spi.writeToSocket(ses, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                spi.writeMessage(ses, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 spi.stats.onMessageSent(msg, U.millisSinceNanos(tsNanos));
 
@@ -1389,7 +1389,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         msg.client(true);
 
                         try {
-                            spi.writeToSocket(ses, msg, sockTimeout);
+                            spi.writeMessage(ses, msg, sockTimeout);
                         }
                         catch (IOException | IgniteCheckedException e) {
                             if (log.isDebugEnabled()) {
@@ -1432,7 +1432,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         }
                     }
 
-                    spi.writeToSocket(ses, msg, sockTimeout);
+                    spi.writeMessage(ses, msg, sockTimeout);
 
                     IgniteUuid latencyCheckId = msg instanceof TcpDiscoveryRingLatencyCheckMessage ?
                         msg.id() : null;

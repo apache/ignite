@@ -472,7 +472,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         }
 
         /**  */
-        @Override protected void writeToSocket(TcpDiscoveryIoSession ses,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (writeToSocketDelay > 0) {
@@ -487,7 +487,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
             }
 
             if (ses.socket().getSoTimeout() >= writeToSocketDelay)
-                super.writeToSocket(ses, msg, timeout);
+                super.writeMessage(ses, msg, timeout);
             else
                 throw new SocketTimeoutException("Write to socket delay timeout exception.");
         }
