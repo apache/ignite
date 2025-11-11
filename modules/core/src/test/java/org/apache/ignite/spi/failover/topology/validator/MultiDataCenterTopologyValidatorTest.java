@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -326,7 +327,9 @@ public class MultiDataCenterTopologyValidatorTest extends GridCommonAbstractTest
 
         srv0.cluster().state(ClusterState.ACTIVE);
 
-        CacheConfiguration<Object, Object> cfgCache = new CacheConfiguration<>("cache").setTopologyValidator(topValidator);
+        CacheConfiguration<Object, Object> cfgCache = new CacheConfiguration<>("cache")
+            .setTopologyValidator(topValidator)
+            .setCacheMode(CacheMode.REPLICATED);
 
         return srv0.createCache(cfgCache);
     }
