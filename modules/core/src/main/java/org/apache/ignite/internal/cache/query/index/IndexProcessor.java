@@ -272,10 +272,8 @@ public class IndexProcessor extends GridProcessorAdapter {
 
             Index idx = idxs.remove(idxName.fullName());
 
-            if (idx != null) {
+            if (idx != null)
                 idx.destroy(softDelete);
-            }
-
         }
         finally {
             ddlLock.writeLock().unlock();
