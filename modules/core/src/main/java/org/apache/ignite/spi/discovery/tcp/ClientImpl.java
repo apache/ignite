@@ -740,9 +740,12 @@ class ClientImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, ackTimeout0);
 
                 if (res.redirectAddresses() != null) {
-                    T2<Boolean, T3<SocketStream, Integer, Boolean>> redirectedRes = sendJoinRequests(recon, res.redirectAddresses());
-
                     U.closeQuiet(sock);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Reconnecting to addresses [addrs=" + res.redirectAddresses() + ']');
+
+                    T2<Boolean, T3<SocketStream, Integer, Boolean>> redirectedRes = sendJoinRequests(recon, res.redirectAddresses());
 
                     return redirectedRes.get2();
                 }
