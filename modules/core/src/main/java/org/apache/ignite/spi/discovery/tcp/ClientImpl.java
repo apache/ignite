@@ -606,6 +606,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                     Collections.swap(addrs, idx, 0);
             }
 
+            Collection<InetSocketAddress> addrs0 = new ArrayList<>(addrs);
+
             T2<Boolean, T3<SocketStream, Integer, Boolean>> waitAndRes = sendJoinRequests(prevAddr != null, addrs);
 
             boolean wait = waitAndRes.get1();
@@ -626,7 +628,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             else if (addrs.isEmpty()) {
                 LT.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
                     "every " + spi.getReconnectDelay() + " ms; change 'reconnectDelay' to configure the frequency " +
-                    "of retries): " + toOrderedList(addrs), true);
+                    "of retries): " + toOrderedList(addrs0), true);
 
                 sleepEx(spi.getReconnectDelay(), beforeEachSleep, afterEachSleep);
             }
@@ -671,6 +673,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                     U.closeQuiet(sock);
             }
         }
+
+        addrs.clear();
 
         return new T2<>(false, null);
     }
