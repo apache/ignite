@@ -77,7 +77,7 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
         return dcId;
     }
 
-    /** @param dcId DataCenter id.*/
+    /** @param dcId DataCenter id. */
     public void dcId(String dcId) {
         this.dcId = dcId;
     }
