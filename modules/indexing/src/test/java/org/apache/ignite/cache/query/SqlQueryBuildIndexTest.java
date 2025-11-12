@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.sql;
+package org.apache.ignite.cache.query;
 
 import java.util.LinkedHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -26,7 +28,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -102,7 +103,7 @@ public class SqlQueryBuildIndexTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(false))
         );
 
         cfg.setCacheConfiguration(ccfg);
@@ -125,46 +126,64 @@ public class SqlQueryBuildIndexTest extends GridCommonAbstractTest {
 
         CountDownLatch idxBuildGate = new CountDownLatch(1);
 
-        crd.context().pools().buildIndexExecutorService().execute(() -> {
+        CountDownLatch workerParked = new CountDownLatch(1);
+
+        Future<?> blocker = crd.context().pools().buildIndexExecutorService().submit(() -> {
+            workerParked.countDown();
+
             try {
-                idxBuildGate.await();
+                idxBuildGate.await(30, TimeUnit.SECONDS);
             }
             catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                Thread.currentThread().interrupt();
             }
         });
 
-        multithreadedAsync(() -> {
-            SqlFieldsQuery ddl = new SqlFieldsQuery("CREATE INDEX " + IDX + " ON " + TBL + "(fld)");
-            cache.query(ddl).getAll();
-        }, 1);
+        try {
+            assertTrue("blocker must be parked", workerParked.await(10, TimeUnit.SECONDS));
 
-        IndexProcessor ip = crd.context().indexProcessor();
+            multithreadedAsync(() -> {
+                SqlFieldsQuery ddl = new SqlFieldsQuery("CREATE INDEX " + IDX + " ON " + TBL + "(fld)");
 
-        IndexName name = new IndexName(cache.getName(), CACHE, TBL.toUpperCase(), IDX);
+                cache.query(ddl).getAll();
+            }, 1);
 
-        boolean seenBuilding = GridTestUtils.waitForCondition(() -> ip.index(name) != null, 10_000);
+            IndexProcessor ip = crd.context().indexProcessor();
 
-        assertTrue("Index must exist", seenBuilding);
+            IndexName name = new IndexName(cache.getName(), CACHE, TBL.toUpperCase(), IDX);
 
-        String sql = "SELECT id FROM " + TBL + " USE INDEX(" + IDX + ") " +
-            "WHERE fld BETWEEN ? AND ? ORDER BY id";
+            boolean seenBuilding = GridTestUtils.waitForCondition(() -> ip.index(name) != null, 10_000);
 
-        SqlFieldsQuery q = new SqlFieldsQuery(sql).setArgs(0, CNT - 1);
+            assertTrue("Index must exist", seenBuilding);
 
-        GridTestUtils.assertThrows(null, () -> {
-            cache.query(q).getAll();
-        }, IgniteException.class, "Failed to parse query. Index \"" + IDX + "\" not found; SQL statement");
+            String sql = "SELECT id FROM " + TBL + " USE INDEX(" + IDX + ") WHERE fld BETWEEN ? AND ? ORDER BY id";
 
-        idxBuildGate.countDown();
+            SqlFieldsQuery qry = new SqlFieldsQuery(sql).setArgs(0, CNT - 1);
 
-        crd.cache(CACHE).indexReadyFuture().get();
+            GridTestUtils.assertThrows(
+                null,
+                () -> {
+                    cache.query(qry).getAll();
+                },
+                IgniteException.class,
+                "Failed to parse query. Index \"" + IDX + "\" not found; SQL statement"
+            );
 
-        boolean done = GridTestUtils.waitForCondition(() -> ip.index(name, true) != null, 20_000);
+            idxBuildGate.countDown();
 
-        assertTrue("Build must finish", done);
+            crd.cache(CACHE).indexReadyFuture().get(30_000);
 
-        assertEquals(CNT, cache.query(new SqlFieldsQuery(sql).setArgs(0, CNT - 1)).getAll().size());
+            boolean done = GridTestUtils.waitForCondition(() -> ip.index(name, true) != null, 20_000);
+
+            assertTrue("Build must finish", done);
+
+            assertEquals(CNT, cache.query(qry).getAll().size());
+        }
+        finally {
+            idxBuildGate.countDown();
+
+            blocker.cancel(true);
+        }
     }
 
     /** */

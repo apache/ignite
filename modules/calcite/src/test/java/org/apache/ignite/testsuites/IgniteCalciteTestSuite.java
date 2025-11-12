@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcSetClientInf
 import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcThinTransactionalSelfTest;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteCommunicationMessageSerializationTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlCustomParserTest;
-import org.apache.ignite.internal.processors.query.calcite.sql.SqlQueryBuildIndexTest;
 import org.apache.ignite.internal.processors.query.calcite.sql.SqlReservedWordsTest;
 import org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest;
 import org.apache.ignite.internal.processors.tx.SqlTransactionsUnsupportedModesTest;
@@ -43,7 +42,6 @@ import org.junit.runners.Suite;
 
     SqlCustomParserTest.class,
     SqlReservedWordsTest.class,
-    SqlQueryBuildIndexTest.class,
     LogicalRelImplementorTest.class,
 
     ScriptTestSuite.class,

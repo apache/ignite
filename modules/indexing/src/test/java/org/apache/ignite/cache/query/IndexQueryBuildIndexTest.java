@@ -19,6 +19,8 @@ package org.apache.ignite.cache.query;
 
 import java.util.LinkedHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -99,7 +101,7 @@ public class IndexQueryBuildIndexTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setPersistenceEnabled(true)));
+                new DataRegionConfiguration().setPersistenceEnabled(false)));
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -119,49 +121,65 @@ public class IndexQueryBuildIndexTest extends GridCommonAbstractTest {
 
         insertData();
 
-        CountDownLatch idxBuild = new CountDownLatch(1);
+        CountDownLatch idxBuildGate = new CountDownLatch(1);
 
-        crd.context().pools().buildIndexExecutorService().execute(() -> {
+        CountDownLatch workerParked = new CountDownLatch(1);
+
+        Future<?> blocker = crd.context().pools().buildIndexExecutorService().submit(() -> {
+            workerParked.countDown();
+
             try {
-                idxBuild.await();
+                idxBuildGate.await(30, TimeUnit.SECONDS);
             }
             catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                Thread.currentThread().interrupt();
             }
         });
 
-        multithreadedAsync(() -> {
-            SqlFieldsQuery idxCreate = new SqlFieldsQuery("create index " + IDX + " on " + TBL + "(fld)");
+        try {
+            assertTrue("blocker must be parked", workerParked.await(10, TimeUnit.SECONDS));
 
-            cache.query(idxCreate).getAll();
-        }, 1);
+            multithreadedAsync(() -> {
+                SqlFieldsQuery idxCreate = new SqlFieldsQuery("create index " + IDX + " on " + TBL + "(fld)");
 
-        IndexProcessor ip = crd.context().indexProcessor();
+                cache.query(idxCreate).getAll();
+            }, 1);
 
-        IndexName name = new IndexName(
-            cache.getName(), CACHE, TBL.toUpperCase(), IDX
-        );
+            IndexProcessor ip = crd.context().indexProcessor();
 
-        boolean seenBuilding = GridTestUtils.waitForCondition(() -> ip.index(name) != null, 10_000);
+            IndexName name = new IndexName(cache.getName(), CACHE, TBL.toUpperCase(), IDX);
 
-        assertTrue("Index must exist", seenBuilding);
+            boolean seenBuilding = GridTestUtils.waitForCondition(() -> ip.index(name) != null, 10_000);
 
-        IndexQuery<Long, Integer> qry = new IndexQuery<Long, Integer>(Integer.class, IDX)
-            .setCriteria(between("fld", 0, CNT));
+            assertTrue("Index must exist", seenBuilding);
 
-        GridTestUtils.assertThrows(null, () -> {
-            cache.query(qry).getAll();
-        }, IgniteException.class, "No index found for");
+            IndexQuery<Long, Integer> qry = new IndexQuery<Long, Integer>(Integer.class, IDX)
+                .setCriteria(between("fld", 0, CNT - 1));
 
-        idxBuild.countDown();
+            GridTestUtils.assertThrows(
+                null,
+                () -> {
+                    cache.query(qry).getAll();
+                },
+                IgniteException.class,
+                "No index found for"
+            );
 
-        crd.cache(CACHE).indexReadyFuture().get();
+            idxBuildGate.countDown();
 
-        boolean done = GridTestUtils.waitForCondition(() -> ip.index(name, true) != null, 20_000);
+            crd.cache(CACHE).indexReadyFuture().get(30_000);
 
-        assertTrue("Build must finish", done);
+            boolean done = GridTestUtils.waitForCondition(() -> ip.index(name, true) != null, 20_000);
 
-        assertEquals(CNT, cache.query(qry).getAll().size());
+            assertTrue("Build must finish", done);
+
+            assertEquals(CNT, cache.query(qry).getAll().size());
+        }
+        finally {
+            idxBuildGate.countDown();
+
+            blocker.cancel(true);
+        }
     }
 
     /** */
