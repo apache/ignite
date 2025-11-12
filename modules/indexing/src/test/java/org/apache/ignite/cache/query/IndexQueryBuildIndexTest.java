@@ -58,9 +58,6 @@ public class IndexQueryBuildIndexTest extends GridCommonAbstractTest {
     private static final int CNT = 10_000;
 
     /** */
-    private boolean persistenceEnabled;
-
-    /** */
     @Parameterized.Parameter
     public String qryNode;
 
@@ -102,7 +99,7 @@ public class IndexQueryBuildIndexTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setPersistenceEnabled(persistenceEnabled)));
+                new DataRegionConfiguration().setPersistenceEnabled(true)));
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -114,8 +111,6 @@ public class IndexQueryBuildIndexTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testConcurrentCreateIndex() throws Exception {
-        persistenceEnabled = true;
-
         IgniteEx crd = startGrids(3);
 
         crd.cluster().state(ClusterState.ACTIVE);

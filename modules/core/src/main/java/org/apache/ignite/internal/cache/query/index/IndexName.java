@@ -96,7 +96,9 @@ public class IndexName {
     @Override public boolean equals(Object o) {
         if (!(o instanceof IndexName))
             return false;
+
         IndexName name = (IndexName)o;
+
         return Objects.equals(schemaName, name.schemaName) && Objects.equals(tableName, name.tableName)
             && Objects.equals(cacheName, name.cacheName) && Objects.equals(idxName, name.idxName);
     }
