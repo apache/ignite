@@ -34,6 +34,9 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
     public static final String DISABLE = "disable";
 
     /** */
+    public static final String FORCE = "--force";
+
+    /** */
     public static final String ROLLING_UPGRADE = "--rolling-upgrade";
 
     /** {@inheritDoc} */
@@ -41,6 +44,14 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         super.beforeTestsStarted();
 
         autoConfirmation = true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        if (crd.context().rollingUpgrade().enabled())
+            crd.context().rollingUpgrade().disable();
     }
 
     /** */
@@ -115,6 +126,32 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         String anotherTargetVerStr = curVer.major() + "." + curVer.minor() + "." + (curVer.maintenance() + 1);
 
         int res = execute(ROLLING_UPGRADE, ENABLE, anotherTargetVerStr);
+
+        assertEquals(EXIT_CODE_OK, res);
+        RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult)lastOperationResult;
+
+        assertNotNull(taskRes.errorMessage());
+        assertTrue(taskRes.errorMessage().contains("Rolling upgrade is already enabled with a different current and target version"));
+
+        assertEquals(curVer, taskRes.currentVersion());
+        assertEquals(targetVer, taskRes.targetVersion());
+
+        assertTrue(crd.context().rollingUpgrade().enabled());
+    }
+
+    /** */
+    @Test
+    public void testForceEnable() {
+        IgniteProductVersion curVer = IgniteProductVersion.fromString(crd.localNode().attribute(ATTR_BUILD_VER));
+
+        String targetVerStr = curVer.major() + "." + (curVer.minor() + 1) + "." + (curVer.maintenance() + 1);
+        IgniteProductVersion targetVer = IgniteProductVersion.fromString(targetVerStr);
+
+        execute(ROLLING_UPGRADE, ENABLE, targetVerStr, FORCE);
+
+        String anotherTargetVerStr = curVer.major() + "." + curVer.minor() + "." + (curVer.maintenance() + 1);
+
+        int res = execute(ROLLING_UPGRADE, ENABLE, anotherTargetVerStr, FORCE);
 
         assertEquals(EXIT_CODE_OK, res);
         RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult)lastOperationResult;

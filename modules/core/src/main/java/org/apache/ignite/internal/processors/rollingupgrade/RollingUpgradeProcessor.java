@@ -152,9 +152,21 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
     /**
      * Enables rolling upgrade with specified target version.
+     *
+     * @param target Target version.
+     * @see #enable(IgniteProductVersion, boolean)
+     */
+    public void enable(IgniteProductVersion target) throws IgniteCheckedException {
+        enable(target, false);
+    }
+
+    /**
+     * Enables rolling upgrade with specified target version.
      * This method can only be called on coordinator node with {@link TcpDiscoverySpi}.
      *
      * @param target Target version.
+     * @param force If {@code true}, skips target version compatibility checks and forcibly enables rolling upgrade.
+     *              This flag does not override an already active upgrade configuration.
      * @throws IgniteCheckedException If:
      *     <ul>
      *         <li>The current and target versions are incompatible;</li>
@@ -163,7 +175,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      *         <li>The distributed metastorage is not ready;</li>
      *     </ul>
      */
-    public void enable(IgniteProductVersion target) throws IgniteCheckedException {
+    public void enable(IgniteProductVersion target, boolean force) throws IgniteCheckedException {
         if (startLatch.getCount() > 0)
             throw new IgniteCheckedException("Cannot enable rolling upgrade: processor has not been started yet");
 
@@ -179,13 +191,22 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         String curBuildVer = ctx.discovery().localNode().attribute(ATTR_BUILD_VER);
         IgniteProductVersion curVer = IgniteProductVersion.fromString(curBuildVer);
 
-        if (!checkVersionsForEnabling(curVer, target))
-            return;
+        IgnitePair<IgniteProductVersion> oldVerPair = rollUpVers;
+        if (oldVerPair != null) {
+            if (oldVerPair.get1().equals(curVer) && oldVerPair.get2().equals(target))
+                return;
+
+            throw new IgniteCheckedException("Rolling upgrade is already enabled with a different current and target version: " +
+                oldVerPair.get1() + " , " + oldVerPair.get2());
+        }
+
+        if (!force)
+            checkVersionsForEnabling(curVer, target);
 
         IgnitePair<IgniteProductVersion> newPair = F.pair(curVer, target);
 
         if (!metastorage.compareAndSet(ROLLING_UPGRADE_VERSIONS_KEY, null, newPair)) {
-            IgnitePair<IgniteProductVersion> oldVerPair = metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
+            oldVerPair = metastorage.read(ROLLING_UPGRADE_VERSIONS_KEY);
 
             if (newPair.equals(oldVerPair))
                 return;
@@ -278,32 +299,20 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      *
      * @param cur Current cluster version.
      * @param target Target cluster version.
-     * @return {@code false} if there is no need to update versions {@code true} otherwise.
      * @throws IgniteCheckedException If versions are incorrect.
      */
-    private boolean checkVersionsForEnabling(IgniteProductVersion cur, IgniteProductVersion target) throws IgniteCheckedException {
-        IgnitePair<IgniteProductVersion> oldVerPair = rollUpVers;
-        if (oldVerPair != null) {
-            if (oldVerPair.get1().equals(cur) && oldVerPair.get2().equals(target))
-                return false;
-
-            throw new IgniteCheckedException("Rolling upgrade is already enabled with a different current and target version: " +
-                oldVerPair.get1() + " , " + oldVerPair.get2());
-        }
-
+    private void checkVersionsForEnabling(IgniteProductVersion cur, IgniteProductVersion target) throws IgniteCheckedException {
         if (cur.major() != target.major())
             throw new IgniteCheckedException("Major versions are different");
 
         if (cur.minor() != target.minor()) {
             if (target.minor() == cur.minor() + 1 && target.maintenance() == 0)
-                return true;
+                return;
 
             throw new IgniteCheckedException("Minor version can only be incremented by 1");
         }
 
         if (cur.maintenance() + 1 != target.maintenance())
             throw new IgniteCheckedException("Patch version can only be incremented by 1");
-
-        return true;
     }
 }
