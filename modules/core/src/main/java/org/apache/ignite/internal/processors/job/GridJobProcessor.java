@@ -1275,8 +1275,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     GridJobSessionImpl jobSes;
                     GridJobContextImpl jobCtx;
 
+                    boolean loc = ctx.localNodeId().equals(node.id()) && !ctx.config().isMarshalLocalJobs();
+
                     try {
-                        req.finishUnmarshal(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                        if (!loc)
+                            req.finishUnmarshal(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
                         // Note that we unmarshal session/job attributes here with proper class loader.
                         GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
