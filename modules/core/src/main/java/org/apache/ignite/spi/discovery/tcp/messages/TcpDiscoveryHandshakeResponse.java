@@ -99,7 +99,7 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
         setFlag(CLIENT_ACK_FLAG_POS, clientAck);
     }
 
-    /** @return Socket addresses list for redirect.*/
+    /** @return Socket addresses list for redirect. */
     public Collection<InetSocketAddress> redirectAddresses() {
         return redirectAddresses;
     }
