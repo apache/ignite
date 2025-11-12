@@ -72,7 +72,7 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
         this.prevNodeId = prevNodeId;
     }
 
-    /** @return DataCenter id.*/
+    /** @return DataCenter id. */
     public String dcId() {
         return dcId;
     }
