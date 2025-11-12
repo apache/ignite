@@ -2425,13 +2425,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         return marsh;
     }
 
-    /**
-     * @return Ignite class loader.
-     */
-    ClassLoader classLoader() {
-        return U.resolveClassLoader(ignite.configuration());
-    }
-
     /** {@inheritDoc} */
     @Override public TcpDiscoverySpi setName(String name) {
         super.setName(name);

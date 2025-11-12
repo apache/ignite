@@ -67,6 +67,9 @@ public class TcpDiscoveryIoSession {
     /** */
     private final TcpDiscoverySpi spi;
 
+    /** Loads discovery messages classes during java deserialization. */
+    private final ClassLoader clsLdr;
+
     /** */
     private final Socket sock;
 
@@ -95,6 +98,8 @@ public class TcpDiscoveryIoSession {
     TcpDiscoveryIoSession(Socket sock, TcpDiscoverySpi spi) {
         this.sock = sock;
         this.spi = spi;
+
+        clsLdr = U.resolveClassLoader(spi.ignite().configuration());
 
         msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
 
@@ -155,13 +160,13 @@ public class TcpDiscoveryIoSession {
         byte serMode = (byte)in.read();
 
         if (JAVA_SERIALIZATION == serMode)
-            return U.unmarshal(spi.marshaller(), in, spi.classLoader());
+            return U.unmarshal(spi.marshaller(), in, clsLdr);
 
         try {
             if (MESSAGE_SERIALIZATION != serMode) {
                 detectSslAlert(serMode, in);
 
-                throw new EOFException();
+                throw new IgniteCheckedException("Received unexpected byte while reading discovery message: " + serMode);
             }
 
             byte b0 = (byte)in.read();
