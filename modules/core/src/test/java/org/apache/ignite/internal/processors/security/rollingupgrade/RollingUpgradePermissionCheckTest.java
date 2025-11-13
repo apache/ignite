@@ -29,6 +29,8 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_ROLLING_UPGRADE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** Test rolling upgrade permissions. */
@@ -36,13 +38,25 @@ public class RollingUpgradePermissionCheckTest extends AbstractSecurityTest {
     /**
      * @throws Exception If failed.
      */
-    @Test public void testRollingUpgradePermissions() throws Exception {
-        IgniteEx node = startGrid("server_test_node", SecurityPermissionSetBuilder.create().defaultAllowAll(false).build(), false);
+    @Test public void testRollingUpgradePermissionDenied() throws Exception {
+        try (IgniteEx node = startGrid("server_test_node", SecurityPermissionSetBuilder.create().defaultAllowAll(false).build(), false)) {
+            for (IgniteThrowableConsumer<IgniteEx> c : operations()) {
+                Throwable throwable = assertThrows(log, () -> c.accept(node), IgniteException.class, "Authorization failed");
 
-        for (IgniteThrowableConsumer<IgniteEx> c : operations()) {
-            Throwable throwable = assertThrows(log, () -> c.accept(node), IgniteException.class, "Authorization failed");
+                assertTrue(X.hasCause(throwable, SecurityException.class));
+            }
+        }
+    }
 
-            assertTrue(X.hasCause(throwable, SecurityException.class));
+    /**
+     * @throws Exception If failed.
+     */
+    @Test public void testRollingUpgradePermissionAllowed() throws Exception {
+        try (IgniteEx node = startGrid("server_test_node", SecurityPermissionSetBuilder.create().defaultAllowAll(false)
+            .appendSystemPermissions(ADMIN_ROLLING_UPGRADE).build(), false)) {
+
+            for (IgniteThrowableConsumer<IgniteEx> c : operations())
+                c.accept(node);
         }
     }
 
@@ -51,7 +65,14 @@ public class RollingUpgradePermissionCheckTest extends AbstractSecurityTest {
      */
     private List<IgniteThrowableConsumer<IgniteEx>> operations() {
         return Arrays.asList(
-            ign -> ign.context().rollingUpgrade().enable(IgniteProductVersion.fromString("2.18.0")),
+            ign -> {
+                IgniteProductVersion curVer = IgniteProductVersion.fromString(ign.localNode().attribute(ATTR_BUILD_VER));
+
+                String targetVerStr = curVer.major() + "." + (curVer.minor() + 1) + ".0";
+                IgniteProductVersion targetVer = IgniteProductVersion.fromString(targetVerStr);
+
+                ign.context().rollingUpgrade().enable(targetVer, false);
+            },
             ign -> ign.context().rollingUpgrade().disable()
         );
     }
