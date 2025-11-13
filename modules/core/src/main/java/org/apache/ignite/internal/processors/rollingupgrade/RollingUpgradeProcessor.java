@@ -283,7 +283,11 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      * @param force Force flag to skip version checks.
      * @throws IgniteCheckedException If versions are incorrect.
      */
-    private boolean checkVersionsForEnabling(IgniteProductVersion cur, IgniteProductVersion target, boolean force) throws IgniteCheckedException {
+    private boolean checkVersionsForEnabling(
+        IgniteProductVersion cur,
+        IgniteProductVersion target,
+        boolean force
+    ) throws IgniteCheckedException {
         IgnitePair<IgniteProductVersion> oldVerPair = rollUpVers;
         if (oldVerPair != null) {
             if (oldVerPair.get1().equals(cur) && oldVerPair.get2().equals(target))

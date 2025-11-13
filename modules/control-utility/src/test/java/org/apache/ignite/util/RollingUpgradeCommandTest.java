@@ -151,7 +151,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
 
         assertEquals(EXIT_CODE_OK, res);
 
-        RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult) lastOperationResult;
+        RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult)lastOperationResult;
 
         assertNotNull(taskRes.errorMessage());
         assertTrue(taskRes.errorMessage().contains("Minor version can only be incremented by 1"));
