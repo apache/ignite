@@ -6845,7 +6845,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (dcNode.isPresent()) {
                                 res.redirectAddresses(dcNode.get().socketAddresses());
 
-                                spi.writeToSocket(sock, spi.socketStream(sock), res, spi.getEffectiveSocketTimeout(srvSock));
+                                spi.writeMessage(ses, res, spi.getEffectiveSocketTimeout(srvSock));
 
                                 return;
                             }
