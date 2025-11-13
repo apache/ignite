@@ -93,7 +93,7 @@ public class IndexQueryProcessor {
 
         GridCursor<IndexRow> cursor = queryMultipleRanges(idx, cacheFilter, qry);
 
-        SortedIndexDefinition def = (SortedIndexDefinition)idxProc.indexDefinition(idx.id());
+        SortedIndexDefinition def = idx.indexDefinition();
 
         IndexQueryResultMeta meta = new IndexQueryResultMeta(def, qry.critSize());
 
@@ -274,7 +274,7 @@ public class IndexQueryProcessor {
      * Criteria fields have to match to a prefix of the index. Order of fields in criteria doesn't matter.
      */
     private boolean checkIndex(SortedSegmentedIndex idx, String tblName, Map<String, String> criteriaFlds) {
-        IndexDefinition idxDef = idxProc.indexDefinition(idx.id());
+        IndexDefinition idxDef = idx.indexDefinition();
 
         if (!tblName.equals(idxDef.idxName().tableName()))
             return false;
@@ -411,7 +411,7 @@ public class IndexQueryProcessor {
         IndexingQueryFilter cacheFilter,
         IndexSingleRangeQuery qry
     ) throws IgniteCheckedException {
-        IndexRowComparator rowCmp = ((SortedIndexDefinition)idxProc.indexDefinition(idx.id())).rowComparator();
+        IndexRowComparator rowCmp = idx.indexDefinition().rowComparator();
 
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> treeFilter = qry.filter(rowCmp);
 
