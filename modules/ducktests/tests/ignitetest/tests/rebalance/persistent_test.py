@@ -50,7 +50,7 @@ class RebalancePersistentTest(BaseRebalanceTest):
     @ignite_versions(str(DEV_BRANCH))
     @defaults(backups=[1], cache_count=[1], entry_count=[5_000], entry_size=[50_000], preloaders=[1],
               thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None],
-              init_version=str(LATEST), upgrade_version=str(DEV_BRANCH), force_upgrade=False)
+              init_version=str(LATEST), upgrade_version=str(DEV_BRANCH))
     def test_node_join_with_upgrade(self, ignite_version, backups, cache_count, entry_count, entry_size, preloaders,
                                     thread_pool_size, batch_size, batches_prefetch_count, throttle, init_version,
                                     upgrade_version, force_upgrade=False):
