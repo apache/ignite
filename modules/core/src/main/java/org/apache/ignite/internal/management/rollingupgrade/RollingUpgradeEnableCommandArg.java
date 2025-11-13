@@ -36,6 +36,11 @@ public class RollingUpgradeEnableCommandArg extends IgniteDataTransferObject {
         + "or one maintenance version higher (e.g. 2.18.0 -> 2.18.1 or 2.18.1 -> 2.19.0)")
     private String targetVersion;
 
+    /** Force flag. */
+    @Argument(description = "Enable rolling upgrade without target version checks."
+        + " Use only when required, if the upgrade cannot proceed otherwise", optional = true)
+    private boolean force;
+
     /** */
     public String targetVersion() {
         return targetVersion;
@@ -46,13 +51,25 @@ public class RollingUpgradeEnableCommandArg extends IgniteDataTransferObject {
         this.targetVersion = targetVersion;
     }
 
+    /** */
+    public boolean force() {
+        return force;
+    }
+
+    /** */
+    public void force(boolean force) {
+        this.force = force;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, targetVersion);
+        out.writeBoolean(force);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         targetVersion = U.readString(in);
+        force = in.readBoolean();
     }
 }
