@@ -147,14 +147,27 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         String targetVerStr = curVer.major() + "." + (curVer.minor() + 1) + "." + (curVer.maintenance() + 1);
         IgniteProductVersion targetVer = IgniteProductVersion.fromString(targetVerStr);
 
-        execute(ROLLING_UPGRADE, ENABLE, targetVerStr, FORCE);
+        int res = execute(ROLLING_UPGRADE, ENABLE, targetVerStr);
+
+        assertEquals(EXIT_CODE_OK, res);
+
+        RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult) lastOperationResult;
+
+        assertNotNull(taskRes.errorMessage());
+        assertTrue(taskRes.errorMessage().contains("Minor version can only be incremented by 1"));
+        assertNull(taskRes.targetVersion());
 
         String anotherTargetVerStr = curVer.major() + "." + curVer.minor() + "." + (curVer.maintenance() + 1);
 
-        int res = execute(ROLLING_UPGRADE, ENABLE, anotherTargetVerStr, FORCE);
+        execute(ROLLING_UPGRADE, ENABLE, targetVerStr, FORCE);
+
+        taskRes = (RollingUpgradeTaskResult)lastOperationResult;
+        assertNull(taskRes.errorMessage());
+
+        res = execute(ROLLING_UPGRADE, ENABLE, anotherTargetVerStr, FORCE);
 
         assertEquals(EXIT_CODE_OK, res);
-        RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult)lastOperationResult;
+        taskRes = (RollingUpgradeTaskResult)lastOperationResult;
 
         assertNotNull(taskRes.errorMessage());
         assertTrue(taskRes.errorMessage().contains("Rolling upgrade is already enabled with a different current and target version"));
