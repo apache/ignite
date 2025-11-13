@@ -17,11 +17,8 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InterruptedIOException;
-import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -719,13 +716,13 @@ class ClientImpl extends TcpDiscoveryImpl {
             boolean openSock = false;
 
             Socket sock = null;
-            OutputStream out;
 
             try {
                 long tsNanos = System.nanoTime();
 
                 sock = spi.openSocket(addr, timeoutHelper);
-                out = spi.socketStream(sock);
+
+                TcpDiscoveryIoSession ses = createSession(sock);
 
                 openSock = true;
 
@@ -733,9 +730,9 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 req.client(true);
 
-                spi.writeToSocket(sock, out, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                spi.writeMessage(ses, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
-                TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, ackTimeout0);
+                TcpDiscoveryHandshakeResponse res = spi.readMessage(ses, ackTimeout0);
 
                 UUID rmtNodeId = res.creatorNodeId();
 
@@ -788,7 +785,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (msg instanceof TraceableMessage)
                     tracing.messages().beforeSend((TraceableMessage)msg);
 
-                spi.writeToSocket(sock, out, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                spi.writeMessage(ses, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 spi.stats.onMessageSent(msg, U.millisSinceNanos(tsNanos));
 
@@ -1179,7 +1176,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     + ":" + sockStream.sock.getPort());
 
                 try {
-                    InputStream in = sockStream.stream();
+                    TcpDiscoveryIoSession ses = createSession(sock);
 
                     assert sock.getKeepAlive() && sock.getTcpNoDelay() : "Socket wasn't configured properly:" +
                         " KeepAlive " + sock.getKeepAlive() +
@@ -1189,7 +1186,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         TcpDiscoveryAbstractMessage msg;
 
                         try {
-                            msg = U.unmarshal(spi.marshaller(), in, U.resolveClassLoader(spi.ignite().configuration()));
+                            msg = spi.readMessage(ses, sock.getSoTimeout());
                         }
                         catch (IgniteCheckedException e) {
                             if (log.isDebugEnabled())
@@ -1267,6 +1264,9 @@ class ClientImpl extends TcpDiscoveryImpl {
         private Socket sock;
 
         /** */
+        private TcpDiscoveryIoSession ses;
+
+        /** */
         private boolean clientAck;
 
         /** */
@@ -1333,6 +1333,8 @@ class ClientImpl extends TcpDiscoveryImpl {
             synchronized (mux) {
                 this.sock = sock;
 
+                ses = createSession(sock);
+
                 this.clientAck = clientAck;
 
                 unackedMsg = null;
@@ -1387,11 +1389,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         msg.client(true);
 
                         try {
-                            spi.writeToSocket(
-                                sock,
-                                spi.socketStream(sock),
-                                msg,
-                                sockTimeout);
+                            spi.writeMessage(ses, msg, sockTimeout);
                         }
                         catch (IOException | IgniteCheckedException e) {
                             if (log.isDebugEnabled()) {
@@ -1434,11 +1432,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         }
                     }
 
-                    spi.writeToSocket(
-                        sock,
-                        spi.socketStream(sock),
-                        msg,
-                        sockTimeout);
+                    spi.writeMessage(ses, msg, sockTimeout);
 
                     IgniteUuid latencyCheckId = msg instanceof TcpDiscoveryRingLatencyCheckMessage ?
                         msg.id() : null;
@@ -1601,6 +1595,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     clientAck = joinRes.get2();
 
                     Socket sock = sockStream.socket();
+                    TcpDiscoveryIoSession ses = createSession(sock);
 
                     if (isInterrupted())
                         throw new InterruptedException();
@@ -1612,8 +1607,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                         sock.setSoTimeout((int)spi.netTimeout);
 
-                        InputStream in = sockStream.stream();
-
                         assert sock.getKeepAlive() && sock.getTcpNoDelay() : "Socket wasn't configured properly:" +
                             " KeepAlive " + sock.getKeepAlive() +
                             " TcpNoDelay " + sock.getTcpNoDelay();
@@ -1621,8 +1614,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         List<TcpDiscoveryAbstractMessage> msgs = null;
 
                         while (!isInterrupted()) {
-                            TcpDiscoveryAbstractMessage msg = U.unmarshal(spi.marshaller(), in,
-                                U.resolveClassLoader(spi.ignite().configuration()));
+                            TcpDiscoveryAbstractMessage msg = spi.readMessage(ses, sock.getSoTimeout());
 
                             if (msg instanceof TcpDiscoveryClientReconnectMessage) {
                                 TcpDiscoveryClientReconnectMessage res = (TcpDiscoveryClientReconnectMessage)msg;
@@ -2769,9 +2761,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         /** */
         private final Socket sock;
 
-        /** */
-        private final InputStream in;
-
         /**
          * @param sock Socket.
          * @throws IOException If failed to create stream.
@@ -2780,8 +2769,6 @@ class ClientImpl extends TcpDiscoveryImpl {
             assert sock != null;
 
             this.sock = sock;
-
-            this.in = new BufferedInputStream(sock.getInputStream());
         }
 
         /**
@@ -2790,13 +2777,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         Socket socket() {
             return sock;
 
-        }
-
-        /**
-         * @return Socket input stream.
-         */
-        InputStream stream() {
-            return in;
         }
 
         /** {@inheritDoc} */
