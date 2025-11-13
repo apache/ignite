@@ -93,7 +93,7 @@ public class DeploymentModeMessage implements Message {
         throw new IllegalArgumentException("Unknown deployment mode: " + depMode);
     }
 
-    /** @param code Deployment mode  code to dencode to a deployment mode value. */
+    /** @param code Deployment mode code to decode back to a deployment mode value. */
     @Nullable private static DeploymentMode decode(byte code) {
         switch (code) {
             case -1: return null;

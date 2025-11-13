@@ -276,7 +276,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets task session ID.
+     * @param sesId New task session ID.
      */
     public void sessionId(IgniteUuid sesId) {
         this.sesId = sesId;
@@ -290,7 +290,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets job session ID.
+     * @param jobId New job session ID.
      */
     public void jobId(IgniteUuid jobId) {
         this.jobId = jobId;
@@ -304,7 +304,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets task class name.
+     * @param taskClsName New task class name.
      */
     public void taskClassName(String taskClsName) {
         this.taskClsName = taskClsName;
@@ -318,7 +318,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets task name.
+     * @param taskName New task name.
      */
     public void taskName(String taskName) {
         this.taskName = taskName;
@@ -332,7 +332,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets task version.
+     * @param userVer New task version.
      */
     public void userVersion(String userVer) {
         this.userVer = userVer;
@@ -346,7 +346,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets serialized job bytes.
+     * @param jobBytes New serialized job bytes.
      */
     public void jobBytes(byte[] jobBytes) {
         this.jobBytes = jobBytes;
@@ -367,7 +367,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets task start time.
+     * @param startTaskTime New task start time.
      */
     public void startTaskTime(long startTaskTime) {
         this.startTaskTime = startTaskTime;
@@ -381,7 +381,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets timeout.
+     * @param timeout New timeout.
      */
     public void timeout(long timeout) {
         this.timeout = timeout;
@@ -404,7 +404,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets serialized collection of split siblings.
+     * @param siblingsBytes New serialized collection of split siblings.
      */
     public void siblingsBytes(byte[] siblingsBytes) {
         this.siblingsBytes = siblingsBytes;
@@ -425,7 +425,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets serialized form of session attributes.
+     * @param sesAttrsBytes New serialized form of session attributes.
      */
     public void sessionAttributesBytes(byte[] sesAttrsBytes) {
         this.sesAttrsBytes = sesAttrsBytes;
@@ -446,7 +446,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets serialized form of job attributes.
+     * @param jobAttrsBytes New serialized form of job attributes.
      */
     public void jobAttributesBytes(byte[] jobAttrsBytes) {
         this.jobAttrsBytes = jobAttrsBytes;
@@ -467,7 +467,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets checkpoint SPI name.
+     * @param cpSpi New checkpoint SPI name.
      */
     public void checkpointSpi(String cpSpi) {
         this.cpSpi = cpSpi;
@@ -481,7 +481,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets task local class loader id.
+     * @param clsLdrId New task local class loader id.
      */
     public void classLoaderId(IgniteUuid clsLdrId) {
         this.clsLdrId = clsLdrId;
@@ -518,7 +518,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets dynamic siblings flag.
+     * @param dynamicSiblings New dynamic siblings flag.
      */
     public void dynamicSiblings(boolean dynamicSiblings) {
         this.dynamicSiblings = dynamicSiblings;
@@ -532,7 +532,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets dynamic siblings flag.
+     * @param ldrParticipants New node class loader participant map.
      */
     public void loaderParticipants(Map<UUID, IgniteUuid> ldrParticipants) {
         this.ldrParticipants = ldrParticipants;
@@ -546,7 +546,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets local deploymend forcing flag.
+     * @param forceLocDep New local deployment forcing flag.
      */
     public void forceLocalDeployment(boolean forceLocDep) {
         this.forceLocDep = forceLocDep;
@@ -560,7 +560,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets topology.
+     * @param top New topology.
      */
     public void topology(@Nullable Collection<UUID> top) {
         this.top = top;
@@ -581,7 +581,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets marshalled topology predicate.
+     * @param topPredBytes New marshalled topology predicate.
      */
     public void topologyPredicateBytes(byte[] topPredBytes) {
         this.topPredBytes = topPredBytes;
@@ -595,7 +595,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets flag, indicating that session attributes are enabled.
+     * @param sesFullSup New flag, indicating that session attributes are enabled.
      */
     public void sessionFullSupport(boolean sesFullSup) {
         this.sesFullSup = sesFullSup;
@@ -609,7 +609,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets internal flag.
+     * @param internal New internal job flag.
      */
     public void internal(boolean internal) {
         this.internal = internal;
@@ -623,7 +623,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets cache identifiers.
+     * @param cacheIds New cache identifiers.
      */
     public void cacheIds(int[] cacheIds) {
         this.cacheIds = cacheIds;
@@ -637,7 +637,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets partition.
+     * @param part New partition.
      */
     public void partition(int part) {
         this.part = part;
@@ -649,7 +649,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets executor name.
+     * @param execName New executor name.
      */
     public void executorName(String execName) {
         this.execName = execName;
@@ -663,7 +663,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     }
 
     /**
-     * Sets topology version.
+     * @param topVer New topology version.
      */
     public void topologyVersion(AffinityTopologyVersion topVer) {
         this.topVer = topVer;
