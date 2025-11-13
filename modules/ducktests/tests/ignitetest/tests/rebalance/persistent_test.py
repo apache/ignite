@@ -53,7 +53,7 @@ class RebalancePersistentTest(BaseRebalanceTest):
               init_version=str(LATEST), upgrade_version=str(DEV_BRANCH), force_upgrade=False)
     def test_node_join_with_upgrade(self, ignite_version, backups, cache_count, entry_count, entry_size, preloaders,
                                     thread_pool_size, batch_size, batches_prefetch_count, throttle, init_version,
-                                    upgrade_version, force_upgrade):
+                                    upgrade_version, force_upgrade=False):
         """
         Tests rebalance on node join with version upgrade.
         """
