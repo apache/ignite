@@ -152,16 +152,6 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
     /**
      * Enables rolling upgrade with specified target version.
-     *
-     * @param target Target version.
-     * @see #enable(IgniteProductVersion, boolean)
-     */
-    public void enable(IgniteProductVersion target) throws IgniteCheckedException {
-        enable(target, false);
-    }
-
-    /**
-     * Enables rolling upgrade with specified target version.
      * This method can only be called on coordinator node with {@link TcpDiscoverySpi}.
      *
      * @param target Target version.

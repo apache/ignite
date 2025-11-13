@@ -325,7 +325,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         IgnitePair<IgniteProductVersion> newPair = F.pair(IgniteProductVersion.fromString("2.18.0"),
             IgniteProductVersion.fromString("2.19.0"));
 
-        grid0.context().rollingUpgrade().enable(newPair.get2());
+        grid0.context().rollingUpgrade().enable(newPair.get2(), false);
 
         assertEnablingFails(grid0, "2.18.1", "Rolling upgrade is already enabled with a different current and target version");
 
@@ -345,7 +345,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
      */
     private void assertEnablingFails(IgniteEx ex, String ver, String errMsg) {
         Throwable e = assertThrows(log,
-            () -> ex.context().rollingUpgrade().enable(IgniteProductVersion.fromString(ver)),
+            () -> ex.context().rollingUpgrade().enable(IgniteProductVersion.fromString(ver), false),
             IgniteException.class,
             null);
 
