@@ -44,23 +44,24 @@ class RebalancePersistentTest(BaseRebalanceTest):
         Tests rebalance on node join.
         """
         return self.test_join(ignite_version, backups, cache_count, entry_count, entry_size, preloaders,
-                                thread_pool_size, batch_size, batches_prefetch_count, throttle, None)
+                              thread_pool_size, batch_size, batches_prefetch_count, throttle)
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(DEV_BRANCH))
     @defaults(backups=[1], cache_count=[1], entry_count=[5_000], entry_size=[50_000], preloaders=[1],
               thread_pool_size=[None], batch_size=[None], batches_prefetch_count=[None], throttle=[None],
-              init_version=str(LATEST), upgrade_version=str(DEV_BRANCH))
+              init_version=str(LATEST), upgrade_version=str(DEV_BRANCH), force_upgrade=False)
     def test_node_join_with_upgrade(self, ignite_version, backups, cache_count, entry_count, entry_size, preloaders,
-                       thread_pool_size, batch_size, batches_prefetch_count, throttle, init_version, upgrade_version):
+                                    thread_pool_size, batch_size, batches_prefetch_count, throttle, init_version,
+                                    upgrade_version, force_upgrade):
         """
         Tests rebalance on node join with version upgrade.
         """
-        return self.test_join(init_version, backups, cache_count, entry_count, entry_size, preloaders,
-                              thread_pool_size, batch_size, batches_prefetch_count, throttle, upgrade_version)
+        return self.test_join(init_version, backups, cache_count, entry_count, entry_size, preloaders, thread_pool_size,
+                              batch_size, batches_prefetch_count, throttle, upgrade_version, force_upgrade)
 
-    def test_join(self, ignite_version, backups, cache_count, entry_count, entry_size, preloaders,
-                       thread_pool_size, batch_size, batches_prefetch_count, throttle, upgrade_version):
+    def test_join(self, ignite_version, backups, cache_count, entry_count, entry_size, preloaders, thread_pool_size,
+                  batch_size, batches_prefetch_count, throttle, upgrade_version=None, force_upgrade=False):
         """
         Tests rebalance on node join.
         """
@@ -87,7 +88,8 @@ class RebalancePersistentTest(BaseRebalanceTest):
                                  num_nodes=1, modules=reb_params.modules)
 
         if upgrade_version is not None:
-            control_utility.enable_rolling_upgrade(IgniteVersion(upgrade_version).vstring)
+            if not force_upgrade:
+                control_utility.enable_rolling_upgrade(IgniteVersion(upgrade_version).vstring)
 
             new_node.config._replace(version=upgrade_version)
 
