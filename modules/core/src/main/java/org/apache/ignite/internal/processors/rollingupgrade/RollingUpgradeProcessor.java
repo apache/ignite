@@ -297,8 +297,13 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
                 oldVerPair.get1() + " , " + oldVerPair.get2());
         }
 
-        if (force)
+        if (force) {
+            if (log.isInfoEnabled())
+                log.info("Skipping version compatibility check for rolling upgrade due to force flag "
+                    + "[currentVer=" + cur + ", targetVer=" + target + ']');
+
             return true;
+        }
 
         if (cur.major() != target.major())
             throw new IgniteCheckedException("Major versions are different");
