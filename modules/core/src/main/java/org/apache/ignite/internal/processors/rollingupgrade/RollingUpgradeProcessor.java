@@ -181,7 +181,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         String curBuildVer = ctx.discovery().localNode().attribute(ATTR_BUILD_VER);
         IgniteProductVersion curVer = IgniteProductVersion.fromString(curBuildVer);
 
-        if (!checkVersionsForEnabling(curVer, target))
+        if (!checkVersionsForEnabling(curVer, target, force))
             return;
 
         IgnitePair<IgniteProductVersion> newPair = F.pair(curVer, target);
