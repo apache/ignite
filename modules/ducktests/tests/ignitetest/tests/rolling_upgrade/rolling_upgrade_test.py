@@ -37,7 +37,8 @@ class RollingUpgradeTest(IgniteTest):
     @ignite_versions(str(DEV_BRANCH))
     @defaults(init_version=[str(LATEST)], upgrade_version=[str(DEV_BRANCH)])
     @matrix(upgrade_coordinator=[True, False])
-    def test_rolling_upgrade(self, ignite_version, init_version, upgrade_version, upgrade_coordinator: bool):
+    def test_rolling_upgrade(self, ignite_version, init_version, upgrade_version, upgrade_coordinator=False,
+                             force_upgrade=False):
         self.logger.info(f"Initiating Rolling Upgrade test from {init_version} to {upgrade_version} "
                          f"starting from coordinator [{upgrade_coordinator}]")
 
@@ -47,11 +48,13 @@ class RollingUpgradeTest(IgniteTest):
 
         control_sh = ControlUtility(ignites)
 
-        control_sh.enable_rolling_upgrade(IgniteVersion(upgrade_version).vstring)
+        if not force_upgrade:
+            control_sh.enable_rolling_upgrade(IgniteVersion(upgrade_version).vstring)
 
         self.upgrade_ignite_cluster(ignites, upgrade_version, upgrade_coordinator, results)
 
-        control_sh.disable_rolling_upgrade()
+        if not force_upgrade:
+            control_sh.disable_rolling_upgrade()
 
         ignites.stop()
 
