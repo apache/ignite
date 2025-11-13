@@ -37,7 +37,7 @@ public class RollingUpgradeEnableCommandArg extends IgniteDataTransferObject {
     private String targetVersion;
 
     /** Force flag. */
-    @Argument(description = "Enable rolling upgrade without target version checks", optional = true)
+    @Argument(description = "Enable rolling upgrade without target version checks. Use only when required, if the upgrade cannot proceed otherwise", optional = true)
     private boolean force;
 
     /** */
