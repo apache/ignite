@@ -62,7 +62,7 @@ public class IgniteSnapshotRollingUpgradeTest extends GridCommonAbstractTest {
             + "." + curVer.minor()
             + "." + curVer.maintenance() + 1);
 
-        srv.context().rollingUpgrade().enable(targetVer);
+        srv.context().rollingUpgrade().enable(targetVer, false);
 
         assertTrue(waitForCondition(() -> srv.context().rollingUpgrade().enabled(), getTestTimeout()));
 
