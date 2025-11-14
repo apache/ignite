@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Handshake response.
