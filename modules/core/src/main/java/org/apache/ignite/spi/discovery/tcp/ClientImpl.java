@@ -610,7 +610,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             T2<SocketStream, Integer> res = waitAndRes.get2();
 
             if (res != null)
-                return waitAndRes.get2().get1();
+                return res.get1();
 
             if (timeout > 0 && U.millisSinceNanos(startNanos) > timeout)
                 return null;
