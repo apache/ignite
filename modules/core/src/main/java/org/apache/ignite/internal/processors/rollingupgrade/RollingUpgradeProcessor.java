@@ -155,6 +155,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      * This method can only be called on coordinator node with {@link TcpDiscoverySpi}.
      *
      * @param target Target version.
+     * @param force If {@code true}, skips target version compatibility checks and forcibly enables rolling upgrade.
+     *              This flag does not override an already active upgrade configuration.
      * @throws IgniteCheckedException If:
      *     <ul>
      *         <li>The current and target versions are incompatible;</li>
@@ -163,7 +165,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      *         <li>The distributed metastorage is not ready;</li>
      *     </ul>
      */
-    public void enable(IgniteProductVersion target) throws IgniteCheckedException {
+    public void enable(IgniteProductVersion target, boolean force) throws IgniteCheckedException {
         if (startLatch.getCount() > 0)
             throw new IgniteCheckedException("Cannot enable rolling upgrade: processor has not been started yet");
 
@@ -179,7 +181,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
         String curBuildVer = ctx.discovery().localNode().attribute(ATTR_BUILD_VER);
         IgniteProductVersion curVer = IgniteProductVersion.fromString(curBuildVer);
 
-        if (!checkVersionsForEnabling(curVer, target))
+        if (!checkVersionsForEnabling(curVer, target, force))
             return;
 
         IgnitePair<IgniteProductVersion> newPair = F.pair(curVer, target);
@@ -278,10 +280,14 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      *
      * @param cur Current cluster version.
      * @param target Target cluster version.
-     * @return {@code false} if there is no need to update versions {@code true} otherwise.
+     * @param force Force flag to skip version checks.
      * @throws IgniteCheckedException If versions are incorrect.
      */
-    private boolean checkVersionsForEnabling(IgniteProductVersion cur, IgniteProductVersion target) throws IgniteCheckedException {
+    private boolean checkVersionsForEnabling(
+        IgniteProductVersion cur,
+        IgniteProductVersion target,
+        boolean force
+    ) throws IgniteCheckedException {
         IgnitePair<IgniteProductVersion> oldVerPair = rollUpVers;
         if (oldVerPair != null) {
             if (oldVerPair.get1().equals(cur) && oldVerPair.get2().equals(target))
@@ -289,6 +295,14 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
             throw new IgniteCheckedException("Rolling upgrade is already enabled with a different current and target version: " +
                 oldVerPair.get1() + " , " + oldVerPair.get2());
+        }
+
+        if (force) {
+            if (log.isInfoEnabled())
+                log.info("Skipping version compatibility check for rolling upgrade due to force flag "
+                    + "[currentVer=" + cur + ", targetVer=" + target + ']');
+
+            return true;
         }
 
         if (cur.major() != target.major())
