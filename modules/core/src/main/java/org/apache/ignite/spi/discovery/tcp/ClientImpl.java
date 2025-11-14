@@ -743,8 +743,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (res.redirectAddresses() != null) {
                     U.closeQuiet(sock);
 
-                    if (log.isDebugEnabled())
-                        log.debug("Reconnecting to addresses [addrs=" + res.redirectAddresses() + ']');
+                    if (log.isInfoEnabled())
+                        log.info("Reconnecting to the addresses of a proper DC [addrs=" + res.redirectAddresses() + ']');
 
                     T2<Boolean, T3<SocketStream, Integer, Boolean>> redirectedRes = sendJoinRequests(recon, res.redirectAddresses());
 
