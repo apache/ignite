@@ -6836,8 +6836,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
 
                     if (req.client()) {
-                        res.clientAck(true);
-
                         if (req.dcId() != null && !Objects.equals(req.dcId(), locNode.dataCenterId())) {
                             List<TcpDiscoveryNode> dcNodes = ring.serverNodes().stream()
                                 .filter(node -> node.dataCenterId() != null && node.dataCenterId().equals(req.dcId()))

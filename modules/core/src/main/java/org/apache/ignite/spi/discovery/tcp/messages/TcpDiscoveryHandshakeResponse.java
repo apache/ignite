@@ -85,20 +85,6 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
         this.order = order;
     }
 
-    /**
-     * @return {@code True} if server supports client message acknowledge.
-     */
-    public boolean clientAck() {
-        return getFlag(CLIENT_ACK_FLAG_POS);
-    }
-
-    /**
-     * @param clientAck {@code True} if server supports client message acknowledge.
-     */
-    public void clientAck(boolean clientAck) {
-        setFlag(CLIENT_ACK_FLAG_POS, clientAck);
-    }
-
     /** @return Socket addresses list for redirect. */
     public Collection<InetSocketAddress> redirectAddresses() {
         return redirectAddresses;
