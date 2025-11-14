@@ -1387,7 +1387,9 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.QUERY_SQL_CURSOR_GET_PAGE,
             qryWriter,
             keepBinary,
-            marsh
+            marsh,
+            cacheId,
+            qry.getPartitions().length >= 1 ? qry.getPartitions()[0] : -1
         ));
     }
 

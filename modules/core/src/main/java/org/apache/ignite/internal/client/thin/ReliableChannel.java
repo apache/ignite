@@ -20,7 +20,6 @@ package org.apache.ignite.internal.client.thin;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +40,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.client.ClientAuthenticationException;
 import org.apache.ignite.client.ClientAuthorizationException;
 import org.apache.ignite.client.ClientConnectionException;
@@ -142,10 +142,16 @@ final class ReliableChannel implements AutoCloseable {
 
         partitionAwarenessEnabled = clientCfg.isPartitionAwarenessEnabled();
 
+        String dcId = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
+
+        if (dcId == null && !F.isEmpty(clientCfg.getUserAttributes()))
+            dcId = clientCfg.getUserAttributes().get(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
+
         affinityCtx = new ClientCacheAffinityContext(
             binary,
             clientCfg.getPartitionAwarenessMapperFactory(),
-            this::isConnectionEstablished
+            this::isConnectionEstablished,
+            dcId
         );
 
         discoveryCtx = new ClientDiscoveryContext(clientCfg);
@@ -191,7 +197,7 @@ final class ReliableChannel implements AutoCloseable {
         Consumer<PayloadOutputChannel> payloadWriter,
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
-        return service(op, payloadWriter, payloadReader, Collections.emptyList());
+        return service(op, payloadWriter, payloadReader, affinityCtx.dataCenterNodes());
     }
 
     /**
@@ -246,7 +252,14 @@ final class ReliableChannel implements AutoCloseable {
         List<ClientConnectionException> failures
     ) {
         try {
-            ClientChannel ch = applyOnDefaultChannel(Function.identity(), null, failures);
+            List<UUID> targetNodes = affinityCtx.dataCenterNodes();
+
+            ClientChannel ch = F.isEmpty(targetNodes)
+                ? applyOnDefaultChannel(Function.identity(), null, failures)
+                : applyOnNodeChannelWithFallback(
+                    targetNodes.get(ThreadLocalRandom.current().nextInt(targetNodes.size())),
+                    Function.identity(),
+                null);
 
             applyOnClientChannelAsync(fut, ch, op, payloadWriter, payloadReader, failures);
         }
@@ -401,7 +414,7 @@ final class ReliableChannel implements AutoCloseable {
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
         if (partitionAwarenessEnabled && affinityInfoIsUpToDate(cacheId)) {
-            UUID affNodeId = affinityCtx.affinityNode(cacheId, key);
+            UUID affNodeId = affinityCtx.affinityNode(cacheId, key, op);
 
             if (affNodeId != null) {
                 return applyOnNodeChannelWithFallback(affNodeId, channel ->
@@ -423,7 +436,7 @@ final class ReliableChannel implements AutoCloseable {
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
         if (partitionAwarenessEnabled && affinityInfoIsUpToDate(cacheId)) {
-            UUID affNodeId = affinityCtx.affinityNode(cacheId, part);
+            UUID affNodeId = affinityCtx.affinityNode(cacheId, part, op);
 
             if (affNodeId != null) {
                 return applyOnNodeChannelWithFallback(affNodeId, channel ->
@@ -445,7 +458,7 @@ final class ReliableChannel implements AutoCloseable {
         Function<PayloadInputChannel, T> payloadReader
     ) throws ClientException, ClientError {
         if (partitionAwarenessEnabled && affinityInfoIsUpToDate(cacheId)) {
-            UUID affNodeId = affinityCtx.affinityNode(cacheId, key);
+            UUID affNodeId = affinityCtx.affinityNode(cacheId, key, op);
 
             if (affNodeId != null) {
                 CompletableFuture<T> fut = new CompletableFuture<>();
@@ -505,10 +518,20 @@ final class ReliableChannel implements AutoCloseable {
                         if (lastTop != affinityCtx.lastTopology())
                             return false;
 
-                        Boolean result = applyOnNodeChannel(nodeId, channel ->
-                            channel.service(ClientOperation.CACHE_PARTITIONS,
-                                affinityCtx::writePartitionsUpdateRequest,
-                                affinityCtx::readPartitionsUpdateResponse),
+                        Boolean result = applyOnNodeChannel(nodeId, channel -> {
+                                boolean updated = channel.service(ClientOperation.CACHE_PARTITIONS,
+                                    affinityCtx::writePartitionsUpdateRequest,
+                                    affinityCtx::readPartitionsUpdateResponse);
+
+                                if (updated && affinityCtx.dataCenterId() != null
+                                    && channel.protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.DC_AWARE)) {
+                                    channel.service(ClientOperation.CLUSTER_GET_DC_NODES,
+                                        affinityCtx::writeDataCenterNodesRequest,
+                                        affinityCtx::readDataCenterNodesRequest);
+                                }
+
+                                return updated;
+                            },
                             failures
                         );
 

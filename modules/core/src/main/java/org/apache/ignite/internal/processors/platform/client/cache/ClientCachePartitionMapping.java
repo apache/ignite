@@ -17,45 +17,60 @@
 
 package org.apache.ignite.internal.processors.platform.client.cache;
 
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
+import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature;
+import org.apache.ignite.internal.processors.platform.client.ClientProtocolContext;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache partition mapping.
  */
 public class ClientCachePartitionMapping {
-    /** Partitions map for caches. */
-    private final HashMap<UUID, Set<Integer>> partitionMap;
+    /** Primary partitions map for caches. */
+    private final Map<UUID, Set<Integer>> primaryPartitionMap;
+
+    /** Backups partitions map, located in current data center for caches. */
+    @Nullable private final Map<UUID, Set<Integer>> dcBackupPartitionMap;
 
     /**
-     * @param assignment Affinity assignment.
+     * @param primaryPartitionMap Primary partition mapping.
+     * @param dcBackupPartitionMap Backup partition mapping, located in current data center.
      */
-    public ClientCachePartitionMapping(AffinityAssignment assignment) {
-        Set<ClusterNode> nodes = assignment.primaryPartitionNodes();
-
-        partitionMap = new HashMap<>(nodes.size());
-
-        for (ClusterNode node : nodes) {
-            UUID nodeId = node.id();
-            Set<Integer> parts = assignment.primaryPartitions(nodeId);
-
-            partitionMap.put(nodeId, parts);
-        }
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
+    public ClientCachePartitionMapping(
+        Map<UUID, Set<Integer>> primaryPartitionMap,
+        @Nullable Map<UUID, Set<Integer>> dcBackupPartitionMap
+    ) {
+        this.primaryPartitionMap = primaryPartitionMap;
+        this.dcBackupPartitionMap = dcBackupPartitionMap;
     }
 
     /**
      * Write mapping using binary writer.
      * @param writer Writer.
      */
-    public void write(BinaryRawWriter writer) {
+    public void write(ClientProtocolContext ctx, BinaryRawWriter writer) {
+        writePartitionMap(writer, primaryPartitionMap);
+
+        if (ctx.isFeatureSupported(ClientBitmaskFeature.DC_AWARE))
+            writePartitionMap(writer, dcBackupPartitionMap);
+    }
+
+    /** */
+    private static void writePartitionMap(BinaryRawWriter writer, @Nullable Map<UUID, Set<Integer>> partitionMap) {
+        if (partitionMap == null) {
+            writer.writeInt(0);
+
+            return;
+        }
+
         writer.writeInt(partitionMap.size());
 
-        for (HashMap.Entry<UUID, Set<Integer>> nodeParts: partitionMap.entrySet()) {
+        for (Map.Entry<UUID, Set<Integer>> nodeParts: partitionMap.entrySet()) {
             UUID nodeUuid = nodeParts.getKey();
             Set<Integer> parts = nodeParts.getValue();
 
@@ -77,11 +92,12 @@ public class ClientCachePartitionMapping {
 
         ClientCachePartitionMapping mapping = (ClientCachePartitionMapping)o;
 
-        return Objects.equals(partitionMap, mapping.partitionMap);
+        return Objects.equals(primaryPartitionMap, mapping.primaryPartitionMap)
+            && Objects.equals(dcBackupPartitionMap, mapping.dcBackupPartitionMap);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(partitionMap);
+        return Objects.hash(primaryPartitionMap, dcBackupPartitionMap);
     }
 }
