@@ -43,7 +43,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.SortedMap;
@@ -160,6 +159,8 @@ import org.apache.ignite.spi.tracing.SpanStatus;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NODE_IDS_HISTORY_SIZE;
@@ -6838,12 +6839,25 @@ class ServerImpl extends TcpDiscoveryImpl {
                         res.clientAck(true);
 
                         if (req.dcId() != null && !Objects.equals(req.dcId(), locNode.dataCenterId())) {
-                            Optional<TcpDiscoveryNode> dcNode = ring.serverNodes().stream()
+                            List<TcpDiscoveryNode> dcNodes = ring.serverNodes().stream()
                                 .filter(node -> node.dataCenterId() != null && node.dataCenterId().equals(req.dcId()))
-                                .findAny();
+                                .collect(
+                                    collectingAndThen(
+                                        toList(),
+                                        l -> {
+                                            Collections.shuffle(l);
+                                            return l;
+                                        }
+                                    ));
 
-                            if (dcNode.isPresent()) {
-                                res.redirectAddresses(dcNode.get().socketAddresses());
+                            if (!dcNodes.isEmpty()) {
+                                Collection<InetSocketAddress> socketAddresses = new ArrayList<>(dcNodes.size());
+
+                                for (TcpDiscoveryNode dcNode : dcNodes) {
+                                    socketAddresses.addAll(dcNode.socketAddresses());
+                                }
+
+                                res.redirectAddresses(socketAddresses);
 
                                 spi.writeMessage(ses, res, spi.getEffectiveSocketTimeout(srvSock));
 
