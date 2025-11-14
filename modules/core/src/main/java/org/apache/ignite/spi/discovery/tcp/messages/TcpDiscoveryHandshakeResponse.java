@@ -86,7 +86,7 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
     }
 
     /** @return Socket addresses list for redirect. */
-    public Collection<InetSocketAddress> redirectAddresses() {
+    @Nullable public Collection<InetSocketAddress> redirectAddresses() {
         return redirectAddresses;
     }
 
