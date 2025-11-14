@@ -6838,7 +6838,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (req.client()) {
                         if (req.dcId() != null && !Objects.equals(req.dcId(), locNode.dataCenterId())) {
                             List<TcpDiscoveryNode> dcNodes = ring.serverNodes().stream()
-                                .filter(node -> node.dataCenterId() != null && node.dataCenterId().equals(req.dcId()))
+                                .filter(node -> node.visible()).filter(node -> node.dataCenterId() != null && node.dataCenterId().equals(req.dcId()))
                                 .collect(
                                     collectingAndThen(
                                         toList(),
