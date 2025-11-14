@@ -6849,13 +6849,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     ));
 
                             if (!dcNodes.isEmpty()) {
-                                Collection<InetSocketAddress> socketAddresses = new ArrayList<>(dcNodes.size());
+                                Collection<InetSocketAddress> addrs = new ArrayList<>(dcNodes.size());
 
                                 for (TcpDiscoveryNode dcNode : dcNodes) {
-                                    socketAddresses.addAll(dcNode.socketAddresses());
+                                    addrs.addAll(dcNode.socketAddresses());
                                 }
 
-                                res.redirectAddresses(socketAddresses);
+                                res.redirectAddresses(addrs);
 
                                 spi.writeMessage(ses, res, spi.getEffectiveSocketTimeout(srvSock));
 
