@@ -73,7 +73,7 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
     }
 
     /** @return DataCenter id. */
-    public String dcId() {
+    @Nullable public String dcId() {
         return dcId;
     }
 
