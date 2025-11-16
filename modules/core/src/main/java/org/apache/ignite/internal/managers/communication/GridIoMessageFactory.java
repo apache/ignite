@@ -353,7 +353,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)35, GridDhtTxPrepareResponse::new, new GridDhtTxPrepareResponseSerializer());
         factory.register((short)36, GridDhtUnlockRequest::new, new GridDhtUnlockRequestSerializer());
         factory.register((short)37, GridDhtAtomicDeferredUpdateResponse::new, new GridDhtAtomicDeferredUpdateResponseSerializer());
-        factory.register((short)38, GridDhtAtomicUpdateRequest::new);
+        factory.register((short)38, GridDhtAtomicUpdateRequest::new, new GridDhtAtomicSingleUpdateRequestSerializer());
         factory.register((short)39, GridDhtAtomicUpdateResponse::new, new GridDhtAtomicUpdateResponseSerializer());
         factory.register((short)40, GridNearAtomicFullUpdateRequest::new);
         factory.register((short)41, GridNearAtomicUpdateResponse::new, new GridNearAtomicUpdateResponseSerializer());
