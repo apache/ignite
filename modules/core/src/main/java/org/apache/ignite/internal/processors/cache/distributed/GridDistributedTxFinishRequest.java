@@ -348,7 +348,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     public boolean replyRequired() {
         assert syncModeMsg != null && syncModeMsg.value() != null;
 
-        return syncModeMsg.value() == FULL_SYNC;
+        return syncModeMsg.is(FULL_SYNC);
     }
 
     /** {@inheritDoc} */

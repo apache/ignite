@@ -121,8 +121,8 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractUpd
         long conflictTtl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer) {
-        assert operation() != TRANSFORM;
-        assert val != null || operation() == DELETE;
+        assert !opMsg.is(TRANSFORM);
+        assert val != null || opMsg.is(DELETE);
         assert conflictTtl < 0 : conflictTtl;
         assert conflictExpireTime < 0 : conflictExpireTime;
         assert conflictVer == null : conflictVer;

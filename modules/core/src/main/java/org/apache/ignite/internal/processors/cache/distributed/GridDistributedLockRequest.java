@@ -83,8 +83,8 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     private boolean isRead;
 
     /** Transaction isolation message. */
-    @Order(15)
-    private TransactionIsolationMessage isolation;
+    @Order(value = 15, method = "isolationMessage")
+    private TransactionIsolationMessage isolationMsg;
 
     /** Key bytes for keys to lock. */
     @Order(16)
@@ -162,7 +162,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         this.futId = futId;
         this.isInTx = isInTx;
         this.isRead = isRead;
-        this.isolation = new TransactionIsolationMessage(isolation);
+        isolationMsg = new TransactionIsolationMessage(isolation);
         this.isInvalidate = isInvalidate;
         this.timeout = timeout;
         this.txSize = txSize;
@@ -358,17 +358,24 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @return Transaction isolation message.
+     * @return Transaction isolation.
      */
-    public TransactionIsolationMessage isolation() {
-        return isolation;
+    public TransactionIsolation isolation() {
+        return isolationMsg.value();
     }
 
     /**
-     * @param isolation Transaction isolation message.
+     * @return Transaction isolation message.
      */
-    public void isolation(TransactionIsolationMessage isolation) {
-        this.isolation = isolation;
+    public TransactionIsolationMessage isolationMessage() {
+        return isolationMsg;
+    }
+
+    /**
+     * @param isolationMsg Transaction isolation message.
+     */
+    public void isolationMessage(TransactionIsolationMessage isolationMsg) {
+        this.isolationMsg = isolationMsg;
     }
 
     /**

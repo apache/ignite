@@ -270,9 +270,9 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @return {@code True} if update is processed in {@link CacheWriteSynchronizationMode#FULL_SYNC} mode.
      */
     boolean fullSync() {
-        assert syncModeMsg != null && writeSynchronizationMode() != null;
+        assert syncModeMsg != null && !syncModeMsg.is(null);
 
-        return writeSynchronizationMode() == CacheWriteSynchronizationMode.FULL_SYNC;
+        return syncModeMsg.is(CacheWriteSynchronizationMode.FULL_SYNC);
     }
 
     /**

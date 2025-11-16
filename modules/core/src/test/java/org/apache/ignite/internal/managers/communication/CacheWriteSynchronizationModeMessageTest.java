@@ -21,21 +21,25 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 /** */
-public class CacheWriteSynchroizationModeMessageTest {
+public class CacheWriteSynchronizationModeMessageTest {
     /** */
     @Test
-    public void testCacheWriteSynchroizationCode() {
+    public void testCacheWriteSynchronizationCode() {
         assertEquals(-1, new CacheWriteSynchronizationModeMessage(null).code());
-        assertEquals(0, new CacheWriteSynchronizationModeMessage(CacheWriteSynchronizationMode.FULL_SYNC).code());
-        assertEquals(1, new CacheWriteSynchronizationModeMessage(CacheWriteSynchronizationMode.FULL_ASYNC).code());
-        assertEquals(2, new CacheWriteSynchronizationModeMessage(CacheWriteSynchronizationMode.PRIMARY_SYNC).code());
+        assertEquals(0, new CacheWriteSynchronizationModeMessage(FULL_SYNC).code());
+        assertEquals(1, new CacheWriteSynchronizationModeMessage(FULL_ASYNC).code());
+        assertEquals(2, new CacheWriteSynchronizationModeMessage(PRIMARY_SYNC).code());
 
         for (CacheWriteSynchronizationMode op : CacheWriteSynchronizationMode.values()) {
             assertTrue(new CacheWriteSynchronizationModeMessage(op).code() >= 0);
@@ -52,13 +56,13 @@ public class CacheWriteSynchroizationModeMessageTest {
         assertNull(msg.value());
 
         msg.code((byte)0);
-        assertSame(CacheWriteSynchronizationMode.FULL_SYNC, msg.value());
+        assertSame(FULL_SYNC, msg.value());
 
         msg.code((byte)1);
-        assertSame(CacheWriteSynchronizationMode.FULL_ASYNC, msg.value());
+        assertSame(FULL_ASYNC, msg.value());
 
         msg.code((byte)2);
-        assertSame(CacheWriteSynchronizationMode.PRIMARY_SYNC, msg.value());
+        assertSame(PRIMARY_SYNC, msg.value());
 
         Throwable t = assertThrowsWithCause(() -> msg.code((byte)3), IllegalArgumentException.class);
         assertEquals("Unknown cache write synchronization mode code: 3", t.getMessage());
@@ -77,5 +81,14 @@ public class CacheWriteSynchroizationModeMessageTest {
 
             assertEquals(msg.value(), newMsg.value());
         }
+    }
+
+    /** */
+    @Test
+    public void testIs() {
+        assertTrue(new CacheWriteSynchronizationModeMessage().is(null));
+        assertTrue(new CacheWriteSynchronizationModeMessage(null).is(null));
+        assertTrue(new CacheWriteSynchronizationModeMessage(FULL_SYNC).is(FULL_SYNC));
+        assertFalse(new CacheWriteSynchronizationModeMessage(FULL_SYNC).is(PRIMARY_SYNC));
     }
 }
