@@ -159,6 +159,8 @@ import org.apache.ignite.spi.tracing.SpanStatus;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NODE_IDS_HISTORY_SIZE;
@@ -6833,8 +6835,35 @@ class ServerImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryHandshakeResponse res =
                         new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
 
-                    if (req.client())
-                        res.clientAck(true);
+                    if (req.client()) {
+                        if (req.dcId() != null && !Objects.equals(req.dcId(), locNode.dataCenterId())) {
+                            List<TcpDiscoveryNode> dcNodes = ring.serverNodes().stream()
+                                .filter(TcpDiscoveryNode::visible)
+                                .filter(node -> node.dataCenterId() != null && node.dataCenterId().equals(req.dcId()))
+                                .collect(
+                                    collectingAndThen(
+                                        toList(),
+                                        l -> {
+                                            Collections.shuffle(l);
+                                            return l;
+                                        }
+                                    ));
+
+                            if (!dcNodes.isEmpty()) {
+                                Collection<InetSocketAddress> addrs = new ArrayList<>(dcNodes.size());
+
+                                for (TcpDiscoveryNode dcNode : dcNodes) {
+                                    addrs.addAll(dcNode.socketAddresses());
+                                }
+
+                                res.redirectAddresses(addrs);
+
+                                spi.writeMessage(ses, res, spi.getEffectiveSocketTimeout(srvSock));
+
+                                return;
+                            }
+                        }
+                    }
                     else if (req.changeTopology()) {
                         // Node cannot connect to it's next (for local node it's previous).
                         // Need to check connectivity to it.
