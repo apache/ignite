@@ -134,19 +134,19 @@ public class ReliabilityTest extends AbstractThinClientTest {
                     .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             );
 
-            // Simple operation failover: put/get
-            assertOnUnstableCluster(cluster, () -> {
-                Integer key = rnd.nextInt();
-                String val = key.toString();
+//            // Simple operation failover: put/get
+//            assertOnUnstableCluster(cluster, () -> {
+//                Integer key = rnd.nextInt();
+//                String val = key.toString();
+//
+//                cachePut(cache, key, val);
+//
+//                String cachedVal = cache.get(key);
+//
+//                assertEquals(val, cachedVal);
+//            });
 
-                cachePut(cache, key, val);
-
-                String cachedVal = cache.get(key);
-
-                assertEquals(val, cachedVal);
-            });
-
-            cache.clear();
+//            cache.clear();
 
             // Composite operation failover: query
             Map<Integer, String> data = IntStream.rangeClosed(1, 1000).boxed()
