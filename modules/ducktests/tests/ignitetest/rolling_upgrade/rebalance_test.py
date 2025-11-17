@@ -101,8 +101,6 @@ class RollingUpgradeRebalanceTest(BaseRebalanceTest):
             control_utility.add_to_baseline(new_node.nodes)
 
             await_and_check_rebalance(new_node)
-
-            control_utility.deactivate()
         else:
             await_rebalance_start(new_node)
 
