@@ -154,9 +154,10 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             try {
                 IgniteInternalFuture<R> fut;
 
-                if (ctx.rollingUpgrade().enabled())
+                if (ctx.rollingUpgrade().enabled()) {
                     fut = new GridFinishedFuture<>(new IgniteException("Failed to start distributed process "
                         + type + ": rolling upgrade is enabled"));
+                }
                 else
                     fut = exec.apply((I)msg.request());
 
