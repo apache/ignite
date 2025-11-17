@@ -46,7 +46,7 @@ class RollingUpgradeRebalanceTest(BaseRebalanceTest):
         """
         Tests rebalance in-memory.
         """
-        return self.test_rebalance(ignite_version, upgrade_version, force, backups, cache_count, entry_count,
+        return self._start_rebalance(ignite_version, upgrade_version, force, backups, cache_count, entry_count,
                                    entry_size, preloaders, thread_pool_size, batch_size, batches_prefetch_count,
                                    throttle, False)
 
@@ -60,12 +60,12 @@ class RollingUpgradeRebalanceTest(BaseRebalanceTest):
         """
         Tests rebalance with persistence.
         """
-        return self.test_rebalance(ignite_version, upgrade_version, force, backups, cache_count, entry_count,
+        return self._start_rebalance(ignite_version, upgrade_version, force, backups, cache_count, entry_count,
                                    entry_size, preloaders, thread_pool_size, batch_size, batches_prefetch_count,
                                    throttle, True)
 
-    def test_rebalance(self, ignite_version, upgrade_version, force, backups, cache_count, entry_count, entry_size,
-                       preloaders, thread_pool_size, batch_size, batches_prefetch_count, throttle, with_persistence):
+    def _start_rebalance(self, ignite_version, upgrade_version, force, backups, cache_count, entry_count, entry_size,
+                         preloaders, thread_pool_size, batch_size, batches_prefetch_count, throttle, with_persistence):
         """
         Tests rebalance on node join with version upgrade.
         """
