@@ -52,7 +52,7 @@ public class ClusterMetricsUpdateMessage implements Message {
     /**
      * @param nodeMetrics Node metrics.
      */
-    ClusterMetricsUpdateMessage(byte[] nodeMetrics) {
+    public ClusterMetricsUpdateMessage(byte[] nodeMetrics) {
         this.nodeMetrics = nodeMetrics;
     }
 
@@ -66,7 +66,7 @@ public class ClusterMetricsUpdateMessage implements Message {
     /**
      * @return Node metrics.
      */
-    @Nullable byte[] nodeMetrics() {
+    public @Nullable byte[] nodeMetrics() {
         return nodeMetrics;
     }
 

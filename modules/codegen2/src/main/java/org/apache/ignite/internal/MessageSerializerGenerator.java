@@ -240,7 +240,7 @@ class MessageSerializerGenerator {
 
         if (enumType(erasedType(field.asType())))
             throw new IllegalArgumentException("Unsupported enum type: " + field.asType() +
-                    ". The enum must be wrapped into a Message (see, for example, TransactionIsolationMessage).");
+                ". The enum must be wrapped into a Message (see, for example, TransactionIsolationMessage).");
 
         writeField(field, opt);
         readField(field, opt);
