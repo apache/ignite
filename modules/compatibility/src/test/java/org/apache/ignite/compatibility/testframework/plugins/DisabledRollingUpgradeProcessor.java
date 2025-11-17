@@ -23,9 +23,7 @@ import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProces
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Disabled node validation.
- */
+/** Disabled rolling upgrade processor. */
 public class DisabledRollingUpgradeProcessor extends RollingUpgradeProcessor {
     /**
      * @param ctx Kernal context.

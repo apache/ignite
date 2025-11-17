@@ -28,7 +28,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
-import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
 public class IgniteSnapshotRollingUpgradeTest extends GridCommonAbstractTest {
@@ -64,7 +63,7 @@ public class IgniteSnapshotRollingUpgradeTest extends GridCommonAbstractTest {
 
         srv.context().rollingUpgrade().enable(targetVer, false);
 
-        assertTrue(waitForCondition(() -> srv.context().rollingUpgrade().enabled(), getTestTimeout()));
+        assertTrue(srv.context().rollingUpgrade().enabled());
 
         Throwable ex = assertThrowsWithCause(
             () -> srv.snapshot().createSnapshot("test").get(getTestTimeout()),
