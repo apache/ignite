@@ -151,16 +151,17 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
                 initCoordinator(p, topVer);
 
             try {
+                IgniteInternalFuture<R> fut;
+
                 if (ctx.rollingUpgrade().enabled()) {
-                    p.resFut.onDone(new IgniteException("Failed to start distributed process: rolling upgrade is enabled"));
+                    GridFutureAdapter<R> futAdapter = new GridFutureAdapter<>();
 
-                    if (!ctx.clientNode())
-                        sendSingleMessage(p);
+                    futAdapter.onDone(new IgniteException("Failed to start distributed process " + type + ": rolling upgrade is enabled"));
 
-                    return;
+                    fut = futAdapter;
                 }
-
-                IgniteInternalFuture<R> fut = exec.apply((I)msg.request());
+                else
+                    fut = exec.apply((I)msg.request());
 
                 fut.listen(() -> {
                     if (fut.error() != null)

@@ -70,6 +70,6 @@ public class IgniteSnapshotRollingUpgradeTest extends GridCommonAbstractTest {
             IgniteException.class
         );
 
-        assertTrue(ex.getMessage().contains("Failed to start distributed process: rolling upgrade is enabled"));
+        assertTrue(ex.getMessage().contains("Failed to start distributed process START_SNAPSHOT: rolling upgrade is enabled"));
     }
 }
