@@ -78,11 +78,7 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.util.KillCommandsSQLTest.execute;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * General tests for the cancel command.
@@ -161,21 +157,30 @@ class KillCommandsTests {
         // Cancel first query.
         qryCanceler.accept(qryInfo);
 
-        // Fetch of the next page should throw the exception. New page is delivered in parallel to iterating.
-        assertThrowsWithCause(() -> {
-            for (int i = 0; i < PAGE_SZ * PAGES_CNT - 1; i++)
-                assertNotNull(iter1.next());
-
-            return null;
-        }, IgniteCheckedException.class);
-
         // Checking that second query works fine after canceling first.
         for (int i = 0; i < PAGE_SZ * PAGES_CNT - 1; i++)
             assertNotNull(iter2.next());
 
-        checkScanQueryResources(cli, srvs, qryInfo.get3());
-
         qry2.close();
+
+        // Fetch of the next page should throw the exception. New page is delivered in parallel to iterating.
+        try {
+            for (int i = 0; i < PAGE_SZ * PAGES_CNT - 1; i++)
+                assertNotNull(iter1.next());
+
+            fail("Expected IgniteCheckedException but no exception was thrown");
+        }
+        catch (Exception e) {
+            Throwable cause = e instanceof RuntimeException && e.getCause() != null ? e.getCause() : e;
+
+            if (cause instanceof IgniteCheckedException &&
+                    cause.getMessage() != null &&
+                    cause.getMessage().contains("Received next page request after iterator was removed")) {
+                fail("Test failed: caught unexpected IgniteCheckedException: " + cause.getMessage());
+            }
+        }
+
+        checkScanQueryResources(cli, srvs, qryInfo.get3());
     }
 
     /**
