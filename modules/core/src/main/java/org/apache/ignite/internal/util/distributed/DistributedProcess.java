@@ -39,6 +39,7 @@ import org.apache.ignite.internal.managers.encryption.GridEncryptionManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI3;
 import org.apache.ignite.internal.util.typedef.F;
@@ -153,13 +154,8 @@ public class DistributedProcess<I extends Serializable, R extends Serializable> 
             try {
                 IgniteInternalFuture<R> fut;
 
-                if (ctx.rollingUpgrade().enabled()) {
-                    GridFutureAdapter<R> futAdapter = new GridFutureAdapter<>();
-
-                    futAdapter.onDone(new IgniteException("Failed to start distributed process " + type + ": rolling upgrade is enabled"));
-
-                    fut = futAdapter;
-                }
+                if (ctx.rollingUpgrade().enabled())
+                    fut = new GridFinishedFuture<>(new IgniteException("Failed to start distributed process " + type + ": rolling upgrade is enabled"));
                 else
                     fut = exec.apply((I)msg.request());
 
