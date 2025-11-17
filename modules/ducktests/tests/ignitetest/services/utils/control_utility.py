@@ -231,12 +231,18 @@ class ControlUtility:
 
         return res
 
-    def enable_rolling_upgrade(self, target_version: str):
+    def enable_rolling_upgrade(self, target_version: str, force: bool = False):
         """
         Enable Rolling Upgrade with the target Ignite version.
         :param target_version: Target Ignite version.
+        :param force: If {@code true}, skips target version compatibility checks and forcibly enables rolling upgrade.
+                    This flag does not override an already active upgrade configuration.
         """
-        result = self.__run(f"--rolling-upgrade enable {target_version} --enable-experimental --yes")
+
+        if force:
+            result = self.__run(f"--rolling-upgrade enable {target_version} --force --enable-experimental --yes")
+        else:
+            result = self.__run(f"--rolling-upgrade enable {target_version} --enable-experimental --yes")
 
         assert "Rolling upgrade enabled" in result, f"Unexpected response: {result}"
 
