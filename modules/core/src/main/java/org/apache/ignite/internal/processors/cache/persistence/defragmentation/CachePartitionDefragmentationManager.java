@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.PendingRow;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.collection.IntHashMap;
@@ -85,7 +86,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 import static java.util.Comparator.comparing;
 import static java.util.stream.StreamSupport.stream;

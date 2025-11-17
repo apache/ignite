@@ -130,10 +130,10 @@ import static org.apache.ignite.internal.processors.query.schema.SchemaIndexCach
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TIMEOUT;
 import static org.apache.ignite.internal.processors.rest.GridRestProcessor.DFLT_SES_TOKEN_INVALIDATE_INTERVAL;
 import static org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandHandler.DFLT_MAX_TASK_RESULTS;
+import static org.apache.ignite.internal.thread.IgniteStripedExecutor.DFLT_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD;
 import static org.apache.ignite.internal.util.GridReflectionCache.DFLT_REFLECTION_CACHE_SIZE;
 import static org.apache.ignite.internal.util.IgniteExceptionRegistry.DEFAULT_QUEUE_SIZE;
 import static org.apache.ignite.internal.util.IgniteUtils.DFLT_MBEAN_APPEND_CLASS_LOADER_ID;
-import static org.apache.ignite.internal.util.StripedExecutor.DFLT_DATA_STREAMING_EXECUTOR_SERVICE_TASKS_STEALING_THRESHOLD;
 import static org.apache.ignite.internal.util.nio.GridNioRecoveryDescriptor.DFLT_NIO_RECOVERY_DESCRIPTOR_RESERVATION_TIMEOUT;
 import static org.apache.ignite.internal.util.nio.GridNioServer.DFLT_IO_BALANCE_PERIOD;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;

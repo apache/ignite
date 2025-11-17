@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.verify.GridNotIdleException;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.thread.IgniteForkJoinPool;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -94,7 +95,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
     public static final String CP_REASON = "VerifyBackupPartitions";
 
     /** Shared for tests. */
-    public static Supplier<ForkJoinPool> poolSupplier = ForkJoinPool::commonPool;
+    public static Supplier<ExecutorService> poolSupplier = IgniteForkJoinPool::commonPool;
 
     /** Injected logger. */
     @LoggerResource
@@ -345,7 +346,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
                 if (grpCtx == null)
                     continue;
 
-                ForkJoinPool pool = poolSupplier.get();
+                ExecutorService pool = poolSupplier.get();
 
                 for (GridDhtLocalPartition part : grpCtx.topology().currentLocalPartitions())
                     partHashCalcFutures.add(calculatePartitionHashAsync(pool, grpCtx, part, this::isCancelled));
@@ -489,7 +490,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<CacheIdleVeri
          * @param cancelled Supplier of cancelled status.
          */
         private Future<Map<PartitionKey, PartitionHashRecord>> calculatePartitionHashAsync(
-            final ForkJoinPool pool,
+            final ExecutorService pool,
             final CacheGroupContext gctx,
             final GridDhtLocalPartition part,
             final BooleanSupplier cancelled

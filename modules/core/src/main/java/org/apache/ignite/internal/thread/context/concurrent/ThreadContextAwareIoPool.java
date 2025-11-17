@@ -15,18 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security.thread;
+package org.apache.ignite.internal.thread.context.concurrent;
 
 import java.util.concurrent.Executor;
-import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.plugin.extensions.communication.IoPool;
-import org.jetbrains.annotations.NotNull;
 
-/** Wrapper of {@link IoPool} that executes tasks in security context that was actual when task was added to pool queue. */
-public class SecurityAwareIoPool implements IoPool {
-    /** */
-    private final IgniteSecurity security;
-
+/** */
+public class ThreadContextAwareIoPool implements IoPool {
     /** */
     private final IoPool delegate;
 
@@ -34,20 +29,9 @@ public class SecurityAwareIoPool implements IoPool {
     private final Executor executor;
 
     /** */
-    public SecurityAwareIoPool(IgniteSecurity security, IoPool delegate) {
-        assert security.enabled();
-        assert delegate != null;
-
-        this.security = security;
+    private ThreadContextAwareIoPool(IoPool delegate) {
         this.delegate = delegate;
-
-        final Executor delegateExecutor = delegate.executor();
-
-        executor = delegateExecutor == null ? null : new Executor() {
-            @Override public void execute(@NotNull Runnable cmd) {
-                delegateExecutor.execute(SecurityAwareRunnable.of(SecurityAwareIoPool.this.security, cmd));
-            }
-        };
+        this.executor = ThreadContextAwareExecutor.wrap(delegate.executor());
     }
 
     /** {@inheritDoc} */
@@ -58,5 +42,10 @@ public class SecurityAwareIoPool implements IoPool {
     /** {@inheritDoc} */
     @Override public Executor executor() {
         return executor;
+    }
+
+    /** */
+    public static IoPool wrap(IoPool pool) {
+        return pool == null ? null : new ThreadContextAwareIoPool(pool);
     }
 }

@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
@@ -45,6 +44,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
+import static org.apache.ignite.internal.thread.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
+
 /**
  * Task for SQL queries execution through {@link IgniteJdbcDriver}.
  * <p>
@@ -61,7 +62,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
         IgniteSystemProperties.IGNITE_JDBC_DRIVER_CURSOR_REMOVE_DELAY, 600000);
 
     /** Scheduler. */
-    private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(1);
+    private static final ScheduledExecutorService SCHEDULER = newSingleThreadScheduledExecutor("jdbc-cursor-close-worker", null);
 
     /** Open cursors. */
     private static final ConcurrentMap<UUID, Cursor> CURSORS = new ConcurrentHashMap<>();

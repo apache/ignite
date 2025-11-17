@@ -15,9 +15,29 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains threads-related utility classes.
- */
+package org.apache.ignite.internal.thread.context;
 
-package org.apache.ignite.thread;
+/** */
+public class ThreadContextAttribute<T> {
+    /** */
+    private final int id;
+
+    /** */
+    private final T initialVal;
+
+    /** */
+    ThreadContextAttribute(int id, T initialVal) {
+        this.id = id;
+        this.initialVal = initialVal;
+    }
+
+    /** */
+    int id() {
+        return id;
+    }
+
+    /** */
+    public T initialValue() {
+        return initialVal;
+    }
+}

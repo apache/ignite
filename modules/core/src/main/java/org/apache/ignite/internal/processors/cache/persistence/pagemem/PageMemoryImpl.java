@@ -29,8 +29,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
@@ -76,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.compress.CompressionProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
+import org.apache.ignite.internal.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -89,13 +88,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.spi.encryption.noop.NoopEncryptionSpi;
-import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DELAYED_REPLACED_PAGE_WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -332,13 +331,14 @@ public class PageMemoryImpl implements PageMemoryEx {
         
         this.dataRegionCfg = dataRegionCfg;
 
-        asyncRunner = new ThreadPoolExecutor(
+        asyncRunner = new IgniteThreadPoolExecutor(
+            "page-mem-op",
+            ctx.igniteInstanceName(),
             0,
             Runtime.getRuntime().availableProcessors(),
-            30L,
-            TimeUnit.SECONDS,
-            new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors()),
-            new IgniteThreadFactory(ctx.igniteInstanceName(), "page-mem-op"));
+            SECONDS.toMillis(30),
+            new ArrayBlockingQueue<>(Runtime.getRuntime().availableProcessors())
+        );
         
         switch (dataRegionCfg.getPageReplacementMode()) {
             case RANDOM_LRU:

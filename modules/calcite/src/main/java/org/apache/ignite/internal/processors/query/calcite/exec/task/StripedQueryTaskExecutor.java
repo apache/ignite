@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.query.calcite.exec.task;
 import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
