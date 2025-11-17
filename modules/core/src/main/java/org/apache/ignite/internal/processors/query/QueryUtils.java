@@ -28,6 +28,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,6 +40,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -181,7 +183,8 @@ public class QueryUtils {
             LocalDateTime.class,
             String.class,
             UUID.class,
-            byte[].class
+            byte[].class,
+            List.class // ARRAY
         ));
 
         return sqlClasses;
@@ -493,8 +496,10 @@ public class QueryUtils {
         // We need that to set correct types for _key and _val columns.
         // We better box these types - otherwise, if user provides, say, raw 'byte' for
         // key or value (which they could), we'll deem key or value as Object which clearly is not right.
-        Class<?> keyCls = U.box(U.classForName(qryEntity.findKeyType(), null, true));
+        List<Class<?>> keyFullCls = parseFieldType(qryEntity.findKeyType(), null, true, true);
         Class<?> valCls = U.box(U.classForName(qryEntity.findValueType(), null, true));
+
+        Class<?> keyCls = F.isEmpty(keyFullCls) ? null : keyFullCls.get(0);
 
         // If local node has the classes and they are externalizable, we must use reflection properties.
         boolean keyMustDeserialize = mustDeserializeBinary(ctx, keyCls);
@@ -519,9 +524,9 @@ public class QueryUtils {
                 desc.valueClass(Object.class);
 
             if (isSqlType(keyCls))
-                desc.keyClass(keyCls);
+                desc.keyClass(keyFullCls);
             else
-                desc.keyClass(Object.class);
+                desc.keyClass(Collections.singletonList(Object.class));
         }
         else {
             if (valCls == null)
@@ -529,7 +534,7 @@ public class QueryUtils {
                     "(use default marshaller to enable binary objects) : " + qryEntity.findValueType());
 
             desc.valueClass(valCls);
-            desc.keyClass(keyCls);
+            desc.keyClass(keyFullCls);
         }
 
         desc.keyTypeName(qryEntity.findKeyType());
@@ -666,7 +671,7 @@ public class QueryUtils {
         // value.
         for (Map.Entry<String, String> entry : fields.entrySet()) {
             String fieldName = entry.getKey();
-            String fieldType = entry.getValue();
+            List<Class<?>> fieldType = parseFieldType(entry.getValue(), Object.class, true, false);
 
             boolean isKeyField;
 
@@ -680,11 +685,14 @@ public class QueryUtils {
 
             Object dfltVal = dlftVals != null ? dlftVals.get(fieldName) : null;
 
-            QueryBinaryProperty prop = buildBinaryProperty(ctx, fieldName,
-                U.classForName(fieldType, Object.class, true),
+            QueryBinaryProperty prop = buildBinaryProperty(
+                ctx,
+                fieldName,
+                fieldType,
                 d.aliases(), isKeyField, notNull, dfltVal,
                 precision == null ? -1 : precision.getOrDefault(fieldName, -1),
-                scale == null ? -1 : scale.getOrDefault(fieldName, -1));
+                scale == null ? -1 : scale.getOrDefault(fieldName, -1)
+            );
 
             d.addProperty(prop, false);
         }
@@ -705,6 +713,51 @@ public class QueryUtils {
             addKeyValueProperty(ctx, qryEntity, d, VAL_FIELD_NAME, false);
 
         processIndexes(qryEntity, d);
+    }
+
+    /** Extracts type from {@code typeStr} including component types if the type is a collection or a map. Splits with ':'. */
+    public static List<Class<?>> parseFieldType(
+        @Nullable String typeStr,
+        @Nullable Class<?> dfltType1,
+        boolean includePrimitives,
+        boolean box
+    ) {
+        if (F.isEmpty(typeStr))
+            return Collections.singletonList(dfltType1);
+
+        int idx;
+        List<String> res = null;
+
+        do {
+            idx = typeStr.indexOf(':');
+
+            if (idx < 0) {
+                if (res == null)
+                    res = Collections.singletonList(typeStr);
+                else
+                    res.add(typeStr);
+            }
+            else {
+                String clsName = typeStr.substring(0, idx);
+
+                if (res == null)
+                    res = new ArrayList<>();
+
+                res.add(clsName);
+
+                typeStr = typeStr.substring(idx + 1);
+            }
+
+        }
+        while (idx >= 0);
+
+        if (box) {
+            return res.stream().map(clsName -> U.box(U.classForName(clsName, Object.class, includePrimitives)))
+                .collect(Collectors.toList());
+        }
+
+        return res.stream().map(clsName -> U.classForName(clsName, Object.class, includePrimitives))
+            .collect(Collectors.toList());
     }
 
     /**
@@ -730,7 +783,7 @@ public class QueryUtils {
         QueryBinaryProperty prop = buildBinaryProperty(
             ctx,
             name,
-            U.classForName(typeName, Object.class, true),
+            parseFieldType(typeName, Object.class, true, false),
             d.aliases(),
             isKey,
             true,
@@ -871,7 +924,7 @@ public class QueryUtils {
      * @param ctx Kernal context.
      * @param pathStr String representing path to the property. May contains dots '.' to identify
      *      nested fields.
-     * @param resType Result type.
+     * @param resType Result type with component types if the type is a collection or a map.
      * @param aliases Aliases.
      * @param isKeyField Key ownership flag, {@code true} if this property is a field of the key object. Note that key
      * not a field of itself.
@@ -884,7 +937,7 @@ public class QueryUtils {
     public static QueryBinaryProperty buildBinaryProperty(
         GridKernalContext ctx,
         String pathStr,
-        Class<?> resType,
+        List<Class<?>> resType,
         Map<String, String> aliases,
         boolean isKeyField,
         boolean notNull,
@@ -907,8 +960,8 @@ public class QueryUtils {
             String alias = aliases.get(fullName.toString());
 
             // The key flag that we've found out is valid for the whole path.
-            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, dlftVal,
-                precision, scale);
+            res = new QueryBinaryProperty(ctx, prop, res, resType.get(0), resType.size() > 1 ? resType.subList(1, resType.size()) : null,
+                isKeyField, alias, notNull, dlftVal, precision, scale);
         }
 
         return res;
