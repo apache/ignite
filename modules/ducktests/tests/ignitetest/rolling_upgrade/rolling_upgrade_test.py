@@ -16,8 +16,6 @@
 """
 Module contains rolling upgrade tests
 """
-from time import monotonic
-
 from ducktape.mark import defaults, matrix
 
 from ignitetest.services.ignite import IgniteService
@@ -34,64 +32,51 @@ class RollingUpgradeTest(IgniteTest):
     Tests validates rolling upgrade
     """
     @cluster(num_nodes=NUM_NODES)
-    @ignite_versions(str(DEV_BRANCH))
-    @defaults(init_version=[str(LATEST)], upgrade_version=[str(DEV_BRANCH)])
-    @matrix(upgrade_coordinator=[True, False])
-    def test_rolling_upgrade(self, ignite_version, init_version, upgrade_version, upgrade_coordinator=False,
-                             force_upgrade=False):
-        self.logger.info(f"Initiating Rolling Upgrade test from {init_version} to {upgrade_version} "
-                         f"starting from coordinator [{upgrade_coordinator}]")
+    @ignite_versions(str(LATEST))
+    @defaults(upgrade_version=[str(DEV_BRANCH)], force=[False])
+    @matrix(upgrade_coordinator_first=[True, False])
+    def test_rolling_upgrade(self, ignite_version, upgrade_version, upgrade_coordinator_first, force):
+        self.logger.info(f"Initiating Rolling Upgrade test from {ignite_version} to {upgrade_version} "
+                         f"starting from coordinator [{upgrade_coordinator_first}]")
 
-        results = {}
-
-        ignites = self.start_ignite_cluster(init_version, results)
+        ignites = self.start_ignite_cluster(ignite_version)
 
         control_sh = ControlUtility(ignites)
 
-        if not force_upgrade:
-            control_sh.enable_rolling_upgrade(IgniteVersion(upgrade_version).vstring)
+        control_sh.enable_rolling_upgrade(IgniteVersion(upgrade_version).vstring, force)
 
-        self.upgrade_ignite_cluster(ignites, upgrade_version, upgrade_coordinator, results)
+        self.upgrade_ignite_cluster(ignites, upgrade_version, upgrade_coordinator_first)
 
-        if not force_upgrade:
-            control_sh.disable_rolling_upgrade()
+        control_sh.disable_rolling_upgrade()
 
         ignites.stop()
 
-        return results
-
-    def start_ignite_cluster(self, ignite_version: str, results):
+    def start_ignite_cluster(self, ignite_version: str):
         self.logger.info("Cluster start-up.")
 
         ignite_cfg = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
             metric_exporters={"org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"})
 
-        start = monotonic()
-
         ignites = IgniteService(self.test_context, ignite_cfg, num_nodes=self.test_context.expected_num_nodes)
 
         ignites.start()
 
-        results['Ignite cluster start time (s)'] = round(monotonic() - start, 1)
-
         ignites.await_event(f"Topology snapshot \\[ver={self.test_context.expected_num_nodes}",
                             ignites.startup_timeout_sec, from_the_beginning=True)
 
-        self.logger.info(f"Initial cluster is up [nodes={self.test_context.expected_num_nodes}].")
+        self.logger.info(f"Initial cluster is up [nodes={len(ignites.nodes)}].")
 
         return ignites
 
-    def upgrade_ignite_cluster(self, ignites: IgniteService, upgrade_version: str, upgrade_coordinator: bool, results):
+    def upgrade_ignite_cluster(self, ignites: IgniteService, upgrade_version: str, upgrade_coordinator_first: bool):
         self.logger.info(f"Starting rolling upgrade.")
 
         ignites.config = IgniteConfiguration(version=IgniteVersion(upgrade_version))
 
         ignite_upgraded = 0
 
-        start = monotonic()
-
-        for ignite in ignites.nodes if upgrade_coordinator else reversed(ignites.nodes):
+        for ignite in ignites.nodes if upgrade_coordinator_first else reversed(ignites.nodes):
             self.logger.debug(f"Updating {ignites.who_am_i(ignite)}")
 
             ignites.stop_node(ignite)
@@ -104,7 +89,5 @@ class RollingUpgradeTest(IgniteTest):
 
             ignites.await_event(f"Topology snapshot \\[ver={exp_topology}", ignites.startup_timeout_sec,
                                 from_the_beginning=True)
-
-        results['Ignite cluster upgrade time (s)'] = round(monotonic() - start, 1)
 
         self.logger.info(f"Upgrade is complete.")
