@@ -58,9 +58,6 @@ public enum SecurityPermission {
     /** Visor admin operations permissions. */
     ADMIN_OPS,
 
-    /** Permission to perform rolling upgrade. */
-    ADMIN_ROLLING_UPGRADE,
-
     /** System processes kill permission. */
     ADMIN_KILL,
 
@@ -120,7 +117,10 @@ public enum SecurityPermission {
     SQL_VIEW_CREATE,
 
     /** Permission to execute DROP VIEW command. */
-    SQL_VIEW_DROP;
+    SQL_VIEW_DROP,
+
+    /** Permission to perform rolling upgrade. */
+    ADMIN_ROLLING_UPGRADE;
 
     /** Enumerated values. */
     private static final SecurityPermission[] VALS = values();
