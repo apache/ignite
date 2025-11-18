@@ -397,14 +397,14 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /**
      * @return Errors map.
      */
-    @Nullable Map<UUID, Throwable> errorsMap() {
+    @Nullable Map<UUID, Throwable> getErrorsMap() {
         return errs;
     }
 
     /**
      * @param errs Errors map.
      */
-    void errorsMap(Map<UUID, Throwable> errs) {
+    void setErrorsMap(Map<UUID, Throwable> errs) {
         this.errs = new HashMap<>(errs);
     }
 

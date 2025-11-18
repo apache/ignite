@@ -2179,7 +2179,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             partsToReload);
 
         if (stateChangeExchange() && !F.isEmpty(exchangeGlobalExceptions))
-            m.errorsMap(exchangeGlobalExceptions);
+            m.setErrorsMap(exchangeGlobalExceptions);
 
         return m;
     }
@@ -2960,7 +2960,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         GridDhtPartitionsFullMessage fullMsg = createPartitionsMessage(true);
 
-        fullMsg.errorsMap(exchangeGlobalExceptions);
+        fullMsg.setErrorsMap(exchangeGlobalExceptions);
 
         fullMsg.rebalanced(rebalanced());
 
@@ -4262,7 +4262,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     nodeId,
                     node.isClient() ? new IgniteNeedReconnectException(node, e) : new IgniteCheckedException(e));
 
-                fullMsg.errorsMap(errs);
+                fullMsg.setErrorsMap(errs);
             }
         }
 
@@ -4522,8 +4522,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 return;
                             }
                             else {
-                                if (!F.isEmpty(msg.errorsMap())) {
-                                    Throwable e = msg.errorsMap().get(cctx.localNodeId());
+                                if (!F.isEmpty(msg.getErrorsMap())) {
+                                    Throwable e = msg.getErrorsMap().get(cctx.localNodeId());
 
                                     if (e instanceof IgniteNeedReconnectException) {
                                         onDone(e);
@@ -4631,8 +4631,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (msg.rebalanced())
                 markRebalanced();
 
-            if (stateChangeExchange() && !F.isEmpty(msg.errorsMap()))
-                cctx.kernalContext().state().onStateChangeError(msg.errorsMap(), exchActions.stateChangeRequest());
+            if (stateChangeExchange() && !F.isEmpty(msg.getErrorsMap()))
+                cctx.kernalContext().state().onStateChangeError(msg.getErrorsMap(), exchActions.stateChangeRequest());
 
             if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 DiscoveryCustomMessage discoveryCustomMsg = ((DiscoveryCustomEvent)firstDiscoEvt).customMessage();
@@ -4809,7 +4809,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         GridDhtPartitionsFullMessage partsMsg = msg.partitionsMessage();
 
-                        IgniteCheckedException err = !F.isEmpty(partsMsg.errorsMap()) ?
+                        IgniteCheckedException err = !F.isEmpty(partsMsg.getErrorsMap()) ?
                             new IgniteCheckedException("Cluster state change failed.") : null;
 
                         if (!crd.isLocal()) {
@@ -4820,7 +4820,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                             if (exchActions != null && exchActions.stateChangeRequest() != null && err != null) {
                                 cctx.kernalContext().state().onStateChangeError(
-                                    partsMsg.errorsMap(),
+                                    partsMsg.getErrorsMap(),
                                     exchActions.stateChangeRequest()
                                 );
                             }
