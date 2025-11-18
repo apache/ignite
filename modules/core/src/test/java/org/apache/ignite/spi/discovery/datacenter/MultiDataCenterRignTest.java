@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.datacenter;
 
 import java.util.Collection;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -43,43 +44,16 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testRing() throws Exception {
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        boolean order = rnd.nextBoolean();
+
         for (int i = 0; i < 10; i += 2) {
-            System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
+            System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, order ? DC_ID_0 : DC_ID_1);
 
             startGrid(i);
 
-            System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
-
-            startGrid(i + 1);
-        }
-
-        waitForTopology(10);
-
-        Collection<ClusterNode> nodes = grid(0).cluster().forServers().nodes();
-
-        int swithes = 0;
-        String curDcId = null;
-
-        for (ClusterNode node : nodes) {
-            if (!node.dataCenterId().equals(curDcId)){
-                swithes++;
-
-                curDcId = node.dataCenterId();
-            }
-        }
-
-        assertEquals(2, swithes);
-    }
-
-    /** */
-    @Test
-    public void testRingWithCordinatorChange() throws Exception {
-        for (int i = 0; i < 10; i += 2) {
-            System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
-
-            startGrid(i);
-
-            System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
+            System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, order ? DC_ID_1 : DC_ID_0);
 
             startGrid(i + 1);
         }
