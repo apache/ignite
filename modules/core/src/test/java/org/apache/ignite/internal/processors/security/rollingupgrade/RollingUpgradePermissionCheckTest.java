@@ -26,11 +26,12 @@ import org.apache.ignite.internal.util.lang.IgniteThrowableConsumer;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.security.SecurityException;
-import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_ROLLING_UPGRADE;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.systemPermissions;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** Test rolling upgrade permissions. */
@@ -39,7 +40,7 @@ public class RollingUpgradePermissionCheckTest extends AbstractSecurityTest {
      * @throws Exception If failed.
      */
     @Test public void testRollingUpgradePermissionDenied() throws Exception {
-        try (IgniteEx node = startGrid("server_test_node", SecurityPermissionSetBuilder.create().defaultAllowAll(false).build(), false)) {
+        try (IgniteEx node = startGrid("server_test_node", NO_PERMISSIONS, false)) {
             for (IgniteThrowableConsumer<IgniteEx> c : operations()) {
                 Throwable throwable = assertThrows(log, () -> c.accept(node), IgniteException.class, "Authorization failed");
 
@@ -52,9 +53,7 @@ public class RollingUpgradePermissionCheckTest extends AbstractSecurityTest {
      * @throws Exception If failed.
      */
     @Test public void testRollingUpgradePermissionAllowed() throws Exception {
-        try (IgniteEx node = startGrid("server_test_node", SecurityPermissionSetBuilder.create().defaultAllowAll(false)
-            .appendSystemPermissions(ADMIN_ROLLING_UPGRADE).build(), false)) {
-
+        try (IgniteEx node = startGrid("server_test_node", systemPermissions(ADMIN_ROLLING_UPGRADE), false)) {
             for (IgniteThrowableConsumer<IgniteEx> c : operations())
                 c.accept(node);
         }
