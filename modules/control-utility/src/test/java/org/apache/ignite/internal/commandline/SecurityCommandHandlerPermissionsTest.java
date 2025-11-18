@@ -31,6 +31,7 @@ import org.apache.ignite.internal.client.thin.ServicesTest;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
@@ -41,11 +42,13 @@ import org.junit.Test;
 import org.junit.runners.Parameterized;
 
 import static java.util.Arrays.asList;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PASSWORD;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_USER;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_ROLLING_UPGRADE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
@@ -136,6 +139,32 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
             asList("--cache", "create", "--springxmlconfig", ccfgPath),
             systemPermissions(CACHE_CREATE)
         );
+    }
+
+    /** */
+    @Test
+    public void testRollingUpgrade() throws Exception {
+        IgniteEx ign = startGrid(0);
+
+        IgniteProductVersion curVer = IgniteProductVersion.fromString(ign.localNode().attribute(ATTR_BUILD_VER));
+
+        String targetVerStr = curVer.major() + "." + (curVer.minor() + 1) + ".0";
+
+
+        checkCommandPermissions(
+            asList("--rolling-upgrade", "enable", targetVerStr),
+            systemPermissions(ADMIN_ROLLING_UPGRADE)
+        );
+
+        assertTrue(ign.context().rollingUpgrade().enabled());
+        assertEquals(IgniteProductVersion.fromString(targetVerStr), ign.context().rollingUpgrade().versions().get2());
+
+        checkCommandPermissions(
+            asList("--rolling-upgrade", "disable"),
+            systemPermissions(ADMIN_ROLLING_UPGRADE)
+        );
+
+        assertFalse(ign.context().rollingUpgrade().enabled());
     }
 
     /** */
