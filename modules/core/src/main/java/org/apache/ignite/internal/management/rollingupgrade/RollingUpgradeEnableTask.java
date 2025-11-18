@@ -52,6 +52,8 @@ public class RollingUpgradeEnableTask extends VisorOneNodeTask<RollingUpgradeEna
 
         /** {@inheritDoc} */
         @Override public SecurityPermissionSet requiredPermissions() {
+            // This task does nothing but delegates the call to the Ignite processor.
+            // Therefore, it is safe to execute task without any additional permissions check.
             return NO_PERMISSIONS;
         }
 
