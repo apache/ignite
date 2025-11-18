@@ -48,14 +48,12 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
 
             startGrid(i);
 
-            waitForTopology(i + 1);
-
             System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
 
             startGrid(i + 1);
-
-            waitForTopology(i + 2);
         }
+
+        waitForTopology(10);
 
         Collection<ClusterNode> nodes = grid(0).cluster().forServers().nodes();
 
@@ -81,14 +79,12 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
 
             startGrid(i);
 
-            waitForTopology(i + 1);
-
             System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
 
             startGrid(i + 1);
-
-            waitForTopology(i + 2);
         }
+
+        waitForTopology(10);
 
         Collection<ClusterNode> nodes = grid(0).cluster().forServers().nodes();
 

@@ -281,7 +281,7 @@ public class GridFunc {
         }
         else {
             if (isEmpty(c1) && isEmpty(c2))
-                return Collections.emptyList();
+                return new ArrayList<>(0);
 
             if (isEmpty(c1) || isEmpty(c2)) {
                 Collection<T> c = isEmpty(c1) ? c2 : c1;

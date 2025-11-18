@@ -1778,7 +1778,11 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     @Nullable private TcpDiscoveryNode resolveCoordinator() {
         synchronized (mux) {
-            Collection<TcpDiscoveryNode> excluded = F.concat(false, failedNodes.keySet(), leavingNodes);
+            Collection<UUID> excluded = F.concat(false, failedNodes.values(), joiningNodes);
+
+            for (TcpDiscoveryNode node : leavingNodes) {
+                excluded.add(node.id());
+            }
 
             return ring.coordinator(excluded);
         }
@@ -2095,7 +2099,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         TcpDiscoveryNode next;
 
         synchronized (mux) {
-            next = ring.nextNode(failedNodes.keySet());
+            next = ring.nextNode(failedNodes.values());
         }
 
         if (next != null)
@@ -3420,12 +3424,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             sendMessageToClients(msg);
 
-            List<TcpDiscoveryNode> failedNodes;
+            Map<TcpDiscoveryNode, UUID> failedNodes;
 
             TcpDiscoverySpiState state;
 
             synchronized (mux) {
-                failedNodes = U.arrayList(ServerImpl.this.failedNodes.keySet());
+                failedNodes = new HashMap<>(ServerImpl.this.failedNodes);
 
                 state = spiState;
             }
@@ -3442,7 +3446,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             UUID locNodeId = getLocalNodeId();
 
             ringLoop: while (true) {
-                TcpDiscoveryNode newNext = ring.nextNode(failedNodes);
+                TcpDiscoveryNode newNext = ring.nextNode(failedNodes.values());
 
                 if (newNext == null) {
                     if (log.isDebugEnabled())
@@ -3563,7 +3567,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     else {
                                         newNextNode = false;
 
-                                        newNextNode(ring.nextNode(failedNodes));
+                                        newNextNode(ring.nextNode(failedNodes.values()));
                                     }
 
                                     U.closeQuiet(sock);
@@ -3571,7 +3575,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     sock = null;
 
                                     if (sndState.isFailed()) {
-                                        segmentLocalNodeOnSendFail(failedNodes);
+                                        segmentLocalNodeOnSendFail(failedNodes.values());
 
                                         return; // Nothing to do here.
                                     }
@@ -3668,7 +3672,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 // Fastens failure detection.
                                 if (sndState != null && sndState.checkTimeout()) {
-                                    segmentLocalNodeOnSendFail(failedNodes);
+                                    segmentLocalNodeOnSendFail(failedNodes.values());
 
                                     return; // Nothing to do here.
                                 }
@@ -3738,7 +3742,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     prepareNodeAddedMessage(pendingMsg, next.id(), pendingMsgs.msgs,
                                         pendingMsgs.customDiscardId);
 
-                                    addFailedNodes(pendingMsg, failedNodes);
+                                    addFailedNodes(pendingMsg, failedNodes.values());
 
                                     if (timeoutHelper == null)
                                         timeoutHelper = serverOperationTimeoutHelper(sndState, lastRingMsgSentTime);
@@ -3788,7 +3792,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (timeoutHelper == null)
                                     timeoutHelper = serverOperationTimeoutHelper(sndState, lastRingMsgSentTime);
 
-                                addFailedNodes(msg, failedNodes);
+                                addFailedNodes(msg, failedNodes.values());
 
                                 boolean latencyCheck = msg instanceof TcpDiscoveryRingLatencyCheckMessage;
 
@@ -3888,15 +3892,15 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
                         sndState = new CrossRingMessageSendState();
                     else if (sndState != null && sndState.checkTimeout()) {
-                        segmentLocalNodeOnSendFail(failedNodes);
+                        segmentLocalNodeOnSendFail(failedNodes.values());
 
                         return; // Nothing to do here.
                     }
 
                     boolean failedNextNode = sndState == null || sndState.markNextNodeFailed();
 
-                    if (failedNextNode && !failedNodes.contains(next)) {
-                        failedNodes.add(next);
+                    if (failedNextNode && !failedNodes.containsValue(next.id())) {
+                        failedNodes.put(next, next.id());
 
                         if (state == CONNECTED) {
                             Exception err = errs != null ?
@@ -3921,7 +3925,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else {
                             newNextNode = false;
 
-                            newNextNode(ring.nextNode(failedNodes));
+                            newNextNode(ring.nextNode(failedNodes.values()));
                         }
                     }
 
@@ -3934,7 +3938,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             synchronized (mux) {
-                failedNodes.removeAll(ServerImpl.this.failedNodes.keySet());
+                failedNodes.keySet().removeAll(ServerImpl.this.failedNodes.keySet());
             }
 
             if (!failedNodes.isEmpty()) {
@@ -3948,16 +3952,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 synchronized (mux) {
-                    for (TcpDiscoveryNode failedNode : failedNodes) {
+                    for (TcpDiscoveryNode failedNode : failedNodes.keySet()) {
                         if (!ServerImpl.this.failedNodes.containsKey(failedNode))
                             ServerImpl.this.failedNodes.put(failedNode, locNodeId);
                     }
 
-                    for (TcpDiscoveryNode failedNode : failedNodes)
+                    for (TcpDiscoveryNode failedNode : failedNodes.keySet())
                         failedNodesMsgSent.add(failedNode.id());
                 }
 
-                for (TcpDiscoveryNode n : failedNodes)
+                for (TcpDiscoveryNode n : failedNodes.keySet())
                     msgWorker.addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId, n.id(), n.internalOrder()));
 
                 if (!sent) {
@@ -4013,7 +4017,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * Segment local node on failed message send.
          */
-        private void segmentLocalNodeOnSendFail(List<TcpDiscoveryNode> failedNodes) {
+        private void segmentLocalNodeOnSendFail(Collection<UUID> failedNodes) {
             String failedNodesStr = failedNodes == null ? "" : (", failedNodes=" + failedNodes);
 
             synchronized (mux) {
@@ -4050,12 +4054,12 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Message to add failed node IDs.
          * @param failedNodes Failed nodes to add to the message.
          */
-        private void addFailedNodes(TcpDiscoveryAbstractMessage msg, Collection<TcpDiscoveryNode> failedNodes) {
+        private void addFailedNodes(TcpDiscoveryAbstractMessage msg, Collection<UUID> failedNodes) {
             if (!failedNodes.isEmpty()) {
-                for (TcpDiscoveryNode failedNode : failedNodes) {
+                for (UUID failedNode : failedNodes) {
                     assert !failedNode.equals(next) : failedNode;
 
-                    msg.addFailedNode(failedNode.id());
+                    msg.addFailedNode(failedNode);
                 }
             }
         }
@@ -6843,10 +6847,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (ok) {
                             // Check case when previous node suddenly died. This will speed up
                             // node failing.
-                            Set<TcpDiscoveryNode> failed;
+                            Collection<UUID> failed;
 
                             synchronized (mux) {
-                                failed = failedNodes.keySet();
+                                failed = failedNodes.values();
                             }
 
                             previous = ring.previousNode(failed);
