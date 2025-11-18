@@ -145,16 +145,26 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testForwardRollingUpgrade() throws Exception {
-        cleanPersistenceDir();
-        IgniteEx ign0 = startGrid(0, "2.18.0", false);
-        IgniteEx ign1 = startGrid(1, "2.18.0", client);
-        IgniteEx ign2 = startGrid(2, "2.18.0", client);
+        doTestRollingUpgrade("2.18.0", "2.18.1", false);
+    }
+
+    /** */
+    @Test
+    public void testForceRollingUpgrade() throws Exception {
+        doTestRollingUpgrade("2.18.0", "2.19.1", true);
+    }
+
+    /** Performs full rolling upgrade scenario. */
+    private void doTestRollingUpgrade(String curVer, String targetVer, boolean force) throws Exception {
+        IgniteEx ign0 = startGrid(0, curVer, false);
+        IgniteEx ign1 = startGrid(1, curVer, client);
+        IgniteEx ign2 = startGrid(2, curVer, client);
 
         assertClusterSize(3);
 
-        assertRemoteRejected(() -> startGrid(3, "2.18.1", client));
+        assertRemoteRejected(() -> startGrid(3, targetVer, client));
 
-        configureRollingUpgradeVersion(ign0, "2.18.1");
+        configureRollingUpgradeVersion(ign0, targetVer, force);
 
         for (int i = 0; i < 3; i++) {
             int finalI = i;
@@ -165,7 +175,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertClusterSize(2);
 
-        startGrid(2, "2.18.1", client);
+        startGrid(2, targetVer, client);
 
         assertClusterSize(3);
 
@@ -173,7 +183,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertClusterSize(2);
 
-        startGrid(1, "2.18.1", client);
+        startGrid(1, targetVer, client);
 
         assertClusterSize(3);
 
@@ -181,7 +191,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         assertClusterSize(2);
 
-        startGrid(0, "2.18.1", false);
+        startGrid(0, targetVer, false);
 
         assertClusterSize(3);
 
@@ -195,7 +205,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
                 assertFalse(grid(i).context().rollingUpgrade().enabled());
         }
 
-        assertRemoteRejected(() -> startGrid(3, "2.18.0", client));
+        assertRemoteRejected(() -> startGrid(3, curVer, client));
     }
 
     /** */
@@ -315,7 +325,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         IgnitePair<IgniteProductVersion> newPair = F.pair(IgniteProductVersion.fromString("2.18.0"),
             IgniteProductVersion.fromString("2.19.0"));
 
-        grid0.context().rollingUpgrade().enable(newPair.get2());
+        grid0.context().rollingUpgrade().enable(newPair.get2(), false);
 
         assertEnablingFails(grid0, "2.18.1", "Rolling upgrade is already enabled with a different current and target version");
 
@@ -335,7 +345,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
      */
     private void assertEnablingFails(IgniteEx ex, String ver, String errMsg) {
         Throwable e = assertThrows(log,
-            () -> ex.context().rollingUpgrade().enable(IgniteProductVersion.fromString(ver)),
+            () -> ex.context().rollingUpgrade().enable(IgniteProductVersion.fromString(ver), false),
             IgniteException.class,
             null);
 
@@ -470,10 +480,16 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
         return ign;
     }
 
+    /** */
+    private void configureRollingUpgradeVersion(IgniteEx grid, String ver) throws IgniteCheckedException {
+        configureRollingUpgradeVersion(grid, ver, false);
+    }
+
     /**
      * @param ver Version for rolling upgrade support.
+     * @param force Force rolling upgrade.
      */
-    private void configureRollingUpgradeVersion(IgniteEx grid, String ver) throws IgniteCheckedException {
+    private void configureRollingUpgradeVersion(IgniteEx grid, String ver, boolean force) throws IgniteCheckedException {
         if (ver == null) {
             grid.context().rollingUpgrade().disable();
             return;
@@ -481,7 +497,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
 
         IgniteProductVersion target = IgniteProductVersion.fromString(ver);
 
-        grid.context().rollingUpgrade().enable(target);
+        grid.context().rollingUpgrade().enable(target, force);
     }
 
     /**

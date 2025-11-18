@@ -18,9 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.StreamCorruptedException;
-import java.net.Socket;
 import java.util.concurrent.Callable;
 import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
@@ -28,7 +26,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
@@ -177,7 +174,7 @@ public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override protected <T> T readMessage(final Socket sock, @Nullable final InputStream in,
+        @Override protected <T> T readMessage(final TcpDiscoveryIoSession ses,
             final long timeout) throws IOException, IgniteCheckedException {
             if (cnt-- > 0) {
                 if (plain)
@@ -186,7 +183,7 @@ public class TcpDiscoverySslSecuredUnsecuredTest extends GridCommonAbstractTest 
                     throw new SSLException("Test SSL exception");
             }
 
-            return super.readMessage(sock, in, timeout);
+            return super.readMessage(ses, timeout);
         }
     }
 }

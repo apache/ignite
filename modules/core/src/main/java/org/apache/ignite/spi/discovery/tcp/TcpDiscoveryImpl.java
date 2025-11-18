@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -437,6 +438,16 @@ abstract class TcpDiscoveryImpl {
         Collections.sort(res);
 
         return res;
+    }
+
+    /**
+     * Instantiates IO session for exchanging discovery messages with remote node.
+     *
+     * @param sock Socket to remote node.
+     * @return IO session for writing and reading {@link TcpDiscoveryAbstractMessage}.
+     */
+    TcpDiscoveryIoSession createSession(Socket sock) {
+        return new TcpDiscoveryIoSession(sock, spi);
     }
 
     /**

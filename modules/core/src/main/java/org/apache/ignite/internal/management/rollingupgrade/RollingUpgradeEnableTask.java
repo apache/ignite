@@ -52,7 +52,7 @@ public class RollingUpgradeEnableTask extends VisorOneNodeTask<RollingUpgradeEna
             RollingUpgradeProcessor proc = ignite.context().rollingUpgrade();
 
             try {
-                proc.enable(IgniteProductVersion.fromString(arg.targetVersion()));
+                proc.enable(IgniteProductVersion.fromString(arg.targetVersion()), arg.force());
 
                 IgnitePair<IgniteProductVersion> rollUpVers = proc.versions();
 
