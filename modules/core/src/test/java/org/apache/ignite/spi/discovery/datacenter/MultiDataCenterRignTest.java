@@ -66,7 +66,7 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
         String curDcId = null;
 
         for (ClusterNode node : nodes) {
-            if (!node.dataCenterId().equals(curDcId)){
+            if (!node.dataCenterId().equals(curDcId)) {
                 swithes++;
 
                 curDcId = node.dataCenterId();
