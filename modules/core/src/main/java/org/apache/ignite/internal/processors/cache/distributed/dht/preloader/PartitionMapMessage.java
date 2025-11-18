@@ -22,39 +22,39 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/** Partition sizes map. */
-public class PartitionSizesMap implements Message {
+/** Message for partition map. */
+public class PartitionMapMessage implements Message {
     /** Type code. */
     public static final short TYPE_CODE = 514;
 
-    /** Partition sizes map. */
-    @Order(value = 0, method = "partitionSizes")
-    private @Nullable Map<Integer, Long> partSizes;
+    /** Partition map. */
+    @Order(value = 0, method = "partitions")
+    private @Nullable Map<Integer, Long> parts;
 
     /** Default constructor. */
-    public PartitionSizesMap() {
+    public PartitionMapMessage() {
         // No-op.
     }
 
     /**
-     * @param partSizes Partition sizes map.
+     * @param parts Partition map.
      */
-    public PartitionSizesMap(@Nullable Map<Integer, Long> partSizes) {
-        this.partSizes = partSizes;
+    public PartitionMapMessage(@Nullable Map<Integer, Long> parts) {
+        this.parts = parts;
     }
 
     /**
-     * @return Partition sizes map.
+     * @return Partition map.
      */
-    public @Nullable Map<Integer, Long> partitionSizes() {
-        return partSizes;
+    public @Nullable Map<Integer, Long> partitions() {
+        return parts;
     }
 
     /**
-     * @param partSizes Partition sizes map.
+     * @param parts Partition map.
      */
-    public void partitionSizes(Map<Integer, Long> partSizes) {
-        this.partSizes = partSizes;
+    public void partitions(Map<Integer, Long> parts) {
+        this.parts = parts;
     }
 
     /** {@inheritDoc} */
