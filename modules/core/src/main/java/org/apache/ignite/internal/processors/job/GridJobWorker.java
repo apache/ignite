@@ -242,9 +242,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         this.reqTopVer = reqTopVer;
         this.execName = execName;
         this.jobInterruptTimeoutSupplier = jobInterruptTimeoutSupplier;
-
-        if (job != null)
-            this.job = job;
+        this.job = job;
 
         log = U.logger(ctx, logRef, this);
 
