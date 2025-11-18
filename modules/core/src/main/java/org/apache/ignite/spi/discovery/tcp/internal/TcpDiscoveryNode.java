@@ -543,7 +543,14 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         if (node == null)
             return 1;
 
-        int res = Long.compare(internalOrder(), node.internalOrder());
+        String locDcId = dataCenterId() == null ? "" : dataCenterId();
+        String otherDcId = node.dataCenterId() == null ? "" : node.dataCenterId();
+
+        int res = locDcId.compareTo(otherDcId);
+
+        if (res == 0) {
+            res = Long.compare(internalOrder(), node.internalOrder());
+        }
 
         if (res == 0) {
             assert id().equals(node.id()) : "Duplicate order [this=" + this + ", other=" + node + ']';

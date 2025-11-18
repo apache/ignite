@@ -5198,12 +5198,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             pendingMsgs.reset(msg.messages(), msg.discardedMessageId(),
                                 msg.discardedCustomMessageId());
-
-                            // Clear data to minimize message size.
-                            msg.messages(null, null, null);
-                            msg.topology(null);
-                            msg.topologyHistory(null);
-                            msg.clearDiscoveryData();
                         }
                         else {
                             if (log.isDebugEnabled())

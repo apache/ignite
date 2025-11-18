@@ -378,38 +378,13 @@ public class DiscoCache {
      * @return Server node instance.
      */
     @Nullable public ClusterNode serverNodeByOrder(long order) {
-        int idx = serverNodeBinarySearch(order);
-
-        if (idx >= 0)
-            return srvNodes.get(idx);
-
-        return null;
-    }
-
-    /**
-     * @param order Node order.
-     * @return Node index.
-     */
-    private int serverNodeBinarySearch(long order) {
-        int low = 0;
-        int high = srvNodes.size() - 1;
-
-        while (low <= high) {
-            int mid = (low + high) >>> 1;
-
-            ClusterNode midVal = srvNodes.get(mid);
-
-            int cmp = Long.compare(midVal.order(), order);
-
-            if (cmp < 0)
-                low = mid + 1;
-            else if (cmp > 0)
-                high = mid - 1;
-            else
-                return mid;
+        for (ClusterNode node : srvNodes) {
+            if (node.order() == order) {
+                return node;
+            }
         }
 
-        return -(low + 1);
+        return null;
     }
 
     /**
