@@ -144,25 +144,33 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
     /** */
     @Test
     public void testRollingUpgrade() throws Exception {
-        IgniteEx ign = startGrid(0);
+        IgniteEx ign = startGrid(
+            0,
+            userData(TEST_NO_PERMISSIONS_LOGIN, NO_PERMISSIONS),
+            userData(TEST_LOGIN, systemPermissions(ADMIN_ROLLING_UPGRADE))
+        );
 
         IgniteProductVersion curVer = IgniteProductVersion.fromString(ign.localNode().attribute(ATTR_BUILD_VER));
-
         String targetVerStr = curVer.major() + "." + (curVer.minor() + 1) + ".0";
 
+        List<String> cmdArgs = asList("--rolling-upgrade", "enable", targetVerStr);
 
-        checkCommandPermissions(
-            asList("--rolling-upgrade", "enable", targetVerStr),
-            systemPermissions(ADMIN_ROLLING_UPGRADE)
-        );
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
+
+        assertFalse(ign.context().rollingUpgrade().enabled());
+
+        assertEquals(EXIT_CODE_OK, execute(enrichWithConnectionArguments(cmdArgs, TEST_LOGIN)));
 
         assertTrue(ign.context().rollingUpgrade().enabled());
         assertEquals(IgniteProductVersion.fromString(targetVerStr), ign.context().rollingUpgrade().versions().get2());
 
-        checkCommandPermissions(
-            asList("--rolling-upgrade", "disable"),
-            systemPermissions(ADMIN_ROLLING_UPGRADE)
-        );
+        cmdArgs = asList("--rolling-upgrade", "disable");
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
+
+        assertTrue(ign.context().rollingUpgrade().enabled());
+
+        assertEquals(EXIT_CODE_OK, execute(enrichWithConnectionArguments(cmdArgs, TEST_LOGIN)));
 
         assertFalse(ign.context().rollingUpgrade().enabled());
     }
