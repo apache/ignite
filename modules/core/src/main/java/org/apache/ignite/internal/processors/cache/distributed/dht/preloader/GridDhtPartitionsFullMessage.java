@@ -61,7 +61,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     private Map<Integer, GridDhtPartitionFullMap> parts;
 
     /**
-     * Serializer local partitions.
+     * Serialized local partitions.
      * <p>
      * TODO Remove this field after completing task IGNITE-26976.
      */
