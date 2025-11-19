@@ -48,7 +48,9 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
 
         boolean order = rnd.nextBoolean();
 
-        for (int i = 0; i < 10; i += 2) {
+        int cnt = 10;
+
+        for (int i = 0; i < cnt; i += 2) {
             System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, order ? DC_ID_0 : DC_ID_1);
 
             startGrid(i);
@@ -58,9 +60,11 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
             startGrid(i + 1);
         }
 
-        waitForTopology(10);
+        waitForTopology(cnt);
 
-        Collection<ClusterNode> nodes = grid(0).cluster().forServers().nodes();
+        Collection<ClusterNode> nodes = grid(rnd.nextInt(cnt)).cluster().forServers().nodes();
+
+        assertEquals(cnt, nodes.size());
 
         int swithes = 0;
         String curDcId = null;
