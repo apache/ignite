@@ -437,20 +437,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /**
-     * @return Topology version.
-     */
-    @Override public AffinityTopologyVersion topologyVersion() {
-        return topVer;
-    }
-
-    /**
-     * @param topVer Topology version.
-     */
-    public void topologyVersion(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-    }
-
-    /**
      * @return Duplicated partitions data.
      */
     public Map<Integer, Integer> duplicatedPartitionsData() {
@@ -555,6 +541,20 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             if (!F.isEmpty(parts) && partsBytes == null)
                 partsBytes = iter.next();
         }
+    }
+
+    /**
+     * @return Topology version.
+     */
+    @Override public AffinityTopologyVersion topologyVersion() {
+        return topVer;
+    }
+
+    /**
+     * @param topVer Topology version.
+     */
+    public void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */
