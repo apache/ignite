@@ -78,5 +78,12 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
         }
 
         assertEquals(2, swithes);
+
+        stopGrid(cnt - 1);
+        stopGrid(0);
+
+        nodes = grid(cnt / 2).cluster().nodes();
+
+        assertEquals(cnt - 2, nodes.size());
     }
 }
