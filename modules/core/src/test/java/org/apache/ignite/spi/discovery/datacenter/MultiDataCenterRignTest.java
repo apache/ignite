@@ -62,7 +62,7 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
 
         waitForTopology(cnt);
 
-        Collection<ClusterNode> nodes = grid(rnd.nextInt(cnt)).cluster().forServers().nodes();
+        Collection<ClusterNode> nodes = grid(rnd.nextInt(cnt)).cluster().nodes();
 
         assertEquals(cnt, nodes.size());
 
