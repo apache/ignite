@@ -3904,7 +3904,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     boolean failedNextNode = sndState == null || sndState.markNextNodeFailed();
 
-                    if (failedNextNode && !failedNodes.containsValue(next.id())) {
+                    if (failedNextNode && !failedNodes.containsKey(next)) {
                         failedNodes.put(next, next.id());
 
                         if (state == CONNECTED) {
