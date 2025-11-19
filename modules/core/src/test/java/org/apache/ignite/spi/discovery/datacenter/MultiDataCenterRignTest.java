@@ -66,6 +66,19 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
 
         assertEquals(cnt, nodes.size());
 
+        checkSwitches(2, nodes);
+
+        stopGrid(cnt - 1);
+        stopGrid(0);
+
+        nodes = grid(cnt / 2).cluster().nodes();
+
+        assertEquals(cnt - 2, nodes.size());
+
+        checkSwitches(2, nodes);
+    }
+
+    private void checkSwitches(int expected, Collection<ClusterNode> nodes){
         int swithes = 0;
         String curDcId = null;
 
@@ -77,13 +90,6 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
             }
         }
 
-        assertEquals(2, swithes);
-
-        stopGrid(cnt - 1);
-        stopGrid(0);
-
-        nodes = grid(cnt / 2).cluster().nodes();
-
-        assertEquals(cnt - 2, nodes.size());
+        assertEquals(expected, swithes);
     }
 }
