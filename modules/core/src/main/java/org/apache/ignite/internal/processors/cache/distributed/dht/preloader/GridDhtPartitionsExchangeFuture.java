@@ -4660,9 +4660,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         assert partHistSuppliers.isEmpty();
 
-        partHistSuppliers.putAll(
-            msg.partitionHistorySuppliers() != null ? msg.partitionHistorySuppliers() : IgniteDhtPartitionHistorySuppliersMap.empty()
-        );
+        partHistSuppliers.putAll(msg.partitionHistorySuppliers() != null ? msg.partitionHistorySuppliers() :
+            IgniteDhtPartitionHistorySuppliersMap.empty());
 
         // Reserve at least 2 threads for system operations.
         int parallelismLvl = U.availableThreadCount(cctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);

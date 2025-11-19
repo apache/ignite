@@ -100,7 +100,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     private Map<UUID, Throwable> errs;
 
     /**
-     * Used as a stub for serialization {@link #errs}.
+     * Used as a stub for serialization of {@link #errs}.
      * All logic resides within getter and setter.
      */
     @Order(value = 13, method = "errorMessages")
