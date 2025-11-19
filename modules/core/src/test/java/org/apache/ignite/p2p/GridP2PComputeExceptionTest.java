@@ -19,17 +19,15 @@ package org.apache.ignite.p2p;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.net.MalformedURLException;
 import java.net.URL;
 import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -37,11 +35,11 @@ import org.junit.Test;
 /** */
 public class GridP2PComputeExceptionTest extends GridCommonAbstractTest {
     /** */
-    private static final String RUN_WITH_SERIALIZABLE_EX =
+    private static final String RUN_WITH_SER_EX =
         "org.apache.ignite.tests.p2p.compute.ExternalRunnableWithSerializableException";
 
     /** */
-    private static final String RUN_WITH_EXTERNALIZABLE_EX =
+    private static final String RUN_WITH_EXT_EX =
         "org.apache.ignite.tests.p2p.compute.ExternalRunnableWithExternalizableException";
 
     /** */
@@ -49,30 +47,47 @@ public class GridP2PComputeExceptionTest extends GridCommonAbstractTest {
         "org.apache.ignite.tests.p2p.compute.ExternalTaskWithBrokenExceptionSerialization";
 
     /** */
-    private static final String SERIALIZABLE_EXCEPTION_CLS_NAME = "SerializableException";
+    private static final String SER_EX_CLS_NAME = "SerializableException";
 
     /** */
-    private static final String EXTERNALIZABLE_EXCEPTION_CLS_NAME = "ExternalizableException";
+    private static final String EXT_EX_CLS_NAME = "ExternalizableException";
 
     /** */
-    private static final String MSG = "Message from Exception";
+    private static final String EXT_EX_WITH_BROKEN_SERDES_CLS_NAME = "ExternalizableExceptionWithBrokenSerialization";
 
     /** */
-    private static final int CODE = 127;
+    public static final String EX_MSG = "Message from Exception";
 
     /** */
-    private static final String DETAILS = "Details from Exception";
+    public static final int EX_CODE = 127;
 
     /** */
-    private static final String SERIALIZATION_EX_MSG = "Failed to serialize job exception";
+    public static final String EX_DETAILS = "Details from Exception";
 
     /** */
-    private static final String UNMARSHAL_EX_MSG = "Failed to unmarshal object with optimized marshaller";
+    private static final String EX_BROKEN_SER_MSG = "Exception occurred on serialization step";
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setPeerClassLoadingEnabled(true);
+    /** */
+    private static final String EX_REMOTE_JOB_MSG = "Remote job threw user exception";
+
+    /** */
+    private static final String EX_UNMARSHAL_MSG = "Failed to unmarshal object with optimized marshaller";
+
+    /** */
+    private static final String EX_DESERIALIZE_MSG = "Failed to deserialize object with given class loader";
+
+    /** Test class loader. */
+    private static final ClassLoader TEST_CLS_LDR;
+
+    static {
+        try {
+            URL[] urls = new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))};
+
+            TEST_CLS_LDR = new GridTestExternalClassLoader(urls);
+        }
+        catch (MalformedURLException e) {
+            throw new RuntimeException("Define property p2p.uri.cls", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -82,72 +97,74 @@ public class GridP2PComputeExceptionTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testSerializableException() throws Exception {
-        testException(RUN_WITH_SERIALIZABLE_EX, SERIALIZABLE_EXCEPTION_CLS_NAME);
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName).setPeerClassLoadingEnabled(true);
     }
 
     /**
      * @throws Exception if failed.
      */
     @Test
-    public void testExternalizableException() throws Exception {
-        testException(RUN_WITH_EXTERNALIZABLE_EX, EXTERNALIZABLE_EXCEPTION_CLS_NAME);
+    public void testComputeRunnableWithSerializableException() throws Exception {
+        testComputeRunnableWithException(RUN_WITH_SER_EX, SER_EX_CLS_NAME);
     }
 
     /**
      * @throws Exception if failed.
      */
     @Test
-    public void testBrokenSerialization() throws Exception {
-        testTaskException(TASK_WITH_BROKEN_SERDES_EX, true);
-    }
-
-    /**
-     * @throws Exception if failed.
-     */
-    @Test
-    public void testBrokenDeserialization() throws Exception {
-        testTaskException(TASK_WITH_BROKEN_SERDES_EX, false);
+    public void testComputeRunnableWithExternalizableException() throws Exception {
+        testComputeRunnableWithException(RUN_WITH_EXT_EX, EXT_EX_CLS_NAME);
     }
 
     /** */
-    private void testException(String runnableBinaryName, String exClsName) throws Exception {
-        try (IgniteEx ignite = startGrid(0); IgniteEx cli = startClientGrid()) {
-            IgniteCompute computeForRemotes = cli.compute(ignite.cluster().forRemotes());
+    private void testComputeRunnableWithException(String runnableBinaryName, String exClsName) throws Exception {
+        try (IgniteEx ignite = startGrids(3); IgniteEx cli = startClientGrid()) {
+            Constructor<?> ctor = TEST_CLS_LDR.loadClass(runnableBinaryName).getConstructor();
 
-            ClassLoader testClsLdr = new GridTestExternalClassLoader(
-                new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))}
-            );
+            IgniteCompute compute = cli.compute(cli.cluster().forRemotes());
 
-            Constructor<?> ctor = testClsLdr.loadClass(runnableBinaryName).getConstructor();
+            assertThrows(() -> compute.run((IgniteRunnable)ctor.newInstance()), exClsName);
 
-            assertThrows(() -> computeForRemotes.run((IgniteRunnable)ctor.newInstance()), exClsName);
+            assertEquals(4, ignite.cluster().topologyVersion());
         }
     }
 
-    /** */
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testBrokenExceptionSerialization() throws Exception {
+        testComputeTaskWithBrokenException(TASK_WITH_BROKEN_SERDES_EX, true);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void testBrokenExceptionDeserialization() throws Exception {
+        testComputeTaskWithBrokenException(TASK_WITH_BROKEN_SERDES_EX, false);
+    }
+
+    /**
+     * @param taskBinaryName ComputeTask class binary name
+     * @param isSerializationBroken {@code True} - if serialization step is broken,
+     *                              {@code False} - if deserialization step is broken
+     */
     @SuppressWarnings("unchecked")
-    private void testTaskException(String runnableBinaryName, boolean isSerializationBroken) throws Exception {
+    private void testComputeTaskWithBrokenException(String taskBinaryName, boolean isSerializationBroken) throws Exception {
         try (IgniteEx ignite = startGrids(3); IgniteEx cli = startClientGrid()) {
-            IgniteCompute computeForRemotes = cli.compute(ignite.cluster().forRemotes());
+            IgniteCompute compute = cli.compute(cli.cluster().forRemotes());
 
-            ClassLoader testClsLdr = new GridTestExternalClassLoader(
-                new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))}
-            );
-
-            Constructor<?> ctor = testClsLdr.loadClass(runnableBinaryName).getConstructor(boolean.class);
+            Constructor<?> ctor = TEST_CLS_LDR.loadClass(taskBinaryName).getConstructor(boolean.class);
 
             ComputeTask<Object, Object> task = (ComputeTask<Object, Object>)ctor.newInstance(isSerializationBroken);
 
-            GridTestUtils.assertThrows(
-                log,
-                () -> computeForRemotes.execute(task, null),
-                isSerializationBroken ? IgniteException.class : BinaryObjectException.class,
-                isSerializationBroken ? SERIALIZATION_EX_MSG : UNMARSHAL_EX_MSG);
+            if (isSerializationBroken)
+                compute.execute(task, null);
+            else
+                assertThrows(() -> compute.execute(task, null), EXT_EX_WITH_BROKEN_SERDES_CLS_NAME);
 
             assertEquals(4, ignite.cluster().topologyVersion());
         }
@@ -168,10 +185,16 @@ public class GridP2PComputeExceptionTest extends GridCommonAbstractTest {
             Throwable ex = getCauseForRemoteJobException(e);
 
             if (clsName.equals(ex.getClass().getSimpleName())) {
-                assertEquals(MSG, ex.getMessage());
+                if (clsName.equals(EXT_EX_WITH_BROKEN_SERDES_CLS_NAME)) {
+                    assertEquals(EX_BROKEN_SER_MSG, ex.getMessage());
+
+                    return;
+                }
+
+                assertEquals(EX_MSG, ex.getMessage());
                 assertNotNull(ex.getStackTrace());
-                assertFieldEquals(ex, "code", CODE);
-                assertFieldEquals(ex, "details", DETAILS);
+                assertFieldEquals(ex, "code", EX_CODE);
+                assertFieldEquals(ex, "details", EX_DETAILS);
 
                 return;
             }
@@ -186,10 +209,17 @@ public class GridP2PComputeExceptionTest extends GridCommonAbstractTest {
     private Throwable getCauseForRemoteJobException(Throwable e) {
         Throwable cause = e;
 
-        while (cause.getCause() != null && cause.getMessage().contains("Remote job threw user exception"))
+        while (cause.getCause() != null && skipToCause(e))
             cause = cause.getCause();
 
         return cause;
+    }
+
+    /** */
+    private boolean skipToCause(Throwable ex) {
+        return (ex.getMessage().contains(EX_REMOTE_JOB_MSG) ||
+            ex.getMessage().contains(EX_UNMARSHAL_MSG) ||
+            ex.getMessage().contains(EX_DESERIALIZE_MSG));
     }
 
     /** */
