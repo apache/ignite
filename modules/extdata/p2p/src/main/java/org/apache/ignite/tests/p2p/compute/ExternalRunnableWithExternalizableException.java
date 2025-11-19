@@ -28,21 +28,21 @@ import org.apache.ignite.lang.IgniteRunnable;
 /** */
 public class ExternalRunnableWithExternalizableException implements IgniteRunnable {
     /** */
-    private static final String MSG = "Message from Exception";
+    private static final String EX_MSG = "Message from Exception";
 
     /** */
-    private static final int CODE = 127;
+    private static final int EX_CODE = 127;
 
     /** */
-    private static final String DETAILS = "Details from Exception";
+    private static final String EX_DETAILS = "Details from Exception";
 
     /** {@inheritDoc} */
     @Override public void run() {
-        throw new ExternalizableException(MSG, CODE, DETAILS);
+        throw new ExternalizableException(EX_MSG, EX_CODE, EX_DETAILS);
     }
 
     /** Custom {@link Externalizable} Exception */
-    private static class ExternalizableException extends IgniteException implements Externalizable {
+    public static class ExternalizableException extends IgniteException implements Externalizable {
         /** */
         protected int code;
 

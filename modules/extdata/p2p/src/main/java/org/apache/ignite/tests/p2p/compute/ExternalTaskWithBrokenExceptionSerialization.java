@@ -36,11 +36,11 @@ import org.jetbrains.annotations.Nullable;
 
 /** */
 public class ExternalTaskWithBrokenExceptionSerialization extends ComputeTaskAdapter<Object, Object> {
-    /** Message 1. */
-    private static final String JOB_EXEC_MSG = "Error occurred while executing the job step";
+    /** */
+    private static final String EX_MSG = "Message from Exception";
 
-    /** Message 2. */
-    private static final String SER_MSG = "Error occurred on serialization step";
+    /** */
+    private static final String EX_BROKEN_SER_MSG = "Exception occurred on serialization step";
 
     /** */
     private final boolean isSerializationBroken;
@@ -64,13 +64,13 @@ public class ExternalTaskWithBrokenExceptionSerialization extends ComputeTaskAda
     private ComputeJobAdapter job() {
         return new ComputeJobAdapter() {
             @Override public Object execute() throws IgniteException {
-                throw new ExternalizableExceptionWothBrokenSerialization(JOB_EXEC_MSG, true, isSerializationBroken);
+                throw new ExternalizableExceptionWithBrokenSerialization(EX_MSG, true, isSerializationBroken);
             }
         };
     }
 
     /** Custom {@link Externalizable} Exception */
-    private static class ExternalizableExceptionWothBrokenSerialization extends IgniteException implements Externalizable {
+    public static class ExternalizableExceptionWithBrokenSerialization extends IgniteException implements Externalizable {
         /** */
         private boolean isBroken;
 
@@ -78,12 +78,12 @@ public class ExternalTaskWithBrokenExceptionSerialization extends ComputeTaskAda
         private boolean isSerializationBroken;
 
         /** */
-        public ExternalizableExceptionWothBrokenSerialization() {
+        public ExternalizableExceptionWithBrokenSerialization() {
             // No-op.
         }
 
         /** */
-        public ExternalizableExceptionWothBrokenSerialization(String msg, boolean isBroken, boolean isSerializationBroken) {
+        public ExternalizableExceptionWithBrokenSerialization(String msg, boolean isBroken, boolean isSerializationBroken) {
             super(msg);
 
             this.isBroken = isBroken;
@@ -113,7 +113,7 @@ public class ExternalTaskWithBrokenExceptionSerialization extends ComputeTaskAda
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             if (isBroken() && isSerializationBroken())
-                throw new ExternalizableExceptionWothBrokenSerialization(SER_MSG, false, false);
+                throw new ExternalizableExceptionWithBrokenSerialization(EX_BROKEN_SER_MSG, false, false);
 
             out.writeBoolean(isBroken());
             out.writeBoolean(isSerializationBroken());
@@ -128,7 +128,7 @@ public class ExternalTaskWithBrokenExceptionSerialization extends ComputeTaskAda
             setSerializationBroken(in.readBoolean());
 
             if (isBroken() && !isSerializationBroken())
-                throw new ExternalizableExceptionWothBrokenSerialization(SER_MSG, false, false);
+                throw new ExternalizableExceptionWithBrokenSerialization(EX_BROKEN_SER_MSG, false, false);
 
             String msg = (String)in.readObject();
 
