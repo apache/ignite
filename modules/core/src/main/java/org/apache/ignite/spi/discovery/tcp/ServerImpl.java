@@ -1780,8 +1780,13 @@ class ServerImpl extends TcpDiscoveryImpl {
         synchronized (mux) {
             Collection<UUID> excluded = F.concat(false, failedNodes.values(), joiningNodes);
 
-            for (TcpDiscoveryNode node : leavingNodes) {
-                excluded.add(node.id());
+            if (!leavingNodes.isEmpty()) {
+                Collection<UUID> leaving = new ArrayList<>();
+
+                for (TcpDiscoveryNode node : leavingNodes)
+                    leaving.add(node.id());
+
+                excluded = F.concat(false, excluded, leaving);
             }
 
             return ring.coordinator(excluded);
