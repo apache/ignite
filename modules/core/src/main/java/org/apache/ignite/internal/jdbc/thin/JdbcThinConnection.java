@@ -301,6 +301,14 @@ public class JdbcThinConnection implements Connection {
 
         schema = JdbcUtils.normalizeSchema(connProps.getSchema());
 
+        if (connProps.isLocal()) {
+            if (connProps.getAddresses().length != 1
+                || connProps.getAddresses()[0].portFrom() != connProps.getAddresses()[0].portTo()) {
+                LOG.warning("Local flag is supposed to be used only when exactly one address is specified, " +
+                    "otherwise the local query may be executed on an unexpected node");
+            }
+        }
+
         partitionAwareness = connProps.isPartitionAwareness();
 
         if (partitionAwareness) {
