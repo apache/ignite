@@ -17,7 +17,11 @@
 
 package org.apache.ignite.util;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeCommand;
+import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeStatusCommand;
+import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeStatusNode;
 import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeTaskResult;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.junit.Test;
@@ -38,6 +42,9 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
 
     /** */
     public static final String ROLLING_UPGRADE = "--rolling-upgrade";
+
+    /** */
+    public static final String STATUS = "status";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -176,5 +183,95 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         assertEquals(targetVer, taskRes.targetVersion());
 
         assertTrue(crd.context().rollingUpgrade().enabled());
+    }
+
+    /** */
+    @Test
+    public void testStatusWhenDisabled() {
+        int res = execute(ROLLING_UPGRADE, STATUS);
+
+        assertEquals(EXIT_CODE_OK, res);
+
+        RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult)lastOperationResult;
+
+        assertNull(taskRes.errorMessage());
+        assertNull(taskRes.currentVersion());
+        assertNull(taskRes.targetVersion());
+
+        List<RollingUpgradeStatusNode> nodes = taskRes.nodes();
+
+        assertNotNull(nodes);
+        assertEquals(SERVER_NODE_CNT + 1, nodes.size());
+
+        IgniteProductVersion curVer = IgniteProductVersion.fromString(crd.localNode().attribute(ATTR_BUILD_VER));
+
+        nodes.forEach(node -> assertEquals(curVer, node.version()));
+
+        RollingUpgradeStatusCommand statusCmd = new RollingUpgradeStatusCommand();
+
+        List<String> lines = new ArrayList<>();
+
+        statusCmd.printResult(null, taskRes, lines::add);
+
+        List<String> expectedLines = new ArrayList<>();
+
+        expectedLines.add("Rolling upgrade status: disabled");
+        expectedLines.add("Cluster nodes and their versions:");
+
+        nodes.forEach(node -> expectedLines.add("  NodeId=" + node.nodeId() + ", Version=" + node.version()));
+
+        assertEquals(expectedLines, lines);
+    }
+
+    /** */
+    @Test
+    public void testStatusWhenEnabled() {
+        IgniteProductVersion curVer = IgniteProductVersion.fromString(crd.localNode().attribute(ATTR_BUILD_VER));
+
+        String targetVerStr = curVer.major() + "." + (curVer.minor() + 1) + "." + curVer.maintenance();
+        IgniteProductVersion targetVer = IgniteProductVersion.fromString(targetVerStr);
+
+        int res = execute(ROLLING_UPGRADE, ENABLE, targetVerStr);
+
+        assertEquals(EXIT_CODE_OK, res);
+
+        RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult)lastOperationResult;
+
+        assertNull(taskRes.errorMessage());
+
+        res = execute(ROLLING_UPGRADE, STATUS);
+
+        assertEquals(EXIT_CODE_OK, res);
+
+        taskRes = (RollingUpgradeTaskResult)lastOperationResult;
+
+        assertNull(taskRes.errorMessage());
+        assertEquals(curVer, taskRes.currentVersion());
+        assertEquals(targetVer, taskRes.targetVersion());
+
+        List<RollingUpgradeStatusNode> nodes = taskRes.nodes();
+
+        assertNotNull(nodes);
+        assertEquals(SERVER_NODE_CNT + 1, nodes.size());
+        nodes.forEach(node -> assertEquals(curVer, node.version()));
+
+        RollingUpgradeStatusCommand statusCmd = new RollingUpgradeStatusCommand();
+
+        List<String> lines = new ArrayList<>();
+
+        statusCmd.printResult(null, taskRes, lines::add);
+
+        List<String> expectedLines = new ArrayList<>();
+
+        expectedLines.add("Rolling upgrade status: enabled");
+        expectedLines.add("Current version: " + curVer);
+        expectedLines.add("Target version: " + targetVer);
+        expectedLines.add("Cluster nodes and their versions:");
+
+        nodes.forEach(node ->
+            expectedLines.add("  NodeId=" + node.nodeId() + ", Version=" + node.version())
+        );
+
+        assertEquals(expectedLines, lines);
     }
 }
