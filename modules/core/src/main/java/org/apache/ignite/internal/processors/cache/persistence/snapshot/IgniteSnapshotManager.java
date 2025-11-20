@@ -779,6 +779,9 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!CU.baselineNode(cctx.localNode(), cctx.kernalContext().state().clusterState()))
             return new GridFinishedFuture<>();
 
+        if (log.isInfoEnabled())
+            log.info("Starting local snapshot operation [req=" + req + ']');
+
         Set<UUID> leftNodes = new HashSet<>(req.nodes());
         leftNodes.removeAll(F.viewReadOnly(cctx.discovery().serverNodes(AffinityTopologyVersion.NONE), node2id()));
 
@@ -1279,8 +1282,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                         enableIncrementalSnapshotsCreation(grpIds);
                     }
                 }
+
+                if (log.isInfoEnabled())
+                    log.info("Finishing local snapshot operation [req=" + req + ']');
             }
             catch (Exception e) {
+                log.error("Finishing local snapshot operation failed " +
+                    "[req=" + req + ", err=" + e + ']');
+
                 throw F.wrap(e);
             }
 

@@ -26,6 +26,7 @@ import org.apache.ignite.spi.discovery.FilterDataForClientNodeDiscoveryTest;
 import org.apache.ignite.spi.discovery.IgniteClientReconnectEventHandlingTest;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryCacheReuseSelfTest;
 import org.apache.ignite.spi.discovery.LongClientConnectToClusterTest;
+import org.apache.ignite.spi.discovery.datacenter.MultiDataCenterClientRoutingTest;
 import org.apache.ignite.spi.discovery.datacenter.MultiDataCenterDeploymentTest;
 import org.apache.ignite.spi.discovery.datacenter.MultiDataCenterRignTest;
 import org.apache.ignite.spi.discovery.tcp.DiscoveryClientSocketTest;
@@ -187,6 +188,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 
     MultiDataCenterDeploymentTest.class,
     MultiDataCenterRignTest.class,
+    MultiDataCenterClientRoutingTest.class,
 })
 public class IgniteSpiDiscoverySelfTestSuite {
     /** */
