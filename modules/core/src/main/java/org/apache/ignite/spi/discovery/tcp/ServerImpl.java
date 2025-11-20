@@ -3962,7 +3962,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 synchronized (mux) {
                     for (TcpDiscoveryNode failedNode : failedNodes.keySet()) {
                         if (!ServerImpl.this.failedNodes.containsKey(failedNode))
-                            ServerImpl.this.failedNodes.put(failedNode, failedNode.id());
+                            ServerImpl.this.failedNodes.put(failedNode, locNodeId);
                     }
 
                     for (TcpDiscoveryNode failedNode : failedNodes.keySet())
