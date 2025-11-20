@@ -333,8 +333,15 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             assertTrue(waitForCondition(() -> {
                 MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(nodeId));
 
-                return mreg == null || !mreg.iterator().hasNext();
-            }, getTestTimeout()));
+                if (mreg == null || !mreg.iterator().hasNext())
+                    return true;
+
+                log.error("TEST | still has metrics for node=" + nodeId + ", order=" + nodeOrder);
+
+                dumpMetrics(ldr);
+
+                return false;
+            }, 10_000, 1_000));
 
             log.error("TEST | step 11, node order=" + nodeOrder);
         }
@@ -499,9 +506,6 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
     /** */
     private static void dumpMetrics(Ignite ldr) {
-        if (!log.isInfoEnabled())
-            return;
-
         GridMetricManager metricsMgr = ((IgniteEx)ldr).context().metric();
 
         for (Ignite node : G.allGrids()) {
@@ -521,7 +525,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
                 b.append(m.name()).append(" = ").append(m.getAsString());
             }
 
-            log.info(b.toString());
+            log.error(b.toString());
         }
     }
 
