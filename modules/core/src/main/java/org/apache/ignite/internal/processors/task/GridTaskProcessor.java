@@ -994,12 +994,10 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 if (node != null) {
                     boolean loc = node.id().equals(ctx.localNodeId()) && !ctx.config().isMarshalLocalJobs();
 
-                    GridTaskSessionRequest req = new GridTaskSessionRequest(
-                        ses.getId(),
-                        s.getJobId(),
-                        loc ? null : U.marshal(marsh, attrs),
-                        attrs
-                    );
+                    GridTaskSessionRequest req = new GridTaskSessionRequest(ses.getId(), s.getJobId(), attrs);
+
+                    if (!loc)
+                        req.marshalAttributes(marsh);
 
                     // Make sure to go through IO manager always, since order
                     // should be preserved here.
@@ -1059,7 +1057,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         lock.readLock();
 
         try {
-            GridTaskWorker<?, ?> task = tasks.get(msg.getSessionId());
+            GridTaskWorker<?, ?> task = tasks.get(msg.sessionId());
 
             if (stopping && !waiting) {
                 U.warn(log, "Received job execution response while stopping grid (will ignore): " + msg
@@ -1096,7 +1094,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         lock.readLock();
 
         try {
-            GridTaskWorker<?, ?> task = tasks.get(msg.getSessionId());
+            GridTaskWorker<?, ?> task = tasks.get(msg.sessionId());
 
             if (stopping && !waiting) {
                 U.warn(log, "Received task session request while stopping grid (will ignore): " + msg
@@ -1114,13 +1112,12 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
             boolean loc = ctx.localNodeId().equals(nodeId) && !ctx.config().isMarshalLocalJobs();
 
-            Map<?, ?> attrs = loc ? msg.getAttributes() :
-                U.<Map<?, ?>>unmarshal(marsh, msg.getAttributesBytes(),
-                    U.resolveClassLoader(task.getTask().getClass().getClassLoader(), ctx.config()));
+            if (!loc)
+                msg.unmarshalAttributes(marsh, U.resolveClassLoader(task.getTask().getClass().getClassLoader(), ctx.config()));
 
             GridTaskSessionImpl ses = task.getSession();
 
-            sendSessionAttributes(attrs, ses);
+            sendSessionAttributes(msg.attributes(), ses);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to deserialize session request: " + msg, e);
@@ -1415,11 +1412,12 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
                     boolean loc = ctx.localNodeId().equals(nodeId);
 
-                    ctx.io().sendToCustomTopic(nodeId, topic,
-                        new GridJobSiblingsResponse(
-                            loc ? siblings : null,
-                            loc ? null : U.marshal(marsh, siblings)),
-                        SYSTEM_POOL);
+                    GridJobSiblingsResponse resp = new GridJobSiblingsResponse(siblings);
+
+                    if (!loc)
+                        resp.marshalSiblings(marsh);
+
+                    ctx.io().sendToCustomTopic(nodeId, topic, resp, SYSTEM_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send job sibling response.", e);

@@ -323,12 +323,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
 
     /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectValueContext cacheCtx) throws IgniteCheckedException {
-        if (valBytes != null)
-            return valBytes;
-
-        valBytes = Marshallers.marshal(ctx.marshaller(), this);
-
-        return valBytes;
+        return valueBytes();
     }
 
     /** {@inheritDoc} */
@@ -382,15 +377,21 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
 
     /** {@inheritDoc} */
     @Override public int size() {
-        if (valBytes == null) {
-            try {
-                valBytes = Marshallers.marshal(ctx.marshaller(), this);
-            }
-            catch (IgniteCheckedException e) {
-                throw CommonUtils.convertException(e);
-            }
+        try {
+            return valueBytes().length;
         }
+        catch (IgniteCheckedException e) {
+            throw CommonUtils.convertException(e);
+        }
+    }
 
-        return BinaryPrimitives.readInt(valBytes, ord + GridBinaryMarshaller.TOTAL_LEN_POS);
+    /** */
+    private byte[] valueBytes() throws IgniteCheckedException {
+        if (valBytes != null)
+            return valBytes;
+
+        valBytes = Marshallers.marshal(ctx.marshaller(), this);
+
+        return valBytes;
     }
 }
