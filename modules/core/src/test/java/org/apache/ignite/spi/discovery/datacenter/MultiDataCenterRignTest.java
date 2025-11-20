@@ -78,6 +78,7 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
         checkSwitches(2, nodes);
     }
 
+    /** */
     private void checkSwitches(int expected, Collection<ClusterNode> nodes) {
         int swithes = 0;
         String curDcId = null;
