@@ -245,21 +245,23 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
 
         Consumer<IgniteConfiguration> cfgC = cfg -> {
             TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
-                @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
+                @Override public void setNodeAttributes(Map<String, Object> attrs,
+                    IgniteProductVersion ver) {
                     super.setNodeAttributes(attrs, ver);
                     attrs.put(ATTR_BUILD_VER, targetVerStr);
                 }
             };
-
-            discoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
+            discoSpi.setIpFinder(sharedStaticIpFinder);
             cfg.setDiscoverySpi(discoSpi);
         };
 
         try (IgniteEx ignored = startGrid(SERVER_NODE_CNT + 1, cfgC)) {
             res = execute(ROLLING_UPGRADE, STATUS);
-        }
 
-        assertEquals(EXIT_CODE_OK, res);
+            assertEquals(EXIT_CODE_OK, res);
+
+            crd.context().rollingUpgrade().disable();
+        }
 
         RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult)lastOperationResult;
 
