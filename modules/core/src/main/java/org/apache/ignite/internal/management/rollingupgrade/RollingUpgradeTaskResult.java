@@ -49,7 +49,12 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
     }
 
     /** */
-    public RollingUpgradeTaskResult(IgniteProductVersion curVer, IgniteProductVersion targetVer, String errMsg, List<RollingUpgradeStatusNode> nodes) {
+    public RollingUpgradeTaskResult(
+        IgniteProductVersion curVer,
+        IgniteProductVersion targetVer,
+        String errMsg,
+        List<RollingUpgradeStatusNode> nodes
+    ) {
         this.curVer = curVer;
         this.targetVer = targetVer;
         this.errMsg = errMsg;
