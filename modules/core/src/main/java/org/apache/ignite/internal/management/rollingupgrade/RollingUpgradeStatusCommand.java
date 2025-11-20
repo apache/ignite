@@ -62,11 +62,7 @@ public class RollingUpgradeStatusCommand implements ComputeCommand<NoArg, Rollin
         }
 
         res.nodes().stream()
-            .collect(Collectors.groupingBy(
-                RollingUpgradeStatusNode::version,
-                TreeMap::new,
-                Collectors.toList()
-            ))
+            .collect(Collectors.groupingBy(RollingUpgradeStatusNode::version, TreeMap::new, Collectors.toList()))
             .forEach((ver, nodes) -> {
                 printer.accept("Version " + ver + ":");
                 nodes.forEach(node -> printer.accept("  " + node.nodeId()));
