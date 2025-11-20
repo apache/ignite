@@ -3945,7 +3945,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             synchronized (mux) {
-                failedNodes.keySet().removeAll(ServerImpl.this.failedNodes.keySet());
+                for (TcpDiscoveryNode node : ServerImpl.this.failedNodes.keySet())
+                    failedNodes.remove(node);
             }
 
             if (!failedNodes.isEmpty()) {
