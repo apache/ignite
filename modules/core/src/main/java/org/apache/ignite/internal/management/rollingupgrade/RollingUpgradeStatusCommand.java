@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.management.rollingupgrade;
 
 import java.util.Collection;
+import java.util.TreeMap;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.ComputeCommand;
@@ -54,16 +56,21 @@ public class RollingUpgradeStatusCommand implements ComputeCommand<NoArg, Rollin
             printer.accept("Target version: " + res.targetVersion());
         }
 
-        printer.accept("Cluster nodes and their versions:");
-
         if (res.nodes() == null || res.nodes().isEmpty()) {
-            printer.accept("  No nodes information available");
+            printer.accept("No nodes information available");
             return;
         }
 
         res.nodes().stream()
-            .map(node -> "  NodeId=" + node.nodeId() + ", Version=" + node.version())
-            .forEach(printer::accept);
+            .collect(Collectors.groupingBy(
+                RollingUpgradeStatusNode::version,
+                TreeMap::new,
+                Collectors.toList()
+            ))
+            .forEach((ver, nodes) -> {
+                printer.accept("Version " + ver + ":");
+                nodes.forEach(node -> printer.accept("  " + node.nodeId()));
+            });
     }
 
     /** {@inheritDoc} */
