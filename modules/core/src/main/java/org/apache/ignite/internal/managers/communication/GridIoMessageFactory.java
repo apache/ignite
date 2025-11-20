@@ -38,6 +38,7 @@ import org.apache.ignite.internal.codegen.CachePartitionPartialCountersMapSerial
 import org.apache.ignite.internal.codegen.CachePartitionsToReloadMapSerializer;
 import org.apache.ignite.internal.codegen.CacheVersionedValueSerializer;
 import org.apache.ignite.internal.codegen.CacheWriteSynchronizationModeMessageSerializer;
+import org.apache.ignite.internal.codegen.DeploymentModeMessageSerializer;
 import org.apache.ignite.internal.codegen.ErrorMessageSerializer;
 import org.apache.ignite.internal.codegen.GenerateEncryptionKeyRequestSerializer;
 import org.apache.ignite.internal.codegen.GridCacheEntryInfoSerializer;
@@ -79,6 +80,7 @@ import org.apache.ignite.internal.codegen.GridDistributedTxFinishResponseSeriali
 import org.apache.ignite.internal.codegen.GridDistributedTxPrepareRequestSerializer;
 import org.apache.ignite.internal.codegen.GridDistributedTxPrepareResponseSerializer;
 import org.apache.ignite.internal.codegen.GridJobCancelRequestSerializer;
+import org.apache.ignite.internal.codegen.GridJobExecuteRequestSerializer;
 import org.apache.ignite.internal.codegen.GridJobExecuteResponseSerializer;
 import org.apache.ignite.internal.codegen.GridJobSiblingsRequestSerializer;
 import org.apache.ignite.internal.codegen.GridJobSiblingsResponseSerializer;
@@ -321,7 +323,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(TcpCommunicationSpi.HANDSHAKE_MSG_TYPE, HandshakeMessage::new, new HandshakeMessageSerializer());
         factory.register(TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE, HandshakeWaitMessage::new, new HandshakeWaitMessageSerializer());
         factory.register((short)0, GridJobCancelRequest::new, new GridJobCancelRequestSerializer());
-        factory.register((short)1, GridJobExecuteRequest::new);
+        factory.register((short)1, GridJobExecuteRequest::new, new GridJobExecuteRequestSerializer());
         factory.register((short)2, GridJobExecuteResponse::new, new GridJobExecuteResponseSerializer());
         factory.register((short)3, GridJobSiblingsRequest::new, new GridJobSiblingsRequestSerializer());
         factory.register((short)4, GridJobSiblingsResponse::new, new GridJobSiblingsResponseSerializer());
@@ -481,6 +483,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(IgniteDhtPartitionsToReloadMap.TYPE_CODE, IgniteDhtPartitionsToReloadMap::new,
             new IgniteDhtPartitionsToReloadMapSerializer());
         factory.register(PartitionSizesMap.TYPE_CODE, PartitionSizesMap::new, new PartitionSizesMapSerializer());
+        factory.register(DeploymentModeMessage.TYPE_CODE, DeploymentModeMessage::new, new DeploymentModeMessageSerializer());
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] [183..188] - this
         // [120..123] - DR

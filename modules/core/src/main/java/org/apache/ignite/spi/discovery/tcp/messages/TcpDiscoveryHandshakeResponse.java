@@ -17,8 +17,11 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Handshake response.
@@ -29,6 +32,9 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
 
     /** */
     private long order;
+
+    /** Redirect addresses. */
+    private Collection<InetSocketAddress> redirectAddresses;
 
     /**
      * Constructor.
@@ -80,18 +86,14 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
         this.order = order;
     }
 
-    /**
-     * @return {@code True} if server supports client message acknowledge.
-     */
-    public boolean clientAck() {
-        return getFlag(CLIENT_ACK_FLAG_POS);
+    /** @return Socket addresses list for redirect. */
+    @Nullable public Collection<InetSocketAddress> redirectAddresses() {
+        return redirectAddresses;
     }
 
-    /**
-     * @param clientAck {@code True} if server supports client message acknowledge.
-     */
-    public void clientAck(boolean clientAck) {
-        setFlag(CLIENT_ACK_FLAG_POS, clientAck);
+    /** @param socketAddresses Socket addresses list for redirect. */
+    public void redirectAddresses(Collection<InetSocketAddress> socketAddresses) {
+        this.redirectAddresses = socketAddresses;
     }
 
     /** {@inheritDoc} */

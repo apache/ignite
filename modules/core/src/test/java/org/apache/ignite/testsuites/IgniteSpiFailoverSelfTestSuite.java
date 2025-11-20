@@ -26,7 +26,7 @@ import org.apache.ignite.spi.failover.jobstealing.GridJobStealingFailoverSpiSelf
 import org.apache.ignite.spi.failover.jobstealing.GridJobStealingFailoverSpiStartStopSelfTest;
 import org.apache.ignite.spi.failover.never.GridNeverFailoverSpiSelfTest;
 import org.apache.ignite.spi.failover.never.GridNeverFailoverSpiStartStopSelfTest;
-import org.apache.ignite.spi.failover.topology.validator.MdcTopologyValidatorTest;
+import org.apache.ignite.spi.failover.topology.validator.MultiDataCenterTopologyValidatorTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -50,7 +50,7 @@ import org.junit.runners.Suite;
     GridJobStealingFailoverSpiConfigSelfTest.class,
 
     // Topology validator.
-    MdcTopologyValidatorTest.class,
+    MultiDataCenterTopologyValidatorTest.class,
 })
 public class IgniteSpiFailoverSelfTestSuite {
 }
