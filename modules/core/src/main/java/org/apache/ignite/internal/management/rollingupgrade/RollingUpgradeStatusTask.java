@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.management.rollingupgrade;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
@@ -57,7 +56,6 @@ public class RollingUpgradeStatusTask extends VisorOneNodeTask<NoArg, RollingUpg
 
             List<RollingUpgradeStatusNode> nodes = ignite.context().discovery().allNodes().stream()
                 .map(node -> new RollingUpgradeStatusNode(node.id(), IgniteProductVersion.fromString(node.attribute(ATTR_BUILD_VER))))
-                .sorted(Comparator.comparing(RollingUpgradeStatusNode::nodeId))
                 .collect(Collectors.toList());
 
             RollingUpgradeTaskResult res = new RollingUpgradeTaskResult(
