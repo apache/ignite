@@ -2438,7 +2438,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         synchronized (mux) {
                             if (!failedNodes.containsKey(failedNode)) {
-                                failedNodes.put(failedNode, msg.senderNodeId() != null ? msg.senderNodeId() : getLocalNodeId());
+                                failedNodes.put(failedNode, failedNode.id());
 
                                 added = true;
                             }
@@ -3962,7 +3962,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 synchronized (mux) {
                     for (TcpDiscoveryNode failedNode : failedNodes.keySet()) {
                         if (!ServerImpl.this.failedNodes.containsKey(failedNode))
-                            ServerImpl.this.failedNodes.put(failedNode, locNodeId);
+                            ServerImpl.this.failedNodes.put(failedNode, failedNode.id());
                     }
 
                     for (TcpDiscoveryNode failedNode : failedNodes.keySet())
@@ -5706,7 +5706,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (!skipUpdateFailedNodes) {
                     synchronized (mux) {
                         if (!failedNodes.containsKey(failedNode))
-                            failedNodes.put(failedNode, msg.senderNodeId() != null ? msg.senderNodeId() : getLocalNodeId());
+                            failedNodes.put(failedNode, failedNode.id());
                     }
                 }
             }
