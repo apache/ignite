@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.thread.context;
 
-/** */
+/**
+ * Represents an arbitrary Scope. A Scope is active from the moment it is created until the {@link #close()} method is
+ * called on the {@link Scope} instance. It is strongly encouraged to use a try-with-resources block to close a Scope.
+ */
 public interface Scope extends AutoCloseable {
-    /** */
+    /** Scope instance that does nothing when closed. */
     Scope NOOP_SCOPE = () -> {};
 
-    /** {@inheritDoc} */
+    /** Closes the scope. This operation cannot fail. */
     @Override void close();
 }

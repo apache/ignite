@@ -19,13 +19,17 @@ package org.apache.ignite.internal.thread.context;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-/** */
+/**
+ * Represents an accessor to Context Attribute value bound to the thread.
+ *
+ * @see Context
+ */
 public class ContextAttribute<T> {
     /** */
     static final AtomicInteger ID_GEN = new AtomicInteger();
 
     /** */
-    static final int MAX_ATTRIBUTE_CNT = Integer.SIZE;
+    static final int MAX_ATTR_CNT = Integer.SIZE;
 
     /** */
     private final byte id;
@@ -53,32 +57,41 @@ public class ContextAttribute<T> {
         return bitmask;
     }
 
-    /** */
+    /**
+     * Gets the value of the Context Attribute bound to the thread from which this method is called. 
+     *  
+     * @see Context#with(ContextAttribute, Object) 
+     */
     public T get() {
-        ScopedContext sc = ThreadLocalContextStorage.get().findScopedContextFor(this);
+        Context.AttributeValueHolder valHolder = ThreadLocalContextStorage.get().findValueHolderFor(this);
 
-        return sc == null ? initVal : sc.value();
-    }
-
-    /** */
-    public static <T> ContextAttribute<T> newInstance() {
-        return newInstance(null);
-    }
-
-    /** */
-    public static <T> ContextAttribute<T> newInstance(T initVal) {
-        int id = ID_GEN.getAndIncrement();
-
-        if (MAX_ATTRIBUTE_CNT <= id) {
-            throw new RuntimeException("Exceeded maximum supported number of created Context Attributes instances" +
-                " [maxCnt=" + MAX_ATTRIBUTE_CNT + ']');
-        }
-
-        return new ContextAttribute<>((byte)id, initVal);
+        return valHolder == null ? initVal : valHolder.value();
     }
 
     /** */
     static int highReservedId() {
         return ID_GEN.get();
+    }
+
+    /** Creates new instance of the Context Attribute with Initial Value set to {@code null}. */
+    public static <T> ContextAttribute<T> newInstance() {
+        return newInstance(null);
+    }
+
+    /**
+     * Creates new instance of the Context Attribute with the specified Initial Value. The Initial Value is returned
+     * by {@link ContextAttribute#get} method if the Attribute's value is not explicitly set in the Context.
+     *
+     * <p>
+     * Note, that the maximum number of attribute instances that can be created is currently limited to
+     * {@link #MAX_ATTR_CNT} for implementation reasons.
+     * </p>
+     */
+    public static <T> ContextAttribute<T> newInstance(T initVal) {
+        int id = ID_GEN.getAndIncrement();
+
+        assert id < MAX_ATTR_CNT : "Exceeded maximum supported number of created Attributes instances [maxCnt=" + MAX_ATTR_CNT + ']';
+
+        return new ContextAttribute<>((byte)id, initVal);
     }
 }

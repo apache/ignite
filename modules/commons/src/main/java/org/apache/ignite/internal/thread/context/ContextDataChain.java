@@ -20,20 +20,20 @@ package org.apache.ignite.internal.thread.context;
 /** */
 public abstract class ContextDataChain<T> {
     /** */
-    private final int storedAttrBits;
+    private final int storedAttrIdBits;
 
     /** */
     private final T prev;
 
     /** */
     protected ContextDataChain() {
-        storedAttrBits = 0;
+        storedAttrIdBits = 0;
         prev = null;
     }
 
     /** */
-    protected ContextDataChain(int storedAttrBits, T prev) {
-        this.storedAttrBits = storedAttrBits;
+    protected ContextDataChain(int storedAttrIdBits, T prev) {
+        this.storedAttrIdBits = storedAttrIdBits;
         this.prev = prev;
     }
 
@@ -41,13 +41,13 @@ public abstract class ContextDataChain<T> {
     abstract boolean isEmpty();
 
     /** */
-    int storedAttributeBits() {
-        return storedAttrBits;
+    int storedAttributeIdBits() {
+        return storedAttrIdBits;
     }
 
     /** */
     boolean containsValueFor(ContextAttribute<?> attr) {
-        return (storedAttrBits & attr.bitmask()) != 0;
+        return (storedAttrIdBits & attr.bitmask()) != 0;
     }
 
     /** */

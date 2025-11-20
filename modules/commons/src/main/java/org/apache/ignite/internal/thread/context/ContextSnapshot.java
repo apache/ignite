@@ -23,18 +23,18 @@ public class ContextSnapshot extends ContextDataChain<ContextSnapshot> {
     static final ContextSnapshot ROOT = new ContextSnapshot();
     
     /** */
-    private final ScopedContext scopedCtx;
+    private final Context.AttributeValueHolder data;
 
     /** */
     private ContextSnapshot() {
-        scopedCtx = null;
+        data = null;
     }
 
     /** */
-    private ContextSnapshot(ScopedContext scopedCtx, ContextSnapshot prev) {
-        super(scopedCtx.storedAttributeBits() | prev.storedAttributeBits(), prev);
+    private ContextSnapshot(Context.AttributeValueHolder data, ContextSnapshot prev) {
+        super(data.storedAttributeIdBits() | prev.storedAttributeIdBits(), prev);
         
-        this.scopedCtx = scopedCtx;
+        this.data = data;
     }
 
     /** */
@@ -55,15 +55,15 @@ public class ContextSnapshot extends ContextDataChain<ContextSnapshot> {
     }
 
     /** */
-    ContextSnapshot attach(ScopedContext scopedCtx) {
-        return new ContextSnapshot(scopedCtx, this);
+    ContextSnapshot attach(Context.AttributeValueHolder data) {
+        return new ContextSnapshot(data, this);
     }
 
     /** */
-    ScopedContext scopedContext() {
+    Context.AttributeValueHolder data() {
         assert !isEmpty();
 
-        return scopedCtx;
+        return data;
     }
 
     /** {@inheritDoc} */

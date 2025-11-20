@@ -82,7 +82,7 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
         assertEquals(DFLT_STR_VAL, STR_ATTR.get());
 
         // Scope opened but testing attribute is not set.
-        try (Scope ignored = ScopedContext.create().with(INT_ATTR, 0).open()) {
+        try (Scope ignored = Context.with(INT_ATTR, 0).attach()) {
             assertEquals(DFLT_STR_VAL, STR_ATTR.get());
         }
     }
@@ -90,7 +90,7 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testAttachedAttribute() {
-        try (Scope ignored = ScopedContext.create().with(STR_ATTR, "test").open()) {
+        try (Scope ignored = Context.with(STR_ATTR, "test").attach()) {
             assertEquals("test", STR_ATTR.get());
         }
     }
@@ -98,8 +98,8 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testAttributeValueSearchUpScopeStack() {
-        try (Scope ignored1 = ScopedContext.create().with(STR_ATTR, "test1").open()) {
-            try (Scope ignored2 = ScopedContext.create().with(INT_ATTR, 2).open()) {
+        try (Scope ignored1 = Context.with(STR_ATTR, "test1").attach()) {
+            try (Scope ignored2 = Context.with(INT_ATTR, 2).attach()) {
                 checkAttributeValues("test1", 2);
             }
         }
@@ -108,7 +108,7 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testAttributeValueOverwrite() {
-        try (Scope ignored = ScopedContext.create().with(STR_ATTR, "test1").with(INT_ATTR, 1).with(STR_ATTR, "test2").open()) {
+        try (Scope ignored = Context.with(STR_ATTR, "test1").with(INT_ATTR, 1).with(STR_ATTR, "test2").attach()) {
             checkAttributeValues("test2", 1);
         }
     }
@@ -118,13 +118,13 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     public void testConsequentScopes() {
         checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
 
-        try (Scope ignored1 = ScopedContext.create().with(STR_ATTR, "test1").with(INT_ATTR, 1).open()) {
+        try (Scope ignored1 = Context.with(STR_ATTR, "test1").with(INT_ATTR, 1).attach()) {
             checkAttributeValues("test1", 1);
         }
 
         checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
 
-        try (Scope ignored2 = ScopedContext.create().with(INT_ATTR, 2).open()) {
+        try (Scope ignored2 = Context.with(INT_ATTR, 2).attach()) {
             checkAttributeValues(DFLT_STR_VAL, 2);
         }
 
@@ -136,10 +136,10 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     public void testNestedScopes() {
         checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
 
-        try (Scope ignored1 = ScopedContext.create().with(INT_ATTR, 1).open()) {
+        try (Scope ignored1 = Context.with(INT_ATTR, 1).attach()) {
             checkAttributeValues(DFLT_STR_VAL, 1);
 
-            try (Scope ignored2 = ScopedContext.create().with(STR_ATTR, "test2").open()) {
+            try (Scope ignored2 = Context.with(STR_ATTR, "test2").attach()) {
                 checkAttributeValues("test2", 1);
             }
 
@@ -154,10 +154,10 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     public void testNestedScopesAttributeValueOverwriteAndInheritance() {
         checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
 
-        try (Scope ignored1 = ScopedContext.create().with(INT_ATTR, 1).with(STR_ATTR, "test1").open()) {
+        try (Scope ignored1 = Context.with(INT_ATTR, 1).with(STR_ATTR, "test1").attach()) {
             checkAttributeValues("test1", 1);
 
-            try (Scope ignored2 = ScopedContext.create().with(STR_ATTR, "test2").open()) {
+            try (Scope ignored2 = Context.with(STR_ATTR, "test2").attach()) {
                 checkAttributeValues("test2", 1);
             }
 
@@ -172,13 +172,13 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     public void testNullAttributeValue() {
         checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
 
-        try (Scope ignored1 = ScopedContext.create().with(INT_ATTR, null).with(STR_ATTR, null).open()) {
+        try (Scope ignored1 = Context.with(INT_ATTR, null).with(STR_ATTR, null).attach()) {
             checkAttributeValues(null, null);
 
-            try (Scope ignored2 = ScopedContext.create().with(STR_ATTR, "test2").open()) {
+            try (Scope ignored2 = Context.with(STR_ATTR, "test2").attach()) {
                 checkAttributeValues("test2", null);
 
-                try (Scope ignored3 = ScopedContext.create().with(STR_ATTR, null).open()) {
+                try (Scope ignored3 = Context.with(STR_ATTR, null).attach()) {
                     checkAttributeValues(null, null);
                 }
 
@@ -194,12 +194,12 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testScopeWithInitialAttributeValue() {
-        try (Scope scope1 = ScopedContext.create().with(INT_ATTR, DFLT_INT_VAL).with(STR_ATTR, DFLT_STR_VAL).open()) {
+        try (Scope scope1 = Context.with(INT_ATTR, DFLT_INT_VAL).with(STR_ATTR, DFLT_STR_VAL).attach()) {
             checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
 
             assertTrue(scope1 == Scope.NOOP_SCOPE);
 
-            try (Scope scope2 = ScopedContext.create().with(INT_ATTR, DFLT_INT_VAL).open()) {
+            try (Scope scope2 = Context.with(INT_ATTR, DFLT_INT_VAL).attach()) {
                 checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
 
                 assertTrue(scope2 == Scope.NOOP_SCOPE);
@@ -212,10 +212,10 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testNestedScopeWithTheSameAttributeValue() {
-        try (Scope ignored1 = ScopedContext.create().with(INT_ATTR, 1).open()) {
+        try (Scope ignored1 = Context.with(INT_ATTR, 1).attach()) {
             checkAttributeValues(DFLT_STR_VAL, 1);
 
-            try (Scope scope = ScopedContext.create().with(INT_ATTR, 1).open()) {
+            try (Scope scope = Context.with(INT_ATTR, 1).attach()) {
                 checkAttributeValues(DFLT_STR_VAL, 1);
 
                 assertTrue(scope == Scope.NOOP_SCOPE);
@@ -228,12 +228,12 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testContextCacheReinitialization() {
-        try (Scope ignored1 = ScopedContext.create().with(INT_ATTR, 1).open()) {
+        try (Scope ignored1 = Context.with(INT_ATTR, 1).attach()) {
             ContextAttribute<Object> attr = ContextAttribute.newInstance();
 
             assertNull(attr.get());
 
-            try (Scope ignored2 = ScopedContext.create().with(attr, "test").open()) {
+            try (Scope ignored2 = Context.with(attr, "test").attach()) {
                 assertEquals("test", attr.get());
             }
 
@@ -244,21 +244,21 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testMaximumAttributesInstanceCount() {
-        int cnt = ContextAttribute.MAX_ATTRIBUTE_CNT - ContextAttribute.highReservedId();
+        int cnt = ContextAttribute.MAX_ATTR_CNT - ContextAttribute.highReservedId();
 
         List<ContextAttribute<Integer>> attrs = new ArrayList<>(cnt);
 
-        ScopedContext ctx = ScopedContext.create();
+        Context.AttributeValueHolder valHolder = Context.with(ContextAttribute.newInstance(), 0);
 
-        for (int i = 0; i < cnt; i++) {
-            ContextAttribute<Integer> attr = ContextAttribute.newInstance();
+        attrs.add((ContextAttribute<Integer>)valHolder.attribute());
 
-            attrs.add(attr);
+        for (int i = 1; i < cnt; i++) {
+            valHolder = valHolder.with(ContextAttribute.newInstance(), i);
 
-            ctx = ctx.with(attr, i);
+            attrs.add((ContextAttribute<Integer>)valHolder.attribute());
         }
 
-        try (Scope ignored = ctx.open()) {
+        try (Scope ignored = valHolder.attach()) {
             for (int i = 0; i < cnt; i++)
                 assertTrue(i == attrs.get(i).get());
         }
@@ -268,18 +268,18 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
         assertThrowsAnyCause(
             log,
             ContextAttribute::newInstance,
-            RuntimeException.class,
-            "Exceeded maximum supported number of created Context Attributes instances"
+            AssertionError.class,
+            "Exceeded maximum supported number of created Attributes instances"
         );
     }
 
     /** */
     @Test
     public void testUnorderedScopeClosing() {
-        Scope scope1 = ScopedContext.create().with(INT_ATTR, 0).open();
+        Scope scope1 = Context.with(INT_ATTR, 0).attach();
 
         try {
-            try (Scope ignored = ScopedContext.create().with(STR_ATTR, "test").open()) {
+            try (Scope ignored = Context.with(STR_ATTR, "test").attach()) {
                 assertThrowsWithCause(scope1::close, AssertionError.class);
             }
         }
@@ -313,7 +313,7 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
 
         ContextSnapshot snapshot;
 
-        try (Scope ignored = ScopedContext.create().with(INT_ATTR, 1).with(STR_ATTR, "test1").open()) {
+        try (Scope ignored = Context.with(INT_ATTR, 1).with(STR_ATTR, "test1").attach()) {
             checkAttributeValues("test1", 1);
 
             snapshot = ContextSnapshot.capture();
@@ -333,8 +333,8 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     public void testNestedScopeSnapshot() {
         ContextSnapshot snapshot;
 
-        try (Scope ignored1 = ScopedContext.create().with(INT_ATTR, 1).with(STR_ATTR, "test1").open()) {
-            try (Scope ignored2 = ScopedContext.create().with(STR_ATTR, "test2").open()) {
+        try (Scope ignored1 = Context.with(INT_ATTR, 1).with(STR_ATTR, "test1").attach()) {
+            try (Scope ignored2 = Context.with(STR_ATTR, "test2").attach()) {
                 checkAttributeValues("test2", 1);
 
                 snapshot = ContextSnapshot.capture();
@@ -353,7 +353,7 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     public void testNestedScopeInSnapshotScope() {
         ContextSnapshot snapshot0;
 
-        try (Scope ignored = ScopedContext.create().with(INT_ATTR, 1).with(STR_ATTR, "test1").open()) {
+        try (Scope ignored = Context.with(INT_ATTR, 1).with(STR_ATTR, "test1").attach()) {
             checkAttributeValues("test1", 1);
 
             snapshot0 = ContextSnapshot.capture();
@@ -364,7 +364,7 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
         try (Scope ignored1 = snapshot0.restore()) {
             checkAttributeValues("test1", 1);
 
-            try (Scope ignored2 = ScopedContext.create().with(INT_ATTR, 2).open()) {
+            try (Scope ignored2 = Context.with(INT_ATTR, 2).attach()) {
                 checkAttributeValues("test1", 2);
 
                 snapshot1 = ContextSnapshot.capture();
@@ -385,13 +385,13 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     public void testSnapshotRestoreInExistingScope() {
         ContextSnapshot snapshot;
 
-        try (Scope ignored = ScopedContext.create().with(STR_ATTR, "test1").open()) {
+        try (Scope ignored = Context.with(STR_ATTR, "test1").attach()) {
             checkAttributeValues("test1", DFLT_INT_VAL);
 
             snapshot = ContextSnapshot.capture();
         }
 
-        try (Scope ignored1 = ScopedContext.create().with(INT_ATTR, 1).open()) {
+        try (Scope ignored1 = Context.with(INT_ATTR, 1).attach()) {
             checkAttributeValues(DFLT_STR_VAL, 1);
 
             // Note, snapshot restores the state of the entire context, including attributes that do not have a value set.
@@ -410,14 +410,14 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     public void testSnapshotScopeUnorderedClosing() {
         ContextSnapshot snapshot;
 
-        try (Scope ignored = ScopedContext.create().with(STR_ATTR, "test1").open()) {
+        try (Scope ignored = Context.with(STR_ATTR, "test1").attach()) {
             checkAttributeValues("test1", DFLT_INT_VAL);
 
             snapshot = ContextSnapshot.capture();
         }
 
         try (Scope snpScope = snapshot.restore()) {
-            try (Scope ignored1 = ScopedContext.create().with(INT_ATTR, 2).open()) {
+            try (Scope ignored1 = Context.with(INT_ATTR, 2).attach()) {
                 checkAttributeValues("test1", 2);
 
                 assertThrowsWithCause(snpScope::close, AssertionError.class);
@@ -537,11 +537,11 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
 
     /** */
     private void createAttributeChecks(BiConsumerX<String, Integer> checkGenerator) throws Exception {
-        try (Scope ignored = ScopedContext.create().with(STR_ATTR, "test1").with(INT_ATTR, 1).open()) {
+        try (Scope ignored = Context.with(STR_ATTR, "test1").with(INT_ATTR, 1).attach()) {
             checkGenerator.accept("test1", 1);
         }
 
-        try (Scope ignored = ScopedContext.create().with(STR_ATTR, "test2").with(INT_ATTR, 2).open()) {
+        try (Scope ignored = Context.with(STR_ATTR, "test2").with(INT_ATTR, 2).attach()) {
             checkGenerator.accept("test2", 2);
         }
 

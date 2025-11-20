@@ -32,9 +32,9 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.security.sandbox.AccessControllerSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.IgniteSandbox;
 import org.apache.ignite.internal.processors.security.sandbox.NoOpSandbox;
+import org.apache.ignite.internal.thread.context.Context;
 import org.apache.ignite.internal.thread.context.ContextAttribute;
 import org.apache.ignite.internal.thread.context.Scope;
-import org.apache.ignite.internal.thread.context.ScopedContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -126,7 +126,7 @@ public class IgniteSecurityProcessor extends IgniteSecurityAdapter {
 
     /** {@inheritDoc} */
     @Override public Scope withContext(SecurityContext secCtx) {
-        return ScopedContext.create().with(SEC_CTX, secCtx == dfltSecCtx ? null : secCtx).open();
+        return Context.with(SEC_CTX, secCtx == dfltSecCtx ? null : secCtx).attach();
     }
 
     /** {@inheritDoc} */
