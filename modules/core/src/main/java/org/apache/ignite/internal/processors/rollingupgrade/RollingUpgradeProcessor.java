@@ -18,11 +18,15 @@
 package org.apache.ignite.internal.processors.rollingupgrade;
 
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage;
 import org.apache.ignite.internal.processors.metastorage.DistributedMetastorageLifecycleListener;
@@ -39,6 +43,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
 
@@ -87,6 +93,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
+        ctx.event().addLocalEventListener(discoListener(), EVT_NODE_FAILED, EVT_NODE_LEFT);
+
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(new DistributedMetastorageLifecycleListener() {
             @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
                 RollingUpgradeProcessor.this.metastorage = metastorage;
@@ -319,5 +327,32 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
             throw new IgniteCheckedException("Patch version can only be incremented by 1");
 
         return true;
+    }
+
+    /** */
+    private GridLocalEventListener discoListener() {
+        return new GridLocalEventListener() {
+            @Override public void onEvent(Event evt) {
+                assert evt instanceof DiscoveryEvent;
+
+                assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
+
+                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
+
+                UUID nodeId = discoEvt.eventNode().id();
+
+                ClusterNode lastJoiningNode = RollingUpgradeProcessor.this.lastJoiningNode;
+
+                if (lastJoiningNode == null || !lastJoiningNode.id().equals(nodeId))
+                    return;
+
+                synchronized (lock) {
+                    if (lastJoiningNode == null || !lastJoiningNode.id().equals(nodeId))
+                        return;
+
+                    RollingUpgradeProcessor.this.lastJoiningNode = null;
+                }
+            }
+        };
     }
 }
