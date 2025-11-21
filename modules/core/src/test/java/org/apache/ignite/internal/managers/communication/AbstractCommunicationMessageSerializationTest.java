@@ -306,6 +306,11 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
+        @Override public <T> boolean writeUserObject(T obj) {
+            return writeField(Object.class);
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean isHeaderWritten() {
             return true;
         }
@@ -535,6 +540,13 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         /** {@inheritDoc} */
         @Override public GridLongList readGridLongList() {
             readField(GridLongList.class);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> T readUserObject() {
+            readField(Object.class);
 
             return null;
         }

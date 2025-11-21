@@ -306,6 +306,15 @@ public interface MessageWriter {
         MessageCollectionItemType valType);
 
     /**
+     * Writes user object.
+     *
+     * @param obj User object.
+     * @param <T> User object type.
+     * @return Whether value was fully written.
+     */
+    public <T> boolean writeUserObject(T obj);
+
+    /**
      * @return Whether header of current message is already written.
      */
     public boolean isHeaderWritten();

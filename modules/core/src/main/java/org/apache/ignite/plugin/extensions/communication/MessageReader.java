@@ -222,6 +222,14 @@ public interface MessageReader {
     public GridLongList readGridLongList();
 
     /**
+     * Reads user object.
+     *
+     * @param <T> User object type.
+     * @return User object.
+     */
+    public <T> T readUserObject();
+
+    /**
      * Reads array of objects.
      *
      * @param itemType Array component type.

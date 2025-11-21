@@ -930,6 +930,7 @@ public class BinaryContext {
      * @param typeName Type name.
      * @return Type ID.
      */
+    // TODO?
     public int typeId(String typeName) {
         Integer id = predefinedTypeNames.get(SIMPLE_NAME_LOWER_CASE_MAPPER.typeName(typeName));
 
