@@ -42,4 +42,7 @@ public @interface Order {
 
     /** @return Getter and setter name. */
     String method() default "";
+
+    /** */
+    boolean user() default false;
 }

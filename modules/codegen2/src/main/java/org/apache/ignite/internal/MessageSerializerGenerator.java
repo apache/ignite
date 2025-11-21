@@ -311,6 +311,12 @@ class MessageSerializerGenerator {
 
         String getExpr = (F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName) + "()";
 
+        if (field.getAnnotation(Order.class).user()) {
+            returnFalseIfWriteFailed(write, "writer.writeUserObject", getExpr);
+
+            return;
+        }
+
         TypeMirror type = field.asType();
 
         if (type.getKind().isPrimitive()) {
@@ -431,6 +437,12 @@ class MessageSerializerGenerator {
         String methodName = field.getAnnotation(Order.class).method();
 
         String name = F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName;
+
+        if (field.getAnnotation(Order.class).user()) {
+            returnFalseIfReadFailed(name, "reader.readUserObject");
+
+            return;
+        }
 
         if (type.getKind().isPrimitive()) {
             String typeName = capitalizeOnlyFirst(type.getKind().name());

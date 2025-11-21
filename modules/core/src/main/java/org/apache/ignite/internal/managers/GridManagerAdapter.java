@@ -35,6 +35,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
@@ -560,6 +561,10 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
                     @Override public MessageFormatter messageFormatter() {
                         return ctx.io().formatter();
+                    }
+
+                    @Override public BinaryMarshaller binaryMarshaller() {
+                        return ctx.marshaller();
                     }
 
                     @Override public MessageFactory messageFactory() {

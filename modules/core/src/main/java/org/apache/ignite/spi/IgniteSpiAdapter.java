@@ -38,6 +38,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
@@ -928,6 +929,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi {
         /** {@inheritDoc} */
         @Override public MessageFormatter messageFormatter() {
             return msgFormatter;
+        }
+
+        /** {@inheritDoc} */
+        @Override public BinaryMarshaller binaryMarshaller() {
+            return null;
         }
 
         /** {@inheritDoc} */

@@ -867,7 +867,7 @@ public class GridNioServerWrapper {
                     @Override public MessageWriter writer(GridNioSession ses) throws IgniteCheckedException {
                         // Enable sending wait message for a communication peer while context isn't initialized.
                         if (!stateProvider.spiContextAvailable())
-                            return new DirectMessageWriter(msgFactory);
+                            return new DirectMessageWriter(msgFactory, context.binaryMarshaller());
 
                         final IgniteSpiContext ctx = stateProvider.getSpiContextWithoutInitialLatch();
 
