@@ -32,6 +32,7 @@ import org.apache.ignite.internal.metric.JmxExporterSpiTest;
 import org.apache.ignite.internal.metric.LogExporterSpiTest;
 import org.apache.ignite.internal.metric.MetricsConfigurationTest;
 import org.apache.ignite.internal.metric.MetricsSelfTest;
+import org.apache.ignite.internal.metric.OutboundIoMessageQueueSizeTest;
 import org.apache.ignite.internal.metric.ReadMetricsOnNodeStartupTest;
 import org.apache.ignite.internal.metric.SystemMetricsTest;
 import org.apache.ignite.internal.metric.SystemViewCacheExpiryPolicyTest;
@@ -81,6 +82,7 @@ public class IgniteCacheTestSuite13 {
         GridTestUtils.addTestIfNeeded(suite, IoStatisticsCacheSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IoStatisticsSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IoStatisticsMetricsLocalMXBeanImplSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, OutboundIoMessageQueueSizeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, MetricsSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, SystemMetricsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CustomMetricsTest.class, ignoredTests);
