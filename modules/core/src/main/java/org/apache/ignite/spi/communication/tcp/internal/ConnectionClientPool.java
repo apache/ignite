@@ -215,8 +215,11 @@ public class ConnectionClientPool {
             @Override public ClusterNode apply(UUID nodeId) {
                 ClusterNode node = nodeGetter.apply(nodeId);
 
-                if (node == null)
+                if (node == null) {
+                    log.error("TEST | node getter didn't find node. Removing metrics. NodeId=" + nodeId);
+
                     removeNodeMetrics(nodeId);
+                }
 
                 return node;
             }
@@ -417,7 +420,23 @@ public class ConnectionClientPool {
                 assert connIdx == client.connectionIndex() : client;
 
                 if (client.reserve()) {
-                    updateClientAcquiredMetric(client);
+                    if (asyncMetric == null) {
+                        synchronized (metrics) {
+                            if (asyncMetric == null) {
+                                MetricRegistryImpl mreg = metricsMgr.registry(SHARED_METRICS_REGISTRY_NAME);
+
+                                // We assume that all the clients have the same async flag.
+                                asyncMetric = new AtomicBoolean(client.async());
+
+                                log.error("TEST | adding async metric, nodeId=" + nodeId);
+
+                                mreg.register(METRIC_NAME_ASYNC_CONNS, () -> asyncMetric.get(), "Asynchronous flag. If TRUE, " +
+                                    "connections put data in a queue (with some preprocessing) instead of immediate sending.");
+                            }
+                        }
+                    }
+                    else
+                        assert client.async() == asyncMetric.get();
 
                     return client;
                 }
@@ -430,25 +449,6 @@ public class ConnectionClientPool {
             if (nodeMetrics != null)
                 nodeMetrics.acquiringThreadsCnt.decrementAndGet();
         }
-    }
-
-    /** */
-    private void updateClientAcquiredMetric(GridCommunicationClient client) {
-        if (asyncMetric == null) {
-            synchronized (metrics) {
-                if (asyncMetric == null) {
-                    MetricRegistryImpl mreg = metricsMgr.registry(SHARED_METRICS_REGISTRY_NAME);
-
-                    // We assume that all the clients have the same async flag.
-                    asyncMetric = new AtomicBoolean(client.async());
-
-                    mreg.register(METRIC_NAME_ASYNC_CONNS, () -> asyncMetric.get(), "Asynchronous flag. If TRUE, " +
-                        "connections put data in a queue (with some preprocessing) instead of immediate sending.");
-                }
-            }
-        }
-        else
-            assert client.async() == asyncMetric.get();
     }
 
     /**
@@ -631,8 +631,7 @@ public class ConnectionClientPool {
                 curClients = clients.compute(node.id(), (nodeId0, clients0) -> {
                     if (clients0 == null) {
                         // Syncs metrics creation on this map.
-                        if (metricsMgr != null)
-                            createNodeMetrics(node);
+                        createNodeMetrics(node);
 
                         return newClients;
                     }
@@ -658,6 +657,8 @@ public class ConnectionClientPool {
 
     /** */
     private void createNodeMetrics(ClusterNode node) {
+        log.error("TEST | creating metrics for node " + node.id());
+
         MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(node.id()));
 
         assert !mreg.iterator().hasNext() : "Node connection pools metrics aren't empty.";
@@ -694,7 +695,7 @@ public class ConnectionClientPool {
             GridCommunicationClient[] nodeClients = clients.get(nodeId);
 
             // Node might already leave the cluster.
-            if (nodeClients != null) {
+            if (nodeClients == null) {
                 long nowMillis = U.currentTimeMillis();
 
                 res = new NodeMetrics(res);
@@ -729,8 +730,11 @@ public class ConnectionClientPool {
 
                 // Node might already leave the cluster. Syncs metrics removal on the clients map.
                 clients.compute(nodeId, (nodeId0, clients) -> {
-                    if (clients == null)
+                    if (clients == null) {
+                        log.error("TEST | updating node metrics, no clients. Seems node left. Removing metrics. NodeId=" + nodeId0);
+
                         removeNodeMetrics(nodeId);
+                    }
                     else
                         metrics.put(nodeId, res0);
 
@@ -738,6 +742,9 @@ public class ConnectionClientPool {
                 });
             }
             else {
+                log.error("TEST | updating node metrics, no clients found at all. Seems node left. " +
+                    "Removing metrics. NodeId=" + nodeId);
+
                 removeNodeMetrics(nodeId);
 
                 res = null;
@@ -795,6 +802,8 @@ public class ConnectionClientPool {
         if (log.isDebugEnabled())
             log.debug("The node client connections were closed [nodeId=" + nodeId + "]");
 
+        log.error("TEST | forceCloseConnection, removing metrics, nodeId=" + nodeId);
+
         removeNodeMetrics(nodeId);
 
         GridCommunicationClient[] clients = this.clients.remove(nodeId);
@@ -818,6 +827,8 @@ public class ConnectionClientPool {
      */
     public void onNodeLeft(UUID nodeId) {
         GridCommunicationClient[] clients0 = clients.remove(nodeId);
+
+        log.error("TEST | onNodeLeft, removing metrics, nodeId=" + nodeId);
 
         removeNodeMetrics(nodeId);
 
