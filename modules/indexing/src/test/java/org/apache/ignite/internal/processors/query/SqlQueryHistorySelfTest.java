@@ -222,6 +222,18 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test metrics for SQL fields queries with initiatot ID.
+     */
+    @Test
+    public void testSqlFieldsQueryHistoryWithInitiatorId() {
+        String testId = "testId";
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("select * from String").setQueryInitiatorId(testId);
+
+        checkQueryMetrics(qry, testId);
+    }
+
+    /**
      * Test metrics for SQL fields queries.
      *
      * @throws Exception In case of error.
@@ -423,6 +435,22 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
     private void checkMetrics(int sz, int idx, int execs, int failures,
         boolean first) {
 
+        checkMetrics(sz, idx, execs, failures, first, null);
+    }
+
+    /**
+     * Check metrics.
+     *
+     * @param sz Expected size of metrics.
+     * @param idx Index of metrics to check.
+     * @param execs Expected number of executions.
+     * @param failures Expected number of failures.
+     * @param first {@code true} if metrics checked for first query only.
+     * @param initId Initiator ID.
+     */
+    private void checkMetrics(int sz, int idx, int execs, int failures,
+        boolean first, String initId) {
+
         Collection<QueryHistory> metrics = queryNode().context().query().runningQueryManager()
             .queryHistoryMetrics().values();
 
@@ -444,6 +472,9 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
 
         if (first)
             assertEquals("On first execution minTime == maxTime", m.minimumTime(), m.maximumTime());
+
+        if (initId != null)
+            assertEquals(initId, m.initiatorId());
     }
 
     /**
@@ -476,17 +507,25 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      * @param qry Query.
      */
     private void checkQueryMetrics(Query qry) {
+        checkQueryMetrics(qry, null);
+    }
+
+    /**
+     * @param qry Query.
+     * @param initId Initiator ID.
+     */
+    private void checkQueryMetrics(Query qry, String initId) {
         IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
 
         // Execute query.
         cache.query(qry).getAll();
 
-        checkMetrics(1, 0, 1, 0, true);
+        checkMetrics(1, 0, 1, 0, true, initId);
 
         // Execute again with the same parameters.
         cache.query(qry).getAll();
 
-        checkMetrics(1, 0, 2, 0, false);
+        checkMetrics(1, 0, 2, 0, false, initId);
     }
 
     /**
