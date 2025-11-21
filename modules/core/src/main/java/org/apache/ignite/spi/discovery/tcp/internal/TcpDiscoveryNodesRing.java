@@ -276,13 +276,13 @@ public class TcpDiscoveryNodesRing {
 
         try {
             if (maxInternalOrder == 0) {
-                long last = 0;
+                long last = -1;
 
                 for (TcpDiscoveryNode node : nodes)
                     if (node.internalOrder() > last)
                         last = node.internalOrder();
 
-                return last != 0 ? maxInternalOrder = last : -1;
+                return last != -1 ? maxInternalOrder = last : -1;
             }
 
             return maxInternalOrder;
