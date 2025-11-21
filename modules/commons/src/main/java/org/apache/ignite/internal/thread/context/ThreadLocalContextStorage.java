@@ -143,15 +143,15 @@ class ThreadLocalContextStorage {
         }
 
         /** */
-        void store(Context.AttributeValueHolder sc) {
-            assert sc != null;
+        void store(Context.AttributeValueHolder valHolder) {
+            assert valHolder != null;
 
-            byte idx = sc.attribute().id();
+            byte idx = valHolder.attribute().id();
 
             if (vals.length <= idx)
                 grow(ContextAttribute.highReservedId());
 
-            vals[idx] = sc;
+            vals[idx] = valHolder;
         }
 
         /** */
