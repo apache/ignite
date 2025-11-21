@@ -1509,10 +1509,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         try {
             cctx.io().sendNoRetry(node, m, SYSTEM_POOL);
         }
-        catch (ClusterTopologyCheckedException ignore) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to send partition update to node because it left grid (will ignore) [node=" +
-                    node.id() + ", msg=" + m + ']');
+        catch (ClusterTopologyCheckedException e) {
+            log.warning("Failed to send local partitions [nodeId=" + node.id() + ", exchId=" + id + ']', e);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send local partition map to node [node=" + node + ", exchId=" + id + ']', e);
