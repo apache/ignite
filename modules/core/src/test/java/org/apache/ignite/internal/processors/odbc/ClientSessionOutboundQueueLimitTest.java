@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCache;
+import org.apache.ignite.client.ClientRetryNonePolicy;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.client.events.ConnectionClosedEvent;
@@ -68,8 +69,7 @@ public class ClientSessionOutboundQueueLimitTest extends GridCommonAbstractTest 
         try (
             IgniteClient cli = Ignition.startClient(new ClientConfiguration()
                 .setAddresses("127.0.0.1:10800")
-                .setTimeout(5000) // Server will drop packets intended for the client. So client can hang on handshake during reconnect.
-                .setRetryLimit(1) // Let's not retry operations if the channel was closed while waiting for a response.
+                .setRetryPolicy(new ClientRetryNonePolicy())
                 .setEventListeners(new ConnectionEventListener() {
                     @Override public void onConnectionClosed(ConnectionClosedEvent event) {
                         isCliDisconnected.set(true);
