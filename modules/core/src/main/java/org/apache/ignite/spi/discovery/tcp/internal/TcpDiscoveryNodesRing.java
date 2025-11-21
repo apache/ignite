@@ -276,9 +276,13 @@ public class TcpDiscoveryNodesRing {
 
         try {
             if (maxInternalOrder == 0) {
-                TcpDiscoveryNode last = nodes.last();
+                long last = -1;
 
-                return last != null ? maxInternalOrder = last.internalOrder() : -1;
+                for (TcpDiscoveryNode node : nodes)
+                    if (node.internalOrder() > last)
+                        last = node.internalOrder();
+
+                return last != -1 ? maxInternalOrder = last : -1;
             }
 
             return maxInternalOrder;
@@ -449,7 +453,7 @@ public class TcpDiscoveryNodesRing {
      * @param excluded Nodes to exclude from the search (optional).
      * @return Coordinator node among remaining nodes or {@code null} if all nodes are excluded.
      */
-    @Nullable public TcpDiscoveryNode coordinator(@Nullable Collection<TcpDiscoveryNode> excluded) {
+    @Nullable public TcpDiscoveryNode coordinator(@Nullable Collection<UUID> excluded) {
         rwLock.readLock().lock();
 
         try {
@@ -494,7 +498,7 @@ public class TcpDiscoveryNodesRing {
      * @return Next node or {@code null} if all nodes were filtered out or
      * topology contains less than two nodes.
      */
-    @Nullable public TcpDiscoveryNode nextNode(@Nullable Collection<TcpDiscoveryNode> excluded) {
+    @Nullable public TcpDiscoveryNode nextNode(@Nullable Collection<UUID> excluded) {
         assert locNode.internalOrder() > 0 : locNode;
         assert excluded == null || excluded.isEmpty() || !excluded.contains(locNode) : excluded;
 
@@ -532,7 +536,7 @@ public class TcpDiscoveryNodesRing {
      * @return Previous node or {@code null} if all nodes were filtered out or
      * topology contains less than two nodes.
      */
-    @Nullable public TcpDiscoveryNode previousNode(@Nullable Collection<TcpDiscoveryNode> excluded) {
+    @Nullable public TcpDiscoveryNode previousNode(@Nullable Collection<UUID> excluded) {
         rwLock.readLock().lock();
 
         try {
@@ -686,12 +690,12 @@ public class TcpDiscoveryNodesRing {
      * @param excluded Nodes to exclude from the search (optional).
      * @return Collection of server nodes.
      */
-    private Collection<TcpDiscoveryNode> serverNodes(@Nullable final Collection<TcpDiscoveryNode> excluded) {
+    private Collection<TcpDiscoveryNode> serverNodes(@Nullable final Collection<UUID> excluded) {
         final boolean excludedEmpty = F.isEmpty(excluded);
 
         return F.view(nodes, new P1<TcpDiscoveryNode>() {
             @Override public boolean apply(TcpDiscoveryNode node) {
-                return node.clientRouterNodeId() == null && (excludedEmpty || !excluded.contains(node));
+                return node.clientRouterNodeId() == null && (excludedEmpty || !excluded.contains(node.id()));
             }
         });
     }
