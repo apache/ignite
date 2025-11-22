@@ -22,7 +22,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/** Map for storing partition ID and long value. */
+/** Map for storing partition ID and long value (e.g. partition size or partition history counter). */
 public class PartitionLongMap implements Message {
     /** Type code. */
     public static final short TYPE_CODE = 514;
