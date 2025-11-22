@@ -22,8 +22,8 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/** Message for partition map. */
-public class PartitionMapMessage implements Message {
+/** Map for storing partition ID and long value. */
+public class PartitionLongMap implements Message {
     /** Type code. */
     public static final short TYPE_CODE = 514;
 
@@ -32,14 +32,14 @@ public class PartitionMapMessage implements Message {
     private @Nullable Map<Integer, Long> parts;
 
     /** Default constructor. */
-    public PartitionMapMessage() {
+    public PartitionLongMap() {
         // No-op.
     }
 
     /**
      * @param parts Partition map.
      */
-    public PartitionMapMessage(@Nullable Map<Integer, Long> parts) {
+    public PartitionLongMap(@Nullable Map<Integer, Long> parts) {
         this.parts = parts;
     }
 

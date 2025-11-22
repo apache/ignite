@@ -63,12 +63,12 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /** Partitions sizes. */
     @Order(value = 9, method = "partitionSizesMap")
     @GridToStringInclude
-    private Map<Integer, PartitionMapMessage> partsSizes;
+    private Map<Integer, PartitionLongMap> partsSizes;
 
     /** Partitions history reservation counters. */
     @Order(value = 10, method = "partitionHistoryCountersMap")
     @GridToStringInclude
-    private Map<Integer, PartitionMapMessage> partHistCntrs;
+    private Map<Integer, PartitionLongMap> partHistCntrs;
 
     /** Error message. */
     @Order(value = 11, method = "errorMessage")
@@ -218,7 +218,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
     /** @return Partition update counters per cache group. */
     public Map<Integer, CachePartitionPartialCountersMap> partitionUpdateCounters() {
-        return partCntrs == null ? Collections.emptyMap() : Collections.unmodifiableMap(partCntrs);
+        return partCntrs;
     }
 
     /**
@@ -244,7 +244,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         if (partsSizes == null)
             partsSizes = new HashMap<>();
 
-        partsSizes.put(grpId, new PartitionMapMessage(partSizesMap));
+        partsSizes.put(grpId, new PartitionLongMap(partSizesMap));
     }
 
     /**
@@ -257,7 +257,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         if (partsSizes == null)
             return Collections.emptyMap();
 
-        PartitionMapMessage sizesMap = partsSizes.get(grpId);
+        PartitionLongMap sizesMap = partsSizes.get(grpId);
 
         return sizesMap != null ? F.emptyIfNull(sizesMap.partitions()) : Collections.emptyMap();
     }
@@ -265,28 +265,28 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /**
      * @return Partitions sizes.
      */
-    public Map<Integer, PartitionMapMessage> partitionSizesMap() {
+    public Map<Integer, PartitionLongMap> partitionSizesMap() {
         return partsSizes;
     }
 
     /**
      * @param partsSizes Partitions sizes.
      */
-    public void partitionSizesMap(Map<Integer, PartitionMapMessage> partsSizes) {
+    public void partitionSizesMap(Map<Integer, PartitionLongMap> partsSizes) {
         this.partsSizes = partsSizes;
     }
 
     /**
      * @return Partitions history reservation counters.
      */
-    public Map<Integer, PartitionMapMessage> partitionHistoryCountersMap() {
+    public Map<Integer, PartitionLongMap> partitionHistoryCountersMap() {
         return partHistCntrs;
     }
 
     /**
      * @param partHistCntrs Partitions history reservation counters.
      */
-    public void partitionHistoryCountersMap(Map<Integer, PartitionMapMessage> partHistCntrs) {
+    public void partitionHistoryCountersMap(Map<Integer, PartitionLongMap> partHistCntrs) {
         this.partHistCntrs = partHistCntrs;
     }
 
@@ -303,7 +303,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             if (partHistCntrs == null)
                 partHistCntrs = new HashMap<>();
 
-            partHistCntrs.put(e.getKey(), new PartitionMapMessage(historyCntrs));
+            partHistCntrs.put(e.getKey(), new PartitionLongMap(historyCntrs));
         }
     }
 
@@ -313,7 +313,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      */
     Map<Integer, Long> partitionHistoryCounters(int grpId) {
         if (partHistCntrs != null) {
-            PartitionMapMessage res = partHistCntrs.get(grpId);
+            PartitionLongMap res = partHistCntrs.get(grpId);
 
             return res != null ? res.partitions() : Collections.emptyMap();
         }
