@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.thread.context;
 
-/** */
-public class ContextSnapshot extends ContextDataChain<ContextSnapshot> {
+/**
+ * Represents Snapshot of all {@link ContextAttribute}s and their corresponding values. Note that Snapshot also stores
+ * the states of {@link ContextAttribute}s for which value are note explicitly specified.
+ */
+public class ContextSnapshot extends ContextDataChainNode<ContextSnapshot> {
     /** */
     static final ContextSnapshot ROOT = new ContextSnapshot();
     
@@ -37,7 +40,13 @@ public class ContextSnapshot extends ContextDataChain<ContextSnapshot> {
         this.data = data;
     }
 
-    /** */
+    /**
+     * Stashes all {@link ContextAttribute} values attached to the thread from which this method is called and replaces
+     * them with ones stored in the current Snapshot.
+     *
+     * @return {@link Scope} instance that, when closed, restores the values of all {@link ContextAttribute}s to the
+     * state they were in before the current method was called.
+     */
     public Scope restore() {
         ThreadLocalContextStorage threadData = ThreadLocalContextStorage.get();
 
@@ -71,7 +80,10 @@ public class ContextSnapshot extends ContextDataChain<ContextSnapshot> {
         return this == ROOT;
     }
 
-    /** */
+    /**
+     * Captures Snapshot of all {@link ContextAttribute}s and their corresponding values attached to the thread from which
+     * this method is called.
+     */
     public static ContextSnapshot capture() {
         return ThreadLocalContextStorage.get().snapshot();
     }

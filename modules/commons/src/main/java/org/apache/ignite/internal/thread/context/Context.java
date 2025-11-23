@@ -17,11 +17,20 @@
 
 package org.apache.ignite.internal.thread.context;
 
-/** Represents mapping of {@link ContextAttribute} to their corresponding values with the ability to be attached to the thread. */
+/**
+ * Represents a set of mappings from the {@link ContextAttribute} to its corresponding value. The Context can be attached
+ * to a thread, making the {@link ContextAttribute} values accessible through the {@link ContextAttribute#get()}
+ * method when invoked from the same thread.
+ *
+ * @see ContextAttribute
+ * @see ContextSnapshot
+ * @see AttributeValueHolder#attach()
+ */
 public final class Context {
     /**
-     * Creates a new {@link AttributeValueHolder} with a single mapping of the specified {@link AttributeValueHolder}
-     * to the specified value. The {@link AttributeValueHolder} can be used to accumulate mappings.
+     * Creates a new Context containing a single mapping from the specified {@link AttributeValueHolder} to its value.
+     * The returned {@link AttributeValueHolder} represents the added mapping and can be used to accumulate to Context
+     * more mappings form {@link ContextAttribute} to its value.
      *
      * @see AttributeValueHolder#with(ContextAttribute, Object)
      */
@@ -30,7 +39,7 @@ public final class Context {
     }
 
     /** */
-    public static final class AttributeValueHolder extends ContextDataChain<AttributeValueHolder> {
+    public static final class AttributeValueHolder extends ContextDataChainNode<AttributeValueHolder> {
         /** */
         private static final AttributeValueHolder ROOT = new AttributeValueHolder();
 
@@ -54,7 +63,13 @@ public final class Context {
             this.val = val;
         }
 
-        /** Adds a new mapping of the specified attribute to its value to the current {@link ContextDataChain}. */
+        /**
+         * Expands Context by adding new mapping from the specified {@link ContextAttribute} to its value.
+         * After this operation, the Context contains all previously added mappings plus the new one.
+         *
+         * @return {@link AttributeValueHolder} instance that represents the added mapping and can be used to accumulate
+         * more mappings from {@link ContextAttribute} to its values.
+         */
         public <T> AttributeValueHolder with(ContextAttribute<T> attr, T val) {
             return attr.get() == val ? this : new AttributeValueHolder(attr, val, this);
         }
@@ -79,9 +94,9 @@ public final class Context {
         }
 
         /**
-         * Attaches {@link ContextAttribute} values stored in current {@link ContextDataChain} to the thread
-         * this method is called from. If {@link ContextAttribute} value was already attached for the current thread,
-         * its value will be stashed and replaced by the new ones.
+         * Attaches {@link ContextAttribute} values stored in current Context to the thread from which this method is
+         * called. If {@link ContextAttribute} value was already attached for the current thread, its value will be
+         * stashed and replaced by the new one.
          *
          * @return {@link Scope} instance that, when closed, resets the values for all {@link ContextAttribute}s added
          * to the current Context and restores them to the previously attached values, if any.

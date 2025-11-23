@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.thread.context;
 
 /** */
-public abstract class ContextDataChain<T> {
+public abstract class ContextDataChainNode<T> {
     /** */
     private final int storedAttrIdBits;
 
@@ -26,13 +26,13 @@ public abstract class ContextDataChain<T> {
     private final T prev;
 
     /** */
-    protected ContextDataChain() {
+    protected ContextDataChainNode() {
         storedAttrIdBits = 0;
         prev = null;
     }
 
     /** */
-    protected ContextDataChain(int storedAttrIdBits, T prev) {
+    protected ContextDataChainNode(int storedAttrIdBits, T prev) {
         this.storedAttrIdBits = storedAttrIdBits;
         this.prev = prev;
     }
