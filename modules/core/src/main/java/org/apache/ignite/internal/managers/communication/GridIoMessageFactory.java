@@ -118,6 +118,7 @@ import org.apache.ignite.internal.codegen.IgniteDhtDemandedPartitionsMapSerializ
 import org.apache.ignite.internal.codegen.IgniteDhtPartitionCountersMapSerializer;
 import org.apache.ignite.internal.codegen.IgniteDhtPartitionHistorySuppliersMapSerializer;
 import org.apache.ignite.internal.codegen.IgniteDhtPartitionsToReloadMapSerializer;
+import org.apache.ignite.internal.codegen.IgniteDiagnosticMessageSerializer;
 import org.apache.ignite.internal.codegen.IgniteTxKeySerializer;
 import org.apache.ignite.internal.codegen.IncrementalSnapshotAwareMessageSerializer;
 import org.apache.ignite.internal.codegen.JobStealingRequestSerializer;
