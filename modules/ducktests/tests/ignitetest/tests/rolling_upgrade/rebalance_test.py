@@ -103,6 +103,9 @@ class RollingUpgradeRebalanceTest(BaseRebalanceTest):
 
         total_alive_nodes = len(ignites.alive_nodes) + len(new_node.alive_nodes)
 
-        assert total_alive_nodes == self.test_context.expected_num_nodes, 'All nodes should be alive'
+        exp_alive_nodes = self.test_context.expected_num_nodes - data_gen_params.preloaders
+
+        assert total_alive_nodes == exp_alive_nodes, \
+            f"All nodes should be alive [exp={exp_alive_nodes}, act={total_alive_nodes}]"
 
         return get_result(new_node.nodes, preload_time, cache_count, entry_count, entry_size)
