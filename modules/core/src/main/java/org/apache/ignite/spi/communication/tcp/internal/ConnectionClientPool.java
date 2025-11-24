@@ -215,11 +215,8 @@ public class ConnectionClientPool {
             @Override public ClusterNode apply(UUID nodeId) {
                 ClusterNode node = nodeGetter.apply(nodeId);
 
-                if (node == null) {
-                    log.error("TEST | node getter didn't find node. Removing metrics. NodeId=" + nodeId);
-
+                if (node == null)
                     removeNodeMetrics(nodeId);
-                }
 
                 return node;
             }
@@ -420,23 +417,7 @@ public class ConnectionClientPool {
                 assert connIdx == client.connectionIndex() : client;
 
                 if (client.reserve()) {
-                    if (asyncMetric == null) {
-                        synchronized (metrics) {
-                            if (asyncMetric == null) {
-                                MetricRegistryImpl mreg = metricsMgr.registry(SHARED_METRICS_REGISTRY_NAME);
-
-                                // We assume that all the clients have the same async flag.
-                                asyncMetric = new AtomicBoolean(client.async());
-
-                                log.error("TEST | adding async metric, nodeId=" + nodeId);
-
-                                mreg.register(METRIC_NAME_ASYNC_CONNS, () -> asyncMetric.get(), "Asynchronous flag. If TRUE, " +
-                                    "connections put data in a queue (with some preprocessing) instead of immediate sending.");
-                            }
-                        }
-                    }
-                    else
-                        assert client.async() == asyncMetric.get();
+                    updateClientAcquiredMetric(client);
 
                     return client;
                 }
@@ -449,6 +430,25 @@ public class ConnectionClientPool {
             if (nodeMetrics != null)
                 nodeMetrics.acquiringThreadsCnt.decrementAndGet();
         }
+    }
+
+    /** */
+    private void updateClientAcquiredMetric(GridCommunicationClient client) {
+        if (asyncMetric == null) {
+            synchronized (metrics) {
+                if (asyncMetric == null) {
+                    MetricRegistryImpl mreg = metricsMgr.registry(SHARED_METRICS_REGISTRY_NAME);
+
+                    // We assume that all the clients have the same async flag.
+                    asyncMetric = new AtomicBoolean(client.async());
+
+                    mreg.register(METRIC_NAME_ASYNC_CONNS, () -> asyncMetric.get(), "Asynchronous flag. If TRUE, " +
+                        "connections put data in a queue (with some preprocessing) instead of immediate sending.");
+                }
+            }
+        }
+        else
+            assert client.async() == asyncMetric.get();
     }
 
     /**

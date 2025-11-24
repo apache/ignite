@@ -52,9 +52,9 @@
         <!--
             Uncomment to enable Ignite query execution debugging.
         -->
-        <!--
-            <Logger name="org.apache.ignite.internal.processors.query" level="DEBUG"/>
-        -->
+
+            <Logger name="org.apache.ignite.spi.communication.tcp" level="DEBUG"/>
+
 
         <!--
             Uncomment to enable Exchange, Rebalance and Partitions workflow debugging.

@@ -1217,6 +1217,8 @@ public class GridNioServer<T> {
             if (rcvdBytesCntMetric != null)
                 rcvdBytesCntMetric.add(cnt);
 
+            log.error("TEST | ses.bytesReceived(cnt)");
+
             ses.bytesReceived(cnt);
 
             // Sets limit to current position and
@@ -1283,6 +1285,8 @@ public class GridNioServer<T> {
 
                         if (sentBytesCntMetric != null)
                             sentBytesCntMetric.add(cnt);
+
+                        log.error("TEST | checkIdle, ses.bytesSent(cnt)");
 
                         ses.bytesSent(cnt);
                     }
@@ -1386,6 +1390,8 @@ public class GridNioServer<T> {
             if (rcvdBytesCntMetric != null)
                 rcvdBytesCntMetric.add(cnt);
 
+            log.error("TEST | ses.bytesReceived(cnt)");
+
             ses.bytesReceived(cnt);
             onRead(cnt);
 
@@ -1458,6 +1464,8 @@ public class GridNioServer<T> {
 
                     if (sentBytesCntMetric != null)
                         sentBytesCntMetric.add(cnt);
+
+                    log.error("TEST | checkIdle, ses.bytesSent(cnt)");
 
                     ses.bytesSent(cnt);
 
@@ -1545,6 +1553,8 @@ public class GridNioServer<T> {
 
                         if (sentBytesCntMetric != null)
                             sentBytesCntMetric.add(cnt);
+
+                        log.error("TEST | checkIdle, ses.bytesSent(cnt)");
 
                         ses.bytesSent(cnt);
                     }
@@ -1655,6 +1665,8 @@ public class GridNioServer<T> {
                 if (sentBytesCntMetric != null)
                     sentBytesCntMetric.add(cnt);
 
+                log.error("TEST | checkIdle, ses.bytesSent(cnt)");
+
                 ses.bytesSent(cnt);
 
                 if (!buf.hasRemaining())
@@ -1745,6 +1757,8 @@ public class GridNioServer<T> {
 
                 if (sentBytesCntMetric != null)
                     sentBytesCntMetric.add(cnt);
+
+                log.error("TEST | checkIdle, ses.bytesSent(cnt)");
 
                 ses.bytesSent(cnt);
                 onWrite(cnt);
@@ -2384,6 +2398,8 @@ public class GridNioServer<T> {
                 if (ses.procWrite.get() && (key.interestOps() & SelectionKey.OP_WRITE) == 0)
                     key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
 
+                log.error("TEST | ses.bytesSent(0)");
+
                 // Update timestamp to protected against false write timeout.
                 ses.bytesSent(0);
             }
@@ -2674,6 +2690,8 @@ public class GridNioServer<T> {
                     if (opWrite && now - ses.lastSendTime() > writeTimeout0) {
                         filterChain.onSessionWriteTimeout(ses);
 
+                        log.error("TEST | checkIdle, ses.bytesSent(0)");
+
                         // Update timestamp to avoid multiple notifications within one timeout interval.
                         ses.bytesSent(0);
 
@@ -2686,6 +2704,8 @@ public class GridNioServer<T> {
                         now - ses.lastReceiveTime() > idleTimeout0 &&
                         now - ses.lastSendScheduleTime() > idleTimeout0) {
                         filterChain.onSessionIdleTimeout(ses);
+
+                        log.error("TEST | checkIdle, ses.resetSendScheduleTime(), ses.bytesReceived(0)");
 
                         // Update timestamp to avoid multiple notifications within one timeout interval.
                         ses.resetSendScheduleTime();
