@@ -29,6 +29,9 @@ import org.jetbrains.annotations.Nullable;
  * Extended writer interface.
  */
 public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOutput {
+    /** Default value for {@link #failIfUnregistered()}. */
+    public static final boolean DFLT_FAIL_IF_UNREGISTERED = false;
+
     /**
      * @param obj Object to write.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
@@ -65,11 +68,6 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
      * @return Fail if unregistered flag value.
      */
     public boolean failIfUnregistered();
-
-    /**
-     * @param failIfUnregistered Fail if unregistered.
-     */
-    public void failIfUnregistered(boolean failIfUnregistered);
 
     /**
      * @param obj Object.

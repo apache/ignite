@@ -88,6 +88,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.IgniteCommonsSystemProperties.DFLT_IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_USE_BINARY_ARRAYS;
+import static org.apache.ignite.internal.binary.BinaryWriterEx.DFLT_FAIL_IF_UNREGISTERED;
 import static org.apache.ignite.internal.util.GridUnsafe.align;
 
 /**
@@ -2923,10 +2924,16 @@ public class BinaryUtils {
      * @param ctx Context.
      * @return Writer instance.
      */
-    public static BinaryWriterEx writer(BinaryContext ctx) {
+    public static BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered) {
         BinaryThreadLocalContext locCtx = BinaryThreadLocalContext.get();
 
-        return new BinaryWriterExImpl(ctx, BinaryStreams.outputStream((int)CommonUtils.KB, locCtx.chunk()), locCtx.schemaHolder(), null);
+        return new BinaryWriterExImpl(
+            ctx,
+            BinaryStreams.outputStream((int)CommonUtils.KB, locCtx.chunk()),
+            locCtx.schemaHolder(),
+            null,
+            failIfUnregistered
+        );
     }
 
     /**
@@ -2935,7 +2942,7 @@ public class BinaryUtils {
      * @return Writer instance.
      */
     public static BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out) {
-        return new BinaryWriterExImpl(ctx, out, BinaryThreadLocalContext.get().schemaHolder(), null);
+        return new BinaryWriterExImpl(ctx, out, BinaryThreadLocalContext.get().schemaHolder(), null, DFLT_FAIL_IF_UNREGISTERED);
     }
 
     /**
@@ -2944,7 +2951,7 @@ public class BinaryUtils {
      * @return Writer instance.
      */
     public static BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema) {
-        return new BinaryWriterExImpl(ctx, out, schema, null);
+        return new BinaryWriterExImpl(ctx, out, schema, null, DFLT_FAIL_IF_UNREGISTERED);
     }
 
     /** @return Instance of caching handler. */

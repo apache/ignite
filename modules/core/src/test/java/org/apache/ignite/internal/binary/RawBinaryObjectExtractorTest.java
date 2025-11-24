@@ -38,6 +38,8 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.binary.BinaryWriterEx.DFLT_FAIL_IF_UNREGISTERED;
+
 /** */
 public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
     /** */
@@ -49,7 +51,7 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
         
         byte[] serializedTestObjectsBytes;
 
-        try (BinaryWriterEx writer = BinaryUtils.writer(ctx)) {
+        try (BinaryWriterEx writer = BinaryUtils.writer(ctx, DFLT_FAIL_IF_UNREGISTERED)) {
             testObjects.forEach(writer::writeObject);
 
             serializedTestObjectsBytes = writer.array();
