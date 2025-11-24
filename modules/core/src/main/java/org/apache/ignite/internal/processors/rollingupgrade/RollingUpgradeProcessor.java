@@ -44,6 +44,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNodesRing;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.processors.metastorage.DistributedMetaStorage.IGNITE_INTERNAL_KEY_PREFIX;
@@ -103,7 +104,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
                         RollingUpgradeProcessor.this.lastJoiningNode = null;
                 }
             }
-        }, EVT_NODE_FAILED, EVT_NODE_LEFT);
+        }, EVT_NODE_JOINED, EVT_NODE_FAILED, EVT_NODE_LEFT);
 
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(new DistributedMetastorageLifecycleListener() {
             @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
