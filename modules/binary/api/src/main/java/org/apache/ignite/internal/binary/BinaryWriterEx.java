@@ -67,11 +67,6 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
     public boolean failIfUnregistered();
 
     /**
-     * @param failIfUnregistered Fail if unregistered.
-     */
-    public void failIfUnregistered(boolean failIfUnregistered);
-
-    /**
      * @param obj Object.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
