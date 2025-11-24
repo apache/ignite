@@ -227,6 +227,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      * Disables rolling upgrade.
      * This method can only be called on coordinator node.
      *
+     * <p>May be blocked while a node with a different version is still joining.</p>
+     *
      * @throws IgniteCheckedException If cluster has two or more nodes with different versions or if node is not coordinator
      * or metastorage is not ready.
      */
@@ -248,6 +250,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
         synchronized (lock) {
             if (lastJoiningNode != null) {
+                // Use 3 * joinTimeout as an upper time bound for joining nodes that may drop during validation
+                // without sending NODE_LEFT / NODE_FAILED events.
                 long timeout = ((TcpDiscoverySpi)ctx.config().getDiscoverySpi()).getJoinTimeout() * 3;
 
                 if (ring.node(lastJoiningNode.id()) != null || (timeout > 0 && U.currentTimeMillis() - lastJoiningNodeTimestamp > timeout))
