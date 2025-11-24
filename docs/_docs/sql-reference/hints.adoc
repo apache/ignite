@@ -14,4 +14,4 @@
 // limitations under the License.
 = Optimizer hints
 
-Currently, optimizer hints are supported only with link:../SQL/../SQL/sql-calcite.adoc#hints[Calcite SQL engine].
+Currently, optimizer hints are supported only with link:SQL/sql-calcite#hints[Calcite SQL engine].

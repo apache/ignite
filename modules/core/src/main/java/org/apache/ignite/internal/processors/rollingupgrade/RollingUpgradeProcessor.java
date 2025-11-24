@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -166,6 +167,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      *     </ul>
      */
     public void enable(IgniteProductVersion target, boolean force) throws IgniteCheckedException {
+        ctx.security().authorize(SecurityPermission.ADMIN_ROLLING_UPGRADE);
+
         if (startLatch.getCount() > 0)
             throw new IgniteCheckedException("Cannot enable rolling upgrade: processor has not been started yet");
 
@@ -213,6 +216,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      * or metastorage is not ready.
      */
     public void disable() throws IgniteCheckedException {
+        ctx.security().authorize(SecurityPermission.ADMIN_ROLLING_UPGRADE);
+
         if (!U.isLocalNodeCoordinator(ctx.discovery()))
             throw new IgniteCheckedException("Rolling upgrade can be disabled only on coordinator node");
 

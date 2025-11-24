@@ -597,4 +597,14 @@ public interface ConnectionProperties {
      * @param transactionLabel Transaction label.
      */
     public void setTransactionLabel(String transactionLabel);
+
+    /**
+     * @return Local flag.
+     */
+    public boolean isLocal();
+
+    /**
+     * @param loc Local flag.
+     */
+    public void setLocal(boolean loc);
 }
