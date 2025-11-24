@@ -41,16 +41,16 @@ class RollingUpgradeTest(IgniteTest):
     @defaults(upgrade_version=[str(DEV_BRANCH)], force=[False])
     @matrix(upgrade_coordinator_first=[True, False])
     def test_rolling_upgrade_in_mem(self, ignite_version, upgrade_version, upgrade_coordinator_first, force):
-        self._start_rolling_upgrade_test(ignite_version, upgrade_version, upgrade_coordinator_first, force, False)
+        self._rolling_upgrade(ignite_version, upgrade_version, upgrade_coordinator_first, force, False)
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(LATEST))
     @defaults(upgrade_version=[str(DEV_BRANCH)], force=[False])
     @matrix(upgrade_coordinator_first=[True, False])
     def test_rolling_upgrade_pds(self, ignite_version, upgrade_version, upgrade_coordinator_first, force):
-        self._start_rolling_upgrade_test(ignite_version, upgrade_version, upgrade_coordinator_first, force, True)
+        self._rolling_upgrade(ignite_version, upgrade_version, upgrade_coordinator_first, force, True)
 
-    def _start_rolling_upgrade_test(self, ignite_version, upgrade_version, upgrade_coordinator_first, force, with_persistence):
+    def _rolling_upgrade(self, ignite_version, upgrade_version, upgrade_coordinator_first, force, with_persistence):
         self.logger.info(f"Initiating Rolling Upgrade test from {ignite_version} to {upgrade_version} with persistence "
                          f"enabled [{with_persistence}] starting from coordinator [{upgrade_coordinator_first}]")
 
@@ -81,7 +81,7 @@ class RollingUpgradeTest(IgniteTest):
             metric_exporters={"org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"})
 
         if with_persistence:
-            ignite_cfg = ignite_cfg._replace(data_storage = DataStorageConfiguration(
+            ignite_cfg = ignite_cfg._replace(data_storage=DataStorageConfiguration(
                 default=DataRegionConfiguration(persistence_enabled=True)))
 
         ignites = IgniteApplicationService(
@@ -100,7 +100,7 @@ class RollingUpgradeTest(IgniteTest):
         return ignites
 
     def _upgrade_ignite_cluster(self, ignites: IgniteApplicationService, upgrade_version: str,
-                               upgrade_coordinator_first: bool):
+                                upgrade_coordinator_first: bool):
         self.logger.info(f"Starting rolling upgrade with data check for each node start-up.")
 
         ignites.config = ignites.config._replace(version=IgniteVersion(upgrade_version))
