@@ -34,11 +34,14 @@ public class DataLoaderAndCheckerApplication extends IgniteAwareApplication {
     /** {@inheritDoc} */
     @Override public void run(JsonNode jNode) throws IgniteInterruptedCheckedException {
         boolean check = jNode.get("check").asBoolean();
+        int backups = jNode.path("backups").asInt(0);
 
         markInitialized();
         waitForActivation();
 
         CacheConfiguration<Integer, CustomObject> cacheCfg = new CacheConfiguration<>("cache");
+
+        cacheCfg.setBackups(backups);
 
         IgniteCache<Integer, CustomObject> cache = ignite.getOrCreateCache(cacheCfg);
 
