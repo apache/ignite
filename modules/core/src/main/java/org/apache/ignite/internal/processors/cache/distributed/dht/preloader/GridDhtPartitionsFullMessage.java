@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -74,11 +75,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** Partitions update counters. */
     @Order(value = 8, method = "partitionCounters")
+    @Compress(condition = "compressed")
     @GridToStringInclude
     private IgniteDhtPartitionCountersMap partCntrs;
 
     /** Partitions history suppliers. */
     @Order(value = 9, method = "partitionHistorySuppliers")
+    @Compress
     @GridToStringInclude
     private IgniteDhtPartitionHistorySuppliersMap partHistSuppliers;
 
@@ -127,6 +130,12 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Order(value = 18, method = "lostPartitions")
     @GridToStringExclude
     private Map<Integer, int[]> lostParts;
+
+    /** */
+    private GridCacheSharedContext<?, ?> ctx;
+
+    /** */
+    private ClassLoader ldr;
 
     /**
      * Empty constructor.
@@ -510,6 +519,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
+        this.ctx = ctx;
+
         boolean marshal = !F.isEmpty(parts) && partsBytes == null;
 
         if (marshal) {
@@ -561,7 +572,11 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
+        this.ctx = ctx;
+
         ClassLoader clsLdr = U.resolveClassLoader(ldr, ctx.gridConfig());
+
+        this.ldr = clsLdr;
 
         Collection<byte[]> objectsToUnmarshall = new ArrayList<>();
 
@@ -681,5 +696,15 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     public void cleanUp() {
         partsBytes = null;
         partCntrs = null;
+    }
+
+    /** @return Context. */
+    public GridCacheSharedContext<?, ?> context() {
+        return ctx;
+    }
+
+    /** @return Class loader. */
+    public ClassLoader classLoader() {
+        return ldr;
     }
 }
