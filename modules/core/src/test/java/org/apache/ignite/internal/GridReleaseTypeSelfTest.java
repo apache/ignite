@@ -256,9 +256,9 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     @Test
     public void testJoiningNodeLeft() throws Exception {
         IgniteEx ign0 = startGrid(0, "2.18.0", false, cfg -> {
-                ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(0);
-                return cfg;
-            });
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(0);
+            return cfg;
+        });
 
         configureRollingUpgradeVersion(ign0, "2.18.1");
 
