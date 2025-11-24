@@ -90,6 +90,8 @@ class RollingUpgradeTest(IgniteTest):
             num_nodes=self.test_context.expected_num_nodes,
             java_class_name=self.JAVA_CLIENT_CLASS_NAME)
 
+        ignites.params = {"check": False}
+
         ignites.start()
 
         ignites.await_event(f"Topology snapshot \\[ver={self.test_context.expected_num_nodes}",
