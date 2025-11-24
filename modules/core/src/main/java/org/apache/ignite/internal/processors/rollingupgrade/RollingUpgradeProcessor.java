@@ -93,7 +93,17 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.event().addLocalEventListener(discoListener(), EVT_NODE_FAILED, EVT_NODE_LEFT);
+        ctx.event().addLocalEventListener(new GridLocalEventListener() {
+            @Override public void onEvent(Event evt) {
+                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
+
+                synchronized (lock) {
+                    if (RollingUpgradeProcessor.this.lastJoiningNode != null
+                        && RollingUpgradeProcessor.this.lastJoiningNode.id().equals(nodeId))
+                        RollingUpgradeProcessor.this.lastJoiningNode = null;
+                }
+            }
+        }, EVT_NODE_FAILED, EVT_NODE_LEFT);
 
         ctx.internalSubscriptionProcessor().registerDistributedMetastorageListener(new DistributedMetastorageLifecycleListener() {
             @Override public void onReadyForWrite(DistributedMetaStorage metastorage) {
@@ -327,32 +337,5 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
             throw new IgniteCheckedException("Patch version can only be incremented by 1");
 
         return true;
-    }
-
-    /** */
-    private GridLocalEventListener discoListener() {
-        return new GridLocalEventListener() {
-            @Override public void onEvent(Event evt) {
-                assert evt instanceof DiscoveryEvent;
-
-                assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
-
-                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
-
-                UUID nodeId = discoEvt.eventNode().id();
-
-                ClusterNode lastJoiningNode = RollingUpgradeProcessor.this.lastJoiningNode;
-
-                if (lastJoiningNode == null || !lastJoiningNode.id().equals(nodeId))
-                    return;
-
-                synchronized (lock) {
-                    if (lastJoiningNode == null || !lastJoiningNode.id().equals(nodeId))
-                        return;
-
-                    RollingUpgradeProcessor.this.lastJoiningNode = null;
-                }
-            }
-        };
     }
 }
