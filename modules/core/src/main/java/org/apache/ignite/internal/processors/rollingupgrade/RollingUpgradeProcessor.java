@@ -99,9 +99,8 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
                 UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
                 synchronized (lock) {
-                    if (RollingUpgradeProcessor.this.lastJoiningNode != null
-                        && RollingUpgradeProcessor.this.lastJoiningNode.id().equals(nodeId))
-                        RollingUpgradeProcessor.this.lastJoiningNode = null;
+                    if (lastJoiningNode != null && lastJoiningNode.id().equals(nodeId))
+                        lastJoiningNode = null;
                 }
             }
         }, EVT_NODE_JOINED, EVT_NODE_FAILED, EVT_NODE_LEFT);
