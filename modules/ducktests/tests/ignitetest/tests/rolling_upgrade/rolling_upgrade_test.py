@@ -18,9 +18,10 @@ Module contains rolling upgrade tests
 """
 from ducktape.mark import defaults, matrix
 
-from ignitetest.services.ignite import IgniteService
+from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
-from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
+from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
+from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.tests.rebalance.util import NUM_NODES
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.ignite_test import IgniteTest
@@ -31,34 +32,63 @@ class RollingUpgradeTest(IgniteTest):
     """
     Tests validates rolling upgrade
     """
+
+    JAVA_CLIENT_CLASS_NAME = ("org.apache.ignite.internal.ducktest.tests.persistence_upgrade_test."
+                              "DataLoaderAndCheckerApplication")
+
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(LATEST))
     @defaults(upgrade_version=[str(DEV_BRANCH)], force=[False])
     @matrix(upgrade_coordinator_first=[True, False])
-    def test_rolling_upgrade(self, ignite_version, upgrade_version, upgrade_coordinator_first, force):
-        self.logger.info(f"Initiating Rolling Upgrade test from {ignite_version} to {upgrade_version} "
-                         f"starting from coordinator [{upgrade_coordinator_first}]")
+    def test_rolling_upgrade_in_mem(self, ignite_version, upgrade_version, upgrade_coordinator_first, force):
+        self._start_rolling_upgrade_test(ignite_version, upgrade_version, upgrade_coordinator_first, force, False)
 
-        ignites = self.start_ignite_cluster(ignite_version)
+    @cluster(num_nodes=NUM_NODES)
+    @ignite_versions(str(LATEST))
+    @defaults(upgrade_version=[str(DEV_BRANCH)], force=[False])
+    @matrix(upgrade_coordinator_first=[True, False])
+    def test_rolling_upgrade_pds(self, ignite_version, upgrade_version, upgrade_coordinator_first, force):
+        self._start_rolling_upgrade_test(ignite_version, upgrade_version, upgrade_coordinator_first, force, True)
+
+    def _start_rolling_upgrade_test(self, ignite_version, upgrade_version, upgrade_coordinator_first, force, with_persistence):
+        self.logger.info(f"Initiating Rolling Upgrade test from {ignite_version} to {upgrade_version} with persistence "
+                         f"enabled [{with_persistence}] starting from coordinator [{upgrade_coordinator_first}]")
+
+        ignites = self._start_ignite_cluster_with_data_load(ignite_version, with_persistence)
 
         control_sh = ControlUtility(ignites)
 
+        if with_persistence:
+            control_sh.activate()
+
         control_sh.enable_rolling_upgrade(IgniteVersion(upgrade_version).vstring, force)
 
-        self.upgrade_ignite_cluster(ignites, upgrade_version, upgrade_coordinator_first)
+        self._upgrade_ignite_cluster(ignites, upgrade_version, upgrade_coordinator_first)
 
         control_sh.disable_rolling_upgrade()
 
+        control_sh.idle_verify()
+
+        assert len(ignites.alive_nodes) == self.test_context.expected_num_nodes, 'All nodes should be alive'
+
         ignites.stop()
 
-    def start_ignite_cluster(self, ignite_version: str):
-        self.logger.info("Cluster start-up.")
+    def _start_ignite_cluster_with_data_load(self, ignite_version: str, with_persistence):
+        self.logger.info("Cluster start-up with data load.")
 
         ignite_cfg = IgniteConfiguration(
             version=IgniteVersion(ignite_version),
             metric_exporters={"org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpi"})
 
-        ignites = IgniteService(self.test_context, ignite_cfg, num_nodes=self.test_context.expected_num_nodes)
+        if with_persistence:
+            ignite_cfg = ignite_cfg._replace(data_storage = DataStorageConfiguration(
+                default=DataRegionConfiguration(persistence_enabled=True)))
+
+        ignites = IgniteApplicationService(
+            self.test_context,
+            ignite_cfg,
+            num_nodes=self.test_context.expected_num_nodes,
+            java_class_name=self.JAVA_CLIENT_CLASS_NAME)
 
         ignites.start()
 
@@ -69,10 +99,13 @@ class RollingUpgradeTest(IgniteTest):
 
         return ignites
 
-    def upgrade_ignite_cluster(self, ignites: IgniteService, upgrade_version: str, upgrade_coordinator_first: bool):
-        self.logger.info(f"Starting rolling upgrade.")
+    def _upgrade_ignite_cluster(self, ignites: IgniteApplicationService, upgrade_version: str,
+                               upgrade_coordinator_first: bool):
+        self.logger.info(f"Starting rolling upgrade with data check for each node start-up.")
 
-        ignites.config = IgniteConfiguration(version=IgniteVersion(upgrade_version))
+        ignites.config = ignites.config._replace(version=IgniteVersion(upgrade_version))
+
+        ignites.params = {"check": True}
 
         ignite_upgraded = 0
 
@@ -81,7 +114,7 @@ class RollingUpgradeTest(IgniteTest):
 
             ignites.stop_node(ignite)
 
-            ignites.start_node(ignite, clean=False)
+            ignites.start_node(ignite)
 
             ignite_upgraded += 1
 
