@@ -695,7 +695,7 @@ public class ConnectionClientPool {
             GridCommunicationClient[] nodeClients = clients.get(nodeId);
 
             // Node might already leave the cluster.
-            if (nodeClients == null) {
+            if (nodeClients != null) {
                 long nowMillis = U.currentTimeMillis();
 
                 res = new NodeMetrics(res);
@@ -741,7 +741,7 @@ public class ConnectionClientPool {
                     return clients;
                 });
             }
-            else {
+            else if (res != null) {
                 log.error("TEST | updating node metrics, no clients found at all. Seems node left. " +
                     "Removing metrics. NodeId=" + nodeId);
 
