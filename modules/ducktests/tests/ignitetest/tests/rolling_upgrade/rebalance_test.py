@@ -22,8 +22,7 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster
 from ignitetest.tests.rebalance.persistent_test import await_and_check_rebalance
-from ignitetest.tests.rebalance.util import NUM_NODES, BaseRebalanceTest, start_ignite, await_rebalance_start, \
-    get_result
+from ignitetest.tests.rebalance.util import NUM_NODES, BaseRebalanceTest, start_ignite, get_result
 from ignitetest.tests.util import preload_data
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.version import LATEST, DEV_BRANCH, IgniteVersion
@@ -46,13 +45,13 @@ class RollingUpgradeRebalanceTest(BaseRebalanceTest):
         """
         Tests rebalance in-memory.
         """
-        return self._start_rebalance(ignite_version, upgrade_version, force, backups, cache_count, entry_count,
+        return self._start_rebalance_test(ignite_version, upgrade_version, force, backups, cache_count, entry_count,
                                    entry_size, preloaders, thread_pool_size, batch_size, batches_prefetch_count,
                                    throttle, False)
 
     @cluster(num_nodes=NUM_NODES)
     @ignite_versions(str(LATEST))
-    @defaults(upgrade_version=[str(DEV_BRANCH)], force=[False], backups=[1], cache_count=[1], entry_count=[5_000],
+    @defaults(upgrade_version=[str(DEV_BRANCH)], force=[False], backups=[1], cache_count=[1], entry_count=[15_000],
               entry_size=[50_000], preloaders=[1], thread_pool_size=[None], batch_size=[None],
               batches_prefetch_count=[None], throttle=[None])
     def test_pds(self, ignite_version, upgrade_version, force, backups, cache_count, entry_count, entry_size,
@@ -60,11 +59,11 @@ class RollingUpgradeRebalanceTest(BaseRebalanceTest):
         """
         Tests rebalance with persistence.
         """
-        return self._start_rebalance(ignite_version, upgrade_version, force, backups, cache_count, entry_count,
+        return self._start_rebalance_test(ignite_version, upgrade_version, force, backups, cache_count, entry_count,
                                    entry_size, preloaders, thread_pool_size, batch_size, batches_prefetch_count,
                                    throttle, True)
 
-    def _start_rebalance(self, ignite_version, upgrade_version, force, backups, cache_count, entry_count, entry_size,
+    def _start_rebalance_test(self, ignite_version, upgrade_version, force, backups, cache_count, entry_count, entry_size,
                          preloaders, thread_pool_size, batch_size, batches_prefetch_count, throttle, with_persistence):
         """
         Tests rebalance on node join with version upgrade.
@@ -100,10 +99,10 @@ class RollingUpgradeRebalanceTest(BaseRebalanceTest):
         if with_persistence:
             control_utility.add_to_baseline(new_node.nodes)
 
-            await_and_check_rebalance(new_node)
-        else:
-            await_rebalance_start(new_node)
+        await_and_check_rebalance(new_node)
 
-            new_node.await_rebalance()
+        total_alive_nodes = len(ignites.alive_nodes) + len(new_node.alive_nodes)
+
+        assert total_alive_nodes == self.test_context.expected_num_nodes, 'All nodes should be alive'
 
         return get_result(new_node.nodes, preload_time, cache_count, entry_count, entry_size)
