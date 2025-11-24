@@ -85,8 +85,6 @@ import org.apache.ignite.internal.processors.query.calcite.integration.ViewsInte
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchScale001Test;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchScale010Test;
 import org.apache.ignite.internal.processors.query.calcite.integration.tpch.TpchScale100Test;
-import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcCrossEngineTest;
-import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.JoinCommuteRulesTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.JoinOrderOptimizationTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
@@ -104,8 +102,6 @@ import org.junit.runners.Suite;
     ProjectScanMergeRuleTest.class,
     CalciteQueryProcessorTest.class,
     CalciteErrorHandlilngIntegrationTest.class,
-    JdbcQueryTest.class,
-    JdbcCrossEngineTest.class,
     CalciteBasicSecondaryIndexIntegrationTest.class,
     CancelTest.class,
     DateTimeTest.class,

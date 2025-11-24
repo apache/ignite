@@ -26,8 +26,10 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
 
 /** Task to disable rolling upgrade. */
 @GridInternal
@@ -48,6 +50,13 @@ public class RollingUpgradeDisableTask extends VisorOneNodeTask<NoArg, RollingUp
         /** */
         protected RollingUpgradeDisableJob(NoArg arg, boolean debug) {
             super(arg, debug);
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet requiredPermissions() {
+            // This task does nothing but delegate a call to the Ignite Rolling Upgrade processor, which performs user
+            // permissions checks on its own. Therefore, it is safe to execute task without any additional permissions check.
+            return NO_PERMISSIONS;
         }
 
         /** {@inheritDoc} */

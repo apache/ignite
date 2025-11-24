@@ -279,8 +279,10 @@ public class JdbcConnectionContext extends ClientListenerAbstractConnectionConte
             }
         };
 
+        boolean loc = features.contains(JdbcThinFeature.LOCAL_QUERIES);
+
         handler = new JdbcRequestHandler(busyLock, snd, maxCursors, distributedJoins, enforceJoinOrder,
-            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, qryEngine,
+            collocated, replicatedOnly, autoCloseCursors, lazyExec, loc, skipReducerOnUpdate, qryEngine,
             dataPageScanEnabled, updateBatchSize,
             concurrency, isolation, timeout, lb,
             ver, this);
