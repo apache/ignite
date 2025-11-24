@@ -298,7 +298,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             Map<Integer, Long> historyCntrs = e.getValue();
 
             if (historyCntrs.isEmpty())
-                return;
+                continue;
 
             if (partHistCntrs == null)
                 partHistCntrs = new HashMap<>();
@@ -315,7 +315,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         if (partHistCntrs != null) {
             PartitionLongMap res = partHistCntrs.get(grpId);
 
-            return res != null ? res.partitions() : Collections.emptyMap();
+            return res != null ? F.emptyIfNull(res.partitions()) : Collections.emptyMap();
         }
 
         return Collections.emptyMap();
