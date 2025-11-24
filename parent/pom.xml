@@ -344,7 +344,7 @@
                         <groups>
                             <group>
                                 <title>Common Grid APIs</title>
-                                <packages>org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.scheduler:org.apache.ignite.events:org.apache.ignite.messaging:org.apache.ignite.startup*:org.apache.ignite.mem</packages>
+                                <packages>org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.scheduler:org.apache.ignite.events:org.apache.ignite.messaging:org.apache.ignite.startup*:org.apache.ignite.mem:org.apache.ignite.topology</packages>
                             </group>
                             <group>
                                 <title>Data Grid APIs</title>

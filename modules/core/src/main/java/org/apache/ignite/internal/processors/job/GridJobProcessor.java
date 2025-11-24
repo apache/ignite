@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.processors.job;
 
-import java.io.Serializable;
 import java.util.AbstractCollection;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -89,7 +86,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.collision.CollisionSpi;
@@ -600,8 +596,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         boolean loc = ctx.localNodeId().equals(taskNode.id()) && !ctx.config().isMarshalLocalJobs();
 
-        GridTaskSessionRequest req = new GridTaskSessionRequest(ses.getId(), ses.getJobId(),
-            loc ? null : U.marshal(marsh, attrs), attrs);
+        GridTaskSessionRequest req = new GridTaskSessionRequest(ses.getId(), ses.getJobId(), attrs);
+
+        if (!loc)
+            req.marshalAttributes(marsh);
 
         Object topic = TOPIC_TASK.topic(ses.getJobId(), ctx.discovery().localNode().id());
 
@@ -1214,11 +1212,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         PartitionsReservation partsReservation = null;
 
-        if (req.getCacheIds() != null) {
-            assert req.getPartition() >= 0 : req;
-            assert !F.isEmpty(req.getCacheIds()) : req;
+        if (req.cacheIds() != null) {
+            assert req.partition() >= 0 : req;
+            assert !F.isEmpty(req.cacheIds()) : req;
 
-            partsReservation = new PartitionsReservation(req.getCacheIds(), req.getPartition(), req.getTopVer());
+            partsReservation = new PartitionsReservation(req.cacheIds(), req.partition(), req.topologyVersion());
         }
 
         GridJobWorker job = null;
@@ -1231,22 +1229,22 @@ public class GridJobProcessor extends GridProcessorAdapter {
         }
 
         try {
-            long endTime = req.getCreateTime() + req.getTimeout();
+            long endTime = req.getCreateTime() + req.timeout();
 
             // Account for overflow.
             if (endTime < 0)
                 endTime = Long.MAX_VALUE;
 
-            GridDeployment tmpDep = req.isForceLocalDeployment() ?
-                ctx.deploy().getLocalDeployment(req.getTaskClassName()) :
+            GridDeployment tmpDep = req.forceLocalDeployment() ?
+                ctx.deploy().getLocalDeployment(req.taskClassName()) :
                 ctx.deploy().getGlobalDeployment(
                     req.getDeploymentMode(),
-                    req.getTaskName(),
-                    req.getTaskClassName(),
-                    req.getUserVersion(),
+                    req.taskName(),
+                    req.taskClassName(),
+                    req.userVersion(),
                     node.id(),
-                    req.getClassLoaderId(),
-                    req.getLoaderParticipants(),
+                    req.classLoaderId(),
+                    req.loaderParticipants(),
                     null);
 
             if (tmpDep == null) {
@@ -1255,7 +1253,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                 // Check local tasks.
                 for (Map.Entry<String, GridDeployment> d : ctx.task().getUsedDeploymentMap().entrySet()) {
-                    if (d.getValue().classLoaderId().equals(req.getClassLoaderId())) {
+                    if (d.getValue().classLoaderId().equals(req.classLoaderId())) {
                         assert d.getValue().local();
 
                         tmpDep = d.getValue();
@@ -1277,74 +1275,42 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     GridJobSessionImpl jobSes;
                     GridJobContextImpl jobCtx;
 
+                    boolean loc = ctx.localNodeId().equals(node.id()) && !ctx.config().isMarshalLocalJobs();
+
                     try {
-                        List<ComputeJobSibling> siblings = null;
-
-                        if (!req.isDynamicSiblings()) {
-                            Collection<ComputeJobSibling> siblings0 = req.getSiblings();
-
-                            if (siblings0 == null) {
-                                assert req.getSiblingsBytes() != null;
-
-                                siblings0 = U.unmarshal(marsh, req.getSiblingsBytes(), U.resolveClassLoader(ctx.config()));
-                            }
-
-                            siblings = new ArrayList<>(siblings0);
-                        }
-
-                        Map<Object, Object> sesAttrs = null;
-
-                        if (req.isSessionFullSupport()) {
-                            sesAttrs = req.getSessionAttributes();
-
-                            if (sesAttrs == null)
-                                sesAttrs = U.unmarshal(marsh, req.getSessionAttributesBytes(),
-                                    U.resolveClassLoader(dep.classLoader(), ctx.config()));
-                        }
-
-                        IgnitePredicate<ClusterNode> topPred = req.getTopologyPredicate();
-
-                        if (topPred == null && req.getTopologyPredicateBytes() != null) {
-                            topPred = U.unmarshal(marsh, req.getTopologyPredicateBytes(),
-                                U.resolveClassLoader(dep.classLoader(), ctx.config()));
-                        }
+                        if (!loc)
+                            req.finishUnmarshal(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
                         // Note that we unmarshal session/job attributes here with proper class loader.
                         GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
-                            req.getSessionId(),
+                            req.sessionId(),
                             node.id(),
-                            req.getTaskName(),
+                            req.taskName(),
                             dep,
-                            req.getTaskClassName(),
+                            req.taskClassName(),
                             req.topology(),
-                            topPred,
-                            req.getStartTaskTime(),
+                            req.getTopologyPredicate(),
+                            req.startTaskTime(),
                             endTime,
-                            siblings,
-                            sesAttrs,
-                            req.isSessionFullSupport(),
-                            req.isInternal(),
+                            req.getSiblings(),
+                            req.getSessionAttributes(),
+                            req.sessionFullSupport(),
+                            req.internal(),
                             req.executorName(),
                             ctx.security().securityContext()
                         );
 
-                        taskSes.setCheckpointSpi(req.getCheckpointSpi());
+                        taskSes.setCheckpointSpi(req.checkpointSpi());
                         taskSes.setClassLoader(dep.classLoader());
 
-                        jobSes = new GridJobSessionImpl(ctx, taskSes, req.getJobId());
+                        jobSes = new GridJobSessionImpl(ctx, taskSes, req.jobId());
 
-                        Map<? extends Serializable, ? extends Serializable> jobAttrs = req.getJobAttributes();
-
-                        if (jobAttrs == null)
-                            jobAttrs = U.unmarshal(marsh, req.getJobAttributesBytes(),
-                                U.resolveClassLoader(dep.classLoader(), ctx.config()));
-
-                        jobCtx = new GridJobContextImpl(ctx, req.getJobId(), jobAttrs);
+                        jobCtx = new GridJobContextImpl(ctx, req.jobId(), req.getJobAttributes());
                     }
                     catch (IgniteCheckedException e) {
                         IgniteException ex = new IgniteException("Failed to deserialize task attributes " +
-                            "[taskName=" + req.getTaskName() + ", taskClsName=" + req.getTaskClassName() +
-                            ", codeVer=" + req.getUserVersion() + ", taskClsLdr=" + dep.classLoader() + ']', e);
+                            "[taskName=" + req.taskName() + ", taskClsName=" + req.taskClassName() +
+                            ", codeVer=" + req.userVersion() + ", taskClsLdr=" + dep.classLoader() + ']', e);
 
                         U.error(log, ex.getMessage(), e);
 
@@ -1359,14 +1325,13 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         req.getCreateTime(),
                         jobSes,
                         jobCtx,
-                        req.getJobBytes(),
                         req.getJob(),
                         node,
-                        req.isInternal(),
+                        req.internal(),
                         evtLsnr,
                         holdLsnr,
                         partsReservation,
-                        req.getTopVer(),
+                        req.topologyVersion(),
                         req.executorName(),
                         this::computeJobWorkerInterruptTimeout
                     );
@@ -1376,7 +1341,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     // If exception occurs on job initialization, deployment is released in job listener.
                     releaseDep = false;
 
-                    if (job.initialize(dep, dep.deployedClass(req.getTaskClassName()).get1())) {
+                    if (job.initialize(dep, dep.deployedClass(req.taskClassName()).get1())) {
                         // Internal jobs will always be executed synchronously.
                         if (job.isInternal()) {
                             // This is an internal job and can be executed inside busy lock
@@ -1422,7 +1387,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                 U.error(log, "Received computation request with duplicate job ID (could be " +
                                     "network malfunction, source node may hang if task timeout was not set) " +
                                     "[srcNode=" + node.id() +
-                                    ", jobId=" + req.getJobId() + ", sesId=" + req.getSessionId() +
+                                    ", jobId=" + req.jobId() + ", sesId=" + req.sessionId() +
                                     ", locNodeId=" + ctx.localNodeId() + ']');
 
                             // No sync execution.
@@ -1436,9 +1401,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 else {
                     // Deployment is null.
                     IgniteException ex = new IgniteDeploymentException("Task was not deployed or was redeployed since " +
-                        "task execution [taskName=" + req.getTaskName() + ", taskClsName=" + req.getTaskClassName() +
-                        ", codeVer=" + req.getUserVersion() + ", clsLdrId=" + req.getClassLoaderId() +
-                        ", seqNum=" + req.getClassLoaderId().localId() + ", depMode=" + req.getDeploymentMode() +
+                        "task execution [taskName=" + req.taskName() + ", taskClsName=" + req.taskClassName() +
+                        ", codeVer=" + req.userVersion() + ", clsLdrId=" + req.classLoaderId() +
+                        ", seqNum=" + req.classLoaderId().localId() + ", depMode=" + req.getDeploymentMode() +
                         ", dep=" + dep + ']');
 
                     U.error(log, ex.getMessage(), ex);
@@ -1643,17 +1608,17 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         if (sndNode == null) {
             U.warn(log, "Failed to reply to sender node because it left grid [nodeId=" + node.id() +
-                ", jobId=" + req.getJobId() + ']');
+                ", jobId=" + req.jobId() + ']');
 
             if (ctx.event().isRecordable(EVT_JOB_FAILED)) {
                 JobEvent evt = new JobEvent();
 
-                evt.jobId(req.getJobId());
-                evt.message("Job reply failed (original task node left grid): " + req.getJobId());
+                evt.jobId(req.jobId());
+                evt.message("Job reply failed (original task node left grid): " + req.jobId());
                 evt.node(ctx.discovery().localNode());
-                evt.taskName(req.getTaskName());
-                evt.taskClassName(req.getTaskClassName());
-                evt.taskSessionId(req.getSessionId());
+                evt.taskName(req.taskName());
+                evt.taskClassName(req.taskClassName());
+                evt.taskSessionId(req.sessionId());
                 evt.type(EVT_JOB_FAILED);
                 evt.taskNode(node);
                 evt.taskSubjectId(securitySubjectId(ctx));
@@ -1670,23 +1635,23 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             GridJobExecuteResponse jobRes = new GridJobExecuteResponse(
                 locNodeId,
-                req.getSessionId(),
-                req.getJobId(),
-                loc ? null : U.marshal(marsh, ex),
+                req.sessionId(),
+                req.jobId(),
                 ex,
-                loc ? null : U.marshal(marsh, null),
                 null,
-                loc ? null : U.marshal(marsh, null),
                 null,
                 false,
                 null);
 
-            if (req.isSessionFullSupport()) {
+            if (!loc)
+                jobRes.marshallUserData(marsh, log);
+
+            if (req.sessionFullSupport()) {
                 // Send response to designated job topic.
                 // Always go through communication to preserve order,
                 // if attributes are enabled.
                 // Job response topic.
-                Object topic = TOPIC_TASK.topic(req.getJobId(), locNodeId);
+                Object topic = TOPIC_TASK.topic(req.jobId(), locNodeId);
 
                 long timeout = endTime - U.currentTimeMillis();
 
@@ -1700,7 +1665,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     sndNode,
                     topic,
                     jobRes,
-                    req.isInternal() ? MANAGEMENT_POOL : SYSTEM_POOL,
+                    req.internal() ? MANAGEMENT_POOL : SYSTEM_POOL,
                     timeout,
                     false);
             }
@@ -1708,30 +1673,30 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 ctx.task().processJobExecuteResponse(ctx.localNodeId(), jobRes);
             else
                 // Send response to common topic as unordered message.
-                ctx.io().sendToGridTopic(sndNode, TOPIC_TASK, jobRes, req.isInternal() ? MANAGEMENT_POOL : SYSTEM_POOL);
+                ctx.io().sendToGridTopic(sndNode, TOPIC_TASK, jobRes, req.internal() ? MANAGEMENT_POOL : SYSTEM_POOL);
         }
         catch (IgniteCheckedException e) {
             // The only option here is to log, as we must assume that resending will fail too.
             if ((e instanceof ClusterTopologyCheckedException) || isDeadNode(node.id()))
                 // Avoid stack trace for left nodes.
                 U.error(log, "Failed to reply to sender node because it left grid [nodeId=" + node.id() +
-                    ", jobId=" + req.getJobId() + ']');
+                    ", jobId=" + req.jobId() + ']');
             else {
                 assert sndNode != null;
 
                 U.error(log, "Error sending reply for job [nodeId=" + sndNode.id() + ", jobId=" +
-                    req.getJobId() + ']', e);
+                    req.jobId() + ']', e);
             }
 
             if (ctx.event().isRecordable(EVT_JOB_FAILED)) {
                 JobEvent evt = new JobEvent();
 
-                evt.jobId(req.getJobId());
-                evt.message("Failed to send reply for job: " + req.getJobId());
+                evt.jobId(req.jobId());
+                evt.message("Failed to send reply for job: " + req.jobId());
                 evt.node(ctx.discovery().localNode());
-                evt.taskName(req.getTaskName());
-                evt.taskClassName(req.getTaskClassName());
-                evt.taskSessionId(req.getSessionId());
+                evt.taskName(req.taskName());
+                evt.taskClassName(req.taskClassName());
+                evt.taskSessionId(req.sessionId());
                 evt.type(EVT_JOB_FAILED);
                 evt.taskNode(node);
                 evt.taskSubjectId(securitySubjectId(ctx));
@@ -1756,7 +1721,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
         }
 
         try {
-            GridTaskSessionImpl ses = ctx.session().getSession(req.getSessionId());
+            GridTaskSessionImpl ses = ctx.session().getSession(req.sessionId());
 
             if (ses == null) {
                 if (log.isDebugEnabled())
@@ -1767,9 +1732,10 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             boolean loc = ctx.localNodeId().equals(nodeId) && !ctx.config().isMarshalLocalJobs();
 
-            Map<?, ?> attrs = loc ? req.getAttributes() :
-                (Map<?, ?>)U.unmarshal(marsh, req.getAttributesBytes(),
-                    U.resolveClassLoader(ses.getClassLoader(), ctx.config()));
+            if (!loc)
+                req.unmarshalAttributes(marsh, U.resolveClassLoader(ses.getClassLoader(), ctx.config()));
+
+            Map<?, ?> attrs = req.attributes();
 
             if (ctx.event().isRecordable(EVT_TASK_SESSION_ATTR_SET)) {
                 Event evt = new TaskEvent(
@@ -1789,7 +1755,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 ses.setInternal(attrs);
             }
 
-            onChangeTaskAttributes(req.getSessionId(), req.getJobId(), attrs);
+            onChangeTaskAttributes(req.sessionId(), req.jobId(), attrs);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to deserialize session attributes.", e);

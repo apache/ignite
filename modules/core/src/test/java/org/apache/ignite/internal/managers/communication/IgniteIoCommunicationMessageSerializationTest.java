@@ -73,12 +73,5 @@ public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommu
 
             return IgniteUuid.randomUuid();
         }
-
-        /** {@inheritDoc} */
-        @Override public int readInt() {
-            super.readInt();
-
-            return 1;
-        }
     }
 }

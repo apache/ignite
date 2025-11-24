@@ -599,7 +599,7 @@ public class GridDhtPartitionDemander {
 
                         assert part != null;
 
-                        boolean last = supplyMsg.last() != null && supplyMsg.last().containsKey(p);
+                        boolean last = F.mapContainsKey(supplyMsg.last(), p);
 
                         if (part.state() == MOVING) {
                             boolean reserved = part.reserve();
@@ -665,7 +665,7 @@ public class GridDhtPartitionDemander {
                     }
                 }
 
-                Collection<Integer> missed = supplyMsg.missed() == null ? Collections.emptyList() : supplyMsg.missed();
+                Collection<Integer> missed = F.emptyIfNull(supplyMsg.missed());
 
                 // Only request partitions based on latest topology version.
                 for (Integer miss : missed) {

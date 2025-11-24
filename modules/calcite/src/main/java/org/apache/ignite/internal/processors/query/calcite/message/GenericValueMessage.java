@@ -17,23 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
 public final class GenericValueMessage implements ValueMessage {
     /** */
-    @GridDirectTransient
     private Object val;
 
     /** */
+    @Order(0)
     private byte[] serialized;
 
     /** */
@@ -51,6 +48,20 @@ public final class GenericValueMessage implements ValueMessage {
         return val;
     }
 
+    /**
+     * @return Serialized value.
+     */
+    public byte[] serialized() {
+        return serialized;
+    }
+
+    /**
+     * @param serialized Serialized value.
+     */
+    public void serialized(byte[] serialized) {
+        this.serialized = serialized;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         if (val != null && serialized == null)
@@ -59,50 +70,8 @@ public final class GenericValueMessage implements ValueMessage {
 
     /** {@inheritDoc} */
     @Override public void prepareUnmarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        if (serialized != null && val == null) {
+        if (serialized != null && val == null)
             val = U.unmarshal(ctx, serialized, U.resolveClassLoader(ctx.gridConfig()));
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByteArray(serialized))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                serialized = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

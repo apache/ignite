@@ -574,11 +574,13 @@ public class ReliabilityTest extends AbstractThinClientTest {
         try {
             // Initialize cluster and client
             ignite = startGrid(getConfiguration().setServiceConfiguration(testSrvcCfg));
-            client = startClient(ignite);
+            client = Ignition.startClient(getClientConfiguration(ignite)
+                .setReconnectThrottlingRetries(0));
+
             TestServiceInterface svc = client.services().serviceProxy(SERVICE_NAME, TestServiceInterface.class);
 
             // Invoke the service method with Externalizable parameter for the first time.
-            // This triggers registration of the PersonExternalizable type in the cluter.
+            // This triggers registration of the PersonExternalizable type in the cluster.
             String result = svc.testMethod(person);
             assertEquals("testMethod(PersonExternalizable person): " + person, result);
 

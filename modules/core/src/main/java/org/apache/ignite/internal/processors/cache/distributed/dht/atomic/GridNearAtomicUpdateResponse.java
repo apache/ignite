@@ -23,7 +23,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -188,12 +187,12 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         if (errs == null)
             errs = new UpdateErrors();
 
-        errs.errorMessage(new ErrorMessage(err));
+        errs.error(err);
     }
 
     /** {@inheritDoc} */
     @Override public Throwable error() {
-        return errs != null ? errs.errorMessage().error() : null;
+        return errs != null ? errs.error() : null;
     }
 
     /**

@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -547,7 +548,28 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
                 assignments0.add(F.isEmpty(partNodes) ? emptyList() : singletonList(F.first(partNodes).id()));
         }
 
-        return ColocationGroup.forAssignments(assignments0);
+        String dcId = cacheContext().kernalContext().discovery().localNode().dataCenterId();
+        Collection<UUID> sameDcNodeIds = dcId == null ? null : new HashSet<>(F.viewReadOnly(
+            cctx.kernalContext().discovery().aliveServerNodes(),
+            ClusterNode::id, n -> Objects.equals(n.dataCenterId(), dcId)));
+
+        if (dcId != null) {
+            List<List<UUID>> curDcAssignments = new ArrayList<>(assignments0.size());
+
+            for (List<UUID> assignment : assignments0) {
+                List<UUID> curDcAssignment = U.arrayList(assignment, sameDcNodeIds::contains);
+
+                // If any assignment become empty after filtration by DC, return original assignments.
+                if (F.isEmpty(curDcAssignment) && !F.isEmpty(assignment))
+                    return ColocationGroup.forCacheAssignments(assignments0);
+
+                curDcAssignments.add(curDcAssignment);
+            }
+
+            return ColocationGroup.forAssignments(curDcAssignments);
+        }
+
+        return ColocationGroup.forCacheAssignments(assignments0);
     }
 
     /** */
@@ -557,29 +579,32 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         GridDhtPartitionTopology top = cctx.topology();
 
         List<ClusterNode> nodes = cctx.discovery().discoCache(topVer).cacheGroupAffinityNodes(cctx.groupId());
-        List<UUID> nodes0;
+        List<UUID> nodeIds;
 
         top.readLock();
 
         try {
-            if (!top.rebalanceFinished(topVer)) {
-                nodes0 = new ArrayList<>(nodes.size());
+            int parts = top.partitions();
 
-                int parts = top.partitions();
+            List<ClusterNode> nodes0 = top.rebalanceFinished(topVer) ? nodes :
+                U.arrayList(nodes, node -> isOwner(node.id(), top, parts));
 
-                for (ClusterNode node : nodes) {
-                    if (isOwner(node.id(), top, parts))
-                        nodes0.add(node.id());
-                }
+            String dcId = cacheContext().kernalContext().discovery().localNode().dataCenterId();
+
+            if (dcId != null) {
+                List<ClusterNode> curDcNodes = U.arrayList(nodes0, node -> dcId.equals(node.dataCenterId()));
+
+                if (!F.isEmpty(curDcNodes))
+                    nodes0 = curDcNodes;
             }
-            else
-                nodes0 = Commons.transform(nodes, ClusterNode::id);
+
+            nodeIds = Commons.transform(nodes0, ClusterNode::id);
         }
         finally {
             top.readUnlock();
         }
 
-        return ColocationGroup.forNodes(nodes0);
+        return ColocationGroup.forNodes(nodeIds);
     }
 
     /** */
