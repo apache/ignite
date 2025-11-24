@@ -88,9 +88,11 @@ class RollingUpgradeTest(IgniteTest):
             self.test_context,
             ignite_cfg,
             num_nodes=self.test_context.expected_num_nodes,
-            java_class_name=self.JAVA_CLIENT_CLASS_NAME)
-
-        ignites.params = {"check": False}
+            java_class_name=self.JAVA_CLIENT_CLASS_NAME,
+            params= {
+                "check": False,
+                "backups": 1
+            })
 
         ignites.start()
 
