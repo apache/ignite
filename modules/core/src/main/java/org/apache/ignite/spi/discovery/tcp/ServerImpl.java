@@ -3431,12 +3431,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             sendMessageToClients(msg);
 
-            Map<TcpDiscoveryNode, UUID> failedNodes;
+            TreeMap<TcpDiscoveryNode, UUID> failedNodes;
 
             TcpDiscoverySpiState state;
 
             synchronized (mux) {
-                failedNodes = new HashMap<>(ServerImpl.this.failedNodes);
+                failedNodes = new TreeMap<>(ServerImpl.this.failedNodes);
 
                 state = spiState;
             }
@@ -3570,7 +3570,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     boolean previousNode = sndState.markLastFailedNodeAlive();
 
                                     if (previousNode)
-                                        failedNodes.remove(failedNodes.size() - 1);
+                                        failedNodes.remove(failedNodes.pollFirstEntry().getKey());
                                     else {
                                         newNextNode = false;
 
@@ -3928,7 +3928,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             ", next=" + next + ']');
 
                         if (prev)
-                            failedNodes.remove(failedNodes.size() - 1);
+                            failedNodes.remove(failedNodes.pollLastEntry().getKey());
                         else {
                             newNextNode = false;
 
