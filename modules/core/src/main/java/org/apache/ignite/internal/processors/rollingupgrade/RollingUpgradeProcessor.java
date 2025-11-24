@@ -227,7 +227,7 @@ public class RollingUpgradeProcessor extends GridProcessorAdapter implements Dis
      * Disables rolling upgrade.
      * This method can only be called on coordinator node.
      *
-     * <p>May be blocked while a node with a different version is still joining.</p>
+     * <p>May be blocked while a node with a different version is still joining or during metastorage operations.</p>
      *
      * @throws IgniteCheckedException If cluster has two or more nodes with different versions or if node is not coordinator
      * or metastorage is not ready.
