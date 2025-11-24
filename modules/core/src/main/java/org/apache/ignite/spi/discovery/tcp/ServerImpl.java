@@ -3570,7 +3570,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     boolean previousNode = sndState.markLastFailedNodeAlive();
 
                                     if (previousNode)
-                                        failedNodes.remove(failedNodes.pollFirstEntry().getKey());
+                                        failedNodes.remove(failedNodes.lastKey());
                                     else {
                                         newNextNode = false;
 
@@ -3928,7 +3928,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             ", next=" + next + ']');
 
                         if (prev)
-                            failedNodes.remove(failedNodes.pollLastEntry().getKey());
+                            failedNodes.remove(failedNodes.lastKey());
                         else {
                             newNextNode = false;
 
