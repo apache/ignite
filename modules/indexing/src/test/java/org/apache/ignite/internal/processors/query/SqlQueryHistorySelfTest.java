@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.running.QueryHistory;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -49,6 +50,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.util.lang.GridFunc.first;
 
 /**
  * Check query history metrics from server node.
@@ -226,11 +228,29 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSqlFieldsQueryHistoryWithInitiatorId() {
-        String testId = "testId";
+        String testId0 = "testId0";
+        String testId1 = "testId1";
 
-        SqlFieldsQuery qry = new SqlFieldsQuery("select * from String").setQueryInitiatorId(testId);
+        SqlFieldsQuery qry0 = new SqlFieldsQuery("select * from String").setQueryInitiatorId(testId0);
 
-        checkQueryMetrics(qry, testId);
+        checkQueryMetrics(qry0, testId0);
+
+        SqlFieldsQuery qry1 = new SqlFieldsQuery("select * from String").setQueryInitiatorId(testId1);
+
+        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
+
+        cache.query(qry1).getAll();
+
+        Collection<QueryHistory> historyCol = queryNode().context().query().runningQueryManager()
+            .queryHistoryMetrics().values();
+
+        assertFalse(F.isEmpty(historyCol));
+
+        QueryHistory history = first(historyCol);
+
+        assertNotNull(history);
+
+        assertEquals(testId1, history.initiatorId());
     }
 
     /**
@@ -432,9 +452,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      * @param failures Expected number of failures.
      * @param first {@code true} if metrics checked for first query only.
      */
-    private void checkMetrics(int sz, int idx, int execs, int failures,
-        boolean first) {
-
+    private void checkMetrics(int sz, int idx, int execs, int failures, boolean first) {
         checkMetrics(sz, idx, execs, failures, first, null);
     }
 
@@ -448,9 +466,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      * @param first {@code true} if metrics checked for first query only.
      * @param initId Initiator ID.
      */
-    private void checkMetrics(int sz, int idx, int execs, int failures,
-        boolean first, String initId) {
-
+    private void checkMetrics(int sz, int idx, int execs, int failures, boolean first, String initId) {
         Collection<QueryHistory> metrics = queryNode().context().query().runningQueryManager()
             .queryHistoryMetrics().values();
 

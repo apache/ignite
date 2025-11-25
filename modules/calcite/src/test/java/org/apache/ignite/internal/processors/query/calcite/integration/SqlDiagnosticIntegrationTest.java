@@ -1003,22 +1003,29 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
     /** Verifies that user-defined query initiator ID is present in the SQL_QUERY_HISTORY system view. */
     @Test
-    public void testSqlFieldsQueryWithInitiatorId() throws IgniteInterruptedCheckedException {
-        String testId = "testId";
-
+    public void testSqlFieldsQueryWithInitiatorId() throws Exception {
         IgniteEx grid = grid(0);
 
         IgniteCache<Long, Long> cache = prepareTestCache(grid);
 
-        cache.query(new SqlFieldsQuery("select * from test").setQueryInitiatorId(testId)).getAll();
+        for (String testId : new String[] {"testId0", "testId1"}) {
+            cache.query(new SqlFieldsQuery("select * from test").setQueryInitiatorId(testId)).getAll();
 
-        SystemView<SqlQueryHistoryView> history = grid.context().systemView().view(SQL_QRY_HIST_VIEW);
+            assertTrue(waitForCondition(() -> {
+                SystemView<SqlQueryHistoryView> history = grid.context().systemView().view(SQL_QRY_HIST_VIEW);
 
-        assertTrue(waitForCondition(() -> history.size() == 1, 1000));
+                assertNotNull(history);
 
-        SqlQueryHistoryView view = first(history);
+                if (history.size() != 1)
+                    return false;
 
-        assertEquals(testId, view.initiatorId());
+                SqlQueryHistoryView view = first(history);
+
+                assertNotNull(view);
+
+                return testId.equals(view.initiatorId());
+            }, 3_000));
+        }
     }
 
     /** */

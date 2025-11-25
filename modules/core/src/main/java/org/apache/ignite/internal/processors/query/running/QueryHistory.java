@@ -49,8 +49,15 @@ public class QueryHistory {
      * @param failed {@code True} query executed unsuccessfully {@code false} otherwise.
      * @param initId Initiator ID.
      */
-    public QueryHistory(String qry, String schema, boolean loc, long startTime, long duration, boolean failed,
-        @Nullable String initId) {
+    public QueryHistory(
+        String qry,
+        String schema,
+        boolean loc,
+        long startTime,
+        long duration,
+        boolean failed,
+        @Nullable String initId
+    ) {
         key = new QueryHistoryKey(qry, schema, loc);
 
         long failures = failed ? 1 : 0;
@@ -77,7 +84,7 @@ public class QueryHistory {
         long curLastStart = val.lastStartTime();
         long newLastStart = m.lastStartTime();
 
-        String initiatorId = curLastStart >= newLastStart
+        String initiatorId = curLastStart > newLastStart
             ? val.initiatorId()
             : m.initiatorId();
 
