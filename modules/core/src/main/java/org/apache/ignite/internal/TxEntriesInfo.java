@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -25,6 +24,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -44,7 +44,7 @@ public final class TxEntriesInfo extends IgniteDiagnosticMessage.DiagnosticBaseI
     private Collection<KeyCacheObject> keys;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor required by {@link GridIoMessageFactory}.
      */
     public TxEntriesInfo() {
         // No-op.

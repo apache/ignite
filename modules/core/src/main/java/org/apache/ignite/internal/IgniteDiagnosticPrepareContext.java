@@ -30,8 +30,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteDiagnosticMessage.TxInfo;
-
 /**
  * Groups diagnostic closures by node/closure type.
  */
