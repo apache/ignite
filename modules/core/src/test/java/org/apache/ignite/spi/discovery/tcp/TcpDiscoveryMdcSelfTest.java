@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Objects;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
@@ -41,11 +41,9 @@ public class TcpDiscoveryMdcSelfTest extends TcpDiscoverySelfTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+        String prev = System.getProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
 
-        boolean order = rnd.nextBoolean();
-
-        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, order ? DC_ID_0 : DC_ID_1);
+        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, Objects.equals(prev, DC_ID_1) ? DC_ID_0 : DC_ID_1);
 
         return cfg;
     }
