@@ -83,12 +83,6 @@ class MessageSerializerGenerator {
     /** */
     private static final String METHOD_JAVADOC = "/** */";
 
-    /** */
-    private static final String MARSHAL_ERR_MSG = "\"Failed to marshal [err=\" + e + \"]\"";
-
-    /** */
-    private static final String UNMARSHAL_ERR_MSG = "\"Failed to unmarshal [err=\" + e + \"]\"";
-
     /** Collection of lines for {@code writeTo} method. */
     private final List<String> write = new ArrayList<>();
 
@@ -222,7 +216,7 @@ class MessageSerializerGenerator {
 
             indent++;
 
-            returnFalseIfWriteFailed(code, "writer.writeHeader", null, "directType()");
+            returnFalseIfWriteFailed(code, "writer.writeHeader", "directType()");
 
             code.add(EMPTY);
             code.add(line("writer.onHeaderWritten();"));
@@ -315,8 +309,6 @@ class MessageSerializerGenerator {
     private void returnFalseIfWriteFailed(VariableElement field) throws Exception {
         String methodName = field.getAnnotation(Order.class).method();
 
-        Compress compress = field.getAnnotation(Compress.class);
-
         String getExpr = (F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName) + "()";
 
         TypeMirror type = field.asType();
@@ -324,7 +316,7 @@ class MessageSerializerGenerator {
         if (type.getKind().isPrimitive()) {
             String typeName = capitalizeOnlyFirst(type.getKind().name());
 
-            returnFalseIfWriteFailed(write, "writer.write" + typeName, compress, getExpr);
+            returnFalseIfWriteFailed(write, "writer.write" + typeName, getExpr);
 
             return;
         }
@@ -336,14 +328,14 @@ class MessageSerializerGenerator {
             if (componentType.getKind().isPrimitive()) {
                 String typeName = capitalizeOnlyFirst(componentType.getKind().name());
 
-                returnFalseIfWriteFailed(write, "writer.write" + typeName + "Array", compress, getExpr);
+                returnFalseIfWriteFailed(write, "writer.write" + typeName + "Array", getExpr);
 
                 return;
             }
 
             imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
-            returnFalseIfWriteFailed(write, "writer.writeObjectArray", compress, getExpr,
+            returnFalseIfWriteFailed(write, "writer.writeObjectArray", getExpr,
                 "MessageCollectionItemType." + messageCollectionItemType(componentType));
 
             return;
@@ -351,19 +343,19 @@ class MessageSerializerGenerator {
 
         if (type.getKind() == TypeKind.DECLARED) {
             if (sameType(type, String.class))
-                returnFalseIfWriteFailed(write, "writer.writeString", compress, getExpr);
+                returnFalseIfWriteFailed(write, "writer.writeString", getExpr);
 
             else if (sameType(type, BitSet.class))
-                returnFalseIfWriteFailed(write, "writer.writeBitSet", compress, getExpr);
+                returnFalseIfWriteFailed(write, "writer.writeBitSet", getExpr);
 
             else if (sameType(type, UUID.class))
-                returnFalseIfWriteFailed(write, "writer.writeUuid", compress, getExpr);
+                returnFalseIfWriteFailed(write, "writer.writeUuid", getExpr);
 
             else if (sameType(type, "org.apache.ignite.lang.IgniteUuid"))
-                returnFalseIfWriteFailed(write, "writer.writeIgniteUuid", compress, getExpr);
+                returnFalseIfWriteFailed(write, "writer.writeIgniteUuid", getExpr);
 
             else if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
-                returnFalseIfWriteFailed(write, "writer.writeAffinityTopologyVersion", compress, getExpr);
+                returnFalseIfWriteFailed(write, "writer.writeAffinityTopologyVersion", getExpr);
 
             else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
@@ -372,22 +364,22 @@ class MessageSerializerGenerator {
 
                 imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
-                returnFalseIfWriteFailed(write, "writer.writeMap", compress, getExpr,
+                returnFalseIfWriteFailed(write, "writer.writeMap", getExpr,
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)),
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)));
             }
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.KeyCacheObject")))
-                returnFalseIfWriteFailed(write, "writer.writeKeyCacheObject", compress, getExpr);
+                returnFalseIfWriteFailed(write, "writer.writeKeyCacheObject", getExpr);
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.CacheObject")))
-                returnFalseIfWriteFailed(write, "writer.writeCacheObject", compress, getExpr);
+                returnFalseIfWriteFailed(write, "writer.writeCacheObject", getExpr);
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
-                returnFalseIfWriteFailed(write, "writer.writeGridLongList", compress, getExpr);
+                returnFalseIfWriteFailed(write, "writer.writeGridLongList", getExpr);
 
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
-                returnFalseIfWriteFailed(write, "writer.writeMessage", compress, getExpr);
+                returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr);
 
             else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
@@ -396,7 +388,7 @@ class MessageSerializerGenerator {
 
                 imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
-                returnFalseIfWriteFailed(write, "writer.writeCollection", compress, getExpr,
+                returnFalseIfWriteFailed(write, "writer.writeCollection", getExpr,
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
 
@@ -416,80 +408,16 @@ class MessageSerializerGenerator {
      *     return false;
      * </pre>
      */
-    private void returnFalseIfWriteFailed(Collection<String> code, String accessor, @Nullable Compress compress, @Nullable String... args) {
+    private void returnFalseIfWriteFailed(Collection<String> code, String accessor, @Nullable String... args) {
         String argsStr = String.join(", ", args);
 
-        if (compress == null) {
-            code.add(line("if (!%s(msg.%s))", accessor, argsStr));
-
-            indent++;
-
-            code.add(line("return false;"));
-
-            indent--;
-
-            return;
-        }
-
-        imports.add("org.apache.ignite.internal.util.typedef.internal.U");
-        imports.add("org.apache.ignite.IgniteCheckedException");
-
-        String ctxMethodName = compress.context() + "()";
-
-        String compressMethodName = compress.condition();
-
-        if (!compressMethodName.isEmpty()) {
-            code.add(line("if (msg.%s()) {", compress.condition()));
-
-            indent++;
-        }
-
-        code.add(line("try {"));
-
-        indent++;
-
-        code.add(line("byte[] marshalled = U.zip(U.marshal(msg.%s, msg.%s),", ctxMethodName, argsStr));
-
-        indent++;
-
-        code.add(line("msg.%s.gridConfig().getNetworkCompressionLevel());" + NL, ctxMethodName));
-
-        indent--;
-
-        code.add(line("if (!%s(%s))", "writer.writeByteArray", "marshalled"));
+        code.add(line("if (!%s(msg.%s))", accessor, argsStr));
 
         indent++;
 
         code.add(line("return false;"));
 
         indent--;
-        indent--;
-
-        code.add(line("}"));
-
-        code.add(line("catch (IgniteCheckedException e) {"));
-
-        indent++;
-
-        code.add(line("U.error(msg.%s.messageLogger(), %s);", ctxMethodName, MARSHAL_ERR_MSG));
-
-        indent--;
-
-        code.add(line("}"));
-
-        if (!compressMethodName.isEmpty()) {
-            indent--;
-
-            code.add(line("}"));
-
-            code.add(line("else if (!%s(msg.%s))", accessor, argsStr));
-
-            indent++;
-
-            code.add(line("return false;"));
-
-            indent--;
-        }
     }
 
     /**
@@ -504,12 +432,10 @@ class MessageSerializerGenerator {
 
         String name = F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName;
 
-        Compress compress = field.getAnnotation(Compress.class);
-
         if (type.getKind().isPrimitive()) {
             String typeName = capitalizeOnlyFirst(type.getKind().name());
 
-            returnFalseIfReadFailed(name, "reader.read" + typeName, compress);
+            returnFalseIfReadFailed(name, "reader.read" + typeName);
 
             return;
         }
@@ -521,7 +447,7 @@ class MessageSerializerGenerator {
             if (componentType.getKind().isPrimitive()) {
                 String typeName = capitalizeOnlyFirst(componentType.getKind().name());
 
-                returnFalseIfReadFailed(name, "reader.read" + typeName + "Array", compress);
+                returnFalseIfReadFailed(name, "reader.read" + typeName + "Array");
 
                 return;
             }
@@ -531,7 +457,7 @@ class MessageSerializerGenerator {
 
                 assert ctype.getKind().isPrimitive();
 
-                returnFalseIfReadFailed(name, "reader.readObjectArray", compress,
+                returnFalseIfReadFailed(name, "reader.readObjectArray",
                     "MessageCollectionItemType." + messageCollectionItemType(ctype),
                     ctype.getKind().name().toLowerCase() + "[].class");
 
@@ -543,7 +469,7 @@ class MessageSerializerGenerator {
 
                 String cls = componentElement.getSimpleName().toString();
 
-                returnFalseIfReadFailed(name, "reader.readObjectArray", compress,
+                returnFalseIfReadFailed(name, "reader.readObjectArray",
                     "MessageCollectionItemType." + messageCollectionItemType(componentType),
                     cls + ".class");
 
@@ -559,48 +485,48 @@ class MessageSerializerGenerator {
 
         if (type.getKind() == TypeKind.DECLARED) {
             if (sameType(type, String.class))
-                returnFalseIfReadFailed(name, "reader.readString", compress);
+                returnFalseIfReadFailed(name, "reader.readString");
 
             else if (sameType(type, BitSet.class))
-                returnFalseIfReadFailed(name, "reader.readBitSet", compress);
+                returnFalseIfReadFailed(name, "reader.readBitSet");
 
             else if (sameType(type, UUID.class))
-                returnFalseIfReadFailed(name, "reader.readUuid", compress);
+                returnFalseIfReadFailed(name, "reader.readUuid");
 
             else if (sameType(type, "org.apache.ignite.lang.IgniteUuid"))
-                returnFalseIfReadFailed(name, "reader.readIgniteUuid", compress);
+                returnFalseIfReadFailed(name, "reader.readIgniteUuid");
 
             else if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
-                returnFalseIfReadFailed(name, "reader.readAffinityTopologyVersion", compress);
+                returnFalseIfReadFailed(name, "reader.readAffinityTopologyVersion");
 
             else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
 
                 assert typeArgs.size() == 2;
 
-                returnFalseIfReadFailed(name, "reader.readMap", compress,
+                returnFalseIfReadFailed(name, "reader.readMap",
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)),
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)), "false");
             }
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.KeyCacheObject")))
-                returnFalseIfReadFailed(name, "reader.readKeyCacheObject", compress);
+                returnFalseIfReadFailed(name, "reader.readKeyCacheObject");
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.CacheObject")))
-                returnFalseIfReadFailed(name, "reader.readCacheObject", compress);
+                returnFalseIfReadFailed(name, "reader.readCacheObject");
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
-                returnFalseIfReadFailed(name, "reader.readGridLongList", compress);
+                returnFalseIfReadFailed(name, "reader.readGridLongList");
 
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
-                returnFalseIfReadFailed(name, "reader.readMessage", compress);
+                returnFalseIfReadFailed(name, "reader.readMessage");
 
             else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
 
                 assert typeArgs.size() == 1;
 
-                returnFalseIfReadFailed(name, "reader.readCollection", compress,
+                returnFalseIfReadFailed(name, "reader.readCollection",
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
 
@@ -700,68 +626,11 @@ class MessageSerializerGenerator {
      *
      * @param var Variable name.
      * @param mtd Method name.
-     * @param compress Compress annotation.
      */
-    private void returnFalseIfReadFailed(String var, String mtd, @Nullable Compress compress, String... args) {
+    private void returnFalseIfReadFailed(String var, String mtd, String... args) {
         String argsStr = String.join(", ", args);
 
-        if (compress == null)
-            read.add(line("msg.%s(%s(%s));", var, mtd, argsStr));
-        else {
-            imports.add("org.apache.ignite.internal.util.typedef.internal.U");
-            imports.add("org.apache.ignite.IgniteCheckedException");
-
-            String ctxMethodName = compress.context() + "()";
-
-            String conditionMethodName = compress.condition();
-
-            String clsLdrMethodName = compress.classLoader() + "()";
-
-            if (!conditionMethodName.isEmpty()) {
-                read.add(line("if (msg.%s()) {", conditionMethodName));
-
-                indent++;
-            }
-
-            read.add(line("try {"));
-
-            indent++;
-
-            read.add(line("msg.%s(U.unmarshalZip(msg.%s.marshaller(),", var, ctxMethodName));
-
-            indent++;
-
-            read.add(line("reader.readByteArray(), msg.%s));", clsLdrMethodName));
-
-            indent--;
-            indent--;
-
-            read.add(line("}"));
-
-            read.add(line("catch (IgniteCheckedException e) {"));
-
-            indent++;
-
-            read.add(line("U.error(msg.%s.messageLogger(), %s);", ctxMethodName, UNMARSHAL_ERR_MSG));
-
-            indent--;
-
-            read.add(line("}"));
-
-            if (!conditionMethodName.isEmpty()) {
-                indent--;
-
-                read.add(line("}"));
-
-                read.add(line("else"));
-
-                indent++;
-
-                read.add(line("msg.%s(%s(%s));", var, mtd, argsStr));
-
-                indent--;
-            }
-        }
+        read.add(line("msg.%s(%s(%s));", var, mtd, argsStr));
 
         read.add(EMPTY);
 
