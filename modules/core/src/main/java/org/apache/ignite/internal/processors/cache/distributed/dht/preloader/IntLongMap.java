@@ -22,39 +22,42 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/** Map for storing partition ID and long value (e.g. partition size or partition history counter). */
-public class PartitionLongMap implements Message {
+/**
+ * Map for storing integer to long value mapping (e.g. partition size or partition history counter for
+ * a partition of a given id).
+ */
+public class IntLongMap implements Message {
     /** Type code. */
     public static final short TYPE_CODE = 514;
 
-    /** Partition map. */
-    @Order(value = 0, method = "partitions")
-    private @Nullable Map<Integer, Long> parts;
+    /** Map. */
+    @Order(0)
+    private @Nullable Map<Integer, Long> map;
 
     /** Default constructor. */
-    public PartitionLongMap() {
+    public IntLongMap() {
         // No-op.
     }
 
     /**
-     * @param parts Partition map.
+     * @param map Map.
      */
-    public PartitionLongMap(@Nullable Map<Integer, Long> parts) {
-        this.parts = parts;
+    public IntLongMap(@Nullable Map<Integer, Long> map) {
+        this.map = map;
     }
 
     /**
-     * @return Partition map.
+     * @return Map.
      */
-    public @Nullable Map<Integer, Long> partitions() {
-        return parts;
+    public @Nullable Map<Integer, Long> map() {
+        return map;
     }
 
     /**
-     * @param parts Partition map.
+     * @param map Map.
      */
-    public void partitions(Map<Integer, Long> parts) {
-        this.parts = parts;
+    public void map(Map<Integer, Long> map) {
+        this.map = map;
     }
 
     /** {@inheritDoc} */

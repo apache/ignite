@@ -63,12 +63,12 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /** Partitions sizes. */
     @Order(value = 9, method = "partitionSizesMap")
     @GridToStringInclude
-    private Map<Integer, PartitionLongMap> partsSizes;
+    private Map<Integer, IntLongMap> partsSizes;
 
     /** Partitions history reservation counters. */
     @Order(value = 10, method = "partitionHistoryCountersMap")
     @GridToStringInclude
-    private Map<Integer, PartitionLongMap> partHistCntrs;
+    private Map<Integer, IntLongMap> partHistCntrs;
 
     /** Error message. */
     @Order(value = 11, method = "errorMessage")
@@ -244,7 +244,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         if (partsSizes == null)
             partsSizes = new HashMap<>();
 
-        partsSizes.put(grpId, new PartitionLongMap(partSizesMap));
+        partsSizes.put(grpId, new IntLongMap(partSizesMap));
     }
 
     /**
@@ -257,36 +257,36 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         if (partsSizes == null)
             return Collections.emptyMap();
 
-        PartitionLongMap sizesMap = partsSizes.get(grpId);
+        IntLongMap sizesMap = partsSizes.get(grpId);
 
-        return sizesMap != null ? F.emptyIfNull(sizesMap.partitions()) : Collections.emptyMap();
+        return sizesMap != null ? F.emptyIfNull(sizesMap.map()) : Collections.emptyMap();
     }
 
     /**
      * @return Partitions sizes.
      */
-    public Map<Integer, PartitionLongMap> partitionSizesMap() {
+    public Map<Integer, IntLongMap> partitionSizesMap() {
         return partsSizes;
     }
 
     /**
      * @param partsSizes Partitions sizes.
      */
-    public void partitionSizesMap(Map<Integer, PartitionLongMap> partsSizes) {
+    public void partitionSizesMap(Map<Integer, IntLongMap> partsSizes) {
         this.partsSizes = partsSizes;
     }
 
     /**
      * @return Partitions history reservation counters.
      */
-    public Map<Integer, PartitionLongMap> partitionHistoryCountersMap() {
+    public Map<Integer, IntLongMap> partitionHistoryCountersMap() {
         return partHistCntrs;
     }
 
     /**
      * @param partHistCntrs Partitions history reservation counters.
      */
-    public void partitionHistoryCountersMap(Map<Integer, PartitionLongMap> partHistCntrs) {
+    public void partitionHistoryCountersMap(Map<Integer, IntLongMap> partHistCntrs) {
         this.partHistCntrs = partHistCntrs;
     }
 
@@ -303,7 +303,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
             if (partHistCntrs == null)
                 partHistCntrs = new HashMap<>();
 
-            partHistCntrs.put(e.getKey(), new PartitionLongMap(historyCntrs));
+            partHistCntrs.put(e.getKey(), new IntLongMap(historyCntrs));
         }
     }
 
@@ -313,9 +313,9 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      */
     Map<Integer, Long> partitionHistoryCounters(int grpId) {
         if (partHistCntrs != null) {
-            PartitionLongMap res = partHistCntrs.get(grpId);
+            IntLongMap res = partHistCntrs.get(grpId);
 
-            return res != null ? F.emptyIfNull(res.partitions()) : Collections.emptyMap();
+            return res != null ? F.emptyIfNull(res.map()) : Collections.emptyMap();
         }
 
         return Collections.emptyMap();
@@ -391,13 +391,8 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        boolean marshal = parts != null && partsBytes == null;
-
-        if (marshal) {
-            byte[] partsBytes0 = null;
-
-            if (parts != null && partsBytes == null)
-                partsBytes0 = U.marshal(ctx, parts);
+        if (parts != null && partsBytes == null) {
+            byte[] partsBytes0 = U.marshal(ctx, parts);
 
             if (compressed()) {
                 try {

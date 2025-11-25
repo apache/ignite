@@ -119,6 +119,7 @@ import org.apache.ignite.internal.codegen.IgniteDhtPartitionHistorySuppliersMapS
 import org.apache.ignite.internal.codegen.IgniteDhtPartitionsToReloadMapSerializer;
 import org.apache.ignite.internal.codegen.IgniteTxKeySerializer;
 import org.apache.ignite.internal.codegen.IncrementalSnapshotAwareMessageSerializer;
+import org.apache.ignite.internal.codegen.IntLongMapSerializer;
 import org.apache.ignite.internal.codegen.JobStealingRequestSerializer;
 import org.apache.ignite.internal.codegen.LatchAckMessageSerializer;
 import org.apache.ignite.internal.codegen.MetadataRequestMessageSerializer;
@@ -127,7 +128,6 @@ import org.apache.ignite.internal.codegen.MissingMappingRequestMessageSerializer
 import org.apache.ignite.internal.codegen.MissingMappingResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.NearCacheUpdatesSerializer;
 import org.apache.ignite.internal.codegen.NodeIdMessageSerializer;
-import org.apache.ignite.internal.codegen.PartitionLongMapSerializer;
 import org.apache.ignite.internal.codegen.PartitionReservationsMapSerializer;
 import org.apache.ignite.internal.codegen.PartitionsToReloadSerializer;
 import org.apache.ignite.internal.codegen.RecoveryLastReceivedMessageSerializer;
@@ -224,7 +224,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Ign
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionLongMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IntLongMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionReservationsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsToReload;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.LatchAckMessage;
@@ -483,7 +483,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(CachePartitionsToReloadMap.TYPE_CODE, CachePartitionsToReloadMap::new, new CachePartitionsToReloadMapSerializer());
         factory.register(IgniteDhtPartitionsToReloadMap.TYPE_CODE, IgniteDhtPartitionsToReloadMap::new,
             new IgniteDhtPartitionsToReloadMapSerializer());
-        factory.register(PartitionLongMap.TYPE_CODE, PartitionLongMap::new, new PartitionLongMapSerializer());
+        factory.register(IntLongMap.TYPE_CODE, IntLongMap::new, new IntLongMapSerializer());
         factory.register(DeploymentModeMessage.TYPE_CODE, DeploymentModeMessage::new, new DeploymentModeMessageSerializer());
 
         // [-3..119] [124..129] [-23..-28] [-36..-55] [183..188] - this

@@ -90,7 +90,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionLongMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IntLongMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
@@ -1441,7 +1441,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         if (!partsSizes.isEmpty())
-            m.partitionSizes(F.viewReadOnly(partsSizes, PartitionLongMap::new));
+            m.partitionSizes(F.viewReadOnly(partsSizes, IntLongMap::new));
 
         return m;
     }
@@ -1772,7 +1772,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 boolean updated = false;
 
-                Map<Integer, PartitionLongMap> partsSizes = F.emptyIfNull(msg.partitionSizes());
+                Map<Integer, IntLongMap> partsSizes = F.emptyIfNull(msg.partitionSizes());
 
                 for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
                     Integer grpId = entry.getKey();
@@ -1782,13 +1782,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     GridDhtPartitionTopology top = grp == null ? clientTops.get(grpId) : grp.topology();
 
                     if (top != null) {
-                        PartitionLongMap sizesMap = partsSizes.get(grpId);
+                        IntLongMap sizesMap = partsSizes.get(grpId);
 
                         updated |= top.update(null,
                             entry.getValue(),
                             null,
                             msg.partsToReload(cctx.localNodeId(), grpId),
-                            sizesMap != null ? F.emptyIfNull(sizesMap.partitions()) : Collections.emptyMap(),
+                            sizesMap != null ? F.emptyIfNull(sizesMap.map()) : Collections.emptyMap(),
                             msg.topologyVersion(),
                             null,
                             null);
