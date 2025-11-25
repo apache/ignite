@@ -56,7 +56,7 @@ public final class ExchangeInfo extends IgniteDiagnosticMessage.DiagnosticBaseIn
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -63;
+        return -62;
     }
 
     /** {@inheritDoc} */

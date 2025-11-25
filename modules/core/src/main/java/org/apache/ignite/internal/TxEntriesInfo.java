@@ -75,7 +75,7 @@ public final class TxEntriesInfo extends IgniteDiagnosticMessage.DiagnosticBaseI
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -64;
+        return -63;
     }
 
     /** {@inheritDoc} */

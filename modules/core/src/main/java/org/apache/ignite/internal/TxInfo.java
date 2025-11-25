@@ -51,7 +51,7 @@ public final class TxInfo extends IgniteDiagnosticMessage.DiagnosticBaseInfo {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -65;
+        return -64;
     }
 
     /** */
