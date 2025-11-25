@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Objects;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -28,9 +25,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public final class TxInfo extends IgniteDiagnosticMessage.DiagnosticBaseInfo {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     @Order(value = 0, method = "dhtVersion")
     private GridCacheVersion dhtVer;
@@ -105,18 +99,6 @@ public final class TxInfo extends IgniteDiagnosticMessage.DiagnosticBaseInfo {
 
         if (!found)
             sb.append(U.nl()).append("Failed to find related transactions.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(dhtVer);
-        out.writeObject(nearVer);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        dhtVer = (GridCacheVersion)in.readObject();
-        nearVer = (GridCacheVersion)in.readObject();
     }
 
     /** {@inheritDoc} */

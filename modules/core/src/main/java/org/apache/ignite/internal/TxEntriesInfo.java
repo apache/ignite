@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
@@ -32,9 +29,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public final class TxEntriesInfo extends IgniteDiagnosticMessage.DiagnosticBaseInfo {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     @Order(0)
     private int cacheId;
@@ -123,18 +117,6 @@ public final class TxEntriesInfo extends IgniteDiagnosticMessage.DiagnosticBaseI
         assert other0 != null && cacheId == other0.cacheId : other;
 
         this.keys.addAll(other0.keys);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(cacheId);
-        U.writeCollection(out, keys);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheId = in.readInt();
-        keys = U.readCollection(in);
     }
 
     /** {@inheritDoc} */

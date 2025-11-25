@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.List;
 import java.util.Objects;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
@@ -29,9 +26,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public final class ExchangeInfo extends IgniteDiagnosticMessage.DiagnosticBaseInfo {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** */
     @Order(value = 0, method = "topologyVersion")
     private AffinityTopologyVersion topVer;
@@ -80,16 +74,6 @@ public final class ExchangeInfo extends IgniteDiagnosticMessage.DiagnosticBaseIn
         }
 
         sb.append("Failed to find exchange future: ").append(topVer);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(topVer);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        topVer = (AffinityTopologyVersion)in.readObject();
     }
 
     /** {@inheritDoc} */
