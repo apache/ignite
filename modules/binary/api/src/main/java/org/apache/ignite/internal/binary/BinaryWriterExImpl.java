@@ -73,14 +73,14 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     /** Raw offset position. */
     private int rawOffPos;
 
-    /** Handles. */
-    private BinaryWriterHandles handles;
-
     /** Schema ID. */
     private int schemaId = BinaryUtils.schemaInitialId();
 
     /** Amount of written fields. */
     private int fieldCnt;
+
+    /** Handles. */
+    private BinaryWriterHandles handles;
 
     /** */
     private BinaryInternalMapper mapper;
