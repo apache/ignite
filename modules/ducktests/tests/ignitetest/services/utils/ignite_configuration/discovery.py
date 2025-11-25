@@ -19,6 +19,7 @@ Module contains classes and utility methods to create discovery configuration fo
 
 from abc import ABCMeta, abstractmethod
 
+from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.ignite_aware import IgniteAwareService
 from ignitetest.services.zk.zookeeper import ZookeeperService
 
@@ -130,6 +131,22 @@ def from_ignite_cluster(cluster, subset=None):
         nodes = cluster.nodes[subset]
     else:
         nodes = cluster.nodes
+
+    return TcpDiscoverySpi(ip_finder=TcpDiscoveryVmIpFinder(nodes))
+
+def from_ignite_services(ignite_service_list: list[IgniteService]):
+    """
+    Constructs a `TcpDiscoverySpi` instance from the provided Ignite services.
+    :param ignite_service_list: A list of `IgniteService` objects representing the cluster.
+    :return: A configured `TcpDiscoverySpi` containing the static IP addresses of the services.
+    """
+    assert isinstance(ignite_service_list, list)
+    assert all(isinstance(ignite_service, IgniteService) for ignite_service in ignite_service_list)
+
+    nodes = []
+
+    for ignite_service in ignite_service_list:
+        nodes.extend(ignite_service.nodes)
 
     return TcpDiscoverySpi(ip_finder=TcpDiscoveryVmIpFinder(nodes))
 
