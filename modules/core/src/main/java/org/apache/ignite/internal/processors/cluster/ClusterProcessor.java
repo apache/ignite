@@ -40,7 +40,6 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteCompoundDiagnosicInfo;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -391,9 +390,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                             return;
                         }
 
-                        String diagnosticInfo = msg0.compoundInfo().diagnosticInfo(ctx);
-
-                        IgniteDiagnosticMessage res = IgniteDiagnosticMessage.createResponse(diagnosticInfo, msg0.futureId());
+                        IgniteDiagnosticMessage res = new IgniteDiagnosticMessage(msg0.diagnosticInfo(ctx), msg0.futureId());
 
                         try {
                             ctx.io().sendToGridTopic(node, TOPIC_INTERNAL_DIAGNOSTIC, res, GridIoPolicy.SYSTEM_POOL);
@@ -820,15 +817,15 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      * communication info about connection(s) with remote node.
      *
      * @param nodeId Target node ID.
-     * @param info Compound info.
+     * @param info Compound diagnostic info.
      * @return Message future.
      */
-    public IgniteInternalFuture<String> requestDiagnosticInfo(final UUID nodeId, IgniteCompoundDiagnosicInfo info) {
+    public IgniteInternalFuture<String> requestDiagnosticInfo(final UUID nodeId, IgniteDiagnosticMessage info) {
         final GridFutureAdapter<String> infoFut = new GridFutureAdapter<>();
 
         final String baseMsg = info.message();
 
-        final IgniteInternalFuture<String> rmtFut = sendDiagnosticMessage(nodeId, info);
+        final IgniteInternalFuture<String> rmtFut = sendDiagnosticMessage(nodeId, info.infos());
 
         rmtFut.listen(new CI1<>() {
             @Override public void apply(IgniteInternalFuture<String> fut) {
@@ -872,12 +869,12 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /**
      * @param nodeId Target node ID.
-     * @param info Compound info.
+     * @param infos Compound infos to send.
      * @return Message future.
      */
-    private IgniteInternalFuture<String> sendDiagnosticMessage(UUID nodeId, IgniteCompoundDiagnosicInfo info) {
+    private IgniteInternalFuture<String> sendDiagnosticMessage(UUID nodeId, Collection<IgniteDiagnosticMessage.DiagnosticBaseInfo> infos) {
         try {
-            IgniteDiagnosticMessage msg = IgniteDiagnosticMessage.createRequest(info, diagFutId.getAndIncrement());
+            IgniteDiagnosticMessage msg = new IgniteDiagnosticMessage(diagFutId.getAndIncrement(), nodeId, infos);
 
             InternalDiagnosticFuture fut = new InternalDiagnosticFuture(nodeId, msg.futureId());
 

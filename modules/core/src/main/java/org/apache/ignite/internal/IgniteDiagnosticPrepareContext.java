@@ -38,7 +38,7 @@ public class IgniteDiagnosticPrepareContext {
     private final UUID locNodeId;
 
     /** */
-    private final Map<UUID, IgniteCompoundDiagnosicInfo> info = new HashMap<>();
+    private final Map<UUID, IgniteDiagnosticMessage> info = new HashMap<>();
 
     /**
      * @param nodeId Local node ID.
@@ -88,11 +88,11 @@ public class IgniteDiagnosticPrepareContext {
      * @param nodeId Remote node ID.
      * @return Compound info.
      */
-    private IgniteCompoundDiagnosicInfo compoundInfo(UUID nodeId) {
-        IgniteCompoundDiagnosicInfo compoundInfo = info.get(nodeId);
+    private IgniteDiagnosticMessage compoundInfo(UUID nodeId) {
+        IgniteDiagnosticMessage compoundInfo = info.get(nodeId);
 
         if (compoundInfo == null)
-            info.put(nodeId, compoundInfo = new IgniteCompoundDiagnosicInfo(locNodeId));
+            info.put(nodeId, compoundInfo = new IgniteDiagnosticMessage(locNodeId));
 
         return compoundInfo;
     }
@@ -109,7 +109,7 @@ public class IgniteDiagnosticPrepareContext {
      * @param lsnr Optional listener (used in test).
      */
     public void send(GridKernalContext ctx, @Nullable IgniteInClosure<IgniteInternalFuture<String>> lsnr) {
-        for (Map.Entry<UUID, IgniteCompoundDiagnosicInfo> entry : info.entrySet()) {
+        for (Map.Entry<UUID, IgniteDiagnosticMessage> entry : info.entrySet()) {
             IgniteInternalFuture<String> fut = ctx.cluster().requestDiagnosticInfo(entry.getKey(), entry.getValue());
 
             if (lsnr != null)
