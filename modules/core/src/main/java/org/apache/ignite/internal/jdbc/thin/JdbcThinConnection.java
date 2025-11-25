@@ -317,6 +317,14 @@ public class JdbcThinConnection implements Connection {
 
         holdability = isTxAwareQueriesSupported ? CLOSE_CURSORS_AT_COMMIT : HOLD_CURSORS_OVER_COMMIT;
         txIsolation = defaultTransactionIsolation();
+
+        if (connProps.isLocal()) {
+            if (connProps.getAddresses().length != 1
+                || connProps.getAddresses()[0].portFrom() != connProps.getAddresses()[0].portTo()) {
+                LOG.warning("Local flag is supposed to be used only when exactly one address is specified, " +
+                    "otherwise the local query may be executed on an unexpected node");
+            }
+        }
     }
 
     /** Create new binary context. */

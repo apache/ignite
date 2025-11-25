@@ -513,7 +513,7 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         G.allGrids().forEach(g -> ((IgniteEx)g).context().io().addMessageListener(GridTopic.TOPIC_JOB, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 if (msg instanceof GridJobExecuteRequest
-                    && ((GridJobExecuteRequest)msg).getTaskClassName().contains(GridServiceProxy.class.getName()))
+                    && ((GridJobExecuteRequest)msg).taskClassName().contains(GridServiceProxy.class.getName()))
                     redirectCnt.incrementAndGet();
             }
         }));
