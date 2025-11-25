@@ -166,9 +166,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
     TcpDiscoverySslTrustedUntrustedTest.class,
     TcpDiscoverySslParametersTest.class,
 
-    // MDC.
-    TcpDiscoveryMdcSelfTest.class,
-
     // Disco cache reuse.
     IgniteDiscoveryCacheReuseSelfTest.class,
 
@@ -190,6 +187,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 
     TcpDiscoveryDeadNodeAddressResolvingTest.class,
 
+    // MDC.
+    TcpDiscoveryMdcSelfTest.class,
     MultiDataCenterDeploymentTest.class,
     MultiDataCenterRignTest.class,
     MultiDataCenterClientRoutingTest.class,
