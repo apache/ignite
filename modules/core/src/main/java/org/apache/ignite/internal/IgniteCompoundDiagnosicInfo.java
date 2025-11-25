@@ -144,7 +144,7 @@ public final class IgniteCompoundDiagnosicInfo implements Message {
         msgs.computeIfAbsent(key, k -> new ArrayList<>()).add(msg);
 
         if (baseInfo != null) {
-            if (!info.add(baseInfo) && baseInfo instanceof IgniteDiagnosticMessage.TxEntriesInfo) {
+            if (!info.add(baseInfo) && baseInfo instanceof TxEntriesInfo) {
                 for (IgniteDiagnosticMessage.DiagnosticBaseInfo baseInfo0 : info) {
                     if (baseInfo0.equals(baseInfo))
                         baseInfo0.merge(baseInfo);

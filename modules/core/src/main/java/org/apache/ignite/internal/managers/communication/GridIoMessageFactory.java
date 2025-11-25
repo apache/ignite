@@ -26,6 +26,7 @@ import org.apache.ignite.internal.GridJobSiblingsResponse;
 import org.apache.ignite.internal.GridTaskCancelRequest;
 import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
+import org.apache.ignite.internal.TxEntriesInfo;
 import org.apache.ignite.internal.codegen.AtomicApplicationAttributesAwareRequestSerializer;
 import org.apache.ignite.internal.codegen.BinaryMetadataVersionInfoSerializer;
 import org.apache.ignite.internal.codegen.CacheContinuousQueryBatchAckSerializer;
@@ -142,6 +143,7 @@ import org.apache.ignite.internal.codegen.SnapshotFilesRequestMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpInverseConnectionResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.TransactionAttributesAwareRequestSerializer;
 import org.apache.ignite.internal.codegen.TransactionIsolationMessageSerializer;
+import org.apache.ignite.internal.codegen.TxEntriesInfoSerializer;
 import org.apache.ignite.internal.codegen.TxLockListSerializer;
 import org.apache.ignite.internal.codegen.TxLockSerializer;
 import org.apache.ignite.internal.codegen.TxLocksRequestSerializer;
@@ -306,6 +308,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
     @Override public void registerAll(MessageFactory factory) {
         // -54 is reserved for SQL.
         factory.register((short)-100, ErrorMessage::new, new ErrorMessageSerializer());
+        factory.register((short)-63, TxEntriesInfo::new, new TxEntriesInfoSerializer());
         factory.register((short)-62, ExchangeInfo::new, new ExchangeInfoSerializer());
         factory.register((short)-61, IgniteDiagnosticMessage::new, new IgniteDiagnosticMessageSerializer());
         factory.register((short)-53, SchemaOperationStatusMessage::new, new SchemaOperationStatusMessageSerializer());
