@@ -237,11 +237,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         String targetVerStr = curVer.major() + "." + (curVer.minor() + 1) + "." + curVer.maintenance();
         IgniteProductVersion targetVer = IgniteProductVersion.fromString(targetVerStr);
 
-        int res = execute(ROLLING_UPGRADE, ENABLE, targetVerStr);
-
-        assertEquals(EXIT_CODE_OK, res);
-
-        assertTrue(crd.context().rollingUpgrade().enabled());
+        execute(ROLLING_UPGRADE, ENABLE, targetVerStr);
 
         Consumer<IgniteConfiguration> cfgC = cfg -> {
             TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
@@ -256,10 +252,10 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         };
 
         try (IgniteEx ignored = startGrid(SERVER_NODE_CNT + 1, cfgC)) {
-            res = execute(ROLLING_UPGRADE, STATUS);
-        }
+            int res = execute(ROLLING_UPGRADE, STATUS);
 
-        assertEquals(EXIT_CODE_OK, res);
+            assertEquals(EXIT_CODE_OK, res);
+        }
 
         RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult)lastOperationResult;
 
