@@ -51,14 +51,14 @@ import static org.openjdk.jmh.annotations.Scope.Thread;
 @OutputTimeUnit(NANOSECONDS)
 @BenchmarkMode(AverageTime)
 @Warmup(iterations = 3, time = 30, timeUnit = SECONDS)
-@Measurement(iterations = 3, time = 60, timeUnit = SECONDS)
+@Measurement(iterations = 3, time = 30, timeUnit = SECONDS)
 public class JmhMapSerdesBenchmark {
     /** */
-    @Param({/*"Integer", "Date", "String",*/ "Object"})
+    @Param({/*"Integer", "Date",*/ "String"/*, "Object"*/})
     private String key;
 
     /** */
-    @Param({/*"Integer", "Date", "String",*/ "Object"})
+    @Param({/*"Integer", "Date",*/ "String"/*, "Object"*/})
     private String value;
 
     /** */
