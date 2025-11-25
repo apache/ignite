@@ -44,14 +44,14 @@ public final class TxInfo extends IgniteDiagnosticMessage.DiagnosticBaseInfo {
      * @param dhtVer  Tx dht version.
      * @param nearVer Tx near version.
      */
-    public TxInfo(GridCacheVersion dhtVer, GridCacheVersion nearVer) {
+    TxInfo(GridCacheVersion dhtVer, GridCacheVersion nearVer) {
         this.dhtVer = dhtVer;
         this.nearVer = nearVer;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -64;
+        return -65;
     }
 
     /** */

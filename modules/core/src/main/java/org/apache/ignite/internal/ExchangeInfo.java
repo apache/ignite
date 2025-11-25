@@ -40,7 +40,7 @@ public final class ExchangeInfo extends IgniteDiagnosticMessage.DiagnosticBaseIn
     /**
      * @param topVer Exchange version.
      */
-    public ExchangeInfo(AffinityTopologyVersion topVer) {
+    ExchangeInfo(AffinityTopologyVersion topVer) {
         this.topVer = topVer;
     }
 
@@ -56,7 +56,7 @@ public final class ExchangeInfo extends IgniteDiagnosticMessage.DiagnosticBaseIn
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -62;
+        return -63;
     }
 
     /** {@inheritDoc} */

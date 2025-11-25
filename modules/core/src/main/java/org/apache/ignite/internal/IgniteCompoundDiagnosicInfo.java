@@ -20,20 +20,16 @@ package org.apache.ignite.internal;
 import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  *
@@ -44,14 +40,11 @@ public final class IgniteCompoundDiagnosicInfo implements Message {
     private UUID nodeId;
 
     /** Info to send on remote node. */
-    private final Set<IgniteDiagnosticMessage.DiagnosticBaseInfo> info = new LinkedHashSet<>();
-
-    /** {@code info} serialization call holder. */
     @Order(1)
-    private Collection<byte[]> infosBytes;
+    private final Set<IgniteDiagnosticMessage.DiagnosticBaseInfo> infos = new LinkedHashSet<>();
 
     /** Local message related to remote info. */
-    private Map<Object, List<String>> msgs = new LinkedHashMap<>();
+    private final Map<Object, List<String>> msgs = new LinkedHashMap<>();
 
     /** Empty constructor required by {@link Externalizable}. */
     public IgniteCompoundDiagnosicInfo() {
@@ -103,7 +96,7 @@ public final class IgniteCompoundDiagnosicInfo implements Message {
      * @param ctx Grid context.
      */
     private void moreInfo(StringBuilder sb, GridKernalContext ctx) {
-        for (IgniteDiagnosticMessage.DiagnosticBaseInfo baseInfo : info) {
+        for (IgniteDiagnosticMessage.DiagnosticBaseInfo baseInfo : infos) {
             try {
                 baseInfo.appendInfo(sb, ctx);
             }
@@ -144,47 +137,13 @@ public final class IgniteCompoundDiagnosicInfo implements Message {
         msgs.computeIfAbsent(key, k -> new ArrayList<>()).add(msg);
 
         if (baseInfo != null) {
-            if (!info.add(baseInfo) && baseInfo instanceof TxEntriesInfo) {
-                for (IgniteDiagnosticMessage.DiagnosticBaseInfo baseInfo0 : info) {
+            if (!infos.add(baseInfo) && baseInfo instanceof TxEntriesInfo) {
+                for (IgniteDiagnosticMessage.DiagnosticBaseInfo baseInfo0 : infos) {
                     if (baseInfo0.equals(baseInfo))
                         baseInfo0.merge(baseInfo);
                 }
             }
         }
-    }
-
-    /** Deserealizes {@code info}. */
-    public void infosBytes(@Nullable Collection<byte[]> infosBytes) {
-        info.clear();
-
-        if (F.isEmpty(infosBytes))
-            return;
-
-        try {
-            for (byte[] bytes : infosBytes)
-                info.add(U.unmarshal(jdk(), bytes, U.gridClassLoader()));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to deserialize a diagnostic info.", e);
-        }
-    }
-
-    /** Serealizes {@code info}. */
-    public @Nullable Collection<byte[]> infosBytes() {
-        if (info.isEmpty())
-            return null;
-
-        Collection<byte[]> res = new ArrayList<>(info.size());
-
-        try {
-            for (IgniteDiagnosticMessage.DiagnosticBaseInfo i : info)
-                res.add(U.marshal(jdk(), i));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to serialize a diagnostic info.", e);
-        }
-
-        return res;
     }
 
     /** */
@@ -195,6 +154,17 @@ public final class IgniteCompoundDiagnosicInfo implements Message {
     /** */
     public void nodeId(UUID nodeId) {
         this.nodeId = nodeId;
+    }
+
+    /** */
+    public Collection<IgniteDiagnosticMessage.DiagnosticBaseInfo> infos() {
+        return Collections.unmodifiableCollection(infos);
+    }
+
+    /** */
+    public void infos(Collection<IgniteDiagnosticMessage.DiagnosticBaseInfo> infos) {
+        this.infos.clear();
+        this.infos.addAll(infos);
     }
 
     /** */

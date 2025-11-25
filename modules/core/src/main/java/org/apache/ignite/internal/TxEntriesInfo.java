@@ -48,7 +48,7 @@ public final class TxEntriesInfo extends IgniteDiagnosticMessage.DiagnosticBaseI
      * @param cacheId Cache ID.
      * @param keys    Keys.
      */
-    public TxEntriesInfo(int cacheId, Collection<KeyCacheObject> keys) {
+    TxEntriesInfo(int cacheId, Collection<KeyCacheObject> keys) {
         this.cacheId = cacheId;
         this.keys = new HashSet<>(keys);
     }
@@ -75,7 +75,7 @@ public final class TxEntriesInfo extends IgniteDiagnosticMessage.DiagnosticBaseI
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -63;
+        return -64;
     }
 
     /** {@inheritDoc} */
