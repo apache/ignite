@@ -28,10 +28,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.toBytes;
 
 /** */
 public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommunicationMessageSerializationTest {
-    @Override public void testMessageSerializationAndDeserializationConsistency() throws Exception {
-        super.testMessageSerializationAndDeserializationConsistency();
-    }
-
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
         return new GridIoMessageFactory();

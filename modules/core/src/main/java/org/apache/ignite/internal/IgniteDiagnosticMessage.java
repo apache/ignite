@@ -24,18 +24,15 @@ import java.io.ObjectOutput;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -145,7 +142,7 @@ public class IgniteDiagnosticMessage implements Message {
     /**
      *
      */
-    public abstract static class DiagnosticBaseInfo implements Externalizable {
+    public abstract static class DiagnosticBaseInfo implements Externalizable, Message {
         /**
          * @param other Another info of the same type.
          */
@@ -185,6 +182,11 @@ public class IgniteDiagnosticMessage implements Message {
         TxEntriesInfo(int cacheId, Collection<KeyCacheObject> keys) {
             this.cacheId = cacheId;
             this.keys = new HashSet<>(keys);
+        }
+
+        /** */
+        @Override public short directType() {
+            return -63;
         }
 
         /** {@inheritDoc} */
@@ -262,74 +264,6 @@ public class IgniteDiagnosticMessage implements Message {
     /**
      *
      */
-    public static final class ExchangeInfo extends DiagnosticBaseInfo {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private AffinityTopologyVersion topVer;
-
-        /** Empty constructor required by {@link Externalizable}. */
-        public ExchangeInfo() {
-            // No-op.
-        }
-
-        /**
-         * @param topVer Exchange version.
-         */
-        ExchangeInfo(AffinityTopologyVersion topVer) {
-            this.topVer = topVer;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void appendInfo(StringBuilder sb, GridKernalContext ctx) {
-            sb.append(U.nl());
-
-            List<GridDhtPartitionsExchangeFuture> futs = ctx.cache().context().exchange().exchangeFutures();
-
-            for (GridDhtPartitionsExchangeFuture fut : futs) {
-                if (topVer.equals(fut.initialVersion())) {
-                    sb.append("Exchange future: ").append(fut);
-
-                    return;
-                }
-            }
-
-            sb.append("Failed to find exchange future: ").append(topVer);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(topVer);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            topVer = (AffinityTopologyVersion)in.readObject();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            ExchangeInfo that = (ExchangeInfo)o;
-
-            return Objects.equals(topVer, that.topVer);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return Objects.hash(getClass(), topVer);
-        }
-    }
-
-    /**
-     *
-     */
     public static final class TxInfo extends DiagnosticBaseInfo {
         /** */
         private static final long serialVersionUID = 0L;
@@ -352,6 +286,11 @@ public class IgniteDiagnosticMessage implements Message {
         TxInfo(GridCacheVersion dhtVer, GridCacheVersion nearVer) {
             this.dhtVer = dhtVer;
             this.nearVer = nearVer;
+        }
+
+        /** */
+        @Override public short directType() {
+            return -64;
         }
 
         /** {@inheritDoc} */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers.communication;
 
+import org.apache.ignite.internal.ExchangeInfo;
 import org.apache.ignite.internal.GridJobCancelRequest;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridJobExecuteResponse;
@@ -24,7 +25,6 @@ import org.apache.ignite.internal.GridJobSiblingsRequest;
 import org.apache.ignite.internal.GridJobSiblingsResponse;
 import org.apache.ignite.internal.GridTaskCancelRequest;
 import org.apache.ignite.internal.GridTaskSessionRequest;
-import org.apache.ignite.internal.IgniteCompoundDiagnosicInfo;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.codegen.AtomicApplicationAttributesAwareRequestSerializer;
 import org.apache.ignite.internal.codegen.BinaryMetadataVersionInfoSerializer;
@@ -41,6 +41,7 @@ import org.apache.ignite.internal.codegen.CacheVersionedValueSerializer;
 import org.apache.ignite.internal.codegen.CacheWriteSynchronizationModeMessageSerializer;
 import org.apache.ignite.internal.codegen.DeploymentModeMessageSerializer;
 import org.apache.ignite.internal.codegen.ErrorMessageSerializer;
+import org.apache.ignite.internal.codegen.ExchangeInfoSerializer;
 import org.apache.ignite.internal.codegen.GenerateEncryptionKeyRequestSerializer;
 import org.apache.ignite.internal.codegen.GridCacheEntryInfoSerializer;
 import org.apache.ignite.internal.codegen.GridCacheOperationMessageSerializer;
@@ -113,7 +114,6 @@ import org.apache.ignite.internal.codegen.GridTaskSessionRequestSerializer;
 import org.apache.ignite.internal.codegen.GroupPartitionIdPairSerializer;
 import org.apache.ignite.internal.codegen.HandshakeMessageSerializer;
 import org.apache.ignite.internal.codegen.HandshakeWaitMessageSerializer;
-import org.apache.ignite.internal.codegen.IgniteCompoundDiagnosicInfoSerializer;
 import org.apache.ignite.internal.codegen.IgniteDhtDemandedPartitionsMapSerializer;
 import org.apache.ignite.internal.codegen.IgniteDhtPartitionCountersMapSerializer;
 import org.apache.ignite.internal.codegen.IgniteDhtPartitionHistorySuppliersMapSerializer;
@@ -306,7 +306,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
     @Override public void registerAll(MessageFactory factory) {
         // -54 is reserved for SQL.
         factory.register((short)-100, ErrorMessage::new, new ErrorMessageSerializer());
-        factory.register((short)-62, IgniteCompoundDiagnosicInfo::new, new IgniteCompoundDiagnosicInfoSerializer());
+        factory.register((short)-62, ExchangeInfo::new, new ExchangeInfoSerializer());
         factory.register((short)-61, IgniteDiagnosticMessage::new, new IgniteDiagnosticMessageSerializer());
         factory.register((short)-53, SchemaOperationStatusMessage::new, new SchemaOperationStatusMessageSerializer());
         factory.register((short)-51, NearCacheUpdates::new, new NearCacheUpdatesSerializer());
