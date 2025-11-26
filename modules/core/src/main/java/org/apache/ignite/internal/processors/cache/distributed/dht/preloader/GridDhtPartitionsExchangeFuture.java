@@ -2117,8 +2117,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (cctx.kernalContext().clientNode() || (dynamicCacheStartExchange() && exchangeLocE != null)) {
             msg = new GridDhtPartitionsSingleMessage(exchangeId(),
                 cctx.kernalContext().clientNode(),
-                cctx.versions().last(),
-                true);
+                cctx.versions().last());
         }
         else {
             msg = cctx.exchange().createPartitionsSingleMessage(exchangeId(),
@@ -4420,8 +4419,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (dynamicCacheStartExchange() && exchangeLocE != null) {
                     res = new GridDhtPartitionsSingleMessage(msg.restoreExchangeId(),
                         cctx.kernalContext().clientNode(),
-                        cctx.versions().last(),
-                        true);
+                        cctx.versions().last());
 
                     res.setError(exchangeLocE);
                 }

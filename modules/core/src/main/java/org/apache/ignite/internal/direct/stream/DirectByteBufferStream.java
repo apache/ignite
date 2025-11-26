@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
 import java.util.UUID;
+import net.jpountz.lz4.LZ4Factory;
+import net.jpountz.lz4.LZ4SafeDecompressor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -59,6 +61,9 @@ import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
  * Direct marshalling I/O stream.
  */
 public class DirectByteBufferStream {
+    /** */
+    private static final LZ4Factory LZ4_FACTORY = LZ4Factory.fastestInstance();
+
     /** */
     private static final byte[] BYTE_ARR_EMPTY = new byte[0];
 
@@ -223,6 +228,12 @@ public class DirectByteBufferStream {
     private final IgniteCacheObjectProcessor cacheObjProc;
 
     /** */
+    private final LZ4SafeDecompressor decompressor;
+
+    /** Decompress buffer. */
+    private final byte[] decompressBuf;
+
+    /** */
     @GridToStringExclude
     protected ByteBuffer buf;
 
@@ -347,6 +358,8 @@ public class DirectByteBufferStream {
 
         // Is not used while writing messages.
         cacheObjProc = null;
+        decompressor = null;
+        decompressBuf = null;
     }
 
     /**
@@ -358,6 +371,8 @@ public class DirectByteBufferStream {
     public DirectByteBufferStream(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
         this.msgFactory = msgFactory;
         this.cacheObjProc = cacheObjProc;
+        decompressor = LZ4_FACTORY.safeDecompressor();
+        decompressBuf = new byte[1024 * 1024];
     }
 
     /**
@@ -1533,13 +1548,17 @@ public class DirectByteBufferStream {
         }
 
         if (msg != null) {
-            try {
-                reader.beforeInnerMessageRead();
+            if (msg.compress())
+                lastFinished = readCompressedMessage(reader);
+            else {
+                try {
+                    reader.beforeInnerMessageRead();
 
-                lastFinished = msgFactory.serializer(msg.directType()).readFrom(msg, reader);
-            }
-            finally {
-                reader.afterInnerMessageRead(lastFinished);
+                    lastFinished = msgFactory.serializer(msg.directType()).readFrom(msg, reader);
+                }
+                finally {
+                    reader.afterInnerMessageRead(lastFinished);
+                }
             }
         }
         else
@@ -2225,6 +2244,47 @@ public class DirectByteBufferStream {
                 uuidMost = GridUnsafe.getLong(heapArr, off);
                 uuidLeast = GridUnsafe.getLong(heapArr, off + 8);
             }
+        }
+    }
+
+    /** */
+    private boolean readCompressedMessage(MessageReader reader) {
+        ByteBuffer oldBuf = buf;
+
+        try {
+            reader.beforeInnerMessageRead();
+
+            int rawSize = readInt();
+            int compressedSize = readInt();
+            byte[] compressed = readByteArray();
+
+            if (compressedSize < 0 || rawSize < 0 || compressed == null)
+                return false;
+
+            int decompressedSize = decompressor.decompress(compressed, 0, compressedSize, decompressBuf, 0, rawSize);
+
+            //System.out.println(">>> READ: type=" + msg.directType() + ", rawSize=" + rawSize + ", compressedSize=" + compressedSize + ", decompressedSize=" + decompressedSize);
+
+            if (decompressedSize != rawSize)
+                throw new IgniteException("Decompression size mismatch [msg=" + msg.getClass().getName() +
+                    "expected=" + rawSize + ", actual=" + decompressedSize + ']');
+
+            ByteBuffer tmpBuf = ByteBuffer.wrap(decompressBuf, 0, rawSize);
+
+            reader.setBuffer(tmpBuf);
+
+            boolean finished = msgFactory.serializer(msg.directType()).readFrom(msg, reader);
+
+            reader.setBuffer(oldBuf);
+
+            return finished;
+        } catch (Exception e) {
+            reader.setBuffer(oldBuf);
+
+            return false;
+        }
+        finally {
+            reader.afterInnerMessageRead(lastFinished);
         }
     }
 

@@ -22,6 +22,8 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import net.jpountz.lz4.LZ4Compressor;
+import net.jpountz.lz4.LZ4Factory;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
@@ -43,15 +45,39 @@ import org.jetbrains.annotations.Nullable;
  * Message writer implementation.
  */
 public class DirectMessageWriter implements MessageWriter {
+    /** Static LZ4 compressor (thread-safe for reuse). */
+    private static final LZ4Factory LZ4_FACTORY = LZ4Factory.fastestInstance();
+
+    /** Compressor. */
+    private static final LZ4Compressor COMPRESSOR = LZ4_FACTORY.fastCompressor();
+
+    /** Max message size for pre-allocation. */
+    private static final int MAX_MESSAGE_SIZE = 1024 * 1024;
+
+    /** Thread-local buffer to avoid allocations. */
+    private static final ThreadLocal<byte[]> COMPRESS_BUF = ThreadLocal.withInitial(
+        () -> new byte[COMPRESSOR.maxCompressedLength(MAX_MESSAGE_SIZE)]
+    );
+
+    /** Thread-local byte buffer for buffering serialized message. */
+    private static final ThreadLocal<ByteBuffer> TMP_BUF = ThreadLocal.withInitial(
+        () -> ByteBuffer.allocate(MAX_MESSAGE_SIZE)
+    );
+
     /** State. */
     @GridToStringInclude
     private final DirectMessageState<StateItem> state;
+
+    /** Message factory. */
+    private final MessageFactory msgFactory;
 
     /** Buffer for writing. */
     private ByteBuffer buf;
 
     /** */
     public DirectMessageWriter(final MessageFactory msgFactory) {
+        this.msgFactory = msgFactory;
+
         state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
             @Override public StateItem apply() {
                 return new StateItem(msgFactory);
@@ -293,6 +319,9 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** {@inheritDoc} */
     @Override public boolean writeMessage(@Nullable Message msg) {
+        if (msg != null && msg.compress())
+            return writeCompressedMessage(msg);
+
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeMessage(msg, this);
@@ -395,6 +424,55 @@ public class DirectMessageWriter implements MessageWriter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DirectMessageWriter.class, this);
+    }
+
+    /** */
+    private boolean writeCompressedMessage(Message msg) {
+        ByteBuffer tmpBuf = TMP_BUF.get();
+
+        tmpBuf.clear();
+
+        ByteBuffer oldBuf = buf;
+
+        setBuffer(tmpBuf);
+
+        if (!msgFactory.serializer(msg.directType()).writeTo(msg, this)) {
+            setBuffer(oldBuf);
+
+            return false;
+        }
+
+        tmpBuf.flip();
+
+        int rawSize = tmpBuf.limit();
+
+        byte[] compressBuf = COMPRESS_BUF.get();
+
+        int compressedSize;
+
+        try {
+            compressedSize = COMPRESSOR.compress(
+                tmpBuf.array(),
+                tmpBuf.arrayOffset(),
+                rawSize,
+                compressBuf,
+                0,
+                compressBuf.length
+            );
+        } catch (Exception e) {
+            setBuffer(oldBuf);
+
+            return false;
+        }
+
+        //System.out.println(">>> WRITE: type=" + msg.directType() + ", rawSize=" + rawSize + ", compressedSize=" + compressedSize);
+
+        setBuffer(oldBuf);
+
+        return writeHeader(msg.directType()) &&
+            writeInt(rawSize) &&
+            writeInt(compressedSize) &&
+            writeByteArray(compressBuf, 0, compressedSize);
     }
 
     /**
