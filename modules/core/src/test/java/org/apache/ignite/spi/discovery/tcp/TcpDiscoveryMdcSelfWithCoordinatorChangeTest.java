@@ -23,13 +23,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 /**
  * Test for {@link TcpDiscoverySpi} with Multi Data Centers.
  */
-public class TcpDiscoveryMdcSelfWithCoordinatorChangeTest extends TcpDiscoverySelfTest {
-    /** */
-    private static final String DC_ID_0 = "DC0";
-
-    /** */
-    private static final String DC_ID_1 = "DC1";
-
+public class TcpDiscoveryMdcSelfWithCoordinatorChangeTest extends TcpDiscoveryMdcSelfPlainTest {
     /**
      * @throws Exception If fails.
      */
@@ -45,12 +39,5 @@ public class TcpDiscoveryMdcSelfWithCoordinatorChangeTest extends TcpDiscoverySe
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, prev == null ? DC_ID_1 : DC_ID_0);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        System.clearProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
     }
 }
