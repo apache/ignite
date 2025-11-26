@@ -227,7 +227,9 @@ public class IgniteDiagnosticMessage implements Message {
     /** */
     public void infos(Collection<DiagnosticBaseInfo> infos) {
         this.infos.clear();
-        this.infos.addAll(infos);
+
+        if (infos != null)
+            this.infos.addAll(infos);
     }
 
     /** */
