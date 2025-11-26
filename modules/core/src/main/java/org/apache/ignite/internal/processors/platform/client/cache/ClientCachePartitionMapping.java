@@ -33,20 +33,20 @@ public class ClientCachePartitionMapping {
     /** Primary partitions map for caches. */
     private final Map<UUID, Set<Integer>> primaryPartitionMap;
 
-    /** Backups partitions map, located in current data center for caches. */
-    @Nullable private final Map<UUID, Set<Integer>> dcBackupPartitionMap;
+    /** Partitions map to nodes located in current data center for caches. */
+    @Nullable private final Map<UUID, Set<Integer>> dcPartitionMap;
 
     /**
      * @param primaryPartitionMap Primary partition mapping.
-     * @param dcBackupPartitionMap Backup partition mapping, located in current data center.
+     * @param dcPartitionMap Partition mapping to nodes located in current data center.
      */
     @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public ClientCachePartitionMapping(
         Map<UUID, Set<Integer>> primaryPartitionMap,
-        @Nullable Map<UUID, Set<Integer>> dcBackupPartitionMap
+        @Nullable Map<UUID, Set<Integer>> dcPartitionMap
     ) {
         this.primaryPartitionMap = primaryPartitionMap;
-        this.dcBackupPartitionMap = dcBackupPartitionMap;
+        this.dcPartitionMap = dcPartitionMap;
     }
 
     /**
@@ -57,7 +57,7 @@ public class ClientCachePartitionMapping {
         writePartitionMap(writer, primaryPartitionMap);
 
         if (ctx.isFeatureSupported(ClientBitmaskFeature.DC_AWARE))
-            writePartitionMap(writer, dcBackupPartitionMap);
+            writePartitionMap(writer, dcPartitionMap);
     }
 
     /** */
@@ -93,11 +93,11 @@ public class ClientCachePartitionMapping {
         ClientCachePartitionMapping mapping = (ClientCachePartitionMapping)o;
 
         return Objects.equals(primaryPartitionMap, mapping.primaryPartitionMap)
-            && Objects.equals(dcBackupPartitionMap, mapping.dcBackupPartitionMap);
+            && Objects.equals(dcPartitionMap, mapping.dcPartitionMap);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(primaryPartitionMap, dcBackupPartitionMap);
+        return Objects.hash(primaryPartitionMap, dcPartitionMap);
     }
 }

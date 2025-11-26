@@ -258,7 +258,7 @@ public class ClientCacheAffinityContext {
     /**
      * @param ch Payload input channel.
      */
-    public boolean readDataCenterNodesRequest(PayloadInputChannel ch) {
+    public boolean readDataCenterNodesResponse(PayloadInputChannel ch) {
         TopologyNodes top = lastTop.get();
 
         if (top == null)

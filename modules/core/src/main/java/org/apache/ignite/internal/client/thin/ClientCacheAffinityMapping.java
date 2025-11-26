@@ -217,13 +217,13 @@ public class ClientCacheAffinityMapping {
                         cacheKeyCfg.put(in.readInt(), readCacheKeyConfiguration(in));
 
                     UUID[] primaryPartToNode = readNodePartitions(in);
-                    UUID[] dcBackupPartToNode = primaryPartToNode;
+                    UUID[] dcPartToNode = primaryPartToNode;
 
                     if (ch.clientChannel().protocolCtx().isFeatureSupported(DC_AWARE)) {
-                        dcBackupPartToNode = readNodePartitions(in);
+                        dcPartToNode = readNodePartitions(in);
 
-                        if (dcBackupPartToNode.length == 0)
-                            dcBackupPartToNode = primaryPartToNode;
+                        if (dcPartToNode.length == 0)
+                            dcPartToNode = primaryPartToNode;
                     }
 
                     boolean dfltMapping = true;
@@ -240,7 +240,7 @@ public class ClientCacheAffinityMapping {
                             continue;
 
                         aff.cacheAff.put(keyCfg.getKey(),
-                            new CacheAffinityInfo(keyCfg.getValue(), primaryPartToNode, dcBackupPartToNode,
+                            new CacheAffinityInfo(keyCfg.getValue(), primaryPartToNode, dcPartToNode,
                                 factory.apply(primaryPartToNode.length))
                         );
                     }
@@ -318,8 +318,8 @@ public class ClientCacheAffinityMapping {
         /** Primary partition mapping. */
         private final UUID[] primaryPartMapping;
 
-        /** Backup partition mapping, located in current DC. */
-        private final UUID[] dcBackupPartMapping;
+        /** Partition mapping to nodes located in current DC. */
+        private final UUID[] dcPartMapping;
 
         /** Mapper a cache key to a partition. */
         private final ClientPartitionAwarenessMapper keyMapper;
@@ -328,17 +328,17 @@ public class ClientCacheAffinityMapping {
          * @param keyCfg Cache key configuration or {@code null} if partition awareness is not applicable for this cache.
          * @param primaryPartMapping Primary partition to node mapping or {@code null} if partition awareness
          * is not applicable for this cache.
-         * @param dcBackupPartMapping Backup partition to node mapping, located in current DC.
+         * @param dcPartMapping Partition to node mapping located in current DC.
          */
         private CacheAffinityInfo(
             Map<Integer, Integer> keyCfg,
             UUID[] primaryPartMapping,
-            UUID[] dcBackupPartMapping,
+            UUID[] dcPartMapping,
             ClientPartitionAwarenessMapper keyMapper
         ) {
             this.keyCfg = keyCfg;
             this.primaryPartMapping = primaryPartMapping;
-            this.dcBackupPartMapping = dcBackupPartMapping;
+            this.dcPartMapping = dcPartMapping;
             this.keyMapper = keyMapper;
         }
 
@@ -362,7 +362,7 @@ public class ClientCacheAffinityMapping {
          * @param primary Force primary node.
          */
         private UUID nodeForPartition(int part, boolean primary) {
-            UUID[] partMapping = primary ? primaryPartMapping : dcBackupPartMapping;
+            UUID[] partMapping = primary ? primaryPartMapping : dcPartMapping;
 
             if (part < 0 || partMapping == null || part >= partMapping.length)
                 return null;

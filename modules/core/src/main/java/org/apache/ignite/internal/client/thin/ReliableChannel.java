@@ -527,7 +527,7 @@ final class ReliableChannel implements AutoCloseable {
                                     && channel.protocolCtx().isFeatureSupported(ProtocolBitmaskFeature.DC_AWARE)) {
                                     channel.service(ClientOperation.CLUSTER_GET_DC_NODES,
                                         affinityCtx::writeDataCenterNodesRequest,
-                                        affinityCtx::readDataCenterNodesRequest);
+                                        affinityCtx::readDataCenterNodesResponse);
                                 }
 
                                 return updated;

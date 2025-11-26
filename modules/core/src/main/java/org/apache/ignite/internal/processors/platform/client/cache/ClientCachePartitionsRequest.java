@@ -193,12 +193,12 @@ public class ClientCachePartitionsRequest extends ClientRequest {
                 primaryPartitionMap.put(nodeId, parts);
             }
 
-            Map<UUID, Set<Integer>> dcBackupPartitionMap = null;
+            Map<UUID, Set<Integer>> dcPartitionMap = null;
 
             if (dcId != null && cacheCtx.config().isReadFromBackup()
                 && cacheCtx.config().getWriteSynchronizationMode() != CacheWriteSynchronizationMode.PRIMARY_SYNC) {
-                // Filter backup partitions, located in current DC.
-                dcBackupPartitionMap = new HashMap<>();
+                // Filter partitions, located in current DC.
+                dcPartitionMap = new HashMap<>();
 
                 List<List<ClusterNode>> partAssignments = assignment.assignment();
 
@@ -208,16 +208,16 @@ public class ClientCachePartitionsRequest extends ClientRequest {
                     ClusterNode node = F.find(partAssignment, null, n -> dcId.equals(n.dataCenterId()));
 
                     if (node != null)
-                        dcBackupPartitionMap.computeIfAbsent(node.id(), id -> new HashSet<>()).add(p);
+                        dcPartitionMap.computeIfAbsent(node.id(), id -> new HashSet<>()).add(p);
                     else {
-                        dcBackupPartitionMap = null;
+                        dcPartitionMap = null;
 
                         break;
                     }
                 }
             }
 
-            return new ClientCachePartitionMapping(primaryPartitionMap, dcBackupPartitionMap);
+            return new ClientCachePartitionMapping(primaryPartitionMap, dcPartitionMap);
         }
         catch (Exception e) {
             return null;
