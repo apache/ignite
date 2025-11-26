@@ -52,7 +52,7 @@ class AddRemoveNodeUpgradeTest(BaseRollingUpgradeTest):
 
         for ignite in ignites.nodes:
             new_node_cfg = ignites.config._replace(
-                version=upgrade_version,
+                version=IgniteVersion(upgrade_version),
                 discovery_spi=from_ignite_services([ignites] + upgraded_nodes)
             )
 
