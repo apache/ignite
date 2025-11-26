@@ -55,7 +55,7 @@ class DataGenerationParams(NamedTuple):
         return int(self.entry_count / self.preloaders)
 
 
-def preload_data(context, config, data_gen_params: DataGenerationParams, timeout=3600, stop=False,
+def preload_data(context, config, data_gen_params: DataGenerationParams, timeout=3600, stop=False, await_started=False,
                  additional_params=None):
     """
     Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
@@ -64,6 +64,7 @@ def preload_data(context, config, data_gen_params: DataGenerationParams, timeout
     :param data_gen_params: Data generation parameters.
     :param timeout: Timeout in seconds for application finished.
     :param stop: Stop application flag
+    :param await_started: Await application start flag
     :param additional_params: Additional parameters to pass to the application.
     :return: Time taken for data preloading.
     """
@@ -94,7 +95,10 @@ def preload_data(context, config, data_gen_params: DataGenerationParams, timeout
         if additional_params is not None:
             app.params.update(additional_params)
 
-        app.start_async()
+        if await_started:
+            app.start()
+        else:
+            app.start_async()
 
         apps.append(app)
 

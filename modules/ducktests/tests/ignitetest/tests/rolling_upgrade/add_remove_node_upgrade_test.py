@@ -44,9 +44,6 @@ class AddRemoveNodeUpgradeTest(BaseRollingUpgradeTest):
     def _upgrade_ignite_cluster(self, ignites, upgrade_version, force, with_persistence):
         control_sh = ControlUtility(ignites)
 
-        if with_persistence:
-            control_sh.activate()
-
         control_sh.enable_rolling_upgrade(IgniteVersion(upgrade_version).vstring, force)
 
         self.logger.info(f"Starting rolling upgrade.")
