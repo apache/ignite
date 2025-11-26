@@ -102,7 +102,8 @@ class BaseRollingUpgradeTest(IgniteTest):
 
         app_cfg = ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites))
 
-        preload_data(self.test_context, app_cfg, data_gen_params=data_gen_params, additional_params={"check": False})
+        preload_data(self.test_context, app_cfg, data_gen_params=data_gen_params, stop=True,
+                     additional_params={"check": False})
 
         self.logger.debug("Data generation is done.")
 
@@ -121,6 +122,6 @@ class BaseRollingUpgradeTest(IgniteTest):
 
         app.start()
 
-        app.await_stopped()
+        app.stop()
 
         self.logger.debug("Data check is complete.")
