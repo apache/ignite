@@ -3019,7 +3019,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         BinaryMarshaller marsh = binaryMarshaller();
 
-        try (BinaryWriterEx writer = BinaryUtils.writer(binaryContext(marsh))) {
+        try (BinaryWriterEx writer = BinaryUtils.writer(binaryContext(marsh), false)) {
             assertEquals(true, BinaryStreamsTestUtils.threadLocalIsAcquired());
 
             writer.writeString("Thread local test");
