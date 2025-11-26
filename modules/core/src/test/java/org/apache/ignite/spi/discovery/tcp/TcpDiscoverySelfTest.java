@@ -124,10 +124,10 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     private UUID nodeId;
 
     /** Flag to disable metrics for some tests. */
-    private boolean metricsEnabled = true;
+    protected boolean metricsEnabled = true;
 
     /** */
-    private static ThreadLocal<TcpDiscoverySpi> nodeSpi = new ThreadLocal<>();
+    protected static ThreadLocal<TcpDiscoverySpi> nodeSpi = new ThreadLocal<>();
 
     /** */
     private GridStringLogger strLog;
@@ -1947,7 +1947,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * @return {@code true} If pending messages were discarded in a timeout period.
      * @throws IgniteInterruptedCheckedException If wait was interrupted.
      */
-    private boolean waitPendingMessagesDiscarded(TcpDiscoverySpi spi) throws IgniteInterruptedCheckedException {
+    protected boolean waitPendingMessagesDiscarded(TcpDiscoverySpi spi) throws IgniteInterruptedCheckedException {
         Iterable<?> pendingMsgsIterable = GridTestUtils.getFieldValue(spi.impl, "msgWorker", "pendingMsgs");
 
         return GridTestUtils.waitForCondition(() -> !pendingMsgsIterable.iterator().hasNext(), 1000);
@@ -2566,15 +2566,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TestEventDiscardSpi extends TcpDiscoverySpi {
+    protected static class TestEventDiscardSpi extends TcpDiscoverySpi {
         /** */
         private GridConcurrentHashSet<IgniteUuid> msgIds = new GridConcurrentHashSet<>();
 
         /** */
-        private volatile boolean checkDuplicates;
+        protected volatile boolean checkDuplicates;
 
         /** */
-        private volatile boolean failed;
+        protected volatile boolean failed;
 
         /** {@inheritDoc} */
         @Override protected void writeMessage(TcpDiscoveryIoSession ses,
