@@ -46,8 +46,7 @@ import org.junit.Test;
 /**
  * Tests services hot redeployment via {@link DeploymentSpi}.
  *
- * <b>NOTE:</b> to run test via Maven Surefire Plugin, the property "forkCount' should be set great than '0' or profile
- * 'surefire-fork-count-1' enabled.
+ * <b>NOTE:</b> to run test via Maven Surefire Plugin, the property "forkCount' should be set greater than '0'.
  */
 public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstractTest {
     /** */
