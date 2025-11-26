@@ -60,6 +60,8 @@ class AddRemoveNodeUpgradeTest(BaseRollingUpgradeTest):
 
             new_node.start()
 
+            control_sh = ControlUtility(new_node)
+
             if with_persistence:
                 control_sh.add_to_baseline(new_node.nodes)
 
