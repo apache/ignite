@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,42 +30,58 @@ public class WalStateResult {
     /** Original message. */
     private final WalStateProposeMessage msg;
 
-    /** Whether mode was changed. */
+    /** Whether mode was changed for at least one cache. */
     private final boolean changed;
+
+    /** Detailed results per group. */
+    private final Map<Integer, Boolean> grpResults;
 
     /** Error message (if any). */
     private final String errMsg;
 
     /**
-     * Constructor.
+     * Constructor for successful operation.
      *
      * @param msg Original message.
-     * @param changed Whether mode was changed.
+     * @param changed Whether mode was changed for at least one cache.
+     * @param grpResults Detailed results per group.
      */
-    public WalStateResult(WalStateProposeMessage msg, boolean changed) {
-        this(msg, changed, null);
+    public WalStateResult(WalStateProposeMessage msg, boolean changed, Map<Integer, Boolean> grpResults) {
+        this(msg, changed, grpResults, null);
     }
 
     /**
-     * Constructor.
+     * Constructor for error.
      *
      * @param msg Original message.
      * @param errMsg Error message (if any).
      */
     public WalStateResult(WalStateProposeMessage msg, String errMsg) {
-        this(msg, false, errMsg);
+        this(msg, false, Collections.emptyMap(), errMsg);
     }
 
     /**
-     * Constructor.
+     * Constructor for single group.
      *
      * @param msg Original message.
      * @param changed Whether mode was changed.
+     */
+    public WalStateResult(WalStateProposeMessage msg, boolean changed) {
+        this(msg, changed, Collections.emptyMap(), null);
+    }
+
+    /**
+     * Main constructor.
+     *
+     * @param msg Original message.
+     * @param changed Whether mode was changed for at least one cache.
+     * @param grpResults Detailed results per group.
      * @param errMsg Error message (if any).
      */
-    private WalStateResult(WalStateProposeMessage msg, boolean changed, String errMsg) {
+    private WalStateResult(WalStateProposeMessage msg, boolean changed, Map<Integer, Boolean> grpResults, String errMsg) {
         this.msg = msg;
         this.changed = changed;
+        this.grpResults = grpResults != null ? new HashMap<>(grpResults) : Collections.emptyMap();
         this.errMsg = errMsg;
     }
 
@@ -74,10 +93,17 @@ public class WalStateResult {
     }
 
     /**
-     * @return Whether mode was changed.
+     * @return Whether mode was changed for at least one cache.
      */
     public boolean changed() {
         return changed;
+    }
+
+    /**
+     * @return Detailed results per group.
+     */
+    public Map<Integer, Boolean> groupResults() {
+        return grpResults;
     }
 
     /**

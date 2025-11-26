@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -35,12 +38,16 @@ public class WalStateAckMessage implements Message {
     @Order(1)
     private boolean affNode;
 
-    /** Operation result. */
+    /** Whether WAL state was changed for at least one cache. */
     @Order(2)
     private boolean changed;
 
+    /** Detailed results per group. */
+    @Order(3)
+    private Map<Integer, Boolean> groupResults;
+
     /** Error message. */
-    @Order(value = 3, method = "errorMessage")
+    @Order(value = 4, method = "errorMessage")
     private String errMsg;
 
     /** Sender node ID. */
@@ -54,7 +61,25 @@ public class WalStateAckMessage implements Message {
     }
 
     /**
-     * Constructor.
+     * Constructor for multiple groups.
+     *
+     * @param opId Operation ID.
+     * @param affNode Affinity node.
+     * @param changed Whether WAL state was changed for at least one cache.
+     * @param groupResults Detailed results per group.
+     * @param errMsg Error message.
+     */
+    public WalStateAckMessage(UUID opId, boolean affNode, boolean changed,
+        Map<Integer, Boolean> groupResults, @Nullable String errMsg) {
+        this.opId = opId;
+        this.affNode = affNode;
+        this.changed = changed;
+        this.groupResults = groupResults != null ? new HashMap<>(groupResults) : Collections.emptyMap();
+        this.errMsg = errMsg;
+    }
+
+    /**
+     * Constructor for single group.
      *
      * @param opId Operation ID.
      * @param affNode Affinity node.
@@ -62,10 +87,7 @@ public class WalStateAckMessage implements Message {
      * @param errMsg Error message.
      */
     public WalStateAckMessage(UUID opId, boolean affNode, boolean changed, @Nullable String errMsg) {
-        this.opId = opId;
-        this.affNode = affNode;
-        this.changed = changed;
-        this.errMsg = errMsg;
+        this(opId, affNode, changed, Collections.emptyMap(), errMsg);
     }
 
     /**
@@ -97,7 +119,7 @@ public class WalStateAckMessage implements Message {
     }
 
     /**
-     * @return Result.
+     * @return Whether WAL state was changed for at least one cache.
      */
     public boolean changed() {
         return changed;
@@ -108,6 +130,20 @@ public class WalStateAckMessage implements Message {
      */
     public void changed(boolean changed) {
         this.changed = changed;
+    }
+
+    /**
+     * @return Detailed results per group.
+     */
+    public Map<Integer, Boolean> groupResults() {
+        return groupResults;
+    }
+
+    /**
+     * @param groupResults New detailed results per group.
+     */
+    public void groupResults(Map<Integer, Boolean> groupResults) {
+        this.groupResults = groupResults != null ? new HashMap<>(groupResults) : Collections.emptyMap();
     }
 
     /**

@@ -641,11 +641,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enableWal() throws IgniteException {
-        return changeWalMode(getAllCacheNames(), true);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean disableWal(String cacheName) throws IgniteException {
         return changeWalMode(cacheName, false);
     }
@@ -653,11 +648,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     /** {@inheritDoc} */
     @Override public boolean disableWal(Collection<String> cacheNames) throws IgniteException {
         return changeWalMode(cacheNames, false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean disableWal() throws IgniteException {
-        return changeWalMode(getAllCacheNames(), false);
     }
 
     /**
@@ -691,27 +681,6 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /**
-     * Get all cache names.
-     *
-     * @return Collection of persistent cache names.
-     */
-    private Collection<String> getAllCacheNames() {
-        guard();
-
-        try {
-            Collection<String> cacheNames = new ArrayList<>();
-
-            for (DynamicCacheDescriptor cacheDesc : ctx.cache().cacheDescriptors().values())
-                cacheNames.add(cacheDesc.cacheName());
-
-            return cacheNames;
         }
         finally {
             unguard();

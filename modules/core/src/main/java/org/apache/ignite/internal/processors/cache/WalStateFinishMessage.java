@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -36,7 +38,23 @@ public class WalStateFinishMessage extends WalStateAbstractMessage {
     private final String errMsg;
 
     /**
-     * Constructor.
+     * Constructor for multiple groups.
+     *
+     * @param opId Unique operation ID.
+     * @param grps Map of group IDs to their deployment IDs.
+     * @param changed Result.
+     * @param errMsg Error message.
+     */
+    public WalStateFinishMessage(UUID opId, Map<Integer, IgniteUuid> grps,
+        boolean changed, @Nullable String errMsg) {
+        super(opId, grps);
+
+        this.changed = changed;
+        this.errMsg = errMsg;
+    }
+
+    /**
+     * Constructor for single group.
      *
      * @param opId Unique operation ID.
      * @param grpId Group ID.
@@ -45,7 +63,7 @@ public class WalStateFinishMessage extends WalStateAbstractMessage {
      * @param errMsg Error message.
      */
     public WalStateFinishMessage(UUID opId, int grpId, IgniteUuid grpDepId, boolean changed, @Nullable String errMsg) {
-        super(opId, grpId, grpDepId);
+        super(opId, Collections.singletonMap(grpId, grpDepId));
 
         this.changed = changed;
         this.errMsg = errMsg;

@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -37,11 +41,8 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage 
     /** Unique operation ID. */
     private final UUID opId;
 
-    /** Group ID. */
-    private int grpId;
-
-    /** Group deployment ID. */
-    private IgniteUuid grpDepId;
+    /** Group IDs mapped to their deployment IDs. */
+    private final Map<Integer, IgniteUuid> grps;
 
     /** Message that should be processed through exchange thread. */
     @GridToStringExclude
@@ -51,13 +52,22 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage 
      * Constructor.
      *
      * @param opId Unique operation ID.
+     * @param grps Map of group IDs to their deployment IDs.
+     */
+    protected WalStateAbstractMessage(UUID opId, Map<Integer, IgniteUuid> grps) {
+        this.opId = opId;
+        this.grps = grps != null ? new HashMap<>(grps) : Collections.emptyMap();
+    }
+
+    /**
+     * Constructor for single group (for backward compatibility).
+     *
+     * @param opId Unique operation ID.
      * @param grpId Group ID.
      * @param grpDepId Group deployment ID.
      */
     protected WalStateAbstractMessage(UUID opId, int grpId, IgniteUuid grpDepId) {
-        this.opId = opId;
-        this.grpId = grpId;
-        this.grpDepId = grpDepId;
+        this(opId, Collections.singletonMap(grpId, grpDepId));
     }
 
     /**
@@ -68,17 +78,35 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage 
     }
 
     /**
-     * @return Group ID.
+     * @return Map of group IDs to their deployment IDs.
      */
-    public int groupId() {
-        return grpId;
+    public Map<Integer, IgniteUuid> groups() {
+        return grps;
     }
 
     /**
-     * @return Group deployment ID.
+     * @return Collection of group IDs.
      */
-    public IgniteUuid groupDeploymentId() {
-        return grpDepId;
+    public Collection<Integer> groupIds() {
+        return grps.keySet();
+    }
+
+    /**
+     * @return Collection of group deployment IDs.
+     */
+    public Collection<IgniteUuid> groupDeploymentIds() {
+        return grps.values();
+    }
+
+    /**
+     * Gets deployment ID for specific group.
+     *
+     * @param grpId Group ID.
+     * @return Group deployment ID or {@code null} if group not found.
+     */
+    @Nullable
+    public IgniteUuid groupDeploymentId(int grpId) {
+        return grps.get(grpId);
     }
 
     /**

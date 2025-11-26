@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -32,8 +35,8 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
     /** Node ID. */
     private final UUID nodeId;
 
-    /** Cache names which are expected to be in the group along with their deployment IDs. */
-    private Map<String, IgniteUuid> caches;
+    /** Cache names mapped to their group IDs and deployment IDs. */
+    private final Map<String, CacheInfo> caches;
 
     /** Whether WAL should be enabled or disabled. */
     private final boolean enable;
@@ -42,23 +45,76 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
     private transient boolean affNode;
 
     /**
-     * Constructor.
+     * Cache information container.
+     */
+    public static class CacheInfo implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        private final int grpId;
+        private final IgniteUuid depId;
+
+        public CacheInfo(int grpId, IgniteUuid depId) {
+            this.grpId = grpId;
+            this.depId = depId;
+        }
+
+        public int groupId() {
+            return grpId;
+        }
+
+        public IgniteUuid deploymentId() {
+            return depId;
+        }
+
+        @Override
+        public String toString() {
+            return S.toString(CacheInfo.class, this);
+        }
+    }
+
+    /**
+     * Constructor for multiple groups.
      *
-     * @param opId Operation IDs.
+     * @param opId Operation ID.
+     * @param grps Map of group IDs to their deployment IDs.
+     * @param nodeId Node ID.
+     * @param caches Expected cache names and their relevant information.
+     * @param enable WAL state flag.
+     */
+    public WalStateProposeMessage(UUID opId, Map<Integer, IgniteUuid> grps, UUID nodeId,
+        Map<String, CacheInfo> caches, boolean enable) {
+        super(opId, grps);
+
+        this.nodeId = nodeId;
+        this.caches = caches != null ? new HashMap<>(caches) : Collections.emptyMap();
+        this.enable = enable;
+    }
+
+    /**
+     * Constructor for single group.
+     *
+     * @param opId Operation ID.
      * @param grpId Expected group ID.
      * @param grpDepId Expected group deployment ID.
      * @param nodeId Node ID.
      * @param caches Expected cache names and their relevant deployment IDs.
-     *
      * @param enable WAL state flag.
      */
     public WalStateProposeMessage(UUID opId, int grpId, IgniteUuid grpDepId, UUID nodeId,
         Map<String, IgniteUuid> caches, boolean enable) {
-        super(opId, grpId, grpDepId);
+        super(opId, Collections.singletonMap(grpId, grpDepId));
 
         this.nodeId = nodeId;
-        this.caches = caches;
         this.enable = enable;
+
+        if (caches != null) {
+            this.caches = new HashMap<>();
+            for (Map.Entry<String, IgniteUuid> entry : caches.entrySet())
+                this.caches.put(entry.getKey(), new CacheInfo(grpId, entry.getValue()));
+        }
+        else
+            this.caches = Collections.emptyMap();
     }
 
     /**
@@ -69,9 +125,9 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
     }
 
     /**
-     * @return Caches.
+     * @return Caches with their group information.
      */
-    public Map<String, IgniteUuid> caches() {
+    public Map<String, CacheInfo> caches() {
         return caches;
     }
 
@@ -83,14 +139,14 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
     }
 
     /**
-     * @return Whether message is being handled on cache affintiy node.
+     * @return Whether message is being handled on cache affinity node.
      */
     public boolean affinityNode() {
         return affNode;
     }
 
     /**
-     * @param affNode Whether message is being handled on cache affintiy node.
+     * @param affNode Whether message is being handled on cache affinity node.
      */
     public void affinityNode(boolean affNode) {
         this.affNode = affNode;

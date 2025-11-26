@@ -26,6 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -251,10 +252,15 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 if (res.changed()) {
                     WalStateProposeMessage propMsg = res.message();
 
-                    CacheGroupContext grpCtx = cctx.cache().cacheGroup(propMsg.groupId());
+                    for (int grpId : propMsg.groupIds()) {
+                        CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpId);
 
-                    if (grpCtx != null)
-                        grpCtx.globalWalEnabled(propMsg.enable());
+                        if (grpCtx != null) {
+                            Boolean grpChanged = res.groupResults().get(grpId);
+                            if (grpChanged != null && grpChanged)
+                                grpCtx.globalWalEnabled(propMsg.enable());
+                        }
+                    }
                 }
             }
 
@@ -472,26 +478,52 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 if (log.isDebugEnabled())
                     log.debug("WAL state change message is valid (will continue processing): " + msg);
 
-                CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
+                boolean allGrpsValid = true;
+                boolean atLeastOneGrpAdded = false;
 
-                assert grpDesc != null;
+                // Process all groups from the message
+                for (int grpId : msg.groupIds()) {
+                    CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(grpId);
 
-                IgnitePredicate<ClusterNode> nodeFilter = grpDesc.config().getNodeFilter();
+                    if (grpDesc == null) {
+                        allGrpsValid = false;
+                        if (log.isDebugEnabled())
+                            log.debug("Group descriptor not found for groupId: " + grpId);
+                        continue;
+                    }
 
-                boolean affNode = srv && (nodeFilter == null || nodeFilter.apply(cctx.localNode()));
+                    IgnitePredicate<ClusterNode> nodeFilter = grpDesc.config().getNodeFilter();
+                    boolean affNode = srv && (nodeFilter == null || nodeFilter.apply(cctx.localNode()));
 
-                msg.affinityNode(affNode);
+                    // For multi-group messages, we consider this node an affinity node if it's affinity for ANY group
+                    if (affNode && !msg.affinityNode())
+                        msg.affinityNode(true);
 
-                if (grpDesc.addWalChangeRequest(msg)) {
+                    if (grpDesc.addWalChangeRequest(msg)) {
+                        atLeastOneGrpAdded = true;
+                        if (log.isDebugEnabled())
+                            log.debug("WAL state change message added for group [grpId=" + grpId + ", msg=" + msg + "]");
+                    }
+                    else {
+                        if (log.isDebugEnabled())
+                            log.debug("WAL state change message is added to pending set for group [grpId=" + grpId +
+                                "] and will be processed later: " + msg);
+                    }
+                }
+
+                if (allGrpsValid && atLeastOneGrpAdded) {
                     msg.exchangeMessage(msg);
 
                     if (log.isDebugEnabled())
-                        log.debug("WAL state change message will be processed in exchange thread: " + msg);
+                        log.debug("WAL state change message will be processed in exchange thread for all groups: " + msg);
                 }
                 else {
-                    if (log.isDebugEnabled())
-                        log.debug("WAL state change message is added to pending set and will be processed later: " +
-                            msg);
+                    if (log.isDebugEnabled()) {
+                        if (!allGrpsValid)
+                            log.debug("WAL state change message ignored - not all groups are valid: " + msg);
+                        else if (!atLeastOneGrpAdded)
+                            log.debug("WAL state change message ignored - no groups were added: " + msg);
+                    }
                 }
             }
             else {
@@ -528,30 +560,54 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @return Error message or {@code null} if everything is OK.
      */
     @Nullable private String validate(WalStateProposeMessage msg) {
-        // Is group still there?
-        CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
+        // Check if all groups still exist
+        for (int grpId : msg.groupIds()) {
+            CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(grpId);
 
-        if (grpDesc == null)
-            return "Failed to change WAL mode because some caches no longer exist: " + msg.caches().keySet();
+            if (grpDesc == null)
+                return "Failed to change WAL mode because cache group no longer exists: " + grpId;
+        }
 
-        // Are specified caches still there?
-        for (Map.Entry<String, IgniteUuid> cache : msg.caches().entrySet()) {
-            String cacheName = cache.getKey();
+        // Are specified caches still there and belong to the correct groups?
+        for (Map.Entry<String, WalStateProposeMessage.CacheInfo> cacheEntry : msg.caches().entrySet()) {
+            String cacheName = cacheEntry.getKey();
+            WalStateProposeMessage.CacheInfo cacheInfo = cacheEntry.getValue();
 
             DynamicCacheDescriptor cacheDesc = cacheProcessor().cacheDescriptor(cacheName);
 
-            if (cacheDesc == null || !Objects.equals(cacheDesc.deploymentId(), cache.getValue()))
+            if (cacheDesc == null || !Objects.equals(cacheDesc.deploymentId(), cacheInfo.deploymentId()))
                 return "Cache doesn't exist: " + cacheName;
+
+            // Verify that cache belongs to the specified group
+            if (cacheDesc.groupId() != cacheInfo.groupId())
+                return "Cache " + cacheName + " belongs to different group: expected=" +
+                    cacheInfo.groupId() + ", actual=" + cacheDesc.groupId();
         }
 
-        // Are there any new caches in the group?
-        HashSet<String> grpCacheNames = new HashSet<>(grpDesc.caches().keySet());
+        // For each group, check that all caches in the group are included in the message
+        for (int grpId : msg.groupIds()) {
+            CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(grpId);
 
-        grpCacheNames.removeAll(msg.caches().keySet());
+            if (grpDesc != null) {
+                // Collect cache names that belong to this group from the message
+                Set<String> msgCacheNamesForGrp = new HashSet<>();
+                for (Map.Entry<String, WalStateProposeMessage.CacheInfo> cacheEntry : msg.caches().entrySet()) {
+                    if (cacheEntry.getValue().groupId() == grpId)
+                        msgCacheNamesForGrp.add(cacheEntry.getKey());
+                }
 
-        if (!grpCacheNames.isEmpty()) {
-            return "Cannot change WAL mode because not all cache names belonging to the " +
-                "group are provided [group=" + grpDesc.groupName() + ", missingCaches=" + grpCacheNames + ']';
+                // Get all cache names that actually belong to this group
+                HashSet<String> grpCacheNames = new HashSet<>(grpDesc.caches().keySet());
+
+                // Check if all caches in the group are included in the message
+                grpCacheNames.removeAll(msgCacheNamesForGrp);
+
+                if (!grpCacheNames.isEmpty()) {
+                    return "Cannot change WAL mode because not all cache names belonging to the " +
+                        "group are provided [group=" + grpDesc.groupName() + ", groupId=" + grpId +
+                        ", missingCaches=" + grpCacheNames + ']';
+                }
+            }
         }
 
         return null;
@@ -574,63 +630,102 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             if (msg.affinityNode()) {
                 // Affinity node, normal processing.
-                CacheGroupContext grpCtx = cacheProcessor().cacheGroup(msg.groupId());
+                Map<Integer, Boolean> grpResults = new HashMap<>();
+                boolean anyGrpChanged = false;
+                List<CheckpointProgress> checkpointFutures = new ArrayList<>();
+                String errorMsg = null;
 
-                if (grpCtx == null) {
-                    // Related caches were destroyed concurrently.
-                    res = new WalStateResult(msg, "Failed to change WAL mode because some caches " +
-                        "no longer exist: " + msg.caches().keySet());
+                // Process all groups
+                for (int grpId : msg.groupIds()) {
+                    CacheGroupContext grpCtx = cacheProcessor().cacheGroup(grpId);
+
+                    if (grpCtx == null) {
+                        // Related caches were destroyed concurrently.
+                        errorMsg = "Failed to change WAL mode because some cache groups no longer exist: " + msg.groupIds();
+                        break;
+                    }
+
+                    boolean curWalEnabled = grpCtx.globalWalEnabled();
+                    boolean shouldChange = (msg.enable() != curWalEnabled);
+
+                    grpResults.put(grpId, shouldChange);
+
+                    if (shouldChange) {
+                        anyGrpChanged = true;
+
+                        // Initiate a checkpoint for this group
+                        CheckpointProgress cpFut = triggerCheckpoint("wal-state-change-grp-" + grpId);
+
+                        if (cpFut != null)
+                            checkpointFutures.add(cpFut);
+                        else {
+                            errorMsg = "Failed to initiate a checkpoint for group " + grpId +
+                                " (checkpoint thread is not available).";
+                            break;
+                        }
+                    }
+                }
+
+                if (errorMsg != null)
+                    res = new WalStateResult(msg, errorMsg);
+                else if (!anyGrpChanged) {
+                    // Nothing changed -> no-op for all groups.
+                    res = new WalStateResult(msg, false, grpResults);
                 }
                 else {
-                    if (Objects.equals(msg.enable(), grpCtx.globalWalEnabled()))
-                        // Nothing changed -> no-op.
-                        res = new WalStateResult(msg, false);
-                    else {
-                        // Initiate a checkpoint.
-                        CheckpointProgress cpFut = triggerCheckpoint("wal-state-change-grp-" + msg.groupId());
+                    // At least one group needs WAL state change
+                    try {
+                        // Wait for all checkpoint marks synchronously before releasing the control.
+                        for (CheckpointProgress cpFut : checkpointFutures)
+                            cpFut.futureFor(LOCK_RELEASED).get();
 
-                        if (cpFut != null) {
-                            try {
-                                // Wait for checkpoint mark synchronously before releasing the control.
-                                cpFut.futureFor(LOCK_RELEASED).get();
-
-                                if (msg.enable()) {
-                                    grpCtx.globalWalEnabled(true);
-
-                                    // Enable: it is enough to release cache operations once mark is finished because
-                                    // not-yet-flushed dirty pages have been logged.
-                                    WalStateChangeWorker worker = new WalStateChangeWorker(msg, cpFut);
-
-                                    IgniteThread thread = U.newThread(worker);
-
-                                    thread.setUncaughtExceptionHandler(new OomExceptionHandler(
-                                        cctx.kernalContext()));
-
-                                    thread.start();
-                                }
-                                else {
-                                    // Disable: not-yet-flushed operations are not logged, so wait for them
-                                    // synchronously in exchange thread. Otherwise, we cannot define a point in
-                                    // when it is safe to continue cache operations.
-                                    res = awaitCheckpoint(cpFut, msg);
-
-                                    // WAL state is persisted after checkpoint if finished. Otherwise in case of crash
-                                    // and restart we will think that WAL is enabled, but data might be corrupted.
-                                    grpCtx.globalWalEnabled(false);
+                        if (msg.enable()) {
+                            // Enable WAL for groups that need change
+                            for (int grpId : msg.groupIds()) {
+                                if (grpResults.get(grpId)) {
+                                    CacheGroupContext grpCtx = cacheProcessor().cacheGroup(grpId);
+                                    if (grpCtx != null)
+                                        grpCtx.globalWalEnabled(true);
                                 }
                             }
-                            catch (Exception e) {
-                                U.warn(log, "Failed to change WAL mode due to unexpected exception [" +
-                                    "msg=" + msg + ']', e);
 
-                                res = new WalStateResult(msg, "Failed to change WAL mode due to unexpected " +
-                                    "exception (see server logs for more information): " + e.getMessage());
-                            }
+                            // Enable: it is enough to release cache operations once mark is finished because
+                            // not-yet-flushed dirty pages have been logged.
+                            WalStateChangeWorker worker = new WalStateChangeWorker(msg, checkpointFutures, grpResults);
+
+                            IgniteThread thread = U.newThread(worker);
+
+                            thread.setUncaughtExceptionHandler(new OomExceptionHandler(cctx.kernalContext()));
+
+                            thread.start();
                         }
                         else {
-                            res = new WalStateResult(msg, "Failed to initiate a checkpoint (checkpoint thread " +
-                                "is not available).");
+                            // Disable: not-yet-flushed operations are not logged, so wait for them
+                            // synchronously in exchange thread. Otherwise, we cannot define a point in
+                            // when it is safe to continue cache operations.
+                            res = awaitCheckpoint(checkpointFutures, msg, grpResults);
+
+                            // Disable WAL for groups that need change after checkpoint completion
+                            if (res != null && res.changed()) {
+                                for (int grpId : msg.groupIds()) {
+                                    if (grpResults.get(grpId)) {
+                                        CacheGroupContext grpCtx = cacheProcessor().cacheGroup(grpId);
+                                        if (grpCtx != null) {
+                                            // WAL state is persisted after checkpoint if finished. Otherwise in case of crash
+                                            // and restart we will think that WAL is enabled, but data might be corrupted.
+                                            grpCtx.globalWalEnabled(false);
+                                        }
+                                    }
+                                }
+                            }
                         }
+                    }
+                    catch (Exception e) {
+                        U.warn(log, "Failed to change WAL mode due to unexpected exception [" +
+                            "msg=" + msg + ']', e);
+
+                        res = new WalStateResult(msg, "Failed to change WAL mode due to unexpected " +
+                            "exception (see server logs for more information): " + e.getMessage());
                     }
                 }
             }
@@ -799,26 +894,48 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             procs.remove(msg.operationId());
 
-            CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(msg.groupId());
+            // Process all groups from the message
+            boolean anyGrpProcessed = false;
+            WalStateProposeMessage nextProposeMsgToProc = null;
 
-            if (grpDesc != null && Objects.equals(grpDesc.deploymentId(), msg.groupDeploymentId())) {
-                // Toggle WAL mode in descriptor.
-                if (msg.changed())
-                    grpDesc.walEnabled(!grpDesc.walEnabled());
+            for (Map.Entry<Integer, IgniteUuid> grpEntry : msg.groups().entrySet()) {
+                int grpId = grpEntry.getKey();
+                IgniteUuid grpDepId = grpEntry.getValue();
 
-                // Remove now-outdated message from the queue.
-                WalStateProposeMessage oldProposeMsg = grpDesc.nextWalChangeRequest();
+                CacheGroupDescriptor grpDesc = cacheProcessor().cacheGroupDescriptors().get(grpId);
 
-                assert oldProposeMsg != null;
-                assert Objects.equals(oldProposeMsg.operationId(), msg.operationId());
+                if (grpDesc != null && Objects.equals(grpDesc.deploymentId(), grpDepId)) {
+                    // Toggle WAL mode in descriptor if the operation was successful.
+                    if (msg.changed())
+                        grpDesc.walEnabled(!grpDesc.walEnabled());
 
-                grpDesc.removeWalChangeRequest();
+                    // Remove now-outdated message from the queue.
+                    WalStateProposeMessage oldProposeMsg = grpDesc.nextWalChangeRequest();
 
-                // Move next message to exchange thread.
-                WalStateProposeMessage nextProposeMsg = grpDesc.nextWalChangeRequest();
+                    if (oldProposeMsg != null && Objects.equals(oldProposeMsg.operationId(), msg.operationId())) {
+                        grpDesc.removeWalChangeRequest();
 
-                if (nextProposeMsg != null)
-                    msg.exchangeMessage(nextProposeMsg);
+                        // Move next message to exchange thread for this group.
+                        WalStateProposeMessage nextProposeMsg = grpDesc.nextWalChangeRequest();
+
+                        if (nextProposeMsg != null) {
+                            // We need to process the next message, but only set it once
+                            if (nextProposeMsgToProc == null)
+                                nextProposeMsgToProc = nextProposeMsg;
+                        }
+                    }
+
+                    anyGrpProcessed = true;
+                }
+            }
+
+            // Set exchange message for the next proposal if any group has pending requests
+            if (nextProposeMsgToProc != null)
+                msg.exchangeMessage(nextProposeMsgToProc);
+
+            if (!anyGrpProcessed && srv) {
+                if (log.isDebugEnabled())
+                    log.debug("Finish message didn't process any groups (possibly all groups were destroyed): " + msg);
             }
 
             if (srv) {
@@ -986,22 +1103,61 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Await for the checkpoint to finish.
+     * Await for the checkpoints to finish.
      *
-     * @param cpFut Checkpoint future.
-     * @param msg Orignial message which triggered the process.
+     * @param cpFuts Checkpoint futures.
+     * @param msg Original message which triggered the process.
+     * @param grpResults Group results indicating which groups need changes.
      * @return Result.
      */
-    private WalStateResult awaitCheckpoint(CheckpointProgress cpFut, WalStateProposeMessage msg) {
+    private WalStateResult awaitCheckpoint(List<CheckpointProgress> cpFuts, WalStateProposeMessage msg,
+        Map<Integer, Boolean> grpResults) {
         WalStateResult res;
 
         try {
             assert msg.affinityNode();
 
-            if (cpFut != null)
-                cpFut.futureFor(FINISHED).get();
+            // Wait for all checkpoints to finish
+            if (cpFuts != null && !cpFuts.isEmpty()) {
+                for (CheckpointProgress cpFut : cpFuts) {
+                    if (cpFut != null)
+                        cpFut.futureFor(FINISHED).get();
+                }
+            }
 
-            res = new WalStateResult(msg, true);
+            // For WAL enable case, we need to track which groups were actually changed
+            Map<Integer, Boolean> actualGroupResults = new HashMap<>();
+            boolean anyChanged = false;
+
+            if (msg.enable()) {
+                // For enable operation, we apply changes after checkpoint completion
+                for (int grpId : msg.groupIds()) {
+                    Boolean needsChange = grpResults.get(grpId);
+                    if (needsChange != null && needsChange) {
+                        CacheGroupContext grpCtx = cacheProcessor().cacheGroup(grpId);
+                        if (grpCtx != null) {
+                            grpCtx.globalWalEnabled(true);
+                            actualGroupResults.put(grpId, true);
+                            anyChanged = true;
+                        }
+                        else
+                            actualGroupResults.put(grpId, false);
+                    }
+                    else
+                        actualGroupResults.put(grpId, false);
+                }
+            }
+            else {
+                // For disable operation, changes were already applied in onProposeExchange
+                // Just use the original group results
+                for (Map.Entry<Integer, Boolean> entry : grpResults.entrySet()) {
+                    if (entry.getValue())
+                        anyChanged = true;
+                    actualGroupResults.put(entry.getKey(), entry.getValue());
+                }
+            }
+
+            res = new WalStateResult(msg, anyChanged, actualGroupResults);
         }
         catch (Exception e) {
             U.warn(log, "Failed to change WAL mode due to unexpected exception [msg=" + msg + ']', e);
@@ -1059,24 +1215,31 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         /** Message. */
         private final WalStateProposeMessage msg;
 
-        /** Checkpoint future. */
-        private final CheckpointProgress cpFut;
+        /** Checkpoint futures. */
+        private final List<CheckpointProgress> cpFuts;
+
+        /** Group results. */
+        private final Map<Integer, Boolean> grpResults;
 
         /**
          * Constructor.
          *
          * @param msg Propose message.
+         * @param cpFuts Checkpoint futures.
+         * @param grpResults Group results indicating which groups need changes.
          */
-        private WalStateChangeWorker(WalStateProposeMessage msg, CheckpointProgress cpFut) {
-            super(cctx.igniteInstanceName(), "wal-state-change-worker-" + msg.groupId(), WalStateManager.this.log);
+        private WalStateChangeWorker(WalStateProposeMessage msg, List<CheckpointProgress> cpFuts,
+            Map<Integer, Boolean> grpResults) {
+            super(cctx.igniteInstanceName(), "wal-state-change-worker-" + msg.operationId(), WalStateManager.this.log);
 
             this.msg = msg;
-            this.cpFut = cpFut;
+            this.cpFuts = cpFuts;
+            this.grpResults = grpResults;
         }
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            WalStateResult res = awaitCheckpoint(cpFut, msg);
+            WalStateResult res = awaitCheckpoint(cpFuts, msg, grpResults);
 
             addResult(res);
 
