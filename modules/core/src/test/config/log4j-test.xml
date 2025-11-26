@@ -126,10 +126,11 @@
     <!--
         Uncomment to enable debugging of partition eviction.
     -->
-        <category name="org.apache.ignite.spi.communication.tcp">
+    <!--
+        <category name="org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionsEvictManager">
             <level value="DEBUG"/>
         </category>
-
+    -->
 
     <!-- Disable all open source debugging. -->
     <category name="org">

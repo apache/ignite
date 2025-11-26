@@ -241,15 +241,11 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
         Ignite ldr = clientLdr ? cli : srvr;
 
-        log.error("TEST | step 1");
-
-        GridMetricManager metricsMgr = ((IgniteEx)ldr).context().metric();
-        MetricRegistryImpl mreg0 = metricsMgr.registry(ConnectionClientPool.SHARED_METRICS_REGISTRY_NAME);
+        GridMetricManager ldrMetricsMgr = ((IgniteEx)ldr).context().metric();
+        MetricRegistryImpl mreg0 = ldrMetricsMgr.registry(ConnectionClientPool.SHARED_METRICS_REGISTRY_NAME);
 
         assertEquals(connsPerNode, mreg0.<IntMetric>findMetric(ConnectionClientPool.METRIC_NAME_POOL_SIZE).value());
         assertEquals(pairedConns, mreg0.<BooleanGauge>findMetric(ConnectionClientPool.METRIC_NAME_PAIRED_CONNS).value());
-
-        log.error("TEST | step 2");
 
         AtomicBoolean runFlag = new AtomicBoolean(true);
         AtomicLong loadCnt = new AtomicLong(preloadCnt);
@@ -260,8 +256,6 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         IgniteInternalFuture<?> loadFut = runLoad(ldr, runFlag, () -> msg, loadCnt);
 
         assertTrue(waitForCondition(() -> loadCnt.get() <= 0 || !runFlag.get(), getTestTimeout(), 25));
-
-        log.error("TEST | step 3");
 
         long loadMillis1 = System.currentTimeMillis() - loadMillis0;
 
@@ -277,41 +271,33 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
             UUID nodeId = node.cluster().localNode().id();
 
-            MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(nodeId));
+            MetricRegistryImpl mreg = ldrMetricsMgr.registry(nodeMetricsRegName(nodeId));
 
             // We assume that entire pool was used at least once.
             assertTrue(waitForCondition(() -> connsPerNode == mreg.<IntMetric>findMetric(METRIC_NAME_CUR_CNT).value(),
                 getTestTimeout(), checkPeriod));
 
-            log.error("TEST | step 4, node order=" + node.cluster().localNode().order());
-
             // Connections should not be idle under a heavy load.
             assertTrue(waitForCondition(() -> mreg.<LongMetric>findMetric(METRIC_NAME_MAX_NET_IDLE_TIME).value() < 50,
                 getTestTimeout(), checkPeriod));
 
-            log.error("TEST | step 5, node order=" + node.cluster().localNode().order());
-
             assertTrue(waitForCondition(() -> mreg.<LongMetric>findMetric(METRIC_NAME_AVG_LIFE_TIME).value() > loadMillis1,
                 getTestTimeout(), checkPeriod));
-
-            log.error("TEST | step 6, node order=" + node.cluster().localNode().order());
 
             // Default connection idle and write timeouts are large enough. Connections should not be failed/deleted.
             assertEquals(0, mreg.<LongMetric>findMetric(METRIC_NAME_REMOVED_CNT).value());
 
-            log.error("TEST | step 7, node order=" + node.cluster().localNode().order());
-
             assertEquals(node.cluster().localNode().consistentId().toString(), mreg.findMetric(METRIC_NAME_CONSIST_ID).getAsString());
-
-            log.error("TEST | step 8, node order=" + node.cluster().localNode().order());
         }
 
         // Current connection implementations are async.
         assertEquals(true, mreg0.<BooleanGauge>findMetric(ConnectionClientPool.METRIC_NAME_ASYNC_CONNS).value());
 
-        log.error("TEST | step 9");
-
         dumpMetrics(ldr);
+
+        // Stop the loading, free the messages queue to prevent the connection recreation attempts.
+        runFlag.set(false);
+        loadFut.get(getTestTimeout());
 
         // Check node metrics are cleared if a node stops.
         for (Ignite node : G.allGrids()) {
@@ -324,39 +310,31 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
             UUID nodeId = node.cluster().localNode().id();
 
-            long nodeOrder = node.cluster().localNode().order();
+            // Wait until there is no messages to this node.
+            assertTrue(waitForCondition(() -> {
+                MetricRegistryImpl mreg = ldrMetricsMgr.registry(nodeMetricsRegName(nodeId));
 
-            log.error("TEST | step 10, node order=" + nodeOrder);
+                assert mreg != null;
 
-            assertTrue(G.stop(node.name(), true));
+                return mreg.<IntMetric>findMetric(METRIC_NAME_MSG_QUEUE_SIZE).value() == 0;
+            }, getTestTimeout(), 100));
+
+            assertTrue(G.stop(node.name(), false));
 
             assertTrue(waitForCondition(() -> {
-                MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(nodeId));
+                MetricRegistryImpl mreg = ldrMetricsMgr.registry(nodeMetricsRegName(nodeId));
 
                 if (mreg == null || !mreg.iterator().hasNext())
                     return true;
 
-                log.error("TEST | still has metrics for node=" + nodeId + ", order=" + nodeOrder);
-
                 dumpMetrics(ldr);
 
                 return false;
-            }, 10_000, 1_000));
-
-            log.error("TEST | step 11, node order=" + nodeOrder);
+            }, getTestTimeout()));
         }
-
-        log.error("TEST | step 12");
-
-        runFlag.set(false);
-        loadFut.get(getTestTimeout());
-
-        log.error("TEST | step 13");
 
         // Ensure that all the possible nodes are stopped.
         assertTrue(waitForCondition(() -> ldr.cluster().nodes().size() == (clientLdr ? 2 : 1), getTestTimeout()));
-
-        log.error("TEST | step 14");
     }
 
     /** Simulates delay/concurrency of connections acquire. */
@@ -506,6 +484,9 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
 
     /** */
     private static void dumpMetrics(Ignite ldr) {
+        if (!log.isInfoEnabled())
+            return;
+
         GridMetricManager metricsMgr = ((IgniteEx)ldr).context().metric();
 
         for (Ignite node : G.allGrids()) {
@@ -525,7 +506,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
                 b.append(m.name()).append(" = ").append(m.getAsString());
             }
 
-            log.error(b.toString());
+            log.info(b.toString());
         }
     }
 

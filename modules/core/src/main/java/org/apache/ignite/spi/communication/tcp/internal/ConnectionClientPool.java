@@ -657,8 +657,6 @@ public class ConnectionClientPool {
 
     /** */
     private void createNodeMetrics(ClusterNode node) {
-        log.error("TEST | creating metrics for node " + node.id());
-
         MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(node.id()));
 
         assert !mreg.iterator().hasNext() : "Node connection pools metrics aren't empty.";
@@ -730,11 +728,8 @@ public class ConnectionClientPool {
 
                 // Node might already leave the cluster. Syncs metrics removal on the clients map.
                 clients.compute(nodeId, (nodeId0, clients) -> {
-                    if (clients == null) {
-                        log.error("TEST | updating node metrics, no clients. Seems node left. Removing metrics. NodeId=" + nodeId0);
-
+                    if (clients == null)
                         removeNodeMetrics(nodeId);
-                    }
                     else
                         metrics.put(nodeId, res0);
 
@@ -742,9 +737,6 @@ public class ConnectionClientPool {
                 });
             }
             else if (res != null) {
-                log.error("TEST | updating node metrics, no clients found at all. Seems node left. " +
-                    "Removing metrics. NodeId=" + nodeId);
-
                 removeNodeMetrics(nodeId);
 
                 res = null;
@@ -802,8 +794,6 @@ public class ConnectionClientPool {
         if (log.isDebugEnabled())
             log.debug("The node client connections were closed [nodeId=" + nodeId + "]");
 
-        log.error("TEST | forceCloseConnection, removing metrics, nodeId=" + nodeId);
-
         removeNodeMetrics(nodeId);
 
         GridCommunicationClient[] clients = this.clients.remove(nodeId);
@@ -827,8 +817,6 @@ public class ConnectionClientPool {
      */
     public void onNodeLeft(UUID nodeId) {
         GridCommunicationClient[] clients0 = clients.remove(nodeId);
-
-        log.error("TEST | onNodeLeft, removing metrics, nodeId=" + nodeId);
 
         removeNodeMetrics(nodeId);
 
