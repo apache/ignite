@@ -51,24 +51,30 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
         private final int grpId;
+
+        /** */
         private final IgniteUuid depId;
 
+        /** */
         public CacheInfo(int grpId, IgniteUuid depId) {
             this.grpId = grpId;
             this.depId = depId;
         }
 
+        /** */
         public int groupId() {
             return grpId;
         }
 
+        /** */
         public IgniteUuid deploymentId() {
             return depId;
         }
 
-        @Override
-        public String toString() {
+        /** {@inheritDoc} */
+        @Override public String toString() {
             return S.toString(CacheInfo.class, this);
         }
     }

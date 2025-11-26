@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -141,40 +140,46 @@ public class WalStateDistributedProcess {
             return new WalStateFinishMessage(msg.operationId(), msg.groups(), false, errMsg.toString());
         }
 
-        // Verify overall results consistency.
-        Boolean overallChanged = null;
-        Map<Integer, Boolean> grpResultsConsistency = new HashMap<>();
+        // Verify group-level results consistency and calculate overall result
+        boolean overallChanged = false;
+        Map<Integer, Boolean> consistentGrpResults = new HashMap<>();
 
-        for (WalStateAckMessage ackMsg : acks.values()) {
-            boolean curChanged = ackMsg.changed();
+        for (int grpId : msg.groupIds()) {
+            Boolean grpResult = null;
+            boolean consistent = true;
 
-            // Check overall changed flag consistency
-            if (overallChanged == null)
-                overallChanged = curChanged;
-            else if (!Objects.equals(curChanged, overallChanged)) {
-                return new WalStateFinishMessage(msg.operationId(), msg.groups(), false,
-                    "Operation result is unknown because nodes reported different overall results (please re-try operation).");
+            for (WalStateAckMessage ackMsg : acks.values()) {
+                Boolean curResult = ackMsg.groupResults().get(grpId);
+
+                if (curResult == null) {
+                    // This node didn't report result for this group
+                    consistent = false;
+                    break;
+                }
+
+                if (grpResult == null)
+                    grpResult = curResult;
+                else if (!grpResult.equals(curResult)) {
+                    // Inconsistent results between nodes
+                    consistent = false;
+                    break;
+                }
             }
 
-            // Check group-level results consistency
-            for (Map.Entry<Integer, Boolean> groupResult : ackMsg.groupResults().entrySet()) {
-                int grpId = groupResult.getKey();
-                boolean grpChanged = groupResult.getValue();
+            if (!consistent) {
+                return new WalStateFinishMessage(msg.operationId(), msg.groups(), false,
+                    "Operation result is unknown because nodes reported different results for group " + grpId +
+                        " (please re-try operation).");
+            }
 
-                Boolean existing = grpResultsConsistency.get(grpId);
-                if (existing == null)
-                    grpResultsConsistency.put(grpId, grpChanged);
-                else if (existing != grpChanged) {
-                    return new WalStateFinishMessage(msg.operationId(), msg.groups(), false,
-                        "Operation result is unknown because nodes reported different results for group " + grpId +
-                            " (please re-try operation).");
-                }
+            if (grpResult != null) {
+                consistentGrpResults.put(grpId, grpResult);
+                if (grpResult)
+                    overallChanged = true;
             }
         }
 
         // All nodes completed operation with consistent results, complete with success.
-        assert overallChanged != null;
-
         return new WalStateFinishMessage(msg.operationId(), msg.groups(), overallChanged, null);
     }
 

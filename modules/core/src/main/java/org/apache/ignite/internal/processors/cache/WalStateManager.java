@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -217,14 +218,24 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                         if (log.isDebugEnabled())
                             log.debug("Processing WAL state message on start: " + msg);
 
-                        boolean enabled = grpDesc.walEnabled();
+                        // For multi-group messages, we need to check each group individually
+                        Map<Integer, Boolean> grpResults = new HashMap<>();
 
-                        WalStateResult res;
+                        for (int grpId : msg.groupIds()) {
+                            CacheGroupDescriptor curGrpDesc = cacheProcessor().cacheGroupDescriptors().get(grpId);
+                            if (curGrpDesc != null) {
+                                boolean enabled = curGrpDesc.walEnabled();
+                                boolean changed = !Objects.equals(enabled, msg.enable());
 
-                        if (Objects.equals(enabled, msg.enable()))
-                            res = new WalStateResult(msg, false);
-                        else
-                            res = new WalStateResult(msg, true);
+                                grpResults.put(grpId, changed);
+                            }
+                            else {
+                                // Group no longer exists, mark as not changed
+                                grpResults.put(grpId, false);
+                            }
+                        }
+
+                        WalStateResult res = new WalStateResult(msg, grpResults);
 
                         initialRess.add(res);
 
@@ -249,17 +260,15 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             for (WalStateResult res : initialRess) {
                 onCompletedLocally(res);
 
-                if (res.changed()) {
-                    WalStateProposeMessage propMsg = res.message();
+                WalStateProposeMessage propMsg = res.message();
 
-                    for (int grpId : propMsg.groupIds()) {
-                        CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpId);
+                for (int grpId : propMsg.groupIds()) {
+                    CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpId);
 
-                        if (grpCtx != null) {
-                            Boolean grpChanged = res.groupResults().get(grpId);
-                            if (grpChanged != null && grpChanged)
-                                grpCtx.globalWalEnabled(propMsg.enable());
-                        }
+                    if (grpCtx != null) {
+                        Boolean grpChanged = res.groupResults().get(grpId);
+                        if (grpChanged != null && grpChanged)
+                            grpCtx.globalWalEnabled(propMsg.enable());
                     }
                 }
             }
@@ -670,7 +679,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     res = new WalStateResult(msg, errorMsg);
                 else if (!anyGrpChanged) {
                     // Nothing changed -> no-op for all groups.
-                    res = new WalStateResult(msg, false, grpResults);
+                    res = new WalStateResult(msg, grpResults);
                 }
                 else {
                     // At least one group needs WAL state change
@@ -706,14 +715,24 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                             res = awaitCheckpoint(checkpointFutures, msg, grpResults);
 
                             // Disable WAL for groups that need change after checkpoint completion
-                            if (res != null && res.changed()) {
-                                for (int grpId : msg.groupIds()) {
-                                    if (grpResults.get(grpId)) {
-                                        CacheGroupContext grpCtx = cacheProcessor().cacheGroup(grpId);
-                                        if (grpCtx != null) {
-                                            // WAL state is persisted after checkpoint if finished. Otherwise in case of crash
-                                            // and restart we will think that WAL is enabled, but data might be corrupted.
-                                            grpCtx.globalWalEnabled(false);
+                            if (res != null) {
+                                anyGrpChanged = false;
+                                for (boolean changed : res.groupResults().values()) {
+                                    if (changed) {
+                                        anyGrpChanged = true;
+                                        break;
+                                    }
+                                }
+
+                                if (anyGrpChanged) {
+                                    for (int grpId : msg.groupIds()) {
+                                        if (grpResults.get(grpId)) {
+                                            CacheGroupContext grpCtx = cacheProcessor().cacheGroup(grpId);
+                                            if (grpCtx != null) {
+                                                // WAL state is persisted after checkpoint if finished. Otherwise in case of crash
+                                                // and restart we will think that WAL is enabled, but data might be corrupted.
+                                                grpCtx.globalWalEnabled(false);
+                                            }
                                         }
                                     }
                                 }
@@ -732,7 +751,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             else {
                 // We cannot know result on non-affinity server node, so just complete operation with "false" flag,
                 // which will be ignored anyway.
-                res = new WalStateResult(msg, false);
+                res = new WalStateResult(msg, Collections.emptyMap());
             }
 
             if (res != null) {
@@ -757,7 +776,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             UUID opId = res.message().operationId();
 
             WalStateAckMessage msg = new WalStateAckMessage(opId, res.message().affinityNode(),
-                res.changed(), res.errorMessage());
+                res.groupResults(), res.errorMessage());
 
             // Handle distributed completion.
             if (crdNode.isLocal()) {
@@ -1126,8 +1145,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             }
 
             // For WAL enable case, we need to track which groups were actually changed
-            Map<Integer, Boolean> actualGroupResults = new HashMap<>();
-            boolean anyChanged = false;
+            Map<Integer, Boolean> actualGrpResults = new HashMap<>();
 
             if (msg.enable()) {
                 // For enable operation, we apply changes after checkpoint completion
@@ -1137,27 +1155,23 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                         CacheGroupContext grpCtx = cacheProcessor().cacheGroup(grpId);
                         if (grpCtx != null) {
                             grpCtx.globalWalEnabled(true);
-                            actualGroupResults.put(grpId, true);
-                            anyChanged = true;
+                            actualGrpResults.put(grpId, true);
                         }
                         else
-                            actualGroupResults.put(grpId, false);
+                            actualGrpResults.put(grpId, false);
                     }
                     else
-                        actualGroupResults.put(grpId, false);
+                        actualGrpResults.put(grpId, false);
                 }
             }
             else {
                 // For disable operation, changes were already applied in onProposeExchange
                 // Just use the original group results
-                for (Map.Entry<Integer, Boolean> entry : grpResults.entrySet()) {
-                    if (entry.getValue())
-                        anyChanged = true;
-                    actualGroupResults.put(entry.getKey(), entry.getValue());
-                }
+                for (Map.Entry<Integer, Boolean> entry : grpResults.entrySet())
+                    actualGrpResults.put(entry.getKey(), entry.getValue());
             }
 
-            res = new WalStateResult(msg, anyChanged, actualGroupResults);
+            res = new WalStateResult(msg, actualGrpResults);
         }
         catch (Exception e) {
             U.warn(log, "Failed to change WAL mode due to unexpected exception [msg=" + msg + ']', e);

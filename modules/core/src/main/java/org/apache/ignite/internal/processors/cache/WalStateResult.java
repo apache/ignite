@@ -30,10 +30,7 @@ public class WalStateResult {
     /** Original message. */
     private final WalStateProposeMessage msg;
 
-    /** Whether mode was changed for at least one cache. */
-    private final boolean changed;
-
-    /** Detailed results per group. */
+    /** Detailed change WAL state results per group. */
     private final Map<Integer, Boolean> grpResults;
 
     /** Error message (if any). */
@@ -43,11 +40,10 @@ public class WalStateResult {
      * Constructor for successful operation.
      *
      * @param msg Original message.
-     * @param changed Whether mode was changed for at least one cache.
-     * @param grpResults Detailed results per group.
+     * @param grpResults Detailed change WAL state results per group.
      */
-    public WalStateResult(WalStateProposeMessage msg, boolean changed, Map<Integer, Boolean> grpResults) {
-        this(msg, changed, grpResults, null);
+    public WalStateResult(WalStateProposeMessage msg, Map<Integer, Boolean> grpResults) {
+        this(msg, grpResults, null);
     }
 
     /**
@@ -57,30 +53,18 @@ public class WalStateResult {
      * @param errMsg Error message (if any).
      */
     public WalStateResult(WalStateProposeMessage msg, String errMsg) {
-        this(msg, false, Collections.emptyMap(), errMsg);
-    }
-
-    /**
-     * Constructor for single group.
-     *
-     * @param msg Original message.
-     * @param changed Whether mode was changed.
-     */
-    public WalStateResult(WalStateProposeMessage msg, boolean changed) {
-        this(msg, changed, Collections.emptyMap(), null);
+        this(msg, Collections.emptyMap(), errMsg);
     }
 
     /**
      * Main constructor.
      *
      * @param msg Original message.
-     * @param changed Whether mode was changed for at least one cache.
      * @param grpResults Detailed results per group.
      * @param errMsg Error message (if any).
      */
-    private WalStateResult(WalStateProposeMessage msg, boolean changed, Map<Integer, Boolean> grpResults, String errMsg) {
+    private WalStateResult(WalStateProposeMessage msg, Map<Integer, Boolean> grpResults, String errMsg) {
         this.msg = msg;
-        this.changed = changed;
         this.grpResults = grpResults != null ? new HashMap<>(grpResults) : Collections.emptyMap();
         this.errMsg = errMsg;
     }
@@ -90,13 +74,6 @@ public class WalStateResult {
      */
     public WalStateProposeMessage message() {
         return msg;
-    }
-
-    /**
-     * @return Whether mode was changed for at least one cache.
-     */
-    public boolean changed() {
-        return changed;
     }
 
     /**
