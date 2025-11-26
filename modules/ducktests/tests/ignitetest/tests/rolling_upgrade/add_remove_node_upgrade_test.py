@@ -14,7 +14,7 @@
 # limitations under the License.
 
 """
-Module contains rolling upgrade tests by adding new nodes to topology and removing the old ones.
+Module contains rolling upgrade tests with new nodes introduced into the topology and older nodes gracefully removed.
 """
 from ducktape.mark import defaults, matrix
 
@@ -23,23 +23,23 @@ from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_services
 from ignitetest.tests.rebalance.persistent_test import await_and_check_rebalance
 from ignitetest.tests.rebalance.util import NUM_NODES
-from ignitetest.tests.rolling_upgrade.util import BaseRollingUpgradeTest
+from ignitetest.tests.rolling_upgrade.util import BaseRollingUpgradeTest, PRELOADERS_COUNT
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.version import LATEST, DEV_BRANCH, IgniteVersion
 
 
 class AddRemoveNodeUpgradeTest(BaseRollingUpgradeTest):
-    """
-    Some docs
-    """
-    @cluster(num_nodes=NUM_NODES)
+
+    @cluster(num_nodes=2 * NUM_NODES + PRELOADERS_COUNT)
     @ignite_versions(str(LATEST))
     @matrix(with_persistence=[True, False])
     @defaults(upgrade_version=[str(DEV_BRANCH)], force=[False], backups=[1], entry_count=[15_000])
     def test_add_remove_rolling_upgrade(self, ignite_version, upgrade_version, force, with_persistence,
-                                      backups, entry_count):
+                                        backups, entry_count):
+        node_count = (self.test_context.expected_num_nodes - PRELOADERS_COUNT) // 2
+
         self.check_rolling_upgrade(ignite_version, upgrade_version, force, with_persistence,
-                                   backups, entry_count, self._upgrade_ignite_cluster)
+                                   backups, entry_count, self._upgrade_ignite_cluster, node_count)
 
     def _upgrade_ignite_cluster(self, ignites, upgrade_version, force, with_persistence):
         control_sh = ControlUtility(ignites)
