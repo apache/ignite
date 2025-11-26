@@ -38,11 +38,8 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
 
     /** */
     @GridToStringInclude
+    @Order(value = 0, method = "code", asType = "byte")
     private PredicateType type;
-
-    /** Type value serialization holder. */
-    @Order(0)
-    protected transient byte code;
 
     /** */
     @GridToStringInclude

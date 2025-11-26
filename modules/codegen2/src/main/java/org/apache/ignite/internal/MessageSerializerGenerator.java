@@ -36,7 +36,6 @@ import java.util.UUID;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -238,10 +237,6 @@ class MessageSerializerGenerator {
         if (assignableFrom(field.asType(), type(Throwable.class.getName())))
             throw new UnsupportedOperationException("You should use ErrorMessage for serialization of throwables.");
 
-        if (enumType(erasedType(field.asType())))
-            throw new IllegalArgumentException("Unsupported enum type: " + field.asType() +
-                    ". The enum must be wrapped into a Message (see, for example, TransactionIsolationMessage).");
-
         writeField(field, opt);
         readField(field, opt);
     }
@@ -307,11 +302,13 @@ class MessageSerializerGenerator {
      * @param field Field to generate write code.
      */
     private void returnFalseIfWriteFailed(VariableElement field) throws Exception {
-        String methodName = field.getAnnotation(Order.class).method();
+        Order order = field.getAnnotation(Order.class);
+
+        String methodName = order.method();
 
         String getExpr = (F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName) + "()";
 
-        TypeMirror type = field.asType();
+        TypeMirror type = extractType(order.asType(), field.asType());
 
         if (type.getKind().isPrimitive()) {
             String typeName = capitalizeOnlyFirst(type.getKind().name());
@@ -401,6 +398,23 @@ class MessageSerializerGenerator {
         throw new IllegalArgumentException("Unsupported type kind: " + type.getKind());
     }
 
+    /** */
+    private TypeMirror extractType(String typeName, TypeMirror dflt) {
+        if (F.isEmpty(typeName))
+            return dflt;
+
+        switch (typeName) {
+            case "byte": return env.getTypeUtils().getPrimitiveType(TypeKind.BYTE);
+            case "short": return env.getTypeUtils().getPrimitiveType(TypeKind.SHORT);
+            case "int": return env.getTypeUtils().getPrimitiveType(TypeKind.INT);
+            case "long": return env.getTypeUtils().getPrimitiveType(TypeKind.LONG);
+            case "float": return env.getTypeUtils().getPrimitiveType(TypeKind.FLOAT);
+            case "double": return env.getTypeUtils().getPrimitiveType(TypeKind.DOUBLE);
+        }
+
+        return type(typeName);
+    }
+
     /**
      * Generate code of writing single field:
      * <pre>
@@ -426,9 +440,11 @@ class MessageSerializerGenerator {
      * @param field Field.
      */
     private void returnFalseIfReadFailed(VariableElement field) throws Exception {
-        TypeMirror type = field.asType();
+        Order order = field.getAnnotation(Order.class);
 
-        String methodName = field.getAnnotation(Order.class).method();
+        String methodName = order.method();
+
+        TypeMirror type = extractType(order.asType(), field.asType());
 
         String name = F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName;
 
@@ -715,17 +731,6 @@ class MessageSerializerGenerator {
     /** */
     private boolean assignableFrom(TypeMirror type, TypeMirror superType) {
         return env.getTypeUtils().isAssignable(type, superType);
-    }
-
-    /** */
-    private boolean enumType(TypeMirror type) {
-        if (type.getKind() == TypeKind.DECLARED) {
-            Element element = env.getTypeUtils().asElement(type);
-
-            return element != null && element.getKind() == ElementKind.ENUM;
-        }
-
-        return false;
     }
 
     /** */

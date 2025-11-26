@@ -28,11 +28,8 @@ public class CacheWriteSynchronizationModeMessage implements Message {
     public static final short TYPE_CODE = 503;
 
     /** Cache write synchronization mode value. */
+    @Order(value = 0, asType = "byte", method = "code")
     @Nullable private CacheWriteSynchronizationMode cacheWriteSyncMode;
-
-    /** Code of cache write synchronization mode. */
-    @Order(0)
-    private byte code = -1;
 
     /** Constructor. */
     public CacheWriteSynchronizationModeMessage() {
@@ -42,7 +39,16 @@ public class CacheWriteSynchronizationModeMessage implements Message {
     /** Constructor. */
     public CacheWriteSynchronizationModeMessage(@Nullable CacheWriteSynchronizationMode mode) {
         cacheWriteSyncMode = mode;
-        code = encode(mode);
+    }
+
+    /** */
+    public byte code() {
+        return cacheWriteSyncMode == null ? -1 : (byte)cacheWriteSyncMode.ordinal();
+    }
+
+    /** */
+    public void code(byte mode) {
+        cacheWriteSyncMode = CacheWriteSynchronizationMode.fromOrdinal(mode);
     }
 
     /** @param mode Cache write synchronization mode to encode. */
@@ -69,17 +75,6 @@ public class CacheWriteSynchronizationModeMessage implements Message {
         }
 
         throw new IllegalArgumentException("Unknown cache write synchronization mode code: " + code);
-    }
-
-    /** @param code Code of cache write synchronization mode. */
-    public void code(byte code) {
-        this.code = code;
-        cacheWriteSyncMode = decode(code);
-    }
-
-    /** @return Code of cache write synchronization mode. */
-    public byte code() {
-        return code;
     }
 
     /** @return Cache write synchronization mode value. */

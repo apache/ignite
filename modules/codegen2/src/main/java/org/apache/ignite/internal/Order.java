@@ -42,4 +42,7 @@ public @interface Order {
 
     /** @return Getter and setter name. */
     String method() default "";
+
+    /** @return Type for {@link #method()}. By default, the field type. */
+    String asType() default "";
 }
