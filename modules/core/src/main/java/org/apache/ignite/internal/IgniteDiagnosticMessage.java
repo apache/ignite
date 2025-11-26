@@ -19,7 +19,6 @@ package org.apache.ignite.internal;
 
 import java.time.Instant;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -55,32 +54,25 @@ public class IgniteDiagnosticMessage implements Message {
     }
 
     /**
+     * Creates diagnostic request.
+     *
      * @param info Compound info.
      * @param futId Future ID.
-     * @return Request message.
-     * @throws IgniteCheckedException If failed.
      */
-    public static IgniteDiagnosticMessage createRequest(IgniteCompoundDiagnosicInfo info, long futId) throws IgniteCheckedException {
-        IgniteDiagnosticMessage msg = new IgniteDiagnosticMessage();
-
-        msg.futId = futId;
-        msg.compoundInfo = info;
-
-        return msg;
+    public IgniteDiagnosticMessage(IgniteCompoundDiagnosicInfo info, long futId) {
+        this.futId = futId;
+        compoundInfo = info;
     }
 
     /**
-     * @param diagnosticInfo Diagnostic info result.
+     * Creates diagnostic response.
+     *
+     * @param resp Diagnostic info response.
      * @param futId Future ID.
-     * @return Response message.
      */
-    public static IgniteDiagnosticMessage createResponse(String diagnosticInfo, long futId) {
-        IgniteDiagnosticMessage msg = new IgniteDiagnosticMessage();
-
-        msg.futId = futId;
-        msg.infoResp = diagnosticInfo;
-
-        return msg;
+    public IgniteDiagnosticMessage(String resp, long futId) {
+        this.futId = futId;
+        infoResp = resp;
     }
 
     /**

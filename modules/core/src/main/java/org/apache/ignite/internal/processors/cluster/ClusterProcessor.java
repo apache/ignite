@@ -391,9 +391,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                             return;
                         }
 
-                        String diagnosticInfo = msg0.compoundInfo().diagnosticInfo(ctx);
-
-                        IgniteDiagnosticMessage res = IgniteDiagnosticMessage.createResponse(diagnosticInfo, msg0.futureId());
+                        IgniteDiagnosticMessage res = new IgniteDiagnosticMessage(msg0.compoundInfo().diagnosticInfo(ctx), msg0.futureId());
 
                         try {
                             ctx.io().sendToGridTopic(node, TOPIC_INTERNAL_DIAGNOSTIC, res, GridIoPolicy.SYSTEM_POOL);
@@ -877,7 +875,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      */
     private IgniteInternalFuture<String> sendDiagnosticMessage(UUID nodeId, IgniteCompoundDiagnosicInfo info) {
         try {
-            IgniteDiagnosticMessage msg = IgniteDiagnosticMessage.createRequest(info, diagFutId.getAndIncrement());
+            IgniteDiagnosticMessage msg = new IgniteDiagnosticMessage(info, diagFutId.getAndIncrement());
 
             InternalDiagnosticFuture fut = new InternalDiagnosticFuture(nodeId, msg.futureId());
 

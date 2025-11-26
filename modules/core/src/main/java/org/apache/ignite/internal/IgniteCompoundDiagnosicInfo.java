@@ -31,9 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/**
- *
- */
+/** */
 public final class IgniteCompoundDiagnosicInfo implements Message {
     /** ID of node sent info. */
     @Order(0)
@@ -52,6 +50,8 @@ public final class IgniteCompoundDiagnosicInfo implements Message {
     }
 
     /**
+     * Creates compound diagnostic info holder.
+     *
      * @param nodeId ID of node sent info.
      */
     IgniteCompoundDiagnosicInfo(UUID nodeId) {
@@ -109,9 +109,7 @@ public final class IgniteCompoundDiagnosicInfo implements Message {
         }
     }
 
-    /**
-     * @return Initial message.
-     */
+    /** @return Initial message. */
     public String message() {
         StringBuilder sb = new StringBuilder();
 
