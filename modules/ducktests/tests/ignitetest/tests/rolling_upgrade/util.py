@@ -27,7 +27,7 @@ from ignitetest.services.utils.ignite_configuration.discovery import from_ignite
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion
 
-NUM_NODES = 4
+NUM_NODES = 2
 PRELOADERS_COUNT = 1
 JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.persistence_upgrade_test.DataLoaderAndCheckerApplication"
 
@@ -45,7 +45,7 @@ class BaseRollingUpgradeTest(IgniteTest):
         5. Ensure all nodes are alive and stop the cluster.
     """
     def check_rolling_upgrade(self, ignite_version, upgrade_version, force, with_persistence, backups, entry_count,
-                              upgrade_func):
+                              upgrade_func, init_cluster_size=None):
         """
         Template test for performing a rolling upgrade.
 
@@ -58,13 +58,17 @@ class BaseRollingUpgradeTest(IgniteTest):
         :param upgrade_func: Function performing the rolling upgrade on the cluster.
                              Must accept the following signature:
                              `(cluster: IgniteService, upgrade_version, force, with_persistence) -> List[IgniteService]`
+        :param init_cluster_size: (optional) Initial cluster size
         """
         self.logger.info(
             f"Initiating Rolling Upgrade test from {ignite_version} to {upgrade_version} "
             f"with {'persistent' if with_persistence else 'in-memory'} mode"
         )
 
-        node_count = self.test_context.expected_num_nodes - PRELOADERS_COUNT
+        if init_cluster_size is None:
+            node_count = self.test_context.expected_num_nodes - PRELOADERS_COUNT
+        else:
+            node_count = init_cluster_size
 
         ignites = self._start_ignite_cluster(ignite_version, node_count, with_persistence)
 
