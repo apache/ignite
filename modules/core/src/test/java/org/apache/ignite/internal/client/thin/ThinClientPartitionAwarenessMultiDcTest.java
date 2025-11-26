@@ -32,6 +32,8 @@ import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientTransaction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
+import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
@@ -64,6 +66,9 @@ public class ThinClientPartitionAwarenessMultiDcTest extends ThinClientAbstractP
     /** */
     private IgniteEx startGrid(int idx, String dcId) throws Exception {
         return startGrid(getConfiguration(getTestIgniteInstanceName(idx))
+            .setClientConnectorConfiguration(new ClientConnectorConfiguration()
+                .setThinClientConfiguration(new ThinClientConfiguration()
+                    .setMaxActiveComputeTasksPerConnection(1)))
             .setUserAttributes(F.asMap(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, dcId)));
     }
 
@@ -146,7 +151,15 @@ public class ThinClientPartitionAwarenessMultiDcTest extends ThinClientAbstractP
 
                 assertOpOnChannel(channels[primaryNodeIdx], ClientOperation.CACHE_PUT);
 
+                cache.putAsync(key, 0).get();
+
+                assertOpOnChannel(channels[primaryNodeIdx], ClientOperation.CACHE_PUT);
+
                 cache.get(key);
+
+                assertOpOnChannel(channels[primaryNodeIdx], ClientOperation.CACHE_GET);
+
+                cache.getAsync(key).get();
 
                 assertOpOnChannel(channels[primaryNodeIdx], ClientOperation.CACHE_GET);
             }
@@ -158,9 +171,13 @@ public class ThinClientPartitionAwarenessMultiDcTest extends ThinClientAbstractP
             for (Integer key : keys) {
                 int primaryNodeIdx = getTestIgniteInstanceIndex(primaryNode.name());
 
+                // If primary in another DC, write requests always sent to primary node.
                 cache.put(key, 0);
 
-                // If primary in another DC, write requests always sent to primary node.
+                assertOpOnChannel(channels[primaryNodeIdx], ClientOperation.CACHE_PUT);
+
+                cache.putAsync(key, 0).get();
+
                 assertOpOnChannel(channels[primaryNodeIdx], ClientOperation.CACHE_PUT);
 
                 int backupNodeIdx = getTestIgniteInstanceIndex(backupNode(key, cacheName).name());
@@ -169,6 +186,10 @@ public class ThinClientPartitionAwarenessMultiDcTest extends ThinClientAbstractP
 
                 // But read requests can be sent to current DC backup node.
                 cache.get(key);
+
+                assertOpOnChannel(channels[expReqToBackup ? backupNodeIdx : primaryNodeIdx], ClientOperation.CACHE_GET);
+
+                cache.getAsync(key).get();
 
                 assertOpOnChannel(channels[expReqToBackup ? backupNodeIdx : primaryNodeIdx], ClientOperation.CACHE_GET);
 
@@ -219,19 +240,15 @@ public class ThinClientPartitionAwarenessMultiDcTest extends ThinClientAbstractP
         for (int i = 0; i < 10; i++) {
             cache.query(new ScanQuery<>()).getAll();
 
-            int channelIdx = nextOpChannelIdx();
-
-            assertTrue(F.contains(expNodeIdxs, channelIdx));
-
-            assertTrue("Ops queue not empty: " + opsQueue, F.isEmpty(opsQueue));
+            assertExpectedChannel(expNodeIdxs);
 
             client.cluster().state();
 
-            channelIdx = nextOpChannelIdx();
+            assertExpectedChannel(expNodeIdxs);
 
-            assertTrue(F.contains(expNodeIdxs, channelIdx));
+            client.compute().executeAsync2(TestTask.class.getName(), null).get();
 
-            assertTrue("Ops queue not empty: " + opsQueue, F.isEmpty(opsQueue));
+            assertExpectedChannel(expNodeIdxs);
 
             try (ClientTransaction tx = client.transactions().txStart()) {
                 cache.put(ThreadLocalRandom.current().nextInt(10), 0);
@@ -241,7 +258,7 @@ public class ThinClientPartitionAwarenessMultiDcTest extends ThinClientAbstractP
             }
 
             while (true) {
-                channelIdx = nextOpChannelIdx();
+                int channelIdx = nextOpChannelIdx();
 
                 if (channelIdx < 0)
                     break;
@@ -249,5 +266,14 @@ public class ThinClientPartitionAwarenessMultiDcTest extends ThinClientAbstractP
                 assertTrue(F.contains(expNodeIdxs, channelIdx));
             }
         }
+    }
+
+    /** */
+    private void assertExpectedChannel(int... expChannelIdxs) {
+        int channelIdx = nextOpChannelIdx();
+
+        assertTrue(F.contains(expChannelIdxs, channelIdx));
+
+        assertTrue("Ops queue not empty: " + opsQueue, F.isEmpty(opsQueue));
     }
 }
