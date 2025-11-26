@@ -2151,9 +2151,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             nodeSpi.set(new TestTcpDiscoveryMarshallerDataSpi());
 
-            Ignite srv1 = startGrid(0);
+            Ignite srv0 = startGrid(0);
 
-            IgniteCache<Object, Object> organizations = srv1.createCache("organizations");
+            IgniteCache<Object, Object> organizations = srv0.createCache("organizations");
 
             organizations.put(1, new Organization());
 
@@ -2163,7 +2163,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     + TestTcpDiscoveryMarshallerDataSpi.marshalledItems,
                     1, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
 
-            IgniteCache<Object, Object> employees = srv1.createCache("employees");
+            IgniteCache<Object, Object> employees = srv0.createCache("employees");
 
             employees.put(1, new Employee());
 
