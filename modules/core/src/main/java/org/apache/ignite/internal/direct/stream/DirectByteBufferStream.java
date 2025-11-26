@@ -390,9 +390,8 @@ public class DirectByteBufferStream {
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeByte(byte val, boolean compress) {
+    public void writeByte(byte val) {
         lastFinished = buf.remaining() >= 1;
 
         if (lastFinished) {
@@ -406,9 +405,8 @@ public class DirectByteBufferStream {
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeShort(short val, boolean compress) {
+    public void writeShort(short val) {
         lastFinished = buf.remaining() >= 2;
 
         if (lastFinished) {
@@ -427,9 +425,8 @@ public class DirectByteBufferStream {
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeInt(int val, boolean compress) {
+    public void writeInt(int val) {
         lastFinished = buf.remaining() >= 5;
 
         if (lastFinished) {
@@ -456,9 +453,8 @@ public class DirectByteBufferStream {
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeLong(long val, boolean compress) {
+    public void writeLong(long val) {
         lastFinished = buf.remaining() >= 10;
 
         if (lastFinished) {
@@ -485,9 +481,8 @@ public class DirectByteBufferStream {
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeFloat(float val, boolean compress) {
+    public void writeFloat(float val) {
         lastFinished = buf.remaining() >= 4;
 
         if (lastFinished) {
@@ -506,9 +501,8 @@ public class DirectByteBufferStream {
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeDouble(double val, boolean compress) {
+    public void writeDouble(double val) {
         lastFinished = buf.remaining() >= 8;
 
         if (lastFinished) {
@@ -527,9 +521,8 @@ public class DirectByteBufferStream {
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeChar(char val, boolean compress) {
+    public void writeChar(char val) {
         lastFinished = buf.remaining() >= 2;
 
         if (lastFinished) {
@@ -548,9 +541,8 @@ public class DirectByteBufferStream {
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeBoolean(boolean val, boolean compress) {
+    public void writeBoolean(boolean val) {
         lastFinished = buf.remaining() >= 1;
 
         if (lastFinished) {
@@ -564,172 +556,160 @@ public class DirectByteBufferStream {
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeByteArray(byte[] val, boolean compress) {
+    public void writeByteArray(byte[] val) {
         if (val != null)
-            lastFinished = writeArray(val, BYTE_ARR_OFF, val.length, val.length, compress);
+            lastFinished = writeArray(val, BYTE_ARR_OFF, val.length, val.length);
         else
-            writeInt(-1, compress);
+            writeInt(-1);
     }
 
     /**
      * @param val Value.
      * @param off Offset.
      * @param len Length.
-     * @param compress
      */
-    public void writeByteArray(byte[] val, long off, int len, boolean compress) {
+    public void writeByteArray(byte[] val, long off, int len) {
         if (val != null)
-            lastFinished = writeArray(val, BYTE_ARR_OFF + off, len, len, compress);
+            lastFinished = writeArray(val, BYTE_ARR_OFF + off, len, len);
         else
-            writeInt(-1, compress);
+            writeInt(-1);
     }
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeShortArray(short[] val, boolean compress) {
+    public void writeShortArray(short[] val) {
         if (val != null)
             if (BIG_ENDIAN)
-                lastFinished = writeArrayLE(val, SHORT_ARR_OFF, val.length, 2, 1, compress);
+                lastFinished = writeArrayLE(val, SHORT_ARR_OFF, val.length, 2, 1);
             else
-                lastFinished = writeArray(val, SHORT_ARR_OFF, val.length, val.length << 1, compress);
+                lastFinished = writeArray(val, SHORT_ARR_OFF, val.length, val.length << 1);
         else
-            writeInt(-1, compress);
+            writeInt(-1);
     }
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeIntArray(int[] val, boolean compress) {
+    public void writeIntArray(int[] val) {
         if (val != null)
             if (BIG_ENDIAN)
-                lastFinished = writeArrayLE(val, INT_ARR_OFF, val.length, 4, 2, compress);
+                lastFinished = writeArrayLE(val, INT_ARR_OFF, val.length, 4, 2);
             else
-                lastFinished = writeArray(val, INT_ARR_OFF, val.length, val.length << 2, compress);
+                lastFinished = writeArray(val, INT_ARR_OFF, val.length, val.length << 2);
         else
-            writeInt(-1, compress);
+            writeInt(-1);
     }
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeLongArray(long[] val, boolean compress) {
+    public void writeLongArray(long[] val) {
         if (val != null)
             if (BIG_ENDIAN)
-                lastFinished = writeArrayLE(val, LONG_ARR_OFF, val.length, 8, 3, compress);
+                lastFinished = writeArrayLE(val, LONG_ARR_OFF, val.length, 8, 3);
             else
-                lastFinished = writeArray(val, LONG_ARR_OFF, val.length, val.length << 3, compress);
+                lastFinished = writeArray(val, LONG_ARR_OFF, val.length, val.length << 3);
         else
-            writeInt(-1, compress);
+            writeInt(-1);
     }
 
     /**
      * @param val Value.
      * @param len Length.
-     * @param compress
      */
-    public void writeLongArray(long[] val, int len, boolean compress) {
+    public void writeLongArray(long[] val, int len) {
         if (val != null)
             if (BIG_ENDIAN)
-                lastFinished = writeArrayLE(val, LONG_ARR_OFF, len, 8, 3, compress);
+                lastFinished = writeArrayLE(val, LONG_ARR_OFF, len, 8, 3);
             else
-                lastFinished = writeArray(val, LONG_ARR_OFF, len, len << 3, compress);
+                lastFinished = writeArray(val, LONG_ARR_OFF, len, len << 3);
         else
-            writeInt(-1, compress);
+            writeInt(-1);
     }
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeFloatArray(float[] val, boolean compress) {
+    public void writeFloatArray(float[] val) {
         if (val != null)
             if (BIG_ENDIAN)
-                lastFinished = writeArrayLE(val, FLOAT_ARR_OFF, val.length, 4, 2, compress);
+                lastFinished = writeArrayLE(val, FLOAT_ARR_OFF, val.length, 4, 2);
             else
-                lastFinished = writeArray(val, FLOAT_ARR_OFF, val.length, val.length << 2, compress);
+                lastFinished = writeArray(val, FLOAT_ARR_OFF, val.length, val.length << 2);
         else
-            writeInt(-1, compress);
+            writeInt(-1);
     }
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeDoubleArray(double[] val, boolean compress) {
+    public void writeDoubleArray(double[] val) {
         if (val != null)
             if (BIG_ENDIAN)
-                lastFinished = writeArrayLE(val, DOUBLE_ARR_OFF, val.length, 8, 3, compress);
+                lastFinished = writeArrayLE(val, DOUBLE_ARR_OFF, val.length, 8, 3);
             else
-                lastFinished = writeArray(val, DOUBLE_ARR_OFF, val.length, val.length << 3, compress);
+                lastFinished = writeArray(val, DOUBLE_ARR_OFF, val.length, val.length << 3);
         else
-            writeInt(-1, compress);
+            writeInt(-1);
     }
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeCharArray(char[] val, boolean compress) {
+    public void writeCharArray(char[] val) {
         if (val != null) {
             if (BIG_ENDIAN)
-                lastFinished = writeArrayLE(val, CHAR_ARR_OFF, val.length, 2, 1, compress);
+                lastFinished = writeArrayLE(val, CHAR_ARR_OFF, val.length, 2, 1);
             else
-                lastFinished = writeArray(val, CHAR_ARR_OFF, val.length, val.length << 1, compress);
+                lastFinished = writeArray(val, CHAR_ARR_OFF, val.length, val.length << 1);
         }
         else
-            writeInt(-1, compress);
+            writeInt(-1);
     }
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeBooleanArray(boolean[] val, boolean compress) {
+    public void writeBooleanArray(boolean[] val) {
         if (val != null)
-            lastFinished = writeArray(val, GridUnsafe.BOOLEAN_ARR_OFF, val.length, val.length, compress);
+            lastFinished = writeArray(val, GridUnsafe.BOOLEAN_ARR_OFF, val.length, val.length);
         else
-            writeInt(-1, compress);
+            writeInt(-1);
     }
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeString(String val, boolean compress) {
+    public void writeString(String val) {
         if (val != null) {
             if (curStrBackingArr == null)
                 curStrBackingArr = val.getBytes();
 
-            writeByteArray(curStrBackingArr, compress);
+            writeByteArray(curStrBackingArr);
 
             if (lastFinished)
                 curStrBackingArr = null;
         }
         else
-            writeByteArray(null, compress);
+            writeByteArray(null);
     }
 
     /**
      * @param val Value.
      */
-    public void writeBitSet(BitSet val, boolean compress) {
-        writeLongArray(val != null ? val.toLongArray() : null, compress);
+    public void writeBitSet(BitSet val) {
+        writeLongArray(val != null ? val.toLongArray() : null);
     }
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeUuid(UUID val, boolean compress) {
+    public void writeUuid(UUID val) {
         switch (uuidState) {
             case 0:
-                writeBoolean(val == null, compress);
+                writeBoolean(val == null);
 
                 if (!lastFinished || val == null)
                     return;
@@ -737,7 +717,7 @@ public class DirectByteBufferStream {
                 uuidState++;
 
             case 1:
-                writeUuidRaw(val, compress);
+                writeUuidRaw(val);
 
                 if (!lastFinished)
                     return;
@@ -748,12 +728,11 @@ public class DirectByteBufferStream {
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeIgniteUuid(IgniteUuid val, boolean compress) {
+    public void writeIgniteUuid(IgniteUuid val) {
         switch (uuidState) {
             case 0:
-                writeBoolean(val == null, compress);
+                writeBoolean(val == null);
 
                 if (!lastFinished || val == null)
                     return;
@@ -761,7 +740,7 @@ public class DirectByteBufferStream {
                 uuidState++;
 
             case 1:
-                writeLong(val.globalId().getMostSignificantBits(), compress);
+                writeLong(val.globalId().getMostSignificantBits());
 
                 if (!lastFinished)
                     return;
@@ -769,7 +748,7 @@ public class DirectByteBufferStream {
                 uuidState++;
 
             case 2:
-                writeLong(val.globalId().getLeastSignificantBits(), compress);
+                writeLong(val.globalId().getLeastSignificantBits());
 
                 if (!lastFinished)
                     return;
@@ -777,7 +756,7 @@ public class DirectByteBufferStream {
                 uuidState++;
 
             case 3:
-                writeLong(val.localId(), compress);
+                writeLong(val.localId());
 
                 if (!lastFinished)
                     return;
@@ -789,11 +768,11 @@ public class DirectByteBufferStream {
     /**
      * @param val Value.
      */
-    public void writeAffinityTopologyVersion(AffinityTopologyVersion val, boolean compress) {
+    public void writeAffinityTopologyVersion(AffinityTopologyVersion val) {
         if (val != null) {
             switch (topVerState) {
                 case 0:
-                    writeInt(val.minorTopologyVersion(), compress);
+                    writeInt(val.minorTopologyVersion());
 
                     if (!lastFinished)
                         return;
@@ -801,7 +780,7 @@ public class DirectByteBufferStream {
                     topVerState++;
 
                 case 1:
-                    writeLong(val.topologyVersion(), compress);
+                    writeLong(val.topologyVersion());
 
                     if (!lastFinished)
                         return;
@@ -810,19 +789,18 @@ public class DirectByteBufferStream {
             }
         }
         else
-            writeInt(-1, compress);
+            writeInt(-1);
     }
 
     /**
      * @param obj Cache object.
-     * @param compress
      */
-    public void writeCacheObject(CacheObject obj, boolean compress) {
+    public void writeCacheObject(CacheObject obj) {
         try {
             if (obj != null) {
                 switch (cacheObjState) {
                     case 0:
-                        writeByte(obj.cacheObjectType(), compress);
+                        writeByte(obj.cacheObjectType());
 
                         if (!lastFinished)
                             return;
@@ -830,7 +808,7 @@ public class DirectByteBufferStream {
                         cacheObjState++;
 
                     case 1:
-                        writeByteArray(obj.valueBytes(null), compress);
+                        writeByteArray(obj.valueBytes(null));
 
                         if (!lastFinished)
                             return;
@@ -839,7 +817,7 @@ public class DirectByteBufferStream {
                 }
             }
             else
-                writeByte((byte)-1, compress);
+                writeByte((byte)-1);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -849,12 +827,12 @@ public class DirectByteBufferStream {
     /**
      * @param keyObj Key cache object.
      */
-    public void writeKeyCacheObject(KeyCacheObject keyObj, boolean compress) {
+    public void writeKeyCacheObject(KeyCacheObject keyObj) {
         try {
             if (keyObj != null) {
                 switch (cacheObjState) {
                     case 0:
-                        writeByte(keyObj.cacheObjectType(), compress);
+                        writeByte(keyObj.cacheObjectType());
 
                         if (!lastFinished)
                             return;
@@ -862,7 +840,7 @@ public class DirectByteBufferStream {
                         cacheObjState++;
 
                     case 1:
-                        writeByteArray(keyObj.valueBytes(null), compress);
+                        writeByteArray(keyObj.valueBytes(null));
 
                         if (!lastFinished)
                             return;
@@ -870,7 +848,7 @@ public class DirectByteBufferStream {
                         cacheObjState++;
 
                     case 2:
-                        writeInt(keyObj.partition(), compress);
+                        writeInt(keyObj.partition());
 
                         if (!lastFinished)
                             return;
@@ -879,7 +857,7 @@ public class DirectByteBufferStream {
                 }
             }
             else
-                writeByte((byte)-1, compress);
+                writeByte((byte)-1);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -888,21 +866,19 @@ public class DirectByteBufferStream {
 
     /**
      * @param val Value.
-     * @param compress
      */
-    public void writeGridLongList(@Nullable GridLongList val, boolean compress) {
+    public void writeGridLongList(@Nullable GridLongList val) {
         if (val != null)
-            writeLongArray(val.array(), val.size(), compress);
+            writeLongArray(val.array(), val.size());
         else
-            writeInt(-1, compress);
+            writeInt(-1);
     }
 
     /**
      * @param msg Message.
      * @param writer Writer.
-     * @param compress
      */
-    public void writeMessage(Message msg, MessageWriter writer, boolean compress) {
+    public void writeMessage(Message msg, MessageWriter writer) {
         if (msg != null) {
             if (buf.hasRemaining()) {
                 try {
@@ -918,21 +894,20 @@ public class DirectByteBufferStream {
                 lastFinished = false;
         }
         else
-            writeShort(Short.MIN_VALUE, compress);
+            writeShort(Short.MIN_VALUE);
     }
 
     /**
      * @param arr Array.
      * @param itemType Component type.
      * @param writer Writer.
-     * @param compress
      */
-    public <T> void writeObjectArray(T[] arr, MessageCollectionItemType itemType, MessageWriter writer, boolean compress) {
+    public <T> void writeObjectArray(T[] arr, MessageCollectionItemType itemType, MessageWriter writer) {
         if (arr != null) {
             int len = arr.length;
 
             if (arrPos == -1) {
-                writeInt(len, compress);
+                writeInt(len);
 
                 if (!lastFinished)
                     return;
@@ -944,7 +919,7 @@ public class DirectByteBufferStream {
                 if (arrCur == NULL)
                     arrCur = arr[arrPos++];
 
-                write(itemType, arrCur, writer, compress);
+                write(itemType, arrCur, writer);
 
                 if (!lastFinished)
                     return;
@@ -955,22 +930,21 @@ public class DirectByteBufferStream {
             arrPos = -1;
         }
         else
-            writeInt(-1, compress);
+            writeInt(-1);
     }
 
     /**
      * @param col Collection.
      * @param itemType Component type.
      * @param writer Writer.
-     * @param compress
      */
-    public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType, MessageWriter writer, boolean compress) {
+    public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType, MessageWriter writer) {
         if (col != null) {
             if (col instanceof List && col instanceof RandomAccess)
-                writeRandomAccessList((List<T>)col, itemType, writer, compress);
+                writeRandomAccessList((List<T>)col, itemType, writer);
             else {
                 if (it == null) {
-                    writeInt(col.size(), compress);
+                    writeInt(col.size());
 
                     if (!lastFinished)
                         return;
@@ -982,7 +956,7 @@ public class DirectByteBufferStream {
                     if (cur == NULL)
                         cur = it.next();
 
-                    write(itemType, cur, writer, compress);
+                    write(itemType, cur, writer);
 
                     if (!lastFinished)
                         return;
@@ -994,22 +968,21 @@ public class DirectByteBufferStream {
             }
         }
         else
-            writeInt(-1, compress);
+            writeInt(-1);
     }
 
     /**
      * @param list List.
      * @param itemType Component type.
      * @param writer Writer.
-     * @param compress
      */
-    private <T> void writeRandomAccessList(List<T> list, MessageCollectionItemType itemType, MessageWriter writer, boolean compress) {
+    private <T> void writeRandomAccessList(List<T> list, MessageCollectionItemType itemType, MessageWriter writer) {
         assert list instanceof RandomAccess;
 
         int size = list.size();
 
         if (arrPos == -1) {
-            writeInt(size, compress);
+            writeInt(size);
 
             if (!lastFinished)
                 return;
@@ -1021,7 +994,7 @@ public class DirectByteBufferStream {
             if (arrCur == NULL)
                 arrCur = list.get(arrPos++);
 
-            write(itemType, arrCur, writer, compress);
+            write(itemType, arrCur, writer);
 
             if (!lastFinished)
                 return;
@@ -1037,18 +1010,11 @@ public class DirectByteBufferStream {
      * @param keyType Key type.
      * @param valType Value type.
      * @param writer Writer.
-     * @param compress
      */
-    public <K, V> void writeMap(
-        Map<K, V> map,
-        MessageCollectionItemType keyType,
-        MessageCollectionItemType valType,
-        MessageWriter writer,
-        boolean compress
-    ) {
+    public <K, V> void writeMap(Map<K, V> map, MessageCollectionItemType keyType, MessageCollectionItemType valType, MessageWriter writer) {
         if (map != null) {
             if (mapIt == null) {
-                writeInt(map.size(), compress);
+                writeInt(map.size());
 
                 if (!lastFinished)
                     return;
@@ -1065,7 +1031,7 @@ public class DirectByteBufferStream {
                 e = (Map.Entry<K, V>)mapCur;
 
                 if (!keyDone) {
-                    write(keyType, e.getKey(), writer, compress);
+                    write(keyType, e.getKey(), writer);
 
                     if (!lastFinished)
                         return;
@@ -1073,7 +1039,7 @@ public class DirectByteBufferStream {
                     keyDone = true;
                 }
 
-                write(valType, e.getValue(), writer, compress);
+                write(valType, e.getValue(), writer);
 
                 if (!lastFinished)
                     return;
@@ -1085,7 +1051,7 @@ public class DirectByteBufferStream {
             mapIt = null;
         }
         else
-            writeInt(-1, compress);
+            writeInt(-1);
     }
 
     /**
@@ -1738,10 +1704,9 @@ public class DirectByteBufferStream {
      * @param off Offset.
      * @param len Length.
      * @param bytes Length in bytes.
-     * @param compress
      * @return Whether array was fully written.
      */
-    boolean writeArray(Object arr, long off, int len, int bytes, boolean compress) {
+    boolean writeArray(Object arr, long off, int len, int bytes) {
         assert arr != null;
         assert arr.getClass().isArray() && arr.getClass().getComponentType().isPrimitive();
         assert off > 0;
@@ -1749,7 +1714,7 @@ public class DirectByteBufferStream {
         assert bytes >= 0;
         assert bytes >= arrOff;
 
-        if (writeArrayLength(len, compress))
+        if (writeArrayLength(len))
             return false;
 
         int toWrite = bytes - arrOff;
@@ -1786,10 +1751,9 @@ public class DirectByteBufferStream {
      * @param len Length.
      * @param typeSize Primitive type size in bytes. Needs for byte reverse.
      * @param shiftCnt Shift for length.
-     * @param compress
      * @return Whether array was fully written.
      */
-    boolean writeArrayLE(Object arr, long off, int len, int typeSize, int shiftCnt, boolean compress) {
+    boolean writeArrayLE(Object arr, long off, int len, int typeSize, int shiftCnt) {
         assert arr != null;
         assert arr.getClass().isArray() && arr.getClass().getComponentType().isPrimitive();
         assert off > 0;
@@ -1799,7 +1763,7 @@ public class DirectByteBufferStream {
 
         assert bytes >= arrOff;
 
-        if (writeArrayLength(len, compress))
+        if (writeArrayLength(len))
             return false;
 
         int toWrite = (bytes - arrOff) >> shiftCnt;
@@ -1843,11 +1807,10 @@ public class DirectByteBufferStream {
 
     /**
      * @param len Length.
-     * @param compress
      */
-    private boolean writeArrayLength(int len, boolean compress) {
+    private boolean writeArrayLength(int len) {
         if (arrOff == -1) {
-            writeInt(len, compress);
+            writeInt(len);
 
             if (!lastFinished)
                 return true;
@@ -1992,127 +1955,126 @@ public class DirectByteBufferStream {
      * @param type Type.
      * @param val Value.
      * @param writer Writer.
-     * @param compress
      */
-    protected void write(MessageCollectionItemType type, Object val, MessageWriter writer, boolean compress) {
+    protected void write(MessageCollectionItemType type, Object val, MessageWriter writer) {
         switch (type) {
             case BYTE:
-                writeByte((Byte)val, compress);
+                writeByte((Byte)val);
 
                 break;
 
             case SHORT:
-                writeShort((Short)val, compress);
+                writeShort((Short)val);
 
                 break;
 
             case INT:
-                writeInt((Integer)val, compress);
+                writeInt((Integer)val);
 
                 break;
 
             case LONG:
-                writeLong((Long)val, compress);
+                writeLong((Long)val);
 
                 break;
 
             case FLOAT:
-                writeFloat((Float)val, compress);
+                writeFloat((Float)val);
 
                 break;
 
             case DOUBLE:
-                writeDouble((Double)val, compress);
+                writeDouble((Double)val);
 
                 break;
 
             case CHAR:
-                writeChar((Character)val, compress);
+                writeChar((Character)val);
 
                 break;
 
             case BOOLEAN:
-                writeBoolean((Boolean)val, compress);
+                writeBoolean((Boolean)val);
 
                 break;
 
             case BYTE_ARR:
-                writeByteArray((byte[])val, compress);
+                writeByteArray((byte[])val);
 
                 break;
 
             case SHORT_ARR:
-                writeShortArray((short[])val, compress);
+                writeShortArray((short[])val);
 
                 break;
 
             case INT_ARR:
-                writeIntArray((int[])val, compress);
+                writeIntArray((int[])val);
 
                 break;
 
             case LONG_ARR:
-                writeLongArray((long[])val, compress);
+                writeLongArray((long[])val);
 
                 break;
 
             case FLOAT_ARR:
-                writeFloatArray((float[])val, compress);
+                writeFloatArray((float[])val);
 
                 break;
 
             case DOUBLE_ARR:
-                writeDoubleArray((double[])val, compress);
+                writeDoubleArray((double[])val);
 
                 break;
 
             case CHAR_ARR:
-                writeCharArray((char[])val, compress);
+                writeCharArray((char[])val);
 
                 break;
 
             case BOOLEAN_ARR:
-                writeBooleanArray((boolean[])val, compress);
+                writeBooleanArray((boolean[])val);
 
                 break;
 
             case STRING:
-                writeString((String)val, compress);
+                writeString((String)val);
 
                 break;
 
             case BIT_SET:
-                writeBitSet((BitSet)val, compress);
+                writeBitSet((BitSet)val);
 
                 break;
 
             case UUID:
-                writeUuid((UUID)val, compress);
+                writeUuid((UUID)val);
 
                 break;
 
             case IGNITE_UUID:
-                writeIgniteUuid((IgniteUuid)val, compress);
+                writeIgniteUuid((IgniteUuid)val);
 
                 break;
 
             case AFFINITY_TOPOLOGY_VERSION:
-                writeAffinityTopologyVersion((AffinityTopologyVersion)val, compress);
+                writeAffinityTopologyVersion((AffinityTopologyVersion)val);
 
                 break;
 
             case KEY_CACHE_OBJECT:
-                writeKeyCacheObject((KeyCacheObject)val, compress);
+                writeKeyCacheObject((KeyCacheObject)val);
 
                 break;
 
             case CACHE_OBJECT:
-                writeCacheObject((CacheObject)val, compress);
+                writeCacheObject((CacheObject)val);
 
                 break;
 
             case GRID_LONG_LIST:
-                writeGridLongList((GridLongList)val, compress);
+                writeGridLongList((GridLongList)val);
 
                 break;
 
@@ -2121,7 +2083,7 @@ public class DirectByteBufferStream {
                     if (val != null)
                         writer.beforeInnerMessageWrite();
 
-                    writeMessage((Message)val, writer, compress);
+                    writeMessage((Message)val, writer);
                 }
                 finally {
                     if (val != null)
@@ -2223,7 +2185,7 @@ public class DirectByteBufferStream {
     }
 
     /** */
-    private void writeUuidRaw(UUID val, boolean compress) {
+    private void writeUuidRaw(UUID val) {
         lastFinished = buf.remaining() >= 16;
 
         if (lastFinished) {
