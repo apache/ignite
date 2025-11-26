@@ -35,7 +35,6 @@ class DataGenerationParams(NamedTuple):
     entry_size: int = 50_000
     preloaders: int = 1
     index_count: int = 0
-    java_class_name: str = "org.apache.ignite.internal.ducktest.tests.DataGenerationApplication"
     data_pattern_base64: str = None
     modules: list = []
 
@@ -55,17 +54,13 @@ class DataGenerationParams(NamedTuple):
         return int(self.entry_count / self.preloaders)
 
 
-def preload_data(context, config, data_gen_params: DataGenerationParams, timeout=3600, stop=False, await_started=False,
-                 additional_params=None):
+def preload_data(context, config, data_gen_params: DataGenerationParams, timeout=3600):
     """
     Puts entry_count of key-value pairs of entry_size bytes to cache_count caches.
     :param context: Test context.
     :param config: Ignite configuration.
     :param data_gen_params: Data generation parameters.
     :param timeout: Timeout in seconds for application finished.
-    :param stop: Stop application flag
-    :param await_started: Await application start flag
-    :param additional_params: Additional parameters to pass to the application.
     :return: Time taken for data preloading.
     """
     assert data_gen_params.preloaders > 0
@@ -79,7 +74,7 @@ def preload_data(context, config, data_gen_params: DataGenerationParams, timeout
         app = IgniteApplicationService(
             context,
             config=config,
-            java_class_name=data_gen_params.java_class_name,
+            java_class_name="org.apache.ignite.internal.ducktest.tests.DataGenerationApplication",
             params={
                 "backups": data_gen_params.backups,
                 "cacheCount": data_gen_params.cache_count,
@@ -91,14 +86,7 @@ def preload_data(context, config, data_gen_params: DataGenerationParams, timeout
             },
             modules=data_gen_params.modules,
             shutdown_timeout_sec=timeout)
-
-        if additional_params is not None:
-            app.params.update(additional_params)
-
-        if await_started:
-            app.start()
-        else:
-            app.start_async()
+        app.start_async()
 
         apps.append(app)
 
@@ -113,9 +101,6 @@ def preload_data(context, config, data_gen_params: DataGenerationParams, timeout
     start_app(end, data_gen_params.entry_count)
 
     for app in apps:
-        if stop:
-            app.stop()
-
         app.await_stopped()
 
     return (max(map(lambda app: app.get_finish_time(), apps)) -
