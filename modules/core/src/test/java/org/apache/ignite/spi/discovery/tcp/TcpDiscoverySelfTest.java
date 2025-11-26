@@ -2159,6 +2159,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             startGrid(1);
 
+            awaitPartitionMapExchange();
+
             assertEquals("Expected items in marshaller discovery data: 1, actual: "
                     + TestTcpDiscoveryMarshallerDataSpi.marshalledItems,
                     1, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
