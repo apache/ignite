@@ -17,14 +17,13 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import java.util.Objects;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  * Test for {@link TcpDiscoverySpi} with Multi Data Centers.
  */
-public class TcpDiscoveryMdcSelfTest extends TcpDiscoverySelfTest {
+public class TcpDiscoveryMdcSelfPlainTest extends TcpDiscoverySelfTest {
     /** */
     private static final String DC_ID_0 = "DC0";
 
@@ -34,7 +33,7 @@ public class TcpDiscoveryMdcSelfTest extends TcpDiscoverySelfTest {
     /**
      * @throws Exception If fails.
      */
-    public TcpDiscoveryMdcSelfTest() throws Exception {
+    public TcpDiscoveryMdcSelfPlainTest() throws Exception {
     }
 
     /** {@inheritDoc} */
@@ -43,7 +42,7 @@ public class TcpDiscoveryMdcSelfTest extends TcpDiscoverySelfTest {
 
         String prev = System.getProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
 
-        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, Objects.equals(prev, DC_ID_1) ? DC_ID_0 : DC_ID_1);
+        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, prev == null ? DC_ID_0 : DC_ID_1);
 
         return cfg;
     }
