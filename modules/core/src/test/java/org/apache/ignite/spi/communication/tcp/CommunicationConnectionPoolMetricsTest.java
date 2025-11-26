@@ -324,12 +324,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
             assertTrue(waitForCondition(() -> {
                 MetricRegistryImpl mreg = ldrMetricsMgr.registry(nodeMetricsRegName(nodeId));
 
-                if (mreg == null || !mreg.iterator().hasNext())
-                    return true;
-
-                dumpMetrics(ldr);
-
-                return false;
+                return mreg == null || !mreg.iterator().hasNext();
             }, getTestTimeout()));
         }
 
