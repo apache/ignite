@@ -1182,7 +1182,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             // Duplicate ID.
             GridTestUtils.assertThrows(
                 log,
-                new Callable<Object>() {
+                new Callable<>() {
                     @Nullable @Override public Object call() throws Exception {
                         // Exception will be thrown and output to log.
                         startGrid(3);
