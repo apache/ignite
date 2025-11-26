@@ -62,16 +62,16 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     private final BinaryWriterSchemaHolder schema;
 
     /** */
-    private final boolean failIfUnregistered;
-
-    /** */
     private int typeId;
 
     /** */
-    private int start;
+    private final int start;
 
     /** Raw offset position. */
     private int rawOffPos;
+
+    /** Handles. */
+    private BinaryWriterHandles handles;
 
     /** Schema ID. */
     private int schemaId = BinaryUtils.schemaInitialId();
@@ -79,11 +79,11 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     /** Amount of written fields. */
     private int fieldCnt;
 
-    /** Handles. */
-    private BinaryWriterHandles handles;
-
     /** */
     private BinaryInternalMapper mapper;
+
+    /** */
+    private final boolean failIfUnregistered;
 
     /**
      * @param ctx Context.
@@ -847,29 +847,16 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         if (obj == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            int typeId0 = this.typeId;
-            int start0 = this.start;
-            int rawOffPos0 = this.rawOffPos;
-            int schemaId0 = this.schemaId;
-            int fieldCnt0 = this.fieldCnt;
-            BinaryInternalMapper mapper0 = this.mapper;
+            BinaryWriterExImpl writer = new BinaryWriterExImpl(
+                ctx,
+                out,
+                schema,
+                handles(),
+                failIfUnregistered,
+                GridBinaryMarshaller.UNREGISTERED_TYPE_ID
+            );
 
-            this.typeId = 0;
-            this.start = out.position();
-            this.rawOffPos = 0;
-            this.schemaId = BinaryUtils.schemaInitialId();
-            this.fieldCnt = 0;
-            this.mapper = null;
-            // Handles not cleared, because, in this mode it shared down to hierarchy.
-
-            marshal(obj);
-
-            this.typeId = typeId0;
-            this.start = start0;
-            this.rawOffPos = rawOffPos0;
-            this.schemaId = schemaId0;
-            this.fieldCnt = fieldCnt0;
-            this.mapper = mapper0;
+            writer.marshal(obj);
         }
     }
 
@@ -878,32 +865,16 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         if (obj == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            int typeId0 = this.typeId;
-            int start0 = this.start;
-            int rawOffPos0 = this.rawOffPos;
-            int schemaId0 = this.schemaId;
-            int fieldCnt0 = this.fieldCnt;
-            BinaryInternalMapper mapper0 = this.mapper;
-            BinaryWriterHandles handles0 = this.handles;
+            BinaryWriterExImpl writer = new BinaryWriterExImpl(
+                ctx,
+                out,
+                schema,
+                null,
+                failIfUnregistered,
+                GridBinaryMarshaller.UNREGISTERED_TYPE_ID
+            );
 
-            this.typeId = 0;
-            this.start = out.position();
-            this.rawOffPos = 0;
-            this.schemaId = BinaryUtils.schemaInitialId();
-            this.fieldCnt = 0;
-            this.mapper = null;
-            // Handles cleared, because, in this mode it NOT shared down to hierarchy.
-            this.handles = null;
-
-            marshal(obj);
-
-            this.typeId = typeId0;
-            this.start = start0;
-            this.rawOffPos = rawOffPos0;
-            this.schemaId = schemaId0;
-            this.fieldCnt = fieldCnt0;
-            this.mapper = mapper0;
-            this.handles = handles0;
+            writer.marshal(obj);
         }
     }
 

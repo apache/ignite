@@ -110,7 +110,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -3020,7 +3019,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         BinaryMarshaller marsh = binaryMarshaller();
 
-        try (BinaryWriterEx writer = BinaryUtils.writer(binaryContext(marsh), false, UNREGISTERED_TYPE_ID)) {
+        try (BinaryWriterEx writer = BinaryUtils.writer(binaryContext(marsh), false, GridBinaryMarshaller.UNREGISTERED_TYPE_ID)) {
             assertEquals(true, BinaryStreamsTestUtils.threadLocalIsAcquired());
 
             writer.writeString("Thread local test");
@@ -3310,7 +3309,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         for (Map.Entry<String, Integer> entry : map.entrySet()) {
             int id = entry.getValue();
 
-            if (id == UNREGISTERED_TYPE_ID)
+            if (id == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
                 continue;
 
             BinaryClassDescriptor desc = bCtx.descriptorForTypeId(false, entry.getValue(), null, true);
