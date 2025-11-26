@@ -34,14 +34,10 @@ class InPlaceNodeUpgradeTest(BaseRollingUpgradeTest):
         self.upgrade_coordinator_first = upgrade_coordinator_first
 
         self.check_rolling_upgrade(ignite_version, upgrade_version, force, with_persistence,
-                                  backups, entry_count, self._upgrade_ignite_cluster)
-
+                                   backups, entry_count, self._upgrade_ignite_cluster)
 
     def _upgrade_ignite_cluster(self, ignites, upgrade_version, force, with_persistence):
         control_sh = ControlUtility(ignites)
-
-        if with_persistence:
-            control_sh.activate()
 
         control_sh.enable_rolling_upgrade(IgniteVersion(upgrade_version).vstring, force)
 

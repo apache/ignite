@@ -16,9 +16,11 @@
 """
 Utils for rolling upgrade tests.
 """
+from typing import List
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
+from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster, from_ignite_services
@@ -94,6 +96,11 @@ class BaseRollingUpgradeTest(IgniteTest):
 
         self.logger.debug(f"Initial cluster is up [nodes={len(ignites.nodes)}].")
 
+        control_sh = ControlUtility(ignites)
+
+        if with_persistence:
+            control_sh.activate()
+
         return ignites
 
     def _preload_data(self, ignites, backups, entry_count):
@@ -102,12 +109,12 @@ class BaseRollingUpgradeTest(IgniteTest):
 
         app_cfg = ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites))
 
-        preload_data(self.test_context, app_cfg, data_gen_params=data_gen_params, stop=True,
+        preload_data(self.test_context, app_cfg, data_gen_params=data_gen_params, stop=True, await_started=True,
                      additional_params={"check": False})
 
         self.logger.debug("Data generation is done.")
 
-    def _check_data(self, upgraded_ignites: list[IgniteService]):
+    def _check_data(self, upgraded_ignites: List[IgniteService]):
         assert len(upgraded_ignites) > 0, "Upgraded cluster is empty!"
 
         cluster_cfg = upgraded_ignites[0].config
