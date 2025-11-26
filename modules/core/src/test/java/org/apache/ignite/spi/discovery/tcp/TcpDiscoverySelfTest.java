@@ -121,7 +121,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     private Map<String, TcpDiscoverySpi> discoMap = new HashMap<>();
 
     /** */
-    private UUID nodeId;
+    protected UUID nodeId;
 
     /** Flag to disable metrics for some tests. */
     protected boolean metricsEnabled = true;

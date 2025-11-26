@@ -17,9 +17,14 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.util.UUID;
+import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
@@ -82,6 +87,39 @@ public class TcpDiscoveryMdcSelfWithCoordinatorChangeTest extends TcpDiscoveryMd
             stopAllGrids();
 
             metricsEnabled = true;
+        }
+    }
+
+    /**
+     * @throws Exception If any error occurs.
+     */
+    @Test
+    @Override public void testDuplicateId() throws Exception {
+        try {
+            // Random ID.
+            startGrid(0);
+            startGrid(1);
+
+            nodeId = UUID.randomUUID();
+
+            startGrid(2);
+
+            // Duplicate ID.
+            GridTestUtils.assertThrows(
+                log,
+                new Callable<>() {
+                    @Nullable @Override public Object call() throws Exception {
+                        // Exception will be thrown and output to log.
+                        startGrid(3);
+
+                        return null;
+                    }
+                },
+                IgniteCheckedException.class,
+                null);
+        }
+        finally {
+            stopAllGrids();
         }
     }
 }
