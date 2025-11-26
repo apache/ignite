@@ -18,18 +18,25 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Full partition map from all nodes.
  */
 public class GridDhtPartitionFullMap
-    extends HashMap<UUID, GridDhtPartitionMap> implements Comparable<GridDhtPartitionFullMap> {
+    extends HashMap<UUID, GridDhtPartitionMap> implements Comparable<GridDhtPartitionFullMap>, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Node ID. */
     private UUID nodeId;
 
@@ -169,6 +176,26 @@ public class GridDhtPartitionFullMap
         this.updateSeq = updateSeq;
 
         return old;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        U.writeUuid(out, nodeId);
+
+        out.writeLong(nodeOrder);
+        out.writeLong(updateSeq);
+
+        U.writeMap(out, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        nodeId = U.readUuid(in);
+
+        nodeOrder = in.readLong();
+        updateSeq = in.readLong();
+
+        putAll(U.<UUID, GridDhtPartitionMap>readMap(in));
     }
 
     /** {@inheritDoc} */
