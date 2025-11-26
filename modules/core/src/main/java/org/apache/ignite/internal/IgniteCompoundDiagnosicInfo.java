@@ -164,7 +164,9 @@ public final class IgniteCompoundDiagnosicInfo implements Message {
     /** */
     public void infos(Collection<IgniteDiagnosticMessage.DiagnosticBaseInfo> infos) {
         this.infos.clear();
-        this.infos.addAll(infos);
+
+        if (infos != null)
+            this.infos.addAll(infos);
     }
 
     /** */
