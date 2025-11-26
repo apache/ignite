@@ -51,14 +51,8 @@ public class GridJobExecuteResponse implements Message {
     private IgniteUuid jobId;
 
     /** */
+    @Order(value = 3, method = "exceptionMessage", asType = "org.apache.ignite.internal.managers.communication.ErrorMessage")
     private IgniteException gridEx;
-
-    /**
-     * Serialization call holder for {@code gridEx}. Works with {@link #marshallUserData(Marshaller)}.
-     * Wraps also possible serialization error.
-     */
-    @Order(value = 3, method = "exceptionMessage")
-    private @Nullable ErrorMessage gridExMsg;
 
     /** Job result serialization call holder. */
     @Order(value = 4, method = "jobResultBytes")
