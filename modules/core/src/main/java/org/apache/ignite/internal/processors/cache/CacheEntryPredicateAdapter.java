@@ -25,7 +25,11 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.jetbrains.annotations.Nullable;
 
-/** A unified container for common, typical cache entry predicates. */
+/**
+ * A unified container for common, typical cache entry predicates.
+ * <p>
+ * The values test is CacheEntryPredicateAdapterMessageTest.
+ */
 public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     /** */
     private static final long serialVersionUID = 4647110502545358709L;
@@ -153,28 +157,12 @@ public class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     public byte code() {
         assert type != null;
 
-        switch (type) {
-            case OTHER: return 0;
-            case VALUE: return 1;
-            case HAS_VALUE: return 2;
-            case HAS_NO_VALUE: return 3;
-            case ALWAYS_FALSE: return 4;
-        }
-
-        throw new IllegalArgumentException("Unknown cache entry predicate type: " + type);
+        return (byte)type.ordinal();
     }
 
     /** */
     public void code(byte code) {
-        switch (code) {
-            case 0: type = PredicateType.OTHER; break;
-            case 1: type = PredicateType.VALUE; break;
-            case 2: type = PredicateType.HAS_VALUE; break;
-            case 3: type = PredicateType.HAS_NO_VALUE; break;
-            case 4: type = PredicateType.ALWAYS_FALSE; break;
-            default:
-                throw new IllegalArgumentException("Unknown cache entry predicate type code: " + code);
-        }
+        type = code < 0 || code >= PredicateType.values().length ? PredicateType.OTHER : PredicateType.values()[code];
     }
 
     /** Common predicate type. */

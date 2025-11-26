@@ -21,7 +21,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -58,8 +57,8 @@ public class TransactionIsolationMessageTest {
         msg.code((byte)2);
         assertSame(TransactionIsolation.SERIALIZABLE, msg.value());
 
-        Throwable t = assertThrowsWithCause(() -> msg.code((byte)3), IllegalArgumentException.class);
-        assertEquals("Unknown transaction isolation code: 3", t.getMessage());
+        msg.code((byte)3);
+        assertSame(null, msg.value());
     }
 
     /** */
