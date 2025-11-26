@@ -24,11 +24,11 @@ from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_cluster, from_ignite_services
-from ignitetest.tests.util import DataGenerationParams, preload_data
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion
 
 NUM_NODES = 4
+PRELOADERS_COUNT = 1
 JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.persistence_upgrade_test.DataLoaderAndCheckerApplication"
 
 
@@ -64,15 +64,17 @@ class BaseRollingUpgradeTest(IgniteTest):
             f"with {'persistent' if with_persistence else 'in-memory'} mode"
         )
 
-        node_count = self.test_context.expected_num_nodes - 1
+        node_count = self.test_context.expected_num_nodes - PRELOADERS_COUNT
 
         ignites = self._start_ignite_cluster(ignite_version, node_count, with_persistence)
 
-        self._preload_data(ignites, backups, entry_count)
+        app = self._configure_data_handler_app(ignites, backups, entry_count)
+
+        self._preload_data(app)
 
         upgraded_ignites = upgrade_func(ignites, upgrade_version, force, with_persistence)
 
-        self._check_data(upgraded_ignites)
+        self._check_data(upgraded_ignites, app)
 
         total_alive = sum(len(ignite.alive_nodes) for ignite in upgraded_ignites)
 
@@ -103,32 +105,32 @@ class BaseRollingUpgradeTest(IgniteTest):
 
         return ignites
 
-    def _preload_data(self, ignites, backups, entry_count):
-        data_gen_params = DataGenerationParams(backups=backups, entry_count=entry_count,
-                                               java_class_name=JAVA_CLASS_NAME)
+    def _configure_data_handler_app(self, ignites, backups, entry_count):
+        return IgniteApplicationService(
+            self.test_context,
+            config=ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites)),
+            java_class_name=JAVA_CLASS_NAME,
+            params={
+                "backups": backups,
+                "entryCount": entry_count
+            })
 
-        app_cfg = ignites.config._replace(client_mode=True, discovery_spi=from_ignite_cluster(ignites))
+    def _preload_data(self, app: IgniteApplicationService):
+        app.params["check"] = False
 
-        preload_data(self.test_context, app_cfg, data_gen_params=data_gen_params, stop=True, await_started=True,
-                     additional_params={"check": False})
+        app.start()
+        app.stop()
 
         self.logger.debug("Data generation is done.")
 
-    def _check_data(self, upgraded_ignites: List[IgniteService]):
+    def _check_data(self, upgraded_ignites: List[IgniteService], app: IgniteApplicationService):
         assert len(upgraded_ignites) > 0, "Upgraded cluster is empty!"
 
-        cluster_cfg = upgraded_ignites[0].config
+        app.config = app.config._replace(discovery_spi=from_ignite_services(upgraded_ignites))
 
-        app_cfg = cluster_cfg._replace(client_mode=True, discovery_spi=from_ignite_services(upgraded_ignites))
-
-        app = IgniteApplicationService(
-            self.test_context,
-            config=app_cfg,
-            java_class_name=JAVA_CLASS_NAME,
-            params={"check": True})
+        app.params["check"] = True
 
         app.start()
-
         app.stop()
 
         self.logger.debug("Data check is complete.")
