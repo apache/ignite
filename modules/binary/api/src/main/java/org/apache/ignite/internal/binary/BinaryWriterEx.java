@@ -73,11 +73,6 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
     void marshal(Object obj) throws BinaryObjectException;
 
     /**
-     * @param typeId Type ID.
-     */
-    public void typeId(int typeId);
-
-    /**
      * @return Array.
      */
     public byte[] array();

@@ -116,11 +116,6 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void typeId(int typeId) {
-        this.typeId = typeId;
-    }
-
-    /** {@inheritDoc} */
     @Override public void close() {
         out.close();
     }
@@ -206,6 +201,8 @@ class BinaryWriterExImpl implements BinaryWriterEx {
 
             return;
         }
+
+        this.typeId = desc.typeId();
 
         desc.write(obj, this);
     }
