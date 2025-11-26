@@ -79,278 +79,278 @@ public class DirectMessageWriter implements MessageWriter {
     @Override public boolean writeHeader(short type) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeShort(type);
+        stream.writeShort(type, false);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeByte(byte val) {
+    @Override public boolean writeByte(byte val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeByte(val);
+        stream.writeByte(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeShort(short val) {
+    @Override public boolean writeShort(short val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeShort(val);
+        stream.writeShort(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeInt(int val) {
+    @Override public boolean writeInt(int val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeInt(val);
+        stream.writeInt(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeLong(long val) {
+    @Override public boolean writeLong(long val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeLong(val);
+        stream.writeLong(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeFloat(float val) {
+    @Override public boolean writeFloat(float val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeFloat(val);
+        stream.writeFloat(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeDouble(double val) {
+    @Override public boolean writeDouble(double val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeDouble(val);
+        stream.writeDouble(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeChar(char val) {
+    @Override public boolean writeChar(char val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeChar(val);
+        stream.writeChar(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeBoolean(boolean val) {
+    @Override public boolean writeBoolean(boolean val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeBoolean(val);
+        stream.writeBoolean(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeByteArray(@Nullable byte[] val) {
+    @Override public boolean writeByteArray(@Nullable byte[] val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeByteArray(val);
+        stream.writeByteArray(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeByteArray(byte[] val, long off, int len) {
+    @Override public boolean writeByteArray(byte[] val, long off, int len, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeByteArray(val, off, len);
+        stream.writeByteArray(val, off, len, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeShortArray(@Nullable short[] val) {
+    @Override public boolean writeShortArray(@Nullable short[] val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeShortArray(val);
+        stream.writeShortArray(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeIntArray(@Nullable int[] val) {
+    @Override public boolean writeIntArray(@Nullable int[] val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeIntArray(val);
+        stream.writeIntArray(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeLongArray(@Nullable long[] val) {
+    @Override public boolean writeLongArray(@Nullable long[] val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeLongArray(val);
+        stream.writeLongArray(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeLongArray(long[] val, int len) {
+    @Override public boolean writeLongArray(long[] val, int len, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeLongArray(val, len);
+        stream.writeLongArray(val, len, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeFloatArray(@Nullable float[] val) {
+    @Override public boolean writeFloatArray(@Nullable float[] val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeFloatArray(val);
+        stream.writeFloatArray(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeDoubleArray(@Nullable double[] val) {
+    @Override public boolean writeDoubleArray(@Nullable double[] val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeDoubleArray(val);
+        stream.writeDoubleArray(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeCharArray(@Nullable char[] val) {
+    @Override public boolean writeCharArray(@Nullable char[] val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeCharArray(val);
+        stream.writeCharArray(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeBooleanArray(@Nullable boolean[] val) {
+    @Override public boolean writeBooleanArray(@Nullable boolean[] val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeBooleanArray(val);
+        stream.writeBooleanArray(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeString(String val) {
+    @Override public boolean writeString(String val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeString(val);
+        stream.writeString(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeBitSet(BitSet val) {
+    @Override public boolean writeBitSet(BitSet val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeBitSet(val);
+        stream.writeBitSet(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeUuid(UUID val) {
+    @Override public boolean writeUuid(UUID val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeUuid(val);
+        stream.writeUuid(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeIgniteUuid(IgniteUuid val) {
+    @Override public boolean writeIgniteUuid(IgniteUuid val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeIgniteUuid(val);
+        stream.writeIgniteUuid(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeAffinityTopologyVersion(AffinityTopologyVersion val) {
+    @Override public boolean writeAffinityTopologyVersion(AffinityTopologyVersion val, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeAffinityTopologyVersion(val);
+        stream.writeAffinityTopologyVersion(val, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeMessage(@Nullable Message msg) {
+    @Override public boolean writeMessage(@Nullable Message msg, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeMessage(msg, this);
+        stream.writeMessage(msg, this, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeCacheObject(@Nullable CacheObject obj) {
+    @Override public boolean writeCacheObject(@Nullable CacheObject obj, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeCacheObject(obj);
+        stream.writeCacheObject(obj, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeKeyCacheObject(KeyCacheObject obj) {
+    @Override public boolean writeKeyCacheObject(KeyCacheObject obj, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeKeyCacheObject(obj);
+        stream.writeKeyCacheObject(obj, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeGridLongList(@Nullable GridLongList ll) {
+    @Override public boolean writeGridLongList(@Nullable GridLongList ll, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeGridLongList(ll);
+        stream.writeGridLongList(ll, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public <T> boolean writeObjectArray(T[] arr, MessageCollectionItemType itemType) {
+    @Override public <T> boolean writeObjectArray(T[] arr, MessageCollectionItemType itemType, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeObjectArray(arr, itemType, this);
+        stream.writeObjectArray(arr, itemType, this, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
-    @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionItemType itemType) {
+    @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionItemType itemType, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeCollection(col, itemType, this);
+        stream.writeCollection(col, itemType, this, compress);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> boolean writeMap(Map<K, V> map, MessageCollectionItemType keyType,
-        MessageCollectionItemType valType) {
+        MessageCollectionItemType valType, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeMap(map, keyType, valType, this);
+        stream.writeMap(map, keyType, valType, this, compress);
 
         return stream.lastFinished();
     }

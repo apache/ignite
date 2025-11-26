@@ -155,153 +155,153 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeByte(byte val) {
+        @Override public boolean writeByte(byte val, boolean compress) {
             return writeField(byte.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeShort(short val) {
+        @Override public boolean writeShort(short val, boolean compress) {
             return writeField(short.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeInt(int val) {
+        @Override public boolean writeInt(int val, boolean compress) {
             return writeField(int.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeLong(long val) {
+        @Override public boolean writeLong(long val, boolean compress) {
             return writeField(long.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeFloat(float val) {
+        @Override public boolean writeFloat(float val, boolean compress) {
             return writeField(float.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeDouble(double val) {
+        @Override public boolean writeDouble(double val, boolean compress) {
             return writeField(double.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeChar(char val) {
+        @Override public boolean writeChar(char val, boolean compress) {
             return writeField(char.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeBoolean(boolean val) {
+        @Override public boolean writeBoolean(boolean val, boolean compress) {
             return writeField(boolean.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeByteArray(byte[] val) {
+        @Override public boolean writeByteArray(byte[] val, boolean compress) {
             return writeField(byte[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeByteArray(byte[] val, long off, int len) {
+        @Override public boolean writeByteArray(byte[] val, long off, int len, boolean compress) {
             return writeField(byte[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeShortArray(short[] val) {
+        @Override public boolean writeShortArray(short[] val, boolean compress) {
             return writeField(short[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeIntArray(int[] val) {
+        @Override public boolean writeIntArray(int[] val, boolean compress) {
             return writeField(int[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeLongArray(long[] val) {
+        @Override public boolean writeLongArray(long[] val, boolean compress) {
             return writeField(long[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeLongArray(long[] val, int len) {
+        @Override public boolean writeLongArray(long[] val, int len, boolean compress) {
             return writeField(long[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeFloatArray(float[] val) {
+        @Override public boolean writeFloatArray(float[] val, boolean compress) {
             return writeField(float[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeDoubleArray(double[] val) {
+        @Override public boolean writeDoubleArray(double[] val, boolean compress) {
             return writeField(double[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeCharArray(char[] val) {
+        @Override public boolean writeCharArray(char[] val, boolean compress) {
             return writeField(char[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeBooleanArray(boolean[] val) {
+        @Override public boolean writeBooleanArray(boolean[] val, boolean compress) {
             return writeField(boolean[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeString(String val) {
+        @Override public boolean writeString(String val, boolean compress) {
             return writeField(String.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeBitSet(BitSet val) {
+        @Override public boolean writeBitSet(BitSet val, boolean compress) {
             return writeField(BitSet.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeUuid(UUID val) {
+        @Override public boolean writeUuid(UUID val, boolean compress) {
             return writeField(UUID.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeIgniteUuid(IgniteUuid val) {
+        @Override public boolean writeIgniteUuid(IgniteUuid val, boolean compress) {
             return writeField(IgniteUuid.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeAffinityTopologyVersion(AffinityTopologyVersion val) {
+        @Override public boolean writeAffinityTopologyVersion(AffinityTopologyVersion val, boolean compress) {
             return writeField(AffinityTopologyVersion.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeCacheObject(CacheObject obj) {
+        @Override public boolean writeCacheObject(CacheObject obj, boolean compress) {
             return writeField(CacheObject.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeKeyCacheObject(KeyCacheObject obj) {
+        @Override public boolean writeKeyCacheObject(KeyCacheObject obj, boolean compress) {
             return writeField(KeyCacheObject.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeGridLongList(@Nullable GridLongList ll) {
+        @Override public boolean writeGridLongList(@Nullable GridLongList ll, boolean compress) {
             return writeField(GridLongList.class);
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeMessage(Message val) {
+        @Override public boolean writeMessage(Message val, boolean compress) {
             return writeField(Message.class);
         }
 
         /** {@inheritDoc} */
-        @Override public <T> boolean writeObjectArray(T[] arr, MessageCollectionItemType itemType) {
+        @Override public <T> boolean writeObjectArray(T[] arr, MessageCollectionItemType itemType, boolean compress) {
             return writeField(Object[].class);
         }
 
         /** {@inheritDoc} */
-        @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionItemType itemType) {
+        @Override public <T> boolean writeCollection(Collection<T> col, MessageCollectionItemType itemType, boolean compress) {
             return writeField(Collection.class);
         }
 
         /** {@inheritDoc} */
         @Override public <K, V> boolean writeMap(Map<K, V> map, MessageCollectionItemType keyType,
-            MessageCollectionItemType valType) {
+            MessageCollectionItemType valType, boolean compress) {
             return writeField(Map.class);
         }
 
