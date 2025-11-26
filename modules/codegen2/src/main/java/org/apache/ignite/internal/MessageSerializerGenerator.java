@@ -234,9 +234,6 @@ class MessageSerializerGenerator {
      * @param opt Case option.
      */
     private void processField(VariableElement field, int opt) throws Exception {
-        if (assignableFrom(field.asType(), type(Throwable.class.getName())))
-            throw new UnsupportedOperationException("You should use ErrorMessage for serialization of throwables.");
-
         writeField(field, opt);
         readField(field, opt);
     }
@@ -405,11 +402,17 @@ class MessageSerializerGenerator {
 
         switch (typeName) {
             case "byte": return env.getTypeUtils().getPrimitiveType(TypeKind.BYTE);
+            case "byte[]": return env.getTypeUtils().getArrayType(env.getTypeUtils().getPrimitiveType(TypeKind.BYTE));
             case "short": return env.getTypeUtils().getPrimitiveType(TypeKind.SHORT);
+            case "short[]": return env.getTypeUtils().getArrayType(env.getTypeUtils().getPrimitiveType(TypeKind.SHORT));
             case "int": return env.getTypeUtils().getPrimitiveType(TypeKind.INT);
+            case "int[]": return env.getTypeUtils().getArrayType(env.getTypeUtils().getPrimitiveType(TypeKind.INT));
             case "long": return env.getTypeUtils().getPrimitiveType(TypeKind.LONG);
+            case "long[]": return env.getTypeUtils().getArrayType(env.getTypeUtils().getPrimitiveType(TypeKind.LONG));
             case "float": return env.getTypeUtils().getPrimitiveType(TypeKind.FLOAT);
+            case "float[]": return env.getTypeUtils().getArrayType(env.getTypeUtils().getPrimitiveType(TypeKind.FLOAT));
             case "double": return env.getTypeUtils().getPrimitiveType(TypeKind.DOUBLE);
+            case "double[]": return env.getTypeUtils().getArrayType(env.getTypeUtils().getPrimitiveType(TypeKind.DOUBLE));
         }
 
         return type(typeName);

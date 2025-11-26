@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.MessageProcessor;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -41,12 +40,8 @@ import static org.apache.ignite.marshaller.Marshallers.jdk;
  */
 @SuppressWarnings({"NullableProblems", "unused"})
 public class ErrorMessage implements Message {
-    /** Serialization and deserealization call holder. */
-    @Order(value = 0, method = "errorBytes")
-    @GridToStringExclude
-    private @Nullable byte[] errBytes;
-
-    /** Original error. It is transient and necessary only to avoid duplicated serialization and deserializtion. */
+    /** Original error. It is transient and necessary only to avoid duplicated serialization and deserialization. */
+    @Order(value = 0, method = "errorBytes", asType = "byte[]")
     private @Nullable Throwable err;
 
     /**

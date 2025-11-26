@@ -51,6 +51,7 @@ public class ColocationGroup implements CalciteMessage {
     private List<UUID> nodeIds;
 
     /** */
+    @Order(value = 2, method = "marshalledAssignments", asType = "int[]")
     private List<List<UUID>> assignments;
 
     /**
@@ -58,10 +59,6 @@ public class ColocationGroup implements CalciteMessage {
      * In case of {@code true} value we can skip assignment marshalling and calc assignment on remote nodes.
      */
     private boolean primaryAssignment;
-
-    /** Marshalled assignments serialization call holder. */
-    @Order(2)
-    private int[] marshalledAssignments;
 
     /** */
     public static ColocationGroup forNodes(List<UUID> nodeIds) {
