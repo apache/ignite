@@ -61,4 +61,4 @@ class InPlaceNodeUpgradeTest(BaseRollingUpgradeTest):
 
         control_sh.disable_rolling_upgrade()
 
-        return list(ignites)
+        return [ignites]
