@@ -22,7 +22,6 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
-import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -67,8 +66,8 @@ public class CacheEntryPredicateAdapterMessageTest {
         msg.code((byte)4);
         assertSame(CacheEntryPredicateAdapter.PredicateType.ALWAYS_FALSE, msg.type());
 
-        Throwable t = assertThrowsWithCause(() -> msg.code((byte)5), IllegalArgumentException.class);
-        assertEquals("Unknown cache entry predicate type code: 5", t.getMessage());
+        msg.code((byte)5);
+        assertSame(CacheEntryPredicateAdapter.PredicateType.OTHER, msg.type());
     }
 
     /** */
