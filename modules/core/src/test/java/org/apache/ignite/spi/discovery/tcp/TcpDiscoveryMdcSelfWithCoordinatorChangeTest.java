@@ -37,7 +37,8 @@ public class TcpDiscoveryMdcSelfWithCoordinatorChangeTest extends TcpDiscoveryMd
     public TcpDiscoveryMdcSelfWithCoordinatorChangeTest() throws Exception {
     }
 
-    @Override protected void applyDC(){
+    /** */
+    @Override protected void applyDC() {
         String prev = System.getProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
 
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, prev == null ? DC_ID_1 : DC_ID_0);
