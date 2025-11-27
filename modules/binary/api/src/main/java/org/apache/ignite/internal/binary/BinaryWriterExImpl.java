@@ -90,19 +90,22 @@ class BinaryWriterExImpl implements BinaryWriterEx {
      * @param out Output stream.
      * @param handles Handles.
      * @param failIfUnregistered Flag to fail while writing object of unregistered type.
+     * @param typeId Type id.
      */
     public BinaryWriterExImpl(
         BinaryContext ctx,
         BinaryOutputStream out,
         BinaryWriterSchemaHolder schema,
         BinaryWriterHandles handles,
-        boolean failIfUnregistered
+        boolean failIfUnregistered,
+        int typeId
     ) {
         this.ctx = ctx;
         this.out = out;
         this.schema = schema;
         this.handles = handles;
         this.failIfUnregistered = failIfUnregistered;
+        this.typeId = typeId;
 
         start = out.position();
     }
@@ -110,11 +113,6 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     /** {@inheritDoc} */
     @Override public boolean failIfUnregistered() {
         return failIfUnregistered;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void typeId(int typeId) {
-        this.typeId = typeId;
     }
 
     /** {@inheritDoc} */
@@ -132,7 +130,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
      * @param enableReplace Object replacing enabled flag.
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
-    void marshal(Object obj, boolean enableReplace) throws BinaryObjectException {
+    private void marshal(Object obj, boolean enableReplace) throws BinaryObjectException {
         String newName = ctx.igniteInstanceName();
         String oldName = CommonUtils.setCurrentIgniteName(newName);
 
@@ -204,6 +202,8 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             return;
         }
 
+        this.typeId = desc.typeId();
+
         desc.write(obj, this);
     }
 
@@ -217,15 +217,6 @@ class BinaryWriterExImpl implements BinaryWriterEx {
      */
     int position() {
         return out.position();
-    }
-
-    /**
-     * Sets new position.
-     *
-     * @param pos Position.
-     */
-    void position(int pos) {
-        out.position(pos);
     }
 
     /** {@inheritDoc} */
@@ -847,7 +838,14 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         if (obj == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, out, schema, handles(), failIfUnregistered);
+            BinaryWriterExImpl writer = new BinaryWriterExImpl(
+                ctx,
+                out,
+                schema,
+                handles(),
+                failIfUnregistered,
+                GridBinaryMarshaller.UNREGISTERED_TYPE_ID
+            );
 
             writer.marshal(obj);
         }
@@ -858,7 +856,14 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         if (obj == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx, out, schema, null, failIfUnregistered);
+            BinaryWriterExImpl writer = new BinaryWriterExImpl(
+                ctx,
+                out,
+                schema,
+                null,
+                failIfUnregistered,
+                GridBinaryMarshaller.UNREGISTERED_TYPE_ID
+            );
 
             writer.marshal(obj);
         }
@@ -1537,11 +1542,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
 
     /** {@inheritDoc} */
     @Override public BinaryWriterEx newWriter(int typeId) {
-        BinaryWriterExImpl res = new BinaryWriterExImpl(ctx, out, schema, handles(), failIfUnregistered);
-
-        res.typeId(typeId);
-
-        return res;
+        return new BinaryWriterExImpl(ctx, out, schema, handles(), failIfUnregistered, typeId);
     }
 
     /** {@inheritDoc} */
