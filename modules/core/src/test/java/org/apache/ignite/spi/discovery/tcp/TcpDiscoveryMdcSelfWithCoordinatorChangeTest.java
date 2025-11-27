@@ -19,14 +19,25 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 
 /**
  * Test for {@link TcpDiscoverySpi} with Multi Data Centers where coordinator changed on second node join.
@@ -154,6 +165,82 @@ public class TcpDiscoveryMdcSelfWithCoordinatorChangeTest extends TcpDiscoveryMd
             assertEquals("Expected items in marshaller discovery data: 2, actual: "
                     + TestTcpDiscoveryMarshallerDataSpi.marshalledItems,
                 2, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
+    @Override public void testFailedCoordinatorNodeNoopSegmentationPolicy() throws Exception {
+        checkFailedCoordinatorNode(SegmentationPolicy.NOOP);
+    }
+
+    /**
+     * @param segPlc Segmentation policy.
+     * @throws Exception If failed.
+     */
+    private void checkFailedCoordinatorNode(SegmentationPolicy segPlc) throws Exception {
+        try {
+            this.segPlc = segPlc;
+
+            for (int i = 0; i < 4; i++)
+                startGrid(i);
+
+            IgniteEx coord = grid(1);
+
+            UUID coordId = coord.localNode().id();
+
+            IgniteEx ignite = grid(2);
+
+            AtomicBoolean coordSegmented = new AtomicBoolean();
+
+            coord.events().localListen(evt -> {
+                assertEquals(EVT_NODE_SEGMENTED, evt.type());
+
+                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
+
+                if (coordId.equals(nodeId))
+                    coordSegmented.set(true);
+
+                return true;
+            }, EVT_NODE_SEGMENTED);
+
+            CountDownLatch failedLatch = new CountDownLatch(2);
+
+            IgnitePredicate<Event> failLsnr = evt -> {
+                assertEquals(EVT_NODE_FAILED, evt.type());
+
+                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
+
+                if (coordId.equals(nodeId))
+                    failedLatch.countDown();
+
+                return true;
+            };
+
+            ignite.events().localListen(failLsnr, EVT_NODE_FAILED);
+
+            grid(3).events().localListen(failLsnr, EVT_NODE_FAILED);
+
+            ignite.configuration().getDiscoverySpi().failNode(coordId, null);
+
+            assertTrue(failedLatch.await(2000, MILLISECONDS));
+
+            assertTrue(coordSegmented.get());
+
+            if (segPlc == SegmentationPolicy.STOP) {
+                assertTrue(coord.context().isStopping());
+
+                waitNodeStop(coord.name());
+            }
+            else
+                assertFalse(coord.context().isStopping());
+
+            assertEquals(3, ignite.context().discovery().allNodes().size());
         }
         finally {
             stopAllGrids();

@@ -136,7 +136,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     private CacheConfiguration[] ccfgs;
 
     /** */
-    private SegmentationPolicy segPlc;
+    protected SegmentationPolicy segPlc;
 
     /** */
     private ListeningTestLogger testLog;
@@ -2328,7 +2328,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * @param nodeName Node name.
      * @throws Exception If failed.
      */
-    private void waitNodeStop(final String nodeName) throws Exception {
+    protected void waitNodeStop(final String nodeName) throws Exception {
         boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
