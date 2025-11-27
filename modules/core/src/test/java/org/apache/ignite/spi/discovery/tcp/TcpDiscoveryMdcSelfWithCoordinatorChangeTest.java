@@ -172,18 +172,10 @@ public class TcpDiscoveryMdcSelfWithCoordinatorChangeTest extends TcpDiscoveryMd
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    @Test
-    @Override public void testFailedCoordinatorNodeNoopSegmentationPolicy() throws Exception {
-        checkFailedCoordinatorNode(SegmentationPolicy.NOOP);
-    }
-
-    /**
      * @param segPlc Segmentation policy.
      * @throws Exception If failed.
      */
-    private void checkFailedCoordinatorNode(SegmentationPolicy segPlc) throws Exception {
+    @Override protected void checkFailedCoordinatorNode(SegmentationPolicy segPlc) throws Exception {
         try {
             this.segPlc = segPlc;
 

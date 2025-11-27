@@ -1957,7 +1957,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * @param segPlc Segmentation policy.
      * @throws Exception If failed.
      */
-    private void checkFailedCoordinatorNode(SegmentationPolicy segPlc) throws Exception {
+    protected void checkFailedCoordinatorNode(SegmentationPolicy segPlc) throws Exception {
         try {
             this.segPlc = segPlc;
 
