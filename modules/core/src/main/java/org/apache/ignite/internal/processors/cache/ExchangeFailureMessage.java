@@ -53,7 +53,7 @@ public class ExchangeFailureMessage implements DiscoveryCustomMessage {
 
     /** */
     @GridToStringInclude
-    private final Map<UUID, Exception> exchangeErrors;
+    private final Map<UUID, Throwable> exchangeErrors;
 
     /** Actions to be done to rollback changes done before the exchange failure. */
     private transient ExchangeActions exchangeRollbackActions;
@@ -68,7 +68,7 @@ public class ExchangeFailureMessage implements DiscoveryCustomMessage {
     public ExchangeFailureMessage(
         ClusterNode locNode,
         GridDhtPartitionExchangeId exchId,
-        Map<UUID, Exception> exchangeErrors,
+        Map<UUID, Throwable> exchangeErrors,
         Collection<String> cacheNames
     ) {
         assert exchId != null;
@@ -94,7 +94,7 @@ public class ExchangeFailureMessage implements DiscoveryCustomMessage {
     }
 
     /** */
-    public Map<UUID, Exception> exchangeErrors() {
+    public Map<UUID, Throwable> exchangeErrors() {
         return exchangeErrors;
     }
 
@@ -123,7 +123,7 @@ public class ExchangeFailureMessage implements DiscoveryCustomMessage {
     public IgniteCheckedException createFailureCompoundException() {
         IgniteCheckedException ex = new IgniteCheckedException("Failed to complete exchange process.");
 
-        for (Map.Entry<UUID, Exception> entry : exchangeErrors.entrySet())
+        for (Map.Entry<UUID, Throwable> entry : exchangeErrors.entrySet())
             U.addSuppressed(ex, entry.getValue());
 
         return ex;

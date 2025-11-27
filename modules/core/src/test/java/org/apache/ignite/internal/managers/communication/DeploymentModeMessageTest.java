@@ -21,6 +21,10 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.Test;
 
+import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
+import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
+import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
+import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -33,13 +37,15 @@ public class DeploymentModeMessageTest {
     @Test
     public void testDeploymentModeCode() {
         assertEquals(-1, new DeploymentModeMessage(null).code());
-        assertEquals(0, new DeploymentModeMessage(DeploymentMode.PRIVATE).code());
-        assertEquals(1, new DeploymentModeMessage(DeploymentMode.ISOLATED).code());
-        assertEquals(2, new DeploymentModeMessage(DeploymentMode.SHARED).code());
-        assertEquals(3, new DeploymentModeMessage(DeploymentMode.CONTINUOUS).code());
+        assertEquals(0, new DeploymentModeMessage(PRIVATE).code());
+        assertEquals(1, new DeploymentModeMessage(ISOLATED).code());
+        assertEquals(2, new DeploymentModeMessage(SHARED).code());
+        assertEquals(3, new DeploymentModeMessage(CONTINUOUS).code());
 
-        for (DeploymentMode isolation : DeploymentMode.values())
-            assertTrue(new DeploymentModeMessage(isolation).code() != -1);
+        for (DeploymentMode depMode : DeploymentMode.values()) {
+            assertTrue(new DeploymentModeMessage(depMode).code() >= 0);
+            assertTrue(new DeploymentModeMessage(depMode).code() < 4);
+        }
     }
 
     /** */
@@ -51,16 +57,16 @@ public class DeploymentModeMessageTest {
         assertNull(msg.value());
 
         msg.code((byte)0);
-        assertSame(DeploymentMode.PRIVATE, msg.value());
+        assertSame(PRIVATE, msg.value());
 
         msg.code((byte)1);
-        assertSame(DeploymentMode.ISOLATED, msg.value());
+        assertSame(ISOLATED, msg.value());
 
         msg.code((byte)2);
-        assertSame(DeploymentMode.SHARED, msg.value());
+        assertSame(SHARED, msg.value());
 
         msg.code((byte)3);
-        assertSame(DeploymentMode.CONTINUOUS, msg.value());
+        assertSame(CONTINUOUS, msg.value());
 
         Throwable t = assertThrowsWithCause(() -> msg.code((byte)4), IllegalArgumentException.class);
         assertEquals("Unknown deployment mode code: 4", t.getMessage());
@@ -69,10 +75,10 @@ public class DeploymentModeMessageTest {
     /** */
     @Test
     public void testConversionConsistency() {
-        for (DeploymentMode isolation : F.concat(DeploymentMode.values(), (DeploymentMode)null)) {
-            DeploymentModeMessage msg = new DeploymentModeMessage(isolation);
+        for (DeploymentMode depMode : F.concat(DeploymentMode.values(), (DeploymentMode)null)) {
+            DeploymentModeMessage msg = new DeploymentModeMessage(depMode);
 
-            assertEquals(isolation, msg.value());
+            assertEquals(depMode, msg.value());
 
             DeploymentModeMessage newMsg = new DeploymentModeMessage();
             newMsg.code(msg.code());

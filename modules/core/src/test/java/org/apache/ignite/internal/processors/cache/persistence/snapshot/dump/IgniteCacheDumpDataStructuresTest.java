@@ -311,7 +311,7 @@ public class IgniteCacheDumpDataStructuresTest extends GridCommonAbstractTest {
 
         IgniteSnapshotManager snpMgr = ign.context().cache().context().snapshotMgr();
 
-        snpMgr.createSnapshot(DMP_NAME, null, null, false, false, true, false, false, true).get(getTestTimeout());
+        snpMgr.createSnapshot(DMP_NAME, null, null, false, false, true, false, false, true, false).get(getTestTimeout());
 
         fut.cancel();
 

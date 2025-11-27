@@ -52,7 +52,6 @@ import static org.apache.ignite.cache.query.SqlFieldsQuery.DFLT_LAZY;
 @SuppressWarnings("ThrowableNotThrown")
 public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
     /** {@inheritDoc} */
-    @SuppressWarnings("deprecation")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -141,6 +140,10 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
         assertNull(ids.getSchema());
         assertEquals(DFLT_LAZY, ids.isLazy());
         assertTrue(ids.isCollocated());
+
+        ids.setUrl("jdbc:ignite:thin://127.0.0.1:10800?local=true");
+
+        assertTrue(ids.isLocal());
     }
 
     /**
@@ -161,6 +164,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
                 assertEquals(DFLT_LAZY, io.connectionProperties().isLazy());
                 assertFalse(io.connectionProperties().isDistributedJoins());
                 assertFalse(io.connectionProperties().isReplicatedOnly());
+                assertFalse(io.connectionProperties().isLocal());
             }
         }
 
@@ -170,6 +174,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
         ids.setLazy(!DFLT_LAZY);
         ids.setDistributedJoins(true);
         ids.setReplicatedOnly(true);
+        ids.setLocal(true);
 
         try (Connection conn = ids.getConnection()) {
 
@@ -180,6 +185,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
                 assertEquals(!DFLT_LAZY, io.connectionProperties().isLazy());
                 assertTrue(io.connectionProperties().isDistributedJoins());
                 assertTrue(io.connectionProperties().isReplicatedOnly());
+                assertTrue(io.connectionProperties().isLocal());
             }
         }
     }

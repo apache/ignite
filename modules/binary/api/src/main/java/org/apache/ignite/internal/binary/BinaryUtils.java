@@ -2921,12 +2921,19 @@ public class BinaryUtils {
 
     /**
      * @param ctx Context.
+     * @param failIfUnregistered Flag to fail while writing object of unregistered type.
      * @return Writer instance.
      */
-    public static BinaryWriterEx writer(BinaryContext ctx) {
+    public static BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered) {
         BinaryThreadLocalContext locCtx = BinaryThreadLocalContext.get();
 
-        return new BinaryWriterExImpl(ctx, BinaryStreams.outputStream((int)CommonUtils.KB, locCtx.chunk()), locCtx.schemaHolder(), null);
+        return new BinaryWriterExImpl(
+            ctx,
+            BinaryStreams.outputStream((int)CommonUtils.KB, locCtx.chunk()),
+            locCtx.schemaHolder(),
+            null,
+            failIfUnregistered
+        );
     }
 
     /**
@@ -2935,7 +2942,7 @@ public class BinaryUtils {
      * @return Writer instance.
      */
     public static BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out) {
-        return new BinaryWriterExImpl(ctx, out, BinaryThreadLocalContext.get().schemaHolder(), null);
+        return new BinaryWriterExImpl(ctx, out, BinaryThreadLocalContext.get().schemaHolder(), null, false);
     }
 
     /**
@@ -2944,7 +2951,7 @@ public class BinaryUtils {
      * @return Writer instance.
      */
     public static BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema) {
-        return new BinaryWriterExImpl(ctx, out, schema, null);
+        return new BinaryWriterExImpl(ctx, out, schema, null, false);
     }
 
     /** @return Instance of caching handler. */

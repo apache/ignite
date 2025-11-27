@@ -766,7 +766,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
         // If this is the primary node for the keys.
         if (n.isLocal()) {
-            req.miniId(miniId);
+            req.updateMiniId(miniId);
 
             IgniteInternalFuture<IgniteInternalTx> fut = cctx.tm().txHandler().finish(n.id(), tx, req);
 
@@ -777,7 +777,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         else {
             FinishMiniFuture fut = new FinishMiniFuture(miniId, m);
 
-            req.miniId(fut.futureId());
+            req.updateMiniId(fut.futureId());
 
             add(fut); // Append new future.
 

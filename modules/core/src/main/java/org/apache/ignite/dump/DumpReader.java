@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -367,6 +366,7 @@ public class DumpReader implements Runnable {
      */
     private GroupsConfigs groupsConfigs(Dump dump) {
         Map<Integer, List<String>> grpsToNodes = new HashMap<>();
+        List<StoredCacheData> ccfgs = new ArrayList<>();
 
         Set<Integer> grpIds = cfg.groupNames() != null
             ? Arrays.stream(cfg.groupNames()).map(CU::cacheId).collect(Collectors.toSet())
@@ -377,29 +377,24 @@ public class DumpReader implements Runnable {
             : null;
 
         for (SnapshotMetadata meta : dump.metadata()) {
-            for (Integer grp : meta.partitions().keySet()) {
-                if (grpIds == null || grpIds.contains(grp))
-                    grpsToNodes.computeIfAbsent(grp, key -> new ArrayList<>()).add(meta.folderName());
+            for (Integer grp : meta.cacheGroupIds()) {
+                if (grpIds != null && !grpIds.contains(grp))
+                    continue;
+
+                // Read all group configs from single node.
+                List<StoredCacheData> grpCaches = dump.configs(meta.folderName(), grp, cacheIds);
+
+                if (F.isEmpty(grpCaches))
+                    continue;
+
+                if (!grpsToNodes.containsKey(grp)) {
+                    grpsToNodes.put(grp, new ArrayList<>());
+
+                    ccfgs.addAll(grpCaches);
+                }
+
+                grpsToNodes.get(grp).add(meta.folderName());
             }
-        }
-
-        Iterator<Map.Entry<Integer, List<String>>> grpToNodesIter = grpsToNodes.entrySet().iterator();
-        List<StoredCacheData> ccfgs = new ArrayList<>();
-
-        while (grpToNodesIter.hasNext()) {
-            Map.Entry<Integer, List<String>> grpToNodes = grpToNodesIter.next();
-
-            // Read all group configs from single node.
-            List<StoredCacheData> grpCaches = dump.configs(F.first(grpToNodes.getValue()), grpToNodes.getKey(), cacheIds);
-
-            if (grpCaches.isEmpty()) {
-                // Remove whole group to skip files read.
-                grpToNodesIter.remove();
-
-                continue;
-            }
-
-            ccfgs.addAll(grpCaches);
         }
 
         // Optimize - skip whole cache if only one in group!

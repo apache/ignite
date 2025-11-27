@@ -155,7 +155,7 @@ import org.junit.runners.Suite;
     GridCacheOperationModeMessageTest.class,
     CacheWriteSynchroizationModeMessageTest.class,
     CacheEntryPredicateAdapterMessageTest.class,
-    DeploymentModeMessageTest.class
+    DeploymentModeMessageTest.class,
 })
 public class IgniteBasicTestSuite {
 }

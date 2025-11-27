@@ -17,29 +17,31 @@
 
 package org.apache.ignite.internal;
 
-import java.nio.ByteBuffer;
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Task session request.
  */
 public class GridTaskSessionRequest implements Message {
     /** Task session ID. */
+    @Order(value = 0, method = "sessionId")
     private IgniteUuid sesId;
 
     /** ID of job within a task. */
+    @Order(1)
     private IgniteUuid jobId;
 
     /** Changed attributes bytes. */
+    @Order(value = 2, method = "attributesBytes")
     private byte[] attrsBytes;
 
     /** Changed attributes. */
-    @GridDirectTransient
     private Map<?, ?> attrs;
 
     /**
@@ -52,115 +54,64 @@ public class GridTaskSessionRequest implements Message {
     /**
      * @param sesId Session ID.
      * @param jobId Job ID.
-     * @param attrsBytes Serialized attributes.
      * @param attrs Attributes.
      */
-    public GridTaskSessionRequest(IgniteUuid sesId, IgniteUuid jobId, byte[] attrsBytes, Map<?, ?> attrs) {
+    public GridTaskSessionRequest(IgniteUuid sesId, IgniteUuid jobId, Map<?, ?> attrs) {
         assert sesId != null;
-        assert attrsBytes != null;
         assert attrs != null;
 
         this.sesId = sesId;
         this.jobId = jobId;
-        this.attrsBytes = attrsBytes;
         this.attrs = attrs;
     }
 
     /**
      * @return Changed attributes (serialized).
      */
-    public byte[] getAttributesBytes() {
+    public byte[] attributesBytes() {
         return attrsBytes;
+    }
+
+    /**
+     * @param attrsBytes Changed attributes (serialized).
+     */
+    public void attributesBytes(byte[] attrsBytes) {
+        this.attrsBytes = attrsBytes;
     }
 
     /**
      * @return Changed attributes.
      */
-    public Map<?, ?> getAttributes() {
+    public Map<?, ?> attributes() {
         return attrs;
     }
 
     /**
      * @return Task session ID.
      */
-    public IgniteUuid getSessionId() {
+    public IgniteUuid sessionId() {
         return sesId;
+    }
+
+    /**
+     * @param sesId Task session ID.
+     */
+    public void sessionId(IgniteUuid sesId) {
+        this.sesId = sesId;
     }
 
     /**
      * @return Job ID.
      */
-    public IgniteUuid getJobId() {
+    public IgniteUuid jobId() {
         return jobId;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByteArray(attrsBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeIgniteUuid(jobId))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeIgniteUuid(sesId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                attrsBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                jobId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                sesId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
+    /**
+     * @param jobId Job ID.
+     */
+    public void jobId(IgniteUuid jobId) {
+        this.jobId = jobId;
     }
 
     /** {@inheritDoc} */
@@ -171,5 +122,29 @@ public class GridTaskSessionRequest implements Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridTaskSessionRequest.class, this);
+    }
+
+    /**
+     * Marshals changed attributes to byte array.
+     *
+     * @param marsh Marshaller.
+     */
+    public void marshalAttributes(Marshaller marsh) throws IgniteCheckedException {
+        attrsBytes = U.marshal(marsh, attrs);
+    }
+
+    /**
+     * Unmarshals changed attributes from byte array.
+     *
+     * @param marsh Marshaller.
+     * @param ldr Class loader.
+     */
+    public void unmarshalAttributes(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
+        if (attrsBytes != null) {
+            attrs = U.unmarshal(marsh, attrsBytes, ldr);
+
+            // It is not required anymore.
+            attrsBytes = null;
+        }
     }
 }

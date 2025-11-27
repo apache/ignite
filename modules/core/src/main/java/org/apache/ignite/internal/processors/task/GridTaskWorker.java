@@ -88,7 +88,6 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.jetbrains.annotations.Nullable;
@@ -757,7 +756,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         return;
                     }
 
-                    jobRes = this.jobRes.get(res.getJobId());
+                    jobRes = this.jobRes.get(res.jobId());
 
                     if (jobRes == null) {
                         if (log.isDebugEnabled())
@@ -782,7 +781,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         continue;
                     }
 
-                    if (!jobRes.getNode().id().equals(res.getNodeId())) {
+                    if (!jobRes.getNode().id().equals(res.nodeId())) {
                         if (log.isDebugEnabled())
                             log.debug("Ignoring stale response as job was already resent to other node [res=" + res +
                                 ", jobRes=" + jobRes + ']');
@@ -821,29 +820,19 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
                     // We don't keep reference to job if results are not cached.
                     if (!resCache)
-                        this.jobRes.remove(res.getJobId());
+                        this.jobRes.remove(res.jobId());
                 }
 
                 if (res.getFakeException() != null)
                     jobRes.onResponse(null, res.getFakeException(), null, false);
                 else {
-                    ClassLoader clsLdr = dep.classLoader();
-
                     try {
-                        boolean loc = ctx.localNodeId().equals(res.getNodeId()) && !ctx.config().isMarshalLocalJobs();
+                        boolean loc = ctx.localNodeId().equals(res.nodeId()) && !ctx.config().isMarshalLocalJobs();
 
-                        Object res0 = loc ? res.getJobResult() : U.unmarshal(marsh, res.getJobResultBytes(),
-                            U.resolveClassLoader(clsLdr, ctx.config()));
+                        if (!loc)
+                            res.unmarshallUserData(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
-                        IgniteException ex = loc ? res.getException() :
-                            U.<IgniteException>unmarshal(marsh, res.getExceptionBytes(),
-                                U.resolveClassLoader(clsLdr, ctx.config()));
-
-                        Map<Object, Object> attrs = loc ? res.getJobAttributes() :
-                            U.<Map<Object, Object>>unmarshal(marsh, res.getJobAttributesBytes(),
-                                U.resolveClassLoader(clsLdr, ctx.config()));
-
-                        jobRes.onResponse(res0, ex, attrs, res.isCancelled());
+                        jobRes.onResponse(res.getJobResult(), res.exception(), res.getJobAttributes(), res.cancelled());
 
                         if (loc)
                             ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobAfterSend.class);
@@ -894,7 +883,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         assert affCacheIds != null;
                         retry = true;
 
-                        mapTopVer = U.max(res.getRetryTopologyVersion(), ctx.cache().context().exchange().readyAffinityVersion());
+                        mapTopVer = U.max(res.retryTopologyVersion(), ctx.cache().context().exchange().readyAffinityVersion());
                         affFut = ctx.cache().context().exchange().lastTopologyFuture();
 
                         if (affFut != null && !affFut.isDone()) {
@@ -1270,7 +1259,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
             if (!resCache) {
                 // Store result back in map before sending.
-                this.jobRes.put(res.getJobId(), jobRes);
+                this.jobRes.put(res.jobId(), jobRes);
             }
         }
 
@@ -1378,7 +1367,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 ctx.resource().invokeAnnotated(dep, res.getJob(), ComputeJobAfterSend.class);
 
                 GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(node.id(), ses.getId(),
-                    res.getJobContext().getJobId(), null, null, null, null, null, null, false, null);
+                    res.getJobContext().getJobId(), null, null, null, false, null);
 
                 fakeRes.setFakeException(new ClusterTopologyException("Failed to send job due to node failure: " + node));
 
@@ -1398,48 +1387,38 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
                     boolean forceLocDep = internal || !ctx.deploy().enabled();
 
-                    try {
-                        MarshallerUtils.jobReceiverVersion(node.version());
-
-                        req = new GridJobExecuteRequest(
-                            ses.getId(),
-                            res.getJobContext().getJobId(),
-                            ses.getTaskName(),
-                            ses.getUserVersion(),
-                            ses.getTaskClassName(),
-                            loc ? null : U.marshal(marsh, res.getJob()),
-                            loc ? res.getJob() : null,
-                            ses.getStartTime(),
-                            timeout,
-                            ses.getTopology(),
-                            loc ? ses.getTopologyPredicate() : null,
-                            loc ? null : U.marshal(marsh, ses.getTopologyPredicate()),
-                            loc ? null : U.marshal(marsh, ses.getJobSiblings()),
-                            loc ? ses.getJobSiblings() : null,
-                            loc ? null : U.marshal(marsh, sesAttrs),
-                            loc ? sesAttrs : null,
-                            loc ? null : U.marshal(marsh, jobAttrs),
-                            loc ? jobAttrs : null,
-                            ses.getCheckpointSpi(),
-                            dep.classLoaderId(),
-                            dep.deployMode(),
-                            continuous,
-                            dep.participants(),
-                            forceLocDep,
-                            ses.isFullSupport(),
-                            internal,
-                            affCacheIds,
-                            affPartId,
-                            mapTopVer,
-                            ses.executorName());
-                    }
-                    finally {
-                        MarshallerUtils.jobReceiverVersion(null);
-                    }
+                    req = new GridJobExecuteRequest(
+                        ses.getId(),
+                        res.getJobContext().getJobId(),
+                        ses.getTaskName(),
+                        ses.getUserVersion(),
+                        ses.getTaskClassName(),
+                        res.getJob(),
+                        ses.getStartTime(),
+                        timeout,
+                        ses.getTopology(),
+                        ses.getTopologyPredicate(),
+                        ses.getJobSiblings(),
+                        sesAttrs,
+                        jobAttrs,
+                        ses.getCheckpointSpi(),
+                        dep.classLoaderId(),
+                        dep.deployMode(),
+                        continuous,
+                        dep.participants(),
+                        forceLocDep,
+                        ses.isFullSupport(),
+                        internal,
+                        affCacheIds,
+                        affPartId,
+                        mapTopVer,
+                        ses.executorName());
 
                     if (loc)
                         ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req);
                     else {
+                        req.prepareMarshal(marsh);
+
                         byte plc;
 
                         if (internal)
@@ -1491,7 +1470,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
             }
 
             GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(node.id(), ses.getId(),
-                res.getJobContext().getJobId(), null, null, null, null, null, null, false, null);
+                res.getJobContext().getJobId(), null, null, null, false, null);
 
             if (fakeErr == null)
                 fakeErr = U.convertException(e);
@@ -1523,7 +1502,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         // Artificial response in case if a job is waiting for a response from
                         // non-existent node.
                         GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(nodeId, ses.getId(),
-                            jr.getJobContext().getJobId(), null, null, null, null, null, null, false, null);
+                            jr.getJobContext().getJobId(), null, null, null, false, null);
 
                         fakeRes.setFakeException(new ClusterTopologyException("Node has left grid: " + nodeId));
 
