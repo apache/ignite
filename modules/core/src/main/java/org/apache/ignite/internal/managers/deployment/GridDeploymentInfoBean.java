@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -28,17 +24,13 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.DeploymentModeMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Deployment info bean.
  */
-public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class GridDeploymentInfoBean implements Message, GridDeploymentInfo {
     /** */
     @Order(value = 0, method = "classLoaderId")
     private IgniteUuid clsLdrId;
@@ -170,27 +162,6 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     /** {@inheritDoc} */
     @Override public short directType() {
         return 10;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeIgniteUuid(out, clsLdrId);
-        out.writeByte(depModeMsg.code());
-        U.writeString(out, userVer);
-        out.writeBoolean(locDepOwner);
-        U.writeMap(out, participants);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        clsLdrId = U.readIgniteUuid(in);
-
-        depModeMsg = new DeploymentModeMessage();
-        depModeMsg.code(in.readByte());
-
-        userVer = U.readString(in);
-        locDepOwner = in.readBoolean();
-        participants = U.readMap(in);
     }
 
     /** {@inheritDoc} */
