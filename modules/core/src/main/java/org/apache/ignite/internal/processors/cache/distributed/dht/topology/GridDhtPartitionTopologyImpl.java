@@ -453,6 +453,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                     topologyVersionFuture().initialVersion(),
                                     ideal.get(p)
                                 );
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Partition has been marked as moving (created not first time) " +
+                                        "[grp=" + grp.cacheOrGroupName() + ", p=" + locPart.id() + ']');
                             }
 
                             needRefresh = true;
