@@ -20,6 +20,7 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -118,6 +119,41 @@ public class TcpDiscoveryMdcSelfWithCoordinatorChangeTest extends TcpDiscoveryMd
                 },
                 IgniteCheckedException.class,
                 null);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Test verifies Ignite nodes don't exchange system types on discovery phase but only user types.
+     */
+    @Test
+    @Override public void testSystemMarshallerTypesFilteredOut() throws Exception {
+        try {
+            nodeSpi.set(new TestTcpDiscoveryMarshallerDataSpi());
+
+            Ignite srv0 = startGrid(0);
+
+            IgniteCache<Object, Object> organizations = srv0.createCache("organizations");
+
+            organizations.put(1, new Organization());
+
+            startGrid(1);
+
+            assertEquals("Expected items in marshaller discovery data: 1, actual: "
+                    + TestTcpDiscoveryMarshallerDataSpi.marshalledItems,
+                1, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
+
+            IgniteCache<Object, Object> employees = srv0.createCache("employees");
+
+            employees.put(1, new Employee());
+
+            startGrid(2);
+
+            assertEquals("Expected items in marshaller discovery data: 2, actual: "
+                    + TestTcpDiscoveryMarshallerDataSpi.marshalledItems,
+                2, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
         }
         finally {
             stopAllGrids();
