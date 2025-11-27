@@ -433,7 +433,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     for (int p = 0; p < partitions; p++) {
                         if (localNode(p, affAssignment)) {
                             // Partition is created first time, so it's safe to own it.
-                            boolean shouldOwn = locParts.get(p) == null;
+                            boolean shouldOwn = locParts.get(p) == null && added;
 
                             GridDhtLocalPartition locPart = getOrCreatePartition(p);
 
@@ -443,6 +443,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 if (log.isDebugEnabled())
                                     log.debug("Partition has been owned (created first time) " +
                                         "[grp=" + grp.cacheOrGroupName() + ", p=" + locPart.id() + ']');
+                            }
+                            else {
+                                List<List<ClusterNode>> ideal = ctx.affinity().affinity(groupId()).idealAssignmentRaw();
+                                ctx.cache().context().affinity().addToWaitGroup(
+                                    groupId(),
+                                    p,
+                                    topologyVersionFuture().initialVersion(),
+                                    ideal.get(p)
+                                );
                             }
 
                             needRefresh = true;
