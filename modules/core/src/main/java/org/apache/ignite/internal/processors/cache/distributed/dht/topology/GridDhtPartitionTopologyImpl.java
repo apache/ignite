@@ -446,6 +446,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             }
                             else {
                                 List<List<ClusterNode>> ideal = ctx.affinity().affinity(groupId()).idealAssignmentRaw();
+
                                 ctx.cache().context().affinity().addToWaitGroup(
                                     groupId(),
                                     p,
