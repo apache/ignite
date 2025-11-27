@@ -2159,8 +2159,6 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             startGrid(1);
 
-            awaitPartitionMapExchange();
-
             assertEquals("Expected items in marshaller discovery data: 1, actual: "
                     + TestTcpDiscoveryMarshallerDataSpi.marshalledItems,
                     1, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
@@ -2385,7 +2383,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * SPI used in {@link #testSystemMarshallerTypesFilteredOut()} test to check that only
      * user types get to discovery messages on joining new nodes.
      */
-    private static class TestTcpDiscoveryMarshallerDataSpi extends TcpDiscoverySpi {
+    protected static class TestTcpDiscoveryMarshallerDataSpi extends TcpDiscoverySpi {
         /** Marshalled items. */
         static volatile int marshalledItems;
 
@@ -2419,12 +2417,12 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * User class used in {@link #testSystemMarshallerTypesFilteredOut()} test to feed into marshaller cache.
      */
-    private static class Organization { }
+    protected static class Organization { }
 
     /**
      * User class used in {@link #testSystemMarshallerTypesFilteredOut()} test to feed into marshaller cache.
      */
-    private static class Employee { }
+    protected static class Employee { }
 
     /**
      *
