@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.managers.discovery;
 
-/**
- *
- */
-public class CacheEntryPredicateNoValue extends CacheEntryPredicateAdapter {
-    /** */
-    private static final long serialVersionUID = 0L;
+import org.apache.ignite.internal.codegen.TcpDiscoveryCheckFailedMessageSerializer;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
 
+/** Message factory for discovery messages. */
+public class DiscoveryMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
-    @Override public boolean apply(GridCacheEntryEx e) {
-        return peekVisibleValue(e) == null;
+    @Override public void registerAll(MessageFactory factory) {
+        factory.register((short)0, TcpDiscoveryCheckFailedMessage::new, new TcpDiscoveryCheckFailedMessageSerializer());
     }
 }

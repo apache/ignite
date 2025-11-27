@@ -15,17 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal;
 
-/**
- *
- */
-public class CacheEntryPredicateHasValue extends CacheEntryPredicateAdapter {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** {@inheritDoc} */
-    @Override public boolean apply(GridCacheEntryEx e) {
-        return peekVisibleValue(e) != null;
-    }
+/** Represents wrapper over arbitrary object. */
+public interface IgniteInternalWrapper<T> {
+    /** @return Wrapped object. */
+    public T delegate();
 }

@@ -84,6 +84,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
@@ -1309,6 +1311,116 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         // Check that client node is alive.
         assertSnapshotCacheKeys(cln.cache(dfltCacheCfg.getName()));
+    }
+
+    /**
+     * Test snapshot operation logging for incremental snapshots.
+     */
+    @Test
+    public void testIncrementalSnapshotOperationLogging() throws Exception {
+        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+
+        int gridsCnt = 2;
+        ListeningTestLogger[] listeningLogs = new ListeningTestLogger[gridsCnt];
+        IgniteEx ignite = null;
+
+        for (int i = 0; i < gridsCnt; ++i) {
+            listeningLogs[i] = new ListeningTestLogger(log);
+
+            IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(i))
+                .setGridLogger(listeningLogs[i]);
+
+            if (ignite == null)
+                ignite = startGrid(cfg);
+            else
+                startGrid(cfg);
+        }
+        ignite.cluster().state(ACTIVE);
+
+        LogListener[] fullStartListeners = new LogListener[gridsCnt];
+        LogListener[] fullEndListeners = new LogListener[gridsCnt];
+
+        for (int i = 0; i < gridsCnt; ++i) {
+            fullStartListeners[i] = LogListener.matches("Starting local snapshot operation")
+                .andMatches("incremental=false")
+                .build();
+
+            fullEndListeners[i] = LogListener.matches("Finishing local snapshot operation")
+                .andMatches("err=null")
+                .andMatches("incremental=false")
+                .build();
+
+            listeningLogs[i].registerListener(fullStartListeners[i]);
+            listeningLogs[i].registerListener(fullEndListeners[i]);
+        }
+
+        ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(getTestTimeout());
+
+        for (int i = 0; i < gridsCnt; i++) {
+            assertTrue("Full snapshot start log not found on node " + i,
+                fullStartListeners[i].check());
+            assertTrue("Full snapshot end log not found on node " + i,
+                fullEndListeners[i].check());
+        }
+
+        LogListener[] incStartListeners = new LogListener[gridsCnt];
+        LogListener[] incEndListeners = new LogListener[gridsCnt];
+
+        for (int i = 0; i < gridsCnt; i++) {
+            incStartListeners[i] = LogListener.matches("Starting local snapshot operation")
+                .andMatches("incremental=true")
+                .andMatches("incIdx=1")
+                .build();
+
+            incEndListeners[i] = LogListener.matches("Finishing local snapshot operation")
+                .andMatches("err=null")
+                .andMatches("incremental=true")
+                .andMatches("incIdx=1")
+                .build();
+
+            listeningLogs[i].registerListener(incStartListeners[i]);
+            listeningLogs[i].registerListener(incEndListeners[i]);
+        }
+
+        ignite.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(getTestTimeout());
+
+        for (int i = 0; i < gridsCnt; i++) {
+            assertTrue("Incremental snapshot start log not found on node " + i,
+                incStartListeners[i].check());
+            assertTrue("Incremental snapshot end log not found on node " + i,
+                incEndListeners[i].check());
+        }
+
+        LogListener[] failureListeners = new LogListener[gridsCnt];
+
+        for (int i = 0; i < gridsCnt; i++) {
+            failureListeners[i] = LogListener.matches("Finishing local snapshot operation")
+                .andMatches("Snapshot process failure for testing")
+                .build();
+
+            listeningLogs[i].registerListener(failureListeners[i]);
+        }
+
+        snp(ignite).localSnapshotSenderFactory(sft -> {
+            throw new IgniteException("Snapshot process failure for testing");
+        });
+
+        try {
+            IgniteFuture<Void> fut = ignite.snapshot().createSnapshot("testSnp2");
+
+            fut.get();
+            fail("Should have failed");
+        }
+        catch (Exception e) {
+            // No-op.
+        }
+
+        stopAllGrids();
+
+        for (int i = 0; i < gridsCnt; i++) {
+            assertTrue("Failure snapshot log not found on node " + i,
+                failureListeners[i].check());
+        }
     }
 
     /**

@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.management.rollingupgrade;
 
-/**
- * Internal wrapper interface for custom resource injection logic.
- */
-public interface GridInternalWrapper<T> {
-    /**
-     * Get user object where resources must be injected.
-     *
-     * @return User object.
-     */
-    public T userObject();
+import org.apache.ignite.internal.management.api.CommandRegistryImpl;
+
+/** Rolling upgrade commands. */
+public class RollingUpgradeCommand extends CommandRegistryImpl {
+    /** */
+    public RollingUpgradeCommand() {
+        super(
+            new RollingUpgradeEnableCommand(),
+            new RollingUpgradeDisableCommand()
+        );
+    }
 }

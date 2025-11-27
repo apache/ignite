@@ -17,43 +17,42 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
 public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAware {
     /** */
+    @Order(value = 0, method = "queryId")
     private UUID qryId;
 
     /** */
+    @Order(1)
     private long fragmentId;
 
     /** */
+    @Order(2)
     private long exchangeId;
 
     /** */
+    @Order(3)
     private int batchId;
 
     /** */
+    @Order(4)
     private boolean last;
 
     /** */
-    @GridDirectTransient
     private List<Object> rows;
 
     /** */
-    @GridDirectCollection(ValueMessage.class)
+    @Order(value = 5, method = "messageRows")
     private List<ValueMessage> mRows;
 
     /** */
@@ -75,9 +74,23 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
         return qryId;
     }
 
+    /**
+     * @param qryId Query ID.
+     */
+    public void queryId(UUID qryId) {
+        this.qryId = qryId;
+    }
+
     /** {@inheritDoc} */
     @Override public long fragmentId() {
         return fragmentId;
+    }
+
+    /**
+     * @param fragmentId Fragment ID.
+     */
+    public void fragmentId(long fragmentId) {
+        this.fragmentId = fragmentId;
     }
 
     /**
@@ -88,10 +101,24 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
     }
 
     /**
+     * @param exchangeId Exchange ID.
+     */
+    public void exchangeId(long exchangeId) {
+        this.exchangeId = exchangeId;
+    }
+
+    /**
      * @return Batch ID.
      */
     public int batchId() {
         return batchId;
+    }
+
+    /**
+     * @param batchId Batch ID.
+     */
+    public void batchId(int batchId) {
+        this.batchId = batchId;
     }
 
     /**
@@ -102,10 +129,31 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
     }
 
     /**
+     * @param last Last batch flag.
+     */
+    public void last(boolean last) {
+        this.last = last;
+    }
+
+    /**
      * @return Rows.
      */
     public List<Object> rows() {
         return rows;
+    }
+
+    /**
+     * @return Message rows.
+     */
+    public List<ValueMessage> messageRows() {
+        return mRows;
+    }
+
+    /**
+     * @param mRows Message rows.
+     */
+    public void messageRows(List<ValueMessage> mRows) {
+        this.mRows = mRows;
     }
 
     /** {@inheritDoc} */
@@ -140,117 +188,6 @@ public class QueryBatchMessage implements MarshalableMessage, ExecutionContextAw
 
             rows.add(mRow.value());
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt(batchId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong(exchangeId))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeLong(fragmentId))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeBoolean(last))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeCollection(mRows, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeUuid(qryId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                batchId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                exchangeId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                fragmentId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                last = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                mRows = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                qryId = reader.readUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

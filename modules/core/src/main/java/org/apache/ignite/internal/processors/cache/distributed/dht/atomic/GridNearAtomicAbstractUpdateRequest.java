@@ -74,6 +74,9 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /** */
     private static final int AFFINITY_MAPPING_FLAG_MASK = 0x80;
 
+    /** */
+    private static final int SKIP_READ_THROUGH_FLAG_MASK = 0x100;
+
     /** Target node ID. */
     protected UUID nodeId;
 
@@ -100,7 +103,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /** Compressed boolean flags. Make sure 'toString' is updated when add new flag. */
     @GridToStringExclude
     @Order(9)
-    protected byte flags;
+    protected short flags;
 
     /** */
     private GridNearAtomicUpdateResponse res;
@@ -133,7 +136,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         int taskNameHash,
-        byte flags,
+        short flags,
         boolean addDepInfo
     ) {
         this.cacheId = cacheId;
@@ -159,7 +162,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @param recovery Recovery mode flag.
      * @return Flags.
      */
-    static byte flags(
+    static short flags(
         boolean nearCache,
         boolean topLocked,
         boolean retval,
@@ -167,8 +170,10 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         boolean needPrimaryRes,
         boolean skipStore,
         boolean keepBinary,
-        boolean recovery) {
-        byte flags = 0;
+        boolean recovery,
+        boolean skipReadThrough
+    ) {
+        short flags = 0;
 
         if (nearCache)
             flags |= NEAR_CACHE_FLAG_MASK;
@@ -193,6 +198,9 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
         if (recovery)
             flags |= RECOVERY_FLAG_MASK;
+
+        if (skipReadThrough)
+            flags |= SKIP_READ_THROUGH_FLAG_MASK;
 
         return flags;
     }
@@ -284,14 +292,14 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /**
      * @return Compressed boolean flags.
      */
-    public byte flags() {
+    public short flags() {
         return flags;
     }
 
     /**
      * @param flags New compressed boolean flags.
      */
-    public void flags(byte flags) {
+    public void flags(short flags) {
         this.flags = flags;
     }
 
@@ -420,6 +428,11 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         return isFlag(SKIP_STORE_FLAG_MASK);
     }
 
+    /** */
+    public final boolean skipReadThrough() {
+        return isFlag(SKIP_READ_THROUGH_FLAG_MASK);
+    }
+
     /**
      * @param val Skip store flag.
      */
@@ -462,7 +475,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @param mask Mask.
      */
     private void setFlag(boolean flag, int mask) {
-        flags = flag ? (byte)(flags | mask) : (byte)(flags & ~mask);
+        flags = flag ? (short)(flags | mask) : (short)(flags & ~mask);
     }
 
     /**
@@ -589,7 +602,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeByte(flags))
+                if (!writer.writeShort(flags))
                     return false;
 
                 writer.incrementState();
@@ -639,7 +652,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
         switch (reader.state()) {
             case 4:
-                flags = reader.readByte();
+                flags = reader.readShort();
 
                 if (!reader.isLastRead())
                     return false;
@@ -695,16 +708,24 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     @Override public String toString() {
         StringBuilder flags = new StringBuilder();
 
+        if (nearCache())
+            appendFlag(flags, "nearCache");
         if (needPrimaryResponse())
             appendFlag(flags, "needRes");
         if (topologyLocked())
             appendFlag(flags, "topLock");
+        if (affinityMapping())
+            appendFlag(flags, "affMapping");
         if (skipStore())
             appendFlag(flags, "skipStore");
         if (keepBinary())
             appendFlag(flags, "keepBinary");
         if (returnValue())
             appendFlag(flags, "retVal");
+        if (recovery())
+            appendFlag(flags, "recovery");
+        if (skipReadThrough())
+            appendFlag(flags, "skipReadThrough");
 
         return S.toString(GridNearAtomicAbstractUpdateRequest.class, this,
             "flags", flags.toString());

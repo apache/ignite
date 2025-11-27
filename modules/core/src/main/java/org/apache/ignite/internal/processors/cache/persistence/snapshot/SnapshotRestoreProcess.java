@@ -408,6 +408,7 @@ public class SnapshotRestoreProcess {
                 onlyPrimary,
                 false,
                 false,
+                false,
                 false
             );
 
