@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -44,18 +45,18 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  */
 public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingleUpdateRequest {
     /** Optional arguments for entry processor. */
-    private Object[] invokeArgs;
+    private @Nullable Object[] invokeArgs;
 
     /** Entry processor arguments bytes. */
     @Order(value = 12, method = "invokeArgumentsBytes")
-    private byte[][] invokeArgsBytes;
+    private @Nullable List<byte[]> invokeArgsBytes;
 
     /** Entry processors. */
-    private EntryProcessor<Object, Object, Object> entryProc;
+    private @Nullable EntryProcessor<Object, Object, Object> entryProc;
 
     /** Entry processors bytes. */
     @Order(value = 13, method = "entryProcessorBytes")
-    private byte[] entryProcBytes;
+    private @Nullable byte[] entryProcBytes;
 
     /**
      * Empty constructor.
@@ -161,22 +162,22 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     }
 
     /** */
-    public byte[] entryProcessorBytes() {
+    public @Nullable byte[] entryProcessorBytes() {
         return entryProcBytes;
     }
 
     /** */
-    public void entryProcessorBytes(byte[] entryProcBytes) {
+    public void entryProcessorBytes(@Nullable byte[] entryProcBytes) {
         this.entryProcBytes = entryProcBytes;
     }
 
     /** */
-    public byte[][] invokeArgumentsBytes() {
+    public @Nullable List<byte[]> invokeArgumentsBytes() {
         return invokeArgsBytes;
     }
 
     /** */
-    public void invokeArgumentsBytes(byte[][] invokeArgsBytes) {
+    public void invokeArgumentsBytes(@Nullable List<byte[]> invokeArgsBytes) {
         this.invokeArgsBytes = invokeArgsBytes;
     }
 
@@ -197,8 +198,8 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
             entryProcBytes = CU.marshal(cctx, entryProc);
         }
 
-        if (invokeArgsBytes == null)
-            invokeArgsBytes = marshalInvokeArguments(invokeArgs, cctx);
+        if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
+            invokeArgsBytes = F.asList(marshalInvokeArguments(invokeArgs, cctx));
     }
 
     /** {@inheritDoc} */
@@ -208,8 +209,8 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         if (entryProcBytes != null && entryProc == null)
             entryProc = U.unmarshal(ctx, entryProcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
-        if (invokeArgs == null)
-            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
+        if (invokeArgsBytes != null && invokeArgs == null)
+            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), ctx, ldr);
     }
 
     /** {@inheritDoc} */
