@@ -608,8 +608,6 @@ class BinaryClassDescriptor {
             assert writer != null;
             assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
 
-            writer.typeId(typeId);
-
             switch (mode) {
                 case P_BYTE:
                 case BYTE:
