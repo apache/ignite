@@ -18,12 +18,10 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -31,8 +29,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -109,27 +105,9 @@ public class TcpDiscoveryMdcSelfWithCoordinatorChangeTest extends TcpDiscoveryMd
     @Test
     @Override public void testDuplicateId() throws Exception {
         try {
-            // Random ID.
             startGrid(0);
-            startGrid(1);
 
-            nodeId = UUID.randomUUID();
-
-            startGrid(2);
-
-            // Duplicate ID.
-            GridTestUtils.assertThrows(
-                log,
-                new Callable<>() {
-                    @Nullable @Override public Object call() throws Exception {
-                        // Exception will be thrown and output to log.
-                        startGrid(3);
-
-                        return null;
-                    }
-                },
-                IgniteCheckedException.class,
-                null);
+            super.testDuplicateId();
         }
         finally {
             stopAllGrids();
