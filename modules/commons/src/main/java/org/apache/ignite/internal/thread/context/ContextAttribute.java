@@ -60,10 +60,11 @@ public class ContextAttribute<T> {
     /**
      * Gets the value of the Context Attribute bound to the thread from which this method is called. 
      *  
-     * @see Context#with(ContextAttribute, Object) 
+     * @see Context.Builder#with(ContextAttribute, Object)
+     * @see Context#attach()
      */
     public T get() {
-        Context.AttributeValueHolder valHolder = ThreadLocalContextStorage.get().findValueHolderFor(this);
+        AttributeValueHolder valHolder = ThreadLocalContextStorage.get().findValueHolderFor(this);
 
         return valHolder == null ? initVal : valHolder.value();
     }

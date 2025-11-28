@@ -18,42 +18,27 @@
 package org.apache.ignite.internal.thread.context;
 
 /** */
-public abstract class ContextDataChainNode<T> {
+/** */
+public class AttributeValueHolder {
     /** */
-    private final int storedAttrIdBits;
+    private final ContextAttribute<?> attr;
 
     /** */
-    private final T prev;
+    private final Object val;
 
     /** */
-    protected ContextDataChainNode() {
-        storedAttrIdBits = 0;
-        prev = null;
+    <T> AttributeValueHolder(ContextAttribute<T> attr, T val) {
+        this.attr = attr;
+        this.val = val;
     }
 
     /** */
-    protected ContextDataChainNode(int storedAttrIdBits, T prev) {
-        this.storedAttrIdBits = storedAttrIdBits;
-        this.prev = prev;
+    public <T> ContextAttribute<T> attribute() {
+        return (ContextAttribute<T>)attr;
     }
 
     /** */
-    abstract boolean isEmpty();
-
-    /** */
-    int storedAttributeIdBits() {
-        return storedAttrIdBits;
-    }
-
-    /** */
-    boolean containsValueFor(ContextAttribute<?> attr) {
-        return (storedAttrIdBits & attr.bitmask()) != 0;
-    }
-
-    /** */
-    T previous() {
-        assert !isEmpty();
-
-        return prev;
+    public <T> T value() {
+        return (T)val;
     }
 }

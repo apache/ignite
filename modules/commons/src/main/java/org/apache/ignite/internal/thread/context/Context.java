@@ -17,97 +17,116 @@
 
 package org.apache.ignite.internal.thread.context;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.NotNull;
+
 /**
  * Represents a set of mappings from the {@link ContextAttribute} to its corresponding value. The Context can be attached
  * to a thread, making the {@link ContextAttribute} values accessible through the {@link ContextAttribute#get()}
  * method when invoked from the same thread.
  *
+ * @see Context#attach()
  * @see ContextAttribute
  * @see ContextSnapshot
- * @see AttributeValueHolder#attach()
  */
-public final class Context {
+public final class Context implements Iterable<AttributeValueHolder> {
+    /** */
+    private static final Context EMPTY = new Context(Collections.emptyList(), 0);
+
+    /** */
+    private final List<AttributeValueHolder> attrs;
+
+    /** */
+    private final int storedAttrIdBits;
+
+    /** */
+    private Context(Collection<AttributeValueHolder> attrs, int storedAttrIdBits) {
+        this.attrs = new ArrayList<>(attrs);
+
+        this.storedAttrIdBits = storedAttrIdBits;
+    }
+
+    /** {@inheritDoc} */
+    @NotNull @Override public Iterator<AttributeValueHolder> iterator() {
+        return attrs.iterator();
+    }
+
     /**
-     * Creates a new Context containing a single mapping from the specified {@link AttributeValueHolder} to its value.
-     * The returned {@link AttributeValueHolder} represents the added mapping and can be used to accumulate to Context
-     * more mappings form {@link ContextAttribute} to its value.
+     * Attaches {@link ContextAttribute} values stored in current Context to the thread from which this method is
+     * called. If {@link ContextAttribute} value was already attached for the current thread, its value will be
+     * stashed and replaced by the new one.
      *
-     * @see AttributeValueHolder#with(ContextAttribute, Object)
+     * @return {@link Scope} instance that, when closed, resets the values for all {@link ContextAttribute}s added
+     * to the current Context and restores them to the previously attached values, if any.
      */
-    public static <T> AttributeValueHolder with(ContextAttribute<T> attr, T val) {
-        return AttributeValueHolder.ROOT.with(attr, val);
+    public Scope attach() {
+        if (attrs.isEmpty())
+            return Scope.NOOP_SCOPE;
+
+        ThreadLocalContextStorage.get().attach(this);
+
+        return () -> ThreadLocalContextStorage.get().detach(this);
     }
 
     /** */
-    public static final class AttributeValueHolder extends ContextDataChainNode<AttributeValueHolder> {
-        /** */
-        private static final AttributeValueHolder ROOT = new AttributeValueHolder();
+    boolean containsValueFor(ContextAttribute<?> attr) {
+        return (storedAttrIdBits & attr.bitmask()) != 0;
+    }
 
-        /** */
-        private final ContextAttribute<?> attr;
+    /** */
+    int storedAttributeIdBits() {
+        return storedAttrIdBits;
+    }
 
+    /** */
+    public static final class Builder {
         /** */
-        private final Object val;
-
-        /** */
-        private AttributeValueHolder() {
-            attr = null;
-            val = null;
-        }
+        private LinkedList<AttributeValueHolder> attrs;
 
         /** */
-        private <T> AttributeValueHolder(ContextAttribute<T> attr, T val, AttributeValueHolder prev) {
-            super(prev.storedAttributeIdBits() | attr.bitmask(), prev);
-
-            this.attr = attr;
-            this.val = val;
-        }
-
-        /**
-         * Expands Context by adding new mapping from the specified {@link ContextAttribute} to its value.
-         * After this operation, the Context contains all previously added mappings plus the new one.
-         *
-         * @return {@link AttributeValueHolder} instance that represents the added mapping and can be used to accumulate
-         * more mappings from {@link ContextAttribute} to its values.
-         */
-        public <T> AttributeValueHolder with(ContextAttribute<T> attr, T val) {
-            return attr.get() == val ? this : new AttributeValueHolder(attr, val, this);
-        }
+        private int storedAttrIdBits;
 
         /** */
-        ContextAttribute<?> attribute() {
-            assert !isEmpty();
-
-            return attr;
-        }
-
-        /** */
-        <T> T value() {
-            assert !isEmpty();
-
-            return (T)val;
-        }
-
-        /** {@inheritDoc} */
-        @Override boolean isEmpty() {
-            return this == ROOT;
+        private Builder() {
+            // No-op.
         }
 
         /**
-         * Attaches {@link ContextAttribute} values stored in current Context to the thread from which this method is
-         * called. If {@link ContextAttribute} value was already attached for the current thread, its value will be
-         * stashed and replaced by the new one.
+         * Adds new mapping from the specified {@link ContextAttribute} to its value.
          *
-         * @return {@link Scope} instance that, when closed, resets the values for all {@link ContextAttribute}s added
-         * to the current Context and restores them to the previously attached values, if any.
+         * @return {@code this} for chaining.
          */
-        public Scope attach() {
-            if (isEmpty())
-                return Scope.NOOP_SCOPE;
+        public <T> Builder with(ContextAttribute<T> attr, T val) {
+            if (attr.get() == val)
+                return this;
 
-            ThreadLocalContextStorage.get().attach(this);
+            if (attrs == null)
+                attrs = new LinkedList<>();
 
-            return () -> ThreadLocalContextStorage.get().detach(this);
+            attrs.push(new AttributeValueHolder(attr, val));
+
+            storedAttrIdBits |= attr.bitmask();
+
+            return this;
+        }
+
+        /** Creates new Context builder. */
+        public static Builder create() {
+            return new Builder();
+        }
+
+        /**
+         * Builds {@link Context} instance that stores previously added mapping from the specified
+         * {@link ContextAttribute} to its value.
+         */
+        public Context build() {
+            return F.isEmpty(attrs) ? EMPTY : new Context(attrs, storedAttrIdBits);
         }
     }
 }

@@ -17,27 +17,25 @@
 
 package org.apache.ignite.internal.thread.context;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import org.apache.ignite.internal.util.typedef.F;
+
 /**
  * Represents Snapshot of all {@link ContextAttribute}s and their corresponding values. Note that Snapshot also stores
  * the states of {@link ContextAttribute}s for which value are note explicitly specified.
  */
-public class ContextSnapshot extends ContextDataChainNode<ContextSnapshot> {
+public class ContextSnapshot {
     /** */
-    static final ContextSnapshot ROOT = new ContextSnapshot();
-    
-    /** */
-    private final Context.AttributeValueHolder data;
+    private static final ContextSnapshot EMPTY = new ContextSnapshot(Collections.emptyList());
 
     /** */
-    private ContextSnapshot() {
-        data = null;
-    }
+    private final Collection<Context> ctxStackSnp;
 
     /** */
-    private ContextSnapshot(Context.AttributeValueHolder data, ContextSnapshot prev) {
-        super(data.storedAttributeIdBits() | prev.storedAttributeIdBits(), prev);
-        
-        this.data = data;
+    private ContextSnapshot(Collection<Context> ctxStackSnp) {
+        this.ctxStackSnp = new ArrayList<>(ctxStackSnp);
     }
 
     /**
@@ -48,36 +46,18 @@ public class ContextSnapshot extends ContextDataChainNode<ContextSnapshot> {
      * state they were in before the current method was called.
      */
     public Scope restore() {
-        ThreadLocalContextStorage threadData = ThreadLocalContextStorage.get();
+        ThreadLocalContextStorage threadStorage = ThreadLocalContextStorage.get();
 
-        ContextSnapshot prev = threadData.snapshot();
+        Collection<Context> prev = threadStorage.contextStackSnapshot();
 
-        threadData.reinitialize(this);
+        threadStorage.reinitialize(ctxStackSnp);
 
-        return () -> {
-            ThreadLocalContextStorage td = ThreadLocalContextStorage.get();
-
-            assert td.snapshot() == this : "Scopes must be closed in the same order and in the same thread they are opened";
-
-            td.reinitialize(prev);
-        };
+        return () -> ThreadLocalContextStorage.get().reinitialize(prev);
     }
 
     /** */
-    ContextSnapshot attach(Context.AttributeValueHolder data) {
-        return new ContextSnapshot(data, this);
-    }
-
-    /** */
-    Context.AttributeValueHolder data() {
-        assert !isEmpty();
-
-        return data;
-    }
-
-    /** {@inheritDoc} */
-    @Override boolean isEmpty() {
-        return this == ROOT;
+    public boolean isEmpty() {
+        return F.isEmpty(ctxStackSnp);
     }
 
     /**
@@ -85,6 +65,8 @@ public class ContextSnapshot extends ContextDataChainNode<ContextSnapshot> {
      * this method is called.
      */
     public static ContextSnapshot capture() {
-        return ThreadLocalContextStorage.get().snapshot();
+        Collection<Context> ctxStackSnp = ThreadLocalContextStorage.get().contextStackSnapshot();
+
+        return ctxStackSnp.isEmpty() ? EMPTY : new ContextSnapshot(ctxStackSnp);
     }
 }

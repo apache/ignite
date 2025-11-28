@@ -17,7 +17,12 @@
 
 package org.apache.ignite.internal.thread.context;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import org.jetbrains.annotations.Nullable;
 
 /** Represents storage of {@link ContextAttribute}s and their values bound to the thread. */
@@ -26,10 +31,13 @@ class ThreadLocalContextStorage {
     private static final ThreadLocal<ThreadLocalContextStorage> INSTANCE = ThreadLocal.withInitial(ThreadLocalContextStorage::new);
 
     /** */
-    private final Cache cache = new Cache();
+    private final LinkedList<Context> ctxStack = new LinkedList<>();
 
     /** */
-    private ContextSnapshot snapshot = ContextSnapshot.ROOT;
+    private final LinkedList<Integer> storedAttrIdBitsStack = new LinkedList<>();
+
+    /** */
+    private final Cache cache = new Cache();
 
     /** */
     private ThreadLocalContextStorage() {
@@ -37,11 +45,11 @@ class ThreadLocalContextStorage {
     }
 
     /** */
-    @Nullable Context.AttributeValueHolder findValueHolderFor(ContextAttribute<?> attr) {
-        if (!snapshot.containsValueFor(attr))
+    @Nullable AttributeValueHolder findValueHolderFor(ContextAttribute<?> attr) {
+        if (!containsValueFor(attr))
             return null;
 
-        Context.AttributeValueHolder valHolder = cache.get(attr.id());
+        AttributeValueHolder valHolder = cache.get(attr.id());
 
         if (valHolder == null)
             valHolder = searchFor(attr);
@@ -53,48 +61,69 @@ class ThreadLocalContextStorage {
     }
 
     /** */
-    void attach(Context.AttributeValueHolder valHolder) {
-        snapshot = snapshot.attach(valHolder);
+    void attach(Context ctx) {
+        ctxStack.push(ctx);
 
-        storeToCache(valHolder);
+        storedAttrIdBitsStack.push(storedAttrIdBitsStack.isEmpty()
+            ? ctx.storedAttributeIdBits()
+            : ctx.storedAttributeIdBits() | storedAttrIdBitsStack.peek()
+        );
+
+        storeValuesToCache(ctx);
     }
 
     /** */
-    void detach(Context.AttributeValueHolder valHolder) {
-        Context.AttributeValueHolder data = snapshot.data();
+    void detach(Context ctx) {
+        Context top = ctxStack.pop();
 
-        assert data == valHolder : "Scopes must be closed in the same order and in the same thread they are opened";
+        assert top == ctx : "Scopes must be closed in the same order and in the same thread they are opened";
 
-        snapshot = snapshot.previous();
+        storedAttrIdBitsStack.pop();
 
-        cache.invalidateByIndexBits(data.storedAttributeIdBits());
+        cache.invalidateByIndexBits(top.storedAttributeIdBits());
     }
 
     /** */
-    ContextSnapshot snapshot() {
-        return snapshot;
+    Collection<Context> contextStackSnapshot() {
+        if (ctxStack.isEmpty())
+            return Collections.emptyList();
+
+        List<Context> res = new ArrayList<>(ctxStack.size());
+
+        ctxStack.descendingIterator().forEachRemaining(res::add);
+
+        return res;
     }
 
     /** */
-    void reinitialize(ContextSnapshot snapshot) {
-        this.snapshot = snapshot;
+    void reinitialize(Collection<Context> ctxStackSnp) {
+        ctxStack.clear();
+        storedAttrIdBitsStack.clear();
 
         cache.invalidate();
+
+        ctxStackSnp.forEach(this::attach);
     }
 
     /** */
-    private Context.AttributeValueHolder searchFor(ContextAttribute<?> attr) {
-        for (ContextSnapshot s = snapshot; !s.isEmpty(); s = s.previous()) {
-            Context.AttributeValueHolder valHolder = s.data();
+    private boolean containsValueFor(ContextAttribute<?> attr) {
+        if (storedAttrIdBitsStack.isEmpty())
+            return false;
 
-            if (!valHolder.containsValueFor(attr))
+        return (storedAttrIdBitsStack.peek() & attr.bitmask()) != 0;
+    }
+
+    /** */
+    private AttributeValueHolder searchFor(ContextAttribute<?> attr) {
+        for (Context ctx : ctxStack) {
+            if (!ctx.containsValueFor(attr))
                 continue;
 
-            for (Context.AttributeValueHolder h = valHolder; !h.isEmpty(); h = h.previous()) {
-                if (h.attribute().id() == attr.id()) {
-                    cache.store(h);
+            for (AttributeValueHolder valHolder : ctx) {
+                if (valHolder.attribute().id() == attr.id()) {
+                    cache.store(valHolder);
 
-                    return h;
+                    return valHolder;
                 }
             }
 
@@ -105,10 +134,10 @@ class ThreadLocalContextStorage {
     }
 
     /** */
-    private void storeToCache(Context.AttributeValueHolder valHolder) {
+    private void storeValuesToCache(Context ctx) {
         int processed = 0;
         
-        for (Context.AttributeValueHolder h = valHolder; !h.isEmpty(); h = h.previous()) {
+        for (AttributeValueHolder h : ctx) {
             ContextAttribute<?> attr = h.attribute();
 
             // The value for an attribute can be specified multiple times during context creation - we ignore all but the last one.
@@ -129,13 +158,13 @@ class ThreadLocalContextStorage {
     /** */
     private static class Cache {
         /** */
-        private static final Context.AttributeValueHolder[] EMPTY = new Context.AttributeValueHolder[0];
+        private static final AttributeValueHolder[] EMPTY = new AttributeValueHolder[0];
 
         /** */
-        private Context.AttributeValueHolder[] vals = EMPTY;
+        private AttributeValueHolder[] vals = EMPTY;
 
         /** */
-        Context.AttributeValueHolder get(int idx) {
+        AttributeValueHolder get(int idx) {
             if (vals.length <= idx)
                 return null;
 
@@ -143,7 +172,7 @@ class ThreadLocalContextStorage {
         }
 
         /** */
-        void store(Context.AttributeValueHolder valHolder) {
+        void store(AttributeValueHolder valHolder) {
             assert valHolder != null;
 
             byte idx = valHolder.attribute().id();
@@ -178,7 +207,7 @@ class ThreadLocalContextStorage {
 
         /** */
         private void grow(int size) {
-            Context.AttributeValueHolder[] upd = new Context.AttributeValueHolder[size];
+            AttributeValueHolder[] upd = new AttributeValueHolder[size];
 
             System.arraycopy(vals, 0, upd, 0, vals.length);
 
