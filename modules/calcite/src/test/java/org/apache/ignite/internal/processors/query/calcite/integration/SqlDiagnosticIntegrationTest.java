@@ -76,6 +76,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
+import org.apache.ignite.spi.systemview.view.SqlQueryHistoryView;
+import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -100,7 +102,9 @@ import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTr
 import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_ERROR_MSG;
 import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_EXEC_MSG;
 import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_FINISHED_MSG;
+import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_QRY_HIST_VIEW;
 import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_USER_QUERIES_REG_NAME;
+import static org.apache.ignite.internal.util.lang.GridFunc.first;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -997,19 +1001,36 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         }
     }
 
+    /** Verifies that user-defined query initiator ID is present in the SQL_QUERY_HISTORY system view. */
+    @Test
+    public void testSqlFieldsQueryWithInitiatorId() throws Exception {
+        IgniteEx grid = grid(0);
+
+        IgniteCache<Long, Long> cache = prepareTestCache(grid);
+
+        for (String testId : new String[] {"testId0", "testId1"}) {
+            cache.query(new SqlFieldsQuery("select * from test").setQueryInitiatorId(testId)).getAll();
+
+            assertTrue(waitForCondition(() -> {
+                SystemView<SqlQueryHistoryView> history = grid.context().systemView().view(SQL_QRY_HIST_VIEW);
+
+                assertNotNull(history);
+
+                if (history.size() != 1)
+                    return false;
+
+                SqlQueryHistoryView view = first(history);
+
+                assertNotNull(view);
+
+                return testId.equals(view.initiatorId());
+            }, 3_000));
+        }
+    }
+
     /** */
     private FieldsQueryCursor<List<?>> runNotFullyFetchedQuery(boolean loc) {
-        IgniteCache<Long, Long> cache = grid(0).createCache(new CacheConfiguration<Long, Long>()
-            .setName("test")
-            .setQueryEntities(Collections.singleton(new QueryEntity(Long.class, Long.class)
-                .setTableName("test")
-                .addQueryField("id", Long.class.getName(), null)
-                .addQueryField("val", Long.class.getName(), null)
-                .setKeyFieldName("id")
-                .setValueFieldName("val"))));
-
-        for (long i = 0; i < 10; ++i)
-            cache.put(i, i);
+        IgniteCache<Long, Long> cache = prepareTestCache(grid(0));
 
         return cache.query(new SqlFieldsQuery("select * from test").setLocal(loc).setPageSize(1));
     }
@@ -1022,6 +1043,23 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     private boolean isHeavyQueriesTrackerEmpty() {
         return heavyQueriesTracker().getQueries().isEmpty();
+    }
+
+    /** */
+    private static IgniteCache<Long, Long> prepareTestCache(IgniteEx grid) {
+        IgniteCache<Long, Long> cache = grid.createCache(new CacheConfiguration<Long, Long>()
+            .setName("test")
+            .setQueryEntities(Collections.singleton(new QueryEntity(Long.class, Long.class)
+                .setTableName("test")
+                .addQueryField("id", Long.class.getName(), null)
+                .addQueryField("val", Long.class.getName(), null)
+                .setKeyFieldName("id")
+                .setValueFieldName("val"))));
+
+        for (long i = 0; i < 10; ++i)
+            cache.put(i, i);
+
+        return cache;
     }
 
     /** */
