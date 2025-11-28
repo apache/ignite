@@ -49,8 +49,10 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryDeadNodeAddressResolvingT
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryFailedJoinTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIpFinderCleanerTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIpFinderFailureTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMdcPlainPendingMessageDeliveryTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMdcSelfPlainTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMdcSelfWithCoordinatorChangeTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMdcWithCoordinatorChangePendingMessageDeliveryTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMetricsWarnLogTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMultiThreadedTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNetworkIssuesTest;
@@ -191,6 +193,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
     // MDC.
     TcpDiscoveryMdcSelfPlainTest.class,
     TcpDiscoveryMdcSelfWithCoordinatorChangeTest.class,
+    TcpDiscoveryMdcPlainPendingMessageDeliveryTest.class,
+    TcpDiscoveryMdcWithCoordinatorChangePendingMessageDeliveryTest.class,
     MultiDataCenterDeploymentTest.class,
     MultiDataCenterRignTest.class,
     MultiDataCenterClientRoutingTest.class,
