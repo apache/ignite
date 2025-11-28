@@ -117,7 +117,11 @@ public class DataStreamerEntry implements Message {
             }
 
             @Override public V setValue(V val) {
-                throw new UnsupportedOperationException();
+                CacheObject old = value();
+
+                value((CacheObject)val);
+
+                return (V)old;
             }
 
             @Override public V getValue() {
