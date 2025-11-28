@@ -55,7 +55,7 @@ public class RollingUpgradeStatusTask extends VisorOneNodeTask<NoArg, RollingUpg
             IgnitePair<IgniteProductVersion> vers = ignite.context().rollingUpgrade().versions();
 
             List<RollingUpgradeStatusNode> nodes = ignite.context().discovery().allNodes().stream()
-                .map(node -> new RollingUpgradeStatusNode(node.id(), IgniteProductVersion.fromString(node.attribute(ATTR_BUILD_VER))))
+                .map(node -> new RollingUpgradeStatusNode(node.consistentId(), IgniteProductVersion.fromString(node.attribute(ATTR_BUILD_VER))))
                 .collect(Collectors.toList());
 
             RollingUpgradeTaskResult res = new RollingUpgradeTaskResult(

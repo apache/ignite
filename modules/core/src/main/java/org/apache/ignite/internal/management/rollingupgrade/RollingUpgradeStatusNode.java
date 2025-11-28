@@ -20,9 +20,7 @@ package org.apache.ignite.internal.management.rollingupgrade;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 
 /** Node status information for rolling upgrade. */
@@ -31,7 +29,7 @@ public class RollingUpgradeStatusNode extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private UUID nodeId;
+    private Object consistentId;
 
     /** */
     private IgniteProductVersion ver;
@@ -42,14 +40,14 @@ public class RollingUpgradeStatusNode extends IgniteDataTransferObject {
     }
 
     /** */
-    public RollingUpgradeStatusNode(UUID nodeId, IgniteProductVersion ver) {
-        this.nodeId = nodeId;
+    public RollingUpgradeStatusNode(Object nodeId, IgniteProductVersion ver) {
+        this.consistentId = nodeId;
         this.ver = ver;
     }
 
     /** */
-    public UUID nodeId() {
-        return nodeId;
+    public Object consistentId() {
+        return consistentId;
     }
 
     /** */
@@ -59,13 +57,13 @@ public class RollingUpgradeStatusNode extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeUuid(out, nodeId);
+        out.writeObject(consistentId);
         out.writeObject(ver);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeId = U.readUuid(in);
+        consistentId = in.readObject();
         ver = (IgniteProductVersion)in.readObject();
     }
 }

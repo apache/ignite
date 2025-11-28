@@ -224,7 +224,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         expectedLines.add("Rolling upgrade status: disabled");
         expectedLines.add("Version " + curVer + ":");
 
-        nodes.forEach(node -> expectedLines.add("  " + node.nodeId()));
+        nodes.forEach(node -> expectedLines.add("  " + node.consistentId()));
 
         assertEquals(expectedLines, lines);
     }
@@ -288,10 +288,10 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         expectedLines.add("Target version: " + targetVer);
 
         expectedLines.add("Version " + curVer + ":");
-        oldNodes.forEach(node -> expectedLines.add("  " + node.nodeId()));
+        oldNodes.forEach(node -> expectedLines.add("  " + node.consistentId()));
 
         expectedLines.add("Version " + targetVer + ":");
-        newNodes.forEach(node -> expectedLines.add("  " + node.nodeId()));
+        newNodes.forEach(node -> expectedLines.add("  " + node.consistentId()));
 
         assertEquals(expectedLines, lines);
     }
