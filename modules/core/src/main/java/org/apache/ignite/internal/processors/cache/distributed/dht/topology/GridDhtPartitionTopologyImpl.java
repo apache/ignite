@@ -433,7 +433,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     for (int p = 0; p < partitions; p++) {
                         if (localNode(p, affAssignment)) {
                             // Partition is created first time, so it's safe to own it.
-                            boolean shouldOwn = locParts.get(p) == null && added;
+                            boolean shouldOwn = discoCache.allNodes().size() == 1;
 
                             GridDhtLocalPartition locPart = getOrCreatePartition(p);
 
