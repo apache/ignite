@@ -55,12 +55,15 @@ public class RollingUpgradeStatusTask extends VisorOneNodeTask<NoArg, RollingUpg
         @Override protected RollingUpgradeTaskResult run(NoArg arg) throws IgniteException {
             IgnitePair<IgniteProductVersion> vers = ignite.context().rollingUpgrade().versions();
 
-            List<RollingUpgradeStatusNode> nodes = ignite.context().discovery().allNodes().stream()
-                .map(node ->
-                    new RollingUpgradeStatusNode(node.consistentId(),
-                        F.first(node.addresses()),
-                        IgniteProductVersion.fromString(node.attribute(ATTR_BUILD_VER))))
-                .collect(Collectors.toList());
+            List<RollingUpgradeStatusNode> nodes = null;
+
+            if (vers != null && vers.get2() != null)
+                nodes = ignite.context().discovery().allNodes().stream()
+                    .map(node ->
+                        new RollingUpgradeStatusNode(node.consistentId(),
+                            F.first(node.addresses()),
+                            IgniteProductVersion.fromString(node.attribute(ATTR_BUILD_VER))))
+                    .collect(Collectors.toList());
 
             RollingUpgradeTaskResult res = new RollingUpgradeTaskResult(
                 vers == null ? null : vers.get1(),

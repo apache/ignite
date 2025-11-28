@@ -204,14 +204,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         assertNull(taskRes.currentVersion());
         assertNull(taskRes.targetVersion());
 
-        List<RollingUpgradeStatusNode> nodes = taskRes.nodes();
-
-        assertNotNull(nodes);
-        assertEquals(SERVER_NODE_CNT + 1, nodes.size());
-
-        IgniteProductVersion curVer = IgniteProductVersion.fromString(crd.localNode().attribute(ATTR_BUILD_VER));
-
-        nodes.forEach(node -> assertEquals(curVer, node.version()));
+        assertNull(taskRes.nodes());
 
         RollingUpgradeStatusCommand statusCmd = new RollingUpgradeStatusCommand();
 
@@ -222,9 +215,6 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         List<String> expectedLines = new ArrayList<>();
 
         expectedLines.add("Rolling upgrade status: disabled");
-        expectedLines.add("Version " + curVer + ":");
-
-        nodes.forEach(node -> expectedLines.add("  " + node.consistentId()));
 
         assertEquals(expectedLines, lines);
     }
@@ -288,10 +278,10 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         expectedLines.add("Target version: " + targetVer);
 
         expectedLines.add("Version " + curVer + ":");
-        oldNodes.forEach(node -> expectedLines.add("  " + node.consistentId()));
+        oldNodes.forEach(node -> expectedLines.add("  " + node.consistentId() + "@" + node.address()));
 
         expectedLines.add("Version " + targetVer + ":");
-        newNodes.forEach(node -> expectedLines.add("  " + node.consistentId()));
+        newNodes.forEach(node -> expectedLines.add("  " + node.consistentId() + "@" + node.address()));
 
         assertEquals(expectedLines, lines);
     }

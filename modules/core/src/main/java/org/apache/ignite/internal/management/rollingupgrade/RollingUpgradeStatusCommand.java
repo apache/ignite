@@ -51,10 +51,11 @@ public class RollingUpgradeStatusCommand implements ComputeCommand<NoArg, Rollin
     @Override public void printResult(NoArg arg, RollingUpgradeTaskResult res, Consumer<String> printer) {
         printer.accept("Rolling upgrade status: " + (res.targetVersion() != null ? "enabled" : "disabled"));
 
-        if (res.targetVersion() != null) {
-            printer.accept("Current version: " + res.currentVersion());
-            printer.accept("Target version: " + res.targetVersion());
-        }
+        if (res.targetVersion() == null)
+            return;
+
+        printer.accept("Current version: " + res.currentVersion());
+        printer.accept("Target version: " + res.targetVersion());
 
         if (res.nodes() == null || res.nodes().isEmpty()) {
             printer.accept("No nodes information available");
@@ -65,7 +66,7 @@ public class RollingUpgradeStatusCommand implements ComputeCommand<NoArg, Rollin
             .collect(Collectors.groupingBy(RollingUpgradeStatusNode::version, TreeMap::new, Collectors.toList()))
             .forEach((ver, nodes) -> {
                 printer.accept("Version " + ver + ":");
-                nodes.forEach(node -> printer.accept("  " + node.consistentId()));
+                nodes.forEach(node -> printer.accept("  " + node.consistentId() + "@" + node.address()));
             });
     }
 
