@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 
 /** Node status information for rolling upgrade. */
@@ -32,6 +33,9 @@ public class RollingUpgradeStatusNode extends IgniteDataTransferObject {
     private Object consistentId;
 
     /** */
+    private String address;
+
+    /** */
     private IgniteProductVersion ver;
 
     /** */
@@ -40,8 +44,9 @@ public class RollingUpgradeStatusNode extends IgniteDataTransferObject {
     }
 
     /** */
-    public RollingUpgradeStatusNode(Object nodeId, IgniteProductVersion ver) {
-        this.consistentId = nodeId;
+    public RollingUpgradeStatusNode(Object consistentId, String address, IgniteProductVersion ver) {
+        this.consistentId = consistentId;
+        this.address = address;
         this.ver = ver;
     }
 
@@ -55,15 +60,22 @@ public class RollingUpgradeStatusNode extends IgniteDataTransferObject {
         return ver;
     }
 
+    /** */
+    public String address() {
+        return address;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeObject(consistentId);
+        U.writeString(out, address);
         out.writeObject(ver);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         consistentId = in.readObject();
+        address = U.readString(in);
         ver = (IgniteProductVersion)in.readObject();
     }
 }

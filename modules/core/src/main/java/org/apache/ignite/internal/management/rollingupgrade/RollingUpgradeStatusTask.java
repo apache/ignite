@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.lang.IgnitePair;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -55,7 +56,10 @@ public class RollingUpgradeStatusTask extends VisorOneNodeTask<NoArg, RollingUpg
             IgnitePair<IgniteProductVersion> vers = ignite.context().rollingUpgrade().versions();
 
             List<RollingUpgradeStatusNode> nodes = ignite.context().discovery().allNodes().stream()
-                .map(node -> new RollingUpgradeStatusNode(node.consistentId(), IgniteProductVersion.fromString(node.attribute(ATTR_BUILD_VER))))
+                .map(node ->
+                    new RollingUpgradeStatusNode(node.consistentId(),
+                        F.first(node.addresses()),
+                        IgniteProductVersion.fromString(node.attribute(ATTR_BUILD_VER))))
                 .collect(Collectors.toList());
 
             RollingUpgradeTaskResult res = new RollingUpgradeTaskResult(
