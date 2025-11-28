@@ -17,13 +17,8 @@
 
 package org.apache.ignite.internal.thread.context;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import org.apache.ignite.internal.util.typedef.F;
+import java.util.NoSuchElementException;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -37,24 +32,41 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class Context implements Iterable<AttributeValueHolder> {
     /** */
-    private static final Context EMPTY = new Context(Collections.emptyList(), 0);
+    private static final Context EMPTY = new Context(null, 0);
 
     /** */
-    private final List<AttributeValueHolder> attrs;
+    private final AttributeValueHolder tail;
 
     /** */
     private final int storedAttrIdBits;
 
     /** */
-    private Context(Collection<AttributeValueHolder> attrs, int storedAttrIdBits) {
-        this.attrs = new ArrayList<>(attrs);
+    private Context(AttributeValueHolder tail, int storedAttrIdBits) {
+        this.tail = tail;
 
         this.storedAttrIdBits = storedAttrIdBits;
     }
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<AttributeValueHolder> iterator() {
-        return attrs.iterator();
+        return new Iterator<>() {
+            AttributeValueHolder tail = Context.this.tail;
+
+            @Override public boolean hasNext() {
+                return tail != null;
+            }
+
+            @Override public AttributeValueHolder next() {
+                AttributeValueHolder res = tail;
+
+                if (res == null)
+                    throw new NoSuchElementException();
+
+                tail = tail.previous();
+
+                return res;
+            }
+        };
     }
 
     /**
@@ -66,7 +78,7 @@ public final class Context implements Iterable<AttributeValueHolder> {
      * to the current Context and restores them to the previously attached values, if any.
      */
     public Scope attach() {
-        if (attrs.isEmpty())
+        if (tail == null)
             return Scope.NOOP_SCOPE;
 
         ThreadLocalContextStorage.get().attach(this);
@@ -87,7 +99,7 @@ public final class Context implements Iterable<AttributeValueHolder> {
     /** */
     public static final class Builder {
         /** */
-        private LinkedList<AttributeValueHolder> attrs;
+        private AttributeValueHolder tail;
 
         /** */
         private int storedAttrIdBits;
@@ -103,15 +115,11 @@ public final class Context implements Iterable<AttributeValueHolder> {
          * @return {@code this} for chaining.
          */
         public <T> Builder with(ContextAttribute<T> attr, T val) {
-            if (attr.get() == val)
-                return this;
+            if (attr.get() != val) {
+                tail = new AttributeValueHolder(attr, val, tail);
 
-            if (attrs == null)
-                attrs = new LinkedList<>();
-
-            attrs.push(new AttributeValueHolder(attr, val));
-
-            storedAttrIdBits |= attr.bitmask();
+                storedAttrIdBits |= attr.bitmask();
+            }
 
             return this;
         }
@@ -126,7 +134,7 @@ public final class Context implements Iterable<AttributeValueHolder> {
          * {@link ContextAttribute} to its value.
          */
         public Context build() {
-            return F.isEmpty(attrs) ? EMPTY : new Context(attrs, storedAttrIdBits);
+            return tail == null ? EMPTY : new Context(tail, storedAttrIdBits);
         }
     }
 }

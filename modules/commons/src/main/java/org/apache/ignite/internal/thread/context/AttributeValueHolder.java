@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.thread.context;
 
 /** */
+
 /** */
 public class AttributeValueHolder {
     /** */
@@ -27,9 +28,13 @@ public class AttributeValueHolder {
     private final Object val;
 
     /** */
-    <T> AttributeValueHolder(ContextAttribute<T> attr, T val) {
+    private final AttributeValueHolder prev;
+
+    /** */
+    <T> AttributeValueHolder(ContextAttribute<T> attr, T val, AttributeValueHolder prev) {
         this.attr = attr;
         this.val = val;
+        this.prev = prev;
     }
 
     /** */
@@ -40,5 +45,10 @@ public class AttributeValueHolder {
     /** */
     public <T> T value() {
         return (T)val;
+    }
+
+    /** */
+    public AttributeValueHolder previous() {
+        return prev;
     }
 }
