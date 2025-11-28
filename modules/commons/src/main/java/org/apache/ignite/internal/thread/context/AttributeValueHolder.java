@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.thread.context;
 
 /** */
-
-/** */
-public class AttributeValueHolder {
+public final class AttributeValueHolder {
     /** */
     private final ContextAttribute<?> attr;
 

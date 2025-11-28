@@ -17,12 +17,7 @@
 
 package org.apache.ignite.internal.thread.context;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
 import org.jetbrains.annotations.Nullable;
 
 /** Represents storage of {@link ContextAttribute}s and their values bound to the thread. */
@@ -31,10 +26,7 @@ class ThreadLocalContextStorage {
     private static final ThreadLocal<ThreadLocalContextStorage> INSTANCE = ThreadLocal.withInitial(ThreadLocalContextStorage::new);
 
     /** */
-    private final LinkedList<Context> ctxStack = new LinkedList<>();
-
-    /** */
-    private final LinkedList<Integer> storedAttrIdBitsStack = new LinkedList<>();
+    private ContextStackNode ctxStackHead;
 
     /** */
     private final Cache cache = new Cache();
@@ -62,11 +54,10 @@ class ThreadLocalContextStorage {
 
     /** */
     void attach(Context ctx) {
-        ctxStack.push(ctx);
-
-        storedAttrIdBitsStack.push(storedAttrIdBitsStack.isEmpty()
-            ? ctx.storedAttributeIdBits()
-            : ctx.storedAttributeIdBits() | storedAttrIdBitsStack.peek()
+        ctxStackHead = new ContextStackNode(
+            ctx,
+            ctxStackHead == null ? ctx.storedAttributeIdBits() : ctxStackHead.storedAttrIdBits | ctx.storedAttributeIdBits(),
+            ctxStackHead
         );
 
         storeValuesToCache(ctx);
@@ -74,52 +65,44 @@ class ThreadLocalContextStorage {
 
     /** */
     void detach(Context ctx) {
-        Context top = ctxStack.pop();
+        assert ctxStackHead != null : "Scopes must be closed in the same order and in the same thread they are opened";
+
+        Context top = ctxStackHead.ctx;
 
         assert top == ctx : "Scopes must be closed in the same order and in the same thread they are opened";
 
-        storedAttrIdBitsStack.pop();
+        ctxStackHead = ctxStackHead.prev;
 
         cache.invalidateByIndexBits(top.storedAttributeIdBits());
     }
 
     /** */
-    Collection<Context> contextStackSnapshot() {
-        if (ctxStack.isEmpty())
-            return Collections.emptyList();
-
-        List<Context> res = new ArrayList<>(ctxStack.size());
-
-        ctxStack.descendingIterator().forEachRemaining(res::add);
-
-        return res;
+    ContextSnapshot createSnapshot() {
+        return ctxStackHead == null ? ContextSnapshot.EMPTY : new ThreadLocalContextSnapshot(ctxStackHead);
     }
 
     /** */
-    void reinitialize(Collection<Context> ctxStackSnp) {
-        ctxStack.clear();
-        storedAttrIdBitsStack.clear();
+    private void restoreContextStackState(ContextStackNode ctxStackHead) {
+        this.ctxStackHead = ctxStackHead;
 
         cache.invalidate();
-
-        ctxStackSnp.forEach(this::attach);
     }
 
     /** */
     private boolean containsValueFor(ContextAttribute<?> attr) {
-        if (storedAttrIdBitsStack.isEmpty())
+        if (ctxStackHead == null)
             return false;
 
-        return (storedAttrIdBitsStack.peek() & attr.bitmask()) != 0;
+        return (ctxStackHead.storedAttrIdBits & attr.bitmask()) != 0;
     }
 
     /** */
     private AttributeValueHolder searchFor(ContextAttribute<?> attr) {
-        for (Context ctx : ctxStack) {
-            if (!ctx.containsValueFor(attr))
+        for (ContextStackNode stackNode = ctxStackHead; stackNode != null; stackNode = stackNode.prev) {
+            if (!stackNode.ctx.containsValueFor(attr))
                 continue;
 
-            for (AttributeValueHolder valHolder : ctx) {
+            for (AttributeValueHolder valHolder : stackNode.ctx) {
                 if (valHolder.attribute().id() == attr.id()) {
                     cache.store(valHolder);
 
@@ -140,7 +123,7 @@ class ThreadLocalContextStorage {
         for (AttributeValueHolder h : ctx) {
             ContextAttribute<?> attr = h.attribute();
 
-            // The value for an attribute can be specified multiple times during context creation - we ignore all but the last one.
+            // The value for an attribute can be specified multiple times during context creation - we ignore all but the first one.
             if ((processed & attr.bitmask()) != 0)
                 continue;
 
@@ -212,6 +195,60 @@ class ThreadLocalContextStorage {
             System.arraycopy(vals, 0, upd, 0, vals.length);
 
             vals = upd;
+        }
+    }
+
+    /** */
+    private static class ContextStackNode {
+        /** */
+        final Context ctx;
+
+        /** */
+        final int storedAttrIdBits;
+
+        /** */
+        final ContextStackNode prev;
+
+        /** */
+        ContextStackNode(Context ctx, int storedAttrIdBits, ContextStackNode prev) {
+            this.ctx = ctx;
+            this.storedAttrIdBits = storedAttrIdBits;
+            this.prev = prev;
+        }
+    }
+
+    /** */
+    private static class ThreadLocalContextSnapshot implements ContextSnapshot {
+        /** */
+        private final ContextStackNode ctxStackHead;
+
+        /** */
+        private ThreadLocalContextSnapshot(ContextStackNode ctxStackHead) {
+            assert ctxStackHead != null;
+
+            this.ctxStackHead = ctxStackHead;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Scope restore() {
+            ThreadLocalContextStorage threadStorage = get();
+
+            ContextStackNode stash = threadStorage.ctxStackHead;
+
+            threadStorage.restoreContextStackState(ctxStackHead);
+
+            return () -> {
+                ThreadLocalContextStorage ts = get();
+
+                assert ts.ctxStackHead == ctxStackHead : "Scopes must be closed in the same order and in the same thread they are opened";
+
+                ts.restoreContextStackState(stash);
+            };
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isEmpty() {
+            return false;
         }
     }
 }

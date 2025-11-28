@@ -49,7 +49,7 @@ public abstract class ContextAwareWrapper<T> implements IgniteInternalWrapper<T>
         if (delegate == null || delegate instanceof ContextAwareWrapper)
             return delegate;
 
-        ContextSnapshot snapshot = ContextSnapshot.capture();
+        ContextSnapshot snapshot = Context.createSnapshot();
 
         if (ignoreEmptyContext && snapshot.isEmpty())
             return delegate;

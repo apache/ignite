@@ -17,26 +17,21 @@
 
 package org.apache.ignite.internal.thread.context;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import org.apache.ignite.internal.util.typedef.F;
-
 /**
- * Represents Snapshot of all {@link ContextAttribute}s and their corresponding values. Note that Snapshot also stores
- * the states of {@link ContextAttribute}s for which value are note explicitly specified.
+ * Represents Snapshot of all {@link ContextAttribute}s and their corresponding values. Note that Snapshot also must
+ * store he states of {@link ContextAttribute}s for which value are note explicitly specified.
  */
-public class ContextSnapshot {
+public interface ContextSnapshot {
     /** */
-    private static final ContextSnapshot EMPTY = new ContextSnapshot(Collections.emptyList());
+    ContextSnapshot EMPTY = new ContextSnapshot() {
+        @Override public Scope restore() {
+            return Scope.NOOP_SCOPE;
+        }
 
-    /** */
-    private final Collection<Context> ctxStackSnp;
-
-    /** */
-    private ContextSnapshot(Collection<Context> ctxStackSnp) {
-        this.ctxStackSnp = new ArrayList<>(ctxStackSnp);
-    }
+        @Override public boolean isEmpty() {
+            return true;
+        }
+    };
 
     /**
      * Stashes all {@link ContextAttribute} values attached to the thread from which this method is called and replaces
@@ -45,28 +40,8 @@ public class ContextSnapshot {
      * @return {@link Scope} instance that, when closed, restores the values of all {@link ContextAttribute}s to the
      * state they were in before the current method was called.
      */
-    public Scope restore() {
-        ThreadLocalContextStorage threadStorage = ThreadLocalContextStorage.get();
+    public Scope restore();
 
-        Collection<Context> prev = threadStorage.contextStackSnapshot();
-
-        threadStorage.reinitialize(ctxStackSnp);
-
-        return () -> ThreadLocalContextStorage.get().reinitialize(prev);
-    }
-
-    /** */
-    public boolean isEmpty() {
-        return F.isEmpty(ctxStackSnp);
-    }
-
-    /**
-     * Captures Snapshot of all {@link ContextAttribute}s and their corresponding values attached to the thread from which
-     * this method is called.
-     */
-    public static ContextSnapshot capture() {
-        Collection<Context> ctxStackSnp = ThreadLocalContextStorage.get().contextStackSnapshot();
-
-        return ctxStackSnp.isEmpty() ? EMPTY : new ContextSnapshot(ctxStackSnp);
-    }
+    /** @return Whether snapshot is empty. */
+    public boolean isEmpty();
 }

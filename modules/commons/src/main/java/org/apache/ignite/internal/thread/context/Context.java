@@ -35,14 +35,14 @@ public final class Context implements Iterable<AttributeValueHolder> {
     private static final Context EMPTY = new Context(null, 0);
 
     /** */
-    private final AttributeValueHolder tail;
+    private final AttributeValueHolder listTail;
 
     /** */
     private final int storedAttrIdBits;
 
     /** */
-    private Context(AttributeValueHolder tail, int storedAttrIdBits) {
-        this.tail = tail;
+    private Context(AttributeValueHolder listTail, int storedAttrIdBits) {
+        this.listTail = listTail;
 
         this.storedAttrIdBits = storedAttrIdBits;
     }
@@ -50,19 +50,19 @@ public final class Context implements Iterable<AttributeValueHolder> {
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<AttributeValueHolder> iterator() {
         return new Iterator<>() {
-            AttributeValueHolder tail = Context.this.tail;
+            AttributeValueHolder listTail = Context.this.listTail;
 
             @Override public boolean hasNext() {
-                return tail != null;
+                return listTail != null;
             }
 
             @Override public AttributeValueHolder next() {
-                AttributeValueHolder res = tail;
+                AttributeValueHolder res = listTail;
 
                 if (res == null)
                     throw new NoSuchElementException();
 
-                tail = tail.previous();
+                listTail = listTail.previous();
 
                 return res;
             }
@@ -78,7 +78,7 @@ public final class Context implements Iterable<AttributeValueHolder> {
      * to the current Context and restores them to the previously attached values, if any.
      */
     public Scope attach() {
-        if (tail == null)
+        if (listTail == null)
             return Scope.NOOP_SCOPE;
 
         ThreadLocalContextStorage.get().attach(this);
@@ -97,9 +97,14 @@ public final class Context implements Iterable<AttributeValueHolder> {
     }
 
     /** */
+    public static ContextSnapshot createSnapshot() {
+        return ThreadLocalContextStorage.get().createSnapshot();
+    }
+
+    /** */
     public static final class Builder {
         /** */
-        private AttributeValueHolder tail;
+        private AttributeValueHolder listTail;
 
         /** */
         private int storedAttrIdBits;
@@ -116,7 +121,7 @@ public final class Context implements Iterable<AttributeValueHolder> {
          */
         public <T> Builder with(ContextAttribute<T> attr, T val) {
             if (attr.get() != val) {
-                tail = new AttributeValueHolder(attr, val, tail);
+                listTail = new AttributeValueHolder(attr, val, listTail);
 
                 storedAttrIdBits |= attr.bitmask();
             }
@@ -134,7 +139,7 @@ public final class Context implements Iterable<AttributeValueHolder> {
          * {@link ContextAttribute} to its value.
          */
         public Context build() {
-            return tail == null ? EMPTY : new Context(tail, storedAttrIdBits);
+            return listTail == null ? EMPTY : new Context(listTail, storedAttrIdBits);
         }
     }
 }

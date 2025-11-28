@@ -33,6 +33,7 @@ import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
 public class ContextAttributesTest extends GridCommonAbstractTest {
@@ -275,10 +276,30 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
 
     /** */
     @Test
+    public void testUnorderedScopeClosing() {
+        Scope scope1 = Context.Builder.create().with(INT_ATTR, 0).build().attach();
+
+        try {
+            try (Scope ignored = Context.Builder.create().with(STR_ATTR, "test").build().attach()) {
+                assertThrowsWithCause(scope1::close, AssertionError.class);
+            }
+        }
+        finally {
+            scope1.close();
+        }
+
+        checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
+
+        assertThrowsWithCause(scope1::close, AssertionError.class);
+    }
+
+
+    /** */
+    @Test
     public void testEmptySnapshot() {
         checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
 
-        ContextSnapshot snapshot = ContextSnapshot.capture();
+        ContextSnapshot snapshot = Context.createSnapshot();
 
         try (Scope ignored = snapshot.restore()) {
             checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
@@ -297,7 +318,7 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
         try (Scope ignored = Context.Builder.create().with(INT_ATTR, 1).with(STR_ATTR, "test1").build().attach()) {
             checkAttributeValues("test1", 1);
 
-            snapshot = ContextSnapshot.capture();
+            snapshot = Context.createSnapshot();
         }
 
         checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
@@ -318,7 +339,7 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
             try (Scope ignored2 = Context.Builder.create().with(STR_ATTR, "test2").build().attach()) {
                 checkAttributeValues("test2", 1);
 
-                snapshot = ContextSnapshot.capture();
+                snapshot = Context.createSnapshot();
             }
         }
 
@@ -337,7 +358,7 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
         try (Scope ignored = Context.Builder.create().with(INT_ATTR, 1).with(STR_ATTR, "test1").build().attach()) {
             checkAttributeValues("test1", 1);
 
-            snapshot0 = ContextSnapshot.capture();
+            snapshot0 = Context.createSnapshot();
         }
 
         ContextSnapshot snapshot1;
@@ -348,7 +369,7 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
             try (Scope ignored2 = Context.Builder.create().with(INT_ATTR, 2).build().attach()) {
                 checkAttributeValues("test1", 2);
 
-                snapshot1 = ContextSnapshot.capture();
+                snapshot1 = Context.createSnapshot();
             }
 
             checkAttributeValues("test1", 1);
@@ -369,7 +390,7 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
         try (Scope ignored = Context.Builder.create().with(STR_ATTR, "test1").build().attach()) {
             checkAttributeValues("test1", DFLT_INT_VAL);
 
-            snapshot = ContextSnapshot.capture();
+            snapshot = Context.createSnapshot();
         }
 
         try (Scope ignored1 = Context.Builder.create().with(INT_ATTR, 1).build().attach()) {
@@ -381,6 +402,28 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
             }
 
             checkAttributeValues(DFLT_STR_VAL, 1);
+        }
+
+        checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
+    }
+
+    /** */
+    @Test
+    public void testSnapshotScopeUnorderedClosing() {
+        ContextSnapshot snapshot;
+
+        try (Scope ignored = Context.Builder.create().with(STR_ATTR, "test1").build().attach()) {
+            checkAttributeValues("test1", DFLT_INT_VAL);
+
+            snapshot = Context.createSnapshot();
+        }
+
+        try (Scope snpScope = snapshot.restore()) {
+            try (Scope ignored1 = Context.Builder.create().with(INT_ATTR, 2).build().attach()) {
+                checkAttributeValues("test1", 2);
+
+                assertThrowsWithCause(snpScope::close, AssertionError.class);
+            }
         }
 
         checkAttributeValues(DFLT_STR_VAL, DFLT_INT_VAL);
