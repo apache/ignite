@@ -805,11 +805,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             if (jobWorker == null)
                 return;
 
-            if (!jobAlwaysActivate && passiveJobs.containsKey(jobWorker.getJobId()))
-                cancelPassiveJob(jobWorker);
-            else if (activeJobs.containsKey(jobWorker.getJobId()))
-                cancelActiveJob(jobWorker, sys);
-            else if (syncRunningJobs.containsKey(jobWorker.getJobId()))
+            if (!cancelPassiveJob(jobWorker) && !cancelActiveJob(jobWorker, sys))
                 cancelJob(jobWorker, sys);
         }
         catch (Exception e) {
@@ -829,9 +825,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @return {@code True} if succeeded.
      */
     private boolean cancelPassiveJob(GridJobWorker job) {
-        assert !jobAlwaysActivate;
-
-        if (removeFromPassive(job)) {
+        if (!jobAlwaysActivate && removeFromPassive(job)) {
             if (log.isDebugEnabled())
                 log.debug("Job has been cancelled before activation: " + job);
 
@@ -851,7 +845,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param job Job to cancel.
      * @param sys Flag indicating whether this is a system cancel.
      */
-    private void cancelActiveJob(GridJobWorker job, boolean sys) {
+    private boolean cancelActiveJob(GridJobWorker job, boolean sys) {
         if (removeFromActive(job)) {
             cancelledJobs.put(job.getJobId(), job);
 
@@ -861,7 +855,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
             else
                 // No reply, since it is not cancel from collision.
                 cancelJob(job, sys);
+
+            return true;
         }
+
+        return false;
     }
 
     /**
