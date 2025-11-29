@@ -210,11 +210,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
      * @param map Underlying map.
      */
     public void map(GridPartitionStateMap map) {
-        this.map = new GridPartitionStateMap();
-
-        if (map != null)
-            for (Map.Entry<Integer, GridDhtPartitionState> entry : map.entrySet())
-                put(entry.getKey(), entry.getValue());
+        this.map = map;
     }
 
     /**

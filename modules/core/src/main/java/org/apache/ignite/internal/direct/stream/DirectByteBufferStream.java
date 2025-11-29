@@ -62,6 +62,9 @@ import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
  */
 public class DirectByteBufferStream {
     /** */
+    private static final LZ4Factory LZ4_FACTORY = LZ4Factory.fastestInstance();
+
+    /** */
     private static final byte[] BYTE_ARR_EMPTY = new byte[0];
 
     /** */
@@ -224,8 +227,11 @@ public class DirectByteBufferStream {
     @GridToStringExclude
     private final IgniteCacheObjectProcessor cacheObjProc;
 
-    /** Decompressor. */
+    /** */
     private final LZ4SafeDecompressor decompressor;
+
+    /** Decompress buffer. */
+    private final byte[] decompressBuf;
 
     /** */
     @GridToStringExclude
@@ -353,6 +359,7 @@ public class DirectByteBufferStream {
         // Is not used while writing messages.
         cacheObjProc = null;
         decompressor = null;
+        decompressBuf = null;
     }
 
     /**
@@ -364,7 +371,8 @@ public class DirectByteBufferStream {
     public DirectByteBufferStream(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
         this.msgFactory = msgFactory;
         this.cacheObjProc = cacheObjProc;
-        decompressor = LZ4Factory.fastestInstance().safeDecompressor();
+        decompressor = LZ4_FACTORY.safeDecompressor();
+        decompressBuf = new byte[1024 * 1024];
     }
 
     /**
@@ -2253,13 +2261,13 @@ public class DirectByteBufferStream {
             if (compressedSize < 0 || rawSize < 0 || compressed == null)
                 return false;
 
-            byte[] decompressBuf = new byte[rawSize];
-
             int decompressedSize = decompressor.decompress(compressed, 0, compressedSize, decompressBuf, 0, rawSize);
+
+            //System.out.println(">>> READ: type=" + msg.directType() + ", rawSize=" + rawSize + ", compressedSize=" + compressedSize + ", decompressedSize=" + decompressedSize);
 
             if (decompressedSize != rawSize)
                 throw new IgniteException("Decompression size mismatch [msg=" + msg.getClass().getName() +
-                    ", expected=" + rawSize + ", actual=" + decompressedSize + ']');
+                    "expected=" + rawSize + ", actual=" + decompressedSize + ']');
 
             ByteBuffer tmpBuf = ByteBuffer.wrap(decompressBuf, 0, rawSize);
 

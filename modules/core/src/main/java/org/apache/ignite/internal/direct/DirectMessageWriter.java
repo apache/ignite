@@ -45,8 +45,24 @@ import org.jetbrains.annotations.Nullable;
  * Message writer implementation.
  */
 public class DirectMessageWriter implements MessageWriter {
+    /** Static LZ4 compressor (thread-safe for reuse). */
+    private static final LZ4Factory LZ4_FACTORY = LZ4Factory.fastestInstance();
+
     /** Compressor. */
-    private static final LZ4Compressor COMPRESSOR = LZ4Factory.fastestInstance().fastCompressor();
+    private static final LZ4Compressor COMPRESSOR = LZ4_FACTORY.fastCompressor();
+
+    /** Max message size for pre-allocation. */
+    private static final int MAX_MESSAGE_SIZE = 1024 * 1024;
+
+    /** Thread-local buffer to avoid allocations. */
+    private static final ThreadLocal<byte[]> COMPRESS_BUF = ThreadLocal.withInitial(
+        () -> new byte[COMPRESSOR.maxCompressedLength(MAX_MESSAGE_SIZE)]
+    );
+
+    /** Thread-local byte buffer for buffering serialized message. */
+    private static final ThreadLocal<ByteBuffer> TMP_BUF = ThreadLocal.withInitial(
+        () -> ByteBuffer.allocate(MAX_MESSAGE_SIZE)
+    );
 
     /** State. */
     @GridToStringInclude
@@ -412,9 +428,11 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** */
     private boolean writeCompressedMessage(Message msg) {
-        ByteBuffer oldBuf = buf;
+        ByteBuffer tmpBuf = TMP_BUF.get();
 
-        ByteBuffer tmpBuf = ByteBuffer.allocate(buf.capacity());
+        tmpBuf.clear();
+
+        ByteBuffer oldBuf = buf;
 
         setBuffer(tmpBuf);
 
@@ -428,10 +446,12 @@ public class DirectMessageWriter implements MessageWriter {
 
         int rawSize = tmpBuf.limit();
 
-        try {
-            byte[] compressBuf = new byte[COMPRESSOR.maxCompressedLength(rawSize)];
+        byte[] compressBuf = COMPRESS_BUF.get();
 
-            int compressedSize = COMPRESSOR.compress(
+        int compressedSize;
+
+        try {
+            compressedSize = COMPRESSOR.compress(
                 tmpBuf.array(),
                 tmpBuf.arrayOffset(),
                 rawSize,
@@ -439,19 +459,20 @@ public class DirectMessageWriter implements MessageWriter {
                 0,
                 compressBuf.length
             );
-
-            setBuffer(oldBuf);
-
-            return writeHeader(msg.directType()) &&
-                writeInt(rawSize) &&
-                writeInt(compressedSize) &&
-                writeByteArray(compressBuf, 0, compressedSize);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             setBuffer(oldBuf);
 
             return false;
         }
+
+        //System.out.println(">>> WRITE: type=" + msg.directType() + ", rawSize=" + rawSize + ", compressedSize=" + compressedSize);
+
+        setBuffer(oldBuf);
+
+        return writeHeader(msg.directType()) &&
+            writeInt(rawSize) &&
+            writeInt(compressedSize) &&
+            writeByteArray(compressBuf, 0, compressedSize);
     }
 
     /**
