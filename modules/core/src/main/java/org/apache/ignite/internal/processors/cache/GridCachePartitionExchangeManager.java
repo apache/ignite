@@ -1387,8 +1387,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         final GridDhtPartitionsFullMessage m =
             new GridDhtPartitionsFullMessage(exchId, lastVer, ver, partHistSuppliers, partsToReload);
 
-        m.compressed(compress);
-
         final Map<Object, T2<Integer, GridDhtPartitionFullMap>> dupData = new HashMap<>();
 
         Map<Integer, Map<Integer, Long>> partsSizes = new HashMap<>();

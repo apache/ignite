@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.direct.stream;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -27,8 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
 import java.util.UUID;
-import net.jpountz.lz4.LZ4Factory;
-import net.jpountz.lz4.LZ4SafeDecompressor;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterInputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -61,9 +63,6 @@ import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
  * Direct marshalling I/O stream.
  */
 public class DirectByteBufferStream {
-    /** */
-    private static final LZ4Factory LZ4_FACTORY = LZ4Factory.fastestInstance();
-
     /** */
     private static final byte[] BYTE_ARR_EMPTY = new byte[0];
 
@@ -228,12 +227,6 @@ public class DirectByteBufferStream {
     private final IgniteCacheObjectProcessor cacheObjProc;
 
     /** */
-    private final LZ4SafeDecompressor decompressor;
-
-    /** Decompress buffer. */
-    private final byte[] decompressBuf;
-
-    /** */
     @GridToStringExclude
     protected ByteBuffer buf;
 
@@ -358,8 +351,6 @@ public class DirectByteBufferStream {
 
         // Is not used while writing messages.
         cacheObjProc = null;
-        decompressor = null;
-        decompressBuf = null;
     }
 
     /**
@@ -371,8 +362,6 @@ public class DirectByteBufferStream {
     public DirectByteBufferStream(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
         this.msgFactory = msgFactory;
         this.cacheObjProc = cacheObjProc;
-        decompressor = LZ4_FACTORY.safeDecompressor();
-        decompressBuf = new byte[1024 * 1024];
     }
 
     /**
@@ -899,7 +888,9 @@ public class DirectByteBufferStream {
                 try {
                     writer.beforeInnerMessageWrite();
 
-                    lastFinished = msgFactory.serializer(msg.directType()).writeTo(msg, writer);
+                    lastFinished = msg.compress()
+                        ? writeCompressedMessage(msg, writer)
+                        : msgFactory.serializer(msg.directType()).writeTo(msg, writer);
                 }
                 finally {
                     writer.afterInnerMessageWrite(lastFinished);
@@ -1548,17 +1539,15 @@ public class DirectByteBufferStream {
         }
 
         if (msg != null) {
-            if (msg.compress())
-                lastFinished = readCompressedMessage(reader);
-            else {
-                try {
-                    reader.beforeInnerMessageRead();
+            try {
+                reader.beforeInnerMessageRead();
 
-                    lastFinished = msgFactory.serializer(msg.directType()).readFrom(msg, reader);
-                }
-                finally {
-                    reader.afterInnerMessageRead(lastFinished);
-                }
+                lastFinished = msg.compress()
+                    ? readCompressedMessage(msg, reader)
+                    : msgFactory.serializer(msg.directType()).readFrom(msg, reader);
+            }
+            finally {
+                reader.afterInnerMessageRead(lastFinished);
             }
         }
         else
@@ -2248,43 +2237,121 @@ public class DirectByteBufferStream {
     }
 
     /** */
-    private boolean readCompressedMessage(MessageReader reader) {
-        ByteBuffer oldBuf = buf;
+    private boolean writeCompressedMessage(Message msg, MessageWriter writer) {
+        ByteBuffer curBuf = buf;
 
         try {
-            reader.beforeInnerMessageRead();
+            ByteBuffer tmpBuf = ByteBuffer.allocateDirect(buf.capacity());
 
-            int rawSize = readInt();
-            int compressedSize = readInt();
-            byte[] compressed = readByteArray();
+            writer.setBuffer(tmpBuf);
 
-            if (compressedSize < 0 || rawSize < 0 || compressed == null)
+            if (!msgFactory.serializer(msg.directType()).writeTo(msg, writer)) {
+                writer.setBuffer(tmpBuf);
+                tmpBuf.flip();
+
+                return false;
+            }
+
+            writer.setBuffer(curBuf);
+
+            tmpBuf.flip();
+
+            int rawSize = tmpBuf.remaining();
+
+            if (rawSize == 0) {
+                writeShort(msg.directType());
+                writeInt(0);
+                writeInt(0);
+                writeByteArray(null);
+
+                return true;
+            }
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream(rawSize);
+
+            try (DeflaterOutputStream dos = new DeflaterOutputStream(baos)) {
+                byte[] rawBytes = new byte[rawSize];
+
+                tmpBuf.get(rawBytes);
+
+                dos.write(rawBytes);
+            }
+
+            byte[] compressedData = baos.toByteArray();
+
+            writeShort(msg.directType());
+
+            if (!lastFinished)
                 return false;
 
-            int decompressedSize = decompressor.decompress(compressed, 0, compressedSize, decompressBuf, 0, rawSize);
+            writeInt(rawSize);
 
-            //System.out.println(">>> READ: type=" + msg.directType() + ", rawSize=" + rawSize + ", compressedSize=" + compressedSize + ", decompressedSize=" + decompressedSize);
+            if (!lastFinished)
+                return false;
 
-            if (decompressedSize != rawSize)
-                throw new IgniteException("Decompression size mismatch [msg=" + msg.getClass().getName() +
-                    "expected=" + rawSize + ", actual=" + decompressedSize + ']');
+            writeInt(compressedData.length);
 
-            ByteBuffer tmpBuf = ByteBuffer.wrap(decompressBuf, 0, rawSize);
+            if (!lastFinished)
+                return false;
 
-            reader.setBuffer(tmpBuf);
+            writeByteArray(compressedData);
 
-            boolean finished = msgFactory.serializer(msg.directType()).readFrom(msg, reader);
+            return lastFinished;
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
+    }
 
-            reader.setBuffer(oldBuf);
+    /** */
+    private boolean readCompressedMessage(Message msg, MessageReader reader) {
+        ByteBuffer curBuf = buf;
 
-            return finished;
-        } catch (Exception e) {
-            reader.setBuffer(oldBuf);
+        try {
+            int rawSize = readInt();
 
-            return false;
+            if (!lastFinished)
+                return false;
+
+            int compressedSize = readInt();
+
+            if (!lastFinished)
+                return false;
+
+            byte[] compressedData = readByteArray();
+
+            if (!lastFinished)
+                return false;
+
+            if (rawSize == 0 && compressedSize == 0 && compressedData == null)
+                return true;
+
+            if (rawSize < 0 || compressedData == null || compressedData.length != compressedSize)
+                return false;
+
+            try (InflaterInputStream iis = new InflaterInputStream(new ByteArrayInputStream(compressedData))) {
+                byte[] rawBytes = iis.readNBytes(rawSize);
+
+                if (rawBytes.length != rawSize)
+                    throw new IgniteException("Decompression size mismatch [msg=" + msg.getClass().getName() +
+                        ", expected=" + rawSize + ", actual=" + rawBytes.length + ']');
+
+                ByteBuffer tmpBuf = ByteBuffer.allocateDirect(rawBytes.length);
+
+                tmpBuf.put(rawBytes);
+                tmpBuf.flip();
+
+                reader.setBuffer(tmpBuf);
+                reader.readShort();
+
+                return msgFactory.serializer(msg.directType()).readFrom(msg, reader);
+            }
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
         }
         finally {
-            reader.afterInnerMessageRead(lastFinished);
+            reader.setBuffer(curBuf);
         }
     }
 
