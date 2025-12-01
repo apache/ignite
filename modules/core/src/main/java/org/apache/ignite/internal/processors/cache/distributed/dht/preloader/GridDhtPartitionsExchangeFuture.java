@@ -907,7 +907,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             remaining.addAll(nodeIds(F.view(srvNodes, remoteNodes(cctx.localNodeId()))));
 
-            crd = srvNodes.isEmpty() ? null : U.oldest(srvNodes, null);
+            crd = srvNodes.isEmpty() ? null : srvNodes.get(0);
 
             boolean crdNode = crd != null && crd.isLocal();
 

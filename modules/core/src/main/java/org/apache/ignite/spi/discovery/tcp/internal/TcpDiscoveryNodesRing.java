@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery.tcp.internal;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -277,13 +276,9 @@ public class TcpDiscoveryNodesRing {
 
         try {
             if (maxInternalOrder == 0) {
-                long last = -1;
+                TcpDiscoveryNode last = nodes.last();
 
-                for (TcpDiscoveryNode node : nodes)
-                    if (node.internalOrder() > last)
-                        last = node.internalOrder();
-
-                return last != -1 ? maxInternalOrder = last : -1;
+                return last != null ? maxInternalOrder = last.internalOrder() : -1;
             }
 
             return maxInternalOrder;
@@ -463,7 +458,7 @@ public class TcpDiscoveryNodesRing {
             if (F.isEmpty(filtered))
                 return null;
 
-            return Collections.min(filtered, Comparator.comparingLong(TcpDiscoveryNode::internalOrder));
+            return Collections.min(filtered);
         }
         finally {
             rwLock.readLock().unlock();
