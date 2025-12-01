@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.binary;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -54,19 +53,11 @@ import static org.openjdk.jmh.annotations.Scope.Thread;
 @Measurement(iterations = 3, time = 30, timeUnit = SECONDS)
 public class JmhMapSerdesBenchmark {
     /** */
-    @Param({"Integer"/*, "Date", "String", "Object"*/})
-    private String key;
-
-    /** */
-    @Param({"Integer"/*, "Date", "String", "Object"*/})
-    private String value;
-
-    /** */
-    @Param({/* "10", "100", "1000" ,*/ "100000"})
+    @Param({"100000", "1000000"})
     private String size;
 
     /** */
-    @Param({"HashMap"/*, "ConcurrentHashMap", "LinkedHashMap"*/})
+    @Param({"HashMap", "ConcurrentHashMap", "LinkedHashMap"})
     private String mapType;
 
     /** */
@@ -74,9 +65,6 @@ public class JmhMapSerdesBenchmark {
 
     /** */
     private BinaryOutputStream out;
-
-    /** */
-    private BinaryWriterEx writer;
 
     /** */
     private Map<Object, Object> data;
@@ -93,7 +81,6 @@ public class JmhMapSerdesBenchmark {
 
         bctx = node.context().cacheObjects().binaryContext();
         out = BinaryStreams.outputStream((int)(100 * U.MB));
-        writer = BinaryUtils.writer(bctx, out);
 
         Ignition.stopAll(false);
 
@@ -108,22 +95,7 @@ public class JmhMapSerdesBenchmark {
 
         int sz = Integer.parseInt(size);
         for (int i = 0; i < sz; i++)
-            data.put(produce(i, key), produce(i, value));
-    }
-
-    /** */
-    public Object produce(int i, String type) {
-        if ("Integer".equals(type))
-            return i;
-        else if ("Date".equals(type))
-            return new Date(System.currentTimeMillis() + i);
-        else if ("String".equals(type))
-            return "" + i;
-        else if ("Object".equals(type)) {
-            return new Employee("Name" + i, 1000L * i, new Date());
-        }
-
-        throw new IllegalArgumentException("Unknown type: " + type);
+            data.put(i, i);
     }
 
     /** */
@@ -136,64 +108,5 @@ public class JmhMapSerdesBenchmark {
         out.position(0);
 
         bh.consume(writer);
-    }
-
-    /** */
-    public static class Employee {
-        /** */
-        private String fio;
-
-        /** */
-        private long salary;
-
-        /** */
-        private Date created;
-
-        /** */
-        public Employee(String fio, long salary, Date created) {
-            this.fio = fio;
-            this.salary = salary;
-            this.created = created;
-        }
-
-        /** */
-        public Employee() {
-        }
-
-        /** */
-        public Employee(String fio, long salary) {
-            this.fio = fio;
-            this.salary = salary;
-        }
-
-        /** */
-        public String getFio() {
-            return fio;
-        }
-
-        /** */
-        public void setFio(String fio) {
-            this.fio = fio;
-        }
-
-        /** */
-        public long getSalary() {
-            return salary;
-        }
-
-        /** */
-        public void setSalary(long salary) {
-            this.salary = salary;
-        }
-
-        /** */
-        public Date getCreated() {
-            return created;
-        }
-
-        /** */
-        public void setCreated(Date created) {
-            this.created = created;
-        }
     }
 }
