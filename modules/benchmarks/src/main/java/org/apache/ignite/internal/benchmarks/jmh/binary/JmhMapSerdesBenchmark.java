@@ -53,7 +53,7 @@ import static org.openjdk.jmh.annotations.Scope.Thread;
 @Measurement(iterations = 3, time = 30, timeUnit = SECONDS)
 public class JmhMapSerdesBenchmark {
     /** */
-    @Param({"100000", "1000000"})
+    @Param({"5", "100000", "1000000"})
     private String size;
 
     /** */
