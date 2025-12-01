@@ -504,10 +504,10 @@ public class TcpDiscoveryNodesRing {
         try {
             List<TcpDiscoveryNode> filtered = new ArrayList<>(serverNodes(excluded));
 
-            filtered.sort(new MdcAwareComparator());
-
             if (filtered.size() < 2)
                 return null;
+
+            filtered.sort(new MdcAwareComparator());
 
             Iterator<TcpDiscoveryNode> iter = filtered.iterator();
 
