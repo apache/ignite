@@ -121,13 +121,13 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     private Map<String, TcpDiscoverySpi> discoMap = new HashMap<>();
 
     /** */
-    protected UUID nodeId;
+    private UUID nodeId;
 
     /** Flag to disable metrics for some tests. */
-    protected boolean metricsEnabled = true;
+    private boolean metricsEnabled = true;
 
     /** */
-    protected static ThreadLocal<TcpDiscoverySpi> nodeSpi = new ThreadLocal<>();
+    private static ThreadLocal<TcpDiscoverySpi> nodeSpi = new ThreadLocal<>();
 
     /** */
     private GridStringLogger strLog;
@@ -136,7 +136,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     private CacheConfiguration[] ccfgs;
 
     /** */
-    protected SegmentationPolicy segPlc;
+    private SegmentationPolicy segPlc;
 
     /** */
     private ListeningTestLogger testLog;
@@ -1182,7 +1182,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             // Duplicate ID.
             GridTestUtils.assertThrows(
                 log,
-                new Callable<>() {
+                new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
                         // Exception will be thrown and output to log.
                         startGrid(3);
@@ -1947,7 +1947,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * @return {@code true} If pending messages were discarded in a timeout period.
      * @throws IgniteInterruptedCheckedException If wait was interrupted.
      */
-    protected boolean waitPendingMessagesDiscarded(TcpDiscoverySpi spi) throws IgniteInterruptedCheckedException {
+    private boolean waitPendingMessagesDiscarded(TcpDiscoverySpi spi) throws IgniteInterruptedCheckedException {
         Iterable<?> pendingMsgsIterable = GridTestUtils.getFieldValue(spi.impl, "msgWorker", "pendingMsgs");
 
         return GridTestUtils.waitForCondition(() -> !pendingMsgsIterable.iterator().hasNext(), 1000);
@@ -1957,7 +1957,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * @param segPlc Segmentation policy.
      * @throws Exception If failed.
      */
-    protected void checkFailedCoordinatorNode(SegmentationPolicy segPlc) throws Exception {
+    private void checkFailedCoordinatorNode(SegmentationPolicy segPlc) throws Exception {
         try {
             this.segPlc = segPlc;
 
@@ -2151,9 +2151,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             nodeSpi.set(new TestTcpDiscoveryMarshallerDataSpi());
 
-            Ignite srv0 = startGrid(0);
+            Ignite srv1 = startGrid(0);
 
-            IgniteCache<Object, Object> organizations = srv0.createCache("organizations");
+            IgniteCache<Object, Object> organizations = srv1.createCache("organizations");
 
             organizations.put(1, new Organization());
 
@@ -2163,7 +2163,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     + TestTcpDiscoveryMarshallerDataSpi.marshalledItems,
                     1, TestTcpDiscoveryMarshallerDataSpi.marshalledItems);
 
-            IgniteCache<Object, Object> employees = srv0.createCache("employees");
+            IgniteCache<Object, Object> employees = srv1.createCache("employees");
 
             employees.put(1, new Employee());
 
@@ -2328,7 +2328,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * @param nodeName Node name.
      * @throws Exception If failed.
      */
-    protected void waitNodeStop(final String nodeName) throws Exception {
+    private void waitNodeStop(final String nodeName) throws Exception {
         boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
@@ -2383,7 +2383,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * SPI used in {@link #testSystemMarshallerTypesFilteredOut()} test to check that only
      * user types get to discovery messages on joining new nodes.
      */
-    protected static class TestTcpDiscoveryMarshallerDataSpi extends TcpDiscoverySpi {
+    private static class TestTcpDiscoveryMarshallerDataSpi extends TcpDiscoverySpi {
         /** Marshalled items. */
         static volatile int marshalledItems;
 
@@ -2417,12 +2417,12 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * User class used in {@link #testSystemMarshallerTypesFilteredOut()} test to feed into marshaller cache.
      */
-    protected static class Organization { }
+    private static class Organization { }
 
     /**
      * User class used in {@link #testSystemMarshallerTypesFilteredOut()} test to feed into marshaller cache.
      */
-    protected static class Employee { }
+    private static class Employee { }
 
     /**
      *
@@ -2566,15 +2566,15 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    protected static class TestEventDiscardSpi extends TcpDiscoverySpi {
+    private static class TestEventDiscardSpi extends TcpDiscoverySpi {
         /** */
         private GridConcurrentHashSet<IgniteUuid> msgIds = new GridConcurrentHashSet<>();
 
         /** */
-        protected volatile boolean checkDuplicates;
+        private volatile boolean checkDuplicates;
 
         /** */
-        protected volatile boolean failed;
+        private volatile boolean failed;
 
         /** {@inheritDoc} */
         @Override protected void writeMessage(TcpDiscoveryIoSession ses,

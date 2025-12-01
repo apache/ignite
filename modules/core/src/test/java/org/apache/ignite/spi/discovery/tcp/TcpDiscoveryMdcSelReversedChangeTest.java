@@ -18,16 +18,15 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import org.apache.ignite.IgniteSystemProperties;
-import org.junit.Test;
 
 /**
- *
+ * Test for {@link TcpDiscoverySpi} with Multi Data Centers where coordinator changed on second node join.
  */
-public class TcpDiscoveryMdcWithCoordinatorChangePendingMessageDeliveryTest extends TcpDiscoveryMdcPlainPendingMessageDeliveryTest {
+public class TcpDiscoveryMdcSelReversedChangeTest extends TcpDiscoveryMdcSelfPlainTest {
     /**
      * @throws Exception If fails.
      */
-    public TcpDiscoveryMdcWithCoordinatorChangePendingMessageDeliveryTest() throws Exception {
+    public TcpDiscoveryMdcSelReversedChangeTest() throws Exception {
     }
 
     /** */
@@ -36,35 +35,4 @@ public class TcpDiscoveryMdcWithCoordinatorChangePendingMessageDeliveryTest exte
 
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, prev == null ? DC_ID_1 : DC_ID_0);
     }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    @Override public void testPendingMessagesOverflow() throws Exception {
-        startGrid(0);
-
-        super.testPendingMessagesOverflow();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    @Override public void testCustomMessageInSingletonCluster() throws Exception {
-        startGrid(0);
-
-        super.testCustomMessageInSingletonCluster();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @Test
-    @Override public void testDeliveryAllFailedMessagesInCorrectOrder() throws Exception {
-        startGrid(0);
-
-        super.testDeliveryAllFailedMessagesInCorrectOrder();
-    }
 }
-
