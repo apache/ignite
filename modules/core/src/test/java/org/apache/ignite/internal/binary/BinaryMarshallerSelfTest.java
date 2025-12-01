@@ -3309,7 +3309,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
         for (Map.Entry<String, Integer> entry : map.entrySet()) {
             int id = entry.getValue();
 
-            if (id == UNREGISTERED_TYPE_ID)
+            if (id == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
                 continue;
 
             BinaryClassDescriptor desc = bCtx.descriptorForTypeId(false, entry.getValue(), null, true);
