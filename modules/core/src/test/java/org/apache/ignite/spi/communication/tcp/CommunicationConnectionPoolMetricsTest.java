@@ -144,8 +144,9 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
     public void testRemovedConnectionMetrics() throws Exception {
         maxConnIdleTimeout = 500;
 
-        // Prevents keeping connections idle by unacknowledged messages.
-        ackSendThreshold = 1;
+        // Prevents keeping connections idle by lazy sending of the unacknowledged messages.
+        if (pairedConns)
+            ackSendThreshold = 1;
 
         Ignite srvr = startGridsMultiThreaded(2);
         Ignite cli = startClientGrid(G.allGrids().size());
