@@ -1028,9 +1028,12 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         }
     }
 
-    /** Verifies that query total execution time is correctly accumulated in the DURATION_TOTAL field. */
+    /**
+     * Verifies that query total execution time is correctly accumulated in the DURATION_TOTAL field of the
+     * SQL_QUERIES_HISTORY system view.
+     */
     @Test
-    public void testSqlFieldsQueryTotalDuration() throws Exception {
+    public void testSqlQueryTotalDuration() throws Exception {
         IgniteEx grid = grid(0);
 
         IgniteCache<Long, Long> cache = prepareTestCache(grid);

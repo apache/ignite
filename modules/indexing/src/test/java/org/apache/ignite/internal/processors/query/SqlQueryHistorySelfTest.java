@@ -255,7 +255,7 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test for SQL query total duration parameter.
+     * Test total duration of SQL queries.
      */
     @Test
     public void testSqlFieldsQueryTotalDuration() {
