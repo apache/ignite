@@ -22,11 +22,11 @@ import org.apache.ignite.IgniteSystemProperties;
 /**
  * Test for {@link TcpDiscoverySpi} with Multi Data Centers where coordinator changed on second node join.
  */
-public class TcpDiscoveryMdcSelReversedChangeTest extends TcpDiscoveryMdcSelfPlainTest {
+public class TcpDiscoveryMdcReversedSelfTest extends TcpDiscoveryMdcPlainSelfTest {
     /**
      * @throws Exception If fails.
      */
-    public TcpDiscoveryMdcSelReversedChangeTest() throws Exception {
+    public TcpDiscoveryMdcReversedSelfTest() throws Exception {
     }
 
     /** */

@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 /**
  * Test for {@link TcpDiscoverySpi} with Multi Data Centers.
  */
-public class TcpDiscoveryMdcSelfPlainTest extends TcpDiscoverySelfTest {
+public class TcpDiscoveryMdcPlainSelfTest extends TcpDiscoverySelfTest {
     /** */
     protected static final String DC_ID_0 = "DC0";
 
@@ -33,7 +33,7 @@ public class TcpDiscoveryMdcSelfPlainTest extends TcpDiscoverySelfTest {
     /**
      * @throws Exception If fails.
      */
-    public TcpDiscoveryMdcSelfPlainTest() throws Exception {
+    public TcpDiscoveryMdcPlainSelfTest() throws Exception {
     }
 
     /** {@inheritDoc} */
