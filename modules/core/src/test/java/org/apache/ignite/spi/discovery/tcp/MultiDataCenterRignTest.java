@@ -91,9 +91,8 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
             String nextDcId = serverImpl.ring().nextNode().dataCenterId();
             String localDcId = node.cluster().localNode().dataCenterId();
 
-            if (!localDcId.equals(nextDcId)) {
+            if (!localDcId.equals(nextDcId))
                 swithes++;
-            }
         }
 
         assertEquals(expected, swithes);
