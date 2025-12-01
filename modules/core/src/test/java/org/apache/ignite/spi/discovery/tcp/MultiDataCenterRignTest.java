@@ -17,13 +17,20 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -53,16 +60,60 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
 
         assertEquals(cnt, grid(0).cluster().nodes().size());
 
-        checkSwitches(2);
+        checkHops(2);
 
         stopGrid(cnt - 1);
         stopGrid(0);
 
         assertEquals(cnt - 2, grid(1).cluster().nodes().size());
 
-        checkSwitches(2);
+        checkHops(2);
     }
 
+    /** */
+    @Test
+    public void testMessageOrder() throws Exception {
+        int cnt = 10;
+
+        generateRandomDcCluster(cnt);
+
+        Collection<Ignite> nodes = G.allGrids();
+
+        CountDownLatch latch = new CountDownLatch(cnt);
+        List<String> dcs = new ArrayList<>();
+
+        for (Ignite node : nodes) {
+            DiscoverySpi disco = node.configuration().getDiscoverySpi();
+
+            ((TcpDiscoverySpi)disco).addSendMessageListener(new IgniteInClosure<>() {
+                @Override public void apply(TcpDiscoveryAbstractMessage msg) {
+                    if (msg instanceof TcpDiscoveryNodeAddedMessage) {
+                        dcs.add(Ignition.localIgnite().cluster().localNode().dataCenterId());
+
+                        latch.countDown();
+                    }
+                }
+            });
+        }
+
+        startGrid(cnt + 1);
+
+        latch.await();
+
+        String curDC = null;
+        int hops = 0;
+
+        for (String dcId : dcs) {
+            if (!dcId.equals(curDC)) {
+                hops++;
+                curDC = dcId;
+            }
+        }
+
+        assertEquals(2, hops);
+    }
+
+    /** */
     private void generateRandomDcCluster(int cnt) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -82,10 +133,10 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void checkSwitches(int expected) {
+    private void checkHops(int expected) {
         Collection<Ignite> nodes = G.allGrids();
 
-        int swithes = 0;
+        int hops = 0;
 
         for (Ignite node : nodes) {
             DiscoverySpi disco = node.configuration().getDiscoverySpi();
@@ -93,13 +144,13 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
             ServerImpl serverImpl = U.field(disco, "impl");
 
             String nextDcId = serverImpl.ring().nextNode().dataCenterId();
-            String localDcId = node.cluster().localNode().dataCenterId();
+            String locDcId = node.cluster().localNode().dataCenterId();
 
-            if (!localDcId.equals(nextDcId))
-                swithes++;
+            if (!locDcId.equals(nextDcId))
+                hops++;
         }
 
-        assertEquals(expected, swithes);
+        assertEquals(expected, hops);
     }
 
     /** */
