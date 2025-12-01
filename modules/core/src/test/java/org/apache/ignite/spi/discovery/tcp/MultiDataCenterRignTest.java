@@ -56,7 +56,7 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
     public void testRing() throws Exception {
         int cnt = 10;
 
-        generateRandomDcCluster(cnt);
+        generateRandomDcOrderCluster(cnt);
 
         assertEquals(cnt, grid(0).cluster().nodes().size());
 
@@ -75,7 +75,7 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
     public void testMessageOrder() throws Exception {
         int cnt = 10;
 
-        generateRandomDcCluster(cnt);
+        generateRandomDcOrderCluster(cnt);
 
         Collection<Ignite> nodes = G.allGrids();
 
@@ -114,7 +114,7 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void generateRandomDcCluster(int cnt) throws Exception {
+    private void generateRandomDcOrderCluster(int cnt) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         boolean order = rnd.nextBoolean();
