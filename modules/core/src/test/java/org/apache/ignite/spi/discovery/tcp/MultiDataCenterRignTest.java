@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -66,18 +65,14 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
 
         waitForTopology(cnt);
 
-        Collection<ClusterNode> nodes = grid(rnd.nextInt(cnt)).cluster().nodes();
-
-        assertEquals(cnt, nodes.size());
+        assertEquals(cnt, grid(rnd.nextInt(cnt)).cluster().nodes().size());
 
         checkSwitches(2);
 
         stopGrid(cnt - 1);
         stopGrid(0);
 
-        nodes = grid(rnd.nextInt(cnt)).cluster().nodes();
-
-        assertEquals(cnt - 2, nodes.size());
+        assertEquals(cnt - 2, grid(rnd.nextInt(cnt)).cluster().nodes().size());
 
         checkSwitches(2);
     }
