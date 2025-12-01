@@ -892,6 +892,25 @@
         </profile>
 
         <profile>
+            <id>jfr</id>
+            <activation>
+                <property>
+                    <name>JFR</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>@{argLine} -XX:+UnlockCommercialFeatures -XX:+FlightRecorder -XX:StartFlightRecording=duration=1000s,filename=surefire.jfr</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
             <id>surefire-fork-count-1</id>
             <activation>
                 <property>
