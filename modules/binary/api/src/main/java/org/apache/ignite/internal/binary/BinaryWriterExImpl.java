@@ -845,13 +845,8 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             int fieldCnt0 = this.fieldCnt;
             BinaryInternalMapper mapper0 = this.mapper;
 
-            this.typeId = 0;
-            this.start = out.position();
-            this.rawOffPos = 0;
-            this.schemaId = BinaryUtils.schemaInitialId();
-            this.fieldCnt = 0;
-            this.mapper = null;
-            // Handles not cleared, because, in this mode it shared down to hierarchy.
+            clearState();
+            // Handles not cleared, because, in this mode they shared down to hierarchy.
 
             marshal(obj);
 
@@ -877,13 +872,8 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             BinaryInternalMapper mapper0 = this.mapper;
             BinaryWriterHandles handles0 = this.handles;
 
-            this.typeId = 0;
-            this.start = out.position();
-            this.rawOffPos = 0;
-            this.schemaId = BinaryUtils.schemaInitialId();
-            this.fieldCnt = 0;
-            this.mapper = null;
-            // Handles cleared, because, in this mode it NOT shared down to hierarchy.
+            clearState();
+            // Handles cleared, because, in this mode they are NOT shared down to hierarchy.
             this.handles = null;
 
             marshal(obj);
@@ -1577,5 +1567,15 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     /** {@inheritDoc} */
     @Override public BinaryContext context() {
         return ctx;
+    }
+
+    /** Clears writer state. */
+    private void clearState() {
+        this.typeId = 0;
+        this.start = out.position();
+        this.rawOffPos = 0;
+        this.schemaId = BinaryUtils.schemaInitialId();
+        this.fieldCnt = 0;
+        this.mapper = null;
     }
 }

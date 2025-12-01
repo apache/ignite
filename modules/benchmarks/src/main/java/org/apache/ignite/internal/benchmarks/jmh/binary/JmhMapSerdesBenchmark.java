@@ -54,15 +54,15 @@ import static org.openjdk.jmh.annotations.Scope.Thread;
 @Measurement(iterations = 3, time = 30, timeUnit = SECONDS)
 public class JmhMapSerdesBenchmark {
     /** */
-    @Param({/*"Integer", "Date",*/ "String"/*, "Object"*/})
+    @Param({"Integer"/*, "Date", "String", "Object"*/})
     private String key;
 
     /** */
-    @Param({/*"Integer", "Date",*/ "String"/*, "Object"*/})
+    @Param({"Integer"/*, "Date", "String", "Object"*/})
     private String value;
 
     /** */
-    @Param({/* "10", "100", */ "1000"/*, "10000"*/})
+    @Param({/* "10", "100", "1000" ,*/ "10000"})
     private String size;
 
     /** */
