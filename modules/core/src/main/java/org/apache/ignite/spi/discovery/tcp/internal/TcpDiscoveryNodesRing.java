@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.internal;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -453,7 +454,7 @@ public class TcpDiscoveryNodesRing {
      * @param excluded Nodes to exclude from the search (optional).
      * @return Coordinator node among remaining nodes or {@code null} if all nodes are excluded.
      */
-    @Nullable public TcpDiscoveryNode coordinator(@Nullable Collection<UUID> excluded) {
+    @Nullable public TcpDiscoveryNode coordinator(@Nullable Collection<TcpDiscoveryNode> excluded) {
         rwLock.readLock().lock();
 
         try {
@@ -462,7 +463,7 @@ public class TcpDiscoveryNodesRing {
             if (F.isEmpty(filtered))
                 return null;
 
-            return Collections.min(filtered);
+            return Collections.min(filtered, Comparator.comparingLong(TcpDiscoveryNode::internalOrder));
         }
         finally {
             rwLock.readLock().unlock();
@@ -498,7 +499,7 @@ public class TcpDiscoveryNodesRing {
      * @return Next node or {@code null} if all nodes were filtered out or
      * topology contains less than two nodes.
      */
-    @Nullable public TcpDiscoveryNode nextNode(@Nullable Collection<UUID> excluded) {
+    @Nullable public TcpDiscoveryNode nextNode(@Nullable Collection<TcpDiscoveryNode> excluded) {
         assert locNode.internalOrder() > 0 : locNode;
         assert excluded == null || excluded.isEmpty() || !excluded.contains(locNode) : excluded;
 
@@ -536,7 +537,7 @@ public class TcpDiscoveryNodesRing {
      * @return Previous node or {@code null} if all nodes were filtered out or
      * topology contains less than two nodes.
      */
-    @Nullable public TcpDiscoveryNode previousNode(@Nullable Collection<UUID> excluded) {
+    @Nullable public TcpDiscoveryNode previousNode(@Nullable Collection<TcpDiscoveryNode> excluded) {
         rwLock.readLock().lock();
 
         try {
@@ -690,12 +691,12 @@ public class TcpDiscoveryNodesRing {
      * @param excluded Nodes to exclude from the search (optional).
      * @return Collection of server nodes.
      */
-    private Collection<TcpDiscoveryNode> serverNodes(@Nullable final Collection<UUID> excluded) {
+    private Collection<TcpDiscoveryNode> serverNodes(@Nullable final Collection<TcpDiscoveryNode> excluded) {
         final boolean excludedEmpty = F.isEmpty(excluded);
 
         return F.view(nodes, new P1<TcpDiscoveryNode>() {
             @Override public boolean apply(TcpDiscoveryNode node) {
-                return node.clientRouterNodeId() == null && (excludedEmpty || !excluded.contains(node.id()));
+                return node.clientRouterNodeId() == null && (excludedEmpty || !excluded.contains(node));
             }
         });
     }

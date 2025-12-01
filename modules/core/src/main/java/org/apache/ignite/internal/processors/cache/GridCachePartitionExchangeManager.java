@@ -3128,7 +3128,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             if (!crd) {
                                 List<ClusterNode> srvNodes = exchFut.firstEventCache().serverNodes();
 
-                                crd = newCrd = !srvNodes.isEmpty() && srvNodes.get(0).isLocal();
+                                crd = newCrd = !srvNodes.isEmpty() && U.oldest(srvNodes, null).isLocal();
                             }
 
                             if (!exchFut.changedAffinity()) {
