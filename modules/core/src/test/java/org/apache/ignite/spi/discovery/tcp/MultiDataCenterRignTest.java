@@ -15,12 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery.datacenter;
+package org.apache.ignite.spi.discovery.tcp;
 
 import java.util.Collection;
 import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -66,28 +70,34 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
 
         assertEquals(cnt, nodes.size());
 
-        checkSwitches(2, nodes);
+        checkSwitches(2);
 
         stopGrid(cnt - 1);
         stopGrid(0);
 
-        nodes = grid(cnt / 2).cluster().nodes();
+        nodes = grid(rnd.nextInt(cnt)).cluster().nodes();
 
         assertEquals(cnt - 2, nodes.size());
 
-        checkSwitches(2, nodes);
+        checkSwitches(2);
     }
 
     /** */
-    private void checkSwitches(int expected, Collection<ClusterNode> nodes) {
+    private void checkSwitches(int expected) {
+        Collection<Ignite> nodes = G.allGrids();
+
         int swithes = 0;
-        String curDcId = null;
 
-        for (ClusterNode node : nodes) {
-            if (!node.dataCenterId().equals(curDcId)) {
+        for (Ignite node : nodes) {
+            DiscoverySpi disco = node.configuration().getDiscoverySpi();
+
+            ServerImpl serverImpl = U.field(disco, "impl");
+
+            String nextDcId = serverImpl.ring().nextNode().dataCenterId();
+            String localDcId = node.cluster().localNode().dataCenterId();
+
+            if (!localDcId.equals(nextDcId)) {
                 swithes++;
-
-                curDcId = node.dataCenterId();
             }
         }
 

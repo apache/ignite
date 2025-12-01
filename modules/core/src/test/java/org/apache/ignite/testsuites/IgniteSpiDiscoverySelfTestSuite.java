@@ -28,7 +28,7 @@ import org.apache.ignite.spi.discovery.IgniteDiscoveryCacheReuseSelfTest;
 import org.apache.ignite.spi.discovery.LongClientConnectToClusterTest;
 import org.apache.ignite.spi.discovery.datacenter.MultiDataCenterClientRoutingTest;
 import org.apache.ignite.spi.discovery.datacenter.MultiDataCenterDeploymentTest;
-import org.apache.ignite.spi.discovery.datacenter.MultiDataCenterRignTest;
+import org.apache.ignite.spi.discovery.tcp.MultiDataCenterRignTest;
 import org.apache.ignite.spi.discovery.tcp.DiscoveryClientSocketTest;
 import org.apache.ignite.spi.discovery.tcp.DiscoveryUnmarshalVulnerabilityTest;
 import org.apache.ignite.spi.discovery.tcp.IgniteClientConnectSslTest;
