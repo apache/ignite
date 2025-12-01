@@ -47,11 +47,26 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testRing() throws Exception {
+        int cnt = 10;
+
+        generateRandomDcCluster(cnt);
+
+        assertEquals(cnt, grid(0).cluster().nodes().size());
+
+        checkSwitches(2);
+
+        stopGrid(cnt - 1);
+        stopGrid(0);
+
+        assertEquals(cnt - 2, grid(1).cluster().nodes().size());
+
+        checkSwitches(2);
+    }
+
+    private void generateRandomDcCluster(int cnt) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         boolean order = rnd.nextBoolean();
-
-        int cnt = 10;
 
         for (int i = 0; i < cnt; i += 2) {
             System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, order ? DC_ID_0 : DC_ID_1);
@@ -64,17 +79,6 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
         }
 
         waitForTopology(cnt);
-
-        assertEquals(cnt, grid(rnd.nextInt(cnt)).cluster().nodes().size());
-
-        checkSwitches(2);
-
-        stopGrid(cnt - 1);
-        stopGrid(0);
-
-        assertEquals(cnt - 2, grid(rnd.nextInt(cnt)).cluster().nodes().size());
-
-        checkSwitches(2);
     }
 
     /** */
