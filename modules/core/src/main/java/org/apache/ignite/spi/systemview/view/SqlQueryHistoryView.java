@@ -83,8 +83,14 @@ public class SqlQueryHistoryView {
         return qry.maximumTime();
     }
 
-    /** @return Last start time. */
+    /** @return Total query duration. */
     @Order(8)
+    public long durationTotal() {
+        return qry.totalTime();
+    }
+
+    /** @return Last start time. */
+    @Order(9)
     public Date lastStartTime() {
         return new Date(qry.lastStartTime());
     }

@@ -38,7 +38,8 @@ public class SqlQueryHistoryViewWalker implements SystemViewRowAttributeWalker<S
         v.accept(5, "failures", long.class);
         v.accept(6, "durationMin", long.class);
         v.accept(7, "durationMax", long.class);
-        v.accept(8, "lastStartTime", Date.class);
+        v.accept(8, "durationTotal", long.class);
+        v.accept(9, "lastStartTime", Date.class);
     }
 
     /** {@inheritDoc} */
@@ -51,11 +52,12 @@ public class SqlQueryHistoryViewWalker implements SystemViewRowAttributeWalker<S
         v.acceptLong(5, "failures", row.failures());
         v.acceptLong(6, "durationMin", row.durationMin());
         v.acceptLong(7, "durationMax", row.durationMax());
-        v.accept(8, "lastStartTime", Date.class, row.lastStartTime());
+        v.acceptLong(8, "durationTotal", row.durationTotal());
+        v.accept(9, "lastStartTime", Date.class, row.lastStartTime());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 9;
+        return 10;
     }
 }

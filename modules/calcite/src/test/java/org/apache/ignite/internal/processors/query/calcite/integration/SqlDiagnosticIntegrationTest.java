@@ -1028,6 +1028,63 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         }
     }
 
+    /** Verifies that query total execution time is correctly accumulated in the DURATION_TOTAL field. */
+    @Test
+    public void testSqlFieldsQueryTotalDuration() throws Exception {
+        IgniteEx grid = grid(0);
+
+        IgniteCache<Long, Long> cache = prepareTestCache(grid);
+
+        long[] totalTimeArr = new long[2];
+
+        AtomicLong curTotalTime = new AtomicLong();
+
+        for (int i = 0; i < totalTimeArr.length; i++) {
+            FunctionsLibrary.latch = new CountDownLatch(1);
+
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(
+                () -> cache.query(new SqlFieldsQuery("select * from test where waitLatch(10000)")).getAll());
+
+            U.sleep(500);
+
+            FunctionsLibrary.latch.countDown();
+
+            fut.get();
+
+            int finI = i;
+
+            assertTrue(waitForCondition(() -> {
+                SystemView<SqlQueryHistoryView> history = grid.context().systemView().view(SQL_QRY_HIST_VIEW);
+
+                assertNotNull(history);
+
+                if (history.size() != 1)
+                    return false;
+
+                SqlQueryHistoryView view = first(grid.context().systemView().view(SQL_QRY_HIST_VIEW));
+
+                assertNotNull(view);
+
+                long totalTime = view.durationTotal();
+
+                if (totalTime > curTotalTime.get()) {
+                    curTotalTime.set(totalTime);
+
+                    totalTimeArr[finI] = totalTime;
+
+                    return true;
+                }
+
+                return false;
+            }, 5_000));
+        }
+
+        long expTotalTime = totalTimeArr[0] * totalTimeArr.length;
+        long actTotalTime = totalTimeArr[1];
+
+        assertEquals(expTotalTime, actTotalTime, expTotalTime * 0.2);
+    }
+
     /** */
     private FieldsQueryCursor<List<?>> runNotFullyFetchedQuery(boolean loc) {
         IgniteCache<Long, Long> cache = prepareTestCache(grid(0));
@@ -1049,6 +1106,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
     private static IgniteCache<Long, Long> prepareTestCache(IgniteEx grid) {
         IgniteCache<Long, Long> cache = grid.createCache(new CacheConfiguration<Long, Long>()
             .setName("test")
+            .setSqlFunctionClasses(FunctionsLibrary.class)
             .setQueryEntities(Collections.singleton(new QueryEntity(Long.class, Long.class)
                 .setTableName("test")
                 .addQueryField("id", Long.class.getName(), null)

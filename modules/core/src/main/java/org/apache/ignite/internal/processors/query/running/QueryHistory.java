@@ -62,7 +62,7 @@ public class QueryHistory {
 
         long failures = failed ? 1 : 0;
 
-        val = new QueryHistoryMetricsValue(1, failures, duration, duration, startTime, initId);
+        val = new QueryHistoryMetricsValue(1, failures, duration, duration, duration, startTime, initId);
 
         linkRef = new AtomicReference<>();
     }
@@ -93,6 +93,7 @@ public class QueryHistory {
             val.failures() + m.failures(),
             Math.min(val.minTime(), m.minimumTime()),
             Math.max(val.maxTime(), m.maximumTime()),
+            val.totalTime() + m.totalTime(),
             Math.max(curLastStart, newLastStart),
             initiatorId);
 
@@ -154,6 +155,15 @@ public class QueryHistory {
      */
     public long maximumTime() {
         return val.maxTime();
+    }
+
+    /**
+     * Gets total execution time of query.
+     *
+     * @return Total execution time of query.
+     */
+    public long totalTime() {
+        return val.totalTime();
     }
 
     /**

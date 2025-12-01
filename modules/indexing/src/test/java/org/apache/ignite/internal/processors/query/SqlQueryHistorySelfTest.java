@@ -245,12 +245,46 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
             .queryHistoryMetrics().values();
 
         assertFalse(F.isEmpty(historyCol));
+        assertEquals(1, historyCol.size());
 
         QueryHistory history = first(historyCol);
 
         assertNotNull(history);
 
         assertEquals(testId1, history.initiatorId());
+    }
+
+    /**
+     * Test for SQL query total duration parameter.
+     */
+    @Test
+    public void testSqlFieldsQueryTotalDuration() {
+        SqlFieldsQuery qry = new SqlFieldsQuery("select * from A.String where _key=sleep_func(?, ?)").setArgs(500, 1);
+
+        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
+
+        long[] totalTimeArr = new long[2];
+
+        for (int i = 0; i < totalTimeArr.length; i++) {
+            cache.query(qry).getAll();
+
+            Collection<QueryHistory> historyCol = queryNode().context().query().runningQueryManager()
+                .queryHistoryMetrics().values();
+
+            assertFalse(F.isEmpty(historyCol));
+            assertEquals(1, historyCol.size());
+
+            QueryHistory history = first(historyCol);
+
+            assertNotNull(history);
+
+            totalTimeArr[i] = history.totalTime();
+        }
+
+        long expTotalTime = totalTimeArr[0] * totalTimeArr.length;
+        long actTotalTime = totalTimeArr[1];
+
+        assertEquals(expTotalTime, actTotalTime, expTotalTime * 0.2);
     }
 
     /**
@@ -668,6 +702,21 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
         @QuerySqlFunction
         public static int fail() {
             throw new IgniteSQLException("SQL function fail for test purpuses");
+        }
+
+        /**
+         *
+         */
+        @QuerySqlFunction
+        public static int sleep_func(int sleep, int val) {
+            try {
+                Thread.sleep(sleep);
+            }
+            catch (InterruptedException ignored) {
+                // No-op
+            }
+
+            return val;
         }
     }
 
