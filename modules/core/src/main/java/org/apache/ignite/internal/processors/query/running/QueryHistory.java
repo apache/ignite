@@ -47,13 +47,22 @@ public class QueryHistory {
      * @param startTime Start time of query execution.
      * @param duration Duration of query execution.
      * @param failed {@code True} query executed unsuccessfully {@code false} otherwise.
+     * @param initId Initiator ID.
      */
-    public QueryHistory(String qry, String schema, boolean loc, long startTime, long duration, boolean failed) {
+    public QueryHistory(
+        String qry,
+        String schema,
+        boolean loc,
+        long startTime,
+        long duration,
+        boolean failed,
+        @Nullable String initId
+    ) {
         key = new QueryHistoryKey(qry, schema, loc);
 
         long failures = failed ? 1 : 0;
 
-        val = new QueryHistoryMetricsValue(1, failures, duration, duration, startTime);
+        val = new QueryHistoryMetricsValue(1, failures, duration, duration, startTime, initId);
 
         linkRef = new AtomicReference<>();
     }
@@ -72,12 +81,20 @@ public class QueryHistory {
      * @return Aggregated metrics.
      */
     public QueryHistory aggregateWithNew(QueryHistory m) {
+        long curLastStart = val.lastStartTime();
+        long newLastStart = m.lastStartTime();
+
+        String initiatorId = curLastStart > newLastStart
+            ? val.initiatorId()
+            : m.initiatorId();
+
         val = new QueryHistoryMetricsValue(
             val.execs() + m.executions(),
             val.failures() + m.failures(),
             Math.min(val.minTime(), m.minimumTime()),
             Math.max(val.maxTime(), m.maximumTime()),
-            Math.max(val.lastStartTime(), m.lastStartTime()));
+            Math.max(curLastStart, newLastStart),
+            initiatorId);
 
         return this;
     }
@@ -146,6 +163,15 @@ public class QueryHistory {
      */
     public long lastStartTime() {
         return val.lastStartTime();
+    }
+
+    /**
+     * Gets latest initiator ID.
+     *
+     * @return Latest initiator ID.
+     */
+    public String initiatorId() {
+        return val.initiatorId();
     }
 
     /**

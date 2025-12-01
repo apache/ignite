@@ -89,7 +89,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** Partition sizes. */
     @Order(value = 11, method = "partitionSizes")
-    private Map<Integer, PartitionSizesMap> partsSizes;
+    private Map<Integer, IntLongMap> partsSizes;
 
     /** Topology version. */
     @Order(value = 12, method = "topologyVersion")
@@ -383,14 +383,14 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      *
      * @param partsSizes Partitions sizes map.
      */
-    public void partitionSizes(Map<Integer, PartitionSizesMap> partsSizes) {
+    public void partitionSizes(Map<Integer, IntLongMap> partsSizes) {
         this.partsSizes = partsSizes;
     }
 
     /**
      * @return Partition sizes map (grpId, (partId, partSize)).
      */
-    public Map<Integer, PartitionSizesMap> partitionSizes() {
+    public Map<Integer, IntLongMap> partitionSizes() {
         return partsSizes;
     }
 

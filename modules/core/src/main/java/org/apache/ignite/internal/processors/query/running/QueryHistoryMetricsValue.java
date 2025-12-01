@@ -18,6 +18,8 @@
 
 package org.apache.ignite.internal.processors.query.running;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * Immutable query metrics.
  */
@@ -37,19 +39,31 @@ class QueryHistoryMetricsValue {
     /** Last start time of execution. */
     private final long lastStartTime;
 
+    /** Latest user-defined initiator ID. */
+    private final String initId;
+
     /**
      * @param execs Number of executions.
      * @param failures Number of failure.
      * @param minTime Min time of execution.
      * @param maxTime Max time of execution.
      * @param lastStartTime Last start time of execution.
+     * @param initId Latest initiator ID.
      */
-    public QueryHistoryMetricsValue(long execs, long failures, long minTime, long maxTime, long lastStartTime) {
+    public QueryHistoryMetricsValue(
+        long execs,
+        long failures,
+        long minTime,
+        long maxTime,
+        long lastStartTime,
+        @Nullable String initId
+    ) {
         this.execs = execs;
         this.failures = failures;
         this.minTime = minTime;
         this.maxTime = maxTime;
         this.lastStartTime = lastStartTime;
+        this.initId = initId;
     }
 
    /**
@@ -95,5 +109,14 @@ class QueryHistoryMetricsValue {
      */
     public long lastStartTime() {
         return lastStartTime;
+    }
+
+    /**
+     * Gets latest initiator ID.
+     *
+     * @return Latest initiator ID.
+     */
+    public String initiatorId() {
+        return initId;
     }
 }

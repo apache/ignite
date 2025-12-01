@@ -219,15 +219,6 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         return out.position();
     }
 
-    /**
-     * Sets new position.
-     *
-     * @param pos Position.
-     */
-    void position(int pos) {
-        out.position(pos);
-    }
-
     /** {@inheritDoc} */
     @Override public void preWrite(@Nullable String clsName) {
         out.position(out.position() + GridBinaryMarshaller.DFLT_HDR_LEN);
