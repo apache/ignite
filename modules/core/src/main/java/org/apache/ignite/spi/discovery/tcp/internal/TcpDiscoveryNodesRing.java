@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery.tcp.internal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -505,22 +504,7 @@ public class TcpDiscoveryNodesRing {
         try {
             List<TcpDiscoveryNode> filtered = new ArrayList<>(serverNodes(excluded));
 
-            Comparator<TcpDiscoveryNode> comparator = new Comparator<>() {
-                @Override public int compare(TcpDiscoveryNode n1, TcpDiscoveryNode n2) {
-                    String n1DcId = n1.dataCenterId() == null ? "" : n1.dataCenterId();
-                    String n2DcId = n2.dataCenterId() == null ? "" : n2.dataCenterId();
-
-                    int res = n1DcId.compareTo(n2DcId);
-
-                    if (res == 0) {
-                        res = n1.compareTo(n2);
-                    }
-
-                    return res;
-                }
-            };
-
-            filtered.sort(comparator);
+            filtered.sort(new MdcAwareComparator());
 
             if (filtered.size() < 2)
                 return null;
