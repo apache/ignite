@@ -62,7 +62,7 @@ public class JmhMapSerdesBenchmark {
     private String value;
 
     /** */
-    @Param({/* "10", "100", "1000" ,*/ "10000"})
+    @Param({/* "10", "100", "1000" ,*/ "100000"})
     private String size;
 
     /** */
