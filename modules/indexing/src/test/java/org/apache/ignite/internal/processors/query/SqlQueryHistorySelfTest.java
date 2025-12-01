@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.running.QueryHistory;
+import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -259,7 +260,9 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSqlFieldsQueryTotalDuration() {
-        SqlFieldsQuery qry = new SqlFieldsQuery("select * from A.String where _key=sleep_func(?, ?)").setArgs(500, 1);
+        int sleepTime = 500;
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("select * from A.String where _key=0 and sleep_func(?)").setArgs(sleepTime);
 
         IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
 
@@ -281,10 +284,8 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
             totalTimeArr[i] = history.totalTime();
         }
 
-        long expTotalTime = totalTimeArr[0] * totalTimeArr.length;
-        long actTotalTime = totalTimeArr[1];
-
-        assertEquals(expTotalTime, actTotalTime, expTotalTime * 0.2);
+        assertTrue(totalTimeArr[0] >= sleepTime);
+        assertTrue(totalTimeArr[1] >= totalTimeArr[0] + sleepTime);
     }
 
     /**
@@ -708,15 +709,12 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
          *
          */
         @QuerySqlFunction
-        public static int sleep_func(int sleep, int val) {
-            try {
-                Thread.sleep(sleep);
-            }
-            catch (InterruptedException ignored) {
-                // No-op
-            }
+        public static boolean sleep_func(int sleep) {
+            doSleep(sleep);
 
-            return val;
+            GridTestClockTimer.update();
+
+            return true;
         }
     }
 

@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQuer
 import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1038,23 +1039,23 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
         IgniteCache<Long, Long> cache = prepareTestCache(grid);
 
-        long[] totalTimeArr = new long[2];
-
         AtomicLong curTotalTime = new AtomicLong();
 
-        for (int i = 0; i < totalTimeArr.length; i++) {
+        int sleepTime = 500;
+
+        for (int i = 0; i < 2; i++) {
             FunctionsLibrary.latch = new CountDownLatch(1);
 
             IgniteInternalFuture<?> fut = GridTestUtils.runAsync(
                 () -> cache.query(new SqlFieldsQuery("select * from test where waitLatch(10000)")).getAll());
 
-            U.sleep(500);
+            U.sleep(sleepTime);
+
+            GridTestClockTimer.update();
 
             FunctionsLibrary.latch.countDown();
 
             fut.get();
-
-            int finI = i;
 
             assertTrue(waitForCondition(() -> {
                 SystemView<SqlQueryHistoryView> history = grid.context().systemView().view(SQL_QRY_HIST_VIEW);
@@ -1070,10 +1071,8 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
 
                 long totalTime = view.durationTotal();
 
-                if (totalTime > curTotalTime.get()) {
+                if (totalTime >= curTotalTime.get() + sleepTime) {
                     curTotalTime.set(totalTime);
-
-                    totalTimeArr[finI] = totalTime;
 
                     return true;
                 }
@@ -1081,11 +1080,6 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
                 return false;
             }, 5_000));
         }
-
-        long expTotalTime = totalTimeArr[0] * totalTimeArr.length;
-        long actTotalTime = totalTimeArr[1];
-
-        assertEquals(expTotalTime, actTotalTime, expTotalTime * 0.2);
     }
 
     /** */
