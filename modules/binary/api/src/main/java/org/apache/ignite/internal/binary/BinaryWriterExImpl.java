@@ -65,7 +65,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     private int typeId;
 
     /** */
-    private final int start;
+    private int start;
 
     /** Raw offset position. */
     private int rawOffPos;
@@ -838,16 +838,27 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         if (obj == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            BinaryWriterExImpl writer = new BinaryWriterExImpl(
-                ctx,
-                out,
-                schema,
-                handles(),
-                failIfUnregistered,
-                GridBinaryMarshaller.UNREGISTERED_TYPE_ID
-            );
+            // Store state.
+            int typeId0 = this.typeId;
+            int start0 = this.start;
+            int rawOffPos0 = this.rawOffPos;
+            int schemaId0 = this.schemaId;
+            int fieldCnt0 = this.fieldCnt;
+            BinaryInternalMapper mapper0 = this.mapper;
 
-            writer.marshal(obj);
+            // Handles not cleared, because, in this mode they shared down to hierarchy.
+            clearState(false);
+
+            // Maybe recursive `writeObject` invocation which will change state.
+            marshal(obj);
+
+            // Restore state.
+            this.typeId = typeId0;
+            this.start = start0;
+            this.rawOffPos = rawOffPos0;
+            this.schemaId = schemaId0;
+            this.fieldCnt = fieldCnt0;
+            this.mapper = mapper0;
         }
     }
 
@@ -856,16 +867,29 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         if (obj == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            BinaryWriterExImpl writer = new BinaryWriterExImpl(
-                ctx,
-                out,
-                schema,
-                null,
-                failIfUnregistered,
-                GridBinaryMarshaller.UNREGISTERED_TYPE_ID
-            );
+            // Store state.
+            int typeId0 = this.typeId;
+            int start0 = this.start;
+            int rawOffPos0 = this.rawOffPos;
+            int schemaId0 = this.schemaId;
+            int fieldCnt0 = this.fieldCnt;
+            BinaryInternalMapper mapper0 = this.mapper;
+            BinaryWriterHandles handles0 = this.handles;
 
-            writer.marshal(obj);
+            // Handles cleared, because, in this mode they are NOT shared down to hierarchy.
+            clearState(true);
+
+            // Maybe recursive `writeObject` invocation which will change state.
+            marshal(obj);
+
+            // Restore state.
+            this.typeId = typeId0;
+            this.start = start0;
+            this.rawOffPos = rawOffPos0;
+            this.schemaId = schemaId0;
+            this.fieldCnt = fieldCnt0;
+            this.mapper = mapper0;
+            this.handles = handles0;
         }
     }
 
@@ -1548,5 +1572,18 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     /** {@inheritDoc} */
     @Override public BinaryContext context() {
         return ctx;
+    }
+
+    /** Clears writer state. */
+    private void clearState(boolean clearHandler) {
+        this.typeId = GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
+        this.start = out.position();
+        this.rawOffPos = 0;
+        this.schemaId = BinaryUtils.schemaInitialId();
+        this.fieldCnt = 0;
+        this.mapper = null;
+
+        if (clearHandler)
+            this.handles = null;
     }
 }
