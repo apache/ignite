@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,14 +27,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
-import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -100,39 +94,6 @@ public class IgniteDiagnosticMessage implements Message {
     public IgniteDiagnosticMessage(String resp, long futId) {
         this.futId = futId;
         infoResp = resp;
-    }
-
-    /**
-     * @param ctx Grid context.
-     * @return Diagnostic info.
-     */
-    public String diagnosticInfo(GridKernalContext ctx) {
-        try {
-            IgniteInternalFuture<String> commInfo = dumpCommunicationInfo(ctx, nodeId);
-
-            StringBuilder sb = new StringBuilder();
-
-            dumpNodeBasicInfo(sb, ctx);
-
-            sb.append(U.nl());
-
-            dumpExchangeInfo(sb, ctx);
-
-            sb.append(U.nl());
-
-            ctx.cache().context().io().dumpPendingMessages(sb);
-
-            sb.append(commInfo.get(10_000));
-
-            moreInfo(sb, ctx);
-
-            return sb.toString();
-        }
-        catch (Exception e) {
-            ctx.cluster().diagnosticLog().error("Failed to execute diagnostic message closure: " + e, e);
-
-            return "Failed to execute diagnostic message closure: " + e;
-        }
     }
 
     /**
@@ -246,41 +207,6 @@ public class IgniteDiagnosticMessage implements Message {
     /** {@inheritDoc} */
     @Override public short directType() {
         return -61;
-    }
-
-    /**
-     * @param sb String builder.
-     * @param ctx Context.
-     */
-    private static void dumpNodeBasicInfo(StringBuilder sb, GridKernalContext ctx) {
-        sb.append("General node info [id=").append(ctx.localNodeId())
-            .append(", client=").append(ctx.clientNode())
-            .append(", discoTopVer=").append(ctx.discovery().topologyVersionEx())
-            .append(", time=").append(IgniteUtils.DEBUG_DATE_FMT.format(Instant.ofEpochMilli(U.currentTimeMillis()))).append(']');
-    }
-
-    /**
-     * @param sb String builder.
-     * @param ctx Context.
-     */
-    private static void dumpExchangeInfo(StringBuilder sb, GridKernalContext ctx) {
-        GridCachePartitionExchangeManager<?, ?> exchMgr = ctx.cache().context().exchange();
-        GridDhtTopologyFuture fut = exchMgr.lastTopologyFuture();
-
-        sb.append("Partitions exchange info [readyVer=").append(exchMgr.readyAffinityVersion()).append(']').append(U.nl())
-            .append("Last initialized exchange future: ").append(fut);
-    }
-
-    /**
-     * @param ctx Context.
-     * @param nodeId Target node ID.
-     * @return Communication information future.
-     */
-    public static IgniteInternalFuture<String> dumpCommunicationInfo(GridKernalContext ctx, UUID nodeId) {
-        if (ctx.config().getCommunicationSpi() instanceof TcpCommunicationSpi)
-            return ((TcpCommunicationSpi)ctx.config().getCommunicationSpi()).dumpNodeStatistics(nodeId);
-        else
-            return new GridFinishedFuture<>("Unexpected communication SPI: " + ctx.config().getCommunicationSpi());
     }
 
     /** {@inheritDoc} */

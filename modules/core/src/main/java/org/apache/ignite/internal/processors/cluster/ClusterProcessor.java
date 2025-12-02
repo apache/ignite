@@ -41,6 +41,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
+import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -390,7 +391,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
                             return;
                         }
 
-                        IgniteDiagnosticMessage res = new IgniteDiagnosticMessage(msg0.diagnosticInfo(ctx), msg0.futureId());
+                        IgniteDiagnosticMessage res = IgniteDiagnosticPrepareContext.diagnosticInfoResponse(ctx, msg0);
 
                         try {
                             ctx.io().sendToGridTopic(node, TOPIC_INTERNAL_DIAGNOSTIC, res, GridIoPolicy.SYSTEM_POOL);
@@ -840,7 +841,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
                 final String rmtMsg0 = rmtMsg;
 
-                IgniteInternalFuture<String> locFut = IgniteDiagnosticMessage.dumpCommunicationInfo(ctx, nodeId);
+                IgniteInternalFuture<String> locFut = IgniteDiagnosticPrepareContext.dumpCommunicationInfo(ctx, nodeId);
 
                 locFut.listen(new CI1<IgniteInternalFuture<String>>() {
                     @Override public void apply(IgniteInternalFuture<String> locFut) {
@@ -869,7 +870,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
     /**
      * @param nodeId Target node ID.
-     * @param infos Compound infos to send.
+     * @param infos Diagnostic infos to send.
      * @return Message future.
      */
     private IgniteInternalFuture<String> sendDiagnosticMessage(UUID nodeId, Collection<IgniteDiagnosticMessage.DiagnosticBaseInfo> infos) {
