@@ -17,6 +17,12 @@
 
 package org.apache.ignite.util;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import jdk.jfr.Recording;
 import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeCommand;
 import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeTaskResult;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -30,6 +36,9 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
     /** */
     public static final String ENABLE = "enable";
 
+    /** Recording. */
+    private Recording recording;
+
     /** */
     public static final String DISABLE = "disable";
 
@@ -42,7 +51,6 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
-
         autoConfirmation = true;
     }
 
@@ -56,7 +64,11 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
 
     /** */
     @Test
-    public void testEnableAndDisable() {
+    public void testEnableAndDisable() throws IOException {
+        recording = new Recording();
+        recording.setName("ignite-jfr");
+        recording.start();
+
         IgniteProductVersion curVer = IgniteProductVersion.fromString(crd.localNode().attribute(ATTR_BUILD_VER));
 
         String targetVerStr = curVer.major() + "." + (curVer.minor() + 1) + ".0";
@@ -85,6 +97,25 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         assertNull(taskRes.targetVersion());
 
         assertFalse(crd.context().rollingUpgrade().enabled());
+
+        Path jfrDir = Paths.get("target", "jfr");
+        Files.createDirectories(jfrDir);
+
+        String fileName = "ignite-jfr-" + System.currentTimeMillis() + ".jfr";
+        Path jfrFile = jfrDir.resolve(fileName);
+
+        recording.stop();
+        recording.dump(jfrFile);
+        System.out.println("✅ JFR saved to: " + jfrFile.toAbsolutePath());
+
+        Path root = findIgniteRoot();
+        Path workLog = root.resolve("work/log");
+        Files.createDirectories(workLog);
+
+        Path jfrInArtifacts = workLog.resolve("ignite.jfr");
+        Files.copy(jfrFile, jfrInArtifacts, StandardCopyOption.REPLACE_EXISTING);
+
+        System.out.println("📦 Saved JFR to: " + jfrInArtifacts.toAbsolutePath());
     }
 
     /** */
@@ -177,4 +208,24 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
 
         assertTrue(crd.context().rollingUpgrade().enabled());
     }
+
+    private static Path findIgniteRoot() throws IOException {
+        Path p = Paths.get("").toAbsolutePath();
+
+        while (p != null) {
+            Path pom = p.resolve("pom.xml");
+            if (pom.toFile().exists()) {
+                String content = Files.readString(pom);
+                // родительский pom содержит секцию <modules>
+                if (content.contains("<modules>"))
+                    return p;
+            }
+
+            p = p.getParent();
+        }
+
+        throw new IllegalStateException("Ignite root not found");
+    }
+
+
 }
