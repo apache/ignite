@@ -86,7 +86,6 @@ Additionally, thin client receives topology updates only when it performs some o
 
 [WARNING]
 ====
-[discrete]
 Server discovery may not work when servers are behind a NAT server or a proxy.
 Server nodes provide their addresses and ports to the client, but when the client is in a different subnet, those addresses won't work.
 ====
