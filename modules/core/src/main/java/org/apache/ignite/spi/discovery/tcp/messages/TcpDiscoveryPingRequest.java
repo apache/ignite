@@ -18,18 +18,26 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Ping request.
  */
-public class TcpDiscoveryPingRequest extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryPingRequest extends TcpDiscoveryAbstractMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Pinged client node ID. */
-    private final UUID clientNodeId;
+    @Order(1)
+    private @Nullable UUID clientNodeId;
+
+    /** */
+    public TcpDiscoveryPingRequest() {
+        // No-op.
+    }
 
     /**
      * @param creatorNodeId Creator node ID.
@@ -48,8 +56,20 @@ public class TcpDiscoveryPingRequest extends TcpDiscoveryAbstractMessage {
         return clientNodeId;
     }
 
+    /**
+     * @param clientNodeId New pinged client node ID.
+     */
+    public void clientNodeId(@Nullable UUID clientNodeId) {
+        this.clientNodeId = clientNodeId;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryPingRequest.class, this, "super", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 1;
     }
 }
