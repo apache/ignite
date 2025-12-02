@@ -66,10 +66,9 @@ Server nodes provide their addresses and ports to the client, but when the clien
 
 ==== Host Names and TLS
 
-By default, server nodes provide their IP addresses to the client as part of the discovery process.
-In some cases, we want to use host names instead of IP addresses to connect to the servers (for example, when TLS is enabled and server certificates contain host names).
-
-To do this, we need to set the desired host name for every server node with the `IgniteConfiguration.Localhost` property on the *server* side:
+By default, server nodes advertise their IP addresses during discovery.
+If clients must connect using host names (for example, when TLS is enabled and certificates contain host names),
+configure each server node to advertise its host name by setting `IgniteConfiguration.Localhost` on the *server* side.
 
 [source, csharp]
 ----
