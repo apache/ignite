@@ -403,22 +403,17 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
         CANCELLED_JOB_CNT.set(0);
         EXECUTED_JOB_CNT.set(0);
 
-        try {
-            ComputeTaskFuture<Object> fut = grid(0).compute().executeAsync(CancelAllowedTask.class, null);
+        ComputeTaskFuture<Object> fut = grid(0).compute().executeAsync(CancelAllowedTask.class, null);
 
-            taskStartedLatch.await(getTestTimeout(), MILLISECONDS);
+        taskStartedLatch.await(getTestTimeout(), MILLISECONDS);
 
-            for (ComputeJobSibling sibling : fut.getTaskSession().getJobSiblings())
-                sibling.cancel();
+        for (ComputeJobSibling sibling : fut.getTaskSession().getJobSiblings())
+            sibling.cancel();
 
-            fut.get(getTestTimeout());
+        fut.get(getTestTimeout());
 
-            assertTrue(waitForCondition(() -> SRV_NODES_CNT == CANCELLED_JOB_CNT.get(), getTestTimeout()));
-            assertEquals(0, EXECUTED_JOB_CNT.get());
-        }
-        finally {
-            taskUnblockedLatch.countDown();
-        }
+        assertTrue(waitForCondition(() -> SRV_NODES_CNT == CANCELLED_JOB_CNT.get(), getTestTimeout()));
+        assertEquals(0, EXECUTED_JOB_CNT.get());
     }
 
     /** */
@@ -430,54 +425,49 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
         CANCELLED_JOB_CNT.set(0);
         EXECUTED_JOB_CNT.set(0);
 
-        try {
-            ComputeTaskFuture<Object> fut = grid(0).compute().executeAsync(CancelForbiddenTask.class, null);
+        ComputeTaskFuture<Object> fut = grid(0).compute().executeAsync(CancelForbiddenTask.class, null);
 
-            taskStartedLatch.await(getTestTimeout(), MILLISECONDS);
+        taskStartedLatch.await(getTestTimeout(), MILLISECONDS);
 
-            for (ComputeJobSibling sibling : fut.getTaskSession().getJobSiblings()) {
-                LogListener logLsnr = LogListener.matches("Failed to cancel Ignite Compute Task Job" +
-                    " [sesId=" + fut.getTaskSession().getId() +
-                    ", jobId=" + sibling.getJobId() + ']'
-                ).build();
+        for (ComputeJobSibling sibling : fut.getTaskSession().getJobSiblings()) {
+            LogListener logLsnr = LogListener.matches("Failed to cancel Ignite Compute Task Job" +
+                " [sesId=" + fut.getTaskSession().getId() +
+                ", jobId=" + sibling.getJobId() + ']'
+            ).build();
 
-                listeningLog.registerListener(logLsnr);
+            listeningLog.registerListener(logLsnr);
 
-                // TODO https://issues.apache.org/jira/browse/IGNITE-27195 Authorization errors during Compute Job
-                //  cancellation do not propagate from remote nodes back to the one that initiated cancellation.
-                if (grid(0).context().job().activeJob(sibling.getJobId()) != null) {
-                    assertThrowsAnyCause(
-                        log,
-                        () -> {
-                            sibling.cancel();
+            // TODO https://issues.apache.org/jira/browse/IGNITE-27195 Authorization errors during Compute Job
+            //  cancellation do not propagate from remote nodes back to the one that initiated cancellation.
+            if (grid(0).context().job().activeJob(sibling.getJobId()) != null) {
+                assertThrowsAnyCause(
+                    log,
+                    () -> {
+                        sibling.cancel();
 
-                            return null;
-                        },
-                        SecurityException.class,
-                        "Authorization failed"
-                    );
-                }
-                else
-                    sibling.cancel();
-
-                logLsnr.check(getTestTimeout());
+                        return null;
+                    },
+                    SecurityException.class,
+                    "Authorization failed"
+                );
             }
+            else
+                sibling.cancel();
 
-            assertEquals(0, EXECUTED_JOB_CNT.get());
-            assertEquals(0, CANCELLED_JOB_CNT.get());
-
-            assertFalse(fut.isDone());
-
-            taskUnblockedLatch.countDown();
-
-            fut.get(getTestTimeout());
-
-            assertTrue(waitForCondition(() -> SRV_NODES_CNT == EXECUTED_JOB_CNT.get(), getTestTimeout()));
-            assertEquals(0, CANCELLED_JOB_CNT.get());
+            logLsnr.check(getTestTimeout());
         }
-        finally {
-            taskUnblockedLatch.countDown();
-        }
+
+        assertEquals(0, EXECUTED_JOB_CNT.get());
+        assertEquals(0, CANCELLED_JOB_CNT.get());
+
+        assertFalse(fut.isDone());
+
+        taskUnblockedLatch.countDown();
+
+        fut.get(getTestTimeout());
+
+        assertTrue(waitForCondition(() -> SRV_NODES_CNT == EXECUTED_JOB_CNT.get(), getTestTimeout()));
+        assertEquals(0, CANCELLED_JOB_CNT.get());
     }
 
     /** */
@@ -530,38 +520,33 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
         CANCELLED_JOB_CNT.set(0);
         EXECUTED_JOB_CNT.set(0);
 
-        try {
-            Future<?> fut = taskStarter.get();
+        Future<?> fut = taskStarter.get();
 
-            assertTrue(taskStartedLatch.await(getTestTimeout(), MILLISECONDS));
+        assertTrue(taskStartedLatch.await(getTestTimeout(), MILLISECONDS));
 
-            try (
-                OperationSecurityContext ignored = initiator == null
-                    ? null
-                    : grid(0).context().security().withContext(initiator)
-            ) {
-                if (expE == null) {
-                    fut.cancel(true);
+        try (
+            OperationSecurityContext ignored = initiator == null
+                ? null
+                : grid(0).context().security().withContext(initiator)
+        ) {
+            if (expE == null) {
+                fut.cancel(true);
 
-                    assertTrue(fut.isCancelled());
+                assertTrue(fut.isCancelled());
 
-                    assertTrue(waitForCondition(() -> expTaskCnt == CANCELLED_JOB_CNT.get(), getTestTimeout()));
+                assertTrue(waitForCondition(() -> expTaskCnt == CANCELLED_JOB_CNT.get(), getTestTimeout()));
 
-                    assertEquals(0, EXECUTED_JOB_CNT.get());
-                }
-                else {
-                    assertThrowsWithCause(() -> fut.cancel(true), expE);
-
-                    assertFalse(fut.isCancelled());
-
-                    taskUnblockedLatch.countDown();
-
-                    assertTrue(waitForCondition(() -> expTaskCnt == EXECUTED_JOB_CNT.get(), getTestTimeout()));
-                }
+                assertEquals(0, EXECUTED_JOB_CNT.get());
             }
-        }
-        finally {
-            taskUnblockedLatch.countDown();
+            else {
+                assertThrowsWithCause(() -> fut.cancel(true), expE);
+
+                assertFalse(fut.isCancelled());
+
+                taskUnblockedLatch.countDown();
+
+                assertTrue(waitForCondition(() -> expTaskCnt == EXECUTED_JOB_CNT.get(), getTestTimeout()));
+            }
         }
     }
 
