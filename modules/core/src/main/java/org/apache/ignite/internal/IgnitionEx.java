@@ -38,7 +38,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -148,6 +147,7 @@ import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEMORY_PO
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+import static org.apache.ignite.internal.thread.IgniteScheduledThreadPoolExecutor.newSingleThreadScheduledExecutor;
 import static org.apache.ignite.internal.util.IgniteUtils.EMPTY_STRS;
 import static org.apache.ignite.internal.util.IgniteUtils.IGNITE_MBEANS_DISABLED;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
@@ -349,7 +349,7 @@ public class IgnitionEx {
      */
     @Deprecated
     public static boolean stop(@Nullable String name, boolean cancel, boolean stopNotStarted, long timeoutMs) {
-        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        final ScheduledExecutorService executor = newSingleThreadScheduledExecutor("ignite-stop-await-worker", name);
 
         // Schedule delayed node killing if graceful stopping will be not finished within timeout.
         executor.schedule(new Runnable() {

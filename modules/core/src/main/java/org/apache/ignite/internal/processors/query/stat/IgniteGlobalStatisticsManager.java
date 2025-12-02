@@ -58,9 +58,9 @@ import org.apache.ignite.internal.processors.query.stat.messages.StatisticsReque
 import org.apache.ignite.internal.processors.query.stat.messages.StatisticsResponse;
 import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnConfigurationView;
 import org.apache.ignite.internal.processors.query.stat.view.StatisticsColumnGlobalDataView;
+import org.apache.ignite.internal.thread.IgniteThreadPoolExecutor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 /**
  * Global statistics manager. Cache global statistics and collect it.
