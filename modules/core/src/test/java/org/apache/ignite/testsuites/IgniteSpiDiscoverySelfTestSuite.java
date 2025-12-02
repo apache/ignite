@@ -49,10 +49,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryDeadNodeAddressResolvingT
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryFailedJoinTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIpFinderCleanerTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIpFinderFailureTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMdcPlainPendingMessageDeliveryTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMdcPlainSelfTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMdcReversedPendingMessageDeliveryTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMdcReversedSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMdcRandomSelfTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMdcSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMetricsWarnLogTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryMultiThreadedTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNetworkIssuesTest;
@@ -60,6 +58,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeAttributesUpdateOnRec
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConfigConsistentIdSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConsistentIdSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeJoinAndFailureTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryPendingMessageDeliveryMdcRandomTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryPendingMessageDeliveryMdcTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryPendingMessageDeliveryTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryReconnectUnstableTopologyTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryRestartTest;
@@ -191,10 +191,10 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
     TcpDiscoveryDeadNodeAddressResolvingTest.class,
 
     // MDC.
-    TcpDiscoveryMdcPlainSelfTest.class,
-    TcpDiscoveryMdcReversedSelfTest.class,
-    TcpDiscoveryMdcPlainPendingMessageDeliveryTest.class,
-    TcpDiscoveryMdcReversedPendingMessageDeliveryTest.class,
+    TcpDiscoveryMdcSelfTest.class,
+    TcpDiscoveryMdcRandomSelfTest.class,
+    TcpDiscoveryPendingMessageDeliveryMdcTest.class,
+    TcpDiscoveryPendingMessageDeliveryMdcRandomTest.class,
     MultiDataCenterDeploymentTest.class,
     MultiDataCenterRignTest.class,
     MultiDataCenterClientRoutingTest.class,

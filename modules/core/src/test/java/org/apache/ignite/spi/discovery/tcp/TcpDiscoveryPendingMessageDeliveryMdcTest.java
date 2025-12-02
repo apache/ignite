@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 /**
  *
  */
-public class TcpDiscoveryMdcPlainPendingMessageDeliveryTest extends TcpDiscoveryPendingMessageDeliveryTest {
+public class TcpDiscoveryPendingMessageDeliveryMdcTest extends TcpDiscoveryPendingMessageDeliveryTest {
     /** */
     protected static final String DC_ID_0 = "DC0";
 

@@ -18,21 +18,44 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
- * Test for {@link TcpDiscoverySpi} with Multi Data Centers where coordinator changed on second node join.
+ * Test for {@link TcpDiscoverySpi} with Multi Data Centers.
  */
-public class TcpDiscoveryMdcReversedSelfTest extends TcpDiscoveryMdcPlainSelfTest {
+public class TcpDiscoveryMdcSelfTest extends TcpDiscoverySelfTest {
+    /** */
+    protected static final String DC_ID_0 = "DC0";
+
+    /** */
+    protected static final String DC_ID_1 = "DC1";
+
     /**
      * @throws Exception If fails.
      */
-    public TcpDiscoveryMdcReversedSelfTest() throws Exception {
+    public TcpDiscoveryMdcSelfTest() throws Exception {
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        applyDC();
+
+        return cfg;
     }
 
     /** */
-    @Override protected void applyDC() {
+    protected void applyDC() {
         String prev = System.getProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
 
-        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, prev == null ? DC_ID_1 : DC_ID_0);
+        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, prev == null ? DC_ID_0 : DC_ID_1);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
     }
 }

@@ -17,17 +17,20 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteSystemProperties;
 
 /**
  *
  */
-public class TcpDiscoveryMdcReversedPendingMessageDeliveryTest extends TcpDiscoveryMdcPlainPendingMessageDeliveryTest {
+public class TcpDiscoveryPendingMessageDeliveryMdcRandomTest extends TcpDiscoveryPendingMessageDeliveryMdcTest {
     /** */
     @Override protected void applyDC() {
-        String prev = System.getProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, prev == null ? DC_ID_1 : DC_ID_0);
+        boolean mainDc = rnd.nextBoolean();
+
+        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, mainDc ? DC_ID_0 : DC_ID_1);
     }
 }
 
