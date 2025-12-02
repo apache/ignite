@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.UserObject;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -221,6 +222,13 @@ public interface MessageReader {
      * @return Grid long list.
      */
     public GridLongList readGridLongList();
+
+    /**
+     * Reads user object.
+     *
+     * @return User object wrapper.
+     */
+    public UserObject readUserObject();
 
     /**
      * Reads array of objects.
