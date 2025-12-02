@@ -24,11 +24,9 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,7 +44,7 @@ public class IgniteDiagnosticRequest implements Message {
 
     /** Infos to send to a remote node. */
     @Order(2)
-    private final Set<DiagnosticBaseInfo> infos = new LinkedHashSet<>();
+    private Collection<DiagnosticBaseInfo> infos;
 
     /** Local message related to remote info. */
     private final Map<Object, List<String>> msgs = new LinkedHashMap<>();
@@ -77,26 +75,10 @@ public class IgniteDiagnosticRequest implements Message {
     public IgniteDiagnosticRequest(long futId, UUID nodeId, Collection<DiagnosticBaseInfo> infos) {
         this(nodeId);
 
+        assert infos != null;
+
         this.futId = futId;
-        this.infos.addAll(infos);
-    }
-
-    /**
-     * @param sb String builder.
-     * @param ctx Grid context.
-     */
-    private void moreInfo(StringBuilder sb, GridKernalContext ctx) {
-        for (IgniteDiagnosticRequest.DiagnosticBaseInfo baseInfo : infos) {
-            try {
-                baseInfo.appendInfo(sb, ctx);
-            }
-            catch (Exception e) {
-                ctx.cluster().diagnosticLog().error(
-                    "Failed to populate diagnostic with additional information: " + e, e);
-
-                sb.append(U.nl()).append("Failed to populate diagnostic with additional information: ").append(e);
-            }
-        }
+        this.infos = new LinkedHashSet<>(infos);
     }
 
     /**
@@ -127,13 +109,21 @@ public class IgniteDiagnosticRequest implements Message {
         msgs.computeIfAbsent(key, k -> new ArrayList<>()).add(msg);
 
         if (baseInfo != null) {
-            if (!infos.add(baseInfo) && baseInfo instanceof TxEntriesInfo) {
-                for (IgniteDiagnosticRequest.DiagnosticBaseInfo baseInfo0 : infos) {
+            if (!infos0().add(baseInfo) && baseInfo instanceof TxEntriesInfo) {
+                for (IgniteDiagnosticRequest.DiagnosticBaseInfo baseInfo0 : infos0()) {
                     if (baseInfo0.equals(baseInfo))
                         baseInfo0.merge(baseInfo);
                 }
             }
         }
+    }
+
+    /** */
+    private Collection<DiagnosticBaseInfo> infos0() {
+        if (infos == null)
+            infos = new LinkedHashSet<>();
+
+        return infos;
     }
 
     /** */
@@ -160,15 +150,14 @@ public class IgniteDiagnosticRequest implements Message {
 
     /** @return Compound diagnostic infos.  */
     public Collection<DiagnosticBaseInfo> infos() {
-        return Collections.unmodifiableCollection(infos);
+        return Collections.unmodifiableCollection(infos0());
     }
 
     /** */
     public void infos(Collection<DiagnosticBaseInfo> infos) {
-        this.infos.clear();
+        assert infos != null;
 
-        if (infos != null)
-            this.infos.addAll(infos);
+        this.infos = new LinkedHashSet<>(infos);
     }
 
     /** {@inheritDoc} */
