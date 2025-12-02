@@ -21,7 +21,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteSystemProperties;
 
 /**
- * Test for {@link TcpDiscoverySpi} with Multi Data Centers where coordinator changed on second node join.
+ * Test for {@link TcpDiscoverySpi} with Multi Data Centers.
  */
 public class TcpDiscoveryMdcRandomSelfTest extends TcpDiscoveryMdcSelfTest {
     /**
