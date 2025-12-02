@@ -20,7 +20,6 @@ package org.apache.ignite.internal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -77,7 +76,7 @@ public class IgniteDiagnosticRequest implements Message {
         assert infos != null;
 
         this.futId = futId;
-        this.infos = new LinkedHashSet<>(infos);
+        this.infos = infos;
     }
 
     /**
@@ -109,7 +108,7 @@ public class IgniteDiagnosticRequest implements Message {
 
         if (baseInfo != null) {
             if (infos == null)
-                infos = new LinkedHashSet<>();
+                infos = new ArrayList<>();
 
             if (!infos.add(baseInfo) && baseInfo instanceof TxEntriesInfo) {
                 for (IgniteDiagnosticRequest.DiagnosticBaseInfo baseInfo0 : infos) {
@@ -149,7 +148,7 @@ public class IgniteDiagnosticRequest implements Message {
 
     /** */
     public void infos(Collection<DiagnosticBaseInfo> infos) {
-        this.infos = new LinkedHashSet<>(infos);
+        this.infos = infos;
     }
 
     /** {@inheritDoc} */
