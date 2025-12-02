@@ -58,7 +58,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeAttributesUpdateOnRec
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConfigConsistentIdSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeConsistentIdSelfTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryNodeJoinAndFailureTest;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryPendingMessageDeliveryMdcRandomTest;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryPendingMessageDeliveryMdcReversedTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryPendingMessageDeliveryMdcTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryPendingMessageDeliveryTest;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryReconnectUnstableTopologyTest;
@@ -194,7 +194,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
     TcpDiscoveryMdcSelfTest.class,
     TcpDiscoveryMdcRandomSelfTest.class,
     TcpDiscoveryPendingMessageDeliveryMdcTest.class,
-    TcpDiscoveryPendingMessageDeliveryMdcRandomTest.class,
+    TcpDiscoveryPendingMessageDeliveryMdcReversedTest.class,
     MultiDataCenterDeploymentTest.class,
     MultiDataCenterRignTest.class,
     MultiDataCenterClientRoutingTest.class,

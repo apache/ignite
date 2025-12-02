@@ -121,7 +121,7 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         log.info("Sending dummy custom messages");
 
         // Non-discarded messages shouldn't be dropped from the queue.
-        int msgsNum = 2000;
+        int msgsNum = 20000;
 
         for (int i = 0; i < msgsNum; i++)
             sendDummyCustomMessage(coordDisco, IgniteUuid.randomUuid());
