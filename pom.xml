@@ -72,6 +72,7 @@
         <module>modules/opencensus</module>
         <module>modules/control-utility</module>
         <module>modules/calcite</module>
+        <module>modules/compatibility</module>
     </modules>
 
     <profiles>
@@ -80,7 +81,6 @@
             <modules> <!-- sorted alphabetically -->
                 <module>examples</module>
                 <module>modules/benchmarks</module>
-                <module>modules/compatibility</module>
                 <module>modules/ducktests</module>
                 <module>modules/numa-allocator</module>
                 <module>modules/schedule</module>
@@ -99,13 +99,6 @@
             <id>numa-allocator</id>
             <modules>
                 <module>modules/numa-allocator</module>
-            </modules>
-        </profile>
-
-        <profile>
-            <id>compatibility</id>
-            <modules>
-                <module>modules/compatibility</module>
             </modules>
         </profile>
 
