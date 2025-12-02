@@ -66,7 +66,12 @@ public class RollingUpgradeStatusCommand implements ComputeCommand<NoArg, Rollin
             .collect(Collectors.groupingBy(RollingUpgradeStatusNode::version, TreeMap::new, Collectors.toList()))
             .forEach((ver, nodes) -> {
                 printer.accept("Version " + ver + ":");
-                nodes.forEach(node -> printer.accept("  " + node.consistentId() + "@" + node.address()));
+                nodes.forEach(node -> printer.accept("    [id=" + node.uuid() +
+                    ", consistentId=" + node.consistentId() +
+                    ", addrs=" + node.addresses() +
+                    ", order=" + node.order() +
+                    ", isClient=" + node.client() +
+                    "]"));
             });
     }
 

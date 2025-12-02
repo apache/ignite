@@ -258,9 +258,9 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         assertNotNull(nodes);
         assertEquals(SERVER_NODE_CNT + 2, nodes.size());
 
-        List<RollingUpgradeStatusNode> oldNodes = nodes.stream().filter(n -> n.version().equals(curVer)).collect(toList());
+        List<RollingUpgradeStatusNode> oldNodes = nodes.stream().filter(node -> node.version().equals(curVer)).collect(toList());
 
-        List<RollingUpgradeStatusNode> newNodes = nodes.stream().filter(n -> n.version().equals(targetVer)).collect(toList());
+        List<RollingUpgradeStatusNode> newNodes = nodes.stream().filter(node -> node.version().equals(targetVer)).collect(toList());
 
         assertEquals(SERVER_NODE_CNT + 1, oldNodes.size());
         assertEquals(1, newNodes.size());
@@ -278,10 +278,20 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         expectedLines.add("Target version: " + targetVer);
 
         expectedLines.add("Version " + curVer + ":");
-        oldNodes.forEach(node -> expectedLines.add("  " + node.consistentId() + "@" + node.address()));
+        oldNodes.forEach(node -> expectedLines.add("    [id=" + node.uuid() +
+            ", consistentId=" + node.consistentId() +
+            ", addrs=" + node.addresses() +
+            ", order=" + node.order() +
+            ", isClient=" + node.client() +
+            "]"));
 
         expectedLines.add("Version " + targetVer + ":");
-        newNodes.forEach(node -> expectedLines.add("  " + node.consistentId() + "@" + node.address()));
+        newNodes.forEach(node -> expectedLines.add("    [id=" + node.uuid() +
+            ", consistentId=" + node.consistentId() +
+            ", addrs=" + node.addresses() +
+            ", order=" + node.order() +
+            ", isClient=" + node.client() +
+            "]"));
 
         assertEquals(expectedLines, lines);
     }
