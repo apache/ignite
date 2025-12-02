@@ -40,6 +40,7 @@ import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 
 /**
@@ -288,7 +289,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         out.unsafeWriteByte(GridBinaryMarshaller.OBJ);
         out.unsafeWriteByte(GridBinaryMarshaller.PROTO_VER);
         out.unsafeWriteShort(flags);
-        out.unsafeWriteInt(registered ? typeId : GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+        out.unsafeWriteInt(registered ? typeId : UNREGISTERED_TYPE_ID);
         out.unsafePosition(start + GridBinaryMarshaller.TOTAL_LEN_POS);
         out.unsafeWriteInt(retPos - start);
         out.unsafeWriteInt(schemaId);
@@ -357,7 +358,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             );
             out.unsafeWriteInt(val.componentTypeId());
 
-            if (val.componentTypeId() == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
+            if (val.componentTypeId() == UNREGISTERED_TYPE_ID)
                 writeString(val.componentClassName());
 
             out.writeInt(val.array().length);
@@ -375,7 +376,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
 
         int typeId = val.typeId();
 
-        if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
+        if (typeId != UNREGISTERED_TYPE_ID) {
             out.unsafeEnsure(1 + 4 + 4);
 
             out.unsafeWriteByte(GridBinaryMarshaller.BINARY_ENUM);
@@ -412,7 +413,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
                 if (desc.registered())
                     out.writeInt(desc.typeId());
                 else {
-                    out.writeInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+                    out.writeInt(UNREGISTERED_TYPE_ID);
 
                     writeString(intf.getName());
                 }
@@ -460,7 +461,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             if (desc.registered())
                 out.unsafeWriteInt(desc.typeId());
             else {
-                out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+                out.unsafeWriteInt(UNREGISTERED_TYPE_ID);
 
                 writeString(val.getName());
             }
@@ -838,6 +839,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         if (obj == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
+            // Store state.
             int typeId0 = this.typeId;
             int start0 = this.start;
             int rawOffPos0 = this.rawOffPos;
@@ -845,11 +847,13 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             int fieldCnt0 = this.fieldCnt;
             BinaryInternalMapper mapper0 = this.mapper;
 
-            clearState();
             // Handles not cleared, because, in this mode they shared down to hierarchy.
+            clearState(false);
 
+            // Maybe recursive `writeObject` invocation which will change state.
             marshal(obj);
 
+            // Restore state.
             this.typeId = typeId0;
             this.start = start0;
             this.rawOffPos = rawOffPos0;
@@ -864,6 +868,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         if (obj == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
+            // Store state.
             int typeId0 = this.typeId;
             int start0 = this.start;
             int rawOffPos0 = this.rawOffPos;
@@ -872,12 +877,13 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             BinaryInternalMapper mapper0 = this.mapper;
             BinaryWriterHandles handles0 = this.handles;
 
-            clearState();
             // Handles cleared, because, in this mode they are NOT shared down to hierarchy.
-            this.handles = null;
+            clearState(true);
 
+            // Maybe recursive `writeObject` invocation which will change state.
             marshal(obj);
 
+            // Restore state.
             this.typeId = typeId0;
             this.start = start0;
             this.rawOffPos = rawOffPos0;
@@ -1189,7 +1195,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             if (desc.registered())
                 out.unsafeWriteInt(desc.typeId());
             else {
-                out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+                out.unsafeWriteInt(UNREGISTERED_TYPE_ID);
 
                 writeString(val.getClass().getComponentType().getName());
             }
@@ -1273,7 +1279,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             if (desc.registered())
                 out.unsafeWriteInt(desc.typeId());
             else {
-                out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+                out.unsafeWriteInt(UNREGISTERED_TYPE_ID);
                 writeString(val.getDeclaringClass().getName());
             }
 
@@ -1313,7 +1319,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             if (desc.registered())
                 out.unsafeWriteInt(desc.typeId());
             else {
-                out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+                out.unsafeWriteInt(UNREGISTERED_TYPE_ID);
 
                 writeString(val.getClass().getComponentType().getName());
             }
@@ -1570,12 +1576,15 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     }
 
     /** Clears writer state. */
-    private void clearState() {
-        this.typeId = 0;
+    private void clearState(boolean clearHandler) {
+        this.typeId = UNREGISTERED_TYPE_ID;
         this.start = out.position();
         this.rawOffPos = 0;
         this.schemaId = BinaryUtils.schemaInitialId();
         this.fieldCnt = 0;
         this.mapper = null;
+
+        if (clearHandler)
+            this.handles = null;
     }
 }
