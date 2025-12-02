@@ -50,11 +50,8 @@ public class GridJobExecuteResponse implements Message {
     private IgniteUuid jobId;
 
     /** Job result exception call holder. */
-    @Order(value = 3, method = "exceptionBytes")
-    private @Nullable byte[] gridExBytes;
-
-    /** */
-    private IgniteException gridEx;
+    @Order(value = 3, method = "gridExceptionHolder")
+    private UserObject gridExHolder;
 
     /** Job result serialization call holder. */
     @Order(value = 4, method = "jobResultBytes")
@@ -63,7 +60,6 @@ public class GridJobExecuteResponse implements Message {
     /** */
     private @Nullable Object res;
 
-    /** */
     /** Job attributes serialization call holder. */
     @Order(value = 5, method = "jobAttrubutesBytes")
     private byte[] jobAttrsBytes;
@@ -120,7 +116,7 @@ public class GridJobExecuteResponse implements Message {
         this.jobAttrs = jobAttrs;
         this.isCancelled = isCancelled;
         this.retry = retry;
-        this.gridEx = gridEx;
+        this.gridExHolder = new UserObjectImpl(gridEx);
     }
 
     /**
@@ -170,17 +166,19 @@ public class GridJobExecuteResponse implements Message {
      * @return Job exception.
      */
     @Nullable public IgniteException exception() {
-        return gridEx;
+        return (IgniteException)gridExHolder.get();
+    }
+
+    /**
+     * @return Job exception holder.
+     */
+    @Nullable public UserObject gridExceptionHolder() {
+        return gridExHolder;
     }
 
     /** */
-    public void exceptionBytes(@Nullable byte[] gridExBytes) {
-        this.gridExBytes = gridExBytes;
-    }
-
-    /** */
-    public @Nullable byte[] exceptionBytes() {
-        return gridExBytes;
+    public void gridExceptionHolder(@Nullable UserObject gridExHolder) {
+        this.gridExHolder = gridExHolder;
     }
 
     /**
@@ -265,23 +263,6 @@ public class GridJobExecuteResponse implements Message {
      * Erases non-marshalled data like {@link #getJobAttributes()} or {@link #getJobResult()}.
      */
     public void marshallUserData(Marshaller marsh, @Nullable IgniteLogger log) {
-        if (gridEx != null) {
-            try {
-                gridExBytes = U.marshal(marsh, gridEx);
-            }
-            catch (IgniteCheckedException e) {
-                gridExBytes = null;
-
-                String msg = "Failed to serialize job exception [nodeId=" + nodeId +
-                    ", ses=" + sesId + ", jobId=" + jobId +
-                    ", msg=\"" + e.getMessage() + "\"]";
-
-                wrapSerializationError(e, msg, log);
-            }
-
-            gridEx = null;
-        }
-
         if (res != null) {
             try {
                 resBytes = U.marshal(marsh, res);
@@ -333,20 +314,33 @@ public class GridJobExecuteResponse implements Message {
 
             resBytes = null;
         }
-
-        if (gridExBytes != null) {
-            gridEx = U.unmarshal(marshaller, gridExBytes, clsLdr);
-
-            gridExBytes = null;
-        }
     }
 
-    /** */
+    /**
+     * Wraps a user object serialization exception before sending a message over the network.
+     *
+     * <p>This method is used to handle exceptions that occur while serializing a user object
+     * to be sent across the network. It ensures that the exception is properly recorded and
+     * stored in {@code gridExHolder} as a {@link UserObjectImpl} instance.
+     *
+     * <p>Important notes:
+     * <ul>
+     *     <li>The holder {@code gridExHolder} is always set to a {@link UserObjectImpl} instance.
+     *         It is <b>not</b> a proxy, because at this point we already know the object
+     *         we are storing is an exception.</li>
+     *     <li>If {@code gridExHolder} already contains a previous exception, it is added as
+     *         a suppressed exception to the new {@link IgniteCheckedException}.</li>
+     * </ul>
+     *
+     * @param e The serialization exception that occurred.
+     * @param msg The log message to use if logging the error.
+     * @param log Optional logger; may be null.
+     */
     private void wrapSerializationError(IgniteCheckedException e, String msg, @Nullable IgniteLogger log) {
-        if (gridEx != null)
-            e.addSuppressed(gridEx);
+        if (gridExHolder != null)
+            e.addSuppressed((IgniteException)gridExHolder.get());
 
-        gridEx = U.convertException(e);
+        gridExHolder = new UserObjectImpl(U.convertException(e));
 
         if (log != null && (log.isDebugEnabled() || !X.hasCause(e, NodeStoppingException.class)))
             U.error(log, msg, e);
