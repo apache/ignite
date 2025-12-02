@@ -12,7 +12,7 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License.
+ * limitations under the License.`
  */
 
 package org.apache.ignite.internal;
@@ -108,21 +108,16 @@ public class IgniteDiagnosticRequest implements Message {
         msgs.computeIfAbsent(key, k -> new ArrayList<>()).add(msg);
 
         if (baseInfo != null) {
-            if (!infos0().add(baseInfo) && baseInfo instanceof TxEntriesInfo) {
-                for (IgniteDiagnosticRequest.DiagnosticBaseInfo baseInfo0 : infos0()) {
+            if (infos == null)
+                infos = new LinkedHashSet<>();
+
+            if (!infos.add(baseInfo) && baseInfo instanceof TxEntriesInfo) {
+                for (IgniteDiagnosticRequest.DiagnosticBaseInfo baseInfo0 : infos) {
                     if (baseInfo0.equals(baseInfo))
                         baseInfo0.merge(baseInfo);
                 }
             }
         }
-    }
-
-    /** */
-    private Collection<DiagnosticBaseInfo> infos0() {
-        if (infos == null)
-            infos = new LinkedHashSet<>();
-
-        return infos;
     }
 
     /** */
@@ -149,13 +144,11 @@ public class IgniteDiagnosticRequest implements Message {
 
     /** @return Compound diagnostic infos.  */
     public Collection<DiagnosticBaseInfo> infos() {
-        return infos0();
+        return infos;
     }
 
     /** */
     public void infos(Collection<DiagnosticBaseInfo> infos) {
-        assert infos != null;
-
         this.infos = new LinkedHashSet<>(infos);
     }
 
