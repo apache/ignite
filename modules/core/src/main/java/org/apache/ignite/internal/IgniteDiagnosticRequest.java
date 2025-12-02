@@ -35,21 +35,17 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class IgniteDiagnosticMessage implements Message {
+public class IgniteDiagnosticRequest implements Message {
     /** */
-    @Order(value = 0, method = "infoResponse")
-    private @Nullable String infoResp;
-
-    /** */
-    @Order(value = 1, method = "futureId")
+    @Order(value = 0, method = "futureId")
     private long futId;
 
     /** Originator node id. */
-    @Order(2)
+    @Order(1)
     private UUID nodeId;
 
     /** Infos to send to a remote node. */
-    @Order(3)
+    @Order(2)
     private final Set<DiagnosticBaseInfo> infos = new LinkedHashSet<>();
 
     /** Local message related to remote info. */
@@ -58,7 +54,7 @@ public class IgniteDiagnosticMessage implements Message {
     /**
      * Default constructor required by {@link GridIoMessageFactory}.
      */
-    public IgniteDiagnosticMessage() {
+    public IgniteDiagnosticRequest() {
         // No-op.
     }
 
@@ -67,7 +63,7 @@ public class IgniteDiagnosticMessage implements Message {
      *
      * @param nodeId Originator node ID.
      */
-    IgniteDiagnosticMessage(UUID nodeId) {
+    IgniteDiagnosticRequest(UUID nodeId) {
         this.nodeId = nodeId;
     }
 
@@ -78,7 +74,7 @@ public class IgniteDiagnosticMessage implements Message {
      * @param nodeId Node ID.
      * @param infos Diagnostic infos.
      */
-    public IgniteDiagnosticMessage(long futId, UUID nodeId, Collection<DiagnosticBaseInfo> infos) {
+    public IgniteDiagnosticRequest(long futId, UUID nodeId, Collection<DiagnosticBaseInfo> infos) {
         this(nodeId);
 
         this.futId = futId;
@@ -86,22 +82,11 @@ public class IgniteDiagnosticMessage implements Message {
     }
 
     /**
-     * Creates a diagnostic response.
-     *
-     * @param resp Diagnostic info result.
-     * @param futId Future ID.
-     */
-    public IgniteDiagnosticMessage(String resp, long futId) {
-        this.futId = futId;
-        infoResp = resp;
-    }
-
-    /**
      * @param sb String builder.
      * @param ctx Grid context.
      */
     private void moreInfo(StringBuilder sb, GridKernalContext ctx) {
-        for (IgniteDiagnosticMessage.DiagnosticBaseInfo baseInfo : infos) {
+        for (IgniteDiagnosticRequest.DiagnosticBaseInfo baseInfo : infos) {
             try {
                 baseInfo.appendInfo(sb, ctx);
             }
@@ -136,14 +121,14 @@ public class IgniteDiagnosticMessage implements Message {
      * @param msg Message.
      * @param baseInfo Info or {@code null} if only basic info is needed.
      */
-    void add(String msg, @Nullable IgniteDiagnosticMessage.DiagnosticBaseInfo baseInfo) {
+    void add(String msg, @Nullable IgniteDiagnosticRequest.DiagnosticBaseInfo baseInfo) {
         Object key = baseInfo != null ? baseInfo : getClass();
 
         msgs.computeIfAbsent(key, k -> new ArrayList<>()).add(msg);
 
         if (baseInfo != null) {
             if (!infos.add(baseInfo) && baseInfo instanceof TxEntriesInfo) {
-                for (IgniteDiagnosticMessage.DiagnosticBaseInfo baseInfo0 : infos) {
+                for (IgniteDiagnosticRequest.DiagnosticBaseInfo baseInfo0 : infos) {
                     if (baseInfo0.equals(baseInfo))
                         baseInfo0.merge(baseInfo);
                 }
@@ -173,13 +158,6 @@ public class IgniteDiagnosticMessage implements Message {
         this.futId = futId;
     }
 
-    /**
-     * @return {@code True} if this is request message.
-     */
-    public boolean request() {
-        return infoResp == null;
-    }
-
     /** @return Compound diagnostic infos.  */
     public Collection<DiagnosticBaseInfo> infos() {
         return Collections.unmodifiableCollection(infos);
@@ -193,17 +171,6 @@ public class IgniteDiagnosticMessage implements Message {
             this.infos.addAll(infos);
     }
 
-    /** */
-    public @Nullable String infoResponse() {
-        return infoResp;
-    }
-
-    /** */
-    public void infoResponse(@Nullable String infoResp) {
-        this.infoResp = infoResp;
-    }
-
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return -61;
@@ -211,7 +178,7 @@ public class IgniteDiagnosticMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteDiagnosticMessage.class, this);
+        return S.toString(IgniteDiagnosticRequest.class, this);
     }
 
     /** */

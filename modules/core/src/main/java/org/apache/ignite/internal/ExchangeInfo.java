@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public final class ExchangeInfo extends IgniteDiagnosticMessage.DiagnosticBaseInfo {
+public final class ExchangeInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
     /** */
     @Order(value = 0, method = "topologyVersion")
     private AffinityTopologyVersion topVer;
@@ -56,7 +56,7 @@ public final class ExchangeInfo extends IgniteDiagnosticMessage.DiagnosticBaseIn
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -62;
+        return -63;
     }
 
     /** {@inheritDoc} */

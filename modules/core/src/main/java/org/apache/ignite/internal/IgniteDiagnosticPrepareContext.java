@@ -44,7 +44,7 @@ public class IgniteDiagnosticPrepareContext {
     private final UUID locNodeId;
 
     /** */
-    private final Map<UUID, IgniteDiagnosticMessage> info = new HashMap<>();
+    private final Map<UUID, IgniteDiagnosticRequest> info = new HashMap<>();
 
     /**
      * @param nodeId Local node ID.
@@ -94,8 +94,8 @@ public class IgniteDiagnosticPrepareContext {
      * @param nodeId Remote node ID.
      * @return Compound info.
      */
-    private IgniteDiagnosticMessage diagnosticInfo(UUID nodeId) {
-        return info.computeIfAbsent(nodeId, nid -> new IgniteDiagnosticMessage(locNodeId));
+    private IgniteDiagnosticRequest diagnosticInfo(UUID nodeId) {
+        return info.computeIfAbsent(nodeId, nid -> new IgniteDiagnosticRequest(locNodeId));
     }
 
     /**
@@ -110,7 +110,7 @@ public class IgniteDiagnosticPrepareContext {
      * @param lsnr Optional listener (used in test).
      */
     public void send(GridKernalContext ctx, @Nullable IgniteInClosure<IgniteInternalFuture<String>> lsnr) {
-        for (Map.Entry<UUID, IgniteDiagnosticMessage> entry : info.entrySet()) {
+        for (Map.Entry<UUID, IgniteDiagnosticRequest> entry : info.entrySet()) {
             IgniteInternalFuture<String> fut = ctx.cluster().requestDiagnosticInfo(entry.getKey(), entry.getValue());
 
             if (lsnr != null)
@@ -145,7 +145,7 @@ public class IgniteDiagnosticPrepareContext {
      * @param req Diagnostic info request.
      * @return Diagnostic info response.
      */
-    public static IgniteDiagnosticMessage diagnosticInfoResponse(GridKernalContext ctx, IgniteDiagnosticMessage req) {
+    public static IgniteDiagnosticResponse diagnosticInfoResponse(GridKernalContext ctx, IgniteDiagnosticRequest req) {
         try {
             IgniteInternalFuture<String> commInfo = dumpCommunicationInfo(ctx, req.nodeId());
 
@@ -165,12 +165,12 @@ public class IgniteDiagnosticPrepareContext {
 
             moreInfo(sb, ctx, req.infos());
 
-            return new IgniteDiagnosticMessage(sb.toString(), req.futureId());
+            return new IgniteDiagnosticResponse(req.futureId(), sb.toString());
         }
         catch (Exception e) {
             ctx.cluster().diagnosticLog().error("Failed to execute diagnostic message closure: " + e, e);
 
-            return new IgniteDiagnosticMessage("Failed to execute diagnostic message closure: " + e, req.futureId());
+            return new IgniteDiagnosticResponse(req.futureId(), "Failed to execute diagnostic message closure: " + e);
         }
     }
 
@@ -214,8 +214,8 @@ public class IgniteDiagnosticPrepareContext {
      * @param ctx Grid context.
      * @param info Collection of the infos.
      */
-    private static void moreInfo(StringBuilder sb, GridKernalContext ctx, Collection<IgniteDiagnosticMessage.DiagnosticBaseInfo> info) {
-        for (IgniteDiagnosticMessage.DiagnosticBaseInfo baseInfo : info) {
+    private static void moreInfo(StringBuilder sb, GridKernalContext ctx, Collection<IgniteDiagnosticRequest.DiagnosticBaseInfo> info) {
+        for (IgniteDiagnosticRequest.DiagnosticBaseInfo baseInfo : info) {
             try {
                 baseInfo.appendInfo(sb, ctx);
             }

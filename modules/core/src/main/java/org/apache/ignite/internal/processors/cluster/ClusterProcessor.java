@@ -40,8 +40,9 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
+import org.apache.ignite.internal.IgniteDiagnosticRequest;
+import org.apache.ignite.internal.IgniteDiagnosticResponse;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -376,44 +377,44 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
         ctx.io().addMessageListener(TOPIC_INTERNAL_DIAGNOSTIC, new GridMessageListener() {
             @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
-                if (msg instanceof IgniteDiagnosticMessage) {
-                    IgniteDiagnosticMessage msg0 = (IgniteDiagnosticMessage)msg;
+                if (msg instanceof IgniteDiagnosticRequest) {
+                    IgniteDiagnosticRequest infoReq = (IgniteDiagnosticRequest)msg;
 
-                    if (msg0.request()) {
-                        ClusterNode node = ctx.discovery().node(nodeId);
+                    ClusterNode node = ctx.discovery().node(nodeId);
 
-                        if (node == null) {
-                            if (diagnosticLog.isDebugEnabled()) {
-                                diagnosticLog.debug("Skip diagnostic request, sender node left " +
-                                    "[node=" + nodeId + ", msg=" + msg + ']');
-                            }
-
-                            return;
+                    if (node == null) {
+                        if (diagnosticLog.isDebugEnabled()) {
+                            diagnosticLog.debug("Skip diagnostic request, sender node left " +
+                                "[node=" + nodeId + ", msg=" + msg + ']');
                         }
 
-                        IgniteDiagnosticMessage res = IgniteDiagnosticPrepareContext.diagnosticInfoResponse(ctx, msg0);
+                        return;
+                    }
 
-                        try {
-                            ctx.io().sendToGridTopic(node, TOPIC_INTERNAL_DIAGNOSTIC, res, GridIoPolicy.SYSTEM_POOL);
-                        }
-                        catch (ClusterTopologyCheckedException e) {
-                            if (diagnosticLog.isDebugEnabled()) {
-                                diagnosticLog.debug("Failed to send diagnostic response, node left " +
-                                    "[node=" + nodeId + ", msg=" + msg + ']');
-                            }
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(diagnosticLog, "Failed to send diagnostic response [msg=" + msg0 + "]", e);
+                    IgniteDiagnosticResponse res = IgniteDiagnosticPrepareContext.diagnosticInfoResponse(ctx, infoReq);
+
+                    try {
+                        ctx.io().sendToGridTopic(node, TOPIC_INTERNAL_DIAGNOSTIC, res, GridIoPolicy.SYSTEM_POOL);
+                    }
+                    catch (ClusterTopologyCheckedException e) {
+                        if (diagnosticLog.isDebugEnabled()) {
+                            diagnosticLog.debug("Failed to send diagnostic response, node left " +
+                                "[node=" + nodeId + ", msg=" + msg + ']');
                         }
                     }
-                    else {
-                        InternalDiagnosticFuture fut = diagnosticFuturesMap().get(msg0.futureId());
-
-                        if (fut != null)
-                            fut.onResponse(msg0.infoResponse());
-                        else
-                            U.warn(diagnosticLog, "Failed to find diagnostic message future [msg=" + msg0 + ']');
+                    catch (IgniteCheckedException e) {
+                        U.error(diagnosticLog, "Failed to send diagnostic response [msg=" + infoReq + "]", e);
                     }
+                }
+                else if (msg instanceof IgniteDiagnosticResponse) {
+                    IgniteDiagnosticResponse infoResp = (IgniteDiagnosticResponse)msg;
+
+                    InternalDiagnosticFuture fut = diagnosticFuturesMap().get(infoResp.futureId());
+
+                    if (fut != null)
+                        fut.onResponse(infoResp.responseInfo());
+                    else
+                        U.warn(diagnosticLog, "Failed to find diagnostic message future [msg=" + infoResp + ']');
                 }
                 else
                     U.warn(diagnosticLog, "Received unexpected message: " + msg);
@@ -821,7 +822,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      * @param info Compound diagnostic info.
      * @return Message future.
      */
-    public IgniteInternalFuture<String> requestDiagnosticInfo(final UUID nodeId, IgniteDiagnosticMessage info) {
+    public IgniteInternalFuture<String> requestDiagnosticInfo(final UUID nodeId, IgniteDiagnosticRequest info) {
         final GridFutureAdapter<String> infoFut = new GridFutureAdapter<>();
 
         final String baseMsg = info.message();
@@ -873,9 +874,9 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      * @param infos Diagnostic infos to send.
      * @return Message future.
      */
-    private IgniteInternalFuture<String> sendDiagnosticMessage(UUID nodeId, Collection<IgniteDiagnosticMessage.DiagnosticBaseInfo> infos) {
+    private IgniteInternalFuture<String> sendDiagnosticMessage(UUID nodeId, Collection<IgniteDiagnosticRequest.DiagnosticBaseInfo> infos) {
         try {
-            IgniteDiagnosticMessage msg = new IgniteDiagnosticMessage(diagFutId.getAndIncrement(), nodeId, infos);
+            IgniteDiagnosticRequest msg = new IgniteDiagnosticRequest(diagFutId.getAndIncrement(), nodeId, infos);
 
             InternalDiagnosticFuture fut = new InternalDiagnosticFuture(nodeId, msg.futureId());
 

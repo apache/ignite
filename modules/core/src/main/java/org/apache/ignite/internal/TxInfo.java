@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public final class TxInfo extends IgniteDiagnosticMessage.DiagnosticBaseInfo {
+public final class TxInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
     /** */
     @Order(value = 0, method = "dhtVersion")
     private GridCacheVersion dhtVer;
@@ -51,7 +51,7 @@ public final class TxInfo extends IgniteDiagnosticMessage.DiagnosticBaseInfo {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -64;
+        return -65;
     }
 
     /** */

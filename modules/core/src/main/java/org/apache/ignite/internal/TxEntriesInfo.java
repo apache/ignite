@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
-public final class TxEntriesInfo extends IgniteDiagnosticMessage.DiagnosticBaseInfo {
+public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseInfo {
     /** */
     @Order(0)
     private int cacheId;
@@ -75,7 +75,7 @@ public final class TxEntriesInfo extends IgniteDiagnosticMessage.DiagnosticBaseI
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -63;
+        return -64;
     }
 
     /** {@inheritDoc} */
@@ -111,7 +111,7 @@ public final class TxEntriesInfo extends IgniteDiagnosticMessage.DiagnosticBaseI
     }
 
     /** {@inheritDoc} */
-    @Override public void merge(IgniteDiagnosticMessage.DiagnosticBaseInfo other) {
+    @Override public void merge(IgniteDiagnosticRequest.DiagnosticBaseInfo other) {
         TxEntriesInfo other0 = (TxEntriesInfo)other;
 
         assert other0 != null && cacheId == other0.cacheId : other;
