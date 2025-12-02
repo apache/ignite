@@ -311,10 +311,14 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             assertNotNull(node);
             assertNotNull(node.lastSuccessfulAddress());
 
+            assertTrue(spi2.pingNode(ignite3.localNode().id()));
+
             node = (TcpDiscoveryNode)spi2.getNode(ignite3.localNode().id());
 
             assertNotNull(node);
             assertNotNull(node.lastSuccessfulAddress());
+
+            assertTrue(spi3.pingNode(ignite1.localNode().id()));
 
             node = (TcpDiscoveryNode)spi3.getNode(ignite1.localNode().id());
 
