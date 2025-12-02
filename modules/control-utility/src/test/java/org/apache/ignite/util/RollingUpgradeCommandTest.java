@@ -278,7 +278,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         expectedLines.add("Target version: " + targetVer);
 
         expectedLines.add("Version " + curVer + ":");
-        oldNodes.forEach(node -> expectedLines.add("    [id=" + node.uuid() +
+        oldNodes.forEach(node -> expectedLines.add("    Node[id=" + node.uuid() +
             ", consistentId=" + node.consistentId() +
             ", addrs=" + node.addresses() +
             ", order=" + node.order() +
@@ -286,7 +286,7 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
             "]"));
 
         expectedLines.add("Version " + targetVer + ":");
-        newNodes.forEach(node -> expectedLines.add("    [id=" + node.uuid() +
+        newNodes.forEach(node -> expectedLines.add("    Node[id=" + node.uuid() +
             ", consistentId=" + node.consistentId() +
             ", addrs=" + node.addresses() +
             ", order=" + node.order() +
