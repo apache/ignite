@@ -75,6 +75,34 @@ include::{sourceCodeFile}[tag=connect-to-many-nodes,indent=0]
 
 Note that the code above provides a failover mechanism in case of server node failures. Refer to the <<Handling Node Failures>> section for more information.
 
+[[discovery]]
+=== Automatic Server Node Discovery
+
+Thin client can discover server nodes in the cluster automatically.
+This behavior is enabled when `ClientConfiguration.clusterDiscoveryEnabled` is enabled (`true` by default).
+
+Server discovery is an asynchronous process - it happens in the background.
+Additionally, thin client receives topology updates only when it performs some operations (to minimize server load and network traffic from idle connections).
+
+[WARNING]
+====
+[discrete]
+Server discovery may not work when servers are behind a NAT server or a proxy.
+Server nodes provide their addresses and ports to the client, but when the client is in a different subnet, those addresses won't work.
+====
+
+==== Host Names and TLS
+
+By default, server nodes advertise their IP addresses during discovery.
+If clients must connect using host names (for example, when TLS is enabled and certificates contain host names),
+configure each server node to advertise its host name by setting `IgniteConfiguration#localHost` on the *server* side.
+
+[source, java]
+----
+IgniteConfiguration cfg = new IgniteConfiguration()
+        .setLocalHost("my-server1-hostname");
+----
+
 == Partition Awareness [partition_awareness]
 
 include::includes/partition-awareness.adoc[]
