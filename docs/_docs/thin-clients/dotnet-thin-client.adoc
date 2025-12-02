@@ -64,6 +64,22 @@ Server discovery may not work when servers are behind a NAT server or a proxy.
 Server nodes provide their addresses and ports to the client, but when the client is in a different subnet, those addresses won't work.
 ====
 
+==== Host Names and TLS
+
+By default, server nodes provide their IP addresses to the client as part of the discovery process.
+In some cases, we want to use host names instead of IP addresses to connect to the servers (for example, when TLS is enabled and server certificates contain host names).
+
+To do this, we need to set the desired host name for every server node with the `IgniteConfiguration.Localhost` property on the *server* side:
+
+[source, csharp]
+----
+var cfg = new IgniteConfiguration
+{
+    Localhost = "my-server1-hostname",
+    // ...
+};
+----
+
 [[partition_awareness]]
 == Partition Awareness
 
