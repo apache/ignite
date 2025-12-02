@@ -1084,7 +1084,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
                     ? transactions.tx()
                     : null
             );
-            serDes.write(qry, payloadCh.out());
+            serDes.write(qry, payloadCh.out(), payloadCh.clientChannel().protocolCtx());
         };
 
         return new ClientFieldsQueryCursor<>(new ClientFieldsQueryPager(
