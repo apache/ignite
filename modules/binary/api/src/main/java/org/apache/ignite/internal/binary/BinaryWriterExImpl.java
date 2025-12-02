@@ -62,9 +62,6 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     private final BinaryWriterSchemaHolder schema;
 
     /** */
-    private final boolean failIfUnregistered;
-
-    /** */
     private int typeId;
 
     /** */
@@ -73,17 +70,20 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     /** Raw offset position. */
     private int rawOffPos;
 
+    /** Handles. */
+    private BinaryWriterHandles handles;
+
     /** Schema ID. */
     private int schemaId = BinaryUtils.schemaInitialId();
 
     /** Amount of written fields. */
     private int fieldCnt;
 
-    /** Handles. */
-    private BinaryWriterHandles handles;
-
     /** */
     private BinaryInternalMapper mapper;
+
+    /** */
+    private final boolean failIfUnregistered;
 
     /**
      * @param ctx Context.
