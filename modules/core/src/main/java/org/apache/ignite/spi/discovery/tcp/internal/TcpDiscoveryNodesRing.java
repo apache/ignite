@@ -507,7 +507,7 @@ public class TcpDiscoveryNodesRing {
             if (filtered.size() < 2)
                 return null;
 
-            filtered.sort(new MdcAwareComparator());
+            filtered.sort(new MdcAwareNodesComparator());
 
             Iterator<TcpDiscoveryNode> iter = filtered.iterator();
 

@@ -20,7 +20,7 @@ package org.apache.ignite.spi.discovery.tcp.internal;
 import java.util.Comparator;
 
 /** Compares nodes using the Data Center id as a primary factor. */
-public class MdcAwareComparator implements Comparator<TcpDiscoveryNode> {
+public class MdcAwareNodesComparator implements Comparator<TcpDiscoveryNode> {
     /** */
     @Override public int compare(TcpDiscoveryNode n1, TcpDiscoveryNode n2) {
         String n1DcId = n1.dataCenterId() == null ? "" : n1.dataCenterId();
