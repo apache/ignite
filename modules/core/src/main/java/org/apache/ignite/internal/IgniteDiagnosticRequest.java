@@ -19,7 +19,6 @@ package org.apache.ignite.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -150,7 +149,7 @@ public class IgniteDiagnosticRequest implements Message {
 
     /** @return Compound diagnostic infos.  */
     public Collection<DiagnosticBaseInfo> infos() {
-        return Collections.unmodifiableCollection(infos0());
+        return infos0();
     }
 
     /** */
