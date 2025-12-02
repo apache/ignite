@@ -1905,11 +1905,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                 spi.failSingleMsg = true;
 
-                long order = ignite.cluster().localNode().order();
-
-                long nextOrder = order == NODES ? 1 : order + 1;
-
-                Ignite failingNode = nodes.get(nextOrder);
+                Ignite failingNode = nodes.get(((ServerImpl)spi.impl).ring().nextNode().order());
 
                 assertNotNull(failingNode);
 
