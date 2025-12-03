@@ -15,24 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.plugin.extensions.communication.mappers;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.transactions.TransactionIsolation;
+/** */
+public class DefaultEnumMapper<T extends Enum<T>> implements EnumMapper<T> {
+    /** */
+    private final T[] enumVals;
 
-public class UnwrappedEnumFieldMessage implements Message {
-    @Order(0)
-    private TransactionIsolation isolation;
-
-    public TransactionIsolation isolation() {
-        return isolation;
+    /** */
+    public DefaultEnumMapper(T[] vals) {
+        enumVals = vals;
     }
 
-    public void isolation(TransactionIsolation isolation) {
-        this.isolation = isolation;
+    /** {@inheritDoc} */
+    @Override public byte encode(T enumVal) {
+        return (byte)enumVal.ordinal();
     }
 
-    public short directType() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public T decode(byte enumCode) {
+        return enumVals[enumCode];
     }
 }
