@@ -31,7 +31,7 @@ public class TcpDiscoveryPingRequest extends TcpDiscoveryAbstractMessage impleme
     private static final long serialVersionUID = 0L;
 
     /** Pinged client node ID. */
-    @Order(1)
+    @Order(5)
     private @Nullable UUID clientNodeId;
 
     /** */
