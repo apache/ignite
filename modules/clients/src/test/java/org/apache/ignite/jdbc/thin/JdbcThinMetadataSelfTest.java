@@ -775,6 +775,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.SQL_QUERIES_HISTORY.FAILURES.null",
                 "SYS.SQL_QUERIES_HISTORY.DURATION_MIN.null",
                 "SYS.SQL_QUERIES_HISTORY.DURATION_MAX.null",
+                "SYS.SQL_QUERIES_HISTORY.DURATION_TOTAL.null",
                 "SYS.SQL_QUERIES_HISTORY.LAST_START_TIME.null",
                 "SYS.SQL_QUERIES.QUERY_ID.null",
                 "SYS.SQL_QUERIES.SQL.null",
