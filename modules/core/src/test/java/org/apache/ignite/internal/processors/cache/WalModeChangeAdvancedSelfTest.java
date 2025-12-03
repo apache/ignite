@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -699,4 +701,137 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
             throw new RuntimeException(e);
         }
     }
+
+    /**
+     * Test disabling and enabling WAL for multiple caches simultaneously.
+     *
+     * <p>
+     *     Test scenario:
+     * </p>
+     * <ol>
+     *     <li>
+     *         Start a cluster with multiple server nodes.
+     *     </li>
+     *     <li>
+     *         Create multiple caches.
+     *     </li>
+     *     <li>
+     *         Disable WAL for all caches in a single operation.
+     *     </li>
+     *     <li>
+     *         Put some data to all caches.
+     *     </li>
+     *     <li>
+     *         Enable WAL for a subset of caches in a single operation.
+     *     </li>
+     *     <li>
+     *         Verify WAL state for all caches.
+     *     </li>
+     *     <li>
+     *         Perform mixed operations with different cache subsets.
+     *     </li>
+     * </ol>
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testMultipleCachesWalModeChange() throws Exception {
+        // Start multiple server nodes
+        Ignite srv1 = startGrid(config(SRV_1, false, false));
+        startGrid(config(SRV_2, false, false));
+
+        srv1.cluster().state(ACTIVE);
+
+        // Create multiple caches with different configurations
+        IgniteCache cache1 = srv1.getOrCreateCache(cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL));
+        IgniteCache cache2 = srv1.getOrCreateCache(cacheConfig(CACHE_NAME_2, PARTITIONED, TRANSACTIONAL));
+        IgniteCache cache3 = srv1.getOrCreateCache(cacheConfig(CACHE_NAME_3, PARTITIONED, TRANSACTIONAL));
+
+        // Initially, WAL should be enabled for all caches
+        assertForAllNodes(CACHE_NAME, true);
+        assertForAllNodes(CACHE_NAME_2, true);
+        assertForAllNodes(CACHE_NAME_3, true);
+
+        // Test 1: Disable WAL for all caches in one operation
+        Collection<String> allCaches = Arrays.asList(CACHE_NAME, CACHE_NAME_2, CACHE_NAME_3);
+        boolean changed = srv1.cluster().disableWal(allCaches);
+
+        assertTrue("WAL state should be changed for at least one cache", changed);
+
+        // Verify WAL is disabled for all caches on all nodes
+        assertForAllNodes(CACHE_NAME, false);
+        assertForAllNodes(CACHE_NAME_2, false);
+        assertForAllNodes(CACHE_NAME_3, false);
+
+        // Put data to all caches with WAL disabled
+        for (int i = 0; i < 100; i++) {
+            cache1.put(i, "value1-" + i);
+            cache2.put(i, "value2-" + i);
+            cache3.put(i, "value3-" + i);
+        }
+
+        // Test 2: Enable WAL for a subset of caches
+        Collection<String> subsetCaches = Arrays.asList(CACHE_NAME, CACHE_NAME_3);
+        changed = srv1.cluster().enableWal(subsetCaches);
+
+        assertTrue("WAL state should be changed for at least one cache", changed);
+
+        // Verify mixed WAL states
+        assertForAllNodes(CACHE_NAME, true);   // Enabled
+        assertForAllNodes(CACHE_NAME_2, false); // Still disabled
+        assertForAllNodes(CACHE_NAME_3, true);  // Enabled
+
+        // Put more data with mixed WAL states
+        for (int i = 100; i < 200; i++) {
+            cache1.put(i, "value1-" + i);
+            cache2.put(i, "value2-" + i);
+            cache3.put(i, "value3-" + i);
+        }
+
+        // Test 3: Disable WAL for cache that already has WAL disabled (no-op)
+        Collection<String> singleCache = Collections.singletonList(CACHE_NAME_2);
+        changed = srv1.cluster().disableWal(singleCache);
+
+        assertFalse("WAL state should not change (already disabled)", changed);
+        assertForAllNodes(CACHE_NAME_2, false); // Still disabled
+
+        // Test 4: Enable WAL for all caches
+        changed = srv1.cluster().enableWal(allCaches);
+
+        // cache1 and cache3 already have WAL enabled, only cache2 should change
+        assertTrue("WAL state should be changed for cache2", changed);
+
+        // Verify all caches have WAL enabled
+        assertForAllNodes(CACHE_NAME, true);
+        assertForAllNodes(CACHE_NAME_2, true);
+        assertForAllNodes(CACHE_NAME_3, true);
+
+        // Test 5: Mixed operations with overlapping cache sets
+        // Disable WAL for cache1 and cache2
+        Collection<String> cache12 = Arrays.asList(CACHE_NAME, CACHE_NAME_2);
+        changed = srv1.cluster().disableWal(cache12);
+        assertTrue("WAL state should be changed for both caches", changed);
+
+        // Enable WAL for cache2 and cache3 (cache2 changes, cache3 already enabled)
+        Collection<String> cache23 = Arrays.asList(CACHE_NAME_2, CACHE_NAME_3);
+        changed = srv1.cluster().enableWal(cache23);
+        assertTrue("WAL state should be changed for cache2", changed);
+
+        // Final verification
+        assertForAllNodes(CACHE_NAME, false);  // Disabled
+        assertForAllNodes(CACHE_NAME_2, true); // Enabled
+        assertForAllNodes(CACHE_NAME_3, true); // Enabled
+
+        // Verify data is still accessible
+        assertEquals(200, cache1.size());
+        assertEquals(200, cache2.size());
+        assertEquals(200, cache3.size());
+
+        for (int i = 0; i < 100; i++) {
+            assertEquals("value1-" + i, cache1.get(i));
+            assertEquals("value2-" + i, cache2.get(i));
+            assertEquals("value3-" + i, cache3.get(i));
+        }
+    }
 }
+

@@ -344,7 +344,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * Initiate WAL mode change operation.
+     * Initiate WAL mode change operation for multiple caches across potentially multiple groups.
      *
      * @param cacheNames Cache names.
      * @param enabled Enabled flag.
@@ -363,8 +363,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             // Prepare cache and group infos.
             Map<String, IgniteUuid> caches = new HashMap<>(cacheNames.size());
-
-            CacheGroupDescriptor grpDesc = null;
+            Map<Integer, CacheGroupDescriptor> grpsInfos = new HashMap<>();
+            Map<Integer, Set<String>> cachesByGrp = new HashMap<>();
 
             for (String cacheName : cacheNames) {
                 DynamicCacheDescriptor cacheDesc = cacheProcessor().cacheDescriptor(cacheName);
@@ -372,34 +372,38 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 if (cacheDesc == null)
                     return errorFuture("Cache doesn't exist: " + cacheName);
 
-                caches.put(cacheName, cacheDesc.deploymentId());
-
+                int grpId = cacheDesc.groupId();
                 CacheGroupDescriptor curGrpDesc = cacheDesc.groupDescriptor();
 
-                if (grpDesc == null)
-                    grpDesc = curGrpDesc;
-                else if (!Objects.equals(grpDesc.deploymentId(), curGrpDesc.deploymentId())) {
-                    return errorFuture("Cannot change WAL mode for caches from different cache groups [" +
-                        "cache1=" + cacheNames.iterator().next() + ", grp1=" + grpDesc.groupName() +
-                        ", cache2=" + cacheName + ", grp2=" + curGrpDesc.groupName() + ']');
+                caches.put(cacheName, cacheDesc.deploymentId());
+                grpsInfos.put(grpId, curGrpDesc);
+
+                cachesByGrp.computeIfAbsent(grpId, k -> new HashSet<>()).add(cacheName);
+            }
+
+            // For each group, check that all caches in the group are included
+            for (Map.Entry<Integer, CacheGroupDescriptor> grpEntry : grpsInfos.entrySet()) {
+                int grpId = grpEntry.getKey();
+                CacheGroupDescriptor grpDesc = grpEntry.getValue();
+
+                Set<String> grpCaches = new HashSet<>(grpDesc.caches().keySet());
+                Set<String> requestedCachesForGrp = cachesByGrp.get(grpId);
+
+                grpCaches.removeAll(requestedCachesForGrp);
+
+                if (!grpCaches.isEmpty()) {
+                    return errorFuture("Cannot change WAL mode because not all cache names belonging to the group are " +
+                        "provided [group=" + grpDesc.groupName() + ", groupId=" + grpId +
+                        ", missingCaches=" + grpCaches + ']');
+                }
+
+                // WAL mode change makes sense only for persistent grpsInfos.
+                if (!grpDesc.persistenceEnabled()) {
+                    return errorFuture("Cannot change WAL mode because persistence is not enabled for cache group [" +
+                        "group=" + grpDesc.groupName() + ", groupId=" + grpId +
+                        ", dataRegion=" + grpDesc.config().getDataRegionName() + ']');
                 }
             }
-
-            assert grpDesc != null;
-
-            HashSet<String> grpCaches = new HashSet<>(grpDesc.caches().keySet());
-
-            grpCaches.removeAll(cacheNames);
-
-            if (!grpCaches.isEmpty()) {
-                return errorFuture("Cannot change WAL mode because not all cache names belonging to the group are " +
-                    "provided [group=" + grpDesc.groupName() + ", missingCaches=" + grpCaches + ']');
-            }
-
-            // WAL mode change makes sense only for persistent groups.
-            if (!grpDesc.persistenceEnabled())
-                return errorFuture("Cannot change WAL mode because persistence is not enabled for cache(s) [" +
-                    "caches=" + cacheNames + ", dataRegion=" + grpDesc.config().getDataRegionName() + ']');
 
             // Send request.
             final UUID opId = UUID.randomUUID();
@@ -414,8 +418,21 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 }
             });
 
-            WalStateProposeMessage msg = new WalStateProposeMessage(opId, grpDesc.groupId(), grpDesc.deploymentId(),
-                cctx.localNodeId(), caches, enabled);
+            // Create map of group IDs to their deployment IDs
+            Map<Integer, IgniteUuid> grps = new HashMap<>();
+            for (CacheGroupDescriptor grpDesc : grpsInfos.values())
+                grps.put(grpDesc.groupId(), grpDesc.deploymentId());
+
+            // Convert cache info to new format
+            Map<String, WalStateProposeMessage.CacheInfo> cacheInfos = new HashMap<>();
+            for (String cacheName : cacheNames) {
+                DynamicCacheDescriptor cacheDesc = cacheProcessor().cacheDescriptor(cacheName);
+                cacheInfos.put(cacheName, new WalStateProposeMessage.CacheInfo(
+                    cacheDesc.groupId(), cacheDesc.deploymentId()));
+            }
+
+            WalStateProposeMessage msg = new WalStateProposeMessage(opId, grps,
+                cctx.localNodeId(), cacheInfos, enabled);
 
             userFuts.put(opId, fut);
 
@@ -423,7 +440,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 cctx.discovery().sendCustomEvent(msg);
 
                 if (log.isDebugEnabled())
-                    log.debug("Initiated WAL state change operation: " + msg);
+                    log.debug("Initiated WAL state change operation for multiple grpsInfos: " + msg);
             }
             catch (Exception e) {
                 IgniteCheckedException e0 =
@@ -926,7 +943,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 if (grpDesc != null && Objects.equals(grpDesc.deploymentId(), grpDepId)) {
                     // Toggle WAL mode in descriptor if the operation was successful.
                     if (msg.changed())
-                        grpDesc.walEnabled(!grpDesc.walEnabled());
+                        grpDesc.walEnabled(msg.enable());
 
                     // Remove now-outdated message from the queue.
                     WalStateProposeMessage oldProposeMsg = grpDesc.nextWalChangeRequest();

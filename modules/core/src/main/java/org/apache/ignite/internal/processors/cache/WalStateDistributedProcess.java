@@ -103,7 +103,7 @@ public class WalStateDistributedProcess {
 
         if (acks.isEmpty()) {
             // We haven't received any response from affinity nodes. Result is unknown, so throw an exception.
-            return new WalStateFinishMessage(msg.operationId(), msg.groups(), false,
+            return new WalStateFinishMessage(msg.operationId(), msg.groups(), null, false,
                 "Operation result is unknown because all affinity nodes have left the grid.");
         }
 
@@ -137,7 +137,7 @@ public class WalStateDistributedProcess {
 
             errMsg.a(']');
 
-            return new WalStateFinishMessage(msg.operationId(), msg.groups(), false, errMsg.toString());
+            return new WalStateFinishMessage(msg.operationId(), msg.groups(), null, false, errMsg.toString());
         }
 
         // Verify group-level results consistency and calculate overall result
@@ -167,7 +167,7 @@ public class WalStateDistributedProcess {
             }
 
             if (!consistent) {
-                return new WalStateFinishMessage(msg.operationId(), msg.groups(), false,
+                return new WalStateFinishMessage(msg.operationId(), msg.groups(), null, false,
                     "Operation result is unknown because nodes reported different results for group " + grpId +
                         " (please re-try operation).");
             }
@@ -180,7 +180,7 @@ public class WalStateDistributedProcess {
         }
 
         // All nodes completed operation with consistent results, complete with success.
-        return new WalStateFinishMessage(msg.operationId(), msg.groups(), overallChanged, null);
+        return new WalStateFinishMessage(msg.operationId(), msg.groups(), msg.enable(), overallChanged, null);
     }
 
     /** {@inheritDoc} */

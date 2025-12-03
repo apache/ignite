@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -30,6 +29,9 @@ import org.jetbrains.annotations.Nullable;
 public class WalStateFinishMessage extends WalStateAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Whether WAL should be enabled or disabled. */
+    private final boolean enable;
 
     /** Whether WAL state was changed as a result of this call. */
     private final boolean changed;
@@ -46,27 +48,19 @@ public class WalStateFinishMessage extends WalStateAbstractMessage {
      * @param errMsg Error message.
      */
     public WalStateFinishMessage(UUID opId, Map<Integer, IgniteUuid> grps,
-        boolean changed, @Nullable String errMsg) {
+        @Nullable Boolean enable, boolean changed, @Nullable String errMsg) {
         super(opId, grps);
 
+        this.enable = enable;
         this.changed = changed;
         this.errMsg = errMsg;
     }
 
     /**
-     * Constructor for single group.
-     *
-     * @param opId Unique operation ID.
-     * @param grpId Group ID.
-     * @param grpDepId Group deployment ID.
-     * @param changed Result.
-     * @param errMsg Error message.
+     * @return Whether WAL should be enabled.
      */
-    public WalStateFinishMessage(UUID opId, int grpId, IgniteUuid grpDepId, boolean changed, @Nullable String errMsg) {
-        super(opId, Collections.singletonMap(grpId, grpDepId));
-
-        this.changed = changed;
-        this.errMsg = errMsg;
+    public boolean enable() {
+        return enable;
     }
 
     /**
