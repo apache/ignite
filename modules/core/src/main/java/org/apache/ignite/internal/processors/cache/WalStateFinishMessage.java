@@ -48,7 +48,7 @@ public class WalStateFinishMessage extends WalStateAbstractMessage {
      * @param errMsg Error message.
      */
     public WalStateFinishMessage(UUID opId, Map<Integer, IgniteUuid> grps,
-        @Nullable Boolean enable, boolean changed, @Nullable String errMsg) {
+        boolean enable, boolean changed, @Nullable String errMsg) {
         super(opId, grps);
 
         this.enable = enable;

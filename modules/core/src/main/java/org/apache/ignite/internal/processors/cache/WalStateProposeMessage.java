@@ -98,32 +98,6 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
     }
 
     /**
-     * Constructor for single group.
-     *
-     * @param opId Operation ID.
-     * @param grpId Expected group ID.
-     * @param grpDepId Expected group deployment ID.
-     * @param nodeId Node ID.
-     * @param caches Expected cache names and their relevant deployment IDs.
-     * @param enable WAL state flag.
-     */
-    public WalStateProposeMessage(UUID opId, int grpId, IgniteUuid grpDepId, UUID nodeId,
-        Map<String, IgniteUuid> caches, boolean enable) {
-        super(opId, Collections.singletonMap(grpId, grpDepId));
-
-        this.nodeId = nodeId;
-        this.enable = enable;
-
-        if (caches != null) {
-            this.caches = new HashMap<>();
-            for (Map.Entry<String, IgniteUuid> entry : caches.entrySet())
-                this.caches.put(entry.getKey(), new CacheInfo(grpId, entry.getValue()));
-        }
-        else
-            this.caches = Collections.emptyMap();
-    }
-
-    /**
      * @return Node ID.
      */
     public UUID nodeId() {
