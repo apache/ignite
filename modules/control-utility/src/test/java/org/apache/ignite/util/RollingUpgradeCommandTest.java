@@ -17,11 +17,21 @@
 
 package org.apache.ignite.util;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeCommand;
+import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeStatusCommand;
+import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeStatusNode;
 import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeTaskResult;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.junit.Test;
 
+import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 
@@ -38,6 +48,9 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
 
     /** */
     public static final String ROLLING_UPGRADE = "--rolling-upgrade";
+
+    /** */
+    public static final String STATUS = "status";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -176,5 +189,110 @@ public class RollingUpgradeCommandTest extends GridCommandHandlerClusterByClassA
         assertEquals(targetVer, taskRes.targetVersion());
 
         assertTrue(crd.context().rollingUpgrade().enabled());
+    }
+
+    /** */
+    @Test
+    public void testStatusWhenDisabled() {
+        int res = execute(ROLLING_UPGRADE, STATUS);
+
+        assertEquals(EXIT_CODE_OK, res);
+
+        RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult)lastOperationResult;
+
+        assertNull(taskRes.errorMessage());
+        assertNull(taskRes.currentVersion());
+        assertNull(taskRes.targetVersion());
+
+        assertNull(taskRes.nodes());
+
+        RollingUpgradeStatusCommand statusCmd = new RollingUpgradeStatusCommand();
+
+        List<String> lines = new ArrayList<>();
+
+        statusCmd.printResult(null, taskRes, lines::add);
+
+        List<String> expectedLines = new ArrayList<>();
+
+        expectedLines.add("Rolling upgrade status: disabled");
+
+        assertEquals(expectedLines, lines);
+    }
+
+    /** */
+    @Test
+    public void testStatusWhenEnabled() throws Exception {
+        IgniteProductVersion curVer = IgniteProductVersion.fromString(crd.localNode().attribute(ATTR_BUILD_VER));
+
+        String targetVerStr = curVer.major() + "." + (curVer.minor() + 1) + "." + curVer.maintenance();
+        IgniteProductVersion targetVer = IgniteProductVersion.fromString(targetVerStr);
+
+        execute(ROLLING_UPGRADE, ENABLE, targetVerStr);
+
+        Consumer<IgniteConfiguration> cfgC = cfg -> {
+            TcpDiscoverySpi discoSpi = new TcpDiscoverySpi() {
+                @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
+                    super.setNodeAttributes(attrs, ver);
+                    attrs.put(ATTR_BUILD_VER, targetVerStr);
+                }
+            };
+
+            discoSpi.setIpFinder(((TcpDiscoverySpi)cfg.getDiscoverySpi()).getIpFinder());
+            cfg.setDiscoverySpi(discoSpi);
+        };
+
+        try (IgniteEx ignored = startGrid(SERVER_NODE_CNT + 1, cfgC)) {
+            int res = execute(ROLLING_UPGRADE, STATUS);
+
+            assertEquals(EXIT_CODE_OK, res);
+        }
+
+        RollingUpgradeTaskResult taskRes = (RollingUpgradeTaskResult)lastOperationResult;
+
+        assertNull(taskRes.errorMessage());
+        assertEquals(curVer, taskRes.currentVersion());
+        assertEquals(targetVer, taskRes.targetVersion());
+
+        List<RollingUpgradeStatusNode> nodes = taskRes.nodes();
+
+        assertNotNull(nodes);
+        assertEquals(SERVER_NODE_CNT + 2, nodes.size());
+
+        List<RollingUpgradeStatusNode> oldNodes = nodes.stream().filter(node -> node.version().equals(curVer)).collect(toList());
+
+        List<RollingUpgradeStatusNode> newNodes = nodes.stream().filter(node -> node.version().equals(targetVer)).collect(toList());
+
+        assertEquals(SERVER_NODE_CNT + 1, oldNodes.size());
+        assertEquals(1, newNodes.size());
+
+        RollingUpgradeStatusCommand statusCmd = new RollingUpgradeStatusCommand();
+
+        List<String> lines = new ArrayList<>();
+
+        statusCmd.printResult(null, taskRes, lines::add);
+
+        List<String> expectedLines = new ArrayList<>();
+
+        expectedLines.add("Rolling upgrade status: enabled");
+        expectedLines.add("Current version: " + curVer);
+        expectedLines.add("Target version: " + targetVer);
+
+        expectedLines.add("Version " + curVer + ":");
+        oldNodes.forEach(node -> expectedLines.add("    Node[id=" + node.uuid() +
+            ", consistentId=" + node.consistentId() +
+            ", addrs=" + node.addresses() +
+            ", order=" + node.order() +
+            ", isClient=" + node.client() +
+            "]"));
+
+        expectedLines.add("Version " + targetVer + ":");
+        newNodes.forEach(node -> expectedLines.add("    Node[id=" + node.uuid() +
+            ", consistentId=" + node.consistentId() +
+            ", addrs=" + node.addresses() +
+            ", order=" + node.order() +
+            ", isClient=" + node.client() +
+            "]"));
+
+        assertEquals(expectedLines, lines);
     }
 }
