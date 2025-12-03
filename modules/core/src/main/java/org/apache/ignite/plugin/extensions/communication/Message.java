@@ -58,4 +58,9 @@ public interface Message {
      * @return Message type.
      */
     public short directType();
+
+    /** @return {@code True} if message should be compressed, {@code False} otherwise. */
+    public default boolean compress() {
+        return false;
+    }
 }

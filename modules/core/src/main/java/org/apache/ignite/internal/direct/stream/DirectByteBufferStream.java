@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.direct.stream;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -27,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
 import java.util.UUID;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterInputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -884,7 +888,9 @@ public class DirectByteBufferStream {
                 try {
                     writer.beforeInnerMessageWrite();
 
-                    lastFinished = msgFactory.serializer(msg.directType()).writeTo(msg, writer);
+                    lastFinished = msg.compress()
+                        ? writeCompressedMessage(msg, writer)
+                        : msgFactory.serializer(msg.directType()).writeTo(msg, writer);
                 }
                 finally {
                     writer.afterInnerMessageWrite(lastFinished);
@@ -1536,7 +1542,9 @@ public class DirectByteBufferStream {
             try {
                 reader.beforeInnerMessageRead();
 
-                lastFinished = msgFactory.serializer(msg.directType()).readFrom(msg, reader);
+                lastFinished = msg.compress()
+                    ? readCompressedMessage(msg, reader)
+                    : msgFactory.serializer(msg.directType()).readFrom(msg, reader);
             }
             finally {
                 reader.afterInnerMessageRead(lastFinished);
@@ -2225,6 +2233,125 @@ public class DirectByteBufferStream {
                 uuidMost = GridUnsafe.getLong(heapArr, off);
                 uuidLeast = GridUnsafe.getLong(heapArr, off + 8);
             }
+        }
+    }
+
+    /** */
+    private boolean writeCompressedMessage(Message msg, MessageWriter writer) {
+        ByteBuffer curBuf = buf;
+
+        try {
+            ByteBuffer tmpBuf = ByteBuffer.allocateDirect(buf.capacity());
+
+            writer.setBuffer(tmpBuf);
+
+            if (!msgFactory.serializer(msg.directType()).writeTo(msg, writer)) {
+                writer.setBuffer(tmpBuf);
+                tmpBuf.flip();
+
+                return false;
+            }
+
+            writer.setBuffer(curBuf);
+
+            tmpBuf.flip();
+
+            int rawSize = tmpBuf.remaining();
+
+            if (rawSize == 0) {
+                writeShort(msg.directType());
+                writeInt(0);
+                writeInt(0);
+                writeByteArray(null);
+
+                return true;
+            }
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream(rawSize);
+
+            try (DeflaterOutputStream dos = new DeflaterOutputStream(baos)) {
+                byte[] rawBytes = new byte[rawSize];
+
+                tmpBuf.get(rawBytes);
+
+                dos.write(rawBytes);
+            }
+
+            byte[] compressedData = baos.toByteArray();
+
+            writeShort(msg.directType());
+
+            if (!lastFinished)
+                return false;
+
+            writeInt(rawSize);
+
+            if (!lastFinished)
+                return false;
+
+            writeInt(compressedData.length);
+
+            if (!lastFinished)
+                return false;
+
+            writeByteArray(compressedData);
+
+            return lastFinished;
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** */
+    private boolean readCompressedMessage(Message msg, MessageReader reader) {
+        ByteBuffer curBuf = buf;
+
+        try {
+            int rawSize = readInt();
+
+            if (!lastFinished)
+                return false;
+
+            int compressedSize = readInt();
+
+            if (!lastFinished)
+                return false;
+
+            byte[] compressedData = readByteArray();
+
+            if (!lastFinished)
+                return false;
+
+            if (rawSize == 0 && compressedSize == 0 && compressedData == null)
+                return true;
+
+            if (rawSize < 0 || compressedData == null || compressedData.length != compressedSize)
+                return false;
+
+            try (InflaterInputStream iis = new InflaterInputStream(new ByteArrayInputStream(compressedData))) {
+                byte[] rawBytes = iis.readNBytes(rawSize);
+
+                if (rawBytes.length != rawSize)
+                    throw new IgniteException("Decompression size mismatch [msg=" + msg.getClass().getName() +
+                        ", expected=" + rawSize + ", actual=" + rawBytes.length + ']');
+
+                ByteBuffer tmpBuf = ByteBuffer.allocateDirect(rawBytes.length);
+
+                tmpBuf.put(rawBytes);
+                tmpBuf.flip();
+
+                reader.setBuffer(tmpBuf);
+                reader.readShort();
+
+                return msgFactory.serializer(msg.directType()).readFrom(msg, reader);
+            }
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
+        finally {
+            reader.setBuffer(curBuf);
         }
     }
 
