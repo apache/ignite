@@ -92,6 +92,9 @@ class MessageSerializerGenerator {
     /** Collection of message-specific imports. */
     private final Set<String> imports = new TreeSet<>();
 
+    /** Collection of Serializer class fields containing mappers for message enum fields. */
+    private final Set<String> mapperFields = new TreeSet<>();
+
     /** */
     private final ProcessingEnvironment env;
 
@@ -141,6 +144,8 @@ class MessageSerializerGenerator {
     private String generateSerializerCode(String serClsName) throws IOException {
         try (Writer writer = new StringWriter()) {
             writeClassHeader(writer, PKG_NAME, serClsName);
+
+            writeClassFields(writer);
 
             // Write #writeTo method.
             for (String w: write)
@@ -238,10 +243,6 @@ class MessageSerializerGenerator {
         if (assignableFrom(field.asType(), type(Throwable.class.getName())))
             throw new UnsupportedOperationException("You should use ErrorMessage for serialization of throwables.");
 
-        if (enumType(erasedType(field.asType())))
-            throw new IllegalArgumentException("Unsupported enum type: " + field.asType() +
-                    ". The enum must be wrapped into a Message (see, for example, TransactionIsolationMessage).");
-
         writeField(field, opt);
         readField(field, opt);
     }
@@ -335,7 +336,7 @@ class MessageSerializerGenerator {
 
             imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
-            returnFalseIfWriteFailed(write, "writer.writeObjectArray", getExpr,
+            returnFalseIfEnumWriteFailed(write, "writer.writeObjectArray", getExpr,
                 "MessageCollectionItemType." + messageCollectionItemType(componentType));
 
             return;
@@ -388,8 +389,29 @@ class MessageSerializerGenerator {
 
                 imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
-                returnFalseIfWriteFailed(write, "writer.writeCollection", getExpr,
+                returnFalseIfEnumWriteFailed(write, "writer.writeCollection", getExpr,
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
+            }
+
+            else if (enumType(type)) {
+                //TODO check CustomMapper annotation
+                imports.add("org.apache.ignite.plugin.extensions.communication.mappers.EnumMapper");
+                imports.add("org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper");
+
+                Element element = env.getTypeUtils().asElement(type);
+
+                imports.add(element.toString());
+
+                String enumName = element.getSimpleName().toString();
+
+                char[] chars = enumName.toCharArray();
+                chars[0] = Character.toLowerCase(chars[0]);
+
+                String enumMapperSerializerFieldName = new String(chars) + "Mapper";
+
+                mapperFields.add("private final EnumMapper<" + enumName + "> " + enumMapperSerializerFieldName + " = new DefaultEnumMapper<>(" + enumName + ".values());");
+
+                returnFalseIfEnumWriteFailed(write, "writer.writeByte", enumMapperSerializerFieldName + ".encode", getExpr);
             }
 
             else
@@ -412,6 +434,23 @@ class MessageSerializerGenerator {
         String argsStr = String.join(", ", args);
 
         code.add(line("if (!%s(msg.%s))", accessor, argsStr));
+
+        indent++;
+
+        code.add(line("return false;"));
+
+        indent--;
+    }
+
+    /**
+     * Generate code of writing single enum field mapped with EnumMapper:
+     * <pre>
+     * if (!writer.writeByte(myEnumMapper.encode(msg.myEnum()))
+     *     return false;
+     * </pre>
+     */
+    private void returnFalseIfEnumWriteFailed(Collection<String> code, String writerCall, String mapperCall, String fieldGetterCall) {
+        code.add(line("if (!%s(%s(msg.%s)))", writerCall, mapperCall, fieldGetterCall));
 
         indent++;
 
@@ -530,6 +569,18 @@ class MessageSerializerGenerator {
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
 
+            else if (enumType(type)) {
+                //TODO check CustomMapper annotation
+                String enumName = env.getTypeUtils().asElement(type).getSimpleName().toString();
+
+                char[] chars = enumName.toCharArray();
+                chars[0] = Character.toLowerCase(chars[0]);
+
+                String enumMapperSerializerFieldName = new String(chars) + "Mapper";
+
+                returnFalseIfEnumReadFailed(name, enumMapperSerializerFieldName + ".decode");
+            }
+
             else
                 throw new IllegalArgumentException("Unsupported declared type: " + type);
 
@@ -643,6 +694,32 @@ class MessageSerializerGenerator {
         indent--;
     }
 
+    /**
+     * Generate code of reading single field:
+     * <pre>
+     * msg.id(reader.readInt());
+     *
+     * if (!reader.isLastRead())
+     *     return false;
+     * </pre>
+     *
+     * @param msgSetterName Variable name.
+     * @param mapperDecodeCall Method name.
+     */
+    private void returnFalseIfEnumReadFailed(String msgSetterName, String mapperDecodeCall) {
+        read.add(line("msg.%s(%s(reader.readByte()));", msgSetterName, mapperDecodeCall));
+
+        read.add(EMPTY);
+
+        read.add(line("if (!reader.isLastRead())"));
+
+        indent++;
+
+        read.add(line("return false;"));
+
+        indent--;
+    }
+
     /** */
     private void finish(List<String> code) {
         String lastLine = code.get(code.size() - 1);
@@ -670,6 +747,21 @@ class MessageSerializerGenerator {
         sb.a(String.format(format, args));
 
         return sb.toString();
+    }
+
+    /** Write header of serializer class: license, imports, class declaration. */
+    private void writeClassFields(Writer writer) throws IOException {
+        indent = 1;
+
+        for (String field: mapperFields) {
+            writer.write(line(METHOD_JAVADOC));
+            writer.write(NL);
+            writer.write(line(field));
+            writer.write(NL);
+        }
+        writer.write(NL);
+
+        indent = 0;
     }
 
     /** Write header of serializer class: license, imports, class declaration. */
@@ -719,13 +811,9 @@ class MessageSerializerGenerator {
 
     /** */
     private boolean enumType(TypeMirror type) {
-        if (type.getKind() == TypeKind.DECLARED) {
-            Element element = env.getTypeUtils().asElement(type);
+        Element element = env.getTypeUtils().asElement(type);
 
-            return element != null && element.getKind() == ElementKind.ENUM;
-        }
-
-        return false;
+        return element != null && element.getKind() == ElementKind.ENUM;
     }
 
     /** */
