@@ -222,7 +222,7 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testSeveralLongRunningTxs() throws Exception {
+        public void testSeveralLongRunningTxs() throws Exception {
         checkSeveralLongRunningTxs(TRANSACTIONAL);
     }
 

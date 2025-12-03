@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -214,7 +215,14 @@ public class IgniteDiagnosticPrepareContext {
      * @param ctx Grid context.
      * @param info Collection of the infos.
      */
-    private static void moreInfo(StringBuilder sb, GridKernalContext ctx, Collection<IgniteDiagnosticRequest.DiagnosticBaseInfo> info) {
+    private static void moreInfo(
+        StringBuilder sb,
+        GridKernalContext ctx,
+        @Nullable Collection<IgniteDiagnosticRequest.DiagnosticBaseInfo> info
+    ) {
+        if (F.isEmpty(info))
+            return;
+
         for (IgniteDiagnosticRequest.DiagnosticBaseInfo baseInfo : info) {
             try {
                 baseInfo.appendInfo(sb, ctx);

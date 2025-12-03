@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -43,7 +42,7 @@ public class IgniteDiagnosticRequest implements Message {
 
     /** Infos to send to a remote node. */
     @Order(2)
-    private Collection<DiagnosticBaseInfo> infos;
+    private @Nullable LinkedHashSet<DiagnosticBaseInfo> infos;
 
     /** Local message related to remote info. */
     private final Map<Object, List<String>> msgs = new LinkedHashMap<>();
@@ -71,13 +70,11 @@ public class IgniteDiagnosticRequest implements Message {
      * @param nodeId Node ID.
      * @param infos Diagnostic infos.
      */
-    public IgniteDiagnosticRequest(long futId, UUID nodeId, Collection<DiagnosticBaseInfo> infos) {
+    public IgniteDiagnosticRequest(long futId, UUID nodeId, @Nullable LinkedHashSet<DiagnosticBaseInfo> infos) {
         this(nodeId);
 
-        assert infos != null;
-
         this.futId = futId;
-        this.infos = new LinkedHashSet<>(infos);
+        this.infos = infos;
     }
 
     /**
@@ -143,13 +140,13 @@ public class IgniteDiagnosticRequest implements Message {
     }
 
     /** @return Compound diagnostic infos.  */
-    public Collection<DiagnosticBaseInfo> infos() {
+    public @Nullable LinkedHashSet<DiagnosticBaseInfo> infos() {
         return infos;
     }
 
     /** */
-    public void infos(Collection<DiagnosticBaseInfo> infos) {
-        this.infos = new LinkedHashSet<>(infos);
+    public void infos(@Nullable LinkedHashSet<DiagnosticBaseInfo> infos) {
+        this.infos = infos;
     }
 
     /** {@inheritDoc} */
