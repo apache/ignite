@@ -319,7 +319,7 @@ public class FunctionalQueryTest {
 
     /** Tests {@link SqlFieldsQuery} initiator ID parameter. */
     @Test
-    public void testQueryInitiatorId() throws Exception {
+    public void testQueryInitiatorId() {
         try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
              IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
         ) {
