@@ -8,18 +8,19 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.jetbrains.annotations.Nullable;
 
-/** Checkpoint force task. */
-public class CheckpointForceTask extends VisorMultiNodeTask<CheckpointForceCommandArg, String, String> {
+/** Checkpoint task. */
+public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, String, String> {
     /** */
     private static final long serialVersionUID = 0;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<CheckpointForceCommandArg, String> job(CheckpointForceCommandArg arg) {
-        return new CheckpointForceJob(arg, false);
+    @Override protected VisorJob<CheckpointCommandArg, String> job(CheckpointCommandArg arg) {
+        return new CheckpointJob(arg, false);
     }
 
     /** {@inheritDoc} */
@@ -32,28 +33,30 @@ public class CheckpointForceTask extends VisorMultiNodeTask<CheckpointForceComma
         return "Checkpoint triggered on all nodes";
     }
 
-    /** Checkpoint force job. */
-    private static class CheckpointForceJob extends VisorJob<CheckpointForceCommandArg, String> {
+    /** Checkpoint job. */
+    private static class CheckpointJob extends VisorJob<CheckpointCommandArg, String> {
         /** */
         private static final long serialVersionUID = 0;
 
         /** */
-        protected CheckpointForceJob(@Nullable CheckpointForceCommandArg arg, boolean debug) {
+        protected CheckpointJob(@Nullable CheckpointCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(@Nullable CheckpointForceCommandArg arg) throws IgniteException {
+        @Override protected String run(@Nullable CheckpointCommandArg arg) throws IgniteException {
+            if (!CU.isPersistenceEnabled(ignite.configuration())) {
+                throw new IgniteException("Can't checkpoint on in-memory node");
+            }
+
             String reason = arg != null && arg.reason() != null ? arg.reason() : "control.sh";
             boolean waitForFinish = arg != null && arg.waitForFinish();
             Long timeout = arg != null ? arg.timeout() : null;
 
             try {
                 GridKernalContext cctx = ignite.context();
-
                 GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.cache().context().database();
 
-                //GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ignite.context().cache().context().database();
                 CheckpointProgress checkpointFuture = dbMgr.forceCheckpoint(reason);
 
                 if (waitForFinish) {

@@ -7,8 +7,8 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-/** Checkpoint force command arguments. */
-public class CheckpointForceCommandArg extends IgniteDataTransferObject {
+/** Checkpoint command arguments. */
+public class CheckpointCommandArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0;
 

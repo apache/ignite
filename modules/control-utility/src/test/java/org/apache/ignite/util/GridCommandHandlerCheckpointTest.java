@@ -24,31 +24,31 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
     /** */
     @Test
-    public void testCheckpointForce() throws Exception {
+    public void testCheckpoint() throws Exception {
         IgniteEx srv = startGrids(2);
         srv.cluster().state(ClusterState.ACTIVE);
 
-        assertEquals(EXIT_CODE_OK, execute("--checkpoint", "force"));
+        assertEquals(EXIT_CODE_OK, execute("--checkpoint"));
         assertTrue(testOut.toString().contains("Checkpoint triggered on all nodes"));
 
         testOut.reset();
 
-        assertEquals(EXIT_CODE_OK, execute("--checkpoint", "force", "--reason", "test_reason"));
+        assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--reason", "test_reason"));
         assertTrue(testOut.toString().contains("Checkpoint triggered on all nodes"));
 
         testOut.reset();
 
-        assertEquals(EXIT_CODE_OK, execute("--checkpoint", "force", "--wait-for-finish"));
+        assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--wait-for-finish"));
         assertTrue(testOut.toString().contains("Checkpoint triggered on all nodes"));
 
         testOut.reset();
 
-        assertEquals(EXIT_CODE_OK, execute("--checkpoint", "force", "--wait-for-finish", "--timeout", "10000"));
+        assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--wait-for-finish", "--timeout", "10000"));
         assertTrue(testOut.toString().contains("Checkpoint triggered on all nodes"));
 
         testOut.reset();
 
-        assertEquals(EXIT_CODE_OK, execute("--checkpoint", "force", "--reason", "planned", "--wait-for-finish", "--timeout", "5000"));
+        assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--reason", "planned", "--wait-for-finish", "--timeout", "5000"));
         assertTrue(testOut.toString().contains("Checkpoint triggered on all nodes"));
     }
 }
