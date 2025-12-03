@@ -112,7 +112,10 @@ public enum ProtocolBitmaskFeature {
     SQL_CACHE_CREATION(21),
 
     /** Data-center information. */
-    DC_AWARE(22);
+    DC_AWARE(22),
+
+    /** SqlFieldsQuery initiatorId property. */
+    QRY_INITIATOR_ID(23);
 
     /** */
     private static final EnumSet<ProtocolBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

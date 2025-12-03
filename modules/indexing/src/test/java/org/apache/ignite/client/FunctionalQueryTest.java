@@ -317,6 +317,30 @@ public class FunctionalQueryTest {
         }
     }
 
+    /** Tests {@link SqlFieldsQuery} initiator ID parameter. */
+    @Test
+    public void testQueryInitiatorId() {
+        try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
+             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))
+        ) {
+            String initiatorId = "test";
+
+            SqlFieldsQuery qry = new SqlFieldsQuery("SELECT INITIATOR_ID FROM SYS.SQL_QUERIES").setQueryInitiatorId(initiatorId);
+
+            List<List<?>> res = client.query(qry).getAll();
+
+            assertEquals(1, res.size());
+            assertEquals(initiatorId, res.get(0).get(0));
+
+            ClientCache<Object, Object> cache = client.getOrCreateCache(Config.DEFAULT_CACHE_NAME);
+
+            res = cache.query(qry).getAll();
+
+            assertEquals(1, res.size());
+            assertEquals(initiatorId, res.get(0).get(0));
+        }
+    }
+
     /** */
     private static ClientConfiguration getClientConfiguration() {
         return new ClientConfiguration().setAddresses(Config.SERVER)
