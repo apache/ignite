@@ -440,7 +440,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 cctx.discovery().sendCustomEvent(msg);
 
                 if (log.isDebugEnabled())
-                    log.debug("Initiated WAL state change operation for multiple grpsInfos: " + msg);
+                    log.debug("Initiated WAL state change operation for multiple groups: " + msg);
             }
             catch (Exception e) {
                 IgniteCheckedException e0 =

@@ -60,17 +60,6 @@ public abstract class WalStateAbstractMessage implements DiscoveryCustomMessage 
     }
 
     /**
-     * Constructor for single group (for backward compatibility).
-     *
-     * @param opId Unique operation ID.
-     * @param grpId Group ID.
-     * @param grpDepId Group deployment ID.
-     */
-    protected WalStateAbstractMessage(UUID opId, int grpId, IgniteUuid grpDepId) {
-        this(opId, Collections.singletonMap(grpId, grpDepId));
-    }
-
-    /**
      * @return Unique operation ID.
      */
     public UUID operationId() {
