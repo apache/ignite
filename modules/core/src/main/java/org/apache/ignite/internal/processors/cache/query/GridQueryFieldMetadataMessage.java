@@ -15,61 +15,69 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.calcite.prepare;
+package org.apache.ignite.internal.processors.cache.query;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.sql.ResultSetMetaData;
-
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- *
- */
-public class CalciteQueryFieldMetadata implements GridQueryFieldMetadata {
+/** */
+public class GridQueryFieldMetadataMessage implements GridQueryFieldMetadata, Message {
     /** */
-    private String schemaName;
-
-    /** */
-    private String typeName;
+    @Order(0)
+    protected String schemaName;
 
     /** */
-    private String fieldName;
+    @Order(1)
+    protected String typeName;
 
     /** */
-    private String fieldTypeName;
+    @Order(2)
+    protected String fieldName;
 
     /** */
-    private int precision;
+    @Order(3)
+    protected String fieldTypeName;
 
     /** */
-    private int scale;
+    @Order(4)
+    protected int precision;
 
     /** */
-    private boolean isNullable;
+    @Order(5)
+    protected int scale;
+
+    /** */
+    @Order(6)
+    protected int nullability;
 
     /** Blank constructor for external serialization. */
-    public CalciteQueryFieldMetadata() {
+    public GridQueryFieldMetadataMessage() {
+        // No-op.
     }
 
-    /**
-     * @param schemaName Schema name.
-     * @param typeName Type name.
-     * @param fieldName Field name.
-     * @param fieldTypeName Field type name.
-     * @param precision Precision.
-     * @param scale Scale.
-     */
-    public CalciteQueryFieldMetadata(String schemaName, String typeName, String fieldName, String fieldTypeName,
-        int precision, int scale, boolean isNullable) {
+    /** */
+    public GridQueryFieldMetadataMessage(
+        String schemaName,
+        String typeName,
+        String fieldTypeName,
+        String fieldName,
+        int precision,
+        int scale,
+        int nullability
+    ) {
         this.schemaName = schemaName;
         this.typeName = typeName;
-        this.fieldName = fieldName;
         this.fieldTypeName = fieldTypeName;
+        this.fieldName = fieldName;
         this.precision = precision;
         this.scale = scale;
-        this.isNullable = isNullable;
+        this.nullability = nullability;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 113;
     }
 
     /** {@inheritDoc} */
@@ -77,9 +85,19 @@ public class CalciteQueryFieldMetadata implements GridQueryFieldMetadata {
         return schemaName;
     }
 
+    /** */
+    public void schemaName(String schemaName) {
+        this.schemaName = schemaName;
+    }
+
     /** {@inheritDoc} */
     @Override public String typeName() {
         return typeName;
+    }
+
+    /** */
+    public void typeName(String typeName) {
+        this.typeName = typeName;
     }
 
     /** {@inheritDoc} */
@@ -87,9 +105,19 @@ public class CalciteQueryFieldMetadata implements GridQueryFieldMetadata {
         return fieldName;
     }
 
+    /** */
+    public void fieldName(String fieldName) {
+        this.fieldName = fieldName;
+    }
+
     /** {@inheritDoc} */
     @Override public String fieldTypeName() {
         return fieldTypeName;
+    }
+
+    /** */
+    public void fieldTypeName(String fieldTypeName) {
+        this.fieldTypeName = fieldTypeName;
     }
 
     /** {@inheritDoc} */
@@ -97,33 +125,28 @@ public class CalciteQueryFieldMetadata implements GridQueryFieldMetadata {
         return precision;
     }
 
+    /** */
+    public void precision(int precision) {
+        this.precision = precision;
+    }
+
     /** {@inheritDoc} */
     @Override public int scale() {
         return scale;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeUTF(schemaName);
-        out.writeUTF(typeName);
-        out.writeUTF(fieldName);
-        out.writeUTF(fieldTypeName);
-        out.writeInt(precision);
-        out.writeInt(scale);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        schemaName = in.readUTF();
-        typeName = in.readUTF();
-        fieldName = in.readUTF();
-        fieldTypeName = in.readUTF();
-        precision = in.readInt();
-        scale = in.readInt();
+    /** */
+    public void scale(int scale) {
+        this.scale = scale;
     }
 
     /** {@inheritDoc} */
     @Override public int nullability() {
-        return isNullable ? ResultSetMetaData.columnNullable : ResultSetMetaData.columnNoNulls;
+        return nullability;
+    }
+
+    /** */
+    public void nullability(int nullability) {
+        this.nullability = nullability;
     }
 }

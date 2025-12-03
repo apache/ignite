@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -39,7 +38,6 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.metric.IoStatisticsHolder;
 import org.apache.ignite.internal.metric.IoStatisticsQueryHelper;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -377,7 +375,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             if (res.fields())
                 ((GridCacheDistributedFieldsQueryFuture)fut).onFieldsPage(
                     sndId,
-                    res.metadata(),
                     (Collection<Map<String, Object>>)((Collection)res.data()),
                     res.error(),
                     res.isFinished());
@@ -453,11 +450,13 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override protected boolean onFieldsPageReady(boolean loc, GridCacheQueryInfo qryInfo,
-        @Nullable List<GridQueryFieldMetadata> metadata,
+    @Override protected boolean onFieldsPageReady(
+        boolean loc,
+        GridCacheQueryInfo qryInfo,
         @Nullable Collection<?> entities,
         @Nullable Collection<?> data,
-        boolean finished, @Nullable Throwable e) {
+        boolean finished, @Nullable Throwable e
+    ) {
         assert qryInfo != null;
 
         if (e != null) {
@@ -477,13 +476,12 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         if (loc) {
             GridCacheLocalFieldsQueryFuture fut = (GridCacheLocalFieldsQueryFuture)qryInfo.localQueryFuture();
 
-            fut.onFieldsPage(null, metadata, data, null, finished);
+            fut.onFieldsPage(null, data, null, finished);
         }
         else {
             GridCacheQueryResponse res = new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(),
                 finished, qryInfo.reducer() == null, cctx.deploymentEnabled());
 
-            res.metadata(metadata);
             res.data(entities != null ? entities : data);
 
             if (!sendQueryResponse(qryInfo.senderId(), res, qryInfo.query().timeout()))

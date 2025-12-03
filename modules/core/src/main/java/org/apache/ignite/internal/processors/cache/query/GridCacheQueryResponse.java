@@ -32,8 +32,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -62,15 +60,6 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
 
     /** */
     private boolean fields;
-
-    /** */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> metaDataBytes;
-
-    /** */
-    @GridToStringInclude
-    @GridDirectTransient
-    private List<GridQueryFieldMetadata> metadata;
 
     /** */
     @GridDirectTransient
@@ -134,9 +123,6 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         if (err != null && errBytes == null)
             errBytes = U.marshal(ctx, err);
 
-        if (metaDataBytes == null && metadata != null)
-            metaDataBytes = marshalCollection(metadata, cctx);
-
         if (idxQryMetadataBytes == null && idxQryMetadata != null)
             idxQryMetadataBytes = U.marshal(ctx, idxQryMetadata);
 
@@ -161,9 +147,6 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
 
         if (errBytes != null && err == null)
             err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-
-        if (metadata == null)
-            metadata = unmarshalCollection(metaDataBytes, ctx, ldr);
 
         if (idxQryMetadataBytes != null && idxQryMetadata == null)
             idxQryMetadata = U.unmarshal(ctx, idxQryMetadataBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
@@ -221,24 +204,10 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     }
 
     /**
-     * @return Metadata.
-     */
-    public List<GridQueryFieldMetadata> metadata() {
-        return metadata;
-    }
-
-    /**
      * @return IndexQuery metadata.
      */
     public IndexQueryResultMeta idxQryMetadata() {
         return idxQryMetadata;
-    }
-
-    /**
-     * @param metadata Metadata.
-     */
-    public void metadata(@Nullable List<GridQueryFieldMetadata> metadata) {
-        this.metadata = metadata;
     }
 
     /**
@@ -334,19 +303,15 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
 
                 writer.incrementState();
 
-            case 8:
-                if (!writer.writeCollection(metaDataBytes, MessageCollectionItemType.BYTE_ARR))
-                    return false;
-
                 writer.incrementState();
 
-            case 9:
+            case 8:
                 if (!writer.writeLong(reqId))
                     return false;
 
                 writer.incrementState();
 
-            case 10:
+            case 9:
                 if (!writer.writeByteArray(idxQryMetadataBytes))
                     return false;
 
@@ -397,14 +362,6 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
                 reader.incrementState();
 
             case 8:
-                metaDataBytes = reader.readCollection(MessageCollectionItemType.BYTE_ARR);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
                 reqId = reader.readLong();
 
                 if (!reader.isLastRead())
@@ -412,7 +369,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
 
                 reader.incrementState();
 
-            case 10:
+            case 9:
                 idxQryMetadataBytes = reader.readByteArray();
 
                 if (!reader.isLastRead())

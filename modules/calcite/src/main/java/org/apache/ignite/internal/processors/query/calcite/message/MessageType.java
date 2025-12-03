@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.function.Supplier;
 import org.apache.ignite.internal.codegen.CalciteErrorMessageSerializer;
+import org.apache.ignite.internal.codegen.CalciteQueryFieldMetadataSerializer;
 import org.apache.ignite.internal.codegen.ColocationGroupSerializer;
 import org.apache.ignite.internal.codegen.FragmentDescriptionSerializer;
 import org.apache.ignite.internal.codegen.FragmentMappingSerializer;
@@ -61,6 +62,9 @@ public enum MessageType {
 
     /** */
     GENERIC_VALUE_MESSAGE(307, GenericValueMessage::new, new GenericValueMessageSerializer()),
+
+    /** */
+    QUERY_FIELD_METADATA(308, CalciteQueryFieldMetadata::new, new CalciteQueryFieldMetadataSerializer()),
 
     /** */
     FRAGMENT_MAPPING(350, FragmentMapping::new, new FragmentMappingSerializer()),
