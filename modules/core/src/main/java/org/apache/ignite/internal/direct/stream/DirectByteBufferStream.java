@@ -29,6 +29,7 @@ import java.util.RandomAccess;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -222,6 +223,9 @@ public class DirectByteBufferStream {
     @GridToStringExclude
     private final IgniteCacheObjectProcessor cacheObjProc;
 
+    /** Binary marshaller for marshalling user objects. */
+    private final BinaryMarshaller marsh;
+
     /** */
     @GridToStringExclude
     protected ByteBuffer buf;
@@ -342,8 +346,9 @@ public class DirectByteBufferStream {
      *
      * @param msgFactory Message factory.
      */
-    public DirectByteBufferStream(MessageFactory msgFactory) {
+    public DirectByteBufferStream(MessageFactory msgFactory, BinaryMarshaller marsh) {
         this.msgFactory = msgFactory;
+        this.marsh = marsh;
 
         // Is not used while writing messages.
         cacheObjProc = null;
@@ -355,8 +360,9 @@ public class DirectByteBufferStream {
      * @param msgFactory Message factory.
      * @param cacheObjProc Cache object processor.
      */
-    public DirectByteBufferStream(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
+    public DirectByteBufferStream(MessageFactory msgFactory, BinaryMarshaller marsh, IgniteCacheObjectProcessor cacheObjProc) {
         this.msgFactory = msgFactory;
+        this.marsh = marsh;
         this.cacheObjProc = cacheObjProc;
     }
 
@@ -895,6 +901,16 @@ public class DirectByteBufferStream {
         }
         else
             writeShort(Short.MIN_VALUE);
+    }
+
+    /** */
+    public <T> void writeUserObject(T obj) {
+        try {
+            writeByteArray(marsh.marshal(obj));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
@@ -1555,6 +1571,18 @@ public class DirectByteBufferStream {
         }
         else
             return null;
+    }
+
+    /** */
+    public <T> T readUserObject(MessageReader reader) {
+        try {
+            byte[] arr = readByteArray();
+
+            return marsh.unmarshal(arr, null);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
