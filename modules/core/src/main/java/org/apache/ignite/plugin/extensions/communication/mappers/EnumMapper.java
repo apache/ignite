@@ -17,8 +17,11 @@
 
 package org.apache.ignite.plugin.extensions.communication.mappers;
 
+/** */
 public interface EnumMapper<T extends Enum<T>> {
+    /** */
     public byte encode(T enumVal);
 
+    /** */
     public T decode(byte enumCode);
 }
