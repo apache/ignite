@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.CLOSE;
 import static org.apache.ignite.internal.processors.platform.client.streamer.ClientDataStreamerFlags.FLUSH;
@@ -65,7 +66,7 @@ public class ClientDataStreamerAddDataRequest extends ClientDataStreamerRequest 
 
         try {
             if (entries != null)
-                dataStreamer.addData(entries);
+                dataStreamer.addData(F.viewReadOnly(entries, DataStreamerEntry::toEntry));
 
             if ((flags & FLUSH) != 0)
                 dataStreamer.flush();

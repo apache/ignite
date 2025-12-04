@@ -736,7 +736,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             keys = new GridConcurrentHashSet<>(entries.size());
 
             for (DataStreamerEntry e : entries)
-                keys.add(new KeyCacheObjectWrapper(e.getKey()));
+                keys.add(new KeyCacheObjectWrapper(e.entryKey()));
         }
 
         load0(entries, fut, keys, 0, null, null);
@@ -879,14 +879,14 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     List<ClusterNode> nodes;
 
                     try {
-                        KeyCacheObject key = entry.getKey();
+                        KeyCacheObject key = entry.entryKey();
 
                         assert key != null;
 
                         if (initPda) {
                             if (cacheObjCtx.addDeploymentInfo())
                                 jobPda = new DataStreamerPda(key.value(cacheObjCtx, false),
-                                    entry.getValue() != null ? entry.getValue().value(cacheObjCtx, false) : null,
+                                    entry.value() != null ? entry.value().value(cacheObjCtx, false) : null,
                                     rcvr);
                             else if (rcvr != null)
                                 jobPda = new DataStreamerPda(rcvr);
@@ -948,7 +948,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                                 if (activeKeys != null) {
                                     for (DataStreamerEntry e : entriesForNode)
-                                        activeKeys.remove(new KeyCacheObjectWrapper(e.getKey()));
+                                        activeKeys.remove(new KeyCacheObjectWrapper(e.entryKey()));
 
                                     if (activeKeys.isEmpty())
                                         resFut.onDone();
@@ -1639,7 +1639,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 AffinityTopologyVersion curBatchTopVer;
 
                 // Init buffer.
-                int part = entry.getKey().partition();
+                int part = entry.entryKey().partition();
 
                 GridFutureAdapter<Object> curFut0;
                 PerStripeBuffer b = stripes[part % stripes.length];
@@ -1934,9 +1934,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             else {
                 try {
                     for (DataStreamerEntry e : entries) {
-                        e.getKey().prepareMarshal(cacheObjCtx);
+                        e.entryKey().prepareMarshal(cacheObjCtx);
 
-                        CacheObject val = e.getValue();
+                        CacheObject val = e.value();
 
                         if (val != null)
                             val.prepareMarshal(cacheObjCtx);

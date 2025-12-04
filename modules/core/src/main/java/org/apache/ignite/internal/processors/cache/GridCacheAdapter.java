@@ -3332,7 +3332,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             });
 
             if (!col.isEmpty())
-                ldr.addData(col);
+                ldr.addData(F.viewReadOnly(col, DataStreamerEntry::toEntry));
         }
     }
 

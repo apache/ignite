@@ -79,13 +79,13 @@ public class IgniteDrDataStreamerCacheUpdater implements StreamReceiver<KeyCache
 
                 entry.unmarshal(cacheObjCtx, ctx.marshaller());
 
-                KeyCacheObject key = entry.getKey();
+                KeyCacheObject key = entry.entryKey();
 
                 // Ensure that receiver to not receive special-purpose values for TTL and expire time.
                 assert entry.ttl() != CU.TTL_NOT_CHANGED && entry.ttl() != CU.TTL_ZERO && entry.ttl() >= 0;
                 assert entry.expireTime() != CU.EXPIRE_TIME_CALCULATE && entry.expireTime() >= 0;
 
-                CacheObject cacheVal = entry.getValue();
+                CacheObject cacheVal = entry.value();
 
                 GridCacheDrInfo val = cacheVal != null ? entry.ttl() != CU.TTL_ETERNAL ?
                     new GridCacheDrExpirationInfo(cacheVal, entry.version(), entry.ttl(), entry.expireTime()) :
