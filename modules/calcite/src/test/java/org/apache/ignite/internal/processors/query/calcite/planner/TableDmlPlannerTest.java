@@ -190,4 +190,28 @@ public class TableDmlPlannerTest extends AbstractPlannerTest {
         assertPlan("SELECT CITY.NAME, STREET.NAME FROM STREET JOIN CITY ON STREET.CITY_ID = CITY.ID ORDER BY STREET.ID",
             schema, hasColumns("NAME", "NAME1"));
     }
+
+    /** Tests that table modify can be executed on remote nodes. */
+    @Test
+    public void testDistributedTableModify() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("TEST", IgniteDistributions.affinity(0, "test", "hash"),
+                "ID", INTEGER, "VAL", INTEGER)
+        );
+
+        assertPlan("UPDATE test SET val = val + 1", schema, hasChildThat(isInstanceOf(IgniteTableModify.class)
+            .and(hasDistribution(IgniteDistributions.random()))));
+    }
+
+    /** */
+    @Test
+    public void testDistributedDelete() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("TEST", IgniteDistributions.affinity(0, "test", "hash"),
+                "_KEY", INTEGER, "VAL", INTEGER)
+        );
+
+        assertPlan("DELETE FROM test WHERE val = 10", schema, hasChildThat(isInstanceOf(IgniteTableModify.class)
+            .and(hasDistribution(IgniteDistributions.random()))));
+    }
 }

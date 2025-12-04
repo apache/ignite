@@ -24,6 +24,7 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelInput;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableModify;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rex.RexNode;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 
@@ -101,5 +102,10 @@ public class IgniteTableModify extends TableModify implements IgniteRel {
     @Override public IgniteRel clone(RelOptCluster cluster, List<IgniteRel> inputs) {
         return new IgniteTableModify(cluster, getTraitSet(), getTable(), sole(inputs),
             getOperation(), getUpdateColumnList(), getSourceExpressionList(), isFlattened());
+    }
+
+    /** {@inheritDoc} */
+    @Override public double estimateRowCount(RelMetadataQuery mq) {
+        return 1.0D;
     }
 }
