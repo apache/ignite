@@ -1167,7 +1167,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                         updateSeq = seq;
                 }
 
-                node2part.updateSequence(updateSeq);
+                node2part.checkAndUpdateSequence(updateSeq);
             }
         }
 

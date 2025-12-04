@@ -318,6 +318,8 @@ class MessageSerializerGenerator {
 
         String getExpr = (F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName) + "()";
 
+        boolean compress = field.getAnnotation(Compress.class) != null;
+
         TypeMirror type = field.asType();
 
         if (type.getKind().isPrimitive()) {
@@ -371,9 +373,15 @@ class MessageSerializerGenerator {
 
                 imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
-                returnFalseIfWriteFailed(write, "writer.writeMap", getExpr,
-                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)),
-                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)));
+                List<String> args = new ArrayList<>();
+                args.add(getExpr);
+                args.add("MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
+                args.add("MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)));
+
+                if (compress)
+                    args.add("true");
+
+                returnFalseIfWriteFailed(write, "writer.writeMap", args.toArray(String[]::new));
             }
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.KeyCacheObject")))
@@ -385,8 +393,12 @@ class MessageSerializerGenerator {
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
                 returnFalseIfWriteFailed(write, "writer.writeGridLongList", getExpr);
 
-            else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
-                returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr);
+            else if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
+                if (compress)
+                    returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr, "true");
+                else
+                    returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr);
+            }
 
             else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
@@ -508,6 +520,8 @@ class MessageSerializerGenerator {
 
         String name = F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName;
 
+        boolean compress = field.getAnnotation(Compress.class) != null;
+
         if (type.getKind().isPrimitive()) {
             String typeName = capitalizeOnlyFirst(type.getKind().name());
 
@@ -580,9 +594,15 @@ class MessageSerializerGenerator {
 
                 assert typeArgs.size() == 2;
 
-                returnFalseIfReadFailed(name, "reader.readMap",
-                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)),
-                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)), "false");
+                List<String> args = new ArrayList<>();
+                args.add("MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
+                args.add("MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)));
+                args.add("false");
+
+                if (compress)
+                    args.add("true");
+
+                returnFalseIfReadFailed(name, "reader.readMap", args.toArray(String[]::new));
             }
 
             else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.KeyCacheObject")))
@@ -594,8 +614,12 @@ class MessageSerializerGenerator {
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
                 returnFalseIfReadFailed(name, "reader.readGridLongList");
 
-            else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
-                returnFalseIfReadFailed(name, "reader.readMessage");
+            else if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
+                if (compress)
+                    returnFalseIfReadFailed(name, "reader.readMessage", "true");
+                else
+                    returnFalseIfReadFailed(name, "reader.readMessage");
+            }
 
             else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();

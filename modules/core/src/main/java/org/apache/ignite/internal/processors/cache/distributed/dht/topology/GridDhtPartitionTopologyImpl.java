@@ -1950,7 +1950,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 long updateSeq = this.updateSeq.incrementAndGet();
 
-                node2part.newUpdateSequence(updateSeq);
+                node2part.updateSequence(updateSeq);
 
                 boolean changed = false;
 
@@ -2650,7 +2650,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         updateSeq = seq;
                 }
 
-                node2part.updateSequence(updateSeq);
+                node2part.checkAndUpdateSequence(updateSeq);
             }
         }
 
