@@ -35,11 +35,11 @@ public class InlineIndexKeyTypeRegistryTest extends GridCommonAbstractTest {
 
     /** */
     private static final IndexKeyTypeSettings pojoArrayKeyTypeSettings =
-        new IndexKeyTypeSettings().inlineObjHash(false);
+        new IndexKeyTypeSettings().inlineObjectHash(false);
 
     /** */
     private static final IndexKeyTypeSettings strNoCompareKeyTypeSettings =
-        new IndexKeyTypeSettings().inlineObjHash(false).stringOptimizedCompare(false);
+        new IndexKeyTypeSettings().inlineObjectHash(false).stringOptimizedCompare(false);
 
     /** */
     @Test

@@ -377,9 +377,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     sndId,
                     (Collection<Map<String, Object>>)((Collection)res.data()),
                     res.error(),
-                    res.isFinished());
+                    res.finished());
             else
-                fut.onPage(sndId, res.idxQryMetadata(), res.data(), res.error(), res.isFinished());
+                fut.onPage(sndId, res.indexQueryMetadata(), res.data(), res.error(), res.finished());
         else if (!cancelled.contains(res.requestId()))
             U.warn(log, "Received response for finished or unknown query [rmtNodeId=" + sndId +
                 ", res=" + res + ']');
@@ -437,7 +437,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 finished, /*fields*/false, cctx.deploymentEnabled());
 
             if (qryInfo.query().type() == INDEX)
-                res.idxQryMetadata((IndexQueryResultMeta)idxQryMetadata);
+                res.indexQueryMetadata((IndexQueryResultMeta)idxQryMetadata);
 
             res.data(data);
 

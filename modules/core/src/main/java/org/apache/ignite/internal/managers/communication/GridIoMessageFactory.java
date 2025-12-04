@@ -349,7 +349,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)24, GridDistributedTxFinishResponse::new, new GridDistributedTxFinishResponseSerializer());
         factory.register((short)25, GridDistributedTxPrepareRequest::new, new GridDistributedTxPrepareRequestSerializer());
         factory.register((short)26, GridDistributedTxPrepareResponse::new, new GridDistributedTxPrepareResponseSerializer());
-        // Type 27 is former GridDistributedUnlockRequest
+        factory.register((short)27, GridQueryFieldMetadataMessage::new, new GridQueryFieldMetadataMessageSerializer());
         factory.register((short)28, GridDhtAffinityAssignmentRequest::new, new GridDhtAffinityAssignmentRequestSerializer());
         factory.register((short)29, GridDhtAffinityAssignmentResponse::new);
         factory.register((short)30, GridDhtLockRequest::new, new GridDhtLockRequestSerializer());
@@ -413,8 +413,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)108, GridQueryNextPageRequest::new, new GridQueryNextPageRequestSerializer());
         factory.register((short)109, GridQueryNextPageResponse::new, new GridQueryNextPageResponseSerializer());
         factory.register((short)112, GridCacheSqlQuery::new, new GridCacheSqlQuerySerializer());
-        factory.register((short)113, GridQueryFieldMetadataMessage::new, new GridQueryFieldMetadataMessageSerializer());
-        // 113 - BinaryObjectImpl
+        factory.register((short)113, IndexKeyTypeSettings::new, new IndexKeyTypeSettingsSerializer());
         factory.register((short)114, GridDhtPartitionSupplyMessage::new, new GridDhtPartitionSupplyMessageSerializer());
         factory.register((short)115, UUIDCollectionMessage::new, new UUIDCollectionMessageSerializer());
         factory.register((short)116, GridNearSingleGetRequest::new, new GridNearSingleGetRequestSerializer());

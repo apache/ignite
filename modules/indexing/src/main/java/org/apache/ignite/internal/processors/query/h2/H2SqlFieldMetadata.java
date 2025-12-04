@@ -57,6 +57,9 @@ public class H2SqlFieldMetadata extends GridQueryFieldMetadataMessage implements
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        // TODO: revise
+        assert false;
+
         U.writeString(out, schemaName);
         U.writeString(out, typeName);
         U.writeString(out, fieldName);
@@ -66,7 +69,10 @@ public class H2SqlFieldMetadata extends GridQueryFieldMetadataMessage implements
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override public void readExternal(ObjectInput in) throws IOException {
+        // TODO: revise
+        assert false;
+
         schemaName = U.readString(in);
         typeName = U.readString(in);
         fieldName = U.readString(in);

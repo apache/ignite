@@ -168,8 +168,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             boolean inlineObjSupported = inlineObjectSupported(def, metaInfo, rowHndFactory);
 
             keyTypeSettings
-                .inlineObjHash(metaInfo.inlineObjectHash())
-                .inlineObjSupported(inlineObjSupported);
+                .inlineObjectHash(metaInfo.inlineObjectHash())
+                .inlineObjectSupported(inlineObjSupported);
 
             rowHnd = rowHndFactory.create(def, keyTypeSettings);
 
@@ -225,8 +225,8 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
 
                         // Create a settings for case where java objects inilned as byte array.
                         IndexKeyTypeSettings keyTypeSettings = new IndexKeyTypeSettings()
-                            .inlineObjSupported(true)
-                            .inlineObjHash(false);
+                            .inlineObjectSupported(true)
+                            .inlineObjectHash(false);
 
                         InlineIndexRowHandler rowHnd = rowHndFactory.create(def, keyTypeSettings);
 

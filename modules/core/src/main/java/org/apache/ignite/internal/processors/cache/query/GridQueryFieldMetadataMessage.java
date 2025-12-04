@@ -77,7 +77,7 @@ public class GridQueryFieldMetadataMessage implements GridQueryFieldMetadata, Me
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 113;
+        return 27;
     }
 
     /** {@inheritDoc} */

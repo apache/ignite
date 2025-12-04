@@ -23,9 +23,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
@@ -46,34 +46,31 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
+    @Order(0)
     private boolean finished;
 
     /** */
+    @Order(value = 1, method = "requestId")
     private long reqId;
 
     /** */
-    @GridDirectTransient
-    private Throwable err;
+    @Order(value = 2, method = "errorMessage")
+    private @Nullable ErrorMessage errMsg;
 
     /** */
-    private byte[] errBytes;
-
-    /** */
+    @Order(value = 3)
     private boolean fields;
 
     /** */
-    @GridDirectTransient
+    // TODO
+    @Order(value = 4, method = "indexQueryMetadata")
     private IndexQueryResultMeta idxQryMetadata;
 
     /** */
-    private byte[] idxQryMetadataBytes;
-
-    /** */
-    @GridDirectCollection(byte[].class)
+    @Order(5)
     private Collection<byte[]> dataBytes;
 
     /** */
-    @GridDirectTransient
     private Collection<Object> data;
 
     /**
@@ -107,7 +104,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     public GridCacheQueryResponse(int cacheId, long reqId, Throwable err, boolean addDepInfo) {
         this.cacheId = cacheId;
         this.reqId = reqId;
-        this.err = err;
+        errMsg = new ErrorMessage(err);
         this.addDepInfo = addDepInfo;
 
         finished = true;
@@ -119,12 +116,6 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         super.prepareMarshal(ctx);
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
-
-        if (err != null && errBytes == null)
-            errBytes = U.marshal(ctx, err);
-
-        if (idxQryMetadataBytes == null && idxQryMetadata != null)
-            idxQryMetadataBytes = U.marshal(ctx, idxQryMetadata);
 
         if (dataBytes == null && data != null)
             dataBytes = marshalCollection(data, cctx);
@@ -144,12 +135,6 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
-
-        if (errBytes != null && err == null)
-            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-
-        if (idxQryMetadataBytes != null && idxQryMetadata == null)
-            idxQryMetadata = U.unmarshal(ctx, idxQryMetadataBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (data == null)
             data = unmarshalCollection0(dataBytes, ctx, ldr);
@@ -206,14 +191,14 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     /**
      * @return IndexQuery metadata.
      */
-    public IndexQueryResultMeta idxQryMetadata() {
+    public IndexQueryResultMeta indexQueryMetadata() {
         return idxQryMetadata;
     }
 
     /**
      * @param idxQryMetadata IndexQuery metadata.
      */
-    public void idxQryMetadata(IndexQueryResultMeta idxQryMetadata) {
+    public void indexQueryMetadata(IndexQueryResultMeta idxQryMetadata) {
         this.idxQryMetadata = idxQryMetadata;
     }
 
@@ -234,7 +219,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     /**
      * @return If this is last response for this request or not.
      */
-    public boolean isFinished() {
+    public boolean finished() {
         return finished;
     }
 
@@ -245,6 +230,16 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         this.finished = finished;
     }
 
+    /** */
+    public Collection<byte[]> dataBytes() {
+        return dataBytes;
+    }
+
+    /** */
+    public void dataBytes(Collection<byte[]> dataBytes) {
+        this.dataBytes = dataBytes;
+    }
+
     /**
      * @return Request id.
      */
@@ -252,9 +247,29 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         return reqId;
     }
 
+    /** */
+    public void requestId(long reqId) {
+        this.reqId = reqId;
+    }
+
     /** {@inheritDoc} */
-    @Override public Throwable error() {
-        return err;
+    @Override public @Nullable Throwable error() {
+        return ErrorMessage.error(errMsg);
+    }
+
+    /** */
+    public @Nullable ErrorMessage errorMessage() {
+        return errMsg;
+    }
+
+    /** */
+    public void errorMessage(@Nullable ErrorMessage errMsg) {
+        this.errMsg = errMsg;
+    }
+
+    /** */
+    public void fields(boolean fields) {
+        this.fields = fields;
     }
 
     /**

@@ -54,6 +54,9 @@ public class CalciteQueryFieldMetadata extends GridQueryFieldMetadataMessage imp
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        // TODO: revise
+        assert false;
+
         out.writeUTF(schemaName);
         out.writeUTF(typeName);
         out.writeUTF(fieldName);
@@ -64,6 +67,9 @@ public class CalciteQueryFieldMetadata extends GridQueryFieldMetadataMessage imp
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
+        // TODO: revise
+        assert false;
+
         schemaName = in.readUTF();
         typeName = in.readUTF();
         fieldName = in.readUTF();

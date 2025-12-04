@@ -76,6 +76,9 @@ public class IndexQueryResultMeta implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        // TODO:
+        assert false;
+
         out.writeObject(keyTypeSettings);
 
         U.writeMap(out, keyDefs);
@@ -83,6 +86,9 @@ public class IndexQueryResultMeta implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        // TODO:
+        assert false;
+
         keyTypeSettings = (IndexKeyTypeSettings)in.readObject();
 
         keyDefs = U.readLinkedMap(in);
