@@ -22,6 +22,9 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
+
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
 
 /**
  * Cancels given tasks sessions on all cluster nodes.
@@ -56,6 +59,11 @@ public class ComputeCancelSessionTask extends VisorOneNodeTask<KillComputeComman
             new ComputeMXBeanImpl(ignite.context()).cancel(arg.sessionId());
 
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet requiredPermissions() {
+            return NO_PERMISSIONS;
         }
 
         /** {@inheritDoc} */

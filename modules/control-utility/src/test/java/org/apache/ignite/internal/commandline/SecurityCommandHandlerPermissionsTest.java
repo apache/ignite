@@ -22,11 +22,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.apache.ignite.Ignite;
@@ -35,20 +36,23 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.client.thin.ServicesTest;
+import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.internal.processors.security.impl.TestSecurityPluginProvider;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.lang.IgniteFutureCancelledException;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
-import org.apache.ignite.spi.systemview.view.ComputeJobView;
-import org.apache.ignite.spi.systemview.view.SystemView;
+import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -56,14 +60,15 @@ import org.junit.Test;
 import org.junit.runners.Parameterized;
 
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_PASSWORD;
 import static org.apache.ignite.internal.commandline.ArgumentParser.CMD_USER;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
+import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_OPS;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_ROLLING_UPGRADE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
@@ -88,9 +93,6 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
     public static final String DEFAULT_PWD = "pwd";
 
     /** */
-    public static CountDownLatch computeLatch;
-
-    /** */
     @Parameterized.Parameters(name = "cmdHnd={0}")
     public static List<String> commandHandlers() {
         return F.asList(CLI_CMD_HND);
@@ -103,6 +105,8 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
         persistenceEnable(false);
 
         injectTestSystemOut();
+
+        TestJob.CANCELLED_JOB_CNT.set(0);
     }
 
     /** {@inheritDoc} */
@@ -176,22 +180,22 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
 
         List<String> cmdArgs = asList("--rolling-upgrade", "enable", targetVerStr);
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, executeOnBehalf(cmdArgs, TEST_NO_PERMISSIONS_LOGIN));
 
         assertFalse(ign.context().rollingUpgrade().enabled());
 
-        assertEquals(EXIT_CODE_OK, execute(enrichWithConnectionArguments(cmdArgs, TEST_LOGIN)));
+        assertEquals(EXIT_CODE_OK, executeOnBehalf(cmdArgs, TEST_LOGIN));
 
         assertTrue(ign.context().rollingUpgrade().enabled());
         assertEquals(IgniteProductVersion.fromString(targetVerStr), ign.context().rollingUpgrade().versions().get2());
 
         cmdArgs = asList("--rolling-upgrade", "disable");
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, executeOnBehalf(cmdArgs, TEST_NO_PERMISSIONS_LOGIN));
 
         assertTrue(ign.context().rollingUpgrade().enabled());
 
-        assertEquals(EXIT_CODE_OK, execute(enrichWithConnectionArguments(cmdArgs, TEST_LOGIN)));
+        assertEquals(EXIT_CODE_OK, executeOnBehalf(cmdArgs, TEST_LOGIN));
 
         assertFalse(ign.context().rollingUpgrade().enabled());
     }
@@ -219,10 +223,10 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
 
         Collection<ServiceDescriptor> svcs = ignite.services().serviceDescriptors();
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, executeOnBehalf(cmdArgs, TEST_NO_PERMISSIONS_LOGIN));
         assertEquals(1, svcs.size());
 
-        assertEquals(EXIT_CODE_OK, execute(enrichWithConnectionArguments(cmdArgs, TEST_LOGIN)));
+        assertEquals(EXIT_CODE_OK, executeOnBehalf(cmdArgs, TEST_LOGIN));
 
         svcs = ignite.services().serviceDescriptors();
         assertEquals(0, svcs.size());
@@ -233,42 +237,50 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
     public void testTaskCancel() throws Exception {
         IgniteEx ignite = startGrid(
             0,
-            userData(TEST_NO_PERMISSIONS_LOGIN, taskPermission(TestTask.class.getName())),
-            userData(TEST_LOGIN, taskPermission(TestTask.class.getName(), TASK_CANCEL))
+            userData(TEST_NO_PERMISSIONS_LOGIN, NO_PERMISSIONS),
+            userData(TEST_LOGIN, SecurityPermissionSetBuilder.create()
+                .defaultAllowAll(false)
+                .appendTaskPermissions(TestTask.class.getName(), TASK_CANCEL)
+                .build())
         );
 
-        computeLatch = new CountDownLatch(1);
+        ComputeTaskFuture<ComputeJobResult> fut = ignite.compute().executeAsync(new TestTask(), null);
 
-        ignite.compute().executeAsync(new TestTask(), null);
+        GridSystemViewManager viewMgr = ignite.context().systemView();
+
+        assertTrue(waitForCondition(() -> viewMgr.view(TASKS_VIEW).size() >= 1, getTestTimeout()));
+        assertTrue(waitForCondition(() -> viewMgr.view(JOBS_VIEW).size() >= 1, getTestTimeout()));
+
+        Iterator<ComputeTaskView> iter = viewMgr.<ComputeTaskView>view(TASKS_VIEW).iterator();
+
+        String sesId = iter.next().sessionId().toString();
+
+        assertFalse(iter.hasNext());
+
+        Collection<String> cmdArgs = asList("--kill", "compute", sesId);
+
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, executeOnBehalf(cmdArgs, TEST_NO_PERMISSIONS_LOGIN));
+
+        assertFalse(fut.isDone());
+
+        assertEquals(0, TestJob.CANCELLED_JOB_CNT.get());
+
+        assertTrue(waitForCondition(() -> viewMgr.view(TASKS_VIEW).size() >= 1, getTestTimeout()));
+        assertTrue(waitForCondition(() -> viewMgr.view(JOBS_VIEW).size() >= 1, getTestTimeout()));
+
+        assertEquals(EXIT_CODE_OK, executeOnBehalf(cmdArgs, TEST_LOGIN));
 
         try {
-            AtomicReference<ComputeJobView> jobViewHolder = new AtomicReference<>();
-
-            boolean res = waitForCondition(() -> {
-                SystemView<ComputeJobView> jobs = ignite.context().systemView().view(JOBS_VIEW);
-
-                if (jobs.size() >= 1) {
-                    assertEquals(1, jobs.size());
-                    jobViewHolder.set(jobs.iterator().next());
-                    return true;
-                }
-
-                return false;
-            }, getTestTimeout());
-
-            assertTrue(res);
-
-            String sesId = jobViewHolder.get().sessionId().toString();
-            Collection<String> cmdArgs = asList("--kill", "compute", sesId);
-
-            assertEquals(EXIT_CODE_UNEXPECTED_ERROR,
-                execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
-
-            assertEquals(EXIT_CODE_OK, execute(enrichWithConnectionArguments(cmdArgs, TEST_LOGIN)));
+            assertTrue(fut.get(getTestTimeout(), MILLISECONDS).isCancelled());
         }
-        finally {
-            computeLatch.countDown();
+        catch (Exception e) {
+            assertTrue(X.hasCause(e, IgniteFutureCancelledException.class));
         }
+
+        assertTrue(waitForCondition(() -> viewMgr.view(TASKS_VIEW).size() == 0, getTestTimeout()));
+        assertTrue(waitForCondition(() -> viewMgr.view(JOBS_VIEW).size() == 0, getTestTimeout()));
+
+        assertEquals(1, TestJob.CANCELLED_JOB_CNT.get());
     }
 
     /** */
@@ -292,13 +304,13 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
 
         ignite.createCache(DEFAULT_CACHE_NAME);
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(enrichWithConnectionArguments(cmdArgs, TEST_NO_PERMISSIONS_LOGIN)));
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, executeOnBehalf(cmdArgs, TEST_NO_PERMISSIONS_LOGIN));
 
-        // We are losing command failure cause for --cache clear commnad. See IGNITE-21023 for more details.
+        // We are losing command failure cause for --cache clear command. See IGNITE-21023 for more details.
         if (!cmdArgs.containsAll(Arrays.asList("--cache", "clear")))
             assertTrue(testOut.toString().contains("Authorization failed"));
 
-        assertEquals(EXIT_CODE_OK, execute(enrichWithConnectionArguments(cmdArgs, TEST_LOGIN)));
+        assertEquals(EXIT_CODE_OK, executeOnBehalf(cmdArgs, TEST_LOGIN));
     }
 
     /** */
@@ -332,15 +344,6 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
     }
 
     /** */
-    private SecurityPermissionSet taskPermission(String name, SecurityPermission... perms) {
-        return SecurityPermissionSetBuilder.create()
-            .defaultAllowAll(false)
-            .appendSystemPermissions(ADMIN_OPS)
-            .appendTaskPermissions(name, perms)
-            .build();
-    }
-
-    /** */
     private TestSecurityData userData(String login, SecurityPermissionSet perms) {
         return new TestSecurityData(
             login,
@@ -351,41 +354,52 @@ public class SecurityCommandHandlerPermissionsTest extends GridCommandHandlerAbs
     }
 
     /** */
-    private static class TestTask extends ComputeTaskAdapter<Object, Object> {
+    private int executeOnBehalf(Collection<String> cmdArgs, String login) {
+        return execute(enrichWithConnectionArguments(cmdArgs, login));
+    }
+
+    /** */
+    private static class TestTask extends ComputeTaskAdapter<Object, ComputeJobResult> {
         /** {@inheritDoc} */
         @Override public @NotNull Map<? extends ComputeJob, ClusterNode> map(
             List<ClusterNode> subgrid,
             @Nullable Object arg
         ) throws IgniteException {
-            return subgrid.stream().filter(g -> !g.isClient()).collect(Collectors.toMap(ignored -> job(), srv -> srv));
+            return subgrid.stream().filter(g -> !g.isClient()).collect(Collectors.toMap(ignored -> new TestJob(), srv -> srv));
         }
 
         /** {@inheritDoc} */
-        @Override public @Nullable Object reduce(List<ComputeJobResult> results) throws IgniteException {
-            return null;
-        }
+        @Override public @Nullable ComputeJobResult reduce(List<ComputeJobResult> results) throws IgniteException {
+            assertTrue(results.size() == 1);
 
-        /** */
-        protected ComputeJob job() {
-            return new TestJob();
+            return results.get(0);
         }
     }
 
     /** */
     private static class TestJob implements ComputeJob {
+        /** */
+        private final CountDownLatch jobBlockedLatch = new CountDownLatch(1);
+
+        /** */
+        private static final AtomicInteger CANCELLED_JOB_CNT = new AtomicInteger();
+
         /** {@inheritDoc} */
         @Override public void cancel() {
-            //No-op
+            jobBlockedLatch.countDown();
+
+            CANCELLED_JOB_CNT.incrementAndGet();
         }
 
         /** {@inheritDoc} */
-        @Override public Object execute() {
+        @Override public Object execute() throws IgniteException {
             try {
-                computeLatch.await();
+                assertTrue(jobBlockedLatch.await(5_000, MILLISECONDS));
             }
-            catch (Exception e) {
+            catch (InterruptedException e) {
                 throw new IgniteException(e);
             }
+
             return null;
         }
     }
