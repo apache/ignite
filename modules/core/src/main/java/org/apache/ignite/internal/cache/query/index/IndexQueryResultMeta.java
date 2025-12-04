@@ -24,24 +24,29 @@ import java.io.ObjectOutput;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Metadata for IndexQuery response. This information is required to be sent to a node that initiated a query.
  * Thick client nodes may have irrelevant information about index structure, {@link MetaPageInfo}.
  */
-public class IndexQueryResultMeta implements Externalizable {
+public class IndexQueryResultMeta implements Message, Externalizable {
     /** */
+    // TODO
     private static final long serialVersionUID = 0L;
 
     /** Index key settings. */
+    @Order(0)
     private IndexKeyTypeSettings keyTypeSettings;
 
     /** Index key definitions. */
+    @Order(value = 1, method = "keyDefinitions")
     private LinkedHashMap<String, IndexKeyDefinition> keyDefs;
 
     /** */
@@ -64,14 +69,31 @@ public class IndexQueryResultMeta implements Externalizable {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 19;
+    }
+
     /** */
     public IndexKeyTypeSettings keyTypeSettings() {
         return keyTypeSettings;
     }
 
     /** */
+    public void keyTypeSettings(IndexKeyTypeSettings keyTypeSettings) {
+        this.keyTypeSettings = keyTypeSettings;
+    }
+
+    /** */
     public LinkedHashMap<String, IndexKeyDefinition> keyDefinitions() {
         return keyDefs;
+    }
+
+    /** */
+    public void keyDefinitions(Map<String, IndexKeyDefinition> keyDefs) {
+        this.keyDefs = keyDefs == null
+            ? null
+            : keyDefs instanceof LinkedHashMap ? (LinkedHashMap)keyDefs : new LinkedHashMap<>(keyDefs);
     }
 
     /** {@inheritDoc} */

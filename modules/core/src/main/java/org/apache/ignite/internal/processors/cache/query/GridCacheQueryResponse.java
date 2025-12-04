@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -36,9 +35,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -46,28 +42,27 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCacheDeployable {
     /** */
-    @Order(0)
+    @Order(4)
     private boolean finished;
 
     /** */
-    @Order(value = 1, method = "requestId")
+    @Order(value = 5, method = "requestId")
     private long reqId;
 
     /** */
-    @Order(value = 2, method = "errorMessage")
+    @Order(value = 6, method = "errorMessage")
     private @Nullable ErrorMessage errMsg;
 
     /** */
-    @Order(value = 3)
+    @Order(value = 7)
     private boolean fields;
 
     /** */
-    // TODO
-    @Order(value = 4, method = "indexQueryMetadata")
+    @Order(value = 8, method = "indexQueryMetadata")
     private IndexQueryResultMeta idxQryMetadata;
 
     /** */
-    @Order(5)
+    @Order(value = 9)
     private Collection<byte[]> dataBytes;
 
     /** */
@@ -277,123 +272,6 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
      */
     public boolean fields() {
         return fields;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeCollection(dataBytes, MessageCollectionItemType.BYTE_ARR))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeByteArray(errBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeBoolean(fields))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeBoolean(finished))
-                    return false;
-
-                writer.incrementState();
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeLong(reqId))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeByteArray(idxQryMetadataBytes))
-                    return false;
-
-                writer.incrementState();
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                dataBytes = reader.readCollection(MessageCollectionItemType.BYTE_ARR);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                errBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                fields = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                finished = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                reqId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                idxQryMetadataBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

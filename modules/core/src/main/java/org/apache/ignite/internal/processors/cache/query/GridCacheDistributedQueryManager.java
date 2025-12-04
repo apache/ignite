@@ -434,10 +434,10 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             fut.onPage(null, null, data, null, finished);
         else {
             GridCacheQueryResponse res = new GridCacheQueryResponse(cctx.cacheId(), qryInfo.requestId(),
-                finished, /*fields*/false, cctx.deploymentEnabled());
+                finished, false, cctx.deploymentEnabled());
 
             if (qryInfo.query().type() == INDEX)
-                res.indexQueryMetadata((IndexQueryResultMeta)idxQryMetadata);
+                res.indexQueryMetadata(idxQryMetadata);
 
             res.data(data);
 
