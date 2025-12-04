@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -35,9 +38,9 @@ public class WalStateAckMessage implements Message {
     @Order(1)
     private boolean affNode;
 
-    /** Operation result. */
-    @Order(2)
-    private boolean changed;
+    /** Detailed change WAL state results per group. */
+    @Order(value = 2, method = "groupResults")
+    private Map<Integer, Boolean> grpResults;
 
     /** Error message. */
     @Order(value = 3, method = "errorMessage")
@@ -54,17 +57,18 @@ public class WalStateAckMessage implements Message {
     }
 
     /**
-     * Constructor.
+     * Constructor for multiple groups.
      *
      * @param opId Operation ID.
      * @param affNode Affinity node.
-     * @param changed Operation result.
+     * @param grpResults Detailed change WAL state results per group.
      * @param errMsg Error message.
      */
-    public WalStateAckMessage(UUID opId, boolean affNode, boolean changed, @Nullable String errMsg) {
+    public WalStateAckMessage(UUID opId, boolean affNode,
+        Map<Integer, Boolean> grpResults, @Nullable String errMsg) {
         this.opId = opId;
         this.affNode = affNode;
-        this.changed = changed;
+        this.grpResults = grpResults != null ? new HashMap<>(grpResults) : Collections.emptyMap();
         this.errMsg = errMsg;
     }
 
@@ -97,17 +101,17 @@ public class WalStateAckMessage implements Message {
     }
 
     /**
-     * @return Result.
+     * @return Detailed results per group.
      */
-    public boolean changed() {
-        return changed;
+    public Map<Integer, Boolean> groupResults() {
+        return grpResults;
     }
 
     /**
-     * @param changed New operation result.
+     * @param groupResults New detailed results per group.
      */
-    public void changed(boolean changed) {
-        this.changed = changed;
+    public void groupResults(Map<Integer, Boolean> groupResults) {
+        this.grpResults = groupResults != null ? new HashMap<>(groupResults) : Collections.emptyMap();
     }
 
     /**
