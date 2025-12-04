@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.query.calcite.rule;
 import java.util.Set;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -39,7 +39,7 @@ import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
  */
 public class ProjectConverterRule extends AbstractIgniteConverterRule<LogicalProject> {
     /** */
-    public static final RelOptRule INSTANCE = new ProjectConverterRule();
+    public static final ConverterRule INSTANCE = new ProjectConverterRule();
 
     /** */
     public ProjectConverterRule() {

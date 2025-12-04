@@ -20,14 +20,22 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Spool;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
+import org.apache.ignite.internal.processors.query.calcite.rule.TableModifySingleNodeConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
+import static org.apache.calcite.sql.type.SqlTypeName.OTHER;
 import static org.apache.calcite.sql.type.SqlTypeName.VARCHAR;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -189,5 +197,198 @@ public class TableDmlPlannerTest extends AbstractPlannerTest {
 
         assertPlan("SELECT CITY.NAME, STREET.NAME FROM STREET JOIN CITY ON STREET.CITY_ID = CITY.ID ORDER BY STREET.ID",
             schema, hasColumns("NAME", "NAME1"));
+    }
+
+    /** Tests that table modify can be executed on remote nodes. */
+    @Test
+    public void testDistributedTableModify() throws Exception {
+        IgniteSchema schema = createSchema(
+            createTable("TEST", IgniteDistributions.affinity(3, "test", "hash"),
+                QueryUtils.KEY_FIELD_NAME, OTHER,
+                QueryUtils.VAL_FIELD_NAME, OTHER,
+                "ID", INTEGER,
+                "AFF_ID", INTEGER,
+                "VAL", INTEGER
+            ),
+            createTable("TEST2", IgniteDistributions.affinity(2, "test2", "hash"),
+                QueryUtils.KEY_FIELD_NAME, OTHER,
+                QueryUtils.VAL_FIELD_NAME, OTHER,
+                "ID", INTEGER,
+                "AFF_ID", INTEGER,
+                "VAL", INTEGER
+            ),
+            createTable("TEST3", IgniteDistributions.random(),
+                QueryUtils.KEY_FIELD_NAME, OTHER,
+                QueryUtils.VAL_FIELD_NAME, OTHER,
+                "ID", INTEGER,
+                "AFF_ID", INTEGER,
+                "VAL", INTEGER
+            ),
+            createTable("TEST_REPL", IgniteDistributions.broadcast(),
+                QueryUtils.KEY_FIELD_NAME, OTHER,
+                QueryUtils.VAL_FIELD_NAME, OTHER,
+                "ID", INTEGER,
+                "AFF_ID", INTEGER,
+                "VAL", INTEGER
+            ),
+            createTable("TEST_REPL2", IgniteDistributions.broadcast(),
+                QueryUtils.KEY_FIELD_NAME, OTHER,
+                QueryUtils.VAL_FIELD_NAME, OTHER,
+                "ID", INTEGER,
+                "AFF_ID", INTEGER,
+                "VAL", INTEGER
+            )
+        );
+
+        // Check INSERT statements.
+
+        // partitioned <- values (broadcast).
+        assertPlan("INSERT INTO test VALUES (?, ?, ?)", schema,
+            isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.single())));
+
+        // partitioned <- partitioned (same).
+        assertPlan("INSERT INTO test SELECT * FROM test", schema,
+            hasChildThat(isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.random()))
+                .and(input(isInstanceOf(IgniteTableSpool.class)
+                    .and(input(isTableScan("TEST")))))));
+
+        // partitioned <- partitioned (same, affinity key change).
+        assertPlan("INSERT INTO test SELECT id, aff_id + 1, val FROM test", schema,
+            isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.single()))
+                .and(input(isInstanceOf(IgniteTableSpool.class)
+                    .and(input(isInstanceOf(IgniteExchange.class)
+                        .and(input(isTableScan("TEST"))))))));
+
+        // partitioned <- partitioned (another affinity).
+        assertPlan("INSERT INTO test SELECT * FROM test2", schema,
+            hasChildThat(isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.random()))
+                .and(input(isTableScan("TEST2")))));
+
+        // partitioned <- partitioned (another affinity, affinity key change).
+        assertPlan("INSERT INTO test SELECT id, aff_id + 1, val FROM test2", schema,
+            hasChildThat(isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.random()))
+                .and(input(isTableScan("TEST2")))));
+
+        // partitioned <- random.
+        assertPlan("INSERT INTO test SELECT * FROM test3", schema,
+            hasChildThat(isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.random()))
+                .and(input(isTableScan("TEST3")))));
+
+        // partitioned <- broadcast.
+        assertPlan("INSERT INTO test SELECT * FROM test_repl", schema,
+            isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.single()))
+                .and(input(isTableScan("TEST_REPL"))));
+
+        // partitioned <- broadcast (force distributed).
+        assertPlan("INSERT INTO test SELECT * FROM test_repl", schema,
+            hasChildThat(isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.random()))
+                .and(input(isInstanceOf(IgniteTrimExchange.class)
+                    .and(input(isTableScan("TEST_REPL")))))),
+            TableModifySingleNodeConverterRule.class.getSimpleName()
+        );
+
+        // broadcast <- partitioned.
+        assertPlan("INSERT INTO test_repl SELECT * FROM test", schema,
+            hasChildThat(isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.random()))
+                .and(input(isTableScan("TEST")))));
+
+        // roadcast <- random.
+        assertPlan("INSERT INTO test_repl SELECT * FROM test3", schema,
+            hasChildThat(isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.random()))
+                .and(input(isTableScan("TEST3")))));
+
+        // broadcast <- broadcast.
+        assertPlan("INSERT INTO test_repl SELECT * FROM test_repl2", schema,
+            isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.single()))
+                .and(input(isTableScan("TEST_REPL2"))));
+
+        // broadcast <- broadcast (force distributed).
+        assertPlan("INSERT INTO test_repl SELECT * FROM test_repl2", schema,
+            hasChildThat(isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.random()))
+                .and(input(isInstanceOf(IgniteTrimExchange.class)
+                    .and(input(isTableScan("TEST_REPL2")))))),
+            TableModifySingleNodeConverterRule.class.getSimpleName()
+        );
+
+        // broadcast <- broadcast (same).
+        assertPlan("INSERT INTO test_repl SELECT * FROM test_repl", schema,
+            isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.single()))
+                .and(input(isInstanceOf(IgniteTableSpool.class)
+                    .and(input(isTableScan("TEST_REPL"))))));
+
+        // broadcast <- broadcast (same, force distributed).
+        GridTestUtils.assertThrows(null, () -> {
+                physicalPlan("INSERT INTO test_repl SELECT * FROM test_repl", schema,
+                    TableModifySingleNodeConverterRule.class.getSimpleName());
+            }, IgniteException.class, ""
+        );
+
+        // random <- partitioned.
+        assertPlan("INSERT INTO test3 SELECT * FROM test", schema,
+            hasChildThat(isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.random()))
+                .and(input(isTableScan("TEST")))));
+
+        // random <- broadcast.
+        assertPlan("INSERT INTO test3 SELECT * FROM test_repl", schema,
+            isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.single()))
+                .and(input(isTableScan("TEST_REPL"))));
+
+        // random <- broadcast (force distributed).
+        assertPlan("INSERT INTO test3 SELECT * FROM test_repl", schema,
+            hasChildThat(isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.random()))
+                .and(input(isInstanceOf(IgniteTrimExchange.class)
+                    .and(input(isTableScan("TEST_REPL")))))),
+            TableModifySingleNodeConverterRule.class.getSimpleName()
+        );
+
+        // Check UPDATE statements.
+
+        // partitioned.
+        assertPlan("UPDATE test SET val = val + 1", schema,
+            hasChildThat(isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.random()))
+                .and(input(isTableScan("TEST")))));
+
+        // broadcast.
+        assertPlan("UPDATE test_repl SET val = val + 1", schema,
+            isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.single()))
+                .and(input(isTableScan("TEST_REPL"))));
+
+        // broadcast (force distributed).
+        assertPlan("UPDATE test_repl SET val = val + 1", schema,
+            hasChildThat(isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.random()))
+                .and(input(isInstanceOf(IgniteTrimExchange.class)
+                    .and(input(isTableScan("TEST_REPL")))))),
+            TableModifySingleNodeConverterRule.class.getSimpleName()
+        );
+
+        // random.
+        assertPlan("UPDATE test3 SET val = val + 1", schema,
+            hasChildThat(isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.random()))
+                .and(input(isTableScan("TEST3")))));
+
+        // Check DELETE statements.
+
+        // partitioned.
+        assertPlan("DELETE FROM test WHERE val = 10", schema,
+            hasChildThat(isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.random()))
+                .and(input(isTableScan("TEST")))));
+
+        // broadcast.
+        assertPlan("DELETE FROM test_repl WHERE val = 10", schema,
+            isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.single()))
+                .and(input(isTableScan("TEST_REPL"))));
+
+        // broadcast (force distributed).
+        assertPlan("DELETE FROM test_repl WHERE val = 10", schema,
+            hasChildThat(isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.random()))
+                .and(input(isInstanceOf(IgniteTrimExchange.class)
+                    .and(input(isTableScan("TEST_REPL")))))),
+            TableModifySingleNodeConverterRule.class.getSimpleName()
+        );
+
+        // random.
+        assertPlan("DELETE FROM test3 WHERE val = 10", schema,
+            hasChildThat(isInstanceOf(IgniteTableModify.class).and(hasDistribution(IgniteDistributions.random()))
+                .and(input(isTableScan("TEST3")))));
     }
 }
