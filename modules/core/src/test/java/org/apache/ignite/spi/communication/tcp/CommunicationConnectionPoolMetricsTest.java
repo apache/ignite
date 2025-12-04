@@ -80,7 +80,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
     private volatile long maxConnIdleTimeout = TcpCommunicationSpi.DFLT_IDLE_CONN_TIMEOUT;
 
     /** */
-    private volatile int ackSendThreshold = TcpCommunicationSpi.DFLT_ACK_SND_THRESHOLD;
+    private int ackSendThreshold = TcpCommunicationSpi.DFLT_ACK_SND_THRESHOLD;
 
     /** */
     private volatile int createClientDelay;
