@@ -27,6 +27,9 @@ import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.security.cert.Certificate;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.direct.DirectMessageReader;
@@ -36,6 +39,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
 
@@ -202,6 +206,21 @@ public class TcpDiscoveryIoSession {
                 throw (IgniteCheckedException)e;
 
             throw new IgniteCheckedException(e);
+        }
+    }
+
+    /** @return SSL certificate this session is established with. {@code null} if SSL is disabled or certificate validation failed. */
+    @Nullable Certificate[] extractCertificates() {
+        if (!spi.isSslEnabled())
+            return null;
+
+        try {
+            return ((SSLSocket)sock).getSession().getPeerCertificates();
+        }
+        catch (SSLPeerUnverifiedException e) {
+            U.error(spi.log, "Failed to extract discovery IO session certificates", e);
+
+            return null;
         }
     }
 

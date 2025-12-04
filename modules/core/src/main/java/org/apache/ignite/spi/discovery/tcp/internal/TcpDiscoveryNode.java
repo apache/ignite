@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.net.InetSocketAddress;
+import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,6 +49,7 @@ import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CERTIFICATES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 
@@ -249,6 +251,31 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
                 return !IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(s);
             }
         });
+    }
+
+    /**
+     * Sets nodes SSL certificates with which connection was established.
+     *
+     * @param certificates SSL certificates.
+     */
+    public void setCertificates(@Nullable Certificate[] certificates) {
+        Map<String, Object> attrs = new HashMap<>(this.attrs);
+
+        attrs.put(IgniteNodeAttributes.ATTR_NODE_CERTIFICATES, certificates);
+
+        setAttributes(attrs);
+    }
+
+    /** Clears nodes SSL certificates with which connection was established. */
+    public void clearCertificates() {
+        if (!attrs.containsKey(ATTR_NODE_CERTIFICATES))
+            return;
+
+        Map<String, Object> attrs = new HashMap<>(this.attrs);
+
+        attrs.remove(IgniteNodeAttributes.ATTR_NODE_CERTIFICATES);
+
+        setAttributes(attrs);
     }
 
     /**

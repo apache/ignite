@@ -2301,6 +2301,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     }
 
                     locNode.setAttributes(msg.clientNodeAttributes());
+                    locNode.clearCertificates();
                     locNode.visible(true);
 
                     long topVer = msg.topologyVersion();
@@ -2357,6 +2358,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     if (!node.visible()) {
                         node.order(topVer);
+                        node.clearCertificates();
                         node.visible(true);
 
                         if (spi.locNodeVer.equals(node.version()))

@@ -5298,6 +5298,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg.verified()) {
                 assert topVer > 0 : "Invalid topology version: " + msg;
 
+                node.clearCertificates();
+
                 if (node.order() == 0)
                     node.order(topVer);
 
@@ -7071,6 +7073,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                         else if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                             TcpDiscoveryJoinRequestMessage req = (TcpDiscoveryJoinRequestMessage)msg;
+
+                            // Current node holds connection with the node that is joining the cluster. Therefore, it can
+                            // save certificates with which the connection was established to joining node attributes.
+                            if (spi.nodeAuth != null && nodeId.equals(req.node().id()))
+                                req.node().setCertificates(ses.extractCertificates());
 
                             if (!req.responded()) {
                                 boolean ok = processJoinRequestMessage(req, clientMsgWrk);
