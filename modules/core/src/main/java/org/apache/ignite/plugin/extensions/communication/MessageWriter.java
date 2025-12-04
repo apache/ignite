@@ -313,8 +313,24 @@ public interface MessageWriter {
      * @param <V> Initial value types of the map to write.
      * @return Whether value was fully written.
      */
+    public default <K, V> boolean writeMap(Map<K, V> map, MessageCollectionItemType keyType,
+        MessageCollectionItemType valType) {
+        return writeMap(map, keyType, valType, false);
+    }
+
+    /**
+     * Writes map.
+     *
+     * @param map Map.
+     * @param keyType Map key type.
+     * @param valType Map value type.
+     * @param compress Whether to compress map.
+     * @param <K> Initial key types of the map to write.
+     * @param <V> Initial value types of the map to write.
+     * @return Whether value was fully written.
+     */
     public <K, V> boolean writeMap(Map<K, V> map, MessageCollectionItemType keyType,
-        MessageCollectionItemType valType);
+        MessageCollectionItemType valType, boolean compress);
 
     /**
      * @return Whether header of current message is already written.

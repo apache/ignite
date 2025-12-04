@@ -353,10 +353,10 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** {@inheritDoc} */
     @Override public <K, V> boolean writeMap(Map<K, V> map, MessageCollectionItemType keyType,
-        MessageCollectionItemType valType) {
+        MessageCollectionItemType valType, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeMap(map, keyType, valType, this);
+        stream.writeMap(map, keyType, valType, this, compress);
 
         return stream.lastFinished();
     }

@@ -307,7 +307,7 @@ public abstract class AbstractMessageSerializationTest {
 
         /** {@inheritDoc} */
         @Override public <K, V> boolean writeMap(Map<K, V> map, MessageCollectionItemType keyType,
-            MessageCollectionItemType valType) {
+            MessageCollectionItemType valType, boolean compress) {
             return writeField(Map.class);
         }
 
@@ -568,7 +568,7 @@ public abstract class AbstractMessageSerializationTest {
 
         /** {@inheritDoc} */
         @Override public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
-            MessageCollectionItemType valType, boolean linked) {
+            MessageCollectionItemType valType, boolean linked, boolean compress) {
             readField(Map.class);
 
             return null;
