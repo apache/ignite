@@ -26,7 +26,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.commandline.CommandHandler.*;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
+import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+
 
 /** Test for checkpoint in control.sh command. */
 public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstractTest {
