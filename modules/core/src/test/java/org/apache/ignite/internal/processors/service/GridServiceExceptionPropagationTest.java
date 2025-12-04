@@ -53,10 +53,10 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
     private static final ExceptionThrower EXT_EX = ExceptionThrower.externalizable(false, false);
 
     /** */
-    private static final ExceptionThrower EX_WITH_BROKEN_SER  = ExceptionThrower.externalizable(true, true);
+    private static final ExceptionThrower EX_WITH_BROKEN_SER = ExceptionThrower.externalizable(true, true);
 
     /** */
-    private static final ExceptionThrower EX_WITH_BROKEN_DESER  = ExceptionThrower.externalizable(true, false);
+    private static final ExceptionThrower EX_WITH_BROKEN_DESER = ExceptionThrower.externalizable(true, false);
 
     /** */
     private boolean isNodeInfoAvailableInExMsg = true;
