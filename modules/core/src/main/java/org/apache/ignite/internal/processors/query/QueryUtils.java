@@ -906,6 +906,10 @@ public class QueryUtils {
 
             String alias = aliases.get(fullName.toString());
 
+            if (alias == null) {
+                alias = fullName.toString();
+            }
+
             // The key flag that we've found out is valid for the whole path.
             res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, dlftVal,
                 precision, scale);
