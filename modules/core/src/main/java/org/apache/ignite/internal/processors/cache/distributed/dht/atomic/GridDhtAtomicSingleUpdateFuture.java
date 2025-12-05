@@ -90,10 +90,10 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
                 writeVer,
                 topVer,
                 updateReq.taskNameHash(),
-                cctx.deploymentEnabled(),
                 updateReq.keepBinary(),
                 updateReq.skipStore(),
-                readRepairRecovery);
+                readRepairRecovery
+            );
         }
         else {
             return new GridDhtAtomicUpdateRequest(
@@ -104,11 +104,11 @@ class GridDhtAtomicSingleUpdateFuture extends GridDhtAtomicAbstractUpdateFuture 
                 topVer,
                 updateReq.taskNameHash(),
                 null,
-                cctx.deploymentEnabled(),
                 updateReq.keepBinary(),
                 updateReq.skipStore(),
                 false,
-                readRepairRecovery);
+                readRepairRecovery
+            );
         }
     }
 

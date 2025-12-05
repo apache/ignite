@@ -373,10 +373,10 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.committedVersions(),
                 tx.rolledbackVersions(),
                 tx.taskNameHash(),
-                tx.activeCachesDeploymentEnabled(),
                 false,
                 false,
-                cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
+                cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n)
+            );
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
@@ -466,10 +466,10 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.committedVersions(),
                 tx.rolledbackVersions(),
                 tx.taskNameHash(),
-                tx.activeCachesDeploymentEnabled(),
                 false,
                 false,
-                commit ? null : cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n));
+                commit ? null : cctx.tm().txHandler().filterUpdateCountersForBackupNode(tx, n)
+            );
 
             try {
                 if (isNull(cctx.discovery().getAlive(n.id()))) {
@@ -536,10 +536,10 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                     tx.committedVersions(),
                     tx.rolledbackVersions(),
                     tx.taskNameHash(),
-                    tx.activeCachesDeploymentEnabled(),
                     false,
                     false,
-                    null);
+                    null
+                );
 
                 try {
                     cctx.io().send(nearMapping.primary(), req, tx.ioPolicy());

@@ -444,16 +444,6 @@ public class CacheGroupContext {
     }
 
     /**
-     *
-     */
-    public void unwindUndeploys() {
-        List<GridCacheContext<?, ?>> caches = this.caches;
-
-        for (GridCacheContext<?, ?> cctx : caches)
-            cctx.deploy().unwind(cctx);
-    }
-
-    /**
      * @param type Event type to check.
      * @return {@code True} if given event type should be recorded.
      */
