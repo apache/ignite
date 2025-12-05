@@ -2445,7 +2445,10 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** */
-    private static void enrichNodeWithAttribute(TcpDiscoveryNode node, String attrName, Object attrVal) {
+    private static void enrichNodeWithAttribute(TcpDiscoveryNode node, String attrName, @Nullable Object attrVal) {
+        if (attrVal == null)
+            return;
+
         Map<String, Object> attrs = new HashMap<>(node.getAttributes());
 
         attrs.put(attrName, attrVal);
