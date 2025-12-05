@@ -150,7 +150,7 @@ public final class IgniteNodeAttributes {
     /** V2 security subject for authenticated node. */
     public static final String ATTR_SECURITY_SUBJECT_V2 = ATTR_PREFIX + ".security.subject.v2";
 
-    /** Node certificates with which the connection was established.  */
+    /** Node certificates the connection was established with.  */
     public static final String ATTR_NODE_CERTIFICATES = ATTR_PREFIX + ".security.certificates";
 
     /** Client mode flag. */
