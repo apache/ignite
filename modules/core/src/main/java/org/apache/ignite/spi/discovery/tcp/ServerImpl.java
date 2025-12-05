@@ -178,6 +178,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CERTIFICATES;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.CONN_DISABLED_BY_ADMIN_ERR_MSG;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.newConnectionEnabledProperty;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authenticateLocalNode;
@@ -1134,7 +1135,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         leavingNodes.clear();
                         failedNodesMsgSent.clear();
 
-                        locNode.attributes().remove(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+                        clearNodeSensitiveData(locNode);
 
                         locNode.order(1);
                         locNode.internalOrder(1);
@@ -2441,6 +2442,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
         }
+    }
+
+    /** */
+    private static void enrichNodeWithAttribute(TcpDiscoveryNode node, String attrName, @Nullable Object attrVal) {
+        if (attrVal == null)
+            return;
+
+        Map<String, Object> attrs = new HashMap<>(node.getAttributes());
+
+        attrs.put(attrName, attrVal);
+
+        node.setAttributes(attrs);
     }
 
     /** */
@@ -5298,6 +5311,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg.verified()) {
                 assert topVer > 0 : "Invalid topology version: " + msg;
 
+                clearNodeSensitiveData(node);
+
                 if (node.order() == 0)
                     node.order(topVer);
 
@@ -7071,6 +7086,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                         else if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                             TcpDiscoveryJoinRequestMessage req = (TcpDiscoveryJoinRequestMessage)msg;
+
+                            // Current node holds connection with the node that is joining the cluster. Therefore, it can
+                            // save certificates with which the connection was established to joining node attributes.
+                            if (spi.nodeAuth != null && nodeId.equals(req.node().id()))
+                                enrichNodeWithAttribute(req.node(), ATTR_NODE_CERTIFICATES, ses.extractCertificates());
 
                             if (!req.responded()) {
                                 boolean ok = processJoinRequestMessage(req, clientMsgWrk);
