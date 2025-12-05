@@ -58,7 +58,6 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      * @param taskNameHash Task name hash.
-     * @param addDepInfo Deployment info flag.
      */
     public GridNearTxFinishRequest(
         IgniteUuid futId,
