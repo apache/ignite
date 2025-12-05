@@ -167,6 +167,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
     /** Skip store flag. */
     private final boolean skipStore;
 
+    /** Skip read-through cache store flag. */
+    private final boolean skipReadThrough;
+
     /** */
     private Deque<GridNearLockMapping> mappings;
 
@@ -206,6 +209,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         long createTtl,
         long accessTtl,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary,
         boolean recovery
     ) {
@@ -222,6 +226,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
+        this.skipReadThrough = skipReadThrough;
         this.keepBinary = keepBinary;
         this.recovery = recovery;
 
@@ -1080,6 +1085,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                                         read ? createTtl : -1L,
                                         read ? accessTtl : -1L,
                                         skipStore,
+                                        skipReadThrough,
                                         keepBinary,
                                         clientFirst,
                                         false,
@@ -1253,6 +1259,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             createTtl,
             accessTtl,
             skipStore,
+            skipReadThrough,
             keepBinary);
 
         // Add new future.

@@ -1356,6 +1356,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         long drExpireTime,
         @Nullable GridCacheVersion drVer,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary,
         boolean addReader
     ) {
@@ -1397,6 +1398,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             // Keep old skipStore and keepBinary flags.
             old.skipStore(skipStore);
+            old.skipReadThrough(skipReadThrough);
             old.keepBinary(keepBinary);
 
             // Update ttl if specified.
@@ -1427,6 +1429,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 filter,
                 drVer,
                 skipStore,
+                skipReadThrough,
                 keepBinary,
                 addReader);
 

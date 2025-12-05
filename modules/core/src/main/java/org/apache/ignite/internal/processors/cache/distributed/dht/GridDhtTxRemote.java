@@ -300,6 +300,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
      * @param entryProcessors Entry processors.
      * @param ttl TTL.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
      */
     public void addWrite(GridCacheContext cacheCtx,
         GridCacheOperation op,
@@ -308,6 +309,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         @Nullable Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessors,
         long ttl,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary) {
         checkInternal(key);
 
@@ -325,6 +327,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
             cached,
             null,
             skipStore,
+            skipReadThrough,
             keepBinary);
 
         txEntry.entryProcessors(entryProcessors);

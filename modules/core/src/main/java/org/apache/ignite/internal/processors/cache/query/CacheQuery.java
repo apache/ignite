@@ -79,7 +79,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SPI;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 
 /**
@@ -336,7 +335,7 @@ public class CacheQuery<T> {
     }
 
     /**
-     * Cache query adapter for SET, SPI, TEXT queries.
+     * Cache query adapter for SET, TEXT queries.
      *
      * @param cctx Context.
      * @param type Query type.
@@ -653,7 +652,7 @@ public class CacheQuery<T> {
 
     /** @throws IgniteCheckedException If query is invalid. */
     public void validate() throws IgniteCheckedException {
-        if ((type != SCAN && type != SET && type != SPI && type != INDEX)
+        if ((type != SCAN && type != SET && type != INDEX)
             && !QueryUtils.isEnabled(cctx.config()))
             throw new IgniteCheckedException("Indexing is disabled for cache: " + cctx.cache().name());
     }
@@ -723,7 +722,7 @@ public class CacheQuery<T> {
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 
-        if (type == SQL_FIELDS || type == SPI)
+        if (type == SQL_FIELDS)
             return (CacheQueryFuture<R>)(loc ? qryMgr.queryFieldsLocal(bean) :
                 qryMgr.queryFieldsDistributed(bean, nodes));
         else

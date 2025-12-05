@@ -47,6 +47,9 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /** */
     private static final int STORE_USED_FLAG_MASK = 0x04;
 
+    /** */
+    private static final int SKIP_READ_THROUGH_FLAG_MASK = 0x08;
+
     /** Sender node ID. */
     @Order(7)
     private UUID nodeId;
@@ -141,6 +144,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         int keyCnt,
         int txSize,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary
     ) {
         super(lockVer, keyCnt, false);
@@ -164,6 +168,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         retVals = new boolean[keyCnt];
 
         skipStore(skipStore);
+        skipReadThrough(skipReadThrough);
         keepBinary(keepBinary);
     }
 
@@ -301,6 +306,22 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      */
     public boolean skipStore() {
         return (flags & SKIP_STORE_FLAG_MASK) == 1;
+    }
+
+    /**
+     * Sets skip store flag value.
+     *
+     * @param skipReadThrough Skip read-through cache store flag.
+     */
+    private void skipReadThrough(boolean skipReadThrough) {
+        flags = skipReadThrough ? (byte)(flags | SKIP_READ_THROUGH_FLAG_MASK) : (byte)(flags & ~SKIP_READ_THROUGH_FLAG_MASK);
+    }
+
+    /**
+     * @return Skip store flag.
+     */
+    public boolean skipReadThrough() {
+        return (flags & SKIP_READ_THROUGH_FLAG_MASK) != 0;
     }
 
     /**

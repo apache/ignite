@@ -829,9 +829,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public <T> EntryProcessorResult<T> invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... args)
         throws IgniteCheckedException {
-        IgniteInternalFuture<EntryProcessorResult<T>> invokeFut = invoke0(false, key, entryProcessor, args);
-
-        return invokeFut.get();
+        return invoke0(false, key, entryProcessor, args).get();
     }
 
     /** {@inheritDoc} */
@@ -1109,6 +1107,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             CU.filterArray(null),
             taskNameHash,
             opCtx != null && opCtx.skipStore(),
+            opCtx != null && opCtx.skipReadThrough(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery(),
             opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
@@ -1296,6 +1295,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 filters,
                 ctx.kernalContext().job().currentTaskNameHash(),
                 opCtx != null && opCtx.skipStore(),
+                opCtx != null && opCtx.skipReadThrough(),
                 opCtx != null && opCtx.isKeepBinary(),
                 opCtx != null && opCtx.recovery(),
                 opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
@@ -1318,6 +1318,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 filters,
                 ctx.kernalContext().job().currentTaskNameHash(),
                 opCtx != null && opCtx.skipStore(),
+                opCtx != null && opCtx.skipReadThrough(),
                 opCtx != null && opCtx.isKeepBinary(),
                 opCtx != null && opCtx.recovery(),
                 opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
@@ -1376,6 +1377,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             CU.filterArray(null),
             taskNameHash,
             opCtx != null && opCtx.skipStore(),
+            opCtx != null && opCtx.skipReadThrough(),
             opCtx != null && opCtx.isKeepBinary(),
             opCtx != null && opCtx.recovery(),
             opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
@@ -2176,7 +2178,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     CacheObject old = entry.innerGet(
                         ver,
                         null,
-                        /*read through*/true,
+                        /*read through*/!req.skipReadThrough(),
                         /*metrics*/true,
                         /*event*/true,
                         entryProc,
@@ -2577,7 +2579,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     writeVal,
                     req.invokeArguments(),
                     writeThrough() && !req.skipStore(),
-                    !req.skipStore(),
+                    !req.skipStore() && !req.skipReadThrough(),
                     sndPrevVal || req.returnValue(),
                     req.keepBinary(),
                     expiry,
@@ -3170,6 +3172,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             req.filter(),
             req.taskNameHash(),
             req.skipStore(),
+            req.skipReadThrough(),
             req.keepBinary(),
             req.recovery(),
             MAX_RETRIES,
@@ -3452,14 +3455,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (nearRes != null)
             sendDhtNearResponse(req, nearRes);
-
-        if (dhtRes == null && req.replyWithoutDelay()) {
-            dhtRes = new GridDhtAtomicUpdateResponse(
-                ctx.cacheId(),
-                req.partition(),
-                req.futureId()
-            );
-        }
 
         if (dhtRes != null)
             sendDhtPrimaryResponse(nodeId, req, dhtRes);

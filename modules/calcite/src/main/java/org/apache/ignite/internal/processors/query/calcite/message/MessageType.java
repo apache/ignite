@@ -18,7 +18,18 @@
 package org.apache.ignite.internal.processors.query.calcite.message;
 
 import java.util.function.Supplier;
+import org.apache.ignite.internal.codegen.CalciteErrorMessageSerializer;
+import org.apache.ignite.internal.codegen.ColocationGroupSerializer;
 import org.apache.ignite.internal.codegen.FragmentDescriptionSerializer;
+import org.apache.ignite.internal.codegen.FragmentMappingSerializer;
+import org.apache.ignite.internal.codegen.GenericValueMessageSerializer;
+import org.apache.ignite.internal.codegen.InboxCloseMessageSerializer;
+import org.apache.ignite.internal.codegen.QueryBatchAcknowledgeMessageSerializer;
+import org.apache.ignite.internal.codegen.QueryBatchMessageSerializer;
+import org.apache.ignite.internal.codegen.QueryCloseMessageSerializer;
+import org.apache.ignite.internal.codegen.QueryStartRequestSerializer;
+import org.apache.ignite.internal.codegen.QueryStartResponseSerializer;
+import org.apache.ignite.internal.codegen.QueryTxEntrySerializer;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentDescription;
 import org.apache.ignite.internal.processors.query.calcite.metadata.FragmentMapping;
@@ -29,40 +40,40 @@ import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
  */
 public enum MessageType {
     /** */
-    QUERY_START_REQUEST(300, QueryStartRequest::new),
+    QUERY_START_REQUEST(300, QueryStartRequest::new, new QueryStartRequestSerializer()),
 
     /** */
-    QUERY_START_RESPONSE(301, QueryStartResponse::new),
+    QUERY_START_RESPONSE(301, QueryStartResponse::new, new QueryStartResponseSerializer()),
 
     /** */
-    QUERY_ERROR_MESSAGE(302, ErrorMessage::new),
+    QUERY_ERROR_MESSAGE(302, CalciteErrorMessage::new, new CalciteErrorMessageSerializer()),
 
     /** */
-    QUERY_BATCH_MESSAGE(303, QueryBatchMessage::new),
+    QUERY_BATCH_MESSAGE(303, QueryBatchMessage::new, new QueryBatchMessageSerializer()),
 
     /** */
-    QUERY_ACKNOWLEDGE_MESSAGE(304, QueryBatchAcknowledgeMessage::new),
+    QUERY_ACKNOWLEDGE_MESSAGE(304, QueryBatchAcknowledgeMessage::new, new QueryBatchAcknowledgeMessageSerializer()),
 
     /** */
-    QUERY_INBOX_CANCEL_MESSAGE(305, InboxCloseMessage::new),
+    QUERY_INBOX_CANCEL_MESSAGE(305, InboxCloseMessage::new, new InboxCloseMessageSerializer()),
 
     /** */
-    QUERY_CLOSE_MESSAGE(306, QueryCloseMessage::new),
+    QUERY_CLOSE_MESSAGE(306, QueryCloseMessage::new, new QueryCloseMessageSerializer()),
 
     /** */
-    GENERIC_VALUE_MESSAGE(307, GenericValueMessage::new),
+    GENERIC_VALUE_MESSAGE(307, GenericValueMessage::new, new GenericValueMessageSerializer()),
 
     /** */
-    FRAGMENT_MAPPING(350, FragmentMapping::new),
+    FRAGMENT_MAPPING(350, FragmentMapping::new, new FragmentMappingSerializer()),
 
     /** */
-    COLOCATION_GROUP(351, ColocationGroup::new),
+    COLOCATION_GROUP(351, ColocationGroup::new, new ColocationGroupSerializer()),
 
     /** */
     FRAGMENT_DESCRIPTION(352, FragmentDescription::new, new FragmentDescriptionSerializer()),
 
     /** */
-    QUERY_TX_ENTRY(353, QueryTxEntry::new);
+    QUERY_TX_ENTRY(353, QueryTxEntry::new, new QueryTxEntrySerializer());
 
     /** */
     private final int directType;

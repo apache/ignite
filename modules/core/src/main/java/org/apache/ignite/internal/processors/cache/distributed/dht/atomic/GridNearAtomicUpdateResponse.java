@@ -186,11 +186,11 @@ public class GridNearAtomicUpdateResponse extends GridCacheIdMessage implements 
         if (errs == null)
             errs = new UpdateErrors();
 
-        errs.onError(err);
+        errs.error(err);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCheckedException error() {
+    @Override public Throwable error() {
         return errs != null ? errs.error() : null;
     }
 

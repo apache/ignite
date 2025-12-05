@@ -129,6 +129,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         long createTtl,
         long accessTtl,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary,
         boolean firstClientReq,
         boolean nearCache,
@@ -149,8 +150,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
             keyCnt,
             txSize,
             skipStore,
-            keepBinary
-        );
+            skipReadThrough,
+            keepBinary);
 
         assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
 

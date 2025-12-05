@@ -131,6 +131,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         int taskNameHash,
         long accessTtl,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean storeUsed,
         boolean keepBinary,
         String txLbl
@@ -150,8 +151,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             dhtCnt,
             txSize,
             skipStore,
-            keepBinary
-        );
+            skipReadThrough,
+            keepBinary);
 
         this.topVer = topVer;
 

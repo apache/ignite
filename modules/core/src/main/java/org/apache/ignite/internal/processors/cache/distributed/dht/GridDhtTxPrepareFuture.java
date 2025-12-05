@@ -399,7 +399,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     tx.nearOnOriginatingNode() || tx.hasInterceptor();
 
                 if (readOld) {
-                    boolean readThrough = !txEntry.skipStore() &&
+                    boolean readThrough = !txEntry.skipStore() && !txEntry.skipReadThrough() &&
                         (txEntry.op() == TRANSFORM || ((retVal || hasFilters) && cacheCtx.config().isLoadPreviousValue()));
 
                     boolean evt = retVal || txEntry.op() == TRANSFORM;
@@ -1920,8 +1920,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
 
                 // Process invalid partitions (no need to remap).
-                if (!F.isEmpty(res.invalidPartitionsByCacheId())) {
-                    Map<Integer, int[]> invalidPartsMap = res.invalidPartitionsByCacheId();
+                if (!F.isEmpty(res.invalidPartitions())) {
+                    Map<Integer, int[]> invalidPartsMap = res.invalidPartitions();
 
                     for (Iterator<IgniteTxEntry> it = dhtMapping.entries().iterator(); it.hasNext();) {
                         IgniteTxEntry entry = it.next();
@@ -1950,7 +1950,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                 boolean rec = cctx.gridEvents().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED);
 
-                for (GridCacheEntryInfo info : res.preloadEntries()) {
+                for (GridCacheEntryInfo info : F.emptyIfNull(res.preloadEntries())) {
                     GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(info.cacheId());
 
                     GridCacheAdapter<?, ?> cache0 = cacheCtx.cache();

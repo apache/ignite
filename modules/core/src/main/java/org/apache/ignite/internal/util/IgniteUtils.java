@@ -222,8 +222,6 @@ import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -6595,39 +6593,6 @@ public abstract class IgniteUtils extends CommonUtils {
         }
 
         return list;
-    }
-
-    /**
-     * Fully writes communication message to provided stream.
-     *
-     * @param msg Message.
-     * @param out Stream to write to.
-     * @param buf Byte buffer that will be passed to {@link Message#writeTo(ByteBuffer, MessageWriter)} method.
-     * @param writer Message writer.
-     * @return Number of written bytes.
-     * @throws IOException In case of error.
-     */
-    public static int writeMessageFully(Message msg, OutputStream out, ByteBuffer buf,
-        MessageWriter writer) throws IOException {
-        assert msg != null;
-        assert out != null;
-        assert buf != null;
-        assert buf.hasArray();
-
-        boolean finished = false;
-        int cnt = 0;
-
-        while (!finished) {
-            finished = msg.writeTo(buf, writer);
-
-            out.write(buf.array(), 0, buf.position());
-
-            cnt += buf.position();
-
-            buf.clear();
-        }
-
-        return cnt;
     }
 
     /**

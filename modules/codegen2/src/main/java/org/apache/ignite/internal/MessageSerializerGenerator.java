@@ -183,10 +183,8 @@ class MessageSerializerGenerator {
     /**
      * Generates start of write/read methods:
      * <pre>
-     *     public boolean writeTo(Message m, ByteBuffer buf, MessageWriter writer) {
+     *     public boolean writeTo(Message m, MessageWriter writer) {
      *         TestMessage msg = (TestMessage)m;
-     *
-     *         writer.setBuffer(buf);
      *
      *         if (!writer.isHeaderWritten()) {
      *             if (!writer.writeHeader(msg.directType()))
@@ -204,16 +202,13 @@ class MessageSerializerGenerator {
 
         code.add(line(METHOD_JAVADOC));
 
-        code.add(line("@Override public boolean %s(Message m, ByteBuffer buf, %s) {",
+        code.add(line("@Override public boolean %s(Message m, %s) {",
             write ? "writeTo" : "readFrom",
             write ? "MessageWriter writer" : "MessageReader reader"));
 
         indent++;
 
         code.add(line("%s msg = (%s)m;", type.getSimpleName().toString(), type.getSimpleName().toString()));
-        code.add(EMPTY);
-        code.add(line("%s.setBuffer(buf);", write ? "writer" : "reader"));
-
         code.add(EMPTY);
 
         if (write) {
@@ -650,9 +645,10 @@ class MessageSerializerGenerator {
 
     /** */
     private void finish(List<String> code) {
-        // Remove the last empty line for the last "case".
-        String removed = code.remove(code.size() - 1);
-        assert EMPTY.equals(removed) : removed;
+        String lastLine = code.get(code.size() - 1);
+
+        if (EMPTY.equals(lastLine))
+            code.remove(code.size() - 1);
 
         code.add(line("}"));
         code.add(EMPTY);
@@ -692,7 +688,6 @@ class MessageSerializerGenerator {
         writer.write(NL);
         writer.write("package " + pkgName + ";" + NL + NL);
 
-        imports.add("java.nio.ByteBuffer");
         imports.add("org.apache.ignite.plugin.extensions.communication.Message");
         imports.add("org.apache.ignite.plugin.extensions.communication.MessageSerializer");
         imports.add("org.apache.ignite.plugin.extensions.communication.MessageWriter");

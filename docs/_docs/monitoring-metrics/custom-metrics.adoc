@@ -16,9 +16,9 @@
 
 WARNING: This feature is experimental and may change in future releases.
 
-Ignite provides various internal link:monitoring-metrics/new-metrics.adoc[metrics]. However, these metrics might
+Ignite provides various internal link:monitoring-metrics/new-metrics[metrics]. However, these metrics might
 not be enough. Users can design and publish their own custom metrics. Custom Metrics are based on
-link:monitoring-metrics/new-metrics-system.adoc[Metric System].
+link:monitoring-metrics/new-metrics-system[Metric System].
 
 [NOTE]
 ====

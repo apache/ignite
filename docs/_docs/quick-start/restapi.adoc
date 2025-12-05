@@ -29,7 +29,7 @@ include::includes/prereqs.adoc[]
 include::includes/install-ignite.adoc[]
 
 Once that's done, you will need to enable HTTP connectivity.
-To do this, copy the `ignite-rest-http` module from `{IGNITE_HOME}/libs/optional/` to the `{IGNITE_HOME}/libs` folder.
+To do this, copy the `ignite-rest-http` and `ignite-json` modules from `{IGNITE_HOME}/libs/optional/` to the `{IGNITE_HOME}/libs` folder.
 
 == Starting a Node
 

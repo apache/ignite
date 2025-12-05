@@ -21,10 +21,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -112,15 +112,13 @@ public class IndexProcessor extends GridProcessorAdapter {
     /**
      * Registry of all indexes. High key is a cache name, lower key is an unique index name.
      */
-    private final Map<String, Map<String, Index>> cacheToIdx = new ConcurrentHashMap<>();
-
-    /**
-     * Registry of all index definitions. Key is {@link Index#id()}, value is IndexDefinition used for creating index.
-     */
-    private final Map<UUID, IndexDefinition> idxDefs = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, Index>> cacheToIdx = new HashMap<>();
 
     /** Exclusive lock for DDL operations. */
     private final ReentrantReadWriteLock ddlLock = new ReentrantReadWriteLock();
+
+    /** Set of index names currently in initial population (null if none). */
+    private @Nullable Set<IndexName> fillingIdxs;
 
     /**
      * @param ctx Kernal context.
@@ -212,18 +210,51 @@ public class IndexProcessor extends GridProcessorAdapter {
      * @param definition Description of an index to create.
      * @param cacheVisitor Enable to cancel dynamic index populating.
      */
-    public Index createIndexDynamically(GridCacheContext cctx, IndexFactory factory, IndexDefinition definition,
-        SchemaIndexCacheVisitor cacheVisitor) {
+    public Index createIndexDynamically(
+        GridCacheContext<?, ?> cctx,
+        IndexFactory factory,
+        IndexDefinition definition,
+        SchemaIndexCacheVisitor cacheVisitor
+    ) {
+        IndexFactory dynamicFactory = (gcctx, indexDefinition) -> {
+            Index idx = factory.createIndex(gcctx, indexDefinition);
 
-        Index idx = createIndex(cctx, factory, definition);
+            assert ddlLock.isWriteLockedByCurrentThread();
 
-        // Populate index with cache rows.
-        cacheVisitor.visit(row -> {
-            if (idx.canHandle(row))
-                idx.onUpdate(null, row, false);
-        });
+            if (fillingIdxs == null)
+                fillingIdxs = new HashSet<>();
 
-        return idx;
+            fillingIdxs.add(indexDefinition.idxName());
+
+            return idx;
+        };
+
+        try {
+            Index idx = createIndex(cctx, dynamicFactory, definition);
+
+            // Populate index with cache rows.
+            cacheVisitor.visit(row -> {
+                if (idx.canHandle(row))
+                    idx.onUpdate(null, row, false);
+            });
+
+            return idx;
+        }
+        finally {
+            ddlLock.writeLock().lock();
+
+            try {
+                if (fillingIdxs != null) {
+                    fillingIdxs.remove(definition.idxName());
+
+                    if (fillingIdxs.isEmpty())
+                        fillingIdxs = null;
+                }
+            }
+            finally {
+                ddlLock.writeLock().unlock();
+            }
+        }
     }
 
     /**
@@ -239,7 +270,7 @@ public class IndexProcessor extends GridProcessorAdapter {
         try {
             String cacheName = definition.idxName().cacheName();
 
-            cacheToIdx.putIfAbsent(cacheName, new ConcurrentHashMap<>());
+            cacheToIdx.putIfAbsent(cacheName, new HashMap<>());
 
             String uniqIdxName = definition.idxName().fullName();
 
@@ -249,8 +280,6 @@ public class IndexProcessor extends GridProcessorAdapter {
             Index idx = factory.createIndex(cctx, definition);
 
             cacheToIdx.get(cacheName).put(uniqIdxName, idx);
-
-            idxDefs.put(idx.id(), definition);
 
             return idx;
 
@@ -280,7 +309,14 @@ public class IndexProcessor extends GridProcessorAdapter {
 
             if (idx != null) {
                 idx.destroy(softDelete);
-                idxDefs.remove(idx.id());
+
+                if (fillingIdxs != null) {
+                    fillingIdxs.remove(idxName);
+
+                    if (fillingIdxs.isEmpty())
+                        fillingIdxs = null;
+                }
+
             }
 
         }
@@ -345,11 +381,8 @@ public class IndexProcessor extends GridProcessorAdapter {
 
             Collection<Index> idxs = cacheToIdx.get(cctx.name()).values();
 
-            for (Index idx: idxs) {
-                if (idx instanceof AbstractIndex)
-                    ((AbstractIndex)idx).markIndexRebuild(val);
-            }
-
+            for (Index idx: idxs)
+                idx.markIndexRebuild(val);
         }
         finally {
             ddlLock.readLock().unlock();
@@ -383,16 +416,33 @@ public class IndexProcessor extends GridProcessorAdapter {
      * @return Collection of indexes for specified cache.
      */
     public Collection<Index> indexes(String cacheName) {
+        return indexes(cacheName, false);
+    }
+
+    /**
+     * Returns collection of indexes for specified cache.
+     *
+     * @param cacheName Cache name.
+     * @param skipFilling If {@code true}, indexes that are currently being initially populated are excluded
+     *     from the result; if {@code false}, all known indexes for the cache are returned.
+     * @return Collection of indexes for specified cache.
+     */
+
+    public Collection<Index> indexes(String cacheName, boolean skipFilling) {
         ddlLock.readLock().lock();
 
         try {
-            Map<String, Index> idxs = cacheToIdx.get(cacheName);
+            Map<String, Index> idxMap = cacheToIdx.get(cacheName);
 
-            if (idxs == null)
+            if (idxMap == null)
                 return Collections.emptyList();
 
-            return idxs.values();
+            List<Index> idxs = new ArrayList<>(idxMap.values());
 
+            if (skipFilling && fillingIdxs != null)
+                idxs.removeIf(idx -> fillingIdxs.contains(idx.indexDefinition().idxName()));
+
+            return idxs;
         }
         finally {
             ddlLock.readLock().unlock();
@@ -406,9 +456,26 @@ public class IndexProcessor extends GridProcessorAdapter {
      * @return Index for specified index name or {@code null} if not found.
      */
     public @Nullable Index index(IndexName idxName) {
+        return index(idxName, false);
+    }
+
+    /**
+     * Returns index for specified name.
+     *
+     * @param idxName Index name.
+     * @param skipFilling If {@code true}, returns {@code null} when the index is currently being initially
+     *     populated and therefore should be skipped; if {@code false}, returns the index if present.
+     * @return Index for specified index name or {@code null} if not found (or skipped due to population when
+     *     {@code skipFilling} is {@code true}).
+     */
+
+    public @Nullable Index index(IndexName idxName, boolean skipFilling) {
         ddlLock.readLock().lock();
 
         try {
+            if (skipFilling && fillingIdxs != null && fillingIdxs.contains(idxName))
+                return null;
+
             Map<String, Index> idxs = cacheToIdx.get(idxName.cacheName());
 
             if (idxs == null)
@@ -419,16 +486,6 @@ public class IndexProcessor extends GridProcessorAdapter {
         finally {
             ddlLock.readLock().unlock();
         }
-    }
-
-    /**
-     * Returns IndexDefinition used for creating index specified id.
-     *
-     * @param idxId UUID of index.
-     * @return IndexDefinition used for creating index with id {@code idxId}.
-     */
-    public IndexDefinition indexDefinition(UUID idxId) {
-        return idxDefs.get(idxId);
     }
 
     /**
@@ -638,7 +695,7 @@ public class IndexProcessor extends GridProcessorAdapter {
                 for (Index idx : idxs.values()) {
                     if (idx instanceof InlineIndex && !QueryUtils.PRIMARY_KEY_INDEX.equals(idx.name())) {
                         InlineIndex idx0 = (InlineIndex)idx;
-                        IndexDefinition idxDef = indexDefinition(idx.id());
+                        IndexDefinition idxDef = idx.indexDefinition();
                         IndexName idxName = idxDef.idxName();
 
                         map.put(

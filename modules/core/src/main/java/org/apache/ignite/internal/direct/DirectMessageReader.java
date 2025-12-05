@@ -48,6 +48,9 @@ public class DirectMessageReader implements MessageReader {
     @GridToStringInclude
     private final DirectMessageState<StateItem> state;
 
+    /** Buffer for reading. */
+    private ByteBuffer buf;
+
     /** Whether last field was fully read. */
     private boolean lastRead;
 
@@ -65,7 +68,18 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public void setBuffer(ByteBuffer buf) {
+        this.buf = buf;
+
         state.item().stream.setBuffer(buf);
+    }
+
+    /**
+     * Gets but buffer to read from.
+     *
+     * @return Byte buffer.
+     */
+    public ByteBuffer getBuffer() {
+        return buf;
     }
 
     /** {@inheritDoc} */
@@ -395,6 +409,8 @@ public class DirectMessageReader implements MessageReader {
     /** {@inheritDoc} */
     @Override public void beforeInnerMessageRead() {
         state.forward();
+
+        state.item().stream.setBuffer(buf);
     }
 
     /** {@inheritDoc} */
