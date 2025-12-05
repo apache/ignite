@@ -18,22 +18,20 @@
 package org.apache.ignite.plugin.extensions.communication.mappers;
 
 /** */
-public class DefaultEnumMapper<T extends Enum<T>> implements EnumMapper<T> {
+public class DefaultEnumMapper {
     /** */
-    private final T[] enumVals;
+    public static final DefaultEnumMapper INSTANCE = new DefaultEnumMapper();
 
     /** */
-    public DefaultEnumMapper(T[] vals) {
-        enumVals = vals;
-    }
+    private DefaultEnumMapper() {}
 
-    /** {@inheritDoc} */
-    @Override public byte encode(T enumVal) {
+    /** */
+    public <T extends Enum<T>> byte encode(T enumVal) {
         return (byte)enumVal.ordinal();
     }
 
-    /** {@inheritDoc} */
-    @Override public T decode(byte enumCode) {
-        return enumVals[enumCode];
+    /** */
+    public <T extends Enum<T>> T decode(T[] vals, byte enumCode) {
+        return vals[enumCode];
     }
 }

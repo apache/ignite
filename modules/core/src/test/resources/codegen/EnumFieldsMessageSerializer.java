@@ -24,7 +24,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper;
-import org.apache.ignite.plugin.extensions.communication.mappers.EnumMapper;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
@@ -34,9 +33,9 @@ import org.apache.ignite.transactions.TransactionIsolation;
  */
 public class EnumFieldsMessageSerializer implements MessageSerializer {
     /** */
-    private final EnumMapper<GridCacheOperation> gridCacheOperationMapper = new DefaultEnumMapper<>(GridCacheOperation.values());
+    private final GridCacheOperation[] gridCacheOperationVals = GridCacheOperation.values();
     /** */
-    private final EnumMapper<TransactionIsolation> transactionIsolationMapper = new DefaultEnumMapper<>(TransactionIsolation.values());
+    private final TransactionIsolation[] transactionIsolationVals = TransactionIsolation.values();
 
     /** */
     @Override public boolean writeTo(Message m, MessageWriter writer) {
@@ -51,13 +50,13 @@ public class EnumFieldsMessageSerializer implements MessageSerializer {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeByte(transactionIsolationMapper.encode(msg.publicEnum())))
+                if (!writer.writeByte(DefaultEnumMapper.INSTANCE.encode(msg.publicEnum())))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByte(gridCacheOperationMapper.encode(msg.internalEnum())))
+                if (!writer.writeByte(DefaultEnumMapper.INSTANCE.encode(msg.internalEnum())))
                     return false;
 
                 writer.incrementState();
@@ -72,7 +71,7 @@ public class EnumFieldsMessageSerializer implements MessageSerializer {
 
         switch (reader.state()) {
             case 0:
-                msg.publicEnum(transactionIsolationMapper.decode(reader.readByte()));
+                msg.publicEnum(DefaultEnumMapper.INSTANCE.decode(transactionIsolationVals, reader.readByte()));
 
                 if (!reader.isLastRead())
                     return false;
@@ -80,7 +79,7 @@ public class EnumFieldsMessageSerializer implements MessageSerializer {
                 reader.incrementState();
 
             case 1:
-                msg.internalEnum(gridCacheOperationMapper.decode(reader.readByte()));
+                msg.internalEnum(DefaultEnumMapper.INSTANCE.decode(gridCacheOperationVals, reader.readByte()));
 
                 if (!reader.isLastRead())
                     return false;
