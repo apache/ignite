@@ -93,7 +93,7 @@ class MessageSerializerGenerator {
     private final Set<String> imports = new TreeSet<>();
 
     /** Collection of Serializer class fields containing mappers for message enum fields. */
-    private final Set<String> mapperFields = new TreeSet<>();
+    private final Set<String> fields = new TreeSet<>();
 
     /** */
     private final ProcessingEnvironment env;
@@ -336,7 +336,7 @@ class MessageSerializerGenerator {
 
             imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
-            returnFalseIfEnumWriteFailed(write, "writer.writeObjectArray", getExpr,
+            returnFalseIfWriteFailed(write, "writer.writeObjectArray", getExpr,
                 "MessageCollectionItemType." + messageCollectionItemType(componentType));
 
             return;
@@ -389,13 +389,12 @@ class MessageSerializerGenerator {
 
                 imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
-                returnFalseIfEnumWriteFailed(write, "writer.writeCollection", getExpr,
+                returnFalseIfWriteFailed(write, "writer.writeCollection", getExpr,
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
 
             else if (enumType(type)) {
                 //TODO check CustomMapper annotation
-                imports.add("org.apache.ignite.plugin.extensions.communication.mappers.EnumMapper");
                 imports.add("org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper");
 
                 Element element = env.getTypeUtils().asElement(type);
@@ -407,11 +406,11 @@ class MessageSerializerGenerator {
                 char[] chars = enumName.toCharArray();
                 chars[0] = Character.toLowerCase(chars[0]);
 
-                String enumMapperSerializerFieldName = new String(chars) + "Mapper";
+                String enumValuesFieldName = new String(chars) + "Vals";
 
-                mapperFields.add("private final EnumMapper<" + enumName + "> " + enumMapperSerializerFieldName + " = new DefaultEnumMapper<>(" + enumName + ".values());");
+                fields.add("private final " + enumName + "[] " + enumValuesFieldName + " = " + enumName + ".values();");
 
-                returnFalseIfEnumWriteFailed(write, "writer.writeByte", enumMapperSerializerFieldName + ".encode", getExpr);
+                returnFalseIfEnumWriteFailed(write, "writer.writeByte", "DefaultEnumMapper.INSTANCE.encode", getExpr);
             }
 
             else
@@ -576,9 +575,9 @@ class MessageSerializerGenerator {
                 char[] chars = enumName.toCharArray();
                 chars[0] = Character.toLowerCase(chars[0]);
 
-                String enumMapperSerializerFieldName = new String(chars) + "Mapper";
+                String enumValuesFieldName = new String(chars) + "Vals";
 
-                returnFalseIfEnumReadFailed(name, enumMapperSerializerFieldName + ".decode");
+                returnFalseIfEnumReadFailed(name, "DefaultEnumMapper.INSTANCE.decode", enumValuesFieldName);
             }
 
             else
@@ -706,8 +705,8 @@ class MessageSerializerGenerator {
      * @param msgSetterName Variable name.
      * @param mapperDecodeCall Method name.
      */
-    private void returnFalseIfEnumReadFailed(String msgSetterName, String mapperDecodeCall) {
-        read.add(line("msg.%s(%s(reader.readByte()));", msgSetterName, mapperDecodeCall));
+    private void returnFalseIfEnumReadFailed(String msgSetterName, String mapperDecodeCall, String enumValuesFieldName) {
+        read.add(line("msg.%s(%s(%s, reader.readByte()));", msgSetterName, mapperDecodeCall, enumValuesFieldName));
 
         read.add(EMPTY);
 
@@ -753,7 +752,7 @@ class MessageSerializerGenerator {
     private void writeClassFields(Writer writer) throws IOException {
         indent = 1;
 
-        for (String field: mapperFields) {
+        for (String field: fields) {
             writer.write(line(METHOD_JAVADOC));
             writer.write(NL);
             writer.write(line(field));
@@ -785,8 +784,8 @@ class MessageSerializerGenerator {
         imports.add("org.apache.ignite.plugin.extensions.communication.MessageWriter");
         imports.add("org.apache.ignite.plugin.extensions.communication.MessageReader");
 
-        for (String i: imports)
-            writer.write("import " + i + ";" + NL);
+        for (String regularImport: imports)
+            writer.write("import " + regularImport + ";" + NL);
 
         writer.write(NL);
         writer.write(CLS_JAVADOC);
