@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -37,9 +36,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,77 +45,81 @@ import org.jetbrains.annotations.Nullable;
 public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateRequest {
     /** Keys to update. */
     @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
+    @Order(11)
     private List<KeyCacheObject> keys;
 
     /** Values to update. */
     @GridToStringInclude
-    @GridDirectCollection(CacheObject.class)
+    @Order(12)
     private List<CacheObject> vals;
 
     /** Previous values. */
     @GridToStringInclude
-    @GridDirectCollection(CacheObject.class)
+    @Order(value = 13, method = "previousValues")
     private List<CacheObject> prevVals;
 
     /** Conflict versions. */
-    @GridDirectCollection(GridCacheVersion.class)
+    @Order(value = 14, method = "conflictVersions")
     private List<GridCacheVersion> conflictVers;
 
     /** TTLs. */
+    @Order(15)
     private GridLongList ttls;
 
     /** Conflict expire time. */
+    @Order(16)
     private GridLongList conflictExpireTimes;
 
     /** Near TTLs. */
+    @Order(17)
     private GridLongList nearTtls;
 
     /** Near expire times. */
+    @Order(18)
     private GridLongList nearExpireTimes;
 
     /** Near cache keys to update. */
     @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
+    @Order(19)
     private List<KeyCacheObject> nearKeys;
 
     /** Values to update. */
     @GridToStringInclude
-    @GridDirectCollection(CacheObject.class)
+    @Order(value = 20, method = "nearValues")
     private List<CacheObject> nearVals;
 
     /** Obsolete near values. */
     @GridToStringInclude
-    @GridDirectCollection(Integer.class)
+    @Order(21)
     private List<Integer> obsoleteIndexes;
 
     /** Force transform backups flag. */
+    @Order(22)
     private boolean forceTransformBackups;
 
     /** Entry processors. */
-    @GridDirectTransient
     private List<EntryProcessor<Object, Object, Object>> entryProcessors;
 
     /** Entry processors bytes. */
-    @GridDirectCollection(byte[].class)
+    @Order(23)
     private List<byte[]> entryProcessorsBytes;
 
     /** Near entry processors. */
-    @GridDirectTransient
     private List<EntryProcessor<Object, Object, Object>> nearEntryProcessors;
 
     /** Near entry processors bytes. */
-    @GridDirectCollection(byte[].class)
+    @Order(24)
     private List<byte[]> nearEntryProcessorsBytes;
 
     /** Optional arguments for entry processor. */
-    @GridDirectTransient
     private Object[] invokeArgs;
 
     /** Entry processor arguments bytes. */
+    @Order(25)
     private byte[][] invokeArgsBytes;
 
     /** Partition. */
+    @Order(value = 26, method = "updateCounters")
     private GridLongList updateCntrs;
 
     /**
@@ -188,7 +188,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     /** {@inheritDoc} */
     @Override public void addWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProcessor,
+        EntryProcessor<Object, Object, Object> entryProc,
         long ttl,
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
@@ -201,9 +201,9 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         keys.add(key);
 
         if (forceTransformBackups) {
-            assert entryProcessor != null;
+            assert entryProc != null;
 
-            entryProcessors.add(entryProcessor);
+            entryProcessors.add(entryProc);
         }
         else
             vals.add(val);
@@ -262,7 +262,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     /** {@inheritDoc} */
     @Override public void addNearWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,
-        EntryProcessor<Object, Object, Object> entryProcessor,
+        EntryProcessor<Object, Object, Object> entryProc,
         long ttl,
         long expireTime) {
         assert key.partition() >= 0 : key;
@@ -292,9 +292,9 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         nearKeys.add(key);
 
         if (forceTransformBackups) {
-            assert entryProcessor != null;
+            assert entryProc != null;
 
-            nearEntryProcessors.add(entryProcessor);
+            nearEntryProcessors.add(entryProc);
         }
         else
             nearVals.add(val);
@@ -329,6 +329,13 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         return forceTransformBackups;
     }
 
+    /**
+     * @param forceTransformBackups New force transform backups flag.
+     */
+    public void forceTransformBackups(boolean forceTransformBackups) {
+        this.forceTransformBackups = forceTransformBackups;
+    }
+
     /** {@inheritDoc} */
     @Override public int size() {
         return keys.size();
@@ -354,6 +361,20 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         return keys.get(idx);
     }
 
+    /**
+     * @return Keys to update.
+     */
+    public List<KeyCacheObject> keys() {
+        return keys;
+    }
+
+    /**
+     * @param keys New keys to update.
+     */
+    public void keys(List<KeyCacheObject> keys) {
+        this.keys = keys;
+    }
+
     /** {@inheritDoc} */
     @Override public Long updateCounter(int updCntr) {
         if (updateCntrs != null && updCntr < updateCntrs.size())
@@ -367,6 +388,20 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         return nearKeys.get(idx);
     }
 
+    /**
+     * @return Near cache keys to update.
+     */
+    public List<KeyCacheObject> nearKeys() {
+        return nearKeys;
+    }
+
+    /**
+     * @param nearKeys New near cache keys to update.
+     */
+    public void nearKeys(List<KeyCacheObject> nearKeys) {
+        this.nearKeys = nearKeys;
+    }
+
     /** {@inheritDoc} */
     @Override @Nullable public CacheObject value(int idx) {
         if (vals != null)
@@ -375,12 +410,40 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         return null;
     }
 
+    /**
+     * @return Values to update.
+     */
+    public List<CacheObject> vals() {
+        return vals;
+    }
+
+    /**
+     * @param vals New values to update.
+     */
+    public void vals(List<CacheObject> vals) {
+        this.vals = vals;
+    }
+
     /** {@inheritDoc} */
     @Override @Nullable public CacheObject previousValue(int idx) {
         if (prevVals != null)
             return prevVals.get(idx);
 
         return null;
+    }
+
+    /**
+     * @return Previous values.
+     */
+    public List<CacheObject> previousValues() {
+        return prevVals;
+    }
+
+    /**
+     * @param prevVals New previous values.
+     */
+    public void previousValues(List<CacheObject> prevVals) {
+        this.prevVals = prevVals;
     }
 
     /** {@inheritDoc} */
@@ -394,6 +457,20 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
             return nearVals.get(idx);
 
         return null;
+    }
+
+    /**
+     * @return Values to update.
+     */
+    public List<CacheObject> nearValues() {
+        return nearVals;
+    }
+
+    /**
+     * @param nearVals New values to update.
+     */
+    public void nearValues(List<CacheObject> nearVals) {
+        this.nearVals = nearVals;
     }
 
     /** {@inheritDoc} */
@@ -412,6 +489,20 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         return null;
     }
 
+    /**
+     * @return Conflict versions.
+     */
+    public List<GridCacheVersion> conflictVersions() {
+        return conflictVers;
+    }
+
+    /**
+     * @param conflictVers New conflict versions.
+     */
+    public void conflictVersions(List<GridCacheVersion> conflictVers) {
+        this.conflictVers = conflictVers;
+    }
+
     /** {@inheritDoc} */
     @Override public long ttl(int idx) {
         if (ttls != null) {
@@ -423,6 +514,20 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         return CU.TTL_NOT_CHANGED;
     }
 
+    /**
+     * @return TTLs.
+     */
+    public GridLongList ttls() {
+        return ttls;
+    }
+
+    /**
+     * @param ttls New TTLs.
+     */
+    public void ttls(GridLongList ttls) {
+        this.ttls = ttls;
+    }
+
     /** {@inheritDoc} */
     @Override public long nearTtl(int idx) {
         if (nearTtls != null) {
@@ -432,6 +537,20 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         }
 
         return CU.TTL_NOT_CHANGED;
+    }
+
+    /**
+     * @return Near TTLs.
+     */
+    public GridLongList nearTtls() {
+        return nearTtls;
+    }
+
+    /**
+     * @param nearTtls New near TTLs.
+     */
+    public void nearTtls(GridLongList nearTtls) {
+        this.nearTtls = nearTtls;
     }
 
     /** {@inheritDoc} */
@@ -456,6 +575,20 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         return CU.EXPIRE_TIME_CALCULATE;
     }
 
+    /**
+     * @return Conflict expire times.
+     */
+    public GridLongList conflictExpireTimes() {
+        return conflictExpireTimes;
+    }
+
+    /**
+     * @param conflictExpireTimes New conflict expire times.
+     */
+    public void conflictExpireTimes(GridLongList conflictExpireTimes) {
+        this.conflictExpireTimes = conflictExpireTimes;
+    }
+
     /** {@inheritDoc} */
     @Override public long nearExpireTime(int idx) {
         if (nearExpireTimes != null) {
@@ -467,16 +600,86 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         return CU.EXPIRE_TIME_CALCULATE;
     }
 
+    /**
+     * @return Near expire times.
+     */
+    public GridLongList nearExpireTimes() {
+        return nearExpireTimes;
+    }
+
+    /**
+     * @param nearExpireTimes New near expire times.
+     */
+    public void nearExpireTimes(GridLongList nearExpireTimes) {
+        this.nearExpireTimes = nearExpireTimes;
+    }
+
+    /**
+     * @return Obsolete near values.
+     */
+    public List<Integer> obsoleteIndexes() {
+        return obsoleteIndexes;
+    }
+
+    /**
+     * @param obsoleteIndexes New obsolete near values.
+     */
+    public void obsoleteIndexes(List<Integer> obsoleteIndexes) {
+        this.obsoleteIndexes = obsoleteIndexes;
+    }
+
+    /**
+     * @return Serialized entry processors.
+     */
+    public List<byte[]> entryProcessorsBytes() {
+        return entryProcessorsBytes;
+    }
+
+    /**
+     * @param entryProcessorsBytes New entry processors.
+     */
+    public void entryProcessorsBytes(List<byte[]> entryProcessorsBytes) {
+        this.entryProcessorsBytes = entryProcessorsBytes;
+    }
+
+    /**
+     * @return Serialized near entry processors.
+     */
+    public List<byte[]> nearEntryProcessorsBytes() {
+        return Collections.unmodifiableList(nearEntryProcessorsBytes);
+    }
+
+    /**
+     * @param nearEntryProcessorsBytes New serialized near entry processors.
+     */
+    public void nearEntryProcessorsBytes(List<byte[]> nearEntryProcessorsBytes) {
+        this.nearEntryProcessorsBytes = nearEntryProcessorsBytes;
+    }
+
+    /**
+     * @return Serialized optional entry processor arguments.
+     */
+    public byte[][] invokeArgsBytes() {
+        return invokeArgsBytes;
+    }
+
+    /**
+     * @param invokeArgsBytes New serialized optional entry processor arguments.
+     */
+    public void invokeArgsBytes(byte[][] invokeArgsBytes) {
+        this.invokeArgsBytes = invokeArgsBytes;
+    }
+
     /** {@inheritDoc} */
     @Override @Nullable public Object[] invokeArguments() {
         return invokeArgs;
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         prepareMarshalCacheObjects(keys, cctx);
 
@@ -505,10 +708,10 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         finishUnmarshalCacheObjects(keys, cctx, ldr);
 
@@ -533,263 +736,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 11:
-                if (!writer.writeGridLongList(conflictExpireTimes))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeCollection(conflictVers, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeCollection(entryProcessorsBytes, MessageCollectionItemType.BYTE_ARR))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeBoolean(forceTransformBackups))
-                    return false;
-
-                writer.incrementState();
-
-            case 15:
-                if (!writer.writeObjectArray(invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
-                    return false;
-
-                writer.incrementState();
-
-            case 16:
-                if (!writer.writeCollection(keys, MessageCollectionItemType.KEY_CACHE_OBJECT))
-                    return false;
-
-                writer.incrementState();
-
-            case 17:
-                if (!writer.writeCollection(nearEntryProcessorsBytes, MessageCollectionItemType.BYTE_ARR))
-                    return false;
-
-                writer.incrementState();
-
-            case 18:
-                if (!writer.writeGridLongList(nearExpireTimes))
-                    return false;
-
-                writer.incrementState();
-
-            case 19:
-                if (!writer.writeCollection(nearKeys, MessageCollectionItemType.KEY_CACHE_OBJECT))
-                    return false;
-
-                writer.incrementState();
-
-            case 20:
-                if (!writer.writeGridLongList(nearTtls))
-                    return false;
-
-                writer.incrementState();
-
-            case 21:
-                if (!writer.writeCollection(nearVals, MessageCollectionItemType.CACHE_OBJECT))
-                    return false;
-
-                writer.incrementState();
-
-            case 22:
-                if (!writer.writeCollection(obsoleteIndexes, MessageCollectionItemType.INT))
-                    return false;
-
-                writer.incrementState();
-
-            case 23:
-                if (!writer.writeCollection(prevVals, MessageCollectionItemType.CACHE_OBJECT))
-                    return false;
-
-                writer.incrementState();
-
-            case 24:
-                if (!writer.writeGridLongList(ttls))
-                    return false;
-
-                writer.incrementState();
-
-            case 25:
-                if (!writer.writeGridLongList(updateCntrs))
-                    return false;
-
-                writer.incrementState();
-
-            case 26:
-                if (!writer.writeCollection(vals, MessageCollectionItemType.CACHE_OBJECT))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 11:
-                conflictExpireTimes = reader.readGridLongList();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                conflictVers = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                entryProcessorsBytes = reader.readCollection(MessageCollectionItemType.BYTE_ARR);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                forceTransformBackups = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 15:
-                invokeArgsBytes = reader.readObjectArray(MessageCollectionItemType.BYTE_ARR, byte[].class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 16:
-                keys = reader.readCollection(MessageCollectionItemType.KEY_CACHE_OBJECT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 17:
-                nearEntryProcessorsBytes = reader.readCollection(MessageCollectionItemType.BYTE_ARR);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 18:
-                nearExpireTimes = reader.readGridLongList();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 19:
-                nearKeys = reader.readCollection(MessageCollectionItemType.KEY_CACHE_OBJECT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 20:
-                nearTtls = reader.readGridLongList();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 21:
-                nearVals = reader.readCollection(MessageCollectionItemType.CACHE_OBJECT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 22:
-                obsoleteIndexes = reader.readCollection(MessageCollectionItemType.INT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 23:
-                prevVals = reader.readCollection(MessageCollectionItemType.CACHE_OBJECT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 24:
-                ttls = reader.readGridLongList();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 25:
-                updateCntrs = reader.readGridLongList();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 26:
-                vals = reader.readCollection(MessageCollectionItemType.CACHE_OBJECT);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void cleanup() {
         nearVals = null;
         prevVals = null;
@@ -798,6 +744,20 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     /** {@inheritDoc} */
     @Override public short directType() {
         return 38;
+    }
+
+    /**
+     * @return Partition update counters.
+     */
+    public GridLongList updateCounters() {
+        return updateCntrs;
+    }
+
+    /**
+     * @param updateCntrs New partition update counters.
+     */
+    public void updateCounters(GridLongList updateCntrs) {
+        this.updateCntrs = updateCntrs;
     }
 
     /** {@inheritDoc} */
