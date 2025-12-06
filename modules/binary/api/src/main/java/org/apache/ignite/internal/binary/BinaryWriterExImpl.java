@@ -34,7 +34,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
@@ -131,14 +130,14 @@ class BinaryWriterExImpl implements BinaryWriterEx {
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     private void marshal(Object obj, boolean enableReplace) throws BinaryObjectException {
-        String newName = ctx.igniteInstanceName();
-        String oldName = CommonUtils.setCurrentIgniteName(newName);
+        //String newName = ctx.igniteInstanceName();
+        //String oldName = CommonUtils.setCurrentIgniteName(newName);
 
         try {
             marshal0(obj, enableReplace);
         }
         finally {
-            CommonUtils.restoreOldIgniteName(oldName, newName);
+            //CommonUtils.restoreOldIgniteName(oldName, newName);
         }
     }
 
