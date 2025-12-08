@@ -46,6 +46,7 @@ import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -190,12 +191,12 @@ public class GridSpiTestContext implements IgniteSpiContext {
      * @return Metrics adapter.
      */
     private ClusterMetricsSnapshot createMetrics(int waitingJobs, int activeJobs) {
-        ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
+        NodeMetricsMessage metrics = new NodeMetricsMessage();
 
         metrics.currentWaitingJobs(waitingJobs);
         metrics.currentActiveJobs(activeJobs);
 
-        return metrics;
+        return new ClusterMetricsSnapshot(metrics);
     }
 
     /**

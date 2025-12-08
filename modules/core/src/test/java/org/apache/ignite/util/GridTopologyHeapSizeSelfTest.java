@@ -20,6 +20,7 @@ package org.apache.ignite.util;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestNode;
@@ -89,12 +90,12 @@ public class GridTopologyHeapSizeSelfTest extends GridCommonAbstractTest {
      * @return Node.
      */
     private GridTestNode getNode(String mac, int pid) {
-        ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
+        NodeMetricsMessage metrics = new NodeMetricsMessage();
 
         metrics.heapMemoryMaximum(1024L * 1024 * 1024);
         metrics.heapMemoryInitialized(1024L * 1024 * 1024);
 
-        GridTestNode node = new GridTestNode(UUID.randomUUID(), metrics);
+        GridTestNode node = new GridTestNode(UUID.randomUUID(), new ClusterMetricsSnapshot(metrics));
 
         node.addAttribute(ATTR_MACS, mac);
         node.addAttribute(ATTR_JVM_PID, pid);

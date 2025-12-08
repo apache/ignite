@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.processors.cluster;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 
 /**
  *
@@ -39,6 +42,15 @@ class ClusterNodeMetrics {
     ClusterNodeMetrics(ClusterMetrics nodeMetrics, Map<Integer, CacheMetrics> cacheMetrics) {
         this.nodeMetrics = nodeMetrics;
         this.cacheMetrics = cacheMetrics;
+    }
+
+    /** */
+    public ClusterNodeMetrics(NodeCompoundMetricsMessage msg) {
+        nodeMetrics = new ClusterMetricsSnapshot(msg.nodeMetricsMsg());
+
+        cacheMetrics = new HashMap<>(msg.cachesMetrics().size(), 1.0f);
+
+        msg.cachesMetrics().entrySet().forEach(e -> cacheMetrics.put(e.getKey(), new CacheMetricsSnapshot(e.getValue())));
     }
 
     /**

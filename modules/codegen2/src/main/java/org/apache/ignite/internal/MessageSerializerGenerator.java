@@ -307,16 +307,11 @@ class MessageSerializerGenerator {
      * @param field Field to generate write code.
      */
     private void returnFalseIfWriteFailed(VariableElement field) throws Exception {
-        Order ordAnt = field.getAnnotation(Order.class);
-
-        String methodName = ordAnt.method();
+        String methodName = field.getAnnotation(Order.class).method();
 
         String getExpr = (F.isEmpty(methodName) ? field.getSimpleName().toString() : methodName) + "()";
 
         TypeMirror type = field.asType();
-
-        if (ordAnt.getter())
-            getExpr = (type.getKind() == TypeKind.BOOLEAN ? "is" : "get") + capitalizeFirst(getExpr);
 
         if (type.getKind().isPrimitive()) {
             String typeName = capitalizeOnlyFirst(type.getKind().name());
@@ -750,11 +745,6 @@ class MessageSerializerGenerator {
     /** Converts string "BYTE" to string "Byte", with first capital latter. */
     private String capitalizeOnlyFirst(String input) {
         return input.substring(0, 1).toUpperCase() + input.substring(1).toLowerCase();
-    }
-
-    /** Capitalizes first character. */
-    private static String capitalizeFirst(String input) {
-        return input.substring(0, 1).toUpperCase() + input.substring(1);
     }
 
     /** @return {@code true} if trying to generate file with the same content. */

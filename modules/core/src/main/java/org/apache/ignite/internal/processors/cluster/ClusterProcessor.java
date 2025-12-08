@@ -40,7 +40,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDiagnosticInfo;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
@@ -705,30 +704,28 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      */
     private void processMetricsUpdateMessage(UUID sndNodeId, ClusterMetricsUpdateMessage msg) {
         // Single node metrics.
-        if (msg.allNodesMetrics() == null && msg.allCachesMetrics() == null) {
-            assert msg.nodeMetrics() != null;
-            assert msg.cacheMetricsMsg() != null && msg.cacheMetricsMsg().cacheMetrics() != null;
+        if (msg.singleNodeMetrics()) {
+            ClusterNodeMetrics metricsHolder = new ClusterNodeMetrics(msg.singleNodeMetricsMsg());
 
-            allNodesMetrics.put(sndNodeId, new ClusterNodeMetrics(msg.nodeMetrics(), msg.cacheMetricsMsg().cacheMetrics()));
+            allNodesMetrics.put(sndNodeId, metricsHolder);
 
-            updateNodeMetrics(ctx.discovery().discoCache(), sndNodeId, msg.nodeMetrics(), msg.cacheMetricsMsg().cacheMetrics());
+            updateNodeMetrics(ctx.discovery().discoCache(), sndNodeId, metricsHolder.nodeMetrics(), metricsHolder.cacheMetrics());
         }
         else {
-            // All-nodes metrics.
-            assert msg.nodeMetrics() == null;
-            assert msg.cacheMetricsMsg() == null;
-            assert msg.allNodesMetrics() != null && msg.allCachesMetrics() != null;
-
-            Map<UUID, ClusterMetricsSnapshot> allNodesMetrics = msg.allNodesMetrics();
+            // All-nodes metrics messages.
+            Map<UUID, NodeCompoundMetricsMessage> allNodesMetrics = msg.allNodesMetrics();
 
             assert allNodesMetrics != null;
 
             DiscoCache discoCache = ctx.discovery().discoCache();
 
-            for (Map.Entry<UUID, ClusterMetricsSnapshot> e : allNodesMetrics.entrySet()) {
-                if (!ctx.localNodeId().equals(e.getKey()))
-                    updateNodeMetrics(discoCache, e.getKey(), msg.nodeMetrics(), msg.cacheMetricsMsg().cacheMetrics());
-            }
+            allNodesMetrics.entrySet().forEach(e -> {
+                if (!ctx.localNodeId().equals(e.getKey())) {
+                    ClusterNodeMetrics metricsHolder = new ClusterNodeMetrics(msg.singleNodeMetricsMsg());
+
+                    updateNodeMetrics(discoCache, e.getKey(), metricsHolder.nodeMetrics(), metricsHolder.cacheMetrics());
+                }
+            });
         }
     }
 

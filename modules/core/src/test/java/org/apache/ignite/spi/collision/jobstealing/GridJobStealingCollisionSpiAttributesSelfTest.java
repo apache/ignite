@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.collision.CollisionJobContext;
@@ -109,11 +110,11 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
 
         rmtNode.setAttribute(U.spiAttribute(getSpi(), WAIT_JOBS_THRESHOLD_NODE_ATTR), getWaitJobsThreshold());
 
-        ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
+        NodeMetricsMessage metrics = new NodeMetricsMessage();
 
         metrics.currentWaitingJobs(2);
 
-        rmtNode.setMetrics(metrics);
+        rmtNode.setMetrics(new ClusterMetricsSnapshot(metrics));
 
         getSpiContext().addNode(rmtNode);
 

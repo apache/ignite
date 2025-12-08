@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.managers.communication;
 
-import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.GridJobCancelRequest;
 import org.apache.ignite.internal.GridJobExecuteRequest;
 import org.apache.ignite.internal.GridJobExecuteResponse;
@@ -40,7 +39,6 @@ import org.apache.ignite.internal.codegen.CachePartitionPartialCountersMapSerial
 import org.apache.ignite.internal.codegen.CachePartitionsToReloadMapSerializer;
 import org.apache.ignite.internal.codegen.CacheVersionedValueSerializer;
 import org.apache.ignite.internal.codegen.CacheWriteSynchronizationModeMessageSerializer;
-import org.apache.ignite.internal.codegen.ClusterMetricsSnapshotSerializer;
 import org.apache.ignite.internal.codegen.ClusterMetricsUpdateMessageSerializer;
 import org.apache.ignite.internal.codegen.DeploymentModeMessageSerializer;
 import org.apache.ignite.internal.codegen.ErrorMessageSerializer;
@@ -132,7 +130,9 @@ import org.apache.ignite.internal.codegen.MetadataResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.MissingMappingRequestMessageSerializer;
 import org.apache.ignite.internal.codegen.MissingMappingResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.NearCacheUpdatesSerializer;
+import org.apache.ignite.internal.codegen.NodeCompoundMetricsMessageSerializer;
 import org.apache.ignite.internal.codegen.NodeIdMessageSerializer;
+import org.apache.ignite.internal.codegen.NodeMetricsMessageSerializer;
 import org.apache.ignite.internal.codegen.PartitionReservationsMapSerializer;
 import org.apache.ignite.internal.codegen.PartitionsToReloadSerializer;
 import org.apache.ignite.internal.codegen.RecoveryLastReceivedMessageSerializer;
@@ -264,6 +264,8 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.ClusterMetricsUpdateMessage;
+import org.apache.ignite.internal.processors.cluster.NodeCompoundMetricsMessage;
+import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.continuous.ContinuousRoutineStartResultMessage;
 import org.apache.ignite.internal.processors.continuous.GridContinuousMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
@@ -437,7 +439,8 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)134, ContinuousRoutineStartResultMessage::new);
         factory.register((short)135, LatchAckMessage::new, new LatchAckMessageSerializer());
         factory.register(CacheMetricsMessage.TYPE_CODE, CacheMetricsMessage::new, new CacheMetricsMessageSerializer());
-        factory.register(ClusterMetricsSnapshot.TYPE_CODE, ClusterMetricsSnapshot::new, new ClusterMetricsSnapshotSerializer());
+        factory.register(NodeMetricsMessage.TYPE_CODE, NodeMetricsMessage::new, new NodeMetricsMessageSerializer());
+        factory.register(NodeCompoundMetricsMessage.TYPE_CODE, NodeCompoundMetricsMessage::new, new NodeCompoundMetricsMessageSerializer());
         factory.register((short)157, PartitionUpdateCountersMessage::new);
         factory.register((short)162, GenerateEncryptionKeyRequest::new, new GenerateEncryptionKeyRequestSerializer());
         factory.register((short)163, GenerateEncryptionKeyResponse::new);
