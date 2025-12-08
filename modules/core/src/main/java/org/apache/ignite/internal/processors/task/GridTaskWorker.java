@@ -114,7 +114,6 @@ import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FIN
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authorizeAll;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.unwrap;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_KILL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 
@@ -1780,16 +1779,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 ses.initiatorSecurityContext().subject().id(),
                 ctx.security().securityContext().subject().id());
 
-            for (GridJobResultImpl jobRes : jobRes.values()) {
-                Object executable = unwrap(jobRes.getJob());
-
-                if (!ctx.security().isSystemType(executable.getClass()))
-                    ctx.security().authorize(executable.getClass().getName(), TASK_CANCEL);
-                else if (executable instanceof PlatformSecurityAwareJob)
-                    ctx.security().authorize(((PlatformSecurityAwareJob)executable).name(), TASK_CANCEL);
-                else if (!isClosedByInitiator)
-                    ctx.security().authorize(ADMIN_KILL);
-            }
+            for (GridJobResultImpl jobRes : jobRes.values())
+                ctx.job().authorizeJobCancel(jobRes.getJob(), isClosedByInitiator);
         }
     }
 }

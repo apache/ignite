@@ -36,6 +36,9 @@ class QueryHistoryMetricsValue {
     /** Maximum time of execution. */
     private final long maxTime;
 
+    /** Total time of execution. */
+    private final long totalTime;
+
     /** Last start time of execution. */
     private final long lastStartTime;
 
@@ -47,6 +50,7 @@ class QueryHistoryMetricsValue {
      * @param failures Number of failure.
      * @param minTime Min time of execution.
      * @param maxTime Max time of execution.
+     * @param totalTime Total time of execution.
      * @param lastStartTime Last start time of execution.
      * @param initId Latest initiator ID.
      */
@@ -55,6 +59,7 @@ class QueryHistoryMetricsValue {
         long failures,
         long minTime,
         long maxTime,
+        long totalTime,
         long lastStartTime,
         @Nullable String initId
     ) {
@@ -62,6 +67,7 @@ class QueryHistoryMetricsValue {
         this.failures = failures;
         this.minTime = minTime;
         this.maxTime = maxTime;
+        this.totalTime = totalTime;
         this.lastStartTime = lastStartTime;
         this.initId = initId;
     }
@@ -100,6 +106,15 @@ class QueryHistoryMetricsValue {
      */
     public long maxTime() {
         return maxTime;
+    }
+
+    /**
+     * Gets total execution time of query.
+     *
+     * @return Total execution time of query.
+     */
+    public long totalTime() {
+        return totalTime;
     }
 
     /**

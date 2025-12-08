@@ -517,6 +517,7 @@ This view exposes information about currently running SQL queries.
 |FAILURES | long |    Count of failures
 |DURATION_MIN | long |    Minimal duration of execution
 |DURATION_MAX | long |    Maximum duration of execution
+|DURATION_TOTAL | long |    Total execution duration for this query over all executions
 |LAST_START_TIME | date |    Last execution date
 |===
 

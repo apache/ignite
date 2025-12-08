@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -41,6 +42,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeExecutionRejectedException;
+import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -57,6 +59,7 @@ import org.apache.ignite.internal.GridJobSiblingsResponse;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.GridTaskSessionRequest;
+import org.apache.ignite.internal.PlatformSecurityAwareJob;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.collision.GridCollisionJobContextAdapter;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
@@ -119,6 +122,10 @@ import static org.apache.ignite.internal.processors.metric.GridMetricManager.CPU
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
+import static org.apache.ignite.internal.processors.security.SecurityUtils.unwrap;
+import static org.apache.ignite.internal.processors.task.GridTaskProcessor.resolveTaskClass;
+import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_KILL;
+import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
 /**
@@ -787,51 +794,24 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 return;
             }
 
+            GridJobWorker jobWorker = findJobWorker(sesId, jobId);
+
+            if (jobWorker != null && !sys)
+                authorizeJobCancel(jobWorker);
+
             // Put either job ID or session ID (they are unique).
             cancelReqs.putIfAbsent(jobId != null ? jobId : sesId, sys);
 
-            Predicate<GridJobWorker> idsMatch = idMatch(sesId, jobId);
+            if (jobWorker == null)
+                return;
 
-            // If we don't have jobId then we have to iterate
-            if (jobId == null) {
-                if (!jobAlwaysActivate) {
-                    for (GridJobWorker job : passiveJobs.values()) {
-                        if (idsMatch.test(job))
-                            cancelPassiveJob(job);
-                    }
-                }
+            if (!cancelPassiveJob(jobWorker) && !cancelActiveJob(jobWorker, sys))
+                cancelJob(jobWorker, sys);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to cancel Ignite Compute Task Job [sesId=" + sesId + ", jobId=" + jobId + ']', e);
 
-                for (GridJobWorker job : activeJobs.values()) {
-                    if (idsMatch.test(job))
-                        cancelActiveJob(job, sys);
-                }
-
-                for (GridJobWorker job : syncRunningJobs.values()) {
-                    if (idsMatch.test(job))
-                        cancelJob(job, sys);
-                }
-            }
-            else {
-                if (!jobAlwaysActivate) {
-                    GridJobWorker passiveJob = passiveJobs.get(jobId);
-
-                    if (passiveJob != null && idsMatch.test(passiveJob) && cancelPassiveJob(passiveJob))
-                        return;
-                }
-
-                GridJobWorker activeJob = activeJobs.get(jobId);
-
-                if (activeJob != null && idsMatch.test(activeJob)) {
-                    cancelActiveJob(activeJob, sys);
-
-                    return;
-                }
-
-                activeJob = syncRunningJobs.get(jobId);
-
-                if (activeJob != null && idsMatch.test(activeJob))
-                    cancelJob(activeJob, sys);
-            }
+            throw e;
         }
         finally {
             rwLock.readUnlock();
@@ -845,9 +825,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @return {@code True} if succeeded.
      */
     private boolean cancelPassiveJob(GridJobWorker job) {
-        assert !jobAlwaysActivate;
-
-        if (removeFromPassive(job)) {
+        if (!jobAlwaysActivate && removeFromPassive(job)) {
             if (log.isDebugEnabled())
                 log.debug("Job has been cancelled before activation: " + job);
 
@@ -867,7 +845,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param job Job to cancel.
      * @param sys Flag indicating whether this is a system cancel.
      */
-    private void cancelActiveJob(GridJobWorker job, boolean sys) {
+    private boolean cancelActiveJob(GridJobWorker job, boolean sys) {
         if (removeFromActive(job)) {
             cancelledJobs.put(job.getJobId(), job);
 
@@ -877,7 +855,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
             else
                 // No reply, since it is not cancel from collision.
                 cancelJob(job, sys);
+
+            return true;
         }
+
+        return false;
     }
 
     /**
@@ -1711,7 +1693,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param nodeId Node ID.
      * @param req Request.
      */
-    @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     private void processTaskSessionRequest(UUID nodeId, GridTaskSessionRequest req) {
         if (!rwLock.tryReadLock()) {
             if (log.isDebugEnabled())
@@ -2422,6 +2403,80 @@ public class GridJobProcessor extends GridProcessorAdapter {
             )
             .filter(idMatch(sesId, null))
             .collect(groupingBy(GridJobWorker::status, counting()));
+    }
+
+    /** */
+    private void authorizeJobCancel(GridJobWorker jobWorker) {
+        if (!ctx.security().enabled())
+            return;
+
+        GridTaskSessionImpl taskSes = jobWorker.getSession().session();
+
+        Class<?> taskCls = resolveTaskClass(taskSes.getTaskName(), null, null);
+
+        if (taskCls == null || !ctx.security().isSystemType(taskCls))
+            ctx.security().authorize(taskSes.getTaskName(), TASK_CANCEL);
+        else {
+            authorizeJobCancel(
+                jobWorker.getJob(),
+                Objects.equals(taskSes.initiatorSecurityContext().subject().id(), ctx.security().securityContext().subject().id())
+            );
+        }
+    }
+
+    /** */
+    public void authorizeJobCancel(ComputeJob job, boolean isCanceledByInitiator) {
+        Object executable = unwrap(job);
+
+        if (!ctx.security().isSystemType(executable.getClass()))
+            ctx.security().authorize(executable.getClass().getName(), TASK_CANCEL);
+        else if (executable instanceof PlatformSecurityAwareJob)
+            ctx.security().authorize(((PlatformSecurityAwareJob)executable).name(), TASK_CANCEL);
+        else if (!isCanceledByInitiator)
+            ctx.security().authorize(ADMIN_KILL);
+    }
+
+    /** */
+    private GridJobWorker findJobWorker(@Nullable final IgniteUuid sesId, @Nullable final IgniteUuid jobId) {
+        Predicate<GridJobWorker> pred = idMatch(sesId, jobId);
+
+        GridJobWorker res = findJobWorker(passiveJobs, jobId, pred);
+
+        if (res == null) {
+            res = findJobWorker(activeJobs, jobId, pred);
+
+            if (res == null)
+                res = findJobWorker(syncRunningJobs, jobId, pred);
+        }
+
+        return res;
+    }
+
+    /** */
+    private GridJobWorker findJobWorker(
+        @Nullable Map<IgniteUuid, GridJobWorker> workers,
+        @Nullable IgniteUuid jobId,
+        Predicate<GridJobWorker> pred
+    ) {
+        if (workers == null)
+            return null;
+
+        if (jobId == null) {
+            for (GridJobWorker jobWorker : workers.values()) {
+                if (jobWorker != null && pred.test(jobWorker))
+                    return jobWorker;
+            }
+
+            return null;
+        }
+        else {
+            GridJobWorker jobWorker = workers.get(jobId);
+
+            if (jobWorker != null && pred.test(jobWorker))
+                return jobWorker;
+        }
+
+        return null;
     }
 
     /**

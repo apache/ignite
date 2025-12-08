@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.running.QueryHistory;
+import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -245,12 +246,46 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
             .queryHistoryMetrics().values();
 
         assertFalse(F.isEmpty(historyCol));
+        assertEquals(1, historyCol.size());
 
         QueryHistory history = first(historyCol);
 
         assertNotNull(history);
 
         assertEquals(testId1, history.initiatorId());
+    }
+
+    /**
+     * Test total duration of SQL queries.
+     */
+    @Test
+    public void testSqlFieldsQueryTotalDuration() {
+        int sleepTime = 500;
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("select * from A.String where _key=0 and sleep_func(?)").setArgs(sleepTime);
+
+        IgniteCache<Integer, String> cache = queryNode().context().cache().jcache("A");
+
+        long[] totalTimeArr = new long[2];
+
+        for (int i = 0; i < totalTimeArr.length; i++) {
+            cache.query(qry).getAll();
+
+            Collection<QueryHistory> historyCol = queryNode().context().query().runningQueryManager()
+                .queryHistoryMetrics().values();
+
+            assertFalse(F.isEmpty(historyCol));
+            assertEquals(1, historyCol.size());
+
+            QueryHistory history = first(historyCol);
+
+            assertNotNull(history);
+
+            totalTimeArr[i] = history.totalTime();
+        }
+
+        assertTrue(totalTimeArr[0] >= sleepTime);
+        assertTrue(totalTimeArr[1] >= totalTimeArr[0] + sleepTime);
     }
 
     /**
@@ -668,6 +703,18 @@ public class SqlQueryHistorySelfTest extends GridCommonAbstractTest {
         @QuerySqlFunction
         public static int fail() {
             throw new IgniteSQLException("SQL function fail for test purpuses");
+        }
+
+        /**
+         *
+         */
+        @QuerySqlFunction
+        public static boolean sleep_func(int sleep) {
+            doSleep(sleep);
+
+            GridTestClockTimer.update();
+
+            return true;
         }
     }
 
