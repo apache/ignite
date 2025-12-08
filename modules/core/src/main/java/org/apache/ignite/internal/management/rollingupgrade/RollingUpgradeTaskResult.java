@@ -20,6 +20,7 @@ package org.apache.ignite.internal.management.rollingupgrade;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.List;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -40,10 +41,24 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
     private String errMsg;
 
     /** */
+    private List<RollingUpgradeStatusNode> nodes;
+
+    /** */
     public RollingUpgradeTaskResult(IgniteProductVersion curVer, IgniteProductVersion targetVer, String errMsg) {
+        this(curVer, targetVer, errMsg, null);
+    }
+
+    /** */
+    public RollingUpgradeTaskResult(
+        IgniteProductVersion curVer,
+        IgniteProductVersion targetVer,
+        String errMsg,
+        List<RollingUpgradeStatusNode> nodes
+    ) {
         this.curVer = curVer;
         this.targetVer = targetVer;
         this.errMsg = errMsg;
+        this.nodes = nodes;
     }
 
     /** */
@@ -81,11 +96,22 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
         this.errMsg = errMsg;
     }
 
+    /** */
+    public List<RollingUpgradeStatusNode> nodes() {
+        return nodes;
+    }
+
+    /** */
+    public void nodes(List<RollingUpgradeStatusNode> nodes) {
+        this.nodes = nodes;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeObject(curVer);
         out.writeObject(targetVer);
         U.writeString(out, errMsg);
+        U.writeCollection(out, nodes);
     }
 
     /** {@inheritDoc} */
@@ -93,6 +119,7 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
         this.curVer = (IgniteProductVersion)in.readObject();
         this.targetVer = (IgniteProductVersion)in.readObject();
         this.errMsg = U.readString(in);
+        this.nodes = U.readList(in);
     }
 
     /** {@inheritDoc} */

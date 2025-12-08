@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.management.kill;
 
-import java.util.List;
-import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.ComputeMXBeanImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.plugin.security.SecurityPermissionSet;
+
+import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
 
 /**
  * Cancels given tasks sessions on all cluster nodes.
@@ -37,12 +37,6 @@ public class ComputeCancelSessionTask extends VisorOneNodeTask<KillComputeComman
     /** {@inheritDoc} */
     @Override protected ComputeCancelSessionJob job(KillComputeCommandArg arg) {
         return new ComputeCancelSessionJob(arg, debug);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) {
-        // No-op, just awaiting all jobs done.
-        return null;
     }
 
     /**
@@ -65,6 +59,11 @@ public class ComputeCancelSessionTask extends VisorOneNodeTask<KillComputeComman
             new ComputeMXBeanImpl(ignite.context()).cancel(arg.sessionId());
 
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public SecurityPermissionSet requiredPermissions() {
+            return NO_PERMISSIONS;
         }
 
         /** {@inheritDoc} */

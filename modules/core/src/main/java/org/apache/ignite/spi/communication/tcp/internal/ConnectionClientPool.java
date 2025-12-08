@@ -631,8 +631,7 @@ public class ConnectionClientPool {
                 curClients = clients.compute(node.id(), (nodeId0, clients0) -> {
                     if (clients0 == null) {
                         // Syncs metrics creation on this map.
-                        if (metricsMgr != null)
-                            createNodeMetrics(node);
+                        createNodeMetrics(node);
 
                         return newClients;
                     }
@@ -737,7 +736,7 @@ public class ConnectionClientPool {
                     return clients;
                 });
             }
-            else {
+            else if (res != null) {
                 removeNodeMetrics(nodeId);
 
                 res = null;

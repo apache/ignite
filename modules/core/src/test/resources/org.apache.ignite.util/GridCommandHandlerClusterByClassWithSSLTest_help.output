@@ -383,6 +383,10 @@ If the file name isn't specified the output file name is: '<typeId>.bin':
   Disable rolling upgrade mode. All nodes in the cluster must be running the same version:
     control.(sh|bat) --rolling-upgrade disable
 
+  [EXPERIMENTAL]
+    Get status of rolling upgrade mode:
+      control.(sh|bat) --rolling-upgrade status
+
   Print system view content:
     control.(sh|bat) --system-view system_view_name [--node-id node_id|--node-ids nodeId1,nodeId2,..|--all-nodes]
 

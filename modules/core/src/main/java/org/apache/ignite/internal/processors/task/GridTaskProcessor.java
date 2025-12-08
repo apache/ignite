@@ -1599,7 +1599,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * execution by its name, and  corresponding to this name task class was not found by the default classloader on
      * the local node.
      */
-    private Class<?> resolveTaskClass(@Nullable String taskName, @Nullable Class<?> taskCls, @Nullable ComputeTask<?, ?> task) {
+    public static Class<?> resolveTaskClass(@Nullable String taskName, @Nullable Class<?> taskCls, @Nullable ComputeTask<?, ?> task) {
         if (taskCls != null)
             return taskCls;
 

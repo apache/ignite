@@ -176,10 +176,9 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
 
         try (BinaryWriterEx writer = BinaryUtils.writer(
             ctx,
-            curThread instanceof IgniteThread && ((IgniteThread)curThread).isForbiddenToRequestBinaryMetadata())
+            curThread instanceof IgniteThread && ((IgniteThread)curThread).isForbiddenToRequestBinaryMetadata(),
+            typeId)
         ) {
-            writer.typeId(typeId);
-
             BinaryBuilderSerializer serializationCtx = new BinaryBuilderSerializer();
 
             serializationCtx.registerObjectWriting(this, 0);
