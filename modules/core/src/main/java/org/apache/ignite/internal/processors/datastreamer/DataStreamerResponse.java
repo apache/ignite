@@ -17,9 +17,16 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -30,16 +37,19 @@ public class DataStreamerResponse implements Message {
     private long reqId;
 
     /** */
+    private @Nullable Throwable err;
+
+    /** */
     @Order(value = 1, method = "errorBytes")
-    private byte[] errBytes;
+    private @Nullable byte[] errBytes;
 
     /**
      * @param reqId Request ID.
-     * @param errBytes Error bytes.
+     * @param err Error.
      */
-    public DataStreamerResponse(long reqId, byte[] errBytes) {
+    public DataStreamerResponse(long reqId, @Nullable Throwable err) {
         this.reqId = reqId;
-        this.errBytes = errBytes;
+        this.err = err;
     }
 
     /**
@@ -66,15 +76,59 @@ public class DataStreamerResponse implements Message {
     /**
      * @return Error bytes.
      */
-    public byte[] errorBytes() {
+    public @Nullable byte[] errorBytes() {
         return errBytes;
     }
 
     /**
      * @param errBytes Error bytes.
      */
-    public void errorBytes(byte[] errBytes) {
+    public void errorBytes(@Nullable byte[] errBytes) {
         this.errBytes = errBytes;
+    }
+
+    /**
+     * @return Error.
+     */
+    public @Nullable Throwable error() {
+        return err;
+    }
+
+    /**
+     * Marshal error to byte array.
+     *
+     * @param marsh Marshaller.
+     * @param log Ignite logger.
+     */
+    public void marshalError(Marshaller marsh, IgniteLogger log) {
+        try {
+            errBytes = err != null ? U.marshal(marsh, err) : null;
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to marshal error [err=" + err + ", marshErr=" + e + ']', e);
+
+            try {
+                errBytes = U.marshal(marsh, new IgniteCheckedException("Failed to marshal response error, " +
+                    "see node log for details."));
+            }
+            catch (IgniteCheckedException ex) {
+                throw new IgniteException(ex);
+            }
+        }
+    }
+
+    /**
+     * Unmarshal error from byte array.
+     *
+     * @param ctx Kernal context.
+     * @param ldr Class loader.
+     */
+    public void unmarshalError(GridKernalContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        if (errBytes != null && err == null) {
+            err = U.unmarshal(ctx, errBytes, ldr);
+
+            errBytes = null;
+        }
     }
 
     /** {@inheritDoc} */
