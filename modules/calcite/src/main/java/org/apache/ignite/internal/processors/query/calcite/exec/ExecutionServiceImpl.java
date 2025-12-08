@@ -882,7 +882,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
             );
 
             final BaseQueryContext qctx = createQueryContext(
-                msg.appAttrs() == null ? Contexts.empty() : Contexts.of(new SessionContextImpl(msg.appAttrs())),
+                msg.applicationAttributes() == null ? Contexts.empty() : Contexts.of(new SessionContextImpl(msg.applicationAttributes())),
                 msg.schema());
 
             QueryPlan qryPlan = queryPlanCache().queryPlan(
@@ -903,7 +903,7 @@ public class ExecutionServiceImpl<Row> extends AbstractService implements Execut
                 msg.fragmentDescription(),
                 handler,
                 qry.createMemoryTracker(memoryTracker, cfg.getQueryMemoryQuota()),
-                createIoTracker(nodeId, msg.originatingQryId()),
+                createIoTracker(nodeId, msg.originatingQueryId()),
                 msg.timeout(),
                 Commons.parametersMap(msg.parameters()),
                 msg.queryTransactionEntries()

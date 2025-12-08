@@ -80,6 +80,9 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
     private volatile long maxConnIdleTimeout = TcpCommunicationSpi.DFLT_IDLE_CONN_TIMEOUT;
 
     /** */
+    private int ackSendThreshold = TcpCommunicationSpi.DFLT_ACK_SND_THRESHOLD;
+
+    /** */
     private volatile int createClientDelay;
 
     /** */
@@ -126,6 +129,7 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
         communicationSpi.setConnectionsPerNode(connsPerNode)
             .setUsePairedConnections(pairedConns)
             .setIdleConnectionTimeout(maxConnIdleTimeout)
+            .setAckSendThreshold(ackSendThreshold)
             .setMessageQueueLimit(msgQueueLimit);
 
         cfg.setCommunicationSpi(communicationSpi);
@@ -139,6 +143,10 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
     @Test
     public void testRemovedConnectionMetrics() throws Exception {
         maxConnIdleTimeout = 500;
+
+        // Prevents keeping connections idle by lazy sending of the unacknowledged messages.
+        if (pairedConns)
+            ackSendThreshold = 1;
 
         Ignite srvr = startGridsMultiThreaded(2);
         Ignite cli = startClientGrid(G.allGrids().size());

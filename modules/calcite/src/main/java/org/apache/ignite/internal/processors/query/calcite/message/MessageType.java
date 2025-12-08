@@ -28,6 +28,7 @@ import org.apache.ignite.internal.codegen.InboxCloseMessageSerializer;
 import org.apache.ignite.internal.codegen.QueryBatchAcknowledgeMessageSerializer;
 import org.apache.ignite.internal.codegen.QueryBatchMessageSerializer;
 import org.apache.ignite.internal.codegen.QueryCloseMessageSerializer;
+import org.apache.ignite.internal.codegen.QueryStartRequestSerializer;
 import org.apache.ignite.internal.codegen.QueryStartResponseSerializer;
 import org.apache.ignite.internal.codegen.QueryTxEntrySerializer;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -40,7 +41,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
  */
 public enum MessageType {
     /** */
-    QUERY_START_REQUEST(300, QueryStartRequest::new),
+    QUERY_START_REQUEST(300, QueryStartRequest::new, new QueryStartRequestSerializer()),
 
     /** */
     QUERY_START_RESPONSE(301, QueryStartResponse::new, new QueryStartResponseSerializer()),
