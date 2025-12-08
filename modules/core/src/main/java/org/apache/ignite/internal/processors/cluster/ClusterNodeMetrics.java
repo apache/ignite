@@ -27,7 +27,7 @@ import org.apache.ignite.internal.ClusterMetricsSnapshot;
 /**
  *
  */
-class ClusterNodeMetrics implements Serializable {
+public class ClusterNodeMetrics implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,7 +56,7 @@ class ClusterNodeMetrics implements Serializable {
     /**
      * @return Cache metrics.
      */
-    Map<Integer, CacheMetrics> cacheMetrics() {
+    public Map<Integer, CacheMetrics> cacheMetrics() {
         return cacheMetrics != null ? cacheMetrics : Collections.<Integer, CacheMetrics>emptyMap();
     }
 }
