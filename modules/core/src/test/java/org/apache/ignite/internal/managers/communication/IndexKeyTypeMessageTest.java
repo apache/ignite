@@ -155,7 +155,7 @@ public class IndexKeyTypeMessageTest {
 
         assertEquals("Unknown index key type code: " + 23, t.getMessage());
 
-        for (byte c = 26; c < Byte.MAX_VALUE; ++c) {
+        for (byte c = 26; c >= 26 && c <= Byte.MAX_VALUE; ++c) {
             byte c0 = c;
 
             t = assertThrowsWithCause(() -> msg.code(c0), IllegalArgumentException.class);
@@ -163,12 +163,12 @@ public class IndexKeyTypeMessageTest {
             assertEquals("Unknown index key type code: " + c0, t.getMessage());
         }
 
-        for (byte c = (byte)(IndexKeyTypeMessage.NULL_VALUE_CODE + 1); c < IndexKeyType.UNKNOWN.code(); ++c) {
+        for (byte c = (byte)(IndexKeyTypeMessage.NULL_VALUE_CODE + 1); c < -1; ++c) {
             byte c0 = c;
 
             t = assertThrowsWithCause(() -> msg.code(c0), IllegalArgumentException.class);
 
-            assertEquals("Unknown index ke type code: " + c0, t.getMessage());
+            assertEquals("Unknown index key type code: " + c0, t.getMessage());
         }
     }
 

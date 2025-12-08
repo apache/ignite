@@ -17,21 +17,13 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.cache.query.index.IndexKeyTypeMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Defines a signle index key.
  */
-public class IndexKeyDefinition implements Message, Externalizable {
-    /** */
-    // TODO
-    private static final long serialVersionUID = 0L;
-
+public class IndexKeyDefinition implements Message {
     /** A message for {@link IndexKeyType}. */
     @org.apache.ignite.internal.Order(value = 0, method = "indexKeyTypeMessage")
     private IndexKeyTypeMessage idxTypeMsg;
@@ -100,24 +92,5 @@ public class IndexKeyDefinition implements Message, Externalizable {
     /** */
     public void indexKeyTypeMessage(IndexKeyTypeMessage idxTypeMsg) {
         this.idxTypeMsg = idxTypeMsg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // TODO
-        assert false;
-
-        // Send only required info for using in MergeSort algorithm.
-        out.writeInt(idxTypeMsg.value().code());
-        out.writeBoolean(asc);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // TODO
-        assert false;
-
-        idxTypeMsg = new IndexKeyTypeMessage(in.readInt());
-        asc = in.readBoolean();
     }
 }
