@@ -116,7 +116,7 @@ public final class TxEntriesInfo extends IgniteDiagnosticRequest.DiagnosticBaseI
 
         assert other0 != null && cacheId == other0.cacheId : other;
 
-        this.keys.addAll(other0.keys);
+        keys.addAll(other0.keys);
     }
 
     /** {@inheritDoc} */

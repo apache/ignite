@@ -45,7 +45,7 @@ public class IgniteDiagnosticResponse implements Message {
      * @param futId Future ID.
      * @param resp Diagnostic info result.
      */
-    public IgniteDiagnosticResponse(long futId, String resp) {
+    public IgniteDiagnosticResponse(long futId, @Nullable String resp) {
         this.futId = futId;
         respInfo = resp;
     }
@@ -68,8 +68,8 @@ public class IgniteDiagnosticResponse implements Message {
     }
 
     /** */
-    public void responseInfo(@Nullable String infoResp) {
-        this.respInfo = infoResp;
+    public void responseInfo(@Nullable String respInfo) {
+        this.respInfo = respInfo;
     }
 
     /** {@inheritDoc} */

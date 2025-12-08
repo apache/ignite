@@ -877,7 +877,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      */
     private IgniteInternalFuture<String> sendDiagnosticMessage(
         UUID nodeId,
-        @Nullable LinkedHashSet<IgniteDiagnosticRequest.DiagnosticBaseInfo> infos
+        @Nullable Collection<IgniteDiagnosticRequest.DiagnosticBaseInfo> infos
     ) {
         try {
             IgniteDiagnosticRequest msg = new IgniteDiagnosticRequest(diagFutId.getAndIncrement(), nodeId, infos);
