@@ -64,7 +64,7 @@ public class IndexKeyDefinition implements Message, Externalizable {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 119;
+        return 113;
     }
 
     /** */

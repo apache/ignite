@@ -71,7 +71,7 @@ public class IndexQueryResultMeta implements Message, Externalizable {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 19;
+        return 18;
     }
 
     /** */

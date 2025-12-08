@@ -50,7 +50,7 @@ public class IndexKeyTypeSettings implements Message, Externalizable {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 113;
+        return 19;
     }
 
     /** */
