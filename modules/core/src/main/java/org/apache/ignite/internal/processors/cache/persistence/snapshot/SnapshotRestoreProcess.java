@@ -1602,7 +1602,7 @@ public class SnapshotRestoreProcess {
             });
         }
 
-        nodes.forEach(k -> {orderedMetas.put(k, metas.get(k));});
+        nodes.forEach(k -> orderedMetas.put(k, metas.get(k)));
 
         for (Map.Entry<UUID, List<SnapshotMetadata>> e : orderedMetas.entrySet()) {
             UUID nodeId = e.getKey();
