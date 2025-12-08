@@ -20,10 +20,11 @@ package org.apache.ignite.internal.processors.cluster;
 import java.util.Collection;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** */
+/** Cache metrics message. */
 public class CacheMetricsMessage implements Message {
     /** */
     public static final short TYPE_CODE = 136;
@@ -395,14 +396,14 @@ public class CacheMetricsMessage implements Message {
     protected int idxBuildPartitionsLeftCount;
 
     /**
-     * Default constructor.
+     * Default constructor for {@link GridIoMessageFactory}.
      */
     public CacheMetricsMessage() {
         // No-op.
     }
 
     /**
-     * Create snapshot for given metrics.
+     * Create snapshot for the given metrics.
      *
      * @param m Cache metrics.
      */
@@ -510,7 +511,7 @@ public class CacheMetricsMessage implements Message {
     }
 
     /**
-     * Constructs merged cache metrics.
+     * Creates merged cache metrics.
      *
      * @param loc Metrics for cache on local node.
      * @param metrics Metrics for merge.
