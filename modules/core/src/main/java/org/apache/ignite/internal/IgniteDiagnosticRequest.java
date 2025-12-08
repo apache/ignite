@@ -71,11 +71,12 @@ public class IgniteDiagnosticRequest implements Message {
      * @param nodeId Node ID.
      * @param infos Diagnostic infos.
      */
-    public IgniteDiagnosticRequest(long futId, UUID nodeId, @Nullable LinkedHashSet<DiagnosticBaseInfo> infos) {
+    public IgniteDiagnosticRequest(long futId, UUID nodeId, @Nullable Collection<DiagnosticBaseInfo> infos) {
         this(nodeId);
 
         this.futId = futId;
-        this.infos = infos;
+
+        infos(infos);
     }
 
     /**
@@ -140,16 +141,22 @@ public class IgniteDiagnosticRequest implements Message {
         this.futId = futId;
     }
 
-    /** @return Compound diagnostic infos.  */
-    public @Nullable LinkedHashSet<DiagnosticBaseInfo> infos() {
+    /** @return Compound diagnostic infos. */
+    public @Nullable Collection<DiagnosticBaseInfo> infos() {
         return infos;
     }
 
-    /** */
+    /** Sets compound diagnostic infos. */
     public void infos(@Nullable Collection<DiagnosticBaseInfo> infos) {
-        this.infos = infos == null
+        // Deserialization supports only `Collection` interface in MessageReader#readCollection.
+        this.infos = toLinkedHashSet(infos);
+    }
+
+    /** */
+    private static @Nullable LinkedHashSet<DiagnosticBaseInfo> toLinkedHashSet(@Nullable Collection<DiagnosticBaseInfo> infos) {
+        return infos == null
             ? null
-            : infos instanceof LinkedHashSet ? (LinkedHashSet)infos : new LinkedHashSet<>(infos);
+            : infos instanceof LinkedHashSet ? (LinkedHashSet<DiagnosticBaseInfo>)infos : new LinkedHashSet<>(infos);
     }
 
     /** {@inheritDoc} */

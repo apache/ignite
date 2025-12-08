@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cluster;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Timer;
 import java.util.UUID;
@@ -877,7 +876,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      */
     private IgniteInternalFuture<String> sendDiagnosticMessage(
         UUID nodeId,
-        @Nullable LinkedHashSet<IgniteDiagnosticRequest.DiagnosticBaseInfo> infos
+        @Nullable Collection<IgniteDiagnosticRequest.DiagnosticBaseInfo> infos
     ) {
         try {
             IgniteDiagnosticRequest msg = new IgniteDiagnosticRequest(diagFutId.getAndIncrement(), nodeId, infos);
