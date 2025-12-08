@@ -17,34 +17,29 @@
 
 package org.apache.ignite.internal.processors.datastreamer;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
 public class DataStreamerResponse implements Message {
     /** */
+    @Order(value = 0, method = "requestId")
     private long reqId;
 
     /** */
+    @Order(value = 1, method = "errorBytes")
     private byte[] errBytes;
-
-    /** */
-    private boolean forceLocDep;
 
     /**
      * @param reqId Request ID.
      * @param errBytes Error bytes.
-     * @param forceLocDep Force local deployment.
      */
-    public DataStreamerResponse(long reqId, byte[] errBytes, boolean forceLocDep) {
+    public DataStreamerResponse(long reqId, byte[] errBytes) {
         this.reqId = reqId;
         this.errBytes = errBytes;
-        this.forceLocDep = forceLocDep;
     }
 
     /**
@@ -62,6 +57,13 @@ public class DataStreamerResponse implements Message {
     }
 
     /**
+     * @param reqId Request ID.
+     */
+    public void requestId(long reqId) {
+        this.reqId = reqId;
+    }
+
+    /**
      * @return Error bytes.
      */
     public byte[] errorBytes() {
@@ -69,84 +71,15 @@ public class DataStreamerResponse implements Message {
     }
 
     /**
-     * @return {@code True} to force local deployment.
+     * @param errBytes Error bytes.
      */
-    public boolean forceLocalDeployment() {
-        return forceLocDep;
+    public void errorBytes(byte[] errBytes) {
+        this.errBytes = errBytes;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DataStreamerResponse.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeByteArray(errBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeBoolean(forceLocDep))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeLong(reqId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                errBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                forceLocDep = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                reqId = reader.readLong();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

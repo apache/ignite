@@ -38,6 +38,7 @@ import org.apache.ignite.internal.codegen.CachePartitionPartialCountersMapSerial
 import org.apache.ignite.internal.codegen.CachePartitionsToReloadMapSerializer;
 import org.apache.ignite.internal.codegen.CacheVersionedValueSerializer;
 import org.apache.ignite.internal.codegen.CacheWriteSynchronizationModeMessageSerializer;
+import org.apache.ignite.internal.codegen.DataStreamerResponseSerializer;
 import org.apache.ignite.internal.codegen.DeploymentModeMessageSerializer;
 import org.apache.ignite.internal.codegen.ErrorMessageSerializer;
 import org.apache.ignite.internal.codegen.GenerateEncryptionKeyRequestSerializer;
@@ -381,7 +382,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)59, GridCacheQueryResponse::new);
         factory.register((short)61, GridContinuousMessage::new);
         factory.register((short)62, DataStreamerRequest::new);
-        factory.register((short)63, DataStreamerResponse::new);
+        factory.register((short)63, DataStreamerResponse::new, new DataStreamerResponseSerializer());
         factory.register((short)76, GridTaskResultRequest::new, new GridTaskResultRequestSerializer());
         factory.register((short)77, GridTaskResultResponse::new, new GridTaskResultResponseSerializer());
         factory.register((short)78, MissingMappingRequestMessage::new, new MissingMappingRequestMessageSerializer());
