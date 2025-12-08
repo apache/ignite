@@ -20,10 +20,10 @@ package org.apache.ignite.util;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import org.apache.ignite.cluster.ClusterState;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
@@ -32,34 +32,35 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UN
 /** Test for checkpoint in control.sh command. */
 public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstractTest {
     /** */
-    private int clusterState;
+    protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
-    /** {@inheritDoc} */
+    /** */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (clusterState == 1)
+        if (!persistenceEnable())
             cfg.setDataStorageConfiguration(null);
-        else {
-            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-                    .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                            .setPersistenceEnabled(true)));
-        }
+
+        cfg.setGridLogger(listeningLog);
+
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
         stopAllGrids();
         cleanPersistenceDir();
         injectTestSystemOut();
-        super.beforeTest();
     }
 
     /** Test checkpoint command with persistence enabled. */
     @Test
     public void testCheckpointPersistenceCluster() throws Exception {
-        clusterState = 0; // PDS cluster.
+        persistenceEnable(true);
+
+        LogListener checkpointFinishedLsnr = LogListener.matches("Checkpoint finished").atLeast(3).build();
+        listeningLog.registerListener(checkpointFinishedLsnr);
 
         IgniteEx srv = startGrids(2);
         IgniteEx cli = startClientGrid("client");
@@ -71,38 +72,29 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         String out = testOut.toString();
         assertFalse(out.contains(cli.localNode().id().toString()));
         assertFalse(out.contains(Objects.toString(cli.localNode().consistentId())));
-        assertTrue(out.contains("Checkpoint triggered on all nodes"));
 
-        outputContains("Checkpoint finished");
+        outputContains("Checkpoint triggered on all nodes");
 
         testOut.reset();
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--reason", "test_reason"));
-        assertTrue(testOut.toString().contains("Checkpoint triggered on all nodes"));
+        outputContains("Checkpoint triggered on all nodes");
 
         testOut.reset();
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--wait-for-finish"));
-        assertTrue(testOut.toString().contains("Checkpoint triggered on all nodes"));
-        outputContains("Checkpoint finished");
+        outputContains("Checkpoint triggered on all nodes");
 
-        testOut.reset();
-
-        assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--wait-for-finish", "--timeout", "30000"));
-        assertTrue(testOut.toString().contains("Checkpoint triggered on all nodes"));
-        outputContains("Checkpoint finished");
-
-        testOut.reset();
-
-        assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--reason", "planned", "--wait-for-finish", "--timeout", "5000"));
-        assertTrue(testOut.toString().contains("Checkpoint triggered on all nodes"));
-        outputContains("Checkpoint finished");
+        assertTrue(checkpointFinishedLsnr.check());
     }
 
     /** Test checkpoint command with in-memory cluster. */
     @Test
     public void testCheckpointInMemoryCluster() throws Exception {
-        clusterState = 1; // In-memory cluster.
+        persistenceEnable(false);
+
+        LogListener checkpointFinishedLsnr = LogListener.matches("Checkpoint finished").build();
+        listeningLog.registerListener(checkpointFinishedLsnr);
 
         IgniteEx srv = startGrids(2);
         IgniteEx cli = startClientGrid("client");
@@ -113,23 +105,29 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--checkpoint"));
 
         String out = testOut.toString();
-        assertTrue(out.contains("Can't checkpoint on in-memory node"));
+        outputContains("Can't checkpoint on in-memory node");
 
         assertFalse(out.contains(cli.localNode().id().toString()));
         assertFalse(out.contains(Objects.toString(cli.localNode().consistentId())));
+
+        assertFalse(checkpointFinishedLsnr.check());
     }
 
-    /** */
+    /** Test checkpoint with timeout. */
     @Test
     public void testCheckpointTimeout() throws Exception {
-        clusterState = 0; // PDS cluster.
+        persistenceEnable(true);
+
+        LogListener checkpointFinishedLsnr = LogListener.matches("Checkpoint finished").build();
+        listeningLog.registerListener(checkpointFinishedLsnr);
 
         IgniteEx srv = startGrids(1);
         srv.cluster().state(ClusterState.ACTIVE);
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--wait-for-finish", "--timeout", "1000"));
-        assertTrue(testOut.toString().contains("Checkpoint triggered on all nodes"));
-        outputContains("Checkpoint finished");
+        outputContains("Checkpoint triggered on all nodes");
+
+        assertTrue(checkpointFinishedLsnr.check());
     }
 
     /** */

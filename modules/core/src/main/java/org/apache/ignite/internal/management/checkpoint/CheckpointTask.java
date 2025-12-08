@@ -80,9 +80,8 @@ public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, Str
                     if (timeout != null && timeout > 0) {
                         checkpointfut.futureFor(CheckpointState.FINISHED).get(timeout, TimeUnit.MILLISECONDS);
                     }
-                    else {
+                    else
                         checkpointfut.futureFor(CheckpointState.FINISHED).get();
-                    }
                     return "Checkpoint completed on node: " + ignite.localNode().id();
                 }
                 else {

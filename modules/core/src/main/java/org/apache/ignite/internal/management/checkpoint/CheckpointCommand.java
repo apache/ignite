@@ -24,7 +24,7 @@ import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 import org.jetbrains.annotations.Nullable;
 
-/** Checkpoint command class*/
+/** Checkpoint command. */
 public class CheckpointCommand implements ComputeCommand<CheckpointCommandArg, String> {
     /** {@inheritDoc} */
     @Override public Class<CheckpointTask> taskClass() {
