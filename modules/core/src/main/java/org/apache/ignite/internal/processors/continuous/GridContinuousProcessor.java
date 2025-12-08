@@ -1651,17 +1651,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         CachePartitionPartialCountersMap cntrsMap,
         @Nullable final Exception err
     ) {
-        ContinuousRoutineStartResultMessage msg = new ContinuousRoutineStartResultMessage(routineId, cntrsMap, err);
-
         try {
-            msg.marshalError(marsh);
-        }
-        catch (Exception e) {
-            U.error(log, "Failed to marshal routine start error: " + e, e);
-        }
-
-        try {
-            ctx.io().sendToGridTopic(node, TOPIC_CONTINUOUS, msg, SYSTEM_POOL);
+            ctx.io().sendToGridTopic(node, TOPIC_CONTINUOUS, new ContinuousRoutineStartResultMessage(routineId, cntrsMap, err),
+                SYSTEM_POOL);
         }
         catch (ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
@@ -2550,7 +2542,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             resCollect = new DiscoveryMessageResultsCollector<ContinuousRoutineStartResultMessage, RoutineRegisterResults>(ctx) {
                 @Override protected RoutineRegisterResults createResult(Map<UUID, NodeMessage<ContinuousRoutineStartResultMessage>> rcvd) {
-                    Map<UUID, Exception> errs = null;
+                    Map<UUID, Throwable> errs = null;
                     Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode = null;
 
                     for (Map.Entry<UUID, NodeMessage<ContinuousRoutineStartResultMessage>> entry : rcvd.entrySet()) {
@@ -2559,23 +2551,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         if (msg == null)
                             continue;
 
-                        if (msg.hasError()) {
-                            Exception err = null;
+                        Throwable err = msg.error();
 
-                            try {
-                                msg.unmarshalError(marsh, U.resolveClassLoader(ctx.config()));
-
-                                err = msg.error();
-                            }
-                            catch (Exception e) {
-                                U.warn(log, "Failed to unmarhal continuous routine start error: " + e);
-                            }
-
-                            if (err == null) {
-                                err = new IgniteCheckedException("Failed to start continuous " +
-                                    "routine on node: " + entry.getKey());
-                            }
-
+                        if (err != null) {
                             if (errs == null)
                                 errs = new HashMap<>();
 
@@ -2614,7 +2592,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          */
         private void onAllRemoteRegistered(
             AffinityTopologyVersion topVer,
-            @Nullable Map<UUID, ? extends Exception> errs,
+            @Nullable Map<UUID, ? extends Throwable> errs,
             Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode,
             Map<Integer, T2<Long, Long>> cntrs) {
             try {
@@ -2638,7 +2616,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     onRemoteRegistered();
                 }
                 else {
-                    Exception firstEx = F.first(errs.values());
+                    Throwable firstEx = F.first(errs.values());
 
                     onDone(firstEx);
 
@@ -2706,7 +2684,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         private final AffinityTopologyVersion topVer;
 
         /** */
-        private final Map<UUID, ? extends Exception> errs;
+        private final Map<UUID, ? extends Throwable> errs;
 
         /** */
         private final Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode;
@@ -2717,7 +2695,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @param cntrsPerNode Update counters.
          */
         RoutineRegisterResults(AffinityTopologyVersion topVer,
-            Map<UUID, ? extends Exception> errs,
+            Map<UUID, ? extends Throwable> errs,
             Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode) {
             this.topVer = topVer;
             this.errs = errs;

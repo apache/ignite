@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.processors.continuous;
 
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,11 +34,8 @@ public class ContinuousRoutineStartResultMessage implements Message {
     private UUID routineId;
 
     /** */
-    private @Nullable Exception err;
-
-    /** */
-    @Order(value = 1, method = "errorBytes")
-    private byte[] errBytes;
+    @Order(value = 1, method = "errorMessage")
+    private @Nullable ErrorMessage errMsg;
 
     /** */
     @Order(value = 2, method = "countersMap")
@@ -61,11 +56,13 @@ public class ContinuousRoutineStartResultMessage implements Message {
     ContinuousRoutineStartResultMessage(
         UUID routineId,
         @Nullable CachePartitionPartialCountersMap cntrsMap,
-        @Nullable Exception err
+        @Nullable Throwable err
     ) {
         this.routineId = routineId;
         this.cntrsMap = cntrsMap;
-        this.err = err;
+
+        if (err != null)
+            errMsg = new ErrorMessage(err);
     }
 
     /**
@@ -83,13 +80,6 @@ public class ContinuousRoutineStartResultMessage implements Message {
     }
 
     /**
-     * @return {@code True} if failed to start routine.
-     */
-    boolean hasError() {
-        return err != null || errBytes != null;
-    }
-
-    /**
      * @return Routine ID.
      */
     public UUID routineId() {
@@ -104,48 +94,24 @@ public class ContinuousRoutineStartResultMessage implements Message {
     }
 
     /**
-     * @return Error bytes.
+     * @return Error message.
      */
-    public @Nullable byte[] errorBytes() {
-        return errBytes;
+    public @Nullable ErrorMessage errorMessage() {
+        return errMsg;
     }
 
     /**
-     * @param errBytes Error bytes.
+     * @param errMsg Error message.
      */
-    public void errorBytes(@Nullable byte[] errBytes) {
-        this.errBytes = errBytes;
+    public void errorMessage(@Nullable ErrorMessage errMsg) {
+        this.errMsg = errMsg;
     }
 
     /**
      * @return Error.
      */
-    public @Nullable Exception error() {
-        return err;
-    }
-
-    /**
-     * Marshal error to byte array.
-     *
-     * @param marsh Marshaller.
-     */
-    public void marshalError(Marshaller marsh) throws IgniteCheckedException {
-        if (err != null)
-            errBytes = U.marshal(marsh, err);
-    }
-
-    /**
-     * Unmarshal error from byte array.
-     *
-     * @param marsh Marshaller.
-     * @param ldr Class loader.
-     */
-    public void unmarshalError(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
-        if (errBytes != null && err == null) {
-            err = U.unmarshal(marsh, errBytes, ldr);
-
-            errBytes = null;
-        }
+    public @Nullable Throwable error() {
+        return ErrorMessage.error(errMsg);
     }
 
     /** {@inheritDoc} */
