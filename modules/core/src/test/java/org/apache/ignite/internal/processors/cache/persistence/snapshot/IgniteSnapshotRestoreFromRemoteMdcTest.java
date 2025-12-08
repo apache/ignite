@@ -122,7 +122,7 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
         listeningLog.registerListener(supLsnr);
         listeningLog.registerListener(otherLsnr);
 
-        other.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(CACHE)).get(TIMEOUT);
+        other.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(CACHE)).get(60_000);
 
         assertTrue(supLsnr.check());
         assertFalse(otherLsnr.check());
