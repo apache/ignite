@@ -18,12 +18,13 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.lang.reflect.Type;
+import java.sql.ResultSetMetaData;
 import java.util.List;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.ignite.internal.processors.cache.query.GridQueryFieldMetadataMessage;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.calcite.message.CalciteQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -80,14 +81,14 @@ public class FieldsMetadataImpl implements FieldsMetadata {
             RelDataType fieldType = field.getType();
             Type fieldCls = typeFactory.getResultClass(fieldType);
 
-            b.add(new CalciteQueryFieldMetadata(
+            b.add(new GridQueryFieldMetadataMessage(
                 F.isEmpty(origin) ? null : origin.get(0),
                 F.isEmpty(origin) ? null : origin.get(1),
                 alias != null ? alias : F.isEmpty(origin) ? field.getName() : origin.get(2),
                 fieldCls == null ? Void.class.getName() : fieldCls.getTypeName(),
                 fieldType.getPrecision(),
                 fieldType.getScale(),
-                fieldType.isNullable()
+                fieldType.isNullable() ? ResultSetMetaData.columnNullable : ResultSetMetaData.columnNoNulls
             ));
         }
 

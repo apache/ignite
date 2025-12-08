@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * TODO: remove
  * Field descriptor.
  */
 public class H2SqlFieldMetadata extends GridQueryFieldMetadataMessage implements Externalizable {
@@ -47,6 +48,7 @@ public class H2SqlFieldMetadata extends GridQueryFieldMetadataMessage implements
      * @param type Type.
      * @param precision Precision.
      * @param scale Scale.
+     * @param nullability Nullability.
      */
     H2SqlFieldMetadata(@Nullable String schemaName, @Nullable String typeName, String name, String type,
         int precision, int scale, int nullability) {

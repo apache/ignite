@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.query.schema.management;
 
 import java.util.LinkedHashMap;
 import java.util.Objects;
-import org.apache.ignite.internal.cache.query.index.OrderMessage;
-import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
@@ -46,8 +44,6 @@ public abstract class AbstractIndexDescriptorFactory implements IndexDescriptorF
 
     /** */
     protected static IndexKeyDefinition keyDefinition(GridQueryTypeDescriptor typeDesc, String field, boolean ascOrder) {
-        OrderMessage order = new OrderMessage(ascOrder ? SortOrder.ASC : SortOrder.DESC, null);
-
         GridQueryProperty prop = typeDesc.property(field);
 
         // Try to find property by alternative key field name.
@@ -59,6 +55,6 @@ public abstract class AbstractIndexDescriptorFactory implements IndexDescriptorF
 
         int fieldPrecision = prop != null ? prop.precision() : -1;
 
-        return new IndexKeyDefinition(IndexKeyType.forClass(fieldType).code(), order, fieldPrecision);
+        return new IndexKeyDefinition(IndexKeyType.forClass(fieldType).code(), fieldPrecision, ascOrder);
     }
 }

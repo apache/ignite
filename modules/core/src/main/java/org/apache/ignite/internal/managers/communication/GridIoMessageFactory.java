@@ -27,7 +27,6 @@ import org.apache.ignite.internal.GridTaskSessionRequest;
 import org.apache.ignite.internal.IgniteDiagnosticMessage;
 import org.apache.ignite.internal.cache.query.index.IndexKeyTypeMessage;
 import org.apache.ignite.internal.cache.query.index.IndexQueryResultMeta;
-import org.apache.ignite.internal.cache.query.index.OrderMessage;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.codegen.AtomicApplicationAttributesAwareRequestSerializer;
@@ -140,7 +139,6 @@ import org.apache.ignite.internal.codegen.MissingMappingRequestMessageSerializer
 import org.apache.ignite.internal.codegen.MissingMappingResponseMessageSerializer;
 import org.apache.ignite.internal.codegen.NearCacheUpdatesSerializer;
 import org.apache.ignite.internal.codegen.NodeIdMessageSerializer;
-import org.apache.ignite.internal.codegen.OrderMessageSerializer;
 import org.apache.ignite.internal.codegen.PartitionReservationsMapSerializer;
 import org.apache.ignite.internal.codegen.PartitionsToReloadSerializer;
 import org.apache.ignite.internal.codegen.RecoveryLastReceivedMessageSerializer;
@@ -396,7 +394,6 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)61, GridContinuousMessage::new);
         factory.register((short)62, DataStreamerRequest::new);
         factory.register((short)63, DataStreamerResponse::new);
-        factory.register((short)64, OrderMessage::new, new OrderMessageSerializer());
         factory.register((short)76, GridTaskResultRequest::new, new GridTaskResultRequestSerializer());
         factory.register((short)77, GridTaskResultResponse::new, new GridTaskResultResponseSerializer());
         factory.register((short)78, MissingMappingRequestMessage::new, new MissingMappingRequestMessageSerializer());

@@ -60,16 +60,16 @@ public class GridQueryFieldMetadataMessage implements GridQueryFieldMetadata, Me
     public GridQueryFieldMetadataMessage(
         String schemaName,
         String typeName,
-        String fieldTypeName,
         String fieldName,
+        String fieldTypeName,
         int precision,
         int scale,
         int nullability
     ) {
         this.schemaName = schemaName;
         this.typeName = typeName;
-        this.fieldTypeName = fieldTypeName;
         this.fieldName = fieldName;
+        this.fieldTypeName = fieldTypeName;
         this.precision = precision;
         this.scale = scale;
         this.nullability = nullability;

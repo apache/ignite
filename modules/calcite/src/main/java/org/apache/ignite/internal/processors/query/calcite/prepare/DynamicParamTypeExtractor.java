@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.lang.reflect.Type;
+import java.sql.ResultSetMetaData;
 import java.util.Collection;
 import java.util.List;
 import java.util.SortedMap;
@@ -27,8 +28,8 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexDynamicParam;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexShuttle;
+import org.apache.ignite.internal.processors.cache.query.GridQueryFieldMetadataMessage;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.calcite.message.CalciteQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 
@@ -77,14 +78,14 @@ public class DynamicParamTypeExtractor {
                 RelDataType paramType = param.getType();
                 Type fieldCls = typeFactory.getResultClass(paramType);
 
-                return new CalciteQueryFieldMetadata(
+                return new GridQueryFieldMetadataMessage(
                     null,
                     null,
                     param.getName(),
                     fieldCls == null ? Void.class.getName() : fieldCls.getTypeName(),
                     paramType.getPrecision(),
                     paramType.getScale(),
-                    paramType.isNullable()
+                    paramType.isNullable() ? ResultSetMetaData.columnNullable : ResultSetMetaData.columnNoNulls
                 );
             }).collect(Collectors.toList());
         }

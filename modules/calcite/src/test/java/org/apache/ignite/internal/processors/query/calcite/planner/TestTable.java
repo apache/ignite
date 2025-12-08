@@ -45,8 +45,6 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.cache.query.index.IndexDefinition;
 import org.apache.ignite.internal.cache.query.index.IndexName;
-import org.apache.ignite.internal.cache.query.index.OrderMessage;
-import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.client.ClientIndex;
@@ -257,9 +255,7 @@ public class TestTable implements IgniteCacheTable {
             IndexKeyType keyType = (fieldType == Character.class || fieldType == char.class) ? IndexKeyType.STRING_FIXED :
                 fieldType instanceof Class ? IndexKeyType.forClass((Class<?>)fieldType) : IndexKeyType.UNKNOWN;
 
-            OrderMessage order = new OrderMessage(fc.direction.isDescending() ? SortOrder.DESC : SortOrder.ASC, null);
-
-            keyDefs.put(field.getName(), new IndexKeyDefinition(keyType.code(), order, -1));
+            keyDefs.put(field.getName(), new IndexKeyDefinition(keyType.code(), -1, !fc.direction.isDescending()));
         }
 
         IndexDefinition idxDef = new ClientIndexDefinition(

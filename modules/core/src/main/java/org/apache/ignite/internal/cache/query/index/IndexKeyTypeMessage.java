@@ -17,15 +17,13 @@
 
 package org.apache.ignite.internal.cache.query.index;
 
-import org.apache.ignite.internal.MessageProcessor;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-/**
- * Message wrapper for {@link IndexKeyType}. See {@link MessageProcessor} for details.
- */
+/** Message wrapper for {@link IndexKeyType}. */
 public class IndexKeyTypeMessage implements Message {
     /** Type code. */
     public static final short TYPE_CODE = 516;
@@ -40,31 +38,23 @@ public class IndexKeyTypeMessage implements Message {
     @Order(0)
     private byte code = NULL_VALUE_CODE;
 
-    /**
-     * Constructor.
-     */
+    /** Empty constructor for {@link GridIoMessageFactory}. */
     public IndexKeyTypeMessage() {
         // No-op.
     }
 
-    /**
-     * Constructor.
-     */
+    /** Constructor. */
     public IndexKeyTypeMessage(@Nullable IndexKeyType keyType) {
         val = keyType;
         code = encode(keyType);
     }
 
-    /**
-     * Constructor.
-     */
+    /** Constructor. */
     public IndexKeyTypeMessage(int keyTypeCode) {
         code((byte)keyTypeCode);
     }
 
-    /**
-     * @return Code.
-     */
+    /** @return Code. */
     public byte code() {
         return code;
     }
@@ -77,9 +67,7 @@ public class IndexKeyTypeMessage implements Message {
         val = decode(code);
     }
 
-    /**
-     * @return Index key type.
-     */
+    /** @return Index key type. */
     public @Nullable IndexKeyType value() {
         return val;
     }
@@ -92,7 +80,9 @@ public class IndexKeyTypeMessage implements Message {
         return (byte)keyType.code();
     }
 
-    /** @param code Code to decode an inde key type. */
+    /**
+     * @param code Code to decode an inde key type.
+     */
     private static @Nullable IndexKeyType decode(byte code) {
         if (code == NULL_VALUE_CODE)
             return null;

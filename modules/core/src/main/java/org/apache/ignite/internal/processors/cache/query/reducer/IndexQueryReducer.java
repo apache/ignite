@@ -39,8 +39,6 @@ import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.lang.IgniteBiTuple;
 
-import static org.apache.ignite.internal.cache.query.index.SortOrder.DESC;
-
 /**
  * Reducer for {@code IndexQuery} results.
  */
@@ -127,7 +125,7 @@ public class IndexQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
                     int cmp = idxRowComp.compareKey(k1, k2);
 
                     if (cmp != 0)
-                        return d.getValue().order().sortOrder() == DESC ? -cmp : cmp;
+                        return d.getValue().ascending() ? cmp : -cmp;
                 }
 
                 return 0;

@@ -22,9 +22,6 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.cache.query.index.IndexKeyTypeMessage;
-import org.apache.ignite.internal.cache.query.index.OrderMessage;
-import org.apache.ignite.internal.cache.query.index.SortOrder;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
@@ -40,10 +37,11 @@ public class IndexKeyDefinition implements Message, Externalizable {
     private IndexKeyTypeMessage idxTypeMsg;
 
     /** Order. */
-    private OrderMessage order;
+    @org.apache.ignite.internal.Order(value = 1, method = "ascending")
+    private boolean asc;
 
     /** Precision for variable length key types. */
-    @org.apache.ignite.internal.Order(1)
+    @org.apache.ignite.internal.Order(2)
     private int precision;
 
     /** */
@@ -52,9 +50,10 @@ public class IndexKeyDefinition implements Message, Externalizable {
     }
 
     /** */
-    public IndexKeyDefinition(int idxTypeCode, OrderMessage order, long precision) {
+    public IndexKeyDefinition(int idxTypeCode, long precision, boolean asc) {
         idxTypeMsg = new IndexKeyTypeMessage(idxTypeCode);
-        this.order = order;
+
+        this.asc = asc;
 
         // Workaround due to wrong type conversion (int -> long).
         if (precision >= Integer.MAX_VALUE)
@@ -69,8 +68,13 @@ public class IndexKeyDefinition implements Message, Externalizable {
     }
 
     /** */
-    public OrderMessage order() {
-        return order;
+    public boolean ascending() {
+        return asc;
+    }
+
+    /** */
+    public void ascending(boolean asc) {
+        this.asc = asc;
     }
 
     /** */
@@ -105,7 +109,7 @@ public class IndexKeyDefinition implements Message, Externalizable {
 
         // Send only required info for using in MergeSort algorithm.
         out.writeInt(idxTypeMsg.value().code());
-        U.writeEnum(out, order.sortOrder());
+        out.writeBoolean(asc);
     }
 
     /** {@inheritDoc} */
@@ -114,6 +118,6 @@ public class IndexKeyDefinition implements Message, Externalizable {
         assert false;
 
         idxTypeMsg = new IndexKeyTypeMessage(in.readInt());
-        order = new OrderMessage(U.readEnum(in, SortOrder.class), null);
+        asc = in.readBoolean();
     }
 }

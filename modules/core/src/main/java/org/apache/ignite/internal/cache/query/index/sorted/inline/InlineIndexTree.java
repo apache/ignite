@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.cache.query.index.IndexName;
-import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
@@ -293,7 +292,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
                 if (cmp != 0) {
                     IndexKeyDefinition keyDef = keyDefs.get(keyIdx);
 
-                    return applySortOrder(cmp, keyDef.order().sortOrder());
+                    return applySortOrder(cmp, keyDef.ascending());
                 }
             }
             catch (Exception e) {
@@ -335,7 +334,7 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
             int c = rowCmp.compareRow(currRow, row, i);
 
             if (c != 0)
-                return applySortOrder(Integer.signum(c), idxKeyDefs.get(i).order().sortOrder());
+                return applySortOrder(Integer.signum(c), idxKeyDefs.get(i).ascending());
         }
 
         return 0;
@@ -345,11 +344,11 @@ public class InlineIndexTree extends BPlusTree<IndexRow, IndexRow> {
      * Perform sort order correction.
      *
      * @param c Compare result.
-     * @param order Sort order.
+     * @param asc Ascending sort flag.
      * @return Fixed compare result.
      */
-    private static int applySortOrder(int c, SortOrder order) {
-        return order == SortOrder.ASC ? c : -c;
+    private static int applySortOrder(int c, boolean asc) {
+        return asc ? c : -c;
     }
 
     /** Creates an index row for this tree. */
