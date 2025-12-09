@@ -28,6 +28,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -87,7 +88,18 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
 
     /** @throws Exception If failed. */
     @Test
-    public void testMdcAwareSnapshot() throws Exception {
+    public void testMdcAwareSnapshotFromCurrentDc() throws Exception {
+        testMdcAwareSnapshot(true);
+    }
+
+    /** @throws Exception If failed. */
+    @Test
+    public void testMdcAwareSnapshotFromAnyDc() throws Exception {
+        testMdcAwareSnapshot(false);
+    }
+
+    /** @throws Exception If failed. */
+    private void testMdcAwareSnapshot(boolean replicatedCache) throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
 
         Ignite supplier = startGridWithCustomWorkdir("supplier");
@@ -98,7 +110,7 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
 
         other.cluster().state(ClusterState.ACTIVE);
 
-        fillCache(other);
+        fillCache(other, replicatedCache);
 
         forceCheckpoint();
 
@@ -123,19 +135,21 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
         other.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(CACHE)).get(60_000);
 
         assertTrue(supLsnr.check());
-        assertFalse(otherLsnr.check());
+        assertEquals(!replicatedCache, otherLsnr.check());
 
         assertCacheKeys(other.cache(CACHE), CACHE_KEYS_RANGE);
     }
 
     /** */
-    private void fillCache(IgniteEx ignite) {
+    private void fillCache(IgniteEx ignite, boolean replicatedCache) {
         CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<>();
 
         ccfg.setName(CACHE);
-        ccfg.setBackups(2); // To fill both nodes
 
-        ignite.createCache(ccfg);
+        if (replicatedCache)
+            ccfg.setCacheMode(CacheMode.REPLICATED); // Fill all nodes with partitions.
+
+            ignite.createCache(ccfg);
 
         try (IgniteDataStreamer<Integer, Object> ds = ignite.dataStreamer(ccfg.getName())) {
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
