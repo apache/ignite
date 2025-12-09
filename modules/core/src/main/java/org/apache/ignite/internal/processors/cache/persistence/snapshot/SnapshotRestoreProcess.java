@@ -1588,7 +1588,7 @@ public class SnapshotRestoreProcess {
 
         Map<UUID, List<SnapshotMetadata>> orderedMetas = new LinkedHashMap<>();
 
-        String locDc = ctx.discovery().node(ctx.localNodeId()).dataCenterId();
+        String locDc = ctx.discovery().localNode().dataCenterId();
 
         if (locDc != null) {
             List<UUID> sameDcNodes = nodes.stream()
