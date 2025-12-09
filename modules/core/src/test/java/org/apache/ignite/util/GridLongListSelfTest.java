@@ -155,7 +155,7 @@ public class GridLongListSelfTest {
      * @param initSz Initial size of list.
      */
     private static void testSerialization(GridLongList ll, int initSz) {
-        DirectMessageWriter writer = new DirectMessageWriter(null);
+        DirectMessageWriter writer = new DirectMessageWriter(null, null);
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
 
@@ -236,7 +236,7 @@ public class GridLongListSelfTest {
     /** */
     @Test
     public void testSerializationInsufficientBuffer() {
-        DirectMessageWriter writer = new DirectMessageWriter(null);
+        DirectMessageWriter writer = new DirectMessageWriter(null, null);
 
         ByteBuffer buf = ByteBuffer.allocate(10);
 
@@ -252,7 +252,7 @@ public class GridLongListSelfTest {
     /** */
     @Test
     public void testSerializationOfNullValue() {
-        DirectMessageWriter writer = new DirectMessageWriter(null);
+        DirectMessageWriter writer = new DirectMessageWriter(null, null);
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
 

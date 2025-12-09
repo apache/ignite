@@ -831,7 +831,7 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         if (!loc)
                             res.unmarshallUserData(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
-                        jobRes.onResponse(res.getJobResult(), res.exception(), res.getJobAttributes(), res.cancelled());
+                        jobRes.onResponse(res.jobResult(), res.exception(), res.getJobAttributes(), res.cancelled());
 
                         if (loc)
                             ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobAfterSend.class);

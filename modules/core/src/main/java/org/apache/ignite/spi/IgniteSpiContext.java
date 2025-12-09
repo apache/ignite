@@ -25,6 +25,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -317,6 +318,13 @@ public interface IgniteSpiContext {
      * @return Message formatter.
      */
     public MessageFormatter messageFormatter();
+
+    /**
+     * Gets binary marshaller.
+     *
+     * @return Binary marshaller.
+     */
+    public BinaryMarshaller binaryMarshaller();
 
     /**
      * Gets message factory.
