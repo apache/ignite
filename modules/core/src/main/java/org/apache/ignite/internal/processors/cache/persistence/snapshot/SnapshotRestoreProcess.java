@@ -1610,13 +1610,10 @@ public class SnapshotRestoreProcess {
 
                 for (Map.Entry<Integer, Set<Integer>> metaParts : parts.entrySet()) {
                     for (Integer partId : metaParts.getValue()) {
-                        if (filter.test(metaParts.getKey(), partId)) {
-                            log.info("Getting partition from remote node [node=" + nodeId + ", part=" + partId + "]");
-
+                        if (filter.test(metaParts.getKey(), partId))
                             nodeToSnp.computeIfAbsent(nodeId, n -> new HashMap<>())
                                 .computeIfAbsent(metaParts.getKey(), k -> new HashSet<>())
                                 .add(partId);
-                        }
                     }
                 }
             }

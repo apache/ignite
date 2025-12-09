@@ -114,10 +114,8 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
 
         resetBaselineTopology();
 
-        LogListener supLsnr = LogListener.matches("Getting partition from remote node [node=" +
-            supplier.cluster().localNode().id()).build();
-        LogListener otherLsnr = LogListener.matches("Getting partition from remote node [node=" +
-            other.cluster().localNode().id()).build();
+        LogListener supLsnr = LogListener.matches(" sec, rmtId=" + supplier.cluster().localNode().id()).build();
+        LogListener otherLsnr = LogListener.matches(" sec, rmtId=" + other.cluster().localNode().id()).build();
 
         listeningLog.registerListener(supLsnr);
         listeningLog.registerListener(otherLsnr);
