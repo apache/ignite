@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -33,10 +34,9 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -53,9 +53,6 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
     /** */
     private static final String DC_ID_1 = "DC_ID_1";
 
-    /** */
-    private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
-
     /** @throws Exception If fails. */
     @Before
     public void before() throws Exception {
@@ -67,8 +64,7 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (listeningLog != null)
-            cfg.setGridLogger(listeningLog);
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         return cfg;
     }
@@ -101,20 +97,30 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
 
         awaitPartitionMapExchange();
 
-        startGridWithCustomWorkdir("demander", DC_ID_0);
+        Ignite demander = startGridWithCustomWorkdir("demander", DC_ID_0);
 
         resetBaselineTopology();
 
-        LogListener supLsnr = LogListener.matches(" sec, rmtId=" + supplier.cluster().localNode().id()).build();
-        LogListener otherLsnr = LogListener.matches(" sec, rmtId=" + other.cluster().localNode().id()).build();
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(demander);
 
-        listeningLog.registerListener(supLsnr);
-        listeningLog.registerListener(otherLsnr);
+        AtomicInteger supReqCnt = new AtomicInteger();
+        AtomicInteger otherReqCnt = new AtomicInteger();
+
+        spi.blockMessages((node, message) -> {
+            if (message instanceof SnapshotFilesRequestMessage) {
+                if (node.id().equals(supplier.cluster().localNode().id()))
+                    supReqCnt.incrementAndGet();
+                else if (node.id().equals(other.cluster().localNode().id()))
+                    otherReqCnt.incrementAndGet();
+            }
+
+            return false;
+        });
 
         other.snapshot().restoreSnapshot(SNAPSHOT_NAME, Collections.singleton(CACHE)).get(60_000);
 
-        assertTrue(supLsnr.check());
-        assertEquals(!replicatedCache, otherLsnr.check());
+        assertTrue(supReqCnt.get() > 0);
+        assertEquals(!replicatedCache, otherReqCnt.get() > 0);
 
         assertCacheKeys(other.cache(CACHE), CACHE_KEYS_RANGE);
     }
