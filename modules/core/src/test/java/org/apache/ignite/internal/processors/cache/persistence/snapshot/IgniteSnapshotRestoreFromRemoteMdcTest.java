@@ -45,7 +45,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.defaultWorkDirectory;
 /** */
 public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelfTest {
     /** Cache. */
-    protected static final String CACHE = "cache";
+    private static final String CACHE = "cache";
 
     /** */
     private static final String DC_ID_0 = "DC_ID_0";
