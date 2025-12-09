@@ -54,7 +54,7 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
     private static final String DC_ID_1 = "DC_ID_1";
 
     /** */
-    private ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+    private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** @throws Exception If fails. */
     @Before
