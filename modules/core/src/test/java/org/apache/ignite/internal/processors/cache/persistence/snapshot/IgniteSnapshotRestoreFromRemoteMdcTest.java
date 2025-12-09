@@ -100,6 +100,8 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
 
         IgniteEx other = startGridWithCustomWorkdir("other_dc_node");
 
+        other.cluster().state(ClusterState.ACTIVE);
+
         fillCache(other);
 
         forceCheckpoint();
@@ -113,6 +115,8 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
 
         startGridWithCustomWorkdir("demander");
+
+        resetBaselineTopology();
 
         LogListener supLsnr = LogListener.matches("Getting partition from remote node [node=" +
             supplier.cluster().localNode().id()).build();
@@ -152,10 +156,6 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
         cfg.setWorkDirectory(Paths.get(defaultWorkDirectory(), U.maskForFileName(instanceName)).toString());
 
         IgniteEx ignite = startGrid(cfg);
-
-        ignite.cluster().state(ClusterState.ACTIVE);
-        resetBaselineTopology();
-        awaitPartitionMapExchange();
 
         return ignite;
     }
