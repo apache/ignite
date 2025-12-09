@@ -102,8 +102,6 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
 
         fillCache(other, replicatedCache);
 
-        forceCheckpoint();
-
         snp(other).createSnapshot(SNAPSHOT_NAME, null, false, false).get(TIMEOUT);
 
         other.cache(CACHE).destroy();
