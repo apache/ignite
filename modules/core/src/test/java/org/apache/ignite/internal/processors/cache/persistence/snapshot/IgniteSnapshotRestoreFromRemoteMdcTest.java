@@ -57,7 +57,7 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
     private final Function<Integer, Object> valBuilder = String::valueOf;
 
     /** */
-    protected ListeningTestLogger listeningLog = new ListeningTestLogger(log);
+    private ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** @throws Exception If fails. */
     @Before
