@@ -182,6 +182,7 @@ public class TcpDiscoveryIoSession {
             boolean finished;
 
             do {
+                // Should be cleared before first operation.
                 msgBuf.clear();
 
                 int read = in.read(msgBuf.array(), 0, msgBuf.limit());
@@ -245,11 +246,12 @@ public class TcpDiscoveryIoSession {
         boolean finished;
 
         do {
+            // Should be cleared before first operation.
+            msgBuf.clear();
+
             finished = msgSer.writeTo(m, msgWriter);
 
             out.write(msgBuf.array(), 0, msgBuf.position());
-
-            msgBuf.clear();
         }
         while (!finished);
     }
