@@ -59,11 +59,11 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
     public void testCheckpointPersistenceCluster() throws Exception {
         persistenceEnable(true);
 
-        LogListener checkpointFinishedLsnr = LogListener.matches("Checkpoint finished").atLeast(3).build();
-        listeningLog.registerListener(checkpointFinishedLsnr);
-
         IgniteEx srv = startGrids(2);
         IgniteEx cli = startClientGrid("client");
+
+        LogListener checkpointFinishedLsnr = LogListener.matches("Checkpoint finished").build();
+        listeningLog.registerListener(checkpointFinishedLsnr);
 
         srv.cluster().state(ClusterState.ACTIVE);
 
@@ -74,18 +74,23 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         assertFalse(out.contains(Objects.toString(cli.localNode().consistentId())));
 
         outputContains("Checkpoint triggered on all nodes");
+        assertTrue(checkpointFinishedLsnr.check());
 
         testOut.reset();
+        checkpointFinishedLsnr.reset();
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--reason", "test_reason"));
         outputContains("Checkpoint triggered on all nodes");
 
+        assertTrue(checkpointFinishedLsnr.check());
         testOut.reset();
+        checkpointFinishedLsnr.reset();
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--wait-for-finish"));
         outputContains("Checkpoint triggered on all nodes");
 
         assertTrue(checkpointFinishedLsnr.check());
+        checkpointFinishedLsnr.reset();
     }
 
     /** Test checkpoint command with in-memory cluster. */
@@ -111,6 +116,7 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         assertFalse(out.contains(Objects.toString(cli.localNode().consistentId())));
 
         assertFalse(checkpointFinishedLsnr.check());
+        checkpointFinishedLsnr.reset();
     }
 
     /** Test checkpoint with timeout. */
@@ -128,6 +134,8 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         outputContains("Checkpoint triggered on all nodes");
 
         assertTrue(checkpointFinishedLsnr.check());
+
+        checkpointFinishedLsnr.reset();
     }
 
     /** */

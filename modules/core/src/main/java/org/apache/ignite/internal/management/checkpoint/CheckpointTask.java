@@ -56,19 +56,18 @@ public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, Str
         private static final long serialVersionUID = 0;
 
         /** */
-        protected CheckpointJob(@Nullable CheckpointCommandArg arg, boolean debug) {
+        protected CheckpointJob(CheckpointCommandArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(@Nullable CheckpointCommandArg arg) throws IgniteException {
-            if (!CU.isPersistenceEnabled(ignite.configuration())) {
+        @Override protected String run(CheckpointCommandArg arg) throws IgniteException {
+            if (!CU.isPersistenceEnabled(ignite.configuration()))
                 throw new IgniteException("Can't checkpoint on in-memory node");
-            }
 
-            String reason = arg != null && arg.reason() != null ? arg.reason() : "control.sh";
-            boolean waitForFinish = arg != null && arg.waitForFinish();
-            Long timeout = arg != null ? arg.timeout() : null;
+            String reason = arg.reason();
+            boolean waitForFinish = arg.waitForFinish();
+            Long timeout = arg.timeout();
 
             try {
                 GridKernalContext cctx = ignite.context();
@@ -77,16 +76,14 @@ public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, Str
                 CheckpointProgress checkpointfut = dbMgr.forceCheckpoint(reason);
 
                 if (waitForFinish) {
-                    if (timeout != null && timeout > 0) {
+                    if (timeout != null && timeout > 0)
                         checkpointfut.futureFor(CheckpointState.FINISHED).get(timeout, TimeUnit.MILLISECONDS);
-                    }
                     else
                         checkpointfut.futureFor(CheckpointState.FINISHED).get();
                     return "Checkpoint completed on node: " + ignite.localNode().id();
                 }
-                else {
+                else
                     return "Checkpoint triggered on node: " + ignite.localNode().id();
-                }
             }
             catch (Exception e) {
                 throw new IgniteException("Failed to force checkpoint on node: " + ignite.localNode().id(), e);
