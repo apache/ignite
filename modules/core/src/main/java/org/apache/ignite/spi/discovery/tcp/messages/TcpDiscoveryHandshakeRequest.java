@@ -18,21 +18,33 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Handshake request.
  */
-public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private UUID prevNodeId;
+    @Order(value = 5, method = "previousNodeId")
+    private @Nullable UUID prevNodeId;
 
     /** */
-    private String dcId;
+    @Order(6)
+    private @Nullable String dcId;
+
+    /**
+     * Default constructor for {@link DiscoveryMessageFactory}.
+     */
+    public TcpDiscoveryHandshakeRequest() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -58,7 +70,7 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
      *
      * @return Previous node ID to check.
      */
-    public UUID checkPreviousNodeId() {
+    public @Nullable UUID previousNodeId() {
         return prevNodeId;
     }
 
@@ -67,7 +79,7 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
      *
      * @param prevNodeId If not {@code null}, will set topology check flag and set node ID to check.
      */
-    public void changeTopology(UUID prevNodeId) {
+    public void previousNodeId(@Nullable UUID prevNodeId) {
         setFlag(CHANGE_TOPOLOGY_FLAG_POS, prevNodeId != null);
 
         this.prevNodeId = prevNodeId;
@@ -81,6 +93,11 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
     /** @param dcId DataCenter id. */
     public void dcId(String dcId) {
         this.dcId = dcId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 4;
     }
 
     /** {@inheritDoc} */
