@@ -77,7 +77,7 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
 
     /** @throws Exception If failed. */
     @Test
-    public void testMdcAwareSnapshotFromAnyDc() throws Exception {
+    public void testMdcAwareSnapshotFromBothDc() throws Exception {
         testMdcAwareSnapshot(false);
     }
 
