@@ -38,6 +38,10 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
 
@@ -167,21 +171,18 @@ public class ConfigVariationsTestSuiteBuilderTest {
     }
 
     /** */
-    @RunWith(ConfigVariationsTestSuiteBuilderTest.SuiteWithExtendsIgnored.class)
-    public static class TestSuiteWithExtendsIgnored {
+    public static class TestSuiteWithExtendsIgnored implements BeforeAllCallback, AfterAllCallback {
         /** **/
         private static final AtomicBoolean alreadyRun = new AtomicBoolean(false);
 
-        /** */
-        @BeforeAll
-        public static void init() {
-            assumeFalse(() -> alreadyRun.getAndSet(true), "This test already has run.");
+        @Override
+        public void afterAll(ExtensionContext context) {
+            assertEquals(2, SuiteWithExtendsIgnored.cntr.get());
         }
 
-        /** */
-        @AfterAll
-        public static void verify() {
-            assertEquals(2, SuiteWithExtendsIgnored.cntr.get());
+        @Override
+        public void beforeAll(ExtensionContext context) {
+            assumeFalse(() -> alreadyRun.getAndSet(true), "This test already has run.");
         }
     }
 
@@ -194,7 +195,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
         /** */
         @BeforeAll
         public static void init() {
-            Assume.assumeFalse("This test already has run.", alreadyRun.getAndSet(true));
+            assumeFalse(() -> alreadyRun.getAndSet(true), "This test already has run.");
         }
     }
 
@@ -239,7 +240,8 @@ public class ConfigVariationsTestSuiteBuilderTest {
     }
 
     /** */
-    public static class SuiteWithExtendsIgnored extends Suite {
+    @ExtendWith(TestSuiteWithExtendsIgnored.class)
+    public static class SuiteWithExtendsIgnored {
         /** */
         private static final AtomicInteger cntr = new AtomicInteger(0);
 
