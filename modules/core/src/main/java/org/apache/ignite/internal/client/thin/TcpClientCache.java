@@ -1389,7 +1389,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             keepBinary,
             marsh,
             cacheId,
-            qry.getPartitions().length >= 1 ? qry.getPartitions()[0] : -1
+            qry.getPartitions() != null && qry.getPartitions().length >= 1 ? qry.getPartitions()[0] : -1
         ));
     }
 
