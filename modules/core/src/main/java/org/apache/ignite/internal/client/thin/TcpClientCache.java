@@ -71,6 +71,7 @@ import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTra
 import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -1389,7 +1390,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             keepBinary,
             marsh,
             cacheId,
-            qry.getPartitions() != null && qry.getPartitions().length >= 1 ? qry.getPartitions()[0] : -1
+            !F.isEmpty(qry.getPartitions()) ? qry.getPartitions()[0] : -1
         ));
     }
 
