@@ -37,7 +37,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -62,12 +61,6 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
     public void before() throws Exception {
         cleanPersistenceDir();
         cleanupDedicatedPersistenceDirs();
-    }
-
-    /** @throws Exception If fails. */
-    @After
-    public void after() throws Exception {
-        afterTestSnapshot();
     }
 
     /** {@inheritDoc} */
