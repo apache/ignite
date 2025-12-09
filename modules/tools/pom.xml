@@ -165,6 +165,13 @@
         </dependency>
 
         <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>${junit.platform.launcher.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.maven.surefire</groupId>
             <artifactId>maven-surefire-common</artifactId>
             <version>${surefire.version}</version>

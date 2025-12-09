@@ -34,9 +34,18 @@ import org.apache.maven.surefire.common.junit48.JUnit48TestChecker;
 /*import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;*/
+import org.junit.platform.launcher.Launcher;
+import org.junit.platform.launcher.LauncherDiscoveryRequest;
+import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
+import org.junit.platform.launcher.core.LauncherFactory;
+import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
+import org.junit.platform.launcher.listeners.TestExecutionSummary;
+import org.junit.platform.launcher.listeners.TestExecutionSummary.Failure;
 
 import static org.apache.maven.surefire.api.report.ConsoleOutputCapture.startCapture;
 import static org.apache.maven.surefire.api.report.RunMode.NORMAL_RUN;
+import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
+
 
 /**
  * Goal of the provider to find unit tests that are not part of any test suite and notify user about it.
@@ -67,13 +76,24 @@ public class IgniteTestsProvider extends AbstractProvider {
 
         CheckAllTestsInSuites.testClasses = scanResult.applyFilter(scannerFilter, testClsLdr);
 
-        Result junitResult = JUnitCore.runClasses(CheckAllTestsInSuites.class);
+        LauncherDiscoveryRequest request =
+                LauncherDiscoveryRequestBuilder.request()
+                .selectors(selectClass(CheckAllTestsInSuites.class))
+                .build();
+
+        final Launcher launcher = LauncherFactory.create();
+        final SummaryGeneratingListener listener = new SummaryGeneratingListener();
+
+        launcher.registerTestExecutionListeners(listener);
+        launcher.execute(request);
+
+        TestExecutionSummary summary = listener.getSummary();
 
         RunResult surefireResult = new RunResult(
-            junitResult.getRunCount(), 0, junitResult.getFailureCount(), 0);
+                (int)summary.getTestsStartedCount(), 0, (int)summary.getTestsFailedCount(), 0);
 
-        if (junitResult.getFailureCount() > 0)
-            writeFailureToOutput(junitResult.getFailures().get(0));
+        if (!summary.getFailures().isEmpty())
+            writeFailureToOutput(summary.getFailures().get(0));
 
         return surefireResult;
     }
@@ -111,9 +131,9 @@ public class IgniteTestsProvider extends AbstractProvider {
         try {
             SimpleReportEntry report = SimpleReportEntry.withException(
                 NORMAL_RUN, 0L,
-                failure.getDescription().getClassName(), null,
-                failure.getDescription().getMethodName(), null,
-                new JUnit4StackTraceWriter(failure));
+                failure.getTestIdentifier().getType().getDeclaringClass().getName(), null,
+                failure.getTestIdentifier().getDisplayName(), null,
+                new JUnit4StackTraceWriter(failure.));
 
             RunListener reporter = reporterFactory.createTestReportListener();
 
