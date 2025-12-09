@@ -149,9 +149,7 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
 
         cfg.setWorkDirectory(Paths.get(defaultWorkDirectory(), U.maskForFileName(instanceName)).toString());
 
-        IgniteEx ignite = startGrid(cfg);
-
-        return ignite;
+        return startGrid(cfg);
     }
 
     /** */
