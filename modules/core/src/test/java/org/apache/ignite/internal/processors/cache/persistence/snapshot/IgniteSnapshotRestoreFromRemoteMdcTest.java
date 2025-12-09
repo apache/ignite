@@ -23,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -52,9 +51,6 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
 
     /** */
     private static final String DC_ID_1 = "DC_ID_1";
-
-    /** Cache value builder. */
-    private final Function<Integer, Object> valBuilder = String::valueOf;
 
     /** */
     private ListeningTestLogger listeningLog = new ListeningTestLogger(log);
@@ -145,7 +141,7 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
 
         try (IgniteDataStreamer<Integer, Object> ds = ignite.dataStreamer(ccfg.getName())) {
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
-                ds.addData(i, valBuilder.apply(i));
+                ds.addData(i, valueBuilder().apply(i));
         }
     }
 
