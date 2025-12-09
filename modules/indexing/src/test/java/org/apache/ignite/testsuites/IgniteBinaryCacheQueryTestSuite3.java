@@ -163,15 +163,15 @@ import org.apache.ignite.spi.communication.tcp.H2CommunicationMessageSerializati
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.util.KillCommandsMXBeanTest;
 import org.apache.ignite.util.KillCommandsSQLTest;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Test suite for cache queries.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     // Fields queries.
     SqlFieldsQuerySelfTest.class,
     IgniteCacheReplicatedFieldsQuerySelfTest.class,
@@ -378,7 +378,7 @@ import org.junit.runners.Suite;
 })
 public class IgniteBinaryCacheQueryTestSuite3 {
     /** Setup lazy mode default. */
-    @BeforeClass
+    @BeforeAll
     public static void setupLazy() {
         GridTestUtils.setFieldValue(SqlFieldsQuery.class, "DFLT_LAZY", false);
     }

@@ -32,15 +32,15 @@ import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySpiSslTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoverySplitBrainTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryTopologyChangeAndReconnectTest;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperValidatePathsTest;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  *
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     ZookeeperValidatePathsTest.class,
     ZookeeperDiscoverySegmentationAndConnectionRestoreTest.class,
     ZookeeperDiscoveryConcurrentStartAndStartStopTest.class,
@@ -59,7 +59,7 @@ import org.junit.runners.Suite;
 })
 public class ZookeeperDiscoverySpiTestSuite1 {
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         System.setProperty("zookeeper.forceSync", "false");
         System.setProperty("zookeeper.jmx.log4j.disable", "true");

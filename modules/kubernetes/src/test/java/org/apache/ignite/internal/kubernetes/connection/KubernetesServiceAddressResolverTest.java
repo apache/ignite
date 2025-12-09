@@ -27,13 +27,14 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfiguration;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
@@ -50,13 +51,13 @@ public class KubernetesServiceAddressResolverTest {
     private static final String service = "ignite";
 
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void startServer() {
         mockServer = startClientAndServer();
     }
 
     /** */
-    @AfterClass
+    @AfterAll
     public static void stopServer() {
         mockServer.stop();
     }
@@ -106,14 +107,14 @@ public class KubernetesServiceAddressResolverTest {
     }
 
     /** */
-    @Test(expected = IgniteException.class)
+    @Test
     public void testConnectionFailure() throws IOException {
         // given
         KubernetesServiceAddressResolver rslvr = prepareResolver(true);
 
         mockFailureServerResponse();
 
-        rslvr.getServiceAddresses();
+        assertThrows(IgniteException.class, rslvr::getServiceAddresses);
     }
 
     /** */

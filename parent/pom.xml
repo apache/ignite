@@ -115,6 +115,9 @@
         <opencensus.version>0.31.1</opencensus.version>
         <commons.lang3.version>3.18.0</commons.lang3.version>
         <ignite-kafka-ext.version>1.0.0</ignite-kafka-ext.version>
+        <junit.version>5.14.1</junit.version>
+        <junit.pioneer.version>2.3.0</junit.pioneer.version>
+        <junit.suite.version>1.14.1</junit.suite.version>
 
         <!-- Maven plugins versions -->
         <maven.javadoc.plugin.version>3.2.0</maven.javadoc.plugin.version>
@@ -180,9 +183,37 @@
 
     <dependencies>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-suite-api</artifactId>
+            <version>${junit.suite.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-suite-engine</artifactId>
+            <version>${junit.suite.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit-pioneer</groupId>
+            <artifactId>junit-pioneer</artifactId>
+            <version>2.3.0</version>
             <scope>test</scope>
         </dependency>
 

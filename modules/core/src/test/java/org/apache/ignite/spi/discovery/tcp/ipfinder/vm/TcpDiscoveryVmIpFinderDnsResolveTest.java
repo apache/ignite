@@ -32,9 +32,9 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**  */
 public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest {
@@ -71,7 +71,7 @@ public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest
 
     /**
      */
-    @BeforeClass
+    @BeforeAll
     public static void before() throws Exception {
         hostNameSvc = new TwoIpRoundRobinDnsService(FQDN, MULTI_FQDN, IP1, IP2);
 
@@ -80,7 +80,7 @@ public class TcpDiscoveryVmIpFinderDnsResolveTest extends GridCommonAbstractTest
 
     /**
      */
-    @AfterClass
+    @AfterAll
     public static void cleanup() throws Exception {
         INameService.uninstall();
     }

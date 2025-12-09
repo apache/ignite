@@ -20,17 +20,17 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.examples.ComputeScheduleExampleMultiNodeSelfTest;
 import org.apache.ignite.examples.ComputeScheduleExampleSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Examples test suite. <p> Contains only Spring ignite examples tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     ComputeScheduleExampleSelfTest.class,
 
     // Multi-node.
@@ -38,7 +38,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 })
 public class IgniteLgplExamplesSelfTestSuite {
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(IgniteLgplExamplesSelfTestSuite.class));

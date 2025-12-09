@@ -42,6 +42,7 @@
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
         <revision>2.18.0-SNAPSHOT</revision>
         <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
+        <junit.version>5.14.1</junit.version>
     </properties>
 
     <url>https://ignite.apache.org</url>
@@ -73,9 +74,9 @@
         </dependency>
 
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

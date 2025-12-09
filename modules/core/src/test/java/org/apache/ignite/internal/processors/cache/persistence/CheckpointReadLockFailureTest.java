@@ -40,10 +40,10 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_LOG_CP_READ_LOCK_HOLDERS;
 import static org.apache.ignite.internal.util.ReentrantReadWriteLockWithTracking.LOCK_HOLD_MESSAGE;
@@ -93,7 +93,7 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         Set<FailureType> ignoredFailureTypes = new HashSet<>(FAILURE_HND.getIgnoredFailureTypes());
         ignoredFailureTypes.remove(FailureType.SYSTEM_CRITICAL_OPERATION_TIMEOUT);
@@ -104,7 +104,7 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         cleanPersistenceDir();
     }
@@ -112,7 +112,7 @@ public class CheckpointReadLockFailureTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @After
+    @AfterEach
     public void after() throws Exception {
         cleanPersistenceDir();
     }

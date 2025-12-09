@@ -36,12 +36,12 @@ import org.apache.ignite.internal.IgniteClientReconnectServicesTest;
 import org.apache.ignite.internal.IgniteClientReconnectStopTest;
 import org.apache.ignite.internal.IgniteClientReconnectStreamerTest;
 import org.apache.ignite.internal.IgniteClientRejoinTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /** */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     IgniteClientConnectAfterCommunicationFailureTest.class,
     IgniteClientReconnectStopTest.class,
     IgniteClientReconnectApiExceptionTest.class,

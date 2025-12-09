@@ -18,17 +18,17 @@
 package org.apache.ignite.internal.websession;
 
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Test suite for web sessions caching functionality.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     WebSessionSelfTest.class,
     WebSessionTransactionalSelfTest.class,
     WebSessionReplicatedSelfTest.class,
@@ -40,7 +40,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 })
 public class IgniteWebSessionSelfTestSuite {
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(IgniteWebSessionSelfTestSuite.class));

@@ -39,8 +39,8 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE;
@@ -94,7 +94,7 @@ public class CacheDataPageScanQueryTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("ConstantConditions")
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11998")
     public void testDataPageScanWithRestart() throws Exception {
         IgniteEx ignite = startGrid(0);
         ignite.cluster().state(ClusterState.ACTIVE);

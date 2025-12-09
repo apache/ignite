@@ -66,10 +66,10 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.util.IgniteUtils.fileCount;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
@@ -109,7 +109,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     private boolean enablePersistence;
 
     /** Called before tests started. */
-    @BeforeClass
+    @BeforeAll
     public static void beforeAll() {
         topic = GridTopic.TOPIC_CACHE.topic("test", 0);
     }
@@ -117,7 +117,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception if failed.
      */
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         cleanPersistenceDir();
 
@@ -125,7 +125,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     }
 
     /** Called after test run. */
-    @After
+    @AfterEach
     public void after() {
         try {
             ensureResourcesFree(snd);

@@ -35,24 +35,19 @@ import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runner.Runner;
-import org.junit.runner.notification.RunNotifier;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /** */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     ConfigVariationsTestSuiteBuilderTest.BasicTest.class,
     ConfigVariationsTestSuiteBuilderTest.TestSuiteBasic.class,
     ConfigVariationsTestSuiteBuilderTest.TestSuiteWithIgnored.class,
@@ -94,7 +89,6 @@ public class ConfigVariationsTestSuiteBuilderTest {
         }
 
         /** */
-        @SuppressWarnings("serial")
         @Test
         public void testIgniteConfigFilter() {
             List<Class<?>> classes = basicBuild(NoopTest.class);
@@ -113,7 +107,6 @@ public class ConfigVariationsTestSuiteBuilderTest {
         }
 
         /** */
-        @SuppressWarnings("serial")
         @Test
         public void testCacheConfigFilter() {
             List<Class<?>> classes = new ConfigVariationsTestSuiteBuilder(NoopTest.class)
@@ -142,13 +135,13 @@ public class ConfigVariationsTestSuiteBuilderTest {
         private static final AtomicBoolean alreadyRun = new AtomicBoolean(false);
 
         /** */
-        @BeforeClass
+        @BeforeAll
         public static void init() {
-            Assume.assumeFalse("This test already has run.", alreadyRun.getAndSet(true));
+            assumeFalse(() -> alreadyRun.getAndSet(true), "This test already has run.");
         }
 
         /** */
-        @AfterClass
+        @AfterAll
         public static void verify() {
             assertEquals(1, SuiteBasic.cntr.get());
         }
@@ -161,13 +154,13 @@ public class ConfigVariationsTestSuiteBuilderTest {
         private static final AtomicBoolean alreadyRun = new AtomicBoolean(false);
 
         /** */
-        @BeforeClass
+        @BeforeAll
         public static void init() {
-            Assume.assumeFalse("This test already has run.", alreadyRun.getAndSet(true));
+            assumeFalse(() -> alreadyRun.getAndSet(true), "This test already has run.");
         }
 
         /** */
-        @AfterClass
+        @AfterAll
         public static void verify() {
             assertEquals(4, SuiteWithIgnored.cntr.get());
         }
@@ -180,13 +173,13 @@ public class ConfigVariationsTestSuiteBuilderTest {
         private static final AtomicBoolean alreadyRun = new AtomicBoolean(false);
 
         /** */
-        @BeforeClass
+        @BeforeAll
         public static void init() {
-            Assume.assumeFalse("This test already has run.", alreadyRun.getAndSet(true));
+            assumeFalse(() -> alreadyRun.getAndSet(true), "This test already has run.");
         }
 
         /** */
-        @AfterClass
+        @AfterAll
         public static void verify() {
             assertEquals(2, SuiteWithExtendsIgnored.cntr.get());
         }
@@ -199,7 +192,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
         private static final AtomicBoolean alreadyRun = new AtomicBoolean(false);
 
         /** */
-        @BeforeClass
+        @BeforeAll
         public static void init() {
             Assume.assumeFalse("This test already has run.", alreadyRun.getAndSet(true));
         }
@@ -303,7 +296,6 @@ public class ConfigVariationsTestSuiteBuilderTest {
         @Test
         public void testDummyExecution() throws Exception {
             runInAllDataModes(new TestRunnable() {
-                @SuppressWarnings("deprecation")
                 @Override public void run() throws Exception {
                     info("Running dummy test.");
 
@@ -354,7 +346,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
         }
 
         /** */
-        @BeforeClass
+        @BeforeAll
         public static void init() {
             System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
         }
@@ -458,7 +450,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
 
         /** */
         private void processStage(String desc, int exp, int update) {
-            Assert.assertEquals(desc + " at test class id " + testClsId, exp, stageCnt.get());
+            assertEquals(desc + " at test class id " + testClsId, exp, stageCnt.get());
 
             stageCnt.set(update);
         }
@@ -477,7 +469,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
         }
 
         /** */
-        @BeforeClass
+        @BeforeAll
         public static void init() {
             System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
         }

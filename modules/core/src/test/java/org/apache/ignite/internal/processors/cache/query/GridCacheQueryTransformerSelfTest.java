@@ -46,9 +46,10 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 
 /**
  * Test for scan query with transformer.
@@ -161,9 +162,6 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
         });
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
     public void testGetObjectFieldPartitioned() {
         IgniteCache<Integer, Value> cache = createTestCache();
@@ -202,11 +200,8 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
-    public void testGetObjectFieldFiltered() throws Exception {
+    public void testGetObjectFieldFiltered() {
         doTestWithCache(i -> new Value("str" + i, i * 100), cache -> {
             IgniteBiPredicate<Integer, Value> filter = new IgniteBiPredicate<Integer, Value>() {
                 @Override public boolean apply(Integer k, Value v) {
@@ -232,11 +227,8 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
         });
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
-    public void testKeepBinary() throws Exception {
+    public void testKeepBinary() {
         doTestWithCache(i -> new Value("str" + i, i * 100), cache -> {
             IgniteCache<Integer, BinaryObject> binaryCache = cache.withKeepBinary();
 
@@ -258,11 +250,8 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
         });
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
-    public void testKeepBinaryFiltered() throws Exception {
+    public void testKeepBinaryFiltered() {
         doTestWithCache(i -> new Value("str" + i, i * 100), cache -> {
             IgniteCache<Integer, BinaryObject> binaryCache = cache.withKeepBinary();
 
@@ -290,7 +279,6 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
         });
     }
 
-    /** @throws Exception If failed. */
     @Test
     public void testLocal() {
         IgniteCache<Integer, Value> cache = createTestCache();
@@ -339,11 +327,8 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
-    public void testLocalCompute() throws Exception {
+    public void testLocalCompute() {
         assumeTrue(txMode == TestTransactionMode.NONE);
 
         doTestWithCache(i -> new Value("str" + i, i * 100), cache -> {
@@ -375,11 +360,8 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
         });
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
-    public void testLocalFiltered() throws Exception {
+    public void testLocalFiltered() {
         assumeTrue(txMode == TestTransactionMode.NONE);
 
         doTestWithCache(i -> new Value("str" + i, i * 100), cache -> {
@@ -417,11 +399,8 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
         });
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
-    public void testLocalKeepBinary() throws Exception {
+    public void testLocalKeepBinary() {
         assumeTrue(txMode == TestTransactionMode.NONE);
 
         doTestWithCache(i -> new Value("str" + i, i * 100), cache -> {
@@ -576,11 +555,8 @@ public class GridCacheQueryTransformerSelfTest extends AbstractTransactionalQuer
         }
     }
 
-    /**
-     * @throws Exception If failed.
-     */
     @Test
-    public void testPageSize() throws Exception {
+    public void testPageSize() {
         int numEntries = 10_000;
         int pageSize = 3;
 

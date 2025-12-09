@@ -47,15 +47,15 @@ import org.apache.ignite.internal.processors.query.h2.twostep.TableViewSubqueryS
 import org.apache.ignite.sqltests.SqlByteArrayTest;
 import org.apache.ignite.sqltests.SqlDataTypesCoverageTests;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Test suite for cache queries.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     CacheQueryMemoryLeakTest.class,
 
     CreateTableWithDateKeySelfTest.class,
@@ -106,7 +106,7 @@ import org.junit.runners.Suite;
 })
 public class IgniteBinaryCacheQueryTestSuite4 {
     /** Setup lazy mode default. */
-    @BeforeClass
+    @BeforeAll
     public static void setupLazy() {
         GridTestUtils.setFieldValue(SqlFieldsQuery.class, "DFLT_LAZY", false);
     }

@@ -31,9 +31,9 @@ import org.apache.maven.surefire.api.util.ScanResult;
 import org.apache.maven.surefire.api.util.ScannerFilter;
 import org.apache.maven.surefire.common.junit4.JUnit4StackTraceWriter;
 import org.apache.maven.surefire.common.junit48.JUnit48TestChecker;
-import org.junit.runner.JUnitCore;
+/*import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
-import org.junit.runner.notification.Failure;
+import org.junit.runner.notification.Failure;*/
 
 import static org.apache.maven.surefire.api.report.ConsoleOutputCapture.startCapture;
 import static org.apache.maven.surefire.api.report.RunMode.NORMAL_RUN;
@@ -41,7 +41,7 @@ import static org.apache.maven.surefire.api.report.RunMode.NORMAL_RUN;
 /**
  * Goal of the provider to find unit tests that are not part of any test suite and notify user about it.
  *
- * This provider is used when command mvn:test is executed. It collect information about test classes
+ * This provider is used when command mvn:test is executed. It collects information about test classes
  * and than checks it in {@link CheckAllTestsInSuites} test class.
  */
 public class IgniteTestsProvider extends AbstractProvider {

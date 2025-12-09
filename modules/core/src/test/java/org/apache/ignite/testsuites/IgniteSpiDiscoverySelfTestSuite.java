@@ -82,17 +82,17 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedF
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinderDnsResolveTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinderSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Test suite for all discovery spi implementations.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     TcpDiscoveryVmIpFinderDnsResolveTest.class,
     TcpDiscoveryVmIpFinderSelfTest.class,
     TcpDiscoverySharedFsIpFinderSelfTest.class,
@@ -190,7 +190,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 })
 public class IgniteSpiDiscoverySelfTestSuite {
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(IgniteSpiDiscoverySelfTestSuite.class));

@@ -28,7 +28,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * A base for tests that check the behaviour of scan queries run on a data set that is modified concurrently.

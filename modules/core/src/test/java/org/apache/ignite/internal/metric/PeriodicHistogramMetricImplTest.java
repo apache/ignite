@@ -30,9 +30,9 @@ import org.apache.ignite.internal.processors.metric.impl.PeriodicHistogramMetric
 import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test PeriodicHistogramMetricImpl class.
@@ -48,13 +48,13 @@ public class PeriodicHistogramMetricImplTest extends GridCommonAbstractTest {
     PeriodicHistogramMetricImpl histogram;
 
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         GridTestClockTimer.timeSupplier(timeSupplier);
     }
 
     /** */
-    @AfterClass
+    @AfterAll
     public static void afterClass() {
         GridTestClockTimer.timeSupplier(GridTestClockTimer.DFLT_TIME_SUPPLIER);
     }

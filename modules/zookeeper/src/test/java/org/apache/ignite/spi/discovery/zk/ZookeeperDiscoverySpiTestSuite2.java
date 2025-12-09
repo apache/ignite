@@ -21,15 +21,15 @@ import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedMultiNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedNodeRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedMultiNodeFullApiSelfTest;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Regular Ignite tests executed with {@link org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi}.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     GridCachePartitionedNodeRestartTest.class,
     IgniteCacheEntryListenerWithZkDiscoAtomicTest.class,
     IgniteClientReconnectCacheTest.class,
@@ -40,7 +40,7 @@ public class ZookeeperDiscoverySpiTestSuite2 {
     /**
      * @throws Exception Thrown in case of the failure.
      */
-    @BeforeClass
+    @BeforeAll
     public static void init() throws Exception {
         ZookeeperDiscoverySpiTestConfigurator.initTestSuite();
     }

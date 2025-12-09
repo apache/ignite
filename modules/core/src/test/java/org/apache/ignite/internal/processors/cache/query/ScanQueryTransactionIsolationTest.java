@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -29,8 +28,6 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.internal.processors.cache.query.AbstractQueryTransactionIsolationTest.ExecutorType.CLIENT;
 import static org.apache.ignite.internal.processors.cache.query.AbstractQueryTransactionIsolationTest.ExecutorType.SERVER;
@@ -41,61 +38,6 @@ import static org.apache.ignite.internal.processors.cache.query.AbstractQueryTra
 
 /** */
 public class ScanQueryTransactionIsolationTest extends AbstractQueryTransactionIsolationTest {
-    /** @return Test parameters. */
-    @Parameterized.Parameters(
-        name = "gridCnt={0},backups={1},partitionAwareness={2},mode={3},execType={4},modify={5},commit={6},multi={7},txConcurrency={8}")
-    public static Collection<?> parameters() {
-        List<Object[]> params = new ArrayList<>();
-
-        for (int gridCnt : new int[]{1, 3}) {
-            int[] backups = gridCnt > 1
-                ? new int[]{1, gridCnt - 1}
-                : new int[]{0};
-
-            for (int backup : backups) {
-                for (CacheMode mode : CacheMode.values()) {
-                    for (ModifyApi modify : new ModifyApi[]{ModifyApi.CACHE, ModifyApi.ENTRY_PROCESSOR}) {
-                        for (boolean commit : new boolean[]{false, true}) {
-                            for (boolean mutli : new boolean[]{false, true}) {
-                                for (TransactionConcurrency txConcurrency : TransactionConcurrency.values()) {
-                                    for (ExecutorType execType : new ExecutorType[]{SERVER, ExecutorType.CLIENT}) {
-                                        params.add(new Object[]{
-                                            gridCnt,
-                                            backup,
-                                            false, //partition awareness
-                                            mode,
-                                            execType,
-                                            modify,
-                                            commit,
-                                            mutli,
-                                            txConcurrency
-                                        });
-                                    }
-
-                                    for (boolean partitionAwareness : new boolean[]{false, true}) {
-                                        params.add(new Object[]{
-                                            gridCnt,
-                                            backup,
-                                            partitionAwareness,
-                                            mode,
-                                            THIN_VIA_QUERY, // executor type
-                                            modify,
-                                            commit,
-                                            mutli,
-                                            txConcurrency
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return params;
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -106,7 +48,7 @@ public class ScanQueryTransactionIsolationTest extends AbstractQueryTransactionI
     }
 
     /** {@inheritDoc} */
-    @Override protected User select(Integer id, ModifyApi api) {
+    @Override protected User select(Integer id, ModifyApi api, ExecutorType type, CacheMode mode) {
         assertTrue(type != THIN_VIA_CACHE_API);
         assertTrue(type != THIN_JDBC);
 
@@ -123,7 +65,7 @@ public class ScanQueryTransactionIsolationTest extends AbstractQueryTransactionI
                     assertTrue(type == SERVER || type == CLIENT);
 
                     List<Cache.Entry<Integer, User>> res =
-                        toList(F.iterator0(node().cache(users()), true, e -> Objects.equals(e.getKey(), id)));
+                        toList(F.iterator0(node(type).cache(users(mode)), true, e -> Objects.equals(e.getKey(), id)));
 
                     assertTrue(F.size(res) + "", F.size(res) <= 1);
 
@@ -133,9 +75,9 @@ public class ScanQueryTransactionIsolationTest extends AbstractQueryTransactionI
                     QueryCursor<Cache.Entry<Integer, User>> cursor = null;
 
                     if (type == THIN_VIA_QUERY)
-                        cursor = thinCli.<Integer, User>cache(users()).query(qry);
+                        cursor = thinCli.<Integer, User>cache(users(mode)).query(qry);
                     else if (type == SERVER || type == CLIENT)
-                        cursor = node().<Integer, User>cache(users()).query(qry);
+                        cursor = node(type).<Integer, User>cache(users(mode)).query(qry);
                     else
                         fail("Unsupported executor type: " + type);
 
@@ -149,7 +91,7 @@ public class ScanQueryTransactionIsolationTest extends AbstractQueryTransactionI
             else {
                 assertTrue(type == SERVER || type == CLIENT);
 
-                List<User> res = toList(node().<Integer, User>cache(users()).query(qry, Cache.Entry::getValue), useGetAll);
+                List<User> res = toList(node(type).<Integer, User>cache(users(mode)).query(qry, Cache.Entry::getValue), useGetAll);
 
                 assertTrue("withTransformer=" + withTrasformer + ", useGetAll=" + useGetAll, F.size(res) <= 1);
 
@@ -157,7 +99,7 @@ public class ScanQueryTransactionIsolationTest extends AbstractQueryTransactionI
             }
         }
 
-        return super.select(id, api);
+        return super.select(id, api, type, mode);
     }
 
     /** */

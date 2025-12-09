@@ -18,21 +18,21 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import org.apache.ignite.IgniteSystemProperties;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 /**
  * Tests for {@link GridAffinityAssignment} without IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION.
  */
 public class GridAffinityAssignmentV2TestNoOptimizations extends GridAffinityAssignmentV2Test {
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void beforeTests() {
         System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION, "true");
     }
 
     /** */
-    @AfterClass
+    @AfterAll
     public static void afterTests() {
         System.clearProperty(IgniteSystemProperties.IGNITE_DISABLE_AFFINITY_MEMORY_OPTIMIZATION);
     }

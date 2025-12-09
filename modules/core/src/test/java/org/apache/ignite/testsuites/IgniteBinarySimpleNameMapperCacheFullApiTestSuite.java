@@ -18,20 +18,20 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.testframework.config.GridTestProperties;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Cache full API suite with binary marshaller and simple name mapper.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     IgniteCacheFullApiSelfTestSuite.class
 })
 public class IgniteBinarySimpleNameMapperCacheFullApiTestSuite {
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         GridTestProperties.setProperty(GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER, "true");
     }

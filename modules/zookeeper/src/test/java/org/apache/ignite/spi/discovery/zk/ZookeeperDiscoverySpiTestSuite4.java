@@ -30,15 +30,15 @@ import org.apache.ignite.internal.processors.metastorage.DistributedMetaStorageT
 import org.apache.ignite.internal.processors.security.cluster.ActivationOnJoinWithoutPermissionsWithPersistenceTest;
 import org.apache.ignite.internal.processors.security.cluster.NodeJoinPermissionsTest;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchangeTest;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Regular Ignite tests executed with {@link ZookeeperDiscoverySpi}.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     ZookeeperDiscoverySuitePreprocessorTest.class,
     IgniteCachePutRetryAtomicSelfTest.class,
     IgniteCachePutRetryTransactionalSelfTest.class,
@@ -56,7 +56,7 @@ import org.junit.runners.Suite;
 })
 public class ZookeeperDiscoverySpiTestSuite4 {
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void init() throws Exception {
         ZookeeperDiscoverySpiTestConfigurator.initTestSuite();
     }

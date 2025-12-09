@@ -23,10 +23,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test node validation on join by plugin.
@@ -83,19 +83,19 @@ public class PluginNodeValidationTest extends GridCommonAbstractTest {
     }
 
     /** Stop all nodes after each test. */
-    @After
+    @AfterEach
     public void after() {
         stopAllGrids();
     }
 
     /** Enables plugin before test start. */
-    @BeforeClass
+    @BeforeAll
     public static void enablePlugin() {
         NodeValidationPluginProvider.setEnabled(true);
     }
 
     /** Disable plugin after test end. */
-    @AfterClass
+    @AfterAll
     public static void disablePlugin() {
         NodeValidationPluginProvider.setEnabled(false);
     }

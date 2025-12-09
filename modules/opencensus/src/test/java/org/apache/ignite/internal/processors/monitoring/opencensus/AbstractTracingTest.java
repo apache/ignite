@@ -46,9 +46,9 @@ import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
 import org.apache.ignite.spi.tracing.TracingSpi;
 import org.apache.ignite.spi.tracing.opencensus.OpenCensusTraceExporter;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 
 import static io.opencensus.trace.AttributeValue.stringAttributeValue;
 import static org.apache.ignite.spi.tracing.Scope.COMMUNICATION;
@@ -158,7 +158,7 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @BeforeClass
+    @BeforeAll
     public static void beforeTests() {
         /* Uncomment following code to see visualisation on local Zipkin: */
 
@@ -171,7 +171,7 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         stopAllGrids();
 
@@ -187,7 +187,7 @@ public abstract class AbstractTracingTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @After
+    @AfterEach
     public void after() {
         exporter.stop();
 

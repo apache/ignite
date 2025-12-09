@@ -19,8 +19,8 @@ package org.apache.ignite.testframework.junits;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
+
+import org.junit.jupiter.api.extension.Extension;
 
 /**
  * Runner for use with test suite classes that implement a static {@code suite()} method for providing list of classes
@@ -34,13 +34,13 @@ import org.junit.runners.model.InitializationError;
  * }
  * </pre>
  */
-public class DynamicSuite extends Suite {
+public class DynamicSuite implements Extension {
     /** */
     private static final String SUITE_METHOD_NAME = "suite";
 
     /** */
-    public DynamicSuite(Class<?> cls) throws InitializationError {
-        super(cls, testClasses(cls));
+    public DynamicSuite(Class<?> cls) {
+        testClasses(cls);
     }
 
     /** */

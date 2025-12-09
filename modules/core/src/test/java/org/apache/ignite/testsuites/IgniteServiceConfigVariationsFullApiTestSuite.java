@@ -28,16 +28,15 @@ import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuit
 import org.apache.ignite.testframework.configvariations.Parameters;
 import org.apache.ignite.testframework.junits.DynamicSuite;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
 
 /**
- * Full API service test suit.
+ * Full API service test suite.
  */
-@RunWith(DynamicSuite.class)
+@ExtendWith(DynamicSuite.class)
 public class IgniteServiceConfigVariationsFullApiTestSuite {
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         JUnitTeamcityReporter.suite = IgniteServiceConfigVariationsFullApiTestSuite.class.getName();
     }

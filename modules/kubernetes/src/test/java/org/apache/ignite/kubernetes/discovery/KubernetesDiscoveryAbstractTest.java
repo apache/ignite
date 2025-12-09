@@ -28,9 +28,9 @@ import org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfigurat
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes.TcpDiscoveryKubernetesIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 
@@ -50,19 +50,19 @@ public abstract class KubernetesDiscoveryAbstractTest extends GridCommonAbstract
     private static final String service = "ignite";
 
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void startServer() {
         mockServer = startClientAndServer();
     }
 
     /** */
-    @AfterClass
+    @AfterAll
     public static void stopServer() {
         mockServer.stop();
     }
 
     /** */
-    @After
+    @AfterEach
     public void tearDown() {
         stopAllGrids();
     }

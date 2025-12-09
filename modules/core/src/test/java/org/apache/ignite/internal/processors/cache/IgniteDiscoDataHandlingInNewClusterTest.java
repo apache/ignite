@@ -32,10 +32,10 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -247,7 +247,7 @@ public class IgniteDiscoDataHandlingInNewClusterTest extends GridCommonAbstractT
     /**
      * Turns off printing stack trace on detecting critical failure to speed up tests.
      */
-    @BeforeClass
+    @BeforeAll
     public static void setUpClass() {
         System.setProperty(IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, "false");
     }
@@ -255,13 +255,13 @@ public class IgniteDiscoDataHandlingInNewClusterTest extends GridCommonAbstractT
     /**
      * Restoring default value for printing stack trace setting.
      */
-    @AfterClass
+    @AfterAll
     public static void tearDownClass() {
         System.setProperty(IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE, "true");
     }
 
     /** {@inheritDoc} */
-    @After
+    @AfterEach
     @Override public void afterTest() throws Exception {
         super.afterTest();
 

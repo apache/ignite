@@ -74,15 +74,15 @@ import org.apache.ignite.internal.processors.security.service.ServiceStaticConfi
 import org.apache.ignite.internal.processors.security.snapshot.SnapshotPermissionCheckTest;
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Security test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     CacheOperationPermissionCheckTest.class,
     CacheOperationPermissionCreateDestroyCheckTest.class,
     DataStreamerPermissionCheckTest.class,
@@ -146,7 +146,7 @@ import org.junit.runners.Suite;
 })
 public class SecurityTestSuite {
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         JUnitTeamcityReporter.suite = SecurityTestSuite.class.getName();
     }

@@ -156,15 +156,15 @@ import org.apache.ignite.sqltests.PartitionedSqlTest;
 import org.apache.ignite.sqltests.ReplicatedSqlCustomPartitionsTest;
 import org.apache.ignite.sqltests.ReplicatedSqlTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Test suite for cache queries.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     AffinityAliasKeyTest.class,
     AffinityKeyNameAndValueFieldNameConflictTest.class,
     DmlInsideTransactionTest.class,
@@ -342,7 +342,7 @@ import org.junit.runners.Suite;
 })
 public class IgniteBinaryCacheQueryTestSuite {
     /** Setup lazy mode default. */
-    @BeforeClass
+    @BeforeAll
     public static void setupLazy() {
         GridTestUtils.setFieldValue(SqlFieldsQuery.class, "DFLT_LAZY", false);
     }

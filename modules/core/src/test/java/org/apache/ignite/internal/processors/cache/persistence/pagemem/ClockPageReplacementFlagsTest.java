@@ -21,9 +21,9 @@ import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -42,7 +42,7 @@ public class ClockPageReplacementFlagsTest extends GridCommonAbstractTest {
     ClockPageReplacementFlags clockFlags;
 
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void setUp() {
         provider = new UnsafeMemoryProvider(log);
         provider.initialize(new long[] {ClockPageReplacementFlags.requiredMemory(MAX_PAGES_CNT)});
@@ -51,7 +51,7 @@ public class ClockPageReplacementFlagsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         provider.shutdown(true);
     }

@@ -28,15 +28,15 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryOperationP2PTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.p2p.GridP2PContinuousDeploymentSelfTest;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Regular Ignite tests executed with {@link ZookeeperDiscoverySpi}.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     GridCacheReplicatedNodeRestartSelfTest.class,
     GridEventConsumeSelfTest.class,
     GridCachePartitionedNodeRestartTxSelfTest.class,
@@ -51,7 +51,7 @@ import org.junit.runners.Suite;
 })
 public class ZookeeperDiscoverySpiTestSuite3 {
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void init() throws Exception {
         ZookeeperDiscoverySpiTestConfigurator.initTestSuite();
     }

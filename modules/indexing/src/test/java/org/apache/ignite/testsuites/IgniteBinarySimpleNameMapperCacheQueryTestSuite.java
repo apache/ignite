@@ -29,7 +29,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({IgniteBinaryCacheQueryTestSuite.class})
 public class IgniteBinarySimpleNameMapperCacheQueryTestSuite {
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         GridTestProperties.setProperty(GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER, "true");
     }

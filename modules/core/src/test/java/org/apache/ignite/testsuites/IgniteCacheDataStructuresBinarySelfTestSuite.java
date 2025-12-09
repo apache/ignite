@@ -22,15 +22,15 @@ import org.apache.ignite.internal.processors.cache.datastructures.partitioned.Gr
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedQueueApiSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.IgnitePartitionedQueueNoBackupsTest;
 import org.apache.ignite.internal.processors.cache.datastructures.replicated.GridCacheReplicatedQueueApiSelfTest;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Test suite for binary cache data structures.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     GridCacheReplicatedQueueApiSelfTest.class,
     GridCachePartitionedQueueApiSelfTest.class,
     GridCachePartitionedAtomicQueueApiSelfTest.class,
@@ -38,7 +38,7 @@ import org.junit.runners.Suite;
 })
 public class IgniteCacheDataStructuresBinarySelfTestSuite {
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         System.setProperty(GridCacheQueueApiSelfAbstractTest.BINARY_QUEUE, "true");
     }

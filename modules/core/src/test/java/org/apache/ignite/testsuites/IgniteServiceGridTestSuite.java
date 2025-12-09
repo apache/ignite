@@ -63,15 +63,15 @@ import org.apache.ignite.internal.processors.service.ServiceReassignmentFunction
 import org.apache.ignite.internal.processors.service.SystemCacheNotConfiguredTest;
 import org.apache.ignite.services.ServiceThreadPoolSelfTest;
 import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Contains Service Grid related tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     ComputeJobCancelWithServiceSelfTest.class,
     GridServiceProcessorSingleNodeSelfTest.class,
     GridServiceProcessorMultiNodeSelfTest.class,
@@ -122,7 +122,7 @@ import org.junit.runners.Suite;
 })
 public class IgniteServiceGridTestSuite {
     /** */
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         JUnitTeamcityReporter.suite = IgniteServiceGridTestSuite.class.getName();
     }
