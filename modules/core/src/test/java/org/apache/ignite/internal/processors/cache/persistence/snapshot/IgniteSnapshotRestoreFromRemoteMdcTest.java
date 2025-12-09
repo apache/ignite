@@ -33,6 +33,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -70,13 +71,6 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        System.clearProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -100,13 +94,9 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
 
     /** @throws Exception If failed. */
     private void testMdcAwareSnapshot(boolean replicatedCache) throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
+        Ignite supplier = startGridWithCustomWorkdir("supplier", DC_ID_0);
 
-        Ignite supplier = startGridWithCustomWorkdir("supplier");
-
-        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
-
-        IgniteEx other = startGridWithCustomWorkdir("other_dc_node");
+        IgniteEx other = startGridWithCustomWorkdir("other_dc_node", DC_ID_1);
 
         other.cluster().state(ClusterState.ACTIVE);
 
@@ -120,9 +110,7 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
 
         awaitPartitionMapExchange();
 
-        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
-
-        startGridWithCustomWorkdir("demander");
+        startGridWithCustomWorkdir("demander", DC_ID_0);
 
         resetBaselineTopology();
 
@@ -158,8 +146,9 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
     }
 
     /** */
-    private IgniteEx startGridWithCustomWorkdir(String instanceName) throws Exception {
-        IgniteConfiguration cfg = getConfiguration(instanceName);
+    private IgniteEx startGridWithCustomWorkdir(String instanceName, String dcId) throws Exception {
+        IgniteConfiguration cfg = getConfiguration(instanceName)
+            .setUserAttributes(F.asMap(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, dcId));
 
         cfg.setWorkDirectory(Paths.get(defaultWorkDirectory(), U.maskForFileName(instanceName)).toString());
 
