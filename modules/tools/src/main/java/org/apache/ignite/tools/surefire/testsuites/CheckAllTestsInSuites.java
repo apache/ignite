@@ -49,84 +49,84 @@ public class CheckAllTestsInSuites {
      */
     static Iterable<Class<?>> testClasses;
 
-//    /** */
-//    @Test
-//    public void check() {
-//        Set<String> suitedTestClasses = new HashSet<>();
-//        Set<String> allTestClasses = new HashSet<>();
-//        Set<String> suites = new HashSet<>();
-//
-//        // Workaround to handle cases when a class has descenders and it's OK to skip the base class.
-//        // Also it works for DynamicSuite that can use a base class to create new test classes with reflection.
-//        Set<String> superClasses = new HashSet<>();
-//
-//        for (Class<?> clazz : testClasses) {
-//            if (Modifier.isAbstract(clazz.getModifiers()))
-//                continue;
-//
-//            if (clazz.getAnnotation(Disabled.class) != null)
-//                continue;
-//
-//            Description desc = Request.aClass(clazz).getRunner().getDescription();
-//
-//            if (isTestClass(desc)) {
-//                allTestClasses.add(clazz.getName());
-//                superClasses.add(clazz.getSuperclass().getName());
-//            }
-//            else
-//                processSuite(desc, suitedTestClasses, suites, superClasses);
-//        }
-//
-//        allTestClasses.removeAll(suitedTestClasses);
-//        allTestClasses.removeAll(superClasses);
-//
-//        OrphanedTestCollection orphaned = new OrphanedTestCollection();
-//
-//        try {
-//            Set<String> orphanedTests = orphaned.getOrphanedTests();
-//
-//            orphanedTests.removeAll(suitedTestClasses);
-//
-//            orphanedTests.addAll(allTestClasses);
-//
-//            orphaned.persistOrphanedTests(orphanedTests, false);
-//
-//        }
-//        catch (Exception e) {
-//            throw new RuntimeException("Failed to check orphaned tests.", e);
-//        }
-//    }
-//
-//    /**
-//     * Recursively handle suites - mark all test classes as suited.
-//     */
-//    private void processSuite(Description suite, Set<String> suitedClasses,
-//        Set<String> suites, Set<String> superClasses) {
-//        suites.add(suite.getTestClass().getName());
-//
-//        for (Description desc: suite.getChildren()) {
-//            if (!isTestClass(desc))
-//                processSuite(desc, suitedClasses, suites, superClasses);
-//            else {
-//                suitedClasses.add(desc.getTestClass().getName());
-//                superClasses.add(desc.getTestClass().getSuperclass().getName());
-//            }
-//        }
-//    }
-//
-//    /**
-//     * Check whether class is a test class or a suite.
-//     *
-//     * Suite classes are marked with RunWith annotation and value of it is a descender of Suite.class.
-//     * For scala tests suite must be inherited from {@code org.scalatest.Suites} class.
-//     * Exclusion of the rule is Parameterized.class, so classes are marked with it are test classes.
-//     */
-//    private boolean isTestClass(Description desc) {
-//        RunWith runWith = desc.getAnnotation(ExtendWith.class);
-//
-//        return runWith == null
-//            || runWith.value().equals(Parameterized.class)
-//            || !(Suite.class.isAssignableFrom(runWith.value())
-//            || "org.scalatest.Suites".equals(desc.getTestClass().getSuperclass().getName()));
-//    }
+    /** */
+    @Test
+    public void check() {
+        Set<String> suitedTestClasses = new HashSet<>();
+        Set<String> allTestClasses = new HashSet<>();
+        Set<String> suites = new HashSet<>();
+
+        // Workaround to handle cases when a class has descenders and it's OK to skip the base class.
+        // Also it works for DynamicSuite that can use a base class to create new test classes with reflection.
+        Set<String> superClasses = new HashSet<>();
+
+        for (Class<?> clazz : testClasses) {
+            if (Modifier.isAbstract(clazz.getModifiers()))
+                continue;
+
+            if (clazz.getAnnotation(Disabled.class) != null)
+                continue;
+
+            Description desc = Request.aClass(clazz).getRunner().getDescription();
+
+            if (isTestClass(desc)) {
+                allTestClasses.add(clazz.getName());
+                superClasses.add(clazz.getSuperclass().getName());
+            }
+            else
+                processSuite(desc, suitedTestClasses, suites, superClasses);
+        }
+
+        allTestClasses.removeAll(suitedTestClasses);
+        allTestClasses.removeAll(superClasses);
+
+        OrphanedTestCollection orphaned = new OrphanedTestCollection();
+
+        try {
+            Set<String> orphanedTests = orphaned.getOrphanedTests();
+
+            orphanedTests.removeAll(suitedTestClasses);
+
+            orphanedTests.addAll(allTestClasses);
+
+            orphaned.persistOrphanedTests(orphanedTests, false);
+
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Failed to check orphaned tests.", e);
+        }
+    }
+
+    /**
+     * Recursively handle suites - mark all test classes as suited.
+     */
+    private void processSuite(Description suite, Set<String> suitedClasses,
+        Set<String> suites, Set<String> superClasses) {
+        suites.add(suite.getTestClass().getName());
+
+        for (Description desc: suite.getChildren()) {
+            if (!isTestClass(desc))
+                processSuite(desc, suitedClasses, suites, superClasses);
+            else {
+                suitedClasses.add(desc.getTestClass().getName());
+                superClasses.add(desc.getTestClass().getSuperclass().getName());
+            }
+        }
+    }
+
+    /**
+     * Check whether class is a test class or a suite.
+     *
+     * Suite classes are marked with RunWith annotation and value of it is a descender of Suite.class.
+     * For scala tests suite must be inherited from {@code org.scalatest.Suites} class.
+     * Exclusion of the rule is Parameterized.class, so classes are marked with it are test classes.
+     */
+    private boolean isTestClass(Description desc) {
+        RunWith runWith = desc.getAnnotation(ExtendWith.class);
+
+        return runWith == null
+            || runWith.value().equals(Parameterized.class)
+            || !(Suite.class.isAssignableFrom(runWith.value())
+            || "org.scalatest.Suites".equals(desc.getTestClass().getSuperclass().getName()));
+    }
 }

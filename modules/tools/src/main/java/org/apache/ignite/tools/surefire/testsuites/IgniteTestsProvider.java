@@ -42,7 +42,7 @@ import static org.apache.maven.surefire.api.report.RunMode.NORMAL_RUN;
  * Goal of the provider to find unit tests that are not part of any test suite and notify user about it.
  *
  * This provider is used when command mvn:test is executed. It collects information about test classes
- * and than checks it in {@link CheckAllTestsInSuites} test class.
+ * and then checks it in {@link CheckAllTestsInSuites} test class.
  */
 public class IgniteTestsProvider extends AbstractProvider {
     /** Test class loader. */
