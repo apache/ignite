@@ -831,7 +831,20 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                         if (!loc)
                             res.unmarshallUserData(marsh, U.resolveClassLoader(dep.classLoader(), ctx.config()));
 
-                        jobRes.onResponse(res.getJobResult(), res.exception(), res.getJobAttributes(), res.cancelled());
+                        final GridJobExecuteResponse res0 = res;
+                        final GridJobResultImpl jobRes0 = jobRes;
+
+                        // User objects (grid exception) are lazily deserialized via LazyUserObjectProxy,
+                        // so we must ensure the thread context classloader is set properly during access.
+                        U.wrapThreadLoader(
+                            U.resolveClassLoader(dep.classLoader(), ctx.config()),
+                            () -> jobRes0.onResponse(
+                                res0.getJobResult(),
+                                res0.exception(),
+                                res0.getJobAttributes(),
+                                res0.cancelled()
+                            )
+                        );
 
                         if (loc)
                             ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobAfterSend.class);

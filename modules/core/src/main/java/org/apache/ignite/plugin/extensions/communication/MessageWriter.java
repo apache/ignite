@@ -22,6 +22,7 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.UserObject;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -304,6 +305,14 @@ public interface MessageWriter {
      */
     public <K, V> boolean writeMap(Map<K, V> map, MessageCollectionItemType keyType,
         MessageCollectionItemType valType);
+
+    /**
+     * Writes user object.
+     *
+     * @param obj User object wrapper.
+     * @return Whether value was fully written.
+     */
+    public boolean writeUserObject(UserObject obj);
 
     /**
      * @return Whether header of current message is already written.
