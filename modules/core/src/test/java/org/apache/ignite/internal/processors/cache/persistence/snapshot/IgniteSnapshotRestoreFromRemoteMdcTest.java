@@ -135,7 +135,7 @@ public class IgniteSnapshotRestoreFromRemoteMdcTest extends AbstractSnapshotSelf
         if (replicatedCache)
             ccfg.setCacheMode(CacheMode.REPLICATED); // Fill all nodes with partitions.
 
-            ignite.createCache(ccfg);
+        ignite.createCache(ccfg);
 
         try (IgniteDataStreamer<Integer, Object> ds = ignite.dataStreamer(ccfg.getName())) {
             for (int i = 0; i < CACHE_KEYS_RANGE; i++)
