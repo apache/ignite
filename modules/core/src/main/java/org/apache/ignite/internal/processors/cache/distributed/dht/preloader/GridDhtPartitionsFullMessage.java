@@ -64,19 +64,19 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** Partitions update counters. */
     @Order(value = 8, method = "partitionCounters")
-    //@Compress TODO
+    @Compress
     @GridToStringInclude
     private IgniteDhtPartitionCountersMap partCntrs;
 
     /** Partitions history suppliers. */
     @Order(value = 9, method = "partitionHistorySuppliers")
-    //@Compress TODO
+    @Compress
     @GridToStringInclude
     private IgniteDhtPartitionHistorySuppliersMap partHistSuppliers;
 
     /** Partitions that must be cleared and re-loaded. */
     @Order(value = 10, method = "partitionsToReload")
-    //@Compress TODO
+    @Compress
     @GridToStringInclude
     private IgniteDhtPartitionsToReloadMap partsToReload;
 

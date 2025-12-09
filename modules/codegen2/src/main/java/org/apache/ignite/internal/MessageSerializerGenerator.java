@@ -386,8 +386,12 @@ class MessageSerializerGenerator {
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
                 returnFalseIfWriteFailed(write, "writer.writeGridLongList", getExpr);
 
-            else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
-                returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr);
+            else if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
+                if (compress)
+                    returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr, "true");
+                else
+                    returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr);
+            }
 
             else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
@@ -538,8 +542,12 @@ class MessageSerializerGenerator {
             else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
                 returnFalseIfReadFailed(name, "reader.readGridLongList");
 
-            else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
-                returnFalseIfReadFailed(name, "reader.readMessage");
+            else if (assignableFrom(type, type(MESSAGE_INTERFACE))) {
+                if (compress)
+                    returnFalseIfReadFailed(name, "reader.readMessage", "true");
+                else
+                    returnFalseIfReadFailed(name, "reader.readMessage");
+            }
 
             else if (assignableFrom(erasedType(type), type(Collection.class.getName()))) {
                 List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();

@@ -199,7 +199,18 @@ public interface MessageReader {
      * @param <T> Type of the message.
      * @return Message.
      */
-    public <T extends Message> T readMessage();
+    public default <T extends Message> T readMessage() {
+        return readMessage(false);
+    }
+
+    /**
+     * Reads nested message.
+     *
+     * @param compress Whether the message is compressed.
+     * @param <T> Type of the message.
+     * @return Message.
+     */
+    public <T extends Message> T readMessage(boolean compress);
 
     /**
      * Reads {@link CacheObject}.
