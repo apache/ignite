@@ -285,7 +285,7 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeMessage(Message val) {
+        @Override public boolean writeMessage(Message val, boolean compress) {
             return writeField(Message.class);
         }
 
@@ -512,7 +512,7 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T extends Message> T readMessage() {
+        @Override public <T extends Message> T readMessage(boolean compress) {
             readField(Message.class);
 
             return null;

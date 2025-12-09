@@ -314,10 +314,10 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T extends Message> T readMessage() {
+    @Nullable @Override public <T extends Message> T readMessage(boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        T msg = stream.readMessage(this);
+        T msg = stream.readMessage(this, compress);
 
         lastRead = stream.lastFinished();
 

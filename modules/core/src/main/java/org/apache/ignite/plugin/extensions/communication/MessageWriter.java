@@ -246,7 +246,18 @@ public interface MessageWriter {
      * @param val Message.
      * @return Whether value was fully written.
      */
-    public boolean writeMessage(Message val);
+    public default boolean writeMessage(Message val) {
+        return writeMessage(val, false);
+    }
+
+    /**
+     * Writes nested message.
+     *
+     * @param val Message.
+     * @param compress Whether to compress message.
+     * @return Whether value was fully written.
+     */
+    public boolean writeMessage(Message val, boolean compress);
 
     /**
      * Writes {@link CacheObject}.
