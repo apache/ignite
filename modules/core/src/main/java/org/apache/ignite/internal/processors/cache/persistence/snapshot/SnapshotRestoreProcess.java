@@ -1597,9 +1597,7 @@ public class SnapshotRestoreProcess {
                 .map(ClusterNode::id)
                 .collect(Collectors.toList());
 
-            sameDcNodes.forEach(k -> {
-                orderedMetas.put(k, metas.get(k)); // Getting same dc files first
-            });
+            sameDcNodes.forEach(k -> orderedMetas.put(k, metas.get(k))); // Getting same DC files first.
         }
 
         nodes.forEach(k -> orderedMetas.put(k, metas.get(k)));
