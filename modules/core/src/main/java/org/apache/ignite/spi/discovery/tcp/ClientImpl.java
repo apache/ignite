@@ -2301,6 +2301,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                     }
 
                     locNode.setAttributes(msg.clientNodeAttributes());
+
+                    clearNodeSensitiveData(locNode);
+
                     locNode.visible(true);
 
                     long topVer = msg.topologyVersion();
@@ -2356,6 +2359,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                     assert topVer > 0 : msg;
 
                     if (!node.visible()) {
+                        clearNodeSensitiveData(node);
+
                         node.order(topVer);
                         node.visible(true);
 
