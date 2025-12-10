@@ -46,7 +46,7 @@ public class SpanContainer implements Serializable {
      * @param serializedSpan Serialized span.
      */
     public void serializedSpanBytes(byte[] serializedSpan) {
-        this.serializedSpanBytes = serializedSpan.clone();
+        serializedSpanBytes = serializedSpan.clone();
     }
 
     /**
