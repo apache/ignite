@@ -38,6 +38,9 @@ namespace Apache.Ignite.Core.Impl.Resource
 
         /** Attribute type: TaskSessionResourceAttribute. */
         private static readonly Type TypAttrTaskSes = typeof(TaskSessionResourceAttribute);
+        
+        /** Attribute type: TaskContinuousMapperResourceAttribute. */
+        private static readonly Type TypTaskContinuousMapperResource = typeof(TaskContinuousMapperResourceAttribute);
 
         /** Type: IGrid. */
         private static readonly Type TypIgnite = typeof(IIgnite);
@@ -47,6 +50,9 @@ namespace Apache.Ignite.Core.Impl.Resource
 
         /** Type: IComputeTaskSession. */
         private static readonly Type TypTaskSes = typeof (IComputeTaskSession);
+
+        /** Type: IComputeTaskContinuousMapper. */
+        private static readonly Type TypComputeTaskContinuousMapper = typeof (IComputeTaskContinuousMapper);
 
         /** Type: ComputeTaskNoResultCacheAttribute. */
         private static readonly Type TypComputeTaskNoResCache = typeof(ComputeTaskNoResultCacheAttribute);
@@ -67,6 +73,9 @@ namespace Apache.Ignite.Core.Impl.Resource
         /** Compute task session injectors. */
         private readonly IList<IResourceInjector> _taskSesInjectors;
 
+        /** Compute task continuous mapper injectors. */
+        private readonly List<IResourceInjector> _taskMapperInjectors;
+
         /** Task "no result cache" flag. */
         private readonly bool _taskNoResCache;
 
@@ -79,12 +88,13 @@ namespace Apache.Ignite.Core.Impl.Resource
             Collector gridCollector = new Collector(TypAttrIgnite, TypIgnite);
             Collector storeSesCollector = new Collector(TypAttrStoreSes, TypStoreSes);
             var taskSesCollector = new Collector(TypAttrTaskSes, TypTaskSes);
+            var taskMapperCollector = new Collector(TypTaskContinuousMapperResource, TypComputeTaskContinuousMapper);
 
             Type curType = type;
 
             while (curType != null)
             {
-                CreateInjectors(curType, gridCollector, storeSesCollector, taskSesCollector);
+                CreateInjectors(curType, gridCollector, storeSesCollector, taskSesCollector, taskMapperCollector);
 
                 curType = curType.BaseType;
             }
@@ -92,6 +102,7 @@ namespace Apache.Ignite.Core.Impl.Resource
             _igniteInjectors = gridCollector.Injectors;
             _storeSesInjectors = storeSesCollector.Injectors;
             _taskSesInjectors = taskSesCollector.Injectors;
+            _taskMapperInjectors = taskMapperCollector.Injectors;
 
             _taskNoResCache = ContainsAttribute(type, TypComputeTaskNoResCache, true);
             TaskSessionFullSupport = ContainsAttribute(type, TypComputeTaskSessionFullSupport, true);
@@ -127,6 +138,19 @@ namespace Apache.Ignite.Core.Impl.Resource
             if (ses != null)
             {
                 Inject0(target, ses, _taskSesInjectors);
+            }
+        }
+
+        /// <summary>
+        /// Inject compute task mapper.
+        /// </summary>
+        /// <param name="target">Target.</param>
+        /// <param name="mapper">Compute task mapper.</param>
+        public void InjectTaskMapper(object target, IComputeTaskContinuousMapper mapper)
+        {
+            if (mapper != null)
+            {
+                Inject0(target, mapper, _taskMapperInjectors);
             }
         }
 
