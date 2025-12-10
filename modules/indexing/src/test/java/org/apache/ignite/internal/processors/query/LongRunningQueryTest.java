@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -51,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.internal.processors.query.h2.H2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker;
+import org.apache.ignite.internal.util.GridTestClockTimer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -64,6 +66,7 @@ import org.junit.runners.model.Statement;
 
 import static java.lang.Thread.currentThread;
 import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_EXEC_MSG;
+import static org.apache.ignite.internal.processors.query.running.HeavyQueriesTracker.LONG_QUERY_FINISHED_MSG;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.h2.engine.Constants.DEFAULT_PAGE_SIZE;
 
@@ -518,6 +521,36 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
     }
 
     /**
+     * Verifies query initiator id information in logs.
+     */
+    @Test
+    @MultiNodeTest
+    public void testQueryInitiatorId() throws Exception {
+        ListeningTestLogger testLog = testLog();
+
+        checkInitiatorId(testLog, "LOCAL", "SELECT sleep_func(?, 0)", LONG_QUERY_WARNING_TIMEOUT);
+
+        checkInitiatorId(testLog, "MAP", "SELECT val FROM test WHERE id = sleep_func(?, 0)",
+            LONG_QUERY_WARNING_TIMEOUT);
+
+        checkInitiatorId(testLog, "REDUCE", "SELECT sleep_func(?, sum(val)) FROM test WHERE id + 1 = 1",
+            LONG_QUERY_WARNING_TIMEOUT);
+    }
+
+    /** */
+    private void checkInitiatorId(ListeningTestLogger log, String type, String sql, Object... args) {
+        String initiatorId = UUID.randomUUID().toString();
+
+        LogListener lsnr = LogListener.matches(LONG_QUERY_FINISHED_MSG).andMatches(type).andMatches(initiatorId).build();
+
+        log.registerListener(lsnr);
+
+        ignite.cache("test").query(new SqlFieldsQuery(sql).setQueryInitiatorId(initiatorId).setArgs(args)).getAll();
+
+        assertTrue(lsnr.check());
+    }
+
+    /**
      * Do several fast queries.
      * Log messages must not contain info about long query.
      */
@@ -765,6 +798,8 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
         public static int sleep_func(int sleep, int val) {
             try {
                 Thread.sleep(sleep);
+
+                GridTestClockTimer.update();
             }
             catch (InterruptedException ignored) {
                 // No-op

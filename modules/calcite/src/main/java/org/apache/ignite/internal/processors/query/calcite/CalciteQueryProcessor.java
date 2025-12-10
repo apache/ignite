@@ -752,7 +752,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             (q, ex) -> qryReg.unregister(q.id(), ex),
             log,
             qryPlannerTimeout,
-            timeout
+            timeout,
+            fldsQry != null ? fldsQry.getQueryInitiatorId() : null
         );
 
         if (qrys != null)
