@@ -18,22 +18,31 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Message sent by coordinator when some operation handling is over. All receiving
  * nodes should discard this and all preceding messages in local buffers.
  */
-public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** ID of the message to discard (this and all preceding). */
-    private final IgniteUuid msgId;
+    @Order(value = 5, method = "messageId")
+    private IgniteUuid msgId;
 
     /** True if this is discard ID for custom event message. */
-    private final boolean customMsgDiscard;
+    @Order(value = 6, method = "customMessageDiscard")
+    private boolean customMsgDiscard;
+
+    /** */
+    public TcpDiscoveryDiscardMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -54,8 +63,15 @@ public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage {
      *
      * @return Message ID.
      */
-    public IgniteUuid msgId() {
+    public IgniteUuid messageId() {
         return msgId;
+    }
+
+    /**
+     * @param msgId Message ID.
+     */
+    public void messageId(IgniteUuid msgId) {
+        this.msgId = msgId;
     }
 
     /**
@@ -67,8 +83,20 @@ public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage {
         return customMsgDiscard;
     }
 
+    /**
+     * @param customMsgDiscard Custom message flag.
+     */
+    public void customMessageDiscard(boolean customMsgDiscard) {
+        this.customMsgDiscard = customMsgDiscard;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryDiscardMessage.class, this, "super", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 7;
     }
 }
