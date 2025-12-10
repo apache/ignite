@@ -59,7 +59,8 @@ public class ClientConfigurationTest {
     public void testSerialization() throws IOException, ClassNotFoundException {
         ClientConfiguration target = new ClientConfiguration()
             .setAddresses("127.0.0.1:10800", "127.0.0.1:10801")
-            .setTimeout(123)
+            .setConnTimeout(123)
+            .setReqTimeout(123)
             .setBinaryConfiguration(new BinaryConfiguration()
                 .setClassNames(Collections.singleton("Person"))
             )

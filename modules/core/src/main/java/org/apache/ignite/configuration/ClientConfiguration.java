@@ -57,8 +57,11 @@ public final class ClientConfiguration implements Serializable {
     /** @serial Tcp no delay. */
     private boolean tcpNoDelay = true;
 
-    /** @serial Timeout. 0 means infinite. */
-    private int timeout;
+    /** @serial Connection timeout in milliseconds. 0 means infinite. */
+    private int connTimeout;
+
+    /** @serial Request timeout in milliseconds. 0 means infinite. */
+    private int reqTimeout;
 
     /** @serial Send buffer size. 0 means system default. */
     private int sndBufSize = 32 * 1024;
@@ -227,19 +230,55 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
+     * @deprecated Use {@link #getConnTimeout()} and {@link #getReqTimeout()} instead.
      * @return Send/receive timeout in milliseconds.
      */
+    @Deprecated
     public int getTimeout() {
-        return timeout;
+        return Math.max(connTimeout, reqTimeout);
     }
 
     /**
+     * @deprecated Use {@link #setConnTimeout(int)} and {@link #setReqTimeout(int)} instead.
      * @param timeout Send/receive timeout in milliseconds.
      * @return {@code this} for chaining.
      */
+    @Deprecated
     public ClientConfiguration setTimeout(int timeout) {
-        this.timeout = timeout;
+        this.connTimeout = timeout;
+        this.reqTimeout = timeout;
+        return this;
+    }
 
+    /**
+     * @return Connection timeout in milliseconds. 0 means infinite.
+     */
+    public int getConnTimeout() {
+        return connTimeout;
+    }
+
+    /**
+     * @param connTimeout Connection timeout in milliseconds. 0 means infinite.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setConnTimeout(int connTimeout) {
+        this.connTimeout = connTimeout;
+        return this;
+    }
+
+    /**
+     * @return Request timeout in milliseconds. 0 means infinite.
+     */
+    public int getReqTimeout() {
+        return reqTimeout;
+    }
+
+    /**
+     * @param reqTimeout Request timeout in milliseconds. 0 means infinite.
+     * @return {@code this} for chaining.
+     */
+    public ClientConfiguration setReqTimeout(int reqTimeout) {
+        this.reqTimeout = reqTimeout;
         return this;
     }
 

@@ -68,7 +68,8 @@ public class ClientSessionOutboundQueueLimitTest extends GridCommonAbstractTest 
         try (
             IgniteClient cli = Ignition.startClient(new ClientConfiguration()
                 .setAddresses("127.0.0.1:10800")
-                .setTimeout(5000) // Server will drop packets intended for the client. So client can hang on handshake during reconnect.
+                .setConnTimeout(5000) // Server will drop packets intended for the client. So client can hang on handshake during reconnect.
+                .setReqTimeout(5000)
                 .setRetryLimit(1) // Let's not retry operations if the channel was closed while waiting for a response.
                 .setEventListeners(new ConnectionEventListener() {
                     @Override public void onConnectionClosed(ConnectionClosedEvent event) {
