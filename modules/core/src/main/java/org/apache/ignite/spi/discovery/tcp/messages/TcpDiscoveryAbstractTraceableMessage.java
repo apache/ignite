@@ -51,20 +51,7 @@ public abstract class TcpDiscoveryAbstractTraceableMessage extends TcpDiscoveryA
     protected TcpDiscoveryAbstractTraceableMessage(TcpDiscoveryAbstractTraceableMessage msg) {
         super(msg);
 
-        this.spanContainer = msg.spanContainer;
-    }
-
-    /**
-     * Restores spanContainer field to non-null value after deserialization.
-     * This is needed for compatibility between nodes having Tracing SPI and not.
-     *
-     * @return Deserialized instance os the current class.
-     */
-    public Object readResolve() {
-        if (spanContainer == null)
-            spanContainer = new SpanContainer();
-
-        return this;
+        spanContainer = msg.spanContainer;
     }
 
     /** {@inheritDoc} */
