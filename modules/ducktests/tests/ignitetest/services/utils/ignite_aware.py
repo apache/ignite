@@ -142,20 +142,30 @@ class IgniteAwareService(BackgroundThreadService, IgnitePathAware, JvmProcessMix
         self.logger.info("Waiting for IgniteAware(s) to stop ...")
 
         for node in self.nodes:
-            stopped = self.wait_node(node, timeout_sec=self.shutdown_timeout_sec)
-            assert stopped, "Node %s's worker thread did not stop in %d seconds" % \
-                            (str(node.account), self.shutdown_timeout_sec)
+            self.await_stopped_node(node)
 
-        for node in self.nodes:
-            wait_until(lambda: not self.alive(node), timeout_sec=self.shutdown_timeout_sec,
-                       err_msg="Node %s's remote processes failed to stop in %d seconds" %
-                               (str(node.account), self.shutdown_timeout_sec))
+    def await_stopped_node(self, node):
+        """
+        Awaits node stop finished.
+        """
+        self.logger.info(f"Waiting for {self.who_am_i(node)}) to stop ...")
+
+        stopped = self.wait_node(node, timeout_sec=self.shutdown_timeout_sec)
+        assert stopped, "Node %s's worker thread did not stop in %d seconds" % \
+                        (str(node.account), self.shutdown_timeout_sec)
+
+        wait_until(lambda: not self.alive(node), timeout_sec=self.shutdown_timeout_sec,
+                   err_msg="Node %s's remote processes failed to stop in %d seconds" %
+                           (str(node.account), self.shutdown_timeout_sec))
 
     def stop_node(self, node, force_stop=False, **kwargs):
         pids = self.pids(node, self.main_java_class)
 
         for pid in pids:
             node.account.signal(pid, signal.SIGKILL if force_stop else signal.SIGTERM, allow_fail=False)
+
+        if not force_stop:
+            self.await_stopped_node(node)
 
     def clean(self, **kwargs):
         self.__restore_iptables()
