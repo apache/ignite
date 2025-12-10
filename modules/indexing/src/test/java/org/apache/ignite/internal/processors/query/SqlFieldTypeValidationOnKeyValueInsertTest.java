@@ -62,7 +62,7 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
     private static final String SQL_TEXT = "select id, name from Person where id=1";
 
     /** */
-    private static final String ERROR = "Type for a column 'NAME' is not compatible with table definition.";
+    private static final String ERROR = "Type for a column 'NAME' is not compatible with the definition.";
 
     /** */
     private static boolean validate;
