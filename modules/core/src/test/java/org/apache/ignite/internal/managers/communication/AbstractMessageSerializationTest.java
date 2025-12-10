@@ -41,7 +41,7 @@ import static java.lang.Integer.MAX_VALUE;
 import static org.junit.Assert.assertEquals;
 
 /** */
-public abstract class AbstractCommunicationMessageSerializationTest {
+public abstract class AbstractMessageSerializationTest {
     /** */
     @Test
     public void testMessageSerializationAndDeserializationConsistency() throws Exception {

@@ -18,21 +18,30 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Ping request.
  */
-public class TcpDiscoveryClientPingResponse extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryClientPingResponse extends TcpDiscoveryAbstractMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Pinged client node ID. */
-    private final UUID nodeToPing;
+    @Order(5)
+    private @Nullable UUID nodeToPing;
 
     /** */
-    private final boolean res;
+    @Order(value = 6, method = "result")
+    private boolean res;
+
+    /** */
+    public TcpDiscoveryClientPingResponse() {
+        // No-op.
+    }
 
     /**
      * @param creatorNodeId Creator node ID.
@@ -54,14 +63,33 @@ public class TcpDiscoveryClientPingResponse extends TcpDiscoveryAbstractMessage 
     }
 
     /**
+     * @param nodeToPing Pinged client node ID.
+     */
+    public void nodeToPing(@Nullable UUID nodeToPing) {
+        this.nodeToPing = nodeToPing;
+    }
+
+    /**
      * @return Result of ping.
      */
     public boolean result() {
         return res;
     }
 
+    /**
+     * @param res Result of ping.
+     */
+    public void result(boolean res) {
+        this.res = res;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryClientPingResponse.class, this, "super", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 4;
     }
 }
