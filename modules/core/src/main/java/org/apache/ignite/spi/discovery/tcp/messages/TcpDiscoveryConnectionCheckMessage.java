@@ -54,7 +54,7 @@ public class TcpDiscoveryConnectionCheckMessage extends TcpDiscoveryAbstractMess
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 3;
+        return 5;
     }
 
     /** {@inheritDoc} */
