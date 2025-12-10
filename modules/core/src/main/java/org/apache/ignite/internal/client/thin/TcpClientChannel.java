@@ -160,8 +160,11 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
     /** Executor for async operation listeners. */
     private final Executor asyncContinuationExecutor;
 
-    /** Send/receive timeout in milliseconds. */
-    private final int timeout;
+    /** Connection timeout in milliseconds. */
+    private final int connTimeout;
+
+    /** Request timeout in milliseconds. */
+    private final int reqTimeout;
 
     /** Heartbeat timer. */
     private final Timer heartbeatTimer;
@@ -195,7 +198,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         Executor cfgExec = cfg.getAsyncContinuationExecutor();
         asyncContinuationExecutor = cfgExec != null ? cfgExec : ForkJoinPool.commonPool();
 
-        timeout = cfg.getTimeout();
+        connTimeout = cfg.getConnTimeout();
+        reqTimeout = cfg.getReqTimeout();
 
         List<InetSocketAddress> addrs = cfg.getAddresses();
 
@@ -419,7 +423,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         long startTimeNanos = pendingReq.startTimeNanos;
 
         try {
-            ByteBuffer payload = timeout > 0 ? pendingReq.get(timeout) : pendingReq.get();
+            ByteBuffer payload = reqTimeout > 0 ? pendingReq.get(reqTimeout) : pendingReq.get();
 
             T res = null;
             if (payload != null && payloadReader != null)
@@ -736,7 +740,7 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
             handshakeReq(ver, user, pwd, userAttrs);
 
             try {
-                ByteBuffer buf = timeout > 0 ? fut.get(timeout) : fut.get();
+                ByteBuffer buf = connTimeout > 0 ? fut.get(connTimeout) : fut.get();
 
                 BinaryInputStream res = BinaryStreams.inputStream(buf);
 
