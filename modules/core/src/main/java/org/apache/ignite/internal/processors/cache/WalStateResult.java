@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,42 +30,42 @@ public class WalStateResult {
     /** Original message. */
     private final WalStateProposeMessage msg;
 
-    /** Whether mode was changed. */
-    private final boolean changed;
+    /** Detailed change WAL state results per group. */
+    private final Map<Integer, Boolean> grpResults;
 
     /** Error message (if any). */
     private final String errMsg;
 
     /**
-     * Constructor.
+     * Constructor for successful operation.
      *
      * @param msg Original message.
-     * @param changed Whether mode was changed.
+     * @param grpResults Detailed change WAL state results per group.
      */
-    public WalStateResult(WalStateProposeMessage msg, boolean changed) {
-        this(msg, changed, null);
+    public WalStateResult(WalStateProposeMessage msg, Map<Integer, Boolean> grpResults) {
+        this(msg, grpResults, null);
     }
 
     /**
-     * Constructor.
+     * Constructor for error.
      *
      * @param msg Original message.
      * @param errMsg Error message (if any).
      */
     public WalStateResult(WalStateProposeMessage msg, String errMsg) {
-        this(msg, false, errMsg);
+        this(msg, Collections.emptyMap(), errMsg);
     }
 
     /**
-     * Constructor.
+     * Main constructor.
      *
      * @param msg Original message.
-     * @param changed Whether mode was changed.
+     * @param grpResults Detailed results per group.
      * @param errMsg Error message (if any).
      */
-    private WalStateResult(WalStateProposeMessage msg, boolean changed, String errMsg) {
+    private WalStateResult(WalStateProposeMessage msg, Map<Integer, Boolean> grpResults, String errMsg) {
         this.msg = msg;
-        this.changed = changed;
+        this.grpResults = grpResults != null ? new HashMap<>(grpResults) : Collections.emptyMap();
         this.errMsg = errMsg;
     }
 
@@ -74,10 +77,10 @@ public class WalStateResult {
     }
 
     /**
-     * @return Whether mode was changed.
+     * @return Detailed results per group.
      */
-    public boolean changed() {
-        return changed;
+    public Map<Integer, Boolean> groupResults() {
+        return grpResults;
     }
 
     /**
