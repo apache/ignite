@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication.tcp;
+package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.internal.managers.communication.AbstractMessageSerializationTest;
-import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
-/** */
-public class H2CommunicationMessageSerializationTest extends AbstractMessageSerializationTest {
+/** Serialization test for discovery messages. */
+public class IgniteDiscoveryMessageSerializationTest extends AbstractMessageSerializationTest {
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
-        return new GridH2ValueMessageFactory();
+        return new DiscoveryMessageFactory();
     }
 }
