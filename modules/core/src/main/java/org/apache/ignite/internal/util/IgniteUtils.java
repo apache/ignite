@@ -4144,22 +4144,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Detects class loader for given object's class.
-     *
-     * @param obj Object to find class loader for class of.
-     * @return Class loader for given object (possibly {@code null}).
-     */
-    @Nullable public static ClassLoader detectObjectClassLoader(@Nullable Object obj) {
-        if (obj == null)
-            return null;
-
-        if (obj instanceof GridPeerDeployAware)
-            return ((GridPeerDeployAware)obj).classLoader();
-
-        return detectClassLoader(obj.getClass());
-    }
-
-    /**
      * Gets the peer deploy aware instance for the object with the widest class loader.
      * If collection is {@code null}, empty or contains only {@code null}s - the peer
      * deploy aware object based on system class loader will be returned.

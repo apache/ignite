@@ -75,7 +75,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      * @param writeVer Write version for cache values.
      * @param topVer Topology version.
      * @param taskNameHash Task name hash code.
-     * @param addDepInfo Deployment info.
      * @param keepBinary Keep binary flag.
      * @param skipStore Skip store flag.
      * @param readRepairRecovery Recovery on Read Repair flag.
@@ -87,21 +86,21 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         GridCacheVersion writeVer,
         @NotNull AffinityTopologyVersion topVer,
         int taskNameHash,
-        boolean addDepInfo,
         boolean keepBinary,
         boolean skipStore,
         boolean readRepairRecovery
     ) {
-        super(cacheId,
+        super(
+            cacheId,
             nodeId,
             futId,
             writeVer,
             topVer,
             taskNameHash,
-            addDepInfo,
             keepBinary,
             skipStore,
-            readRepairRecovery);
+            readRepairRecovery
+        );
     }
 
     /**

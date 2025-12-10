@@ -58,7 +58,6 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      * @param taskNameHash Task name hash.
-     * @param addDepInfo Deployment info flag.
      */
     public GridNearTxFinishRequest(
         IgniteUuid futId,
@@ -74,8 +73,8 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        int taskNameHash,
-        boolean addDepInfo) {
+        int taskNameHash
+    ) {
         super(
             xidVer,
             futId,
@@ -89,8 +88,7 @@ public class GridNearTxFinishRequest extends GridDistributedTxFinishRequest {
             baseVer,
             committedVers,
             rolledbackVers,
-            taskNameHash,
-            addDepInfo
+            taskNameHash
         );
 
         explicitLock(explicitLock);

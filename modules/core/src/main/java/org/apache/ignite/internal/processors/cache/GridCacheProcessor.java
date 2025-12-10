@@ -4845,21 +4845,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Callback invoked by deployment manager for whenever a class loader gets undeployed.
-     *
-     * @param ldr Class loader.
-     */
-    public void onUndeployed(ClassLoader ldr) {
-        if (!ctx.isStopping()) {
-            for (GridCacheAdapter<?, ?> cache : caches.values()) {
-                // Do not notify system caches and caches for which deployment is disabled.
-                if (cache.context().userCache() && cache.context().deploymentEnabled())
-                    cache.onUndeploy(ldr);
-            }
-        }
-    }
-
-    /**
      * @return Shared context.
      */
     public <K, V> GridCacheSharedContext<K, V> context() {

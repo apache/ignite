@@ -170,7 +170,6 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
      * @param retVal Return value flag.
      * @param last Last request flag.
      * @param onePhaseCommit One phase commit flag.
-     * @param addDepInfo Deployment info flag.
      */
     public GridDistributedTxPrepareRequest(
         IgniteInternalTx tx,
@@ -180,10 +179,9 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         Map<UUID, Collection<UUID>> txNodes,
         boolean retVal,
         boolean last,
-        boolean onePhaseCommit,
-        boolean addDepInfo
+        boolean onePhaseCommit
     ) {
-        super(tx.xidVersion(), 0, addDepInfo);
+        super(tx.xidVersion(), 0, false);
 
         writeVer = tx.writeVersion();
         threadId = tx.threadId();

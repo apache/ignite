@@ -122,7 +122,6 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
-     * @param addDepInfo Deployment info flag.
      */
     public GridDistributedTxFinishRequest(
         GridCacheVersion xidVer,
@@ -137,10 +136,9 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        int taskNameHash,
-        boolean addDepInfo
+        int taskNameHash
     ) {
-        super(xidVer, 0, addDepInfo);
+        super(xidVer, 0, false);
 
         assert xidVer != null;
         assert syncMode != null;
