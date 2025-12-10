@@ -43,14 +43,14 @@ import org.apache.ignite.lang.utils.IgniteOffheapReadWriteLockSelfTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLoggerSelfTest;
 import org.apache.ignite.util.GridConcurrentLinkedDequeSelfTest;
 import org.apache.ignite.util.GridConcurrentLinkedHashMapMultiThreadedSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Ignite language test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     GridTupleSelfTest.class,
     GridBoundedPriorityQueueSelfTest.class,
     GridByteArrayListSelfTest.class,

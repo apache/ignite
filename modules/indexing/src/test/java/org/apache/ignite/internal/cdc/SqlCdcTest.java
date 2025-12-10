@@ -36,9 +36,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cdc.AbstractCdcTest.ChangeEventType.DELETE;
@@ -48,7 +47,6 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /** */
-@RunWith(Parameterized.class)
 public class SqlCdcTest extends AbstractCdcTest {
     /** */
     private static final String SARAH = "Sarah Connor";
@@ -90,18 +88,8 @@ public class SqlCdcTest extends AbstractCdcTest {
     public static final String REGION = "REGION";
 
     /** */
-    @Parameterized.Parameter
-    public boolean persistenceEnabled;
-
-    /** */
-    @Parameterized.Parameters(name = "persistence={0}")
-    public static Object[] parameters() {
-        return new Object[] {false, true};
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+    IgniteConfiguration getConfiguration(String igniteInstanceName, boolean persistenceEnabled) throws Exception {
+        IgniteConfiguration cfg = getConfiguration(igniteInstanceName);
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setWalForceArchiveTimeout(WAL_ARCHIVE_TIMEOUT)
@@ -120,9 +108,10 @@ public class SqlCdcTest extends AbstractCdcTest {
     }
 
     /** Simplest CDC test. */
-    @Test
-    public void testReadAllSQLRows() throws Exception {
-        IgniteConfiguration cfg = getConfiguration("ignite-0");
+    @ParameterizedTest(name = "persistence={0}")
+    @ValueSource(booleans = {true, false})
+    public void testReadAllSQLRows(boolean persistenceEnabled) throws Exception {
+        IgniteConfiguration cfg = getConfiguration("ignite-0", persistenceEnabled);
 
         IgniteEx ign = startGrid(cfg);
 

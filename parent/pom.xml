@@ -563,7 +563,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
 
-                <configuration>
+<!--                <configuration>
                     <forkCount>0</forkCount>
                     <statelessTestsetInfoReporter implementation="org.apache.ignite.tools.surefire.TestSuiteAwareTestsetReporter"/>
                     <properties>
@@ -573,10 +573,10 @@
                         </property>
                     </properties>
                     <includes>
-                        <!-- Check all classes that may have any test. -->
+                        &lt;!&ndash; Check all classes that may have any test. &ndash;&gt;
                         <include>**/*.java</include>
                     </includes>
-                </configuration>
+                </configuration>-->
             </plugin>
 
             <plugin>

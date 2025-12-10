@@ -17,50 +17,50 @@
 
 package org.apache.ignite.tools.surefire;
 
-import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
+//import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
 import org.apache.maven.plugin.surefire.extensions.SurefireStatelessTestsetInfoReporter;
-import org.apache.maven.plugin.surefire.log.api.ConsoleLogger;
-import org.apache.maven.plugin.surefire.report.ConsoleReporter;
-import org.apache.maven.plugin.surefire.report.TestSetStats;
-import org.apache.maven.plugin.surefire.report.WrappedReportEntry;
-import org.apache.maven.surefire.api.report.ReportEntry;
-import org.apache.maven.surefire.api.report.TestSetReportEntry;
-import org.apache.maven.surefire.extensions.StatelessTestsetInfoConsoleReportEventListener;
-import org.apache.maven.surefire.shared.utils.logging.MessageBuilder;
-import org.apache.maven.surefire.shared.utils.logging.MessageUtils;
-
-import static org.apache.maven.surefire.api.report.CategorizedReportEntry.GROUP_PREFIX;
+//import org.apache.maven.plugin.surefire.log.api.ConsoleLogger;
+//import org.apache.maven.plugin.surefire.report.ConsoleReporter;
+//import org.apache.maven.plugin.surefire.report.TestSetStats;
+//import org.apache.maven.plugin.surefire.report.WrappedReportEntry;
+//import org.apache.maven.surefire.api.report.ReportEntry;
+//import org.apache.maven.surefire.api.report.TestSetReportEntry;
+//import org.apache.maven.surefire.extensions.StatelessTestsetInfoConsoleReportEventListener;
+//import org.apache.maven.surefire.shared.utils.logging.MessageBuilder;
+//import org.apache.maven.surefire.shared.utils.logging.MessageUtils;
+//
+//import static org.apache.maven.surefire.api.report.CategorizedReportEntry.GROUP_PREFIX;
 
 /** */
 public class TestSuiteAwareTestsetReporter extends SurefireStatelessTestsetInfoReporter {
     /** */
-    @Override public StatelessTestsetInfoConsoleReportEventListener<WrappedReportEntry, TestSetStats> createListener(
-        ConsoleLogger log) {
-        return new ConsoleReporter(log, false, false) {
-            /** */
-            @Override public void testSetStarting(TestSetReportEntry report) {
-                MessageBuilder builder = MessageUtils.buffer();
-
-                JUnitTeamcityReporter.suite = concatenateWithTestGroup(builder, report);
-
-                super.testSetStarting(report);
-            }
-        };
-    }
-
-    /**
-     * @see TestSetStats#concatenateWithTestGroup(MessageBuilder, ReportEntry, boolean)
-     */
-    private static String concatenateWithTestGroup(MessageBuilder builder, ReportEntry report) {
-        String testCls = report.getNameWithGroup();
-
-        int idxOfGrp = testCls.indexOf(GROUP_PREFIX);
-
-        int delim = testCls.lastIndexOf('.', idxOfGrp == -1 ? testCls.length() : idxOfGrp);
-
-        String pkg = testCls.substring(0, 1 + delim);
-        String cls = testCls.substring(1 + delim);
-
-        return builder.a(pkg).a(cls).toString();
-    }
+//    @Override public StatelessTestsetInfoConsoleReportEventListener<WrappedReportEntry, TestSetStats> createListener(
+//        ConsoleLogger log) {
+//        return new ConsoleReporter(log, false, false) {
+//            /** */
+//            @Override public void testSetStarting(TestSetReportEntry report) {
+//                MessageBuilder builder = MessageUtils.buffer();
+//
+//                JUnitTeamcityReporter.suite = concatenateWithTestGroup(builder, report);
+//
+//                super.testSetStarting(report);
+//            }
+//        };
+//    }
+//
+//    /**
+//     * @see TestSetStats#concatenateWithTestGroup(MessageBuilder, ReportEntry, boolean)
+//     */
+//    private static String concatenateWithTestGroup(MessageBuilder builder, ReportEntry report) {
+//        String testCls = report.getNameWithGroup();
+//
+//        int idxOfGrp = testCls.indexOf(GROUP_PREFIX);
+//
+//        int delim = testCls.lastIndexOf('.', idxOfGrp == -1 ? testCls.length() : idxOfGrp);
+//
+//        String pkg = testCls.substring(0, 1 + delim);
+//        String cls = testCls.substring(1 + delim);
+//
+//        return builder.a(pkg).a(cls).toString();
+//    }
 }

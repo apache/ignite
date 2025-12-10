@@ -18,8 +18,6 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.logger.java.JavaLoggerTest;
-import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
 
@@ -31,8 +29,8 @@ import org.junit.platform.suite.api.Suite;
 @SelectClasses({JavaLoggerTest.class})
 public class IgniteLoggingSelfTestSuite {
     /** */
-    @BeforeAll
+    /*@BeforeAll
     public static void setUpClass() {
         JUnitTeamcityReporter.suite = IgniteLoggingSelfTestSuite.class.getName();
-    }
+    }*/
 }

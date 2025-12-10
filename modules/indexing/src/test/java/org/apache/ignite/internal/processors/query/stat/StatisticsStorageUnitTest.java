@@ -18,25 +18,23 @@
 package org.apache.ignite.internal.processors.query.stat;
 
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.metastorage.persistence.ReadWriteMetaStorageMock;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 /**
  * Unit tests for statistics store.
  */
-@RunWith(Parameterized.class)
 public class StatisticsStorageUnitTest extends StatisticsAbstractTest {
     /** Test statistics key1. */
     private static final StatisticsKey KEY1 = new StatisticsKey("schema", "obj");
@@ -44,53 +42,29 @@ public class StatisticsStorageUnitTest extends StatisticsAbstractTest {
     /** Test statistics key2. */
     private static final StatisticsKey KEY2 = new StatisticsKey("schema", "obj2");
 
-    /** Test against storage of such type. */
-    @Parameterized.Parameter(0)
-    public String testLb;
-
-    /** Test store. */
-    @Parameterized.Parameter(1)
-    public IgniteStatisticsStore store;
-
-    /**
-     * @return Test parameters.
-     */
-    @Parameterized.Parameters(name = "cacheMode={0}")
-    public static Collection<Object[]> parameters() throws IgniteCheckedException {
-
+    /** Test parameters. */
+    private static Stream<Arguments> storeVariants() throws IgniteCheckedException {
         MetastorageLifecycleListener lsnr[] = new MetastorageLifecycleListener[1];
-
-        IgniteStatisticsHelper helper = Mockito.mock(IgniteStatisticsHelper.class);
 
         GridInternalSubscriptionProcessor subscriptionProc = Mockito.mock(GridInternalSubscriptionProcessor.class);
         Mockito.doAnswer(invocation -> lsnr[0] = invocation.getArgument(0))
-            .when(subscriptionProc).registerMetastorageListener(Mockito.any(MetastorageLifecycleListener.class));
+                .when(subscriptionProc).registerMetastorageListener(Mockito.any(MetastorageLifecycleListener.class));
 
         IgniteStatisticsStore inMemoryStore = new IgniteStatisticsInMemoryStoreImpl(cls -> log);
-        GridSystemViewManager sysViewMgr = Mockito.mock(GridSystemViewManager.class);
-
-        IgniteStatisticsRepository statsRepos = new IgniteStatisticsRepository(inMemoryStore, sysViewMgr, helper, cls -> log);
 
         GridTestLog4jLogger log = new GridTestLog4jLogger();
 
         IgniteCacheDatabaseSharedManager dbMgr = new IgniteCacheDatabaseSharedManager(new GridTestKernalContext(log));
         IgniteStatisticsPersistenceStoreImpl persStore = new IgniteStatisticsPersistenceStoreImpl(subscriptionProc,
-            dbMgr, cls -> log);
+                dbMgr, cls -> log);
 
         ReadWriteMetaStorageMock metastorage = new ReadWriteMetaStorageMock();
         lsnr[0].onReadyForReadWrite(metastorage);
 
-        return Arrays.asList(new Object[][] {
-            { "IgniteStatisticsInMemoryStoreImpl", inMemoryStore },
-            { "IgniteStatisticsPersistenceStoreImpl", persStore},
-        });
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        store = new IgniteStatisticsInMemoryStoreImpl(cls -> log);
+        return Stream.of(
+                Arguments.of(IgniteStatisticsInMemoryStoreImpl.class.getName(), inMemoryStore),
+                Arguments.of(IgniteStatisticsPersistenceStoreImpl.class.getName(), persStore)
+        );
     }
 
     /**
@@ -100,8 +74,9 @@ public class StatisticsStorageUnitTest extends StatisticsAbstractTest {
      * 2) Call clearAll.
      * 2) Check that saved statistics are deleted.
      */
-    @Test
-    public void testClearAll() {
+    @ParameterizedTest(name = "cacheMode={0}")
+    @MethodSource("storeVariants")
+    public void testClearAll(IgniteStatisticsStore store) {
         store.clearAllStatistics();
         store.saveLocalPartitionStatistics(KEY1, getPartitionStatistics(1));
 
@@ -119,8 +94,9 @@ public class StatisticsStorageUnitTest extends StatisticsAbstractTest {
      *  3) Load null with wrong key.
      *  4) Load null with wrong part id.
      */
-    @Test
-    public void testSingleOperations() {
+    @ParameterizedTest(name = "cacheMode={0}")
+    @MethodSource("storeVariants")
+    public void testSingleOperations(IgniteStatisticsStore store) {
         ObjectPartitionStatisticsImpl partStat = getPartitionStatistics(21);
         store.saveLocalPartitionStatistics(KEY1, partStat);
 
@@ -136,8 +112,9 @@ public class StatisticsStorageUnitTest extends StatisticsAbstractTest {
      * 1) Save a few statistics with group replace method.
      * 2) Check that group load methods return correct number of partition statistics with right and wrong keys.
      */
-    @Test
-    public void testGroupOperations() {
+    @ParameterizedTest(name = "cacheMode={0}")
+    @MethodSource("storeVariants")
+    public void testGroupOperations(IgniteStatisticsStore store) {
         ObjectPartitionStatisticsImpl partStat1 = getPartitionStatistics(101);
         ObjectPartitionStatisticsImpl partStat2 = getPartitionStatistics(102);
         ObjectPartitionStatisticsImpl partStat3 = getPartitionStatistics(103);

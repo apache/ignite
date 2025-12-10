@@ -62,8 +62,6 @@ import org.apache.ignite.internal.processors.service.ServicePredicateAccessCache
 import org.apache.ignite.internal.processors.service.ServiceReassignmentFunctionSelfTest;
 import org.apache.ignite.internal.processors.service.SystemCacheNotConfiguredTest;
 import org.apache.ignite.services.ServiceThreadPoolSelfTest;
-import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
 
@@ -122,8 +120,8 @@ import org.junit.platform.suite.api.Suite;
 })
 public class IgniteServiceGridTestSuite {
     /** */
-    @BeforeAll
+/*    @BeforeAll
     public static void init() {
         JUnitTeamcityReporter.suite = IgniteServiceGridTestSuite.class.getName();
-    }
+    }*/
 }

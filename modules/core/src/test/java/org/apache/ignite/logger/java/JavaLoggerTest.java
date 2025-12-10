@@ -24,14 +24,13 @@ import java.util.logging.Logger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.logger.java.JavaLogger.DFLT_CONFIG_PATH;
 
@@ -139,8 +138,8 @@ public class JavaLoggerTest extends GridCommonAbstractTest {
     public void testLogInitialize() throws Exception {
         JavaLogger log = new JavaLogger();
 
-        ((JavaLogger)log).setWorkDirectory(U.defaultWorkDirectory());
-        ((IgniteLoggerEx)log).setApplicationAndNode(null, UUID.fromString("00000000-1111-2222-3333-444444444444"));
+        log.setWorkDirectory(U.defaultWorkDirectory());
+        log.setApplicationAndNode(null, UUID.fromString("00000000-1111-2222-3333-444444444444"));
 
         assertTrue(log.toString().contains("JavaLogger"));
         assertTrue(log.toString().contains(DFLT_CONFIG_PATH));
@@ -169,8 +168,8 @@ public class JavaLoggerTest extends GridCommonAbstractTest {
 
         log = new JavaLogger();
 
-        ((JavaLogger)log).setWorkDirectory(U.defaultWorkDirectory());
-        ((IgniteLoggerEx)log).setApplicationAndNode("other-app", UUID.fromString("00000000-1111-2222-3333-444444444444"));
+        log.setWorkDirectory(U.defaultWorkDirectory());
+        log.setApplicationAndNode("other-app", UUID.fromString("00000000-1111-2222-3333-444444444444"));
 
         assert log.fileName() != null;
 

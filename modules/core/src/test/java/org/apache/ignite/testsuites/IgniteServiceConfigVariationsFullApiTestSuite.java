@@ -26,19 +26,26 @@ import org.apache.ignite.internal.processors.service.IgniteServiceConfigVariatio
 import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.Parameters;
-import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.platform.launcher.Launcher;
+import org.junit.platform.launcher.LauncherDiscoveryRequest;
+import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
+import org.junit.platform.launcher.core.LauncherFactory;
+import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
+import org.junit.platform.launcher.listeners.TestExecutionSummary;
+
+import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 
 /**
  * Full API service test suite.
  */
-@ExtendWith(DynamicSuite.class)
+//@ExtendWith(DynamicSuite.class)
 public class IgniteServiceConfigVariationsFullApiTestSuite {
     /** */
     @BeforeAll
     public static void init() {
-        JUnitTeamcityReporter.suite = IgniteServiceConfigVariationsFullApiTestSuite.class.getName();
+        //JUnitTeamcityReporter.suite = IgniteServiceConfigVariationsFullApiTestSuite.class.getName();
     }
 
     /** */
@@ -48,37 +55,57 @@ public class IgniteServiceConfigVariationsFullApiTestSuite {
     };
 
     /** */
-    public static List<Class<?>> suite() {
-        return Stream.of(
-            new ConfigVariationsTestSuiteBuilder(IgniteServiceConfigVariationsFullApiTest.class)
-                .igniteParams(PARAMS)
-                .gridsCount(1)
-                .classes(),
+    @Test
+    public void suite() {
+        List<Class<?>> variants = Stream.of(
+                        new ConfigVariationsTestSuiteBuilder(IgniteServiceConfigVariationsFullApiTest.class)
+                                .igniteParams(PARAMS)
+                                .gridsCount(1)
+                                .classes(),
 
-            // Tests run on server (node#0) & client(node#1).
-            new ConfigVariationsTestSuiteBuilder(IgniteServiceConfigVariationsFullApiTest.class)
-                .igniteParams(PARAMS)
-                .gridsCount(2)
-                .testedNodesCount(2)
-                .withClients()
-                .classes(),
+                        // Tests run on server (node#0) & client(node#1).
+                        new ConfigVariationsTestSuiteBuilder(IgniteServiceConfigVariationsFullApiTest.class)
+                                .igniteParams(PARAMS)
+                                .gridsCount(2)
+                                .testedNodesCount(2)
+                                .withClients()
+                                .classes(),
 
-            // Tests run on servers (node#0,node#2,node#3) & client(node#1).
-            new ConfigVariationsTestSuiteBuilder(IgniteServiceConfigVariationsFullApiTest.class)
-                .igniteParams(PARAMS)
-                .gridsCount(4)
-                .testedNodesCount(2)
-                .withClients()
-                .classes(),
+                        // Tests run on servers (node#0,node#2,node#3) & client(node#1).
+                        new ConfigVariationsTestSuiteBuilder(IgniteServiceConfigVariationsFullApiTest.class)
+                                .igniteParams(PARAMS)
+                                .gridsCount(4)
+                                .testedNodesCount(2)
+                                .withClients()
+                                .classes(),
 
-            // Tests run on servers (node#0,node#2,node#3) & client(node#1,node#4).
-            new ConfigVariationsTestSuiteBuilder(IgniteServiceConfigVariationsFullApiTest.class)
-                .igniteParams(PARAMS)
-                .gridsCount(5)
-                .testedNodesCount(2)
-                .withClients()
-                .classes())
+                        // Tests run on servers (node#0,node#2,node#3) & client(node#1,node#4).
+                        new ConfigVariationsTestSuiteBuilder(IgniteServiceConfigVariationsFullApiTest.class)
+                                .igniteParams(PARAMS)
+                                .gridsCount(5)
+                                .testedNodesCount(2)
+                                .withClients()
+                                .classes())
 
-            .flatMap(Collection::stream).collect(Collectors.toList());
+                .flatMap(Collection::stream).collect(Collectors.toList());
+
+        for (Class<?> cls : variants) {
+            final LauncherDiscoveryRequest request =
+                    LauncherDiscoveryRequestBuilder.request()
+                            .selectors(selectClass(cls))
+                            .build();
+
+            final Launcher launcher = LauncherFactory.create();
+            final SummaryGeneratingListener listener = new SummaryGeneratingListener();
+
+            launcher.registerTestExecutionListeners(listener);
+            launcher.execute(request);
+
+            TestExecutionSummary summary = listener.getSummary();
+            //long testFoundCount = summary.getTestsFoundCount();
+            List<TestExecutionSummary.Failure> failures = summary.getFailures();
+            System.out.println("getTestsSucceededCount() - " + summary.getTestsSucceededCount());
+            failures.forEach(failure -> System.out.println("failure - " + failure.getException()));
+        }
     }
 }

@@ -73,8 +73,6 @@ import org.apache.ignite.internal.processors.security.service.ServiceAuthorizati
 import org.apache.ignite.internal.processors.security.service.ServiceStaticConfigTest;
 import org.apache.ignite.internal.processors.security.snapshot.SnapshotPermissionCheckTest;
 import org.apache.ignite.ssl.MultipleSSLContextsTest;
-import org.apache.ignite.tools.junit.JUnitTeamcityReporter;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
 
@@ -146,8 +144,8 @@ import org.junit.platform.suite.api.Suite;
 })
 public class SecurityTestSuite {
     /** */
-    @BeforeAll
+/*    @BeforeAll
     public static void init() {
         JUnitTeamcityReporter.suite = SecurityTestSuite.class.getName();
-    }
+    }*/
 }

@@ -19,18 +19,19 @@ package org.apache.ignite.tools.surefire.testsuites;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.TestTemplate;
+import org.junit.platform.commons.support.AnnotationSupport;
+import org.junit.platform.launcher.LauncherDiscoveryRequest;
+import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-/*import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.Description;
-import org.junit.runner.Request;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Suite;*/
+
+import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 
 /**
  * Checks that all test classes are part of any suite.
@@ -57,7 +58,7 @@ public class CheckAllTestsInSuites {
         Set<String> suites = new HashSet<>();
 
         // Workaround to handle cases when a class has descenders and it's OK to skip the base class.
-        // Also it works for DynamicSuite that can use a base class to create new test classes with reflection.
+        // Also, it works for DynamicSuite that can use a base class to create new test classes with reflection.
         Set<String> superClasses = new HashSet<>();
 
         for (Class<?> clazz : testClasses) {
@@ -67,14 +68,12 @@ public class CheckAllTestsInSuites {
             if (clazz.getAnnotation(Disabled.class) != null)
                 continue;
 
-            Description desc = Request.aClass(clazz).getRunner().getDescription();
-
-            if (isTestClass(desc)) {
+            if (isTestClass(clazz)) {
                 allTestClasses.add(clazz.getName());
                 superClasses.add(clazz.getSuperclass().getName());
             }
             else
-                processSuite(desc, suitedTestClasses, suites, superClasses);
+                processSuite(clazz, suitedTestClasses, suites, superClasses);
         }
 
         allTestClasses.removeAll(suitedTestClasses);
@@ -100,8 +99,19 @@ public class CheckAllTestsInSuites {
     /**
      * Recursively handle suites - mark all test classes as suited.
      */
-    private void processSuite(Description suite, Set<String> suitedClasses,
-        Set<String> suites, Set<String> superClasses) {
+    private void processSuite(
+            Class<?> clazz,
+            Set<String> suitedClasses,
+            Set<String> suites,
+            Set<String> superClasses
+    ) {
+        LauncherDiscoveryRequest request =
+                LauncherDiscoveryRequestBuilder.request()
+                        .selectors(selectClass(clazz))
+                        .build();
+
+/*        request.
+
         suites.add(suite.getTestClass().getName());
 
         for (Description desc: suite.getChildren()) {
@@ -111,22 +121,27 @@ public class CheckAllTestsInSuites {
                 suitedClasses.add(desc.getTestClass().getName());
                 superClasses.add(desc.getTestClass().getSuperclass().getName());
             }
-        }
+        }*/
     }
 
     /**
      * Check whether class is a test class or a suite.
-     *
-     * Suite classes are marked with RunWith annotation and value of it is a descender of Suite.class.
-     * For scala tests suite must be inherited from {@code org.scalatest.Suites} class.
-     * Exclusion of the rule is Parameterized.class, so classes are marked with it are test classes.
      */
-    private boolean isTestClass(Description desc) {
-        RunWith runWith = desc.getAnnotation(ExtendWith.class);
+    private boolean isTestClass(Class<?> clazz) {
+        boolean hasTestInstanceAnnotation = AnnotationSupport.isAnnotated(clazz, org.junit.jupiter.api.TestInstance.class);
 
-        return runWith == null
-            || runWith.value().equals(Parameterized.class)
-            || !(Suite.class.isAssignableFrom(runWith.value())
-            || "org.scalatest.Suites".equals(desc.getTestClass().getSuperclass().getName()));
+        // Check if any method in the class is a test method
+        boolean hasTestMethod = Arrays.stream(clazz.getDeclaredMethods())
+                .anyMatch(CheckAllTestsInSuites::isJUnit5TestMethod);
+
+        return hasTestInstanceAnnotation
+                || hasTestMethod
+                || "org.scalatest.Suites".equals(clazz.getSuperclass().getName());
+    }
+
+    public static boolean isJUnit5TestMethod(Method method) {
+        return AnnotationSupport.isAnnotated(method, Test.class) ||
+                AnnotationSupport.isAnnotated(method, TestFactory.class) ||
+                AnnotationSupport.isAnnotated(method, TestTemplate.class);
     }
 }

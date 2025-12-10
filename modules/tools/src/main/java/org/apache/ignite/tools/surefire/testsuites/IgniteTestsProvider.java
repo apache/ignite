@@ -29,11 +29,7 @@ import org.apache.maven.surefire.api.suite.RunResult;
 import org.apache.maven.surefire.api.testset.TestSetFailedException;
 import org.apache.maven.surefire.api.util.ScanResult;
 import org.apache.maven.surefire.api.util.ScannerFilter;
-import org.apache.maven.surefire.common.junit4.JUnit4StackTraceWriter;
 import org.apache.maven.surefire.common.junit48.JUnit48TestChecker;
-/*import org.junit.runner.JUnitCore;
-import org.junit.runner.Result;
-import org.junit.runner.notification.Failure;*/
 import org.junit.platform.launcher.Launcher;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
 import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
@@ -133,7 +129,7 @@ public class IgniteTestsProvider extends AbstractProvider {
                 NORMAL_RUN, 0L,
                 failure.getTestIdentifier().getType().getDeclaringClass().getName(), null,
                 failure.getTestIdentifier().getDisplayName(), null,
-                new JUnit4StackTraceWriter(failure.));
+                new JUnitStackTraceWriter(failure));
 
             RunListener reporter = reporterFactory.createTestReportListener();
 
