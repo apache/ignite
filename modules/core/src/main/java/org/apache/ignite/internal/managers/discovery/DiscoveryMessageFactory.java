@@ -21,6 +21,7 @@ import org.apache.ignite.internal.codegen.HostAddressMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryCheckFailedMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryClientPingRequestSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryClientPingResponseSerializer;
+import org.apache.ignite.internal.codegen.TcpDiscoveryHandshakeResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryPingRequestSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryPingResponseSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -29,10 +30,9 @@ import org.apache.ignite.spi.discovery.tcp.messages.HostAddressMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
-import org.apache.ignite.internal.codegen.TcpDiscoveryHandshakeResponseSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 
 /** Message factory for discovery messages. */
 public class DiscoveryMessageFactory implements MessageFactoryProvider {
