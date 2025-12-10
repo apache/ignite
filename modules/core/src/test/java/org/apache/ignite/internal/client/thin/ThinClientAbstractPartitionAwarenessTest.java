@@ -20,6 +20,7 @@ package org.apache.ignite.internal.client.thin;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
@@ -87,6 +88,9 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
 
     /** Channels. */
     protected final TestTcpClientChannel[] channels = new TestTcpClientChannel[MAX_CLUSTER_SIZE];
+
+    /** Channels list. */
+    protected final List<TestTcpClientChannel> channelsList = Collections.unmodifiableList(F.asList(channels));
 
     /** Operations queue. */
     protected final Queue<T2<TestTcpClientChannel, ClientOperation>> opsQueue = new ConcurrentLinkedQueue<>();
@@ -181,6 +185,18 @@ public abstract class ThinClientAbstractPartitionAwarenessTest extends GridCommo
             assertEquals("Unexpected channel for operation [expCh=" + expCh + ", expOp=" + expOp +
                 ", nextOpCh=" + nextChOp + ", queuedOp=" + queuedOp + ']', expCh, nextChOp.get1());
         }
+    }
+
+    /**
+     * Next operation channel index.
+     */
+    protected int nextOpChannelIdx() {
+        T2<TestTcpClientChannel, ClientOperation> nextOp = opsQueue.poll();
+
+        if (nextOp == null)
+            return -1;
+
+        return channelsList.indexOf(nextOp.get1());
     }
 
     /**

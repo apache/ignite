@@ -4251,7 +4251,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             node.clientRouterNodeId(),
                             null);
 
-                        reconMsg.verify(getLocalNodeId());
+                        reconMsg.verifierNodeId(getLocalNodeId());
 
                         Collection<TcpDiscoveryAbstractMessage> msgs = msgHist.messages(null, node);
 
@@ -4924,7 +4924,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (worker == null)
                 throw new IgniteSpiException("Client node already disconnected: " + clientNodeId);
 
-            msg.verify(getLocalNodeId()); // Client worker require verified messages.
+            msg.verifierNodeId(getLocalNodeId()); // Client worker require verified messages.
 
             worker.addMessage(msg);
         }
@@ -4999,7 +4999,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                msg.verify(locNodeId);
+                msg.verifierNodeId(locNodeId);
 
                 msg.spanContainer().span()
                     .addLog(() -> "Verified");
@@ -5282,7 +5282,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 else
                     msg.topologyVersion(ring.incrementTopologyVersion());
 
-                msg.verify(locNodeId);
+                msg.verifierNodeId(locNodeId);
             }
 
             long topVer = msg.topologyVersion();
@@ -5513,7 +5513,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                msg.verify(locNodeId);
+                msg.verifierNodeId(locNodeId);
 
                 msg.spanContainer().span()
                     .addLog(() -> "Verified");
@@ -5723,7 +5723,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                msg.verify(locNodeId);
+                msg.verifierNodeId(locNodeId);
             }
 
             if (msg.verified()) {
@@ -6096,7 +6096,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (isLocalNodeCoordinator()) {
                 if (!getLocalNodeId().equals(msg.verifierNodeId()))
                     // Message is not verified or verified by former coordinator.
-                    msg.verify(getLocalNodeId());
+                    msg.verifierNodeId(getLocalNodeId());
                 else
                     // Discard the message.
                     return;
@@ -6145,7 +6145,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         TcpDiscoveryClientPingResponse pingRes = new TcpDiscoveryClientPingResponse(
                             getLocalNodeId(), msg.nodeToPing(), res);
 
-                        pingRes.verify(getLocalNodeId());
+                        pingRes.verifierNodeId(getLocalNodeId());
 
                         worker.addMessage(pingRes);
                     }
@@ -6163,7 +6163,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
 
                 if (!msg.verified()) {
-                    msg.verify(getLocalNodeId());
+                    msg.verifierNodeId(getLocalNodeId());
 
                     msg.spanContainer().span()
                         .addLog(() -> "Verified");
@@ -6430,7 +6430,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             TcpDiscoveryMetricsUpdateMessage msg = new TcpDiscoveryMetricsUpdateMessage(getConfiguredNodeId());
 
-            msg.verify(getLocalNodeId());
+            msg.verifierNodeId(getLocalNodeId());
 
             msgWorker.addMessage(msg);
 
@@ -7185,7 +7185,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     ClientMessageWorker worker = clientMsgWorkers.get(msg.creatorNodeId());
 
                                     if (worker != null) {
-                                        msg.verify(getLocalNodeId());
+                                        msg.verifierNodeId(getLocalNodeId());
 
                                         worker.addMessage(msg);
                                     }
@@ -7268,7 +7268,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (clientMsgWrk != null) {
                             TcpDiscoveryClientAckResponse ack = new TcpDiscoveryClientAckResponse(locNodeId, msg.id());
 
-                            ack.verify(locNodeId);
+                            ack.verifierNodeId(locNodeId);
 
                             clientMsgWrk.addMessage(ack);
                         }
@@ -7471,7 +7471,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         Collection<TcpDiscoveryAbstractMessage> pending = msgHist.messages(msg.lastMessageId(), node);
 
                         if (pending != null) {
-                            msg.verify(locNodeId);
+                            msg.verifierNodeId(locNodeId);
                             msg.pendingMessages(pending);
                             msg.success(true);
 
@@ -7488,7 +7488,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             }
                         }
                         else {
-                            msg.verify(locNodeId);
+                            msg.verifierNodeId(locNodeId);
 
                             if (log.isDebugEnabled()) {
                                 log.debug("Failing reconnecting client node because failed to restore pending " +
@@ -7502,7 +7502,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                     }
                     else {
-                        msg.verify(locNodeId);
+                        msg.verifierNodeId(locNodeId);
 
                         if (log.isDebugEnabled())
                             log.debug("Reconnecting client node is already failed [nodeId=" + nodeId + ']');
@@ -7933,7 +7933,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (pingFut.compareAndSet(null, fut)) {
                     TcpDiscoveryPingRequest pingReq = new TcpDiscoveryPingRequest(getLocalNodeId(), clientNodeId);
 
-                    pingReq.verify(getLocalNodeId());
+                    pingReq.verifierNodeId(getLocalNodeId());
 
                     addMessage(pingReq);
 
