@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cdc;
 
+import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -186,10 +187,14 @@ public class WalRecordsConsumer<K, V> {
      *
      * @param cdcReg CDC metric registry.
      * @param cdcConsumerReg CDC consumer metric registry.
+     * @param cdcDir Path to Change Data Capture Directory.
      * @throws IgniteCheckedException If failed.
      */
-    public void start(MetricRegistryImpl cdcReg, MetricRegistryImpl cdcConsumerReg) throws IgniteCheckedException {
-        consumer.start(cdcConsumerReg);
+    public void start(MetricRegistryImpl cdcReg, MetricRegistryImpl cdcConsumerReg, Path cdcDir) throws IgniteCheckedException {
+        if (consumer instanceof CdcConsumerEx)
+            ((CdcConsumerEx) consumer).start(cdcConsumerReg, cdcDir);
+        else
+            consumer.start(cdcConsumerReg);
 
         evtsCnt = cdcReg.longMetric(EVTS_CNT, "Count of events processed by the consumer");
         lastEvtTs = cdcReg.longMetric(LAST_EVT_TIME, "Time of the last event process");
@@ -200,7 +205,7 @@ public class WalRecordsConsumer<K, V> {
 
     /**
      * Stops the consumer.
-     * This methods can be invoked only after {@link #start(MetricRegistryImpl, MetricRegistryImpl)}.
+     * This methods can be invoked only after {@link #start(MetricRegistryImpl, MetricRegistryImpl, Path)}.
      */
     public void stop() {
         consumer.stop();
