@@ -545,6 +545,31 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public boolean disableWal(String cacheName) throws IgniteException;
 
     /**
+     * Disables write-ahead logging for specified caches. When WAL is disabled, changes are not logged to disk.
+     * This significantly improves cache update speed. The drawback is absence of local crash-recovery guarantees.
+     * If node is crashed, local content of WAL-disabled cache will be cleared on restart to avoid data corruption.
+     * <p>
+     * Internally this method will wait for all current cache operations to finish and prevent new cache operations
+     * from being executed. Then checkpoint is initiated to flush all data to disk. Control is returned to the callee
+     * when all dirty pages are prepared for checkpoint, but not necessarily flushed to disk.
+     * <p>
+     * WAL state can be changed only for persistent caches.
+     * <p>
+     * <b>NOTE:</b>
+     * Currently, this method should only be called on a stable topology when no nodes are leaving or joining cluster,
+     * and all baseline nodes are present.
+     * Cache may be stuck in inconsistent state due to violation of these conditions. It is advised to destroy
+     * such cache.
+     *
+     * @param cacheNames Collection of cache names, all caches must be in the same cache group.
+     * @return Whether WAL disabled by this call.
+     * @throws IgniteException If error occurs.
+     * @see #enableWal(Collection)
+     * @see #isWalEnabled(String)
+     */
+    public boolean disableWal(Collection<String> cacheNames) throws IgniteException;
+
+    /**
      * Enables write-ahead logging for specified cache. Restoring crash-recovery guarantees of a previous call to
      * {@link #disableWal(String)}.
      * <p>
@@ -567,6 +592,30 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @see #isWalEnabled(String)
      */
     public boolean enableWal(String cacheName) throws IgniteException;
+
+    /**
+     * Enables write-ahead logging for specified caches. Restoring crash-recovery guarantees of a previous call to
+     * {@link #disableWal(Collection)}.
+     * <p>
+     * Internally this method will wait for all current cache operations to finish and prevent new cache operations
+     * from being executed. Then checkpoint is initiated to flush all data to disk. Control is returned to the callee
+     * when all data is persisted to disk.
+     * <p>
+     * WAL state can be changed only for persistent caches.
+     * <p>
+     * <b>NOTE:</b>
+     * Currently, this method should only be called on a stable topology when no nodes are leaving or joining cluster,
+     * and all baseline nodes are present.
+     * Cache may be stuck in inconsistent state due to violation of these conditions. It is advised to destroy
+     * such cache.
+     *
+     * @param cacheNames Collection of cache names, all caches must be in the same cache group.
+     * @return Whether WAL state enabled by this call.
+     * @throws IgniteException If error occurs.
+     * @see #disableWal(Collection)
+     * @see #isWalEnabled(String)
+     */
+    public boolean enableWal(Collection<String> cacheNames) throws IgniteException;
 
     /**
      * Checks if write-ahead logging is enabled for specified cache.

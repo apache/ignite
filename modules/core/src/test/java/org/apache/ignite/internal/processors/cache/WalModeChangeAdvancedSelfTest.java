@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -27,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -698,5 +700,72 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
         catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Test that WAL mode change for caches from the same group requires all caches to be specified.
+     *
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testWalModeChangeRequiresAllGroupCaches() throws Exception {
+        IgniteEx srv = startGrid(config(SRV_1, false, false));
+
+        srv.cluster().state(ACTIVE);
+
+        CacheConfiguration<Integer, Integer> cacheCfg1 = cacheConfig(CACHE_NAME, PARTITIONED, TRANSACTIONAL);
+        CacheConfiguration<Integer, Integer> cacheCfg2 = cacheConfig(CACHE_NAME_2, PARTITIONED, TRANSACTIONAL);
+
+        cacheCfg1.setGroupName("testGroup");
+        cacheCfg2.setGroupName("testGroup");
+
+        srv.getOrCreateCache(cacheCfg1);
+        srv.getOrCreateCache(cacheCfg2);
+
+        assertForAllNodes(CACHE_NAME, true);
+        assertForAllNodes(CACHE_NAME_2, true);
+
+        try {
+            srv.cluster().disableWal(CACHE_NAME);
+            fail("Should have thrown exception when trying to disable WAL for only one cache from a group");
+        }
+        catch (IgniteException e) {
+            String expectedMsg = "Cannot change WAL mode because not all cache names belonging to the group are provided";
+            assertTrue("Expected message about missing caches, but got: " + e.getMessage(),
+                e.getMessage().contains(expectedMsg));
+        }
+
+        assertForAllNodes(CACHE_NAME, true);
+        assertForAllNodes(CACHE_NAME_2, true);
+
+        try {
+            srv.cluster().enableWal(CACHE_NAME);
+            fail("Should have thrown exception when trying to change WAL mode for only one cache from a group");
+        }
+        catch (IgniteException e) {
+            String expectedMsg = "Cannot change WAL mode because not all cache names belonging to the group are provided";
+            assertTrue("Expected message about missing caches, but got: " + e.getMessage(),
+                e.getMessage().contains(expectedMsg));
+        }
+
+        srv.cluster().disableWal(Arrays.asList(CACHE_NAME, CACHE_NAME_2));
+
+        assertForAllNodes(CACHE_NAME, false);
+        assertForAllNodes(CACHE_NAME_2, false);
+
+        try {
+            srv.cluster().enableWal(CACHE_NAME);
+            fail("Should have thrown exception when trying to enable WAL for only one cache from a group");
+        }
+        catch (IgniteException e) {
+            String expectedMsg = "Cannot change WAL mode because not all cache names belonging to the group are provided";
+            assertTrue("Expected message about missing caches, but got: " + e.getMessage(),
+                e.getMessage().contains(expectedMsg));
+        }
+
+        srv.cluster().enableWal(Arrays.asList(CACHE_NAME, CACHE_NAME_2));
+
+        assertForAllNodes(CACHE_NAME, true);
+        assertForAllNodes(CACHE_NAME_2, true);
     }
 }
