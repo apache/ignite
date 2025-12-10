@@ -18,23 +18,42 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Handshake response.
  */
-public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Order(5)
     private long order;
 
+    /** Redirect addresses messages serialization holder. */
+    @Order(value = 6, method = "redirectHostAddressesMessages")
+    private @Nullable Collection<HostAddressMessage> redirectAddrsMsgs;
+
     /** Redirect addresses. */
-    private Collection<InetSocketAddress> redirectAddresses;
+    private @Nullable Collection<InetSocketAddress> redirectAddrs;
+
+    /**
+     * Default constructor for {@link DiscoveryMessageFactory}.
+     */
+    public TcpDiscoveryHandshakeResponse() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -87,13 +106,47 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
     }
 
     /** @return Socket addresses list for redirect. */
-    @Nullable public Collection<InetSocketAddress> redirectAddresses() {
-        return redirectAddresses;
+    public @Nullable Collection<InetSocketAddress> redirectAddresses() {
+        return redirectAddrs;
     }
 
-    /** @param socketAddresses Socket addresses list for redirect. */
-    public void redirectAddresses(Collection<InetSocketAddress> socketAddresses) {
-        this.redirectAddresses = socketAddresses;
+    /** @param sockAddrs Socket addresses list for redirect. */
+    public void redirectAddresses(@Nullable Collection<InetSocketAddress> sockAddrs) {
+        redirectAddrs = sockAddrs;
+    }
+
+    /** @return Collection of {@link HostAddressMessage}. */
+    public @Nullable Collection<HostAddressMessage> redirectHostAddressesMessages() {
+        if (redirectAddrs == null)
+            return null;
+
+        return redirectAddrs.stream().map(addrs -> new HostAddressMessage(addrs.getAddress(), addrs.getPort()))
+            .collect(Collectors.toList());
+    }
+
+    /** @param redirectAddrsMsgs Collection of {@link HostAddressMessage}. */
+    public void redirectHostAddressesMessages(@Nullable Collection<HostAddressMessage> redirectAddrsMsgs) {
+        if (redirectAddrsMsgs == null) {
+            redirectAddrs = null;
+
+            return;
+        }
+
+        redirectAddrs = new ArrayList<>(redirectAddrsMsgs.size());
+
+        redirectAddrsMsgs.forEach(aMsg -> {
+            try {
+                redirectAddrs.add(new InetSocketAddress(aMsg.address(), aMsg.port()));
+            }
+            catch (UnknownHostException e) {
+                throw new IgniteException("Failed to read host address.", e);
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 7;
     }
 
     /** {@inheritDoc} */
