@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.codegen;
 
-import org.apache.ignite.internal.EnumFieldsMessage;
+import org.apache.ignite.internal.DefaultMapperEnumFieldsMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -31,7 +31,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
  *
  * @see org.apache.ignite.internal.MessageProcessor
  */
-public class EnumFieldsMessageSerializer implements MessageSerializer {
+public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializer {
     /** */
     private final GridCacheOperation[] gridCacheOperationVals = GridCacheOperation.values();
     /** */
@@ -39,7 +39,7 @@ public class EnumFieldsMessageSerializer implements MessageSerializer {
 
     /** */
     @Override public boolean writeTo(Message m, MessageWriter writer) {
-        EnumFieldsMessage msg = (EnumFieldsMessage)m;
+        DefaultMapperEnumFieldsMessage msg = (DefaultMapperEnumFieldsMessage)m;
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
@@ -67,7 +67,7 @@ public class EnumFieldsMessageSerializer implements MessageSerializer {
 
     /** */
     @Override public boolean readFrom(Message m, MessageReader reader) {
-        EnumFieldsMessage msg = (EnumFieldsMessage)m;
+        DefaultMapperEnumFieldsMessage msg = (DefaultMapperEnumFieldsMessage)m;
 
         switch (reader.state()) {
             case 0:

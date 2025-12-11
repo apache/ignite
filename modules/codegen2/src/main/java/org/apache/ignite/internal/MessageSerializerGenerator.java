@@ -394,23 +394,43 @@ class MessageSerializerGenerator {
             }
 
             else if (enumType(type)) {
-                //TODO check CustomMapper annotation
-                imports.add("org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper");
-
                 Element element = env.getTypeUtils().asElement(type);
-
                 imports.add(element.toString());
 
                 String enumName = element.getSimpleName().toString();
+                char[] enumNameChars = enumName.toCharArray();
+                enumNameChars[0] = Character.toLowerCase(enumNameChars[0]);
+                String enumFieldPrefix = new String(enumNameChars);
 
-                char[] chars = enumName.toCharArray();
-                chars[0] = Character.toLowerCase(chars[0]);
+                String mapperCallStmnt;
 
-                String enumValuesFieldName = new String(chars) + "Vals";
+                CustomMapper custMapperAnn = field.getAnnotation(CustomMapper.class);
 
-                fields.add("private final " + enumName + "[] " + enumValuesFieldName + " = " + enumName + ".values();");
+                if (custMapperAnn != null) {
+                    String fullMapperName = custMapperAnn.value();
+                    if (fullMapperName == null || fullMapperName.isEmpty())
+                        throw new IllegalArgumentException("Please specify a not-null not-empty CustomMapper class name");
 
-                returnFalseIfEnumWriteFailed(write, "writer.writeByte", "DefaultEnumMapper.INSTANCE.encode", getExpr);
+                    imports.add("org.apache.ignite.plugin.extensions.communication.mappers.CustomMapper");
+                    imports.add(fullMapperName);
+
+                    String simpleName = fullMapperName.substring(fullMapperName.lastIndexOf('.') + 1);
+
+                    String mapperFieldName = enumFieldPrefix + "Mapper";
+
+                    fields.add("private final CustomMapper<" + enumName + "> " + mapperFieldName + " = new " + simpleName + "();");
+
+                    mapperCallStmnt = mapperFieldName + ".encode";
+                } else {
+                    imports.add("org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper");
+                    String enumValuesFieldName = enumFieldPrefix + "Vals";
+
+                    fields.add("private final " + enumName + "[] " + enumValuesFieldName + " = " + enumName + ".values();");
+
+                    mapperCallStmnt = "DefaultEnumMapper.INSTANCE.encode";
+                }
+
+                returnFalseIfEnumWriteFailed(write, "writer.writeByte", mapperCallStmnt, getExpr);
             }
 
             else
@@ -575,9 +595,21 @@ class MessageSerializerGenerator {
                 char[] chars = enumName.toCharArray();
                 chars[0] = Character.toLowerCase(chars[0]);
 
-                String enumValuesFieldName = new String(chars) + "Vals";
+                String enumFieldPrefix = new String(chars);
 
-                returnFalseIfEnumReadFailed(name, "DefaultEnumMapper.INSTANCE.decode", enumValuesFieldName);
+                CustomMapper custMapperAnn = field.getAnnotation(CustomMapper.class);
+
+                String mapperCallStmnt;
+                String enumValsFieldName = null;
+
+                if (custMapperAnn == null) {
+                    mapperCallStmnt = "DefaultEnumMapper.INSTANCE.decode";
+                    enumValsFieldName = enumFieldPrefix + "Vals";
+                }
+                else
+                    mapperCallStmnt = enumFieldPrefix + "Mapper.decode";
+
+                returnFalseIfEnumReadFailed(name, mapperCallStmnt, enumValsFieldName);
             }
 
             else
@@ -703,10 +735,13 @@ class MessageSerializerGenerator {
      * </pre>
      *
      * @param msgSetterName Variable name.
-     * @param mapperDecodeCall Method name.
+     * @param mapperDecodeCallStmnt Method name.
      */
-    private void returnFalseIfEnumReadFailed(String msgSetterName, String mapperDecodeCall, String enumValuesFieldName) {
-        read.add(line("msg.%s(%s(%s, reader.readByte()));", msgSetterName, mapperDecodeCall, enumValuesFieldName));
+    private void returnFalseIfEnumReadFailed(String msgSetterName, String mapperDecodeCallStmnt, String enumValuesFieldName) {
+        if (enumValuesFieldName == null)
+            read.add(line("msg.%s(%s(reader.readByte()));", msgSetterName, mapperDecodeCallStmnt));
+        else
+            read.add(line("msg.%s(%s(%s, reader.readByte()));", msgSetterName, mapperDecodeCallStmnt, enumValuesFieldName));
 
         read.add(EMPTY);
 

@@ -17,32 +17,20 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionIsolation;
 
-public class EnumFieldsMessage implements Message {
+public class CustomMapperEnumFieldsMessage implements Message {
     @Order(0)
-    private TransactionIsolation publicEnum;
+    @CustomMapper("org.apache.ignite.internal.TransactionIsolationCustomMapper")
+    private TransactionIsolation txMode;
 
-    @Order(1)
-    private GridCacheOperation internalEnum;
-
-    public TransactionIsolation publicEnum() {
-        return publicEnum;
+    public TransactionIsolation txMode() {
+        return txMode;
     }
 
-    public void publicEnum(TransactionIsolation publicEnum) {
-        this.publicEnum = publicEnum;
-    }
-
-    public GridCacheOperation internalEnum() {
-        return internalEnum;
-    }
-
-    public void internalEnum(GridCacheOperation internalEnum) {
-        this.internalEnum = internalEnum;
+    public void txMode(TransactionIsolation txMode) {
+        this.txMode = txMode;
     }
 
     public short directType() {

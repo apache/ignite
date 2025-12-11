@@ -132,8 +132,21 @@ public class MessageProcessor extends AbstractProcessor {
                     if (el.getModifiers().contains(Modifier.STATIC)) {
                         processingEnv.getMessager().printMessage(
                             Diagnostic.Kind.ERROR,
-                            "Annotation @Order must be used only for non-static fields.",
+                            "Annotation @Order must only be used for non-static fields.",
                             el);
+                    }
+
+                    if (el.getAnnotation(CustomMapper.class) != null) {
+                        TypeMirror elType = el.asType();
+
+                        if (elType.getKind().isPrimitive() ||
+                            processingEnv.getTypeUtils().asElement(elType).getKind() != ElementKind.ENUM)
+                        {
+                            processingEnv.getMessager().printMessage(
+                                Diagnostic.Kind.ERROR,
+                                "Annotation @CustomMapper must only be used for enum fields.",
+                                el);
+                        }
                     }
                 }
             }

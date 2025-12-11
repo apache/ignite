@@ -172,14 +172,35 @@ public class MessageProcessorTest {
 
     /** */
     @Test
-    public void testEnumFields() {
-        Compilation compilation = compile("EnumFieldsMessage.java");
+    public void testDefaultMapperEnumFields() {
+        Compilation compilation = compile("DefaultMapperEnumFieldsMessage.java");
 
         assertThat(compilation).succeeded();
 
         assertThat(compilation)
-            .generatedSourceFile("org.apache.ignite.internal.codegen.EnumFieldsMessageSerializer")
-            .hasSourceEquivalentTo(javaFile("EnumFieldsMessageSerializer.java"));
+            .generatedSourceFile("org.apache.ignite.internal.codegen.DefaultMapperEnumFieldsMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("DefaultMapperEnumFieldsMessageSerializer.java"));
+    }
+
+    /** */
+    @Test
+    public void testMappedByOnWrongField() {
+        Compilation compilation = compile("CustomEnumMapperOnWrongFieldMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("Annotation @CustomMapper must only be used for enum fields.");
+    }
+
+    /** */
+    @Test
+    public void testCustomMapperEnumFieldsMessage() {
+        Compilation compilation = compile("CustomMapperEnumFieldsMessage.java", "TransactionIsolationCustomMapper.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.codegen.CustomMapperEnumFieldsMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("CustomMapperEnumFieldsMessageSerializer.java"));
     }
 
     /** */
