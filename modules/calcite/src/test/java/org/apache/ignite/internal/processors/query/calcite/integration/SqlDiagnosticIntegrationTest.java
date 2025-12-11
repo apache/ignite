@@ -1028,11 +1028,14 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
             }, 3_000));
         }
 
-        LogListener logLsnr = LogListener.matches(LONG_QUERY_FINISHED_MSG).andMatches("initiatorId=testId2").build();
+        String initiatorId = "testId2";
+
+        LogListener logLsnr = LogListener.matches(LONG_QUERY_FINISHED_MSG)
+            .andMatches("initiatorId=" + initiatorId).build();
 
         log.registerListener(logLsnr);
 
-        cache.query(new SqlFieldsQuery("SELECT sleep(?)").setArgs(LONG_QRY_TIMEOUT).setQueryInitiatorId("testId2"))
+        cache.query(new SqlFieldsQuery("SELECT sleep(?)").setArgs(LONG_QRY_TIMEOUT).setQueryInitiatorId(initiatorId))
             .getAll();
 
         assertTrue(logLsnr.check(1000));

@@ -525,7 +525,7 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
      */
     @Test
     @MultiNodeTest
-    public void testQueryInitiatorId() throws Exception {
+    public void testQueryInitiatorId() {
         ListeningTestLogger testLog = testLog();
 
         checkInitiatorId(testLog, "LOCAL", "SELECT sleep_func(?, 0)", LONG_QUERY_WARNING_TIMEOUT);
@@ -535,13 +535,17 @@ public class LongRunningQueryTest extends AbstractIndexingCommonTest {
 
         checkInitiatorId(testLog, "REDUCE", "SELECT sleep_func(?, sum(val)) FROM test WHERE id + 1 = 1",
             LONG_QUERY_WARNING_TIMEOUT);
+
+        checkInitiatorId(testLog, "DML", "UPDATE test SET val = sleep_func(?, val) WHERE id = 0",
+            LONG_QUERY_WARNING_TIMEOUT);
     }
 
     /** */
     private void checkInitiatorId(ListeningTestLogger log, String type, String sql, Object... args) {
         String initiatorId = UUID.randomUUID().toString();
 
-        LogListener lsnr = LogListener.matches(LONG_QUERY_FINISHED_MSG).andMatches(type).andMatches(initiatorId).build();
+        LogListener lsnr = LogListener.matches(LONG_QUERY_FINISHED_MSG).andMatches("type=" + type)
+            .andMatches("initiatorId=" + initiatorId).build();
 
         log.registerListener(lsnr);
 
