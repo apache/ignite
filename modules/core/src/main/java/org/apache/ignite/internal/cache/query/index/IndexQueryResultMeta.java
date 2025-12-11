@@ -25,6 +25,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
@@ -38,7 +39,7 @@ public class IndexQueryResultMeta implements Message {
 
     /** Index key definitions. */
     @Order(value = 1, method = "keyDefinitions")
-    private Map<String, IndexKeyDefinition> keyDefs;
+    private LinkedHashMap<String, IndexKeyDefinition> keyDefs;
 
     /** */
     public IndexQueryResultMeta() {
@@ -49,7 +50,7 @@ public class IndexQueryResultMeta implements Message {
     public IndexQueryResultMeta(SortedIndexDefinition def, int critSize) {
         keyTypeSettings = def.keyTypeSettings();
 
-        keyDefs = new LinkedHashMap<>();
+        keyDefs = U.newLinkedHashMap(critSize);
 
         Iterator<Map.Entry<String, IndexKeyDefinition>> keys = def.indexKeyDefinitions().entrySet().iterator();
 
