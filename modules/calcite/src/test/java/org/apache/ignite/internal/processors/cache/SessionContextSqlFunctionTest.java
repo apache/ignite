@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
@@ -33,39 +31,16 @@ import org.apache.ignite.resources.SessionContextProviderResource;
 import org.apache.ignite.session.SessionContext;
 import org.apache.ignite.session.SessionContextProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** */
-@RunWith(Parameterized.class)
 public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
     /** */
     private static final String SESSION_ID = "sessionId";
 
     /** */
     private Ignite ign;
-
-    /** */
-    @Parameterized.Parameter
-    public CacheAtomicityMode mode;
-
-    /** */
-    @Parameterized.Parameter(1)
-    public boolean isClnNode;
-
-    /** */
-    @Parameterized.Parameters(name = "mode={0}, isClnNode={1}")
-    public static List<Object[]> parameters() {
-        List<Object[]> params = new ArrayList<>();
-
-        for (CacheAtomicityMode m: CacheAtomicityMode.values()) {
-            params.add(new Object[] {m, false});
-            params.add(new Object[] {m, true});
-        }
-
-        return params;
-    }
 
     /** */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -85,11 +60,6 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         ign = startGrids(3);
-
-        if (isClnNode)
-            ign = startClientGrid(3);
-
-        query(ign, "create table PUBLIC.MYTABLE(id int primary key, sessionId varchar);");
     }
 
     /** {@inheritDoc} */
@@ -98,8 +68,14 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testWhereClause() {
+    @ParameterizedTest(name = "client={0}")
+    @ValueSource(booleans = {true, false})
+    public void testWhereClause(boolean isClnNode) throws Exception {
+        if (isClnNode)
+            ign = startClientGrid(3);
+
+        query(ign, "create table PUBLIC.MYTABLE(id int primary key, sessionId varchar);");
+
         for (int i = 0; i < 100; i++) {
             String sesId = i % 2 == 0 ? "1" : "2";
 
@@ -122,8 +98,14 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testInsertClause() {
+    @ParameterizedTest(name = "client={0}")
+    @ValueSource(booleans = {true, false})
+    public void testInsertClause(boolean isClnNode) throws Exception {
+        if (isClnNode)
+            ign = startClientGrid(3);
+
+        query(ign, "create table PUBLIC.MYTABLE(id int primary key, sessionId varchar);");
+
         for (int i = 0; i < 100; i++) {
             String sesId = i % 2 == 0 ? "1" : "2";
 
@@ -142,8 +124,14 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testNestedQuery() {
+    @ParameterizedTest(name = "client={0}")
+    @ValueSource(booleans = {true, false})
+    public void testNestedQuery(boolean isClnNode) throws Exception {
+        if (isClnNode)
+            ign = startClientGrid(3);
+
+        query(ign, "create table PUBLIC.MYTABLE(id int primary key, sessionId varchar);");
+
         for (int i = 0; i < 100; i++) {
             String sesId = i % 2 == 0 ? "1" : "2";
 
@@ -170,8 +158,14 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testOverwriteApplicationAttributes() {
+    @ParameterizedTest(name = "client={0}")
+    @ValueSource(booleans = {true, false})
+    public void testOverwriteApplicationAttributes(boolean isClnNode) throws Exception {
+        if (isClnNode)
+            ign = startClientGrid(3);
+
+        query(ign, "create table PUBLIC.MYTABLE(id int primary key, sessionId varchar);");
+
         Ignite ignApp = ign;
 
         for (int i = 0; i < 100; i++) {
@@ -192,8 +186,14 @@ public class SessionContextSqlFunctionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testMultithreadApplication() throws Exception {
+    @ParameterizedTest(name = "client={0}")
+    @ValueSource(booleans = {true, false})
+    public void testMultithreadApplication(boolean isClnNode) throws Exception {
+        if (isClnNode)
+            ign = startClientGrid(3);
+
+        query(ign, "create table PUBLIC.MYTABLE(id int primary key, sessionId varchar);");
+
         String sesId = "1";
 
         Ignite ignApp = ign.withApplicationAttributes(F.asMap(SESSION_ID, sesId));

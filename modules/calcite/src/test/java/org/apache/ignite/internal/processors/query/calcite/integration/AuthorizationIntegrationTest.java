@@ -46,9 +46,10 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
@@ -63,7 +64,8 @@ import static org.apache.ignite.plugin.security.SecurityPermission.SQL_VIEW_DROP
 /**
  * Test authorization of different operations.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass
+@ValueSource(booleans = {true, false})
 public class AuthorizationIntegrationTest extends AbstractSecurityTest {
     /** */
     private static final String LOGIN = "client";
@@ -87,14 +89,8 @@ public class AuthorizationIntegrationTest extends AbstractSecurityTest {
     private static final AtomicInteger removeCnt = new AtomicInteger();
 
     /** */
-    @Parameterized.Parameter
+    @Parameter
     public boolean allowDdl;
-
-    /** */
-    @Parameterized.Parameters(name = "allowDdl = {0}")
-    public static Iterable<Object> parameters() {
-        return Arrays.asList(false, true);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
