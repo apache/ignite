@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.query.reducer;
 import java.io.Serializable;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -72,7 +71,7 @@ public class IndexQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
     /** {@inheritDoc} */
     @Override protected CompletableFuture<Comparator<NodePage<R>>> pageComparator() {
         return metaFut.thenApply(m -> {
-            LinkedHashMap<String, IndexKeyDefinition> keyDefs = m.keyDefinitions();
+            Map<String, IndexKeyDefinition> keyDefs = m.keyDefinitions();
 
             GridQueryTypeDescriptor typeDesc = cctx.kernalContext().query().typeDescriptor(cctx.name(), QueryUtils.typeName(valType));
 
@@ -86,7 +85,7 @@ public class IndexQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
         private static final long serialVersionUID = 0L;
 
         /** Index key defintiions in case of IndexQuery. */
-        private final LinkedHashMap<String, IndexKeyDefinition> keyDefs;
+        private final Map<String, IndexKeyDefinition> keyDefs;
 
         /** Description of value type for IndexQuery. */
         private final GridQueryTypeDescriptor typeDesc;
@@ -101,7 +100,7 @@ public class IndexQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
         IndexedNodePageComparator(
             IndexQueryResultMeta meta,
             GridQueryTypeDescriptor typeDesc,
-            LinkedHashMap<String, IndexKeyDefinition> keyDefs
+            Map<String, IndexKeyDefinition> keyDefs
         ) {
             this.meta = meta;
             this.typeDesc = typeDesc;
@@ -119,8 +118,8 @@ public class IndexQueryReducer<R> extends MergeSortCacheQueryReducer<R> {
                 while (defs.hasNext()) {
                     Map.Entry<String, IndexKeyDefinition> d = defs.next();
 
-                    IndexKey k1 = key(d.getKey(), d.getValue().idxType(), e1);
-                    IndexKey k2 = key(d.getKey(), d.getValue().idxType(), e2);
+                    IndexKey k1 = key(d.getKey(), d.getValue().indexKeyType(), e1);
+                    IndexKey k2 = key(d.getKey(), d.getValue().indexKeyType(), e2);
 
                     int cmp = idxRowComp.compareKey(k1, k2);
 

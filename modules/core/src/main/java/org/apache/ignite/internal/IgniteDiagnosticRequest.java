@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -43,7 +44,7 @@ public class IgniteDiagnosticRequest implements Message {
 
     /** Infos to send to a remote node. */
     @Order(2)
-    private @Nullable LinkedHashSet<DiagnosticBaseInfo> infos;
+    private @Nullable Set<DiagnosticBaseInfo> infos;
 
     /** Local message related to remote info. */
     private final Map<Object, List<String>> msgs = new LinkedHashMap<>();

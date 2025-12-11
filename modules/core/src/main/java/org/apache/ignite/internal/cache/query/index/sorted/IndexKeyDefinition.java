@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.IndexKeyTypeMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -25,15 +26,15 @@ import org.apache.ignite.plugin.extensions.communication.Message;
  */
 public class IndexKeyDefinition implements Message {
     /** A message for {@link IndexKeyType}. */
-    @org.apache.ignite.internal.Order(value = 0, method = "indexKeyTypeMessage")
+    @Order(value = 0, method = "indexKeyTypeMessage")
     private IndexKeyTypeMessage idxTypeMsg;
 
     /** Order. */
-    @org.apache.ignite.internal.Order(value = 1, method = "ascending")
+    @Order(value = 1, method = "ascending")
     private boolean asc;
 
     /** Precision for variable length key types. */
-    @org.apache.ignite.internal.Order(2)
+    @Order(2)
     private int precision;
 
     /** */
@@ -70,7 +71,7 @@ public class IndexKeyDefinition implements Message {
     }
 
     /** */
-    public IndexKeyType idxType() {
+    public IndexKeyType indexKeyType() {
         return idxTypeMsg.value();
     }
 

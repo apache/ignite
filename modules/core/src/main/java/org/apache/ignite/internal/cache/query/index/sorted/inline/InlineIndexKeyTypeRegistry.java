@@ -178,10 +178,10 @@ public class InlineIndexKeyTypeRegistry {
         List<InlineIndexKeyType> keyTypes = new ArrayList<>();
 
         for (IndexKeyDefinition keyDef: keyDefs) {
-            if (!supportInline(keyDef.idxType(), settings))
+            if (!supportInline(keyDef.indexKeyType(), settings))
                 break;
 
-            keyTypes.add(type(keyDef.idxType(), settings));
+            keyTypes.add(type(keyDef.indexKeyType(), settings));
         }
 
         return Collections.unmodifiableList(keyTypes);

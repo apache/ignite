@@ -38,7 +38,7 @@ public class IndexQueryResultMeta implements Message {
 
     /** Index key definitions. */
     @Order(value = 1, method = "keyDefinitions")
-    private LinkedHashMap<String, IndexKeyDefinition> keyDefs;
+    private Map<String, IndexKeyDefinition> keyDefs;
 
     /** */
     public IndexQueryResultMeta() {
@@ -76,7 +76,7 @@ public class IndexQueryResultMeta implements Message {
     }
 
     /** */
-    public LinkedHashMap<String, IndexKeyDefinition> keyDefinitions() {
+    public Map<String, IndexKeyDefinition> keyDefinitions() {
         return keyDefs;
     }
 
