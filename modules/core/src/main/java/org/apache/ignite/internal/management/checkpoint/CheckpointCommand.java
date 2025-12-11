@@ -42,10 +42,7 @@ public class CheckpointCommand implements ComputeCommand<CheckpointCommandArg, S
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable Collection<ClusterNode> nodes(
-            Collection<ClusterNode> nodes,
-            CheckpointCommandArg arg
-    ) {
+    @Override public @Nullable Collection<ClusterNode> nodes(Collection<ClusterNode> nodes, CheckpointCommandArg arg) {
         return CommandUtils.servers(nodes);
     }
 

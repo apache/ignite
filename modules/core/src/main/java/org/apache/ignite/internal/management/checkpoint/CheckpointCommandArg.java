@@ -39,7 +39,7 @@ public class CheckpointCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(description = "Timeout in milliseconds", optional = true)
-    private Long timeout;
+    private long timeout = -1;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
@@ -52,7 +52,7 @@ public class CheckpointCommandArg extends IgniteDataTransferObject {
     @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         reason = U.readString(in);
         waitForFinish = in.readBoolean();
-        timeout = (Long)in.readObject();
+        timeout = (long)in.readObject();
     }
 
     /** */
@@ -76,12 +76,12 @@ public class CheckpointCommandArg extends IgniteDataTransferObject {
     }
 
     /** */
-    public Long timeout() {
+    public long timeout() {
         return timeout;
     }
 
     /** */
-    public void timeout(Long timeout) {
+    public void timeout(long timeout) {
         this.timeout = timeout;
     }
 }

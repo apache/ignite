@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
@@ -65,25 +64,22 @@ public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, Str
             if (!CU.isPersistenceEnabled(ignite.configuration()))
                 throw new IgniteException("Can't checkpoint on in-memory node");
 
-            String reason = arg.reason();
-            boolean waitForFinish = arg.waitForFinish();
-            Long timeout = arg.timeout();
-
             try {
-                GridKernalContext cctx = ignite.context();
-                GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.cache().context().database();
+                GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ignite.context().cache().context().database();
 
-                CheckpointProgress checkpointfut = dbMgr.forceCheckpoint(reason);
+                CheckpointProgress checkpointfut = dbMgr.forceCheckpoint(arg.reason());
 
-                if (waitForFinish) {
-                    if (timeout != null && timeout > 0)
-                        checkpointfut.futureFor(CheckpointState.FINISHED).get(timeout, TimeUnit.MILLISECONDS);
-                    else
-                        checkpointfut.futureFor(CheckpointState.FINISHED).get();
-                    return "Checkpoint completed on node: " + ignite.localNode().id();
-                }
-                else
+                if (!arg.waitForFinish())
                     return "Checkpoint triggered on node: " + ignite.localNode().id();
+
+                long timeout = arg.timeout();
+
+                if (timeout > 0)
+                    checkpointfut.futureFor(CheckpointState.FINISHED).get(timeout, TimeUnit.MILLISECONDS);
+                else
+                    checkpointfut.futureFor(CheckpointState.FINISHED).get();
+
+                return "Checkpoint completed on node: " + ignite.localNode().id();
             }
             catch (Exception e) {
                 throw new IgniteException("Failed to force checkpoint on node: " + ignite.localNode().id(), e);
