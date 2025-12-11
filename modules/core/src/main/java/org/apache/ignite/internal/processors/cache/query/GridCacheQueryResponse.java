@@ -107,10 +107,10 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
 
     /** {@inheritDoc}
      * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        GridCacheContext cctx = ctx.cacheContext(cacheId);
+        GridCacheContext<?, ?> cctx = ctx.cacheContext(cacheId);
 
         if (dataBytes == null && data != null)
             dataBytes = marshalCollection(data, cctx);
@@ -118,7 +118,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
         if (addDepInfo && !F.isEmpty(data)) {
             for (Object o : data) {
                 if (o instanceof Map.Entry) {
-                    Map.Entry e = (Map.Entry)o;
+                    Map.Entry<?, ?> e = (Map.Entry<?, ?>)o;
 
                     prepareObject(e.getKey(), cctx);
                     prepareObject(e.getValue(), cctx);
@@ -128,7 +128,7 @@ public class GridCacheQueryResponse extends GridCacheIdMessage implements GridCa
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (data == null)
