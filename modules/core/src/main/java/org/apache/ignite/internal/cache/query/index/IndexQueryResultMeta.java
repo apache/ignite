@@ -40,11 +40,11 @@ public class IndexQueryResultMeta implements Message {
     private IndexKeyTypeSettings keyTypeSettings;
 
     /** Index names order holder. Should be serialized before the definitions. */
-    @Order(value = 1, method = "orderredIndexNames")
+    @Order(value = 1, method = "orderedIndexNames")
     private List<String> idxNames;
 
     /** Index definitions serialization holder. Should be serialized after the names. */
-    @Order(value = 2, method = "orderredIndexDefinitions")
+    @Order(value = 2, method = "orderedIndexDefinitions")
     private List<IndexKeyDefinition> idxDefs;
 
     /** Map of index definitions with proper order. */
@@ -91,7 +91,7 @@ public class IndexQueryResultMeta implements Message {
     }
 
     /** @return Index names with proper order. */
-    public Collection<String> orderredIndexNames() {
+    public Collection<String> orderedIndexNames() {
         assert idxDefsMap != null;
 
         return idxDefsMap.keySet();
@@ -101,7 +101,7 @@ public class IndexQueryResultMeta implements Message {
      * Stores index names with proper order to build the linked map later.
      * Should be called once and before the setting of the definitions and the map.
      */
-    public void orderredIndexNames(List<String> idxNames) {
+    public void orderedIndexNames(List<String> idxNames) {
         assert idxNames != null : "Index names cannot be null.";
         assert this.idxNames == null : "Index names should be set once.";
         assert idxDefs == null : "Index definitions should not be initialized yet.";
@@ -111,7 +111,7 @@ public class IndexQueryResultMeta implements Message {
     }
 
     /** @return Index definitions with proper order. */
-    public Collection<IndexKeyDefinition> orderredIndexDefinitions() {
+    public Collection<IndexKeyDefinition> orderedIndexDefinitions() {
         assert idxDefsMap != null;
 
         return idxDefsMap.values();
@@ -121,7 +121,7 @@ public class IndexQueryResultMeta implements Message {
      * Process the index definitions with proper order and buils the linked map.
      * Should be called once and after the setting of the index names.
      */
-    public void orderredIndexDefinitions(List<IndexKeyDefinition> idxDefs) {
+    public void orderedIndexDefinitions(List<IndexKeyDefinition> idxDefs) {
         assert idxDefs != null : "Index definitions cannot be null.";
         assert idxNames != null && idxNames.size() == idxDefs.size() : "Index names should be already properly initialized.";
         assert idxDefsMap == null : "Index definitions map should not be initialized yet.";
