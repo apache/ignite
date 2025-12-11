@@ -27,11 +27,17 @@ public class DefaultEnumMapper {
 
     /** */
     public <T extends Enum<T>> byte encode(T enumVal) {
+        if (enumVal == null)
+            return -1;
+
         return (byte)enumVal.ordinal();
     }
 
     /** */
     public <T extends Enum<T>> T decode(T[] vals, byte enumCode) {
+        if (enumCode < 0)
+            return null;
+
         return vals[enumCode];
     }
 }
