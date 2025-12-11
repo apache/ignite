@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -34,10 +33,8 @@ import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -46,7 +43,6 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
  * Checks SQL query with the WITH clause (AKA Common Table Expressions (CTEs))
  * doesn't break the H2 SQL Engine.
  */
-@RunWith(Parameterized.class)
 public class DropTableAfterCteSqlQueryTest extends AbstractIndexingCommonTest {
     /** */
     private static final String SCHEMA = "PUBLIC";
@@ -69,22 +65,6 @@ public class DropTableAfterCteSqlQueryTest extends AbstractIndexingCommonTest {
 
     /** */
     final CountDownLatch completed = new CountDownLatch(1);
-
-    /** */
-    @Parameterized.Parameter(value = 0)
-    public Boolean validSql;
-
-    /** */
-    @Parameterized.Parameter(value = 1)
-    public String sql;
-
-    /** */
-    @Parameterized.Parameters(name = "VALID_SQL={0}")
-    public static Collection<Object[]> params() {
-        return F.asList(
-            new Object[] {true, VALID_SQL},
-            new Object[] {false, INVALID_SQL});
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -111,8 +91,14 @@ public class DropTableAfterCteSqlQueryTest extends AbstractIndexingCommonTest {
      *
      * @throws Exception If fails.
      */
-    @Test
-    public void testCteQueryDoesNotCrashNode() throws Exception {
+    @ParameterizedTest(name = "validSql={0},query={1}")
+    @CsvSource({
+            "true, " + VALID_SQL,
+            "false, " + VALID_SQL,
+            "true, " + INVALID_SQL,
+            "false, " + INVALID_SQL,
+    })
+    public void testCteQueryDoesNotCrashNode(boolean validSql, String sql) throws Exception {
         node.createCache(new CacheConfiguration<>("T1")
             .setQueryEntities(List.of(
                 new QueryEntity("java.lang.Integer", "T1")
@@ -163,8 +149,14 @@ public class DropTableAfterCteSqlQueryTest extends AbstractIndexingCommonTest {
      * Check that CTE query doesn't prevent the table drop and doesn't prevent
      * the table recreate if used via the SQL API.
      */
-    @Test
-    public void testCteQueryDoesNotPreventTableRecreate() {
+    @ParameterizedTest(name = "validSql={0},query={1}")
+    @CsvSource({
+            "true, " + VALID_SQL,
+            "false, " + VALID_SQL,
+            "true, " + INVALID_SQL,
+            "false, " + INVALID_SQL,
+    })
+    public void testCteQueryDoesNotPreventTableRecreate(boolean validSql, String sql) {
         sql("CREATE TABLE T1 (id INTEGER PRIMARY KEY, data VARCHAR)");
 
         sql("CREATE TABLE T2 (id INTEGER PRIMARY KEY, data VARCHAR)");

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -30,38 +29,22 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "persistence={0}")
+@ValueSource(booleans = {true, false})
 public class SqlTwoCachesInGroupWithSameEntryTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int KEYS = 50_000;
 
-    /**
-     * Test's parameters.
-     */
-    @Parameterized.Parameters(name = "persistence={0}, useOnlyPkHash={1}")
-    public static Iterable<Object[]> params() {
-        return Arrays.asList(
-            new Object[] {true, true},
-            new Object[] {true, false},
-            new Object[] {false, true},
-            new Object[] {false, false}
-        );
-    }
-
-    /** Enable persistence for the test. */
-    @Parameterized.Parameter(0)
+    @Parameter
     public boolean persistenceEnabled;
-
-    /** Disable H2Tree indexes. */
-    @Parameterized.Parameter(1)
-    public boolean useOnlyPkHashIndex;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -90,8 +73,9 @@ public class SqlTwoCachesInGroupWithSameEntryTest extends AbstractIndexingCommon
      * @throws Exception On error.
      */
     @SuppressWarnings("unchecked")
-    @Test
-    public void test() throws Exception {
+    @ParameterizedTest(name = "useOnlyPkHashIndex={0}")
+    @ValueSource(booleans = {true, false})
+    public void test(boolean useOnlyPkHashIndex) throws Exception {
         IgniteEx ign = startGrid(0);
 
         ign.cluster().state(ClusterState.ACTIVE);

@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -43,20 +41,26 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "{index} {0} {1} {2}")
+@CsvSource({
+        "REPLICATED, TRANSACTIONAL, true",
+        "REPLICATED, TRANSACTIONAL, false",
+        "REPLICATED, ATOMIC, true",
+        "REPLICATED, ATOMIC, false",
+        "PARTITIONED, TRANSACTIONAL, true",
+        "PARTITIONED, TRANSACTIONAL, false",
+        "PARTITIONED, ATOMIC, true",
+        "PARTITIONED, ATOMIC, false",
+})
 public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexingCommonTest {
     /** */
     private static final String SQL_TEXT = "select id, name from Person where id=1";
@@ -68,15 +72,15 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
     private static boolean validate;
 
     /** */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public CacheMode cacheMode;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public CacheAtomicityMode atomicityMode;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean near;
 
     /** {@inheritDoc} */
@@ -103,24 +107,7 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
     }
 
     /** */
-    @Parameterized.Parameters(name = "{index} {0} {1} {2}")
-    public static List<Object[]> data() {
-        List<Object[]> res = new ArrayList<>();
-
-        res.add(new Object[] {REPLICATED, TRANSACTIONAL, true});
-        res.add(new Object[] {REPLICATED, TRANSACTIONAL, false});
-        res.add(new Object[] {REPLICATED, ATOMIC, true});
-        res.add(new Object[] {REPLICATED, ATOMIC, false});
-        res.add(new Object[] {PARTITIONED, TRANSACTIONAL, true});
-        res.add(new Object[] {PARTITIONED, TRANSACTIONAL, false});
-        res.add(new Object[] {PARTITIONED, ATOMIC, true});
-        res.add(new Object[] {PARTITIONED, ATOMIC, false});
-
-        return res;
-    }
-
-    /** */
-    @After
+    @AfterEach
     public void tearDown() {
         stopAllGrids();
     }

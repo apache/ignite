@@ -67,23 +67,27 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "Task executor = {0}, Execution strategy = {1}")
+@CsvSource({
+        "STRIPED, FIFO",
+        "STRIPED, LIFO",
+        "STRIPED, RANDOM",
+        "QUERY_BLOCKING, FIFO",
+})
 public class AbstractExecutionTest extends GridCommonAbstractTest {
     /** Last parameter number. */
     protected static final int LAST_PARAM_NUM = 1;
-
-    /** Params string. */
-    protected static final String PARAMS_STRING = "Task executor = {0}, Execution strategy = {1}";
 
     /** */
     protected static final int IN_BUFFER_SIZE = AbstractNode.IN_BUFFER_SIZE;
@@ -152,28 +156,18 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
         }
     }
 
-    /** */
-    @Parameterized.Parameters(name = PARAMS_STRING)
-    public static List<Object[]> parameters() {
-        List<Object[]> params = Stream.of(ExecutionStrategy.values())
-            .map(s -> new Object[] {TaskExecutorType.STRIPED, s})
-            .collect(Collectors.toList());
-
-        params.add(new Object[] {TaskExecutorType.QUERY_BLOCKING, ExecutionStrategy.FIFO});
-
-        return params;
-    }
-
     /** Task executor. */
-    @Parameterized.Parameter
-    public TaskExecutorType taskExecutorType;
+    @Parameter(0)
+    @SuppressWarnings("unused")
+    private TaskExecutorType taskExecutorType;
 
     /** Execution direction. */
-    @Parameterized.Parameter(LAST_PARAM_NUM)
-    public ExecutionStrategy execStgy;
+    @Parameter(LAST_PARAM_NUM)
+    @SuppressWarnings("unused")
+    private ExecutionStrategy execStgy;
 
     /** */
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         nodes = IntStream.range(0, nodesCnt)
             .mapToObj(i -> UUID.randomUUID()).collect(Collectors.toList());
@@ -307,7 +301,7 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @After
+    @AfterEach
     public void tearDown() {
         taskExecutors.values().forEach(AbstractQueryTaskExecutor::tearDown);
 
