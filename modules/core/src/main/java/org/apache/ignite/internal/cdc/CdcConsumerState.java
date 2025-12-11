@@ -58,7 +58,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.WALPoi
  * @see CdcMain
  */
 public class CdcConsumerState {
-
     /** Log. */
     private final IgniteLogger log;
 
@@ -236,10 +235,21 @@ public class CdcConsumerState {
             return dflt.get();
 
         try (ObjectInputStream ois = new ObjectInputStream(Files.newInputStream(state))) {
-
             return (D)ois.readObject();
         }
-        catch (IOException | ClassNotFoundException e) {
+        catch (IOException e) {
+            try {
+                log.warning("State file was been corrupted. Will remove the file and restore state with default [file=" + state + ']');
+
+                Files.delete(state);
+            }
+            catch (IOException ioe) {
+                throw new RuntimeException(e);
+            }
+
+            return dflt.get();
+        }
+        catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
