@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
@@ -35,24 +33,20 @@ import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.testframework.SupplierX;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass
+@EnumSource(value = AbstractBasicIntegrationTransactionalTest.SqlTransactionMode.class)
 public abstract class AbstractBasicIntegrationTransactionalTest extends AbstractBasicIntegrationTest {
     /** */
-    @Parameterized.Parameter()
+    @Parameter
     public SqlTransactionMode sqlTxMode;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "sqlTxMode={0}")
-    public static Collection<?> parameters() {
-        return Arrays.asList(SqlTransactionMode.values());
-    }
 
     /** */
     protected static SqlTransactionMode currentMode;
