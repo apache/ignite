@@ -23,7 +23,6 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.TransactionIsolationMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -84,7 +83,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
     /** Transaction isolation message. */
     @Order(15)
-    private TransactionIsolationMessage isolation;
+    private TransactionIsolation isolation;
 
     /** Key bytes for keys to lock. */
     @Order(16)
@@ -162,7 +161,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
         this.futId = futId;
         this.isInTx = isInTx;
         this.isRead = isRead;
-        this.isolation = new TransactionIsolationMessage(isolation);
+        this.isolation = isolation;
         this.isInvalidate = isInvalidate;
         this.timeout = timeout;
         this.txSize = txSize;
@@ -360,14 +359,14 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     /**
      * @return Transaction isolation message.
      */
-    public TransactionIsolationMessage isolation() {
+    public TransactionIsolation isolation() {
         return isolation;
     }
 
     /**
      * @param isolation Transaction isolation message.
      */
-    public void isolation(TransactionIsolationMessage isolation) {
+    public void isolation(TransactionIsolation isolation) {
         this.isolation = isolation;
     }
 
