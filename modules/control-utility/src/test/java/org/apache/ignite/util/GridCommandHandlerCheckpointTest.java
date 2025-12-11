@@ -19,9 +19,12 @@ package org.apache.ignite.util;
 
 import java.util.Objects;
 import java.util.regex.Pattern;
+
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
@@ -67,6 +70,12 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
         srv.cluster().state(ClusterState.ACTIVE);
 
+        IgniteCache<Integer, Integer> cacheSrv = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, Integer> cacheCli = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+        cacheSrv.put(1, 1);
+        cacheCli.put(1, 1);
+
         assertEquals(EXIT_CODE_OK, execute("--checkpoint"));
 
         String out = testOut.toString();
@@ -74,22 +83,28 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         assertFalse(out.contains(Objects.toString(cli.localNode().consistentId())));
 
         outputContains("Checkpoint triggered on all nodes");
-        assertTrue(checkpointFinishedLsnr.check());
+        assertTrue(GridTestUtils.waitForCondition(checkpointFinishedLsnr::check, 10_000));
 
         testOut.reset();
         checkpointFinishedLsnr.reset();
+
+        cacheSrv.put(2, 2);
+        cacheCli.put(2, 2);
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--reason", "test_reason"));
         outputContains("Checkpoint triggered on all nodes");
 
-        assertTrue(checkpointFinishedLsnr.check());
+        assertTrue(GridTestUtils.waitForCondition(checkpointFinishedLsnr::check, 10_000));
         testOut.reset();
         checkpointFinishedLsnr.reset();
+
+        cacheSrv.put(3, 3);
+        cacheCli.put(3, 3);
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--wait-for-finish"));
         outputContains("Checkpoint triggered on all nodes");
 
-        assertTrue(checkpointFinishedLsnr.check());
+        assertTrue(GridTestUtils.waitForCondition(checkpointFinishedLsnr::check, 10_000));
         checkpointFinishedLsnr.reset();
     }
 
