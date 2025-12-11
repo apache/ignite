@@ -2424,7 +2424,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     *
+     * TODO: IGNITE-27326, remove
      */
     private static class FieldsResult<Q> extends CachedResult<Q> {
         /**

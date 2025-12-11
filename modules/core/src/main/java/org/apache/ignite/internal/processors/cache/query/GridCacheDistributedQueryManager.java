@@ -274,7 +274,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             null,
             sndId,
             req.id(),
-            req.includeMetaData(),
+            req.allPages(),
             req.arguments()
         );
     }
