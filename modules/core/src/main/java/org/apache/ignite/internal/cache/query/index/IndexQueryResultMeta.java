@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.cache.query.index;
 
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
@@ -49,7 +49,7 @@ public class IndexQueryResultMeta implements Message {
     public IndexQueryResultMeta(SortedIndexDefinition def, int critSize) {
         keyTypeSettings = def.keyTypeSettings();
 
-        keyDefs = new LinkedHashMap<>();
+        keyDefs = new HashMap<>(critSize, 1.0f);
 
         Iterator<Map.Entry<String, IndexKeyDefinition>> keys = def.indexKeyDefinitions().entrySet().iterator();
 
@@ -82,8 +82,6 @@ public class IndexQueryResultMeta implements Message {
 
     /** */
     public void keyDefinitions(Map<String, IndexKeyDefinition> keyDefs) {
-        this.keyDefs = keyDefs == null
-            ? null
-            : keyDefs instanceof LinkedHashMap ? (LinkedHashMap)keyDefs : new LinkedHashMap<>(keyDefs);
+        this.keyDefs = keyDefs;
     }
 }
