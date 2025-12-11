@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,20 +33,26 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Test Rolling Upgrade release types.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "client = {0}, persistence = {1}")
+@CsvSource({
+        "true, true",
+        "true, false",
+        "false, true",
+        "false, false",
+})
 public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** */
     private String nodeVer;
@@ -57,18 +61,12 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
      * Indicates whether the tested node is started as a client.
      * This flag is used to run all test cases for both client and server node configurations.
      */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean client;
 
     /** Persistence. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean persistence;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "client={0}, persistence={1}")
-    public static Collection<?> parameters() {
-        return GridTestUtils.cartesianProduct(List.of(false, true), List.of(false, true));
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -301,7 +299,7 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testNodeRestart() throws Exception {
-        assumeTrue("Distributed metastorage is only preserved across restarts when persistence is enabled", persistence);
+        assumeTrue(persistence, "Distributed metastorage is only preserved across restarts when persistence is enabled");
 
         for (int i = 0; i < 3; i++)
             startGrid(i, "2.18.0", false);

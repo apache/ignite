@@ -48,25 +48,23 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.hamcrest.core.IsInstanceOf;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.EnumSource;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "Algorithm = {0}")
+@EnumSource(value = AggregatePlannerTest.AggregateAlgorithm.class)
 public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
     /** Algorithm. */
-    @Parameterized.Parameter
-    public AggregateAlgorithm algo;
-
-    /** */
-    @Parameterized.Parameters(name = "Algorithm = {0}")
-    public static List<Object[]> parameters() {
-        return Stream.of(AggregateAlgorithm.values()).map(a -> new Object[]{a}).collect(Collectors.toList());
-    }
+    @Parameter(0)
+    @SuppressWarnings("unused")
+    private AggregateAlgorithm algo;
 
     /**
      * @throws Exception If failed.
@@ -93,7 +91,7 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
 
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), agg);
 
-        Assert.assertThat(
+        assertThat(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.first(agg.getAggCallList()).getAggregation(),
             IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
@@ -127,7 +125,7 @@ public class AggregatePlannerTest extends AbstractAggregatePlannerTest {
 
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), agg);
 
-        Assert.assertThat(
+        assertThat(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.first(agg.getAggCallList()).getAggregation(),
             IsInstanceOf.instanceOf(SqlAvgAggFunction.class));

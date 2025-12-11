@@ -16,39 +16,22 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.hamcrest.CoreMatchers;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
 
 /**
  * Tests index multi-range scans (with SEARCH/SARG operator or with dynamic parameters).
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "sqlTxMode={0},dynamicParams={1}")
 public class IndexMultiRangeScanIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean dynamicParams;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "sqlTxMode={0},dynamicParams={1}")
-    public static Collection<?> parameters() {
-        List<Object[]> params = new ArrayList<>();
-
-        for (boolean dynamicParams : new boolean[]{true, false}) {
-            for (SqlTransactionMode sqlTxMode : SqlTransactionMode.values()) {
-                params.add(new Object[]{sqlTxMode, dynamicParams});
-            }
-        }
-
-        return params;
-    }
 
     /** {@inheritDoc} */
     @Override protected void init() throws Exception {
