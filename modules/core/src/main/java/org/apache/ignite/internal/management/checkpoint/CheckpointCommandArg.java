@@ -45,14 +45,14 @@ public class CheckpointCommandArg extends IgniteDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, reason);
         out.writeBoolean(waitForFinish);
-        out.writeObject(timeout);
+        out.writeLong(timeout);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         reason = U.readString(in);
         waitForFinish = in.readBoolean();
-        timeout = (long)in.readObject();
+        timeout = in.readLong();
     }
 
     /** */

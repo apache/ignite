@@ -30,12 +30,12 @@ import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.jetbrains.annotations.Nullable;
 
 /** Checkpoint task. */
-public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, String, String> {
+public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, String, Void> {
     /** */
     private static final long serialVersionUID = 0;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<CheckpointCommandArg, String> job(CheckpointCommandArg arg) {
+    @Override protected VisorJob<CheckpointCommandArg, Void> job(CheckpointCommandArg arg) {
         return new CheckpointJob(arg, false);
     }
 
@@ -50,7 +50,7 @@ public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, Str
     }
 
     /** Checkpoint job. */
-    private static class CheckpointJob extends VisorJob<CheckpointCommandArg, String> {
+    private static class CheckpointJob extends VisorJob<CheckpointCommandArg, Void> {
         /** */
         private static final long serialVersionUID = 0;
 
@@ -60,7 +60,7 @@ public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, Str
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(CheckpointCommandArg arg) throws IgniteException {
+        @Override protected Void run(CheckpointCommandArg arg) throws IgniteException {
             if (!CU.isPersistenceEnabled(ignite.configuration()))
                 throw new IgniteException("Can't checkpoint on in-memory node");
 
@@ -69,21 +69,20 @@ public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, Str
 
                 CheckpointProgress checkpointfut = dbMgr.forceCheckpoint(arg.reason());
 
-                if (!arg.waitForFinish())
-                    return "Checkpoint triggered on node: " + ignite.localNode().id();
+                if (arg.waitForFinish()) {
+                    long timeout = arg.timeout();
 
-                long timeout = arg.timeout();
-
-                if (timeout > 0)
-                    checkpointfut.futureFor(CheckpointState.FINISHED).get(timeout, TimeUnit.MILLISECONDS);
-                else
-                    checkpointfut.futureFor(CheckpointState.FINISHED).get();
-
-                return "Checkpoint completed on node: " + ignite.localNode().id();
+                    if (timeout > 0)
+                        checkpointfut.futureFor(CheckpointState.FINISHED).get(timeout, TimeUnit.MILLISECONDS);
+                    else
+                        checkpointfut.futureFor(CheckpointState.FINISHED).get();
+                }
             }
             catch (Exception e) {
                 throw new IgniteException("Failed to force checkpoint on node: " + ignite.localNode().id(), e);
             }
+
+            return null;
         }
     }
 }

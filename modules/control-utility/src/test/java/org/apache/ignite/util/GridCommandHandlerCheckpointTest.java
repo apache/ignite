@@ -59,6 +59,7 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         stopAllGrids();
         cleanPersistenceDir();
         injectTestSystemOut();
+        checkpointFinishedLsnr.reset();
     }
 
     /** Test checkpoint command with persistence enabled. */
@@ -106,8 +107,6 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
         outputContains("Checkpoint triggered on all nodes");
         assertTrue(GridTestUtils.waitForCondition(checkpointFinishedLsnr::check, 10_000));
-
-        checkpointFinishedLsnr.reset();
     }
 
     /** Test checkpoint command with in-memory cluster. */
@@ -128,8 +127,6 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         String out = testOut.toString();
         assertFalse(out.contains(cli.localNode().id().toString()));
         assertFalse(out.contains(Objects.toString(cli.localNode().consistentId())));
-
-        checkpointFinishedLsnr.reset();
     }
 
     /** Test checkpoint with timeout. */
@@ -144,8 +141,6 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
         outputContains("Checkpoint triggered on all nodes");
         assertTrue(checkpointFinishedLsnr.check());
-
-        checkpointFinishedLsnr.reset();
     }
 
     /** */
