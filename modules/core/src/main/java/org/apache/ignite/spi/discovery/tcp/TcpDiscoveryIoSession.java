@@ -141,8 +141,6 @@ public class TcpDiscoveryIoSession {
             out.write(MESSAGE_SERIALIZATION);
 
             serializeMessage((Message)msg, out);
-
-            out.flush();
         }
         catch (Exception e) {
             // Keep logic similar to `U.marshal(...)`.
@@ -271,6 +269,8 @@ public class TcpDiscoveryIoSession {
             finished = msgSer.writeTo(m, msgWriter);
 
             out.write(msgBuf.array(), 0, msgBuf.position());
+
+            out.flush();
         }
         while (!finished);
     }
