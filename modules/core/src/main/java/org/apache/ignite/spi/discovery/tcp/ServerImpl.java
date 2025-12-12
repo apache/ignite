@@ -5210,9 +5210,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             topHist.clear();
                             topHist.putAll(msg.topologyHistory());
-
-                            pendingMsgs.reset(msg.messages(), msg.discardedMessageId(),
-                                msg.discardedCustomMessageId());
                         }
                         else {
                             if (log.isDebugEnabled())

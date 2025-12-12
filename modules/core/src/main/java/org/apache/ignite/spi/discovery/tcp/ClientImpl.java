@@ -920,7 +920,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             Collection<ClusterNode> top = topHist.get(topVer);
 
-            assert top != null : "Failed to find topology history [msg=" + msg + ", hist=" + topHist + ']';
+            assert top != null : "Failed to find topology history [top=" + topVer + ", msg=" + msg + ", hist=" + topHist + ']';
 
             return top;
         }
