@@ -109,6 +109,14 @@ This utility can do the following commands:
     Parameters:
       --groups group1[,group2,....,groupN]  - Comma-separated list of cache groups. If not set action applied to all groups.
 
+  Trigger checkpoint with optional parameters:
+    control.(sh|bat) --checkpoint [--reason reason] [--wait-for-finish] [--timeout timeout]
+
+    Parameters:
+      --reason reason    - Reason for checkpoint.
+      --wait-for-finish  - Wait for checkpoint to finish.
+      --timeout timeout  - Timeout in milliseconds.
+
   Print diagnostic command help:
     control.(sh|bat) --diagnostic
 

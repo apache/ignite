@@ -24,6 +24,7 @@ import org.apache.ignite.internal.management.api.NoArg;
 import org.apache.ignite.internal.management.baseline.BaselineCommand;
 import org.apache.ignite.internal.management.cache.CacheCommand;
 import org.apache.ignite.internal.management.cdc.CdcCommand;
+import org.apache.ignite.internal.management.checkpoint.CheckpointCommand;
 import org.apache.ignite.internal.management.consistency.ConsistencyCommand;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand;
 import org.apache.ignite.internal.management.diagnostic.DiagnosticCommand;
@@ -58,6 +59,7 @@ public class IgniteCommandRegistry extends CommandRegistryImpl<NoArg, Void> {
             new TxCommand(),
             new CacheCommand(),
             new WalCommand(),
+            new CheckpointCommand(),
             new DiagnosticCommand(),
             new EncryptionCommand(),
             new KillCommand(),
