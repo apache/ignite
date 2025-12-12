@@ -5423,7 +5423,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg.maxHopsReached()) {
                 if (log.isInfoEnabled()) {
                     log.info("Latency check has been discarded (max hops reached) [id=" + msg.id() +
-                        ", maxHops=" + msg.maxHops() + ']');
+                        ", maxHops=" + msg.maximalHops() + ']');
                 }
 
                 return;
