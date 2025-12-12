@@ -1609,7 +1609,7 @@ public class DirectByteBufferStream {
      * @param reader Reader.
      * @return {@link ArrayList}.
      */
-    public <C extends List<?>> C readList(MessageCollectionItemType itemType, MessageReader reader) {
+    public <L extends List<?>> L readList(MessageCollectionItemType itemType, MessageReader reader) {
         return readCollection(itemType, reader, false);
     }
 
