@@ -27,11 +27,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.stream.Stream;
+
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -43,10 +45,11 @@ import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvParser;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.ComparisonFailure;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -58,7 +61,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 /**
  * COPY statement tests.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass
+@MethodSource("allTypesArgs")
 public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
     /** Subdirectory with CSV files. */
     private static final String CSV_FILE_SUBDIR = "/modules/clients/src/test/resources/";
@@ -138,28 +142,29 @@ public class JdbcThinBulkLoadSelfTest extends JdbcThinAbstractDmlStatementSelfTe
     private Statement stmt;
 
     /** Parametrized run param : cacheMode. */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public CacheMode cacheMode;
 
     /** Parametrized run param : atomicity. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public CacheAtomicityMode atomicityMode;
 
     /** Parametrized run param : near mode. */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public Boolean isNear;
 
     /** Test run configurations: Cache mode, atomicity type, is near. */
-    @Parameterized.Parameters
-    public static Collection<Object[]> runConfig() {
-        return Arrays.asList(new Object[][] {
-            {PARTITIONED, ATOMIC, true},
-            {PARTITIONED, ATOMIC, false},
-            {PARTITIONED, TRANSACTIONAL, true},
-            {PARTITIONED, TRANSACTIONAL, false},
-            {REPLICATED, ATOMIC, false},
-            {REPLICATED, TRANSACTIONAL, false},
-        });
+    private static Stream<Arguments> allTypesArgs() {
+        List<Arguments> params = List.of(
+            Arguments.of(PARTITIONED, ATOMIC, true),
+            Arguments.of(PARTITIONED, ATOMIC, false),
+            Arguments.of(PARTITIONED, TRANSACTIONAL, true),
+            Arguments.of(PARTITIONED, TRANSACTIONAL, false),
+            Arguments.of(REPLICATED, ATOMIC, false),
+            Arguments.of(REPLICATED, TRANSACTIONAL, false)
+        );
+
+        return params.stream();
     }
 
     /** {@inheritDoc} */

@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DiskPageCompression;
@@ -41,9 +43,12 @@ import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.MAX_PAGE_SIZE;
 import static org.apache.ignite.configuration.DiskPageCompression.LZ4;
@@ -60,43 +65,9 @@ import static org.apache.ignite.internal.util.GridUnsafe.bufferAddress;
 
 /**
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "page_size = {0}, block_size = {1}, compression = {2}, level = {3}")
+@MethodSource("allTypesArgs")
 public class CompressionProcessorTest extends GridCommonAbstractTest {
-    /** */
-    @Parameterized.Parameters(name = "page_size = {0}, block_size = {1}, compression = {2}, level = {3}")
-    public static Iterable<Object[]> testParameters() {
-        List<Object[]> params = new ArrayList<>();
-
-        for (int pageSz = 4 * 1024; pageSz <= MAX_PAGE_SIZE; pageSz *= 2) {
-            for (int blockSize : Arrays.asList(16, 128, 1024, 2048)) {
-                params.add(new Object[] {pageSz, blockSize, SKIP_GARBAGE, 0});
-                params.add(new Object[] {pageSz, blockSize, SNAPPY, 0});
-                params.add(new Object[] {pageSz, blockSize, LZ4, LZ4_MIN_LEVEL});
-                params.add(new Object[] {pageSz, blockSize, LZ4, LZ4_MAX_LEVEL});
-                params.add(new Object[] {pageSz, blockSize, ZSTD, ZSTD_DEFAULT_LEVEL});
-                params.add(new Object[] {pageSz, blockSize, ZSTD, ZSTD_MAX_LEVEL});
-            }
-        }
-
-        return params;
-    }
-
-    /** */
-    @Parameterized.Parameter
-    public int pageSize;
-
-    /** */
-    @Parameterized.Parameter(1)
-    public int blockSize;
-
-    /** */
-    @Parameterized.Parameter(2)
-    public DiskPageCompression compression;
-
-    /** */
-    @Parameterized.Parameter(3)
-    public int compressLevel;
-
     /** */
     private CompressionProcessor p;
 
@@ -105,6 +76,22 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
 
     /** */
     private TestLeafIO leafIo;
+
+    /** */
+    @Parameter(0)
+    public int pageSize;
+
+    /** */
+    @Parameter(1)
+    public int blockSize;
+
+    /** */
+    @Parameter(2)
+    public DiskPageCompression compression;
+
+    /** */
+    @Parameter(3)
+    public int compressLevel;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() {
@@ -123,11 +110,34 @@ public class CompressionProcessorTest extends GridCommonAbstractTest {
         p = new CompressionProcessorImpl(new GridTestKernalContext(log));
     }
 
+    private static Stream<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
+
+        for (int pageSz = 4 * 1024; pageSz <= MAX_PAGE_SIZE; pageSz *= 2) {
+            for (int blockSize : Arrays.asList(16, 128, 1024, 2048)) {
+                params.add(Arguments.of(pageSz, blockSize, SKIP_GARBAGE, 0));
+                params.add(Arguments.of(pageSz, blockSize, SNAPPY, 0));
+                params.add(Arguments.of(pageSz, blockSize, LZ4, LZ4_MIN_LEVEL));
+                params.add(Arguments.of(pageSz, blockSize, LZ4, LZ4_MAX_LEVEL));
+                params.add(Arguments.of(pageSz, blockSize, ZSTD, ZSTD_DEFAULT_LEVEL));
+                params.add(Arguments.of(pageSz, blockSize, ZSTD, ZSTD_MAX_LEVEL));
+            }
+        }
+
+        return params.stream();
+    }
+
     /**
      * @throws IgniteCheckedException If failed.
      */
-    @Test
-    public void testDataPage() throws IgniteCheckedException {
+    @ParameterizedTest(name = "page_size = {0}, block_size = {1}, compression = {2}, level = {3}")
+    @MethodSource("allTypesArgs")
+    public void testDataPage(
+            int pageSize,
+            int blockSize,
+            DiskPageCompression compression,
+            int compressLevel
+    ) throws IgniteCheckedException {
         Random rnd = ThreadLocalRandom.current();
 
         final byte[][] rows = new byte[][]{
