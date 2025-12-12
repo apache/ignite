@@ -30,7 +30,6 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
 import static com.google.testing.compile.CompilationSubject.assertThat;
@@ -173,11 +172,35 @@ public class MessageProcessorTest {
 
     /** */
     @Test
-    public void testEnumFieldFailed() {
-        Compilation compilation = compile("UnwrappedEnumFieldMessage.java");
+    public void testDefaultMapperEnumFields() {
+        Compilation compilation = compile("DefaultMapperEnumFieldsMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.codegen.DefaultMapperEnumFieldsMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("DefaultMapperEnumFieldsMessageSerializer.java"));
+    }
+
+    /** */
+    @Test
+    public void testMappedByOnWrongField() {
+        Compilation compilation = compile("CustomEnumMapperOnWrongFieldMessage.java");
 
         assertThat(compilation).failed();
-        assertThat(compilation).hadErrorContaining("Unsupported enum type: " + TransactionIsolation.class.getName());
+        assertThat(compilation).hadErrorContaining("Annotation @CustomMapper must only be used for enum fields.");
+    }
+
+    /** */
+    @Test
+    public void testCustomMapperEnumFieldsMessage() {
+        Compilation compilation = compile("CustomMapperEnumFieldsMessage.java", "TransactionIsolationCustomMapper.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.codegen.CustomMapperEnumFieldsMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("CustomMapperEnumFieldsMessageSerializer.java"));
     }
 
     /** */

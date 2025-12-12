@@ -20,16 +20,17 @@ package org.apache.ignite.internal;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.TransactionIsolation;
 
-public class UnwrappedEnumFieldMessage implements Message {
+public class CustomMapperEnumFieldsMessage implements Message {
     @Order(0)
-    private TransactionIsolation isolation;
+    @CustomMapper("org.apache.ignite.internal.TransactionIsolationCustomMapper")
+    private TransactionIsolation txMode;
 
-    public TransactionIsolation isolation() {
-        return isolation;
+    public TransactionIsolation txMode() {
+        return txMode;
     }
 
-    public void isolation(TransactionIsolation isolation) {
-        this.isolation = isolation;
+    public void txMode(TransactionIsolation txMode) {
+        this.txMode = txMode;
     }
 
     public short directType() {

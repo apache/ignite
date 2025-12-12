@@ -26,7 +26,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.configuration.DeploymentMode;
-import org.apache.ignite.internal.managers.communication.DeploymentModeMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -121,8 +120,8 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     private IgniteUuid clsLdrId;
 
     /** */
-    @Order(value = 14, method = "deploymentModeMessage")
-    private DeploymentModeMessage depModeMsg;
+    @Order(value = 14, method = "deploymentMode")
+    private DeploymentMode depMode;
 
     /** */
     @Order(15)
@@ -254,7 +253,7 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
         this.sesAttrs = sesAttrs;
         this.jobAttrs = jobAttrs;
         this.clsLdrId = clsLdrId;
-        depModeMsg = new DeploymentModeMessage(depMode);
+        this.depMode = depMode;
         this.dynamicSiblings = dynamicSiblings;
         this.ldrParticipants = ldrParticipants;
         this.forceLocDep = forceLocDep;
@@ -490,22 +489,15 @@ public class GridJobExecuteRequest implements ExecutorAwareMessage {
     /**
      * @return Deployment mode.
      */
-    public DeploymentMode getDeploymentMode() {
-        return depModeMsg.value();
+    public DeploymentMode deploymentMode() {
+        return depMode;
     }
 
     /**
-     * @return Deployment mode messsage.
+     * @param depMode New deployment mode value.
      */
-    public DeploymentModeMessage deploymentModeMessage() {
-        return depModeMsg;
-    }
-
-    /**
-     * @param depModeMsg New deployment mode messsage.
-     */
-    public void deploymentModeMessage(DeploymentModeMessage depModeMsg) {
-        this.depModeMsg = depModeMsg;
+    public void deploymentMode(DeploymentMode depMode) {
+        this.depMode = depMode;
     }
 
     /**
