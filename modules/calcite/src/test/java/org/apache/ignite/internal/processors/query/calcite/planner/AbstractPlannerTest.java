@@ -100,8 +100,8 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
@@ -141,7 +141,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     protected ListeningTestLogger lsnrLog = new ListeningTestLogger(log);
 
     /** */
-    @Before
+    @BeforeEach
     public void setup() {
         nodes = new ArrayList<>(4);
 
@@ -150,7 +150,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @After
+    @AfterEach
     public void tearDown() throws Throwable {
         if (!F.isEmpty(executors))
             executors.forEach(StripedQueryTaskExecutor::tearDown);
