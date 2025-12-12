@@ -41,6 +41,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
@@ -639,6 +640,19 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         return res;
     }
 
+    /** Test-only hook: how many times executeFieldsQuery was hit. */
+    private static final AtomicInteger EXECUTE_FIELDS_QRY_HITS = new AtomicInteger();
+
+    /** Test-only hook. */
+    static void resetExecuteFieldsQueryHitCount() {
+        EXECUTE_FIELDS_QRY_HITS.set(0);
+    }
+
+    /** Test-only hook. */
+    static int executeFieldsQueryHitCount() {
+        return EXECUTE_FIELDS_QRY_HITS.get();
+    }
+
     /**
      * Performs fields query.
      *
@@ -652,6 +666,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     private FieldsResult executeFieldsQuery(CacheQuery<?> qry, @Nullable Object[] args,
         boolean loc, @Nullable String taskName, Object rcpt) throws IgniteCheckedException {
+        EXECUTE_FIELDS_QRY_HITS.incrementAndGet();
         assert qry != null;
         assert qry.type() == SQL_FIELDS : "Unexpected query type: " + qry.type();
 
