@@ -29,7 +29,8 @@ package org.apache.ignite.plugin.extensions.communication.mappers;
  * <ul>
  *     <li>Each enum constant maps to a unique {@code byte} value.</li>
  *     <li>The {@code byte} codes are stable and consistent across all nodes in the cluster.</li>
- *     <li>The {@link #decode(byte)} method handles invalid or unknown codes appropriately (e.g., throws an exception or returns a default).</li>
+ *     <li>The {@link #decode(byte)} method handles invalid or unknown codes appropriately
+ *     (e.g., throws an exception or returns a default).</li>
  * </ul>
  * </p>
  *
