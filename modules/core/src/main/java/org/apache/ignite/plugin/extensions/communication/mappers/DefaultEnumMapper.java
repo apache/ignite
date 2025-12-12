@@ -25,7 +25,11 @@ public class DefaultEnumMapper {
     /** */
     private DefaultEnumMapper() {}
 
-    /** */
+    /**
+     * @param <T> Enum type.
+     * @param enumVal Enum value to encode.
+     * @return {@code byte} representation of the enum value (non-negative) or {@code -1} if {@code null} value was provided.
+     */
     public <T extends Enum<T>> byte encode(T enumVal) {
         if (enumVal == null)
             return -1;
@@ -33,10 +37,19 @@ public class DefaultEnumMapper {
         return (byte)enumVal.ordinal();
     }
 
-    /** */
+    /**
+     * @param <T> Enum type.
+     * @param vals Array of all possible values of the enum type. Should not be null.
+     * @param enumCode {@code byte} representation of enum value.
+     * @return Enum value or {@code null} if negative enumCode was provided.
+     * @throws IllegalArgumentException if enumCode is out of range.
+     */
     public <T extends Enum<T>> T decode(T[] vals, byte enumCode) {
         if (enumCode < 0)
             return null;
+
+        if (enumCode > vals.length - 1)
+            throw new IllegalArgumentException("Enum code " + enumCode + " is out of range for enum type " + vals[0].getClass().getName());
 
         return vals[enumCode];
     }

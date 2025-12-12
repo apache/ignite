@@ -140,8 +140,7 @@ public class MessageProcessor extends AbstractProcessor {
                         TypeMirror elType = el.asType();
 
                         if (elType.getKind().isPrimitive() ||
-                            processingEnv.getTypeUtils().asElement(elType).getKind() != ElementKind.ENUM)
-                        {
+                            processingEnv.getTypeUtils().asElement(elType).getKind() != ElementKind.ENUM) {
                             processingEnv.getMessager().printMessage(
                                 Diagnostic.Kind.ERROR,
                                 "Annotation @CustomMapper must only be used for enum fields.",

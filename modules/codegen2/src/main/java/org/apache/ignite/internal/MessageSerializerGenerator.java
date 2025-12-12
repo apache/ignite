@@ -421,7 +421,8 @@ class MessageSerializerGenerator {
                     fields.add("private final CustomMapper<" + enumName + "> " + mapperFieldName + " = new " + simpleName + "();");
 
                     mapperCallStmnt = mapperFieldName + ".encode";
-                } else {
+                }
+                else {
                     imports.add("org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper");
                     String enumValuesFieldName = enumFieldPrefix + "Vals";
 
