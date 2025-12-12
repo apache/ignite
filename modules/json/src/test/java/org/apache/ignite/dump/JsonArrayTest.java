@@ -25,27 +25,21 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.jackson.IgniteObjectMapper;
 import org.apache.ignite.platform.model.Department;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.IgniteCommonsSystemProperties.DFLT_IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "useBinaryArrays={0}")
+@ValueSource(booleans = {true, false})
 public class JsonArrayTest extends GridCommonAbstractTest {
     /** */
-    @Parameterized.Parameter
+    @Parameter
     public boolean useBinaryArrays;
-
-    /**
-     * @return Test parameters.
-     */
-    @Parameterized.Parameters(name = "useBinaryArrays={0}")
-    public static Object[] parameters() {
-        return new Object[] {true, false};
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
