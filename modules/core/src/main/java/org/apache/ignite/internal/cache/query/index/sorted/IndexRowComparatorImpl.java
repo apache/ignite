@@ -52,7 +52,7 @@ public class IndexRowComparatorImpl implements IndexRowComparator {
         // Value can be set up by user in query with different data type. Don't compare uncomparable types in this comparator.
         if (inlineKeyType == key.type() || isInlineComparable(type, key)) {
             // If inlining of POJO is not supported then don't compare it here.
-            if (inlineKeyType != IndexKeyType.JAVA_OBJECT || keyTypeSettings.inlineObjSupported())
+            if (inlineKeyType != IndexKeyType.JAVA_OBJECT || keyTypeSettings.inlineObjectSupported())
                 return type.compare(pageAddr, off, maxSize, key);
             else
                 return CANT_BE_COMPARE;

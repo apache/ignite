@@ -17,32 +17,28 @@
 
 package org.apache.ignite.internal.cache.query.index;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Metadata for IndexQuery response. This information is required to be sent to a node that initiated a query.
  * Thick client nodes may have irrelevant information about index structure, {@link MetaPageInfo}.
  */
-public class IndexQueryResultMeta implements Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class IndexQueryResultMeta implements Message {
     /** Index key settings. */
+    @Order(0)
     private IndexKeyTypeSettings keyTypeSettings;
 
     /** Index key definitions. */
-    private LinkedHashMap<String, IndexKeyDefinition> keyDefs;
+    @Order(value = 1, method = "keyDefinitions")
+    private Map<String, IndexKeyDefinition> keyDefs;
 
     /** */
     public IndexQueryResultMeta() {
@@ -53,7 +49,7 @@ public class IndexQueryResultMeta implements Externalizable {
     public IndexQueryResultMeta(SortedIndexDefinition def, int critSize) {
         keyTypeSettings = def.keyTypeSettings();
 
-        keyDefs = new LinkedHashMap<>();
+        keyDefs = new HashMap<>(critSize, 1.0f);
 
         Iterator<Map.Entry<String, IndexKeyDefinition>> keys = def.indexKeyDefinitions().entrySet().iterator();
 
@@ -64,27 +60,28 @@ public class IndexQueryResultMeta implements Externalizable {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 18;
+    }
+
     /** */
     public IndexKeyTypeSettings keyTypeSettings() {
         return keyTypeSettings;
     }
 
     /** */
-    public LinkedHashMap<String, IndexKeyDefinition> keyDefinitions() {
+    public void keyTypeSettings(IndexKeyTypeSettings keyTypeSettings) {
+        this.keyTypeSettings = keyTypeSettings;
+    }
+
+    /** */
+    public Map<String, IndexKeyDefinition> keyDefinitions() {
         return keyDefs;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(keyTypeSettings);
-
-        U.writeMap(out, keyDefs);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        keyTypeSettings = (IndexKeyTypeSettings)in.readObject();
-
-        keyDefs = U.readLinkedMap(in);
+    /** */
+    public void keyDefinitions(Map<String, IndexKeyDefinition> keyDefs) {
+        this.keyDefs = keyDefs;
     }
 }
