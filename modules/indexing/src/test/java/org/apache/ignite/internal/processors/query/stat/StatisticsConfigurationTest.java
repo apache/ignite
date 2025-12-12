@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
@@ -41,9 +40,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.internal.processors.query.stat.IgniteStatisticsHelper.buildDefaultConfigurations;
 import static org.apache.ignite.internal.processors.query.stat.StatisticsUsageState.NO_UPDATE;
@@ -53,7 +53,8 @@ import static org.apache.ignite.internal.processors.query.stat.StatisticsUsageSt
 /**
  * Tests for statistics configuration.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "persist={0}")
+@ValueSource(booleans = {true, false})
 public class StatisticsConfigurationTest extends StatisticsAbstractTest {
     /** Columns to check.*/
     private static final String[] COLUMNS = {"A", "B", "C"};
@@ -65,22 +66,9 @@ public class StatisticsConfigurationTest extends StatisticsAbstractTest {
     /** Logger which tries to catch client-side statistics store warning. */
     private final ListeningTestLogger obsolescenceAwareLog = new ListeningTestLogger(log(), obsolescenceLsnr);
 
-    /** Lazy mode. */
-    @Parameterized.Parameter(value = 0)
+    /** Persistence enabled flag. */
+    @Parameter(0)
     public boolean persist;
-
-    /** */
-    @Parameterized.Parameters(name = "persist={0}")
-    public static List<Object[]> parameters() {
-        ArrayList<Object[]> params = new ArrayList<>();
-
-        boolean[] arrBool = new boolean[] {true, false};
-
-        for (boolean persist0 : arrBool)
-            params.add(new Object[] {persist0});
-
-        return params;
-    }
 
     /** Statistic checker: total row count. */
     private Consumer<List<ObjectStatisticsImpl>> checkTotalRows = stats -> {

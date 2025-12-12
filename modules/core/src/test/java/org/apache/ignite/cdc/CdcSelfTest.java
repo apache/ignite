@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -36,6 +35,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -69,9 +70,11 @@ import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID;
@@ -88,10 +91,11 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "consistentId={0}, wal={1}, persistence={2}")
+@MethodSource("allTypesArgs")
 public class CdcSelfTest extends AbstractCdcTest {
     /** */
     public static final String TX_CACHE_NAME = "tx-cache";
@@ -109,31 +113,30 @@ public class CdcSelfTest extends AbstractCdcTest {
     private String storagePath;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean specificConsistentId;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public WALMode walMode;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean persistenceEnabled;
 
     /** */
     private long cdcWalDirMaxSize = DFLT_CDC_WAL_DIRECTORY_MAX_SIZE;
 
     /** */
-    @Parameterized.Parameters(name = "consistentId={0}, wal={1}, persistence={2}")
-    public static Collection<?> parameters() {
-        List<Object[]> params = new ArrayList<>();
+    private static Stream<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         for (WALMode mode : EnumSet.of(WALMode.FSYNC, WALMode.LOG_ONLY, WALMode.BACKGROUND))
             for (boolean specificConsistentId : new boolean[] {false, true})
                 for (boolean persistenceEnabled : new boolean[] {true, false})
-                    params.add(new Object[] {specificConsistentId, mode, persistenceEnabled});
+                    params.add(Arguments.of(specificConsistentId, mode, persistenceEnabled));
 
-        return params;
+        return params.stream();
     }
 
     /** {@inheritDoc} */
@@ -331,8 +334,8 @@ public class CdcSelfTest extends AbstractCdcTest {
     /** */
     @Test
     public void testReadOneByOneForBackup() throws Exception {
-        assumeTrue("CDC with 2 local nodes can't determine correct PDS directory without specificConsistentId.",
-            specificConsistentId);
+        assumeTrue(specificConsistentId,
+                "CDC with 2 local nodes can't determine correct PDS directory without specificConsistentId.");
 
         IgniteEx ign = startGrids(2);
 

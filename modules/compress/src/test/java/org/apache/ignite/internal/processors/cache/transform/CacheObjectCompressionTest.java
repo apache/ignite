@@ -18,42 +18,25 @@
 package org.apache.ignite.internal.processors.cache.transform;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.apache.ignite.internal.processors.cache.transform.AbstractCacheObjectCompressionTest.CompressionTransformer.CompressionType;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
 public class CacheObjectCompressionTest extends AbstractCacheObjectCompressionTest {
-    /** Thin client. */
-    @Parameterized.Parameter
-    public CompressionType type;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "type={0}")
-    public static Collection<?> parameters() {
-        List<Object[]> res = new ArrayList<>();
-
-        for (CompressionType type : CompressionType.values())
-            res.add(new Object[] {type});
-
-        return res;
-    }
-
     /**
      * @throws Exception If failed.
      */
-    @Test
-    public void testCompression() throws Exception {
+    @ParameterizedTest(name = "type={0}")
+    @EnumSource
+    public void testCompression(CompressionType type) throws Exception {
         try {
             CompressionTransformer.type = type;
 

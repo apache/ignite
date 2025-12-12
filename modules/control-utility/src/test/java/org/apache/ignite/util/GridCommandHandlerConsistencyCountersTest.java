@@ -30,6 +30,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -60,9 +62,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.transactions.TransactionHeuristicException;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -81,7 +83,6 @@ import static org.apache.ignite.testframework.LogListener.matches;
 /**
  *
  */
-@RunWith(Parameterized.class)
 public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** */
     public static final String CACHE = "--cache";
@@ -93,9 +94,8 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
     public static final String PARTITIONS = "--partitions";
 
     /** */
-    @Parameterized.Parameters(name = "strategy={0}, reuse={1}, historical={2}, atomicity={3}, walRestore={4}")
-    public static Iterable<Object[]> data() {
-        List<Object[]> res = new ArrayList<>();
+    private static Stream<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         int cntr = 0;
         List<String> invokers = commandHandlers();
@@ -105,52 +105,22 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
                 for (boolean historical : new boolean[] {false, true}) {
                     for (CacheAtomicityMode atomicityMode : new CacheAtomicityMode[] {ATOMIC, TRANSACTIONAL}) {
                         for (boolean walRestore: new boolean[] {false, true}) {
-                            res.add(new Object[]{
+                            params.add(Arguments.of(
                                 invokers.get(cntr++ % invokers.size()),
                                 strategy,
                                 reuse,
                                 historical,
                                 atomicityMode,
                                 walRestore
-                            });
+                            ));
                         }
                     }
                 }
             }
         }
 
-        return res;
+        return params.stream();
     }
-
-    /**
-     * ReadRepair strategy
-     */
-    @Parameterized.Parameter(1)
-    public ReadRepairStrategy strategy;
-
-    /**
-     * When true, updates will reuse already existing keys.
-     */
-    @Parameterized.Parameter(2)
-    public boolean reuseKeys;
-
-    /**
-     * When true, historical rebalance will be used instead of full.
-     */
-    @Parameterized.Parameter(3)
-    public boolean historical;
-
-    /**
-     * Cache atomicity mode
-     */
-    @Parameterized.Parameter(4)
-    public CacheAtomicityMode atomicityMode;
-
-    /**
-     * Ignite nodes use WAL for restoring logical updates at restart after the crash.
-     */
-    @Parameterized.Parameter(5)
-    public boolean walRestore;
 
     /** Listening logger. */
     protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
@@ -237,10 +207,22 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
      * It may detect counters and/or hash inconsistency (depends on test params).
      * Step 2: Repairing the data using '--consistency repair'.
      * Step 3: Fixing counters using '--consistency finalize'.
-     * Profit :)
+     *
+     * @param strategy ReadRepair strategy.
+     * @param reuseKeys When true, updates will reuse already existing keys.
+     * @param historical When true, historical rebalance will be used instead of full.
+     * @param atomicityMode Cache atomicity mode.
+     * @param walRestore Ignite nodes use WAL for restoring logical updates at restart after the crash.
      */
-    @Test
-    public void testCountersOnCrachRecovery() throws Exception {
+    @ParameterizedTest(name = "strategy={0}, reuse={1}, historical={2}, atomicity={3}, walRestore={4}")
+    @MethodSource("allTypesArgs")
+    public void testCountersOnCrachRecovery(
+            ReadRepairStrategy strategy,
+            boolean reuseKeys,
+            boolean historical,
+            CacheAtomicityMode atomicityMode,
+            boolean walRestore
+    ) throws Exception {
         int nodes = 3;
         int backupNodes = nodes - 1;
 
@@ -479,7 +461,7 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
 
         stopAllGrids();
 
-        checkAsyncPutOperationsFinished(asyncPutFuts);
+        checkAsyncPutOperationsFinished(asyncPutFuts, atomicityMode);
 
         ioBlocked = false;
 
@@ -660,7 +642,7 @@ public class GridCommandHandlerConsistencyCountersTest extends GridCommandHandle
     /**
      * Checks that all async put operations are finished.
      */
-    private void checkAsyncPutOperationsFinished(GridCompoundFuture<?, ?> asyncPutFuts) {
+    private void checkAsyncPutOperationsFinished(GridCompoundFuture<?, ?> asyncPutFuts, CacheAtomicityMode atomicityMode) {
         asyncPutFuts.markInitialized();
 
         try {

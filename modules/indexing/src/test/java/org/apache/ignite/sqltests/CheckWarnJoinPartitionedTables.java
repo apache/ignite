@@ -17,7 +17,6 @@
 
 package org.apache.ignite.sqltests;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.cache.QueryEntity;
@@ -31,12 +30,14 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Check that illegal joins of partitioned tables are warned. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "join={0}")
+@ValueSource(strings = {"LEFT JOIN", "RIGHT JOIN", "INNER JOIN", "JOIN"})
 public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
     /** */
     private final ListeningTestLogger testLog = new ListeningTestLogger(log);
@@ -45,14 +46,8 @@ public class CheckWarnJoinPartitionedTables extends GridCommonAbstractTest {
     private IgniteEx crd;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public String joinType;
-
-    /** */
-    @Parameterized.Parameters(name = "join={0}")
-    public static List<Object> params() {
-        return Arrays.asList("LEFT JOIN", "RIGHT JOIN", "INNER JOIN", "JOIN");
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

@@ -26,18 +26,15 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /**
  * Tests proper exception is thrown when multiline expressions are executed on thin client on both engines.
  */
-@RunWith(Parameterized.class)
 public class MultiLineQueryTest extends GridCommonAbstractTest {
     /** */
     private static final String H2_ENGINE = IndexingQueryEngineConfiguration.ENGINE_NAME;
@@ -47,16 +44,6 @@ public class MultiLineQueryTest extends GridCommonAbstractTest {
 
     /** */
     private IgniteClient cli;
-
-    /** */
-    @Parameterized.Parameter
-    public String queryEngine;
-
-    /** */
-    @Parameterized.Parameters(name = "engine={0}")
-    public static List<Object> parameters() {
-        return F.asList(H2_ENGINE, CALCITE_ENGINE);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -93,8 +80,10 @@ public class MultiLineQueryTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testMultilineThrowsProperException() {
+    @SuppressWarnings("ThrowableNotThrown")
+    @ParameterizedTest
+    @ValueSource(strings = {H2_ENGINE, CALCITE_ENGINE})
+    public void testMultilineThrowsProperException(String queryEngine) {
         assertThrows(log(), () -> {
             execute("insert /* QUERY_ENGINE('" + queryEngine + "') */ into test (id, val) values (1, 'hello');" +
                 "select /* QUERY_ENGINE('" + queryEngine + "') */ val from test where id = 1");

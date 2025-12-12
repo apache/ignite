@@ -17,8 +17,6 @@
 
 package org.apache.ignite.cdc;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -47,33 +45,29 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /**
- * This tests check that the following scenario will works correctly.
+ * This tests check that the following scenario will work correctly.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "walMode={0}")
+@EnumSource(value = WALMode.class, names = {"NONE"}, mode = EnumSource.Mode.EXCLUDE)
 public class WalRolloverOnStopTest extends GridCommonAbstractTest {
     /** WAL mode. */
-    @Parameterized.Parameter
+    @Parameter
     public WALMode walMode;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "walMode={0}")
-    public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {{WALMode.BACKGROUND}, {WALMode.LOG_ONLY}, {WALMode.FSYNC}});
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setWalAutoArchiveAfterInactivity(1500L)
+                .setWalMode(walMode)
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
     }
@@ -98,7 +92,6 @@ public class WalRolloverOnStopTest extends GridCommonAbstractTest {
      *
      * After restart WAL should log in the next segment.
      * */
-    @Test
     public void testWallRollover() throws Exception {
         AtomicLong curIdx = new AtomicLong();
 
