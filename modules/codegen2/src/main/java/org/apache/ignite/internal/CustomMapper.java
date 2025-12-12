@@ -24,25 +24,16 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation used to specify a custom mapping strategy for an enum type during code generation.
- * It allows associating a custom mapper class that defines how enum constants are serialized,
- * deserialized, or otherwise processed externally (e.g., to integer codes, strings, or other representations).
+ * It allows associating a custom mapper class that defines how enum constants are serialized and deserialized.
  *
- * <p>The class specified by {@link #value()} must implement the appropriate mapping interface
- * expected by the code generation framework, typically providing methods to convert between
- * enum constants and their external representations.</p>
+ * <p>It is used in conjunction with {@link Order} annotation and used to mark fields of enum type
+ * that should be serialized and deserialized using custom logic.</p>
  *
- * <p>Example usage:</p>
- * <pre>{@code
- * @CustomEnumMapper(className = "com.example.MyCustomColorMapper")
- * public enum Color {
- *     RED, GREEN, BLUE;
- * }
- * }</pre>
- *
- * <p>In this example, {@code MyCustomColorMapper} is responsible for defining the mapping logic
- * between the {@code Color} enum and its external form (e.g., integers or strings).</p>
+ * <p>The class specified by {@link #value()} must implement {@code org.apache.ignite.plugin.extensions.communication.mappers.CustomMapper}
+ * interface to provide methods for converting enum values to and from their external representations.</p>
  *
  * @see #value()
+ * @see org.apache.ignite.internal.Order
  */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
