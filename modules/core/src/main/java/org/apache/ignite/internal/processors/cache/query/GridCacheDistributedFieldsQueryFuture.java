@@ -54,16 +54,12 @@ public class GridCacheDistributedFieldsQueryFuture
 
     /**
      * @param nodeId Sender node ID.
-     * @param metaData Meta data.
      * @param data Page data.
      * @param err Error.
      * @param finished Finished or not.
      */
-    public void onFieldsPage(@Nullable UUID nodeId, @Nullable List<GridQueryFieldMetadata> metaData,
-        @Nullable Collection<Map<String, Object>> data, @Nullable Throwable err, boolean finished) {
-        if (!metaFut.isDone() && metaData != null)
-            metaFut.onDone(metaData);
-
+    public void onFieldsPage(@Nullable UUID nodeId, @Nullable Collection<Map<String, Object>> data, @Nullable Throwable err,
+        boolean finished) {
         onPage(nodeId, null, data, err, finished);
     }
 

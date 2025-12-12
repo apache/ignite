@@ -22,7 +22,6 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRow;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexRowComparator;
@@ -55,11 +54,8 @@ public class SortedSegmentedIndexCursor implements GridCursor<IndexRow> {
                     for (int i = 0; i < keysLen; i++) {
                         int cmp = rowComparator.compareRow(o1.get(), o2.get(), i);
 
-                        if (cmp != 0) {
-                            boolean desc = keyDefs[i].order().sortOrder() == SortOrder.DESC;
-
-                            return desc ? -cmp : cmp;
-                        }
+                        if (cmp != 0)
+                            return keyDefs[i].ascending() ? cmp : -cmp;
                     }
 
                     return 0;

@@ -17,49 +17,53 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * List of settings that affects key types of index keys.
  */
-public class IndexKeyTypeSettings implements Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class IndexKeyTypeSettings implements Message {
     /** Whether inlining POJO keys as hash is supported. */
+    @Order(value = 0, method = "inlineObjectHash")
     private boolean inlineObjHash = true;
 
     /** Whether inlining of POJO keys is supported. */
+    @Order(value = 1, method = "inlineObjectSupported")
     private boolean inlineObjSupported = true;
 
     /** Whether optimized algorithm of String comparison is used. */
+    @Order(value = 2, method = "stringOptimizedCompare")
     private boolean strOptimizedCompare = true;
 
     /** Whether use unsigned bytes for storing byte arrays. */
+    @Order(3)
     private boolean binaryUnsigned = true;
 
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 19;
+    }
+
     /** */
-    public boolean inlineObjHash() {
+    public boolean inlineObjectHash() {
         return inlineObjHash;
     }
 
     /** */
-    public IndexKeyTypeSettings inlineObjHash(boolean inlineObjHash) {
+    public IndexKeyTypeSettings inlineObjectHash(boolean inlineObjHash) {
         this.inlineObjHash = inlineObjHash;
 
         return this;
     }
 
     /** */
-    public boolean inlineObjSupported() {
+    public boolean inlineObjectSupported() {
         return inlineObjSupported;
     }
 
     /** */
-    public IndexKeyTypeSettings inlineObjSupported(boolean inlineObjSupported) {
+    public IndexKeyTypeSettings inlineObjectSupported(boolean inlineObjSupported) {
         this.inlineObjSupported = inlineObjSupported;
 
         return this;
@@ -87,21 +91,5 @@ public class IndexKeyTypeSettings implements Externalizable {
         this.binaryUnsigned = binaryUnsigned;
 
         return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeBoolean(inlineObjHash);
-        out.writeBoolean(inlineObjSupported);
-        out.writeBoolean(strOptimizedCompare);
-        out.writeBoolean(binaryUnsigned);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        inlineObjHash = in.readBoolean();
-        inlineObjSupported = in.readBoolean();
-        strOptimizedCompare = in.readBoolean();
-        binaryUnsigned = in.readBoolean();
     }
 }

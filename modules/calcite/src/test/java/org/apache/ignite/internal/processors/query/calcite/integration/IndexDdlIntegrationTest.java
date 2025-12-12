@@ -22,7 +22,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.Index;
-import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -151,11 +150,11 @@ public class IndexDdlIntegrationTest extends AbstractDdlIntegrationTest {
         List<String> keys = new ArrayList<>(keyDefs.keySet());
 
         assertEquals("ID", keys.get(0));
-        assertEquals(SortOrder.ASC, keyDefs.get(keys.get(0)).order().sortOrder());
+        assertEquals(true, keyDefs.get(keys.get(0)).ascending());
         assertEquals("VAL_INT", keys.get(1));
-        assertEquals(SortOrder.ASC, keyDefs.get(keys.get(1)).order().sortOrder());
+        assertEquals(true, keyDefs.get(keys.get(1)).ascending());
         assertEquals("VAL_STR", keys.get(2));
-        assertEquals(SortOrder.DESC, keyDefs.get(keys.get(2)).order().sortOrder());
+        assertEquals(false, keyDefs.get(keys.get(2)).ascending());
     }
 
     /**

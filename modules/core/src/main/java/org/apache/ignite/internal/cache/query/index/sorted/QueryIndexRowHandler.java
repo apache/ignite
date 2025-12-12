@@ -91,7 +91,7 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
         try {
             return IndexKeyFactory.wrap(
                 props[idx].value(row.key(), row.value()),
-                keyDefs.get(idx).idxType(),
+                keyDefs.get(idx).indexKeyType(),
                 cacheInfo.cacheContext().cacheObjectContext(),
                 keyTypeSettings
             );
