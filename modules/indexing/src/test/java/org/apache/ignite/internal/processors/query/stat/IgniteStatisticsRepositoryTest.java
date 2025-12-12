@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
@@ -30,18 +31,16 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.Metas
 import org.apache.ignite.internal.processors.metastorage.persistence.ReadWriteMetaStorageMock;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.collection.IntMap;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 /**
  * Test for statistics repository.
  */
-@RunWith(Parameterized.class)
 public class IgniteStatisticsRepositoryTest extends StatisticsAbstractTest {
     /** First default key. */
     protected static final StatisticsKey K1 = new StatisticsKey(SCHEMA, "tab1");
@@ -49,37 +48,8 @@ public class IgniteStatisticsRepositoryTest extends StatisticsAbstractTest {
     /** Second default key. */
     protected static final StatisticsKey K2 = new StatisticsKey(SCHEMA, "tab2");
 
-    /** Column statistics with 100 nulls. */
-    protected ColumnStatistics cs1 = new ColumnStatistics(null, null, 100, 0, 100,
-        0, new byte[0], 0, U.currentTimeMillis());
-
-    /** Column statistics with 100 integers 0-100. */
-    protected ColumnStatistics cs2 = new ColumnStatistics(new BigDecimal(0), new BigDecimal(100), 0, 100, 100,
-        4, new byte[0], 0, U.currentTimeMillis());
-
-    /** Column statistics with 0 rows. */
-    protected ColumnStatistics cs3 = new ColumnStatistics(null, null, 0, 0, 0, 0,
-        new byte[0], 0, U.currentTimeMillis());
-
-    /** Column statistics with 100 integers 0-10. */
-    protected ColumnStatistics cs4 = new ColumnStatistics(new BigDecimal(0), new BigDecimal(10), 0, 10, 100,
-        4, new byte[0], 0, U.currentTimeMillis());
-
-    /** Persistence enabled flag. */
-    @Parameterized.Parameter(value = 0)
-    public boolean persist;
-
-    /** Repository to test. */
-    @Parameterized.Parameter(value = 1)
-    public IgniteStatisticsRepository repo;
-
-    /** Parameters: boolean, store.
-     * boolean - is persistence store;
-     * store - store instance.
-     */
-    @Parameterized.Parameters(name = "persist={0}")
-    public static List<Object[]> parameters() throws IgniteCheckedException {
-        ArrayList<Object[]> params = new ArrayList<>();
+    private static Stream<Arguments> allTypesArgs() throws IgniteCheckedException {
+        List<Arguments> params = new ArrayList<>();
 
         // Without persistence
         IgniteStatisticsStore storeInMemory = new IgniteStatisticsInMemoryStoreImpl(
@@ -87,7 +57,7 @@ public class IgniteStatisticsRepositoryTest extends StatisticsAbstractTest {
         GridSystemViewManager sysViewMgr = Mockito.mock(GridSystemViewManager.class);
         IgniteStatisticsRepository inMemRepo = new IgniteStatisticsRepository(storeInMemory, sysViewMgr, null,
             IgniteStatisticsRepositoryTest::getLogger);
-        params.add(new Object[] {false, inMemRepo});
+        params.add(Arguments.of(inMemRepo));
 
         // With persistence
         MetastorageLifecycleListener lsnr[] = new MetastorageLifecycleListener[1];
@@ -107,9 +77,9 @@ public class IgniteStatisticsRepositoryTest extends StatisticsAbstractTest {
         ReadWriteMetaStorageMock metastorage = new ReadWriteMetaStorageMock();
         lsnr[0].onReadyForReadWrite(metastorage);
 
-        params.add(new Object[]{true, statsRepos[0]});
+        params.add(Arguments.of(statsRepos[0]));
 
-        return params;
+        return params.stream();
     }
 
     /**
@@ -131,8 +101,9 @@ public class IgniteStatisticsRepositoryTest extends StatisticsAbstractTest {
      * 4) Read and check partition statistics one by one.
      * 5) Read all partition statistics by object and check its size.
      */
-    @Test
-    public void testRepositoryPartitions() {
+    @ParameterizedTest(name = "repo={0}")
+    @MethodSource("allTypesArgs")
+    public void testRepositoryPartitions(IgniteStatisticsRepository repo) {
         ObjectPartitionStatisticsImpl stat1 = getPartitionStatistics(1);
         ObjectPartitionStatisticsImpl stat10 = getPartitionStatistics(10);
 
@@ -163,8 +134,9 @@ public class IgniteStatisticsRepositoryTest extends StatisticsAbstractTest {
     /**
      * Save few object partition statistics, delete some of them and check the results.
      */
-    @Test
-    public void testClearLocalPartitionIdsStatistics() {
+    @ParameterizedTest(name = "repo={0}")
+    @MethodSource("allTypesArgs")
+    public void testClearLocalPartitionIdsStatistics(IgniteStatisticsRepository repo) {
         ObjectPartitionStatisticsImpl stat1 = getPartitionStatistics(1);
         ObjectPartitionStatisticsImpl stat10 = getPartitionStatistics(10);
         ObjectPartitionStatisticsImpl stat100 = getPartitionStatistics(100);
@@ -190,8 +162,9 @@ public class IgniteStatisticsRepositoryTest extends StatisticsAbstractTest {
      * 3) Remove all partitions statistics by first key.
      * 4) Check it and endure the second one are still presented in repo.
      */
-    @Test
-    public void testLocalStatistics() {
+    @ParameterizedTest(name = "repo={0}")
+    @MethodSource("allTypesArgs")
+    public void testLocalStatistics(IgniteStatisticsRepository repo) {
         ObjectStatisticsImpl stat1 = getStatistics();
         ObjectStatisticsImpl stat2 = getStatistics();
 
@@ -218,8 +191,9 @@ public class IgniteStatisticsRepositoryTest extends StatisticsAbstractTest {
      * 6) Check there is obsolescence info in store.
      * 7) Check there is clean object in repo.
      */
-    @Test
-    public void testRefreshObsolescence() {
+    @ParameterizedTest(name = "repo={0}")
+    @MethodSource("allTypesArgs")
+    public void testRefreshObsolescence(IgniteStatisticsRepository repo) {
         IgniteStatisticsStore store = repo.statisticsStore();
 
         repo.stop();
@@ -257,10 +231,9 @@ public class IgniteStatisticsRepositoryTest extends StatisticsAbstractTest {
     /**
      * Save obsolescence info and check it saved into the store.
      */
-    @Test
-    public void testSaveObsolescenceInfo() {
-        IgniteStatisticsStore store = repo.statisticsStore();
-
+    @ParameterizedTest(name = "repo={0}")
+    @MethodSource("allTypesArgs")
+    public void testSaveObsolescenceInfo(IgniteStatisticsRepository repo) {
         Map<StatisticsKey, IntMap<ObjectPartitionStatisticsObsolescence>> statObs = GridTestUtils
             .getFieldValue(repo, "statObs");
 
