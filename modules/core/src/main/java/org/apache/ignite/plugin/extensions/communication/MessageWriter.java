@@ -283,7 +283,7 @@ public interface MessageWriter {
     public <T> boolean writeObjectArray(T[] arr, MessageCollectionItemType itemType);
 
     /**
-     * Writes collection.
+     * Writes collection with its elements order.
      *
      * @param col Collection.
      * @param itemType Collection item type.

@@ -293,10 +293,8 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     /**
      * @param failedNodes Failed nodes.
      */
-    public void failedNodes(@Nullable Collection<UUID> failedNodes) {
-        this.failedNodes = failedNodes == null
-            ? null
-            : failedNodes instanceof Set ? (Set<UUID>)failedNodes : new HashSet<>(failedNodes);
+    public void failedNodes(@Nullable Set<UUID> failedNodes) {
+        this.failedNodes = failedNodes;
     }
 
     /**

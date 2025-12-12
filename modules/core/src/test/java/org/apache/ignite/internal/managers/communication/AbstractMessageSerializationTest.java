@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -549,6 +550,13 @@ public abstract class AbstractMessageSerializationTest {
         /** {@inheritDoc} */
         @Override public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType) {
             readField(Collection.class);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <S extends Set<?>> S readSet(MessageCollectionItemType itemType) {
+            readField(Set.class);
 
             return null;
         }
