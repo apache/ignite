@@ -227,6 +227,16 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                         threads.remove(req.id());
                     }
                 }
+            } else {
+                GridCacheQueryResponse closedResponse = new GridCacheQueryResponse(
+                        cctx.cacheId(),
+                        req.id(),
+                        new NoSuchElementException("Iterator has been closed."),
+                        cctx.deploymentEnabled()
+                );
+
+                sendQueryResponse(sndId, closedResponse, 0);
+
             }
         }
     }

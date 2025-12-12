@@ -22,6 +22,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryManager;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -173,7 +176,18 @@ public class QueryMXBeanImpl implements QueryMXBean {
                 return null;
             }
 
-            ctx.queries().removeQueryResult(arg.get1(), arg.get3());
+            GridCacheQueryManager qryMgr = ctx.queries();
+
+            if (qryMgr instanceof GridCacheDistributedQueryManager) {
+                GridCacheDistributedQueryManager distQryMgr = (GridCacheDistributedQueryManager) qryMgr;
+
+                GridCacheQueryRequest cancelReq = GridCacheQueryRequest.cancelRequest(ctx, arg.get3(), false);
+
+                distQryMgr.processQueryRequest(arg.get1(), cancelReq);
+
+            } else {
+                qryMgr.removeQueryResult(arg.get1(), arg.get3());
+            }
 
             return null;
         }
