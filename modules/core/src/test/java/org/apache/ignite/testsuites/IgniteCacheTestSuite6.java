@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.SysCacheInconsistencyInternal
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerCoordinatorFailTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteExchangeLatchManagerDiscoHistoryTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheClientsConcurrentStartTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeMdcTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheParallelStartTest;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossWithRestartsTest;
@@ -100,6 +101,7 @@ public class IgniteCacheTestSuite6 {
         GridTestUtils.addTestIfNeeded(suite, IgnitePessimisticTxSuspendResumeTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CacheExchangeMergeTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheExchangeMergeMdcTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, OnePhaseCommitAndNodeLeftTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, PendingExchangeTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, ExchangeMergeStaleServerNodesTest.class, ignoredTests);

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp.internal;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -501,10 +502,12 @@ public class TcpDiscoveryNodesRing {
         rwLock.readLock().lock();
 
         try {
-            Collection<TcpDiscoveryNode> filtered = serverNodes(excluded);
+            List<TcpDiscoveryNode> filtered = new ArrayList<>(serverNodes(excluded));
 
             if (filtered.size() < 2)
                 return null;
+
+            filtered.sort(new MdcAwareNodesComparator());
 
             Iterator<TcpDiscoveryNode> iter = filtered.iterator();
 
