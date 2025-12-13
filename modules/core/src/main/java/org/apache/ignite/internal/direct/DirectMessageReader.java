@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
@@ -372,11 +373,22 @@ public class DirectMessageReader implements MessageReader {
     @Override public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType) {
         DirectByteBufferStream stream = state.item().stream;
 
-        C col = stream.readCollection(itemType, this);
+        C col = stream.readList(itemType, this);
 
         lastRead = stream.lastFinished();
 
         return col;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <SET extends Set<?>> SET readSet(MessageCollectionItemType itemType) {
+        DirectByteBufferStream stream = state.item().stream;
+
+        SET set = stream.readSet(itemType, this);
+
+        lastRead = stream.lastFinished();
+
+        return set;
     }
 
     /** {@inheritDoc} */

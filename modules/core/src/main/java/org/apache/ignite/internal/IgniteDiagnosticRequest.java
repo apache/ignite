@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -71,12 +72,12 @@ public class IgniteDiagnosticRequest implements Message {
      * @param nodeId Node ID.
      * @param infos Diagnostic infos.
      */
-    public IgniteDiagnosticRequest(long futId, UUID nodeId, @Nullable Collection<DiagnosticBaseInfo> infos) {
+    public IgniteDiagnosticRequest(long futId, UUID nodeId, @Nullable LinkedHashSet<DiagnosticBaseInfo> infos) {
         this(nodeId);
 
         this.futId = futId;
 
-        infos(infos);
+        this.infos = infos;
     }
 
     /**
@@ -142,13 +143,13 @@ public class IgniteDiagnosticRequest implements Message {
     }
 
     /** @return Compound diagnostic infos. */
-    public @Nullable Collection<DiagnosticBaseInfo> infos() {
+    public @Nullable LinkedHashSet<DiagnosticBaseInfo> infos() {
         return infos;
     }
 
     /** Sets compound diagnostic infos. */
-    public void infos(@Nullable Collection<DiagnosticBaseInfo> infos) {
-        // Deserialization supports only `Collection` interface in MessageReader#readCollection.
+    public void infos(@Nullable Set<DiagnosticBaseInfo> infos) {
+        // Deserialization supports only `Set` interface in MessageReader#readSet.
         this.infos = toLinkedHashSet(infos);
     }
 
