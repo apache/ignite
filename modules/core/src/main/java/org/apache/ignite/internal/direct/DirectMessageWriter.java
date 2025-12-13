@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
@@ -341,6 +342,17 @@ public class DirectMessageWriter implements MessageWriter {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeCollection(col, itemType, this);
+
+        return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> boolean writeSet(Set<T> set, MessageCollectionItemType itemType) {
+        DirectByteBufferStream stream = state.item().stream;
+
+        // There is no need to use set under the hood. Elemets are via the ierator with the order provided.
+        // Only read collection type matter.
+        stream.writeCollection(set, itemType, this);
 
         return stream.lastFinished();
     }
