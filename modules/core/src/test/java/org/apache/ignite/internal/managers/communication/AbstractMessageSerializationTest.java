@@ -20,7 +20,6 @@ package org.apache.ignite.internal.managers.communication;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -55,7 +54,7 @@ public abstract class AbstractMessageSerializationTest {
 
         IgniteMessageFactoryImpl msgFactory = new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{messageFactory()});
 
-        for (short msgType : List.of((short)-61)) {
+        for (short msgType : msgFactory.registeredDirectTypes()) {
             checkSerializationAndDeserializationConsistency(msgFactory, msgType, oneFieldWriter, unboundedReader);
 
             checkSerializationAndDeserializationConsistency(msgFactory, msgType, unboundedWriter, oneFieldReader);
