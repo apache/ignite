@@ -18,8 +18,6 @@
 package org.apache.ignite.internal;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,9 +43,8 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 
@@ -56,7 +53,6 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
 @GridCommonTest(group = "Kernal Self")
-@RunWith(Parameterized.class)
 public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
     /** */
     public enum FailType {
@@ -71,16 +67,6 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         /** */
         EXECUTE
-    }
-
-    /** */
-    @Parameterized.Parameter
-    public FailType failType;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "failType={0}")
-    public static Collection<?> parameters() {
-        return Arrays.asList(FailType.values());
     }
 
     /** */
@@ -101,8 +87,9 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
-    public void testFailComputeTask() throws Exception {
+    @ParameterizedTest(name = "failType={0}")
+    @EnumSource
+    public void testFailComputeTask(FailType failType) throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         ignite.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
