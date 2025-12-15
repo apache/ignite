@@ -444,7 +444,7 @@ public class CacheMetricsMessage implements Message {
         offHeapHits = m.getOffHeapHits();
         offHeapMisses = m.getOffHeapMisses();
 
-        offHeapEntriesCnt = m.getHeapEntriesCount();
+        offHeapEntriesCnt = m.getOffHeapEntriesCount();
         heapEntriesCnt = m.getHeapEntriesCount();
         offHeapPrimaryEntriesCnt = m.getOffHeapPrimaryEntriesCount();
         offHeapBackupEntriesCnt = m.getOffHeapBackupEntriesCount();
