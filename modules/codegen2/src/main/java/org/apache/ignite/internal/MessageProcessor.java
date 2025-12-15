@@ -160,8 +160,6 @@ public class MessageProcessor extends AbstractProcessor {
         return result;
     }
 
-
-
     /**
      * Checks if the field type is an enum. Only enum fields should be annotated with {@link CustomMapper} annotation.
      *
