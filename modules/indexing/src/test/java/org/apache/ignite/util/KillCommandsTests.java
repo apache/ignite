@@ -17,12 +17,7 @@
 
 package org.apache.ignite.util;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -157,12 +152,6 @@ class KillCommandsTests {
         // Cancel first query.
         qryCanceler.accept(qryInfo);
 
-        // Checking that second query works fine after canceling first.
-        for (int i = 0; i < PAGE_SZ * PAGES_CNT - 1; i++)
-            assertNotNull(iter2.next());
-
-        qry2.close();
-
         // Fetch of the next page should throw the exception. New page is delivered in parallel to iterating.
         try {
             for (int i = 0; i < PAGE_SZ * PAGES_CNT - 1; i++)
@@ -180,7 +169,15 @@ class KillCommandsTests {
             }
         }
 
+        // Checking that second query works fine after canceling first.
+        for (int i = 0; i < PAGE_SZ * PAGES_CNT - 1; i++)
+            assertNotNull(iter2.next());
+
         checkScanQueryResources(cli, srvs, qryInfo.get3());
+
+        qry2.close();
+
+        checkRequestFutureMapEmpty(cli, srvs, qryInfo.get1());
     }
 
     /**
@@ -256,6 +253,41 @@ class KillCommandsTests {
 
             assertNotNull(futs);
             assertFalse(futs.containsKey(qryId));
+        }
+    }
+
+
+    /**
+     * Checks that RequestFutureMap is empty on all nodes after query cancellation.
+     *
+     * @param cli Client node.
+     * @param srvs Server nodes.
+     * @param originNodeId Origin node ID.
+     */
+    private static void checkRequestFutureMapEmpty(
+            IgniteEx cli,
+            List<IgniteEx> srvs,
+            UUID originNodeId
+    ) {
+        List<IgniteEx> allNodes = new ArrayList<>(srvs);
+        allNodes.add(cli);
+
+        for (IgniteEx node : allNodes) {
+            int cacheId = CU.cacheId(DEFAULT_CACHE_NAME);
+            GridCacheContext<?, ?> ctx = node.context().cache().context().cacheContext(cacheId);
+
+            if (ctx == null) {
+                continue;
+            }
+
+            GridCacheQueryManager<?, ?> qryMgr = ctx.queries();
+
+            Map<UUID, GridCacheQueryManager.RequestFutureMap> qryIters = GridTestUtils.getFieldValue(qryMgr, "qryIters");
+            GridCacheQueryManager.RequestFutureMap futMap = qryIters.get(originNodeId);
+
+            if (futMap != null) {
+                assertTrue("RequestFutureMap not empty on node " + node.localNode().id() + ": size = " + futMap.size(), futMap.isEmpty());
+            }
         }
     }
 

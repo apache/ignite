@@ -27,6 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -231,7 +232,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 GridCacheQueryResponse closedResponse = new GridCacheQueryResponse(
                         cctx.cacheId(),
                         req.id(),
-                        new NoSuchElementException("Iterator has been closed."),
+                        new QueryCancelledException("Iterator has been closed."),
                         cctx.deploymentEnabled()
                 );
 

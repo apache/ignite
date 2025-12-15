@@ -176,18 +176,10 @@ public class QueryMXBeanImpl implements QueryMXBean {
                 return null;
             }
 
-            GridCacheQueryManager qryMgr = ctx.queries();
+            GridCacheQueryRequest cancelReq = GridCacheQueryRequest.cancelRequest(ctx, arg.get3(), false);
 
-            if (qryMgr instanceof GridCacheDistributedQueryManager) {
-                GridCacheDistributedQueryManager distQryMgr = (GridCacheDistributedQueryManager) qryMgr;
-
-                GridCacheQueryRequest cancelReq = GridCacheQueryRequest.cancelRequest(ctx, arg.get3(), false);
-
-                distQryMgr.processQueryRequest(arg.get1(), cancelReq);
-
-            } else {
-                qryMgr.removeQueryResult(arg.get1(), arg.get3());
-            }
+            GridCacheDistributedQueryManager distQryMgr = (GridCacheDistributedQueryManager) ctx.queries();
+            distQryMgr.processQueryRequest(arg.get1(), cancelReq);
 
             return null;
         }
