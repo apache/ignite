@@ -28,6 +28,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -38,14 +40,17 @@ import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiMBean;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "stop mode = {0}, with crd = {1}")
+@MethodSource("allTypesArgs")
 public class ZookeeperDiscoveryRandomStopOrFailConcurrentTest extends ZookeeperDiscoverySpiTestBase {
     /** */
     private static final int NUM_CLIENTS = 10;
@@ -57,24 +62,23 @@ public class ZookeeperDiscoveryRandomStopOrFailConcurrentTest extends ZookeeperD
     private static final int ZK_SESSION_TIMEOUT = 5_000;
 
     /** */
-    @Parameterized.Parameters(name = "stop mode = {0}, with crd = {1}")
-    public static Collection<Object[]> parameters() {
-        List<Object[]> params = new ArrayList<>();
+    private static Stream<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         for (StopMode stopMode: StopMode.values()) {
-            params.add(new Object[] {stopMode, true});
-            params.add(new Object[] {stopMode, false});
+            params.add(Arguments.of(stopMode, true));
+            params.add(Arguments.of(stopMode, false));
         }
 
-        return params;
+        return params.stream();
     }
 
     /** */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public StopMode stopMode;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean killCrd;
 
     /** */

@@ -20,13 +20,12 @@ package org.apache.ignite.internal.processors.query;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
-import org.apache.ignite.IgniteCache;
+import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -46,32 +45,34 @@ import org.apache.ignite.internal.processors.query.h2.H2QueryInfo;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests for lazy mode for DML queries.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "atomicityMode={0}, cacheMode={1}")
+@MethodSource("allTypesArgs")
 public class LazyOnDmlTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int KEY_CNT = 3_000;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public CacheAtomicityMode atomicityMode;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public CacheMode cacheMode;
 
     /**
      * @return Test parameters.
      */
-    @Parameterized.Parameters(name = "atomicityMode={0}, cacheMode={1}")
-    public static Collection parameters() {
-        Set<Object[]> paramsSet = new LinkedHashSet<>();
+    private static Stream<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         Object[] paramTemplate = new Object[2];
 
@@ -81,15 +82,15 @@ public class LazyOnDmlTest extends AbstractIndexingCommonTest {
             paramTemplate[0] = atomicityMode;
 
             for (CacheMode cacheMode : new CacheMode[] {CacheMode.PARTITIONED, CacheMode.REPLICATED}) {
-                Object[] params = Arrays.copyOf(paramTemplate, paramTemplate.length);
+                Object[] res = Arrays.copyOf(paramTemplate, paramTemplate.length);
 
-                params[1] = cacheMode;
+                res[1] = cacheMode;
 
-                paramsSet.add(params);
+                params.add(Arguments.of(res));
             }
         }
 
-        return paramsSet;
+        return params.stream();
     }
 
     /** {@inheritDoc} */
@@ -112,7 +113,7 @@ public class LazyOnDmlTest extends AbstractIndexingCommonTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        IgniteCache<Long, Long> c = grid(0).createCache(new CacheConfiguration<Long, Long>()
+        grid(0).createCache(new CacheConfiguration<Long, Long>()
             .setName("test")
             .setSqlSchema("TEST")
             .setAtomicityMode(atomicityMode)

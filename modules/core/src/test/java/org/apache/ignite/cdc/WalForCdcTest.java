@@ -20,12 +20,13 @@ package org.apache.ignite.cdc;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
+import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -49,9 +50,11 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Ignite
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -66,7 +69,8 @@ import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsyn
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Check only {@link DataRecord} written to the WAL for in-memory cache. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "mode={0}, atomicityMode={1}")
+@MethodSource("allTypesArgs")
 public class WalForCdcTest extends GridCommonAbstractTest {
     /** */
     private static final int RECORD_COUNT = 10;
@@ -75,11 +79,11 @@ public class WalForCdcTest extends GridCommonAbstractTest {
     public static final int DFLT_WAL_SGMNT_SZ = (int)(2 * MB);
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public CacheMode mode;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public CacheAtomicityMode atomicityMode;
 
     /** */
@@ -95,15 +99,14 @@ public class WalForCdcTest extends GridCommonAbstractTest {
     private int walSgmntSz = DFLT_WAL_SGMNT_SZ;
 
     /** */
-    @Parameterized.Parameters(name = "mode={0}, atomicityMode={1}")
-    public static Collection<?> parameters() {
-        List<Object[]> params = new ArrayList<>();
+    private static Stream<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         for (CacheMode mode : Arrays.asList(REPLICATED, PARTITIONED))
             for (CacheAtomicityMode atomicityMode : Arrays.asList(ATOMIC, TRANSACTIONAL))
-                params.add(new Object[] {mode, atomicityMode});
+                params.add(Arguments.of(mode, atomicityMode));
 
-        return params;
+        return params.stream();
     }
 
     /** {@inheritDoc} */
