@@ -23,6 +23,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
@@ -35,33 +37,32 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.After;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "{index} type={0}, errVal={1}, indexed={2}")
+@MethodSource("allTypesArgs")
 public class SqlFieldTypeValidationTypesTest extends AbstractIndexingCommonTest {
     /** */
     private static final String ERROR = "Type for a column 'NAME' is not compatible with table definition.";
 
     /** */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public Class<?> fieldType;
 
     /** */
-    @Parameterized.Parameter(1)
-    public Object okVal;
-
-    /** */
-    @Parameterized.Parameter(2)
+    @Parameter(1)
     public Object errVal;
 
     /** */
-    @Parameterized.Parameter(3)
+    @Parameter(2)
     public boolean indexed;
 
     /** */
@@ -90,37 +91,36 @@ public class SqlFieldTypeValidationTypesTest extends AbstractIndexingCommonTest 
     }
 
     /** */
-    @Parameterized.Parameters(name = "{index} type={0} idx={3}")
-    public static List<Object[]> data() {
-        List<Object[]> res = new ArrayList<>();
+    private static Stream<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         // Type, ok value, error value, indexed flag.
-        res.add(new Object[] {Integer.class, 1, "1", false});
-        res.add(new Object[] {Integer.class, 1, "1", true});
+        params.add(Arguments.of(Integer.class, "1", false));
+        params.add(Arguments.of(Integer.class, "1", true));
 
-        res.add(new Object[] {String.class, "1", 1, false});
-        res.add(new Object[] {String.class, "1", 1, true});
+        params.add(Arguments.of(String.class, 1, false));
+        params.add(Arguments.of(String.class, 1, true));
 
-        res.add(new Object[] {UUID.class, UUID.randomUUID(), UUID.randomUUID().toString(), false});
-        res.add(new Object[] {UUID.class, UUID.randomUUID(), UUID.randomUUID().toString(), true});
+        params.add(Arguments.of(UUID.class, UUID.randomUUID().toString(), false));
+        params.add(Arguments.of(UUID.class, UUID.randomUUID().toString(), true));
 
-        res.add(new Object[] {TestEnum.class, TestEnum.A, "C", false});
-        res.add(new Object[] {TestEnum.class, TestEnum.A, "C", true});
+        params.add(Arguments.of(TestEnum.class, "C", false));
+        params.add(Arguments.of(TestEnum.class, "C", true));
 
-        res.add(new Object[] {Integer[].class, new Integer[] {0, 1}, new String[] {"0", "1"}, false});
-        res.add(new Object[] {Integer[].class, new Integer[] {0, 1}, new String[] {"0", "1"}, true});
+        params.add(Arguments.of(Integer[].class, new String[] {"0", "1"}, false));
+        params.add(Arguments.of(Integer[].class, new String[] {"0", "1"}, true));
 
-        res.add(new Object[] {int[].class, new Integer[] {0, 1}, new String[] {"0", "1"}, false});
-        res.add(new Object[] {int[].class, new Integer[] {0, 1}, new String[] {"0", "1"}, true});
+        params.add(Arguments.of(int[].class, new String[] {"0", "1"}, false));
+        params.add(Arguments.of(int[].class, new String[] {"0", "1"}, true));
 
-        res.add(new Object[] {int[].class, new Object[] {0, 1}, new Object[] {"0", "1"}, false});
-        res.add(new Object[] {int[].class, new Object[] {0, 1}, new Object[] {"0", "1"}, true});
+        params.add(Arguments.of(int[].class, new Object[] {"0", "1"}, false));
+        params.add(Arguments.of(int[].class, new Object[] {"0", "1"}, true));
 
-        return res;
+        return params.stream();
     }
 
     /** */
-    @After
+    @AfterEach
     public void tearDown() {
         stopAllGrids();
     }
@@ -156,11 +156,6 @@ public class SqlFieldTypeValidationTypesTest extends AbstractIndexingCommonTest 
         GridTestUtils.assertThrows(log, () -> cache.put(1, new Person(errVal)), IgniteException.class, ERROR);
 
         assertNull(cache.withKeepBinary().get(1));
-    }
-
-    /** */
-    private boolean expectIndexFail() {
-        return indexed && (UUID.class == fieldType || Integer.class == fieldType);
     }
 
     /** */

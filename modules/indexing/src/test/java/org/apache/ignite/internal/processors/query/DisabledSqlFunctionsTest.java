@@ -20,16 +20,16 @@ package org.apache.ignite.internal.processors.query;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryEntity;
@@ -40,14 +40,17 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests for disabled SQL functions.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "local={0}, client={1}")
+@MethodSource("allTypesArgs")
 public class DisabledSqlFunctionsTest extends AbstractIndexingCommonTest {
     /** Pattern func not found. */
     private static final Pattern PTRN_FUNC_NOT_FOUND = Pattern.compile("Failed to parse query. Function \"\\w+\" not found");
@@ -56,30 +59,29 @@ public class DisabledSqlFunctionsTest extends AbstractIndexingCommonTest {
     private static final int KEY_CNT = 10;
 
     /** Local mode. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean local;
 
     /** Executes query on client node. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean client;
 
     /**
      * @return Test parameters.
      */
-    @Parameterized.Parameters(name = "local={0}, client={1}")
-    public static Collection parameters() {
-        Set<Object[]> paramsSet = new LinkedHashSet<>();
+    private static Stream<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         for (int i = 0; i < 4; ++i) {
-            Object[] params = new Object[2];
+            Object[] res = new Object[2];
 
-            params[0] = (i & 1) == 0;
-            params[1] = (i & 2) == 0;
+            res[0] = (i & 1) == 0;
+            res[1] = (i & 2) == 0;
 
-            paramsSet.add(params);
+            params.add(Arguments.of(res));
         }
 
-        return paramsSet;
+        return params.stream();
     }
 
     /** {@inheritDoc} */
@@ -120,7 +122,7 @@ public class DisabledSqlFunctionsTest extends AbstractIndexingCommonTest {
     /**
      */
     @Test
-    public void testDefaultSelect() throws Exception {
+    public void testDefaultSelect() {
         checkSqlWithDisabledFunction("SELECT FILE_WRITE(0, 'test.dat')");
         checkSqlWithDisabledFunction("SELECT FILE_READ('test.dat')");
         checkSqlWithDisabledFunction("SELECT CSVWRITE('test.csv', 'select 1, 2')");
@@ -136,7 +138,7 @@ public class DisabledSqlFunctionsTest extends AbstractIndexingCommonTest {
     /**
      */
     @Test
-    public void testDefaultInsert() throws Exception {
+    public void testDefaultInsert() {
         checkSqlWithDisabledFunction("INSERT INTO TEST (ID, VAL) SELECT 1, FILE_WRITE(0, 'test.dat')");
         checkSqlWithDisabledFunction("INSERT INTO TEST (ID, VAL) SELECT 1, FILE_READ('test.dat')");
         checkSqlWithDisabledFunction("INSERT INTO TEST (ID, VAL) SELECT 1, SELECT CSVWRITE('test.csv', 'select 1, 2')");
@@ -153,7 +155,7 @@ public class DisabledSqlFunctionsTest extends AbstractIndexingCommonTest {
     /**
      */
     @Test
-    public void testDefaultUpdate() throws Exception {
+    public void testDefaultUpdate() {
         checkSqlWithDisabledFunction("UPDATE TEST SET VAL = FILE_WRITE(0, 'test.dat')");
         checkSqlWithDisabledFunction("UPDATE TEST SET VAL = LENGTH(FILE_READ('test.dat'))");
         checkSqlWithDisabledFunction("UPDATE TEST SET VAL = CSVWRITE('test.csv', 'select 1, 2')");
@@ -169,7 +171,7 @@ public class DisabledSqlFunctionsTest extends AbstractIndexingCommonTest {
     /**
      */
     @Test
-    public void testDefaultDelete() throws Exception {
+    public void testDefaultDelete() {
         checkSqlWithDisabledFunction("DELETE FROM TEST WHERE VAL = FILE_WRITE(0, 'test.dat')");
         checkSqlWithDisabledFunction("DELETE FROM TEST WHERE VAL = LENGTH(FILE_READ('test.dat'))");
         checkSqlWithDisabledFunction("DELETE FROM TEST WHERE VAL = CSVWRITE('test.csv', 'select 1, 2')");
