@@ -350,7 +350,7 @@ public class DirectMessageWriter implements MessageWriter {
     @Override public <T> boolean writeSet(Set<T> set, MessageCollectionItemType itemType) {
         DirectByteBufferStream stream = state.item().stream;
 
-        // There is no need to use set under the hood. Elemets are via the ierator with the order provided.
+        // There is no need to use set under the hood. Elemets are written via the iterator with the order provided.
         // Only read collection type matter.
         stream.writeCollection(set, itemType, this);
 
