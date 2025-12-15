@@ -17,7 +17,13 @@
 
 package org.apache.ignite.util;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -73,7 +79,12 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.util.KillCommandsSQLTest.execute;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * General tests for the cancel command.
@@ -255,7 +266,6 @@ class KillCommandsTests {
             assertFalse(futs.containsKey(qryId));
         }
     }
-
 
     /**
      * Checks that RequestFutureMap is empty on all nodes after query cancellation.
