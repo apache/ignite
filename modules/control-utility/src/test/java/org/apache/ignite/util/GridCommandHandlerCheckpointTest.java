@@ -98,7 +98,7 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
         outputContains("Checkpoint triggered on all nodes");
 
-        LogListener checkpointReasonLsnr = LogListener.matches("test_reason").build();
+        LogListener checkpointReasonLsnr = LogListener.matches("reason='test_reason'").build();
         listeningLog.registerListener(checkpointReasonLsnr);
 
         assertTrue(GridTestUtils.waitForCondition(checkpointFinishedLsnr::check, 10_000));

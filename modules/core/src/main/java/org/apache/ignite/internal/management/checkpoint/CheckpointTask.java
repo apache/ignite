@@ -19,7 +19,6 @@ package org.apache.ignite.internal.management.checkpoint;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
