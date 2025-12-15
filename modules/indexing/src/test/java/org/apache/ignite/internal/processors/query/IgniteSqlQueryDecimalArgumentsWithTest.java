@@ -25,14 +25,18 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndex;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /** Checks whether correctly compare non-inlined decimal search key with inlined types. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "fld={0} type={1}")
+@CsvSource({
+        "intFld, int",
+        "dblFld, double"
+})
 public class IgniteSqlQueryDecimalArgumentsWithTest extends GridCommonAbstractTest {
     /** */
     private static final String IDX_NAME = "FLD_IDX";
@@ -47,21 +51,12 @@ public class IgniteSqlQueryDecimalArgumentsWithTest extends GridCommonAbstractTe
     private IgniteEx node;
 
     /** */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public String idxFldName;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public String idxFldType;
-
-    /** */
-    @Parameterized.Parameters(name = "fld={0} type={1}")
-    public static List<Object[]> params() {
-        return F.asList(
-            new Object[] {"intFld", "int"},
-            new Object[] {"dblFld", "double"}
-        );
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

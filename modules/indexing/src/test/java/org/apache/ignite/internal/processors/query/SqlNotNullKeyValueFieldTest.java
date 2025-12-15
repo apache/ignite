@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,36 +27,32 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /**
  * Tests key and value fields with not-null constraints.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "key={0} val={1}")
+@CsvSource({
+        "id, val",
+        "ID, VAL"
+})
 public class SqlNotNullKeyValueFieldTest extends GridCommonAbstractTest {
     /** */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public String keyName;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public String valName;
 
     /** */
-    @Parameterized.Parameters(name = "key={0} val={1}")
-    public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {
-                {"id", "val"},
-                {"ID", "VAL"}
-        });
-    }
-
-    /** */
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         startGrid(0);
 
@@ -66,7 +60,7 @@ public class SqlNotNullKeyValueFieldTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @After
+    @AfterEach
     public void clean() {
         stopAllGrids();
     }
