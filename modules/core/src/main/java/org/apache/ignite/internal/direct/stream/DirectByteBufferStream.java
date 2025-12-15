@@ -352,6 +352,9 @@ public class DirectByteBufferStream {
     /** */
     private boolean uncompressFinished;
 
+    /** */
+    private boolean serializeFinished;
+
     /**
      * Constructror for stream used for writing messages.
      *
@@ -895,27 +898,50 @@ public class DirectByteBufferStream {
      * @param compress Whether to compress message.
      */
     public void writeMessage(Message msg, MessageWriter writer, boolean compress) {
+        if (compress && buf.position() != 0) {
+            lastFinished = false;
+
+            return;
+        }
+
         if (msg != null) {
+            if (compress && compressFinished && serializeFinished) {
+                lastFinished = true;
+                compressFinished = false;
+
+                return;
+            }
+
             if (buf.hasRemaining()) {
                 try {
                     writer.beforeInnerMessageWrite();
 
-                    if (compress && buf.position() != 0)
-                        lastFinished = false;
-                    else {
-                        lastFinished = msgFactory.serializer(msg.directType()).writeTo(msg, writer);
+                    if (compress) {
+                        if (!serializeFinished)
+                            lastFinished = msgFactory.serializer(msg.directType()).writeTo(msg, writer);
 
-                        if (compress && !compressFinished) {
+                        if (lastFinished) {
+                            if (!compressFinished) {
+                                compressData();
+
+                                lastFinished = false;
+                                compressFinished = true;
+                                serializeFinished = true;
+                            }
+                            else {
+                                lastFinished = true;
+                                compressFinished = false;
+                                serializeFinished = false;
+                            }
+                        }
+                        else {
                             compressData();
 
                             lastFinished = false;
-                            compressFinished = true;
-                        }
-                        else {
-                            lastFinished = true;
-                            compressFinished = false;
                         }
                     }
+                    else
+                        lastFinished = msgFactory.serializer(msg.directType()).writeTo(msg, writer);
                 }
                 finally {
                     writer.afterInnerMessageWrite(lastFinished);
@@ -1074,9 +1100,6 @@ public class DirectByteBufferStream {
             return;
         }
 
-        if (compress)
-            System.out.println(">>> WRITE MAP");
-
         if (map != null) {
             if (mapIt == null) {
                 writeInt(map.size());
@@ -1121,17 +1144,19 @@ public class DirectByteBufferStream {
                 keyDone = false;
             }
 
-            if (compress && !compressFinished) {
-                compressData();
+            if (compress) {
+                if (!compressFinished) {
+                    compressData();
 
-                lastFinished = false;
-                compressFinished = true;
+                    lastFinished = false;
+                    compressFinished = true;
 
-                return;
-            }
-            else {
-                lastFinished = true;
-                compressFinished = false;
+                    return;
+                }
+                else {
+                    lastFinished = true;
+                    compressFinished = false;
+                }
             }
 
             mapIt = null;
@@ -1662,7 +1687,10 @@ public class DirectByteBufferStream {
             Message msg0 = msg;
 
             msgTypeDone = false;
-            uncompressFinished = false;
+
+            if (compress)
+                uncompressFinished = false;
+
             msg = null;
 
             return (T)msg0;
@@ -1843,8 +1871,10 @@ public class DirectByteBufferStream {
 
         M map0 = (M)map;
 
-        uncompressFinished = false;
         map = null;
+
+        if (compress)
+            uncompressFinished = false;
 
         return map0;
     }
@@ -2409,11 +2439,7 @@ public class DirectByteBufferStream {
 
         buf.clear();
 
-        byte[] compressed = baos.toByteArray();
-
-        writeByteArray(compressed);
-
-        System.out.println(">>> CompressData: rawData=" + rawData.length + ", compressed=" + compressed.length);
+        writeByteArray(baos.toByteArray());
     }
 
     /** */
@@ -2456,8 +2482,6 @@ public class DirectByteBufferStream {
             buf.put(tmpBuf);
 
         buf.flip();
-
-        System.out.println(">>> uncompressData: rawData=" + uncompressedData.length + ", compressed=" + compressedData.length);
 
         return true;
     }
