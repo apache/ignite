@@ -53,6 +53,6 @@ public class TcpDiscoveryNodeLeftMessage extends TcpDiscoveryAbstractTraceableMe
 
     /** */
     @Override public short directType() {
-        return 5;
+        return 6;
     }
 }
