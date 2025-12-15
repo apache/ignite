@@ -136,17 +136,8 @@ public class MessageProcessor extends AbstractProcessor {
                             el);
                     }
 
-                    if (el.getAnnotation(CustomMapper.class) != null) {
-                        TypeMirror elType = el.asType();
-
-                        if (elType.getKind().isPrimitive() ||
-                            processingEnv.getTypeUtils().asElement(elType).getKind() != ElementKind.ENUM) {
-                            processingEnv.getMessager().printMessage(
-                                Diagnostic.Kind.ERROR,
-                                "Annotation @CustomMapper must only be used for enum fields.",
-                                el);
-                        }
-                    }
+                    if (el.getAnnotation(CustomMapper.class) != null)
+                        checkFieldTypeIsEnum(el);
                 }
             }
 
@@ -167,5 +158,24 @@ public class MessageProcessor extends AbstractProcessor {
         }
 
         return result;
+    }
+
+
+
+    /**
+     * Checks if the field type is an enum. Only enum fields should be annotated with {@link CustomMapper} annotation.
+     *
+     * @param el Element representing the field.
+     */
+    private void checkFieldTypeIsEnum(Element el) {
+        TypeMirror elType = el.asType();
+
+        if (elType.getKind().isPrimitive() ||
+            processingEnv.getTypeUtils().asElement(elType).getKind() != ElementKind.ENUM) {
+            processingEnv.getMessager().printMessage(
+                Diagnostic.Kind.ERROR,
+                "Annotation @CustomMapper must only be used for enum fields.",
+                el);
+        }
     }
 }

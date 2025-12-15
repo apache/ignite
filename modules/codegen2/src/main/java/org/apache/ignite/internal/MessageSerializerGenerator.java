@@ -83,6 +83,9 @@ class MessageSerializerGenerator {
     /** */
     private static final String METHOD_JAVADOC = "/** */";
 
+    /** */
+    public static final String RETURN_FALSE_STMT = "return false;";
+
     /** Collection of lines for {@code writeTo} method. */
     private final List<String> write = new ArrayList<>();
 
@@ -457,7 +460,7 @@ class MessageSerializerGenerator {
 
         indent++;
 
-        code.add(line("return false;"));
+        code.add(line(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -474,7 +477,7 @@ class MessageSerializerGenerator {
 
         indent++;
 
-        code.add(line("return false;"));
+        code.add(line(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -721,7 +724,7 @@ class MessageSerializerGenerator {
 
         indent++;
 
-        read.add(line("return false;"));
+        read.add(line(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -750,7 +753,7 @@ class MessageSerializerGenerator {
 
         indent++;
 
-        read.add(line("return false;"));
+        read.add(line(RETURN_FALSE_STMT));
 
         indent--;
     }
