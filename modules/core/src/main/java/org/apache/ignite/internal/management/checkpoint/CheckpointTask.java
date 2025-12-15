@@ -19,6 +19,8 @@ package org.apache.ignite.internal.management.checkpoint;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
@@ -78,7 +80,7 @@ public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, Str
                         checkpointfut.futureFor(CheckpointState.FINISHED).get();
                 }
             }
-            catch (Exception e) {
+            catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to force checkpoint on node: " + ignite.localNode().id(), e);
             }
 

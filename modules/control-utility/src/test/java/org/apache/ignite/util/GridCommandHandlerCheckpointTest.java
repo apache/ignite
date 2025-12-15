@@ -56,9 +56,11 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
         stopAllGrids();
         cleanPersistenceDir();
         injectTestSystemOut();
+
         checkpointFinishedLsnr.reset();
     }
 
@@ -95,7 +97,12 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--reason", "test_reason"));
 
         outputContains("Checkpoint triggered on all nodes");
+
+        LogListener checkpointReasonLsnr = LogListener.matches("test_reason").build();
+        listeningLog.registerListener(checkpointReasonLsnr);
+
         assertTrue(GridTestUtils.waitForCondition(checkpointFinishedLsnr::check, 10_000));
+        assertTrue(GridTestUtils.waitForCondition(checkpointReasonLsnr::check, 10_000));
 
         testOut.reset();
         checkpointFinishedLsnr.reset();
@@ -106,7 +113,7 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--wait-for-finish"));
 
         outputContains("Checkpoint triggered on all nodes");
-        assertTrue(GridTestUtils.waitForCondition(checkpointFinishedLsnr::check, 10_000));
+        assertTrue(checkpointFinishedLsnr.check());
     }
 
     /** Test checkpoint command with in-memory cluster. */
