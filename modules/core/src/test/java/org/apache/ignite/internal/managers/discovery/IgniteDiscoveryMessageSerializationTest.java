@@ -15,31 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query.index;
+package org.apache.ignite.internal.managers.discovery;
 
-/**
- * Represents ordering of rows within sorted index.
- */
-public class Order {
-    /** */
-    private final NullsOrder nullsOrder;
+import org.apache.ignite.internal.managers.communication.AbstractMessageSerializationTest;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
-    /** */
-    private final SortOrder sortOrder;
-
-    /** */
-    public Order(SortOrder sortOrder, NullsOrder nullsOrder) {
-        this.sortOrder = sortOrder;
-        this.nullsOrder = nullsOrder;
-    }
-
-    /** */
-    public SortOrder sortOrder() {
-        return sortOrder;
-    }
-
-    /** */
-    public NullsOrder nullsOrder() {
-        return nullsOrder;
+/** Serialization test for discovery messages. */
+public class IgniteDiscoveryMessageSerializationTest extends AbstractMessageSerializationTest {
+    /** {@inheritDoc} */
+    @Override protected MessageFactoryProvider messageFactory() {
+        return new DiscoveryMessageFactory();
     }
 }
