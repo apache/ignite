@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -44,60 +45,62 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "cacheMode={0},backups={1},idxFld={3},idxFldType={4},gridCnt={5}")
+@MethodSource("allTypesArgs")
 public class WrongQueryEntityFieldTypeTest extends GridCommonAbstractTest {
     /** */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public CacheAtomicityMode mode;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public int backups;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public Supplier<?> val;
 
     /** */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public String idxFld;
 
     /** */
-    @Parameterized.Parameter(4)
+    @Parameter(4)
     public Class<?> idxFldType;
 
     /** */
-    @Parameterized.Parameter(5)
+    @Parameter(5)
     public int gridCnt;
 
     /** */
-    @Parameterized.Parameters(name = "cacheMode={0},backups={1},idxFld={3},idxFldType={4},gridCnt={5}")
-    public static Collection<Object[]> parameters() {
+    private static Stream<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
+
         Supplier<?> person = WrongQueryEntityFieldTypeTest::personInside;
         Supplier<?> floatInsteadLong = WrongQueryEntityFieldTypeTest::floatInside;
         Supplier<?> organization = WrongQueryEntityFieldTypeTest::personInsideOrganization;
 
-        Collection<Object[]> params = new ArrayList<>();
-
         for (CacheAtomicityMode cacheMode : CacheAtomicityMode.values()) {
             for (int backups = 0; backups < 4; backups++) {
                 for (int gridCnt = 1; gridCnt < 4; gridCnt++) {
-                    params.add(new Object[] {cacheMode, backups, person, "field", String.class, gridCnt});
-                    params.add(new Object[] {cacheMode, backups, floatInsteadLong, "field", Long.class, gridCnt});
-                    params.add(new Object[] {cacheMode, backups, organization, "head", String.class, gridCnt});
+                    params.add(Arguments.of(cacheMode, backups, person, "field", String.class, gridCnt));
+                    params.add(Arguments.of(cacheMode, backups, floatInsteadLong, "field", Long.class, gridCnt));
+                    params.add(Arguments.of(cacheMode, backups, organization, "head", String.class, gridCnt));
                 }
             }
         }
 
-        return params;
+        return params.stream();
     }
 
     /** */

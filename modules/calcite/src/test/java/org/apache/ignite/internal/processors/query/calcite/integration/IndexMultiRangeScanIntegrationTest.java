@@ -23,11 +23,13 @@ import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Tests index multi-range scans (with SEARCH/SARG operator or with dynamic parameters).
  */
 @ParameterizedClass(name = "sqlTxMode={0},dynamicParams={1}")
+@ValueSource(booleans = {true, false})
 public class IndexMultiRangeScanIntegrationTest extends AbstractBasicIntegrationTransactionalTest {
     /** */
     @Parameter(1)

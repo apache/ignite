@@ -25,63 +25,66 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.Collections.singletonList;
 import static org.h2.util.LocalDateTimeUtils.localDateToDateValue;
 import static org.h2.util.LocalDateTimeUtils.localTimeToTimeValue;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "isValidationEnabled={0}, sqlType={1}, testObjCls={2}, isDdl={4}")
+@MethodSource("allTypesArgs")
 public class IgniteQueryConvertibleTypesValidationTest extends GridCommonAbstractTest {
     /** */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public boolean isValidationEnabled;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public String sqlType;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public Class<?> objType;
 
     /** */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public Function<Object, Object> sqlTypeConverter;
 
     /** */
-    @Parameterized.Parameter(4)
+    @Parameter(4)
     public boolean isDdl;
 
     /** */
-    @Parameterized.Parameters(name = "isValidationEnabled={0}, sqlType={1}, testObjCls={2}, isDdl={4}")
-    public static Collection<Object[]> parameters() {
-        Collection<Object[]> params = new ArrayList<>();
+    private static Stream<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         for (boolean isV : Arrays.asList(true, false)) {
             for (boolean isDdl : Arrays.asList(true, false)) {
-                params.add(new Object[] {isV, "TIMESTAMP", LocalDateTime.class, f(d -> Timestamp.valueOf((LocalDateTime)d)), isDdl});
-                params.add(new Object[] {isV, "TIMESTAMP", Date.class, f(d -> new Timestamp(((Date)d).getTime())), isDdl});
-                params.add(new Object[] {isV, "TIMESTAMP", java.sql.Date.class, f(d -> new Timestamp(((Date)d).getTime())), isDdl});
-                params.add(new Object[] {isV, "DATE", LocalDate.class, f(d -> localDateToDateValue(d).getDate()), isDdl});
-                params.add(new Object[] {isV, "TIME", LocalTime.class, f(d -> localTimeToTimeValue(d).getTime()), isDdl});
+                params.add(Arguments.of(isV, "TIMESTAMP", LocalDateTime.class, f(d -> Timestamp.valueOf((LocalDateTime)d)), isDdl));
+                params.add(Arguments.of(isV, "TIMESTAMP", Date.class, f(d -> new Timestamp(((Date)d).getTime())), isDdl));
+                params.add(Arguments.of(isV, "TIMESTAMP", java.sql.Date.class, f(d -> new Timestamp(((Date)d).getTime())), isDdl));
+                params.add(Arguments.of(isV, "DATE", LocalDate.class, f(d -> localDateToDateValue(d).getDate()), isDdl));
+                params.add(Arguments.of(isV, "TIME", LocalTime.class, f(d -> localTimeToTimeValue(d).getTime()), isDdl));
             }
         }
 
-        return params;
+        return params.stream();
     }
 
     /** {@inheritDoc} */
