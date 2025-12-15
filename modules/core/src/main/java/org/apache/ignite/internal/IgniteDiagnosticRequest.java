@@ -44,7 +44,7 @@ public class IgniteDiagnosticRequest implements Message {
 
     /** Infos to send to a remote node. */
     @Order(2)
-    private @Nullable LinkedHashSet<DiagnosticBaseInfo> infos;
+    private @Nullable Set<DiagnosticBaseInfo> infos;
 
     /** Local message related to remote info. */
     private final Map<Object, List<String>> msgs = new LinkedHashMap<>();
@@ -72,7 +72,7 @@ public class IgniteDiagnosticRequest implements Message {
      * @param nodeId Node ID.
      * @param infos Diagnostic infos.
      */
-    public IgniteDiagnosticRequest(long futId, UUID nodeId, @Nullable LinkedHashSet<DiagnosticBaseInfo> infos) {
+    public IgniteDiagnosticRequest(long futId, UUID nodeId, @Nullable Set<DiagnosticBaseInfo> infos) {
         this(nodeId);
 
         this.futId = futId;
@@ -143,14 +143,13 @@ public class IgniteDiagnosticRequest implements Message {
     }
 
     /** @return Compound diagnostic infos. */
-    public @Nullable LinkedHashSet<DiagnosticBaseInfo> infos() {
+    public @Nullable Set<DiagnosticBaseInfo> infos() {
         return infos;
     }
 
     /** Sets compound diagnostic infos. */
     public void infos(@Nullable Set<DiagnosticBaseInfo> infos) {
-        // Deserialization supports only `Set` interface in MessageReader#readSet.
-        this.infos = toLinkedHashSet(infos);
+        this.infos = infos;
     }
 
     /** */

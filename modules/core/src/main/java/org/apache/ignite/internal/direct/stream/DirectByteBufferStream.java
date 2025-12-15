@@ -1644,7 +1644,7 @@ public class DirectByteBufferStream {
 
         if (readSize >= 0) {
             if (col == null)
-                col = set ? new HashSet<>(readSize, 1.0f) : new ArrayList<>(readSize);
+                col = set ? U.newHashSet(readSize) : new ArrayList<>(readSize);
 
             for (int i = readItems; i < readSize; i++) {
                 Object item = read(itemType, reader);
