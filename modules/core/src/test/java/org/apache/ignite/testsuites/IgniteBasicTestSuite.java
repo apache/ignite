@@ -42,6 +42,7 @@ import org.apache.ignite.internal.managers.communication.CacheWriteSynchroizatio
 import org.apache.ignite.internal.managers.communication.DefaultEnumMapperTest;
 import org.apache.ignite.internal.managers.communication.ErrorMessageSelfTest;
 import org.apache.ignite.internal.managers.communication.GridCacheOperationModeMessageTest;
+import org.apache.ignite.internal.managers.communication.IndexKeyTypeMessageTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
@@ -153,7 +154,8 @@ import org.junit.runners.Suite;
     GridCacheOperationModeMessageTest.class,
     CacheWriteSynchroizationModeMessageTest.class,
     CacheEntryPredicateAdapterMessageTest.class,
-    DefaultEnumMapperTest.class
+    DefaultEnumMapperTest.class,
+    IndexKeyTypeMessageTest.class
 })
 public class IgniteBasicTestSuite {
 }
