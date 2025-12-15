@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -150,13 +149,6 @@ public class IgniteDiagnosticRequest implements Message {
     /** Sets compound diagnostic infos. */
     public void infos(@Nullable Set<DiagnosticBaseInfo> infos) {
         this.infos = infos;
-    }
-
-    /** */
-    private static @Nullable LinkedHashSet<DiagnosticBaseInfo> toLinkedHashSet(@Nullable Collection<DiagnosticBaseInfo> infos) {
-        return infos == null
-            ? null
-            : infos instanceof LinkedHashSet ? (LinkedHashSet<DiagnosticBaseInfo>)infos : new LinkedHashSet<>(infos);
     }
 
     /** {@inheritDoc} */
