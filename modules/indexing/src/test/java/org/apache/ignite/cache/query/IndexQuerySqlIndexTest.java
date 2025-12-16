@@ -17,8 +17,6 @@
 
 package org.apache.ignite.cache.query;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -31,16 +29,16 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lte;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "qryIdxName={0}")
 public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
@@ -59,16 +57,6 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
 
     /** */
     private static final int CNT = 10_000;
-
-    /** Query index, {@code null} of index name. */
-    @Parameterized.Parameter()
-    public String qryDescIdxName;
-
-    /** */
-    @Parameterized.Parameters(name = "qryIdxName={0}")
-    public static Collection<?> testParams() {
-        return Arrays.asList(null, DESC_ID_IDX);
-    }
 
     /** */
     private IgniteCache<Object, Object> cache;
@@ -92,8 +80,9 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testEmptyCache() {
+    @ParameterizedTest
+    @CsvSource(value = {"null", DESC_ID_IDX}, nullValues={"null"})
+    public void testEmptyCache(String qryDescIdxName) {
         prepareTable(Person.class.getName(), DESC_ID_IDX, "descId", false);
 
         tblCache = crd.cache(CACHE_TABLE);
@@ -109,8 +98,9 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testWrongQueries() {
+    @ParameterizedTest
+    @CsvSource(value = {"null", DESC_ID_IDX}, nullValues={"null"})
+    public void testWrongQueries(String qryDescIdxName) {
         prepareTable(Person.class.getName(), DESC_ID_IDX, "descId", false);
 
         tblCache = crd.cache(CACHE_TABLE);
@@ -137,8 +127,9 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     }
 
     /** Should support both fields: normalized and original. */
-    @Test
-    public void testRangeQueries() {
+    @ParameterizedTest
+    @CsvSource(value = {"null", DESC_ID_IDX}, nullValues={"null"})
+    public void testRangeQueries(String qryDescIdxName) {
         prepareTable(Person.class.getName(), DESC_ID_IDX, "descId", true);
 
         int pivot = new Random().nextInt(CNT);
@@ -161,8 +152,9 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     }
 
     /** Should support only original field. */
-    @Test
-    public void testEscapedColumnName() {
+    @ParameterizedTest
+    @CsvSource(value = {"null", DESC_ID_IDX}, nullValues={"null"})
+    public void testEscapedColumnName(String qryDescIdxName) {
         prepareTable(Person.class.getName(), DESC_ID_IDX, "\"descId\"", true);
 
         int pivot = new Random().nextInt(CNT);
@@ -186,8 +178,9 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     }
 
     /** Should support only original field. */
-    @Test
-    public void testEscapedIndexName() {
+    @ParameterizedTest
+    @CsvSource(value = {"null", DESC_ID_IDX}, nullValues={"null"})
+    public void testEscapedIndexName(String qryDescIdxName) {
         prepareTable(Person.class.getName(), "\"" + DESC_ID_IDX.toLowerCase() + "\"", "descId", true);
 
         int pivot = new Random().nextInt(CNT);
@@ -213,8 +206,9 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testRangeQueriesWithKeepBinary() {
+    @ParameterizedTest
+    @CsvSource(value = {"null", DESC_ID_IDX}, nullValues={"null"})
+    public void testRangeQueriesWithKeepBinary(String qryDescIdxName) {
         prepareTable(Person.class.getName(), DESC_ID_IDX, "descId", true);
 
         int pivot = new Random().nextInt(CNT);
@@ -228,8 +222,9 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testRangeQueriesWithValueType() {
+    @ParameterizedTest
+    @CsvSource(value = {"null", DESC_ID_IDX}, nullValues={"null"})
+    public void testRangeQueriesWithValueType(String qryDescIdxName) {
         prepareTable(VALUE_TYPE, DESC_ID_IDX, "descId", true);
 
         int pivot = new Random().nextInt(CNT);
@@ -243,8 +238,9 @@ public class IndexQuerySqlIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testReverseFieldOrder() {
+    @ParameterizedTest
+    @CsvSource(value = {"null", DESC_ID_IDX}, nullValues={"null"})
+    public void testReverseFieldOrder(String qryDescIdxName) {
         prepareTable(Person.class.getName(), DESC_ID_IDX, "descId", true);
 
         int pivot = new Random().nextInt(CNT);

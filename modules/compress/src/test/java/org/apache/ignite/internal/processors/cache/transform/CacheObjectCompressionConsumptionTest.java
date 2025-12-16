@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.transform;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,8 +45,10 @@ import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.internal.util.nio.GridNioServer.RECEIVED_BYTES_METRIC_NAME;
@@ -56,25 +57,15 @@ import static org.apache.ignite.internal.util.nio.GridNioServer.SENT_BYTES_METRI
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "mode={0}")
+@EnumSource(value = CacheObjectCompressionConsumptionTest.ConsumptionTestMode.class)
 public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCompressionTest {
     /** Region name. */
     private static final String REGION_NAME = "region";
 
     /** Thin client. */
-    @Parameterized.Parameter
-    public ConsumptionTestMode mode;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "mode={0}")
-    public static Collection<?> parameters() {
-        List<Object[]> res = new ArrayList<>();
-
-        for (ConsumptionTestMode mode : ConsumptionTestMode.values())
-            res.add(new Object[] {mode});
-
-        return res;
-    }
+    @Parameter
+    ConsumptionTestMode mode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -100,7 +91,7 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testString() throws Exception {
         testConsumption((i) -> i, this::hugeValue);
     }
@@ -108,7 +99,7 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testWrappedString() throws Exception {
         testConsumption((i) -> i, (i) -> new StringData(hugeValue(i)));
     }
@@ -116,7 +107,7 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testStringArray() throws Exception {
         testConsumption((i) -> i, (i) -> new String[] {hugeValue(i)});
     }
@@ -124,7 +115,7 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testWrappedStringArray() throws Exception {
         testConsumption((i) -> i, (i) -> new StringData[] {new StringData(hugeValue(i))});
     }
@@ -133,7 +124,7 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
      * @throws Exception If failed.
      */
     @WithSystemProperty(key = IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS, value = "true")
-    @org.junit.Test
+    @Test
     public void testWrappedStringBinaryArray() throws Exception {
         testWrappedStringArray();
     }
@@ -141,7 +132,7 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
     /**
      *
      */
-    @org.junit.Test
+    @Test
     public void testIncompressible() {
         GridTestUtils.assertThrowsWithCause(
             () -> {
@@ -415,7 +406,7 @@ public class CacheObjectCompressionConsumptionTest extends AbstractCacheObjectCo
     /**
      *
      */
-    private enum ConsumptionTestMode {
+    enum ConsumptionTestMode {
         /** Node. */
         NODE,
 

@@ -31,14 +31,16 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.cache.query.ThinClientIndexQueryTest.getFilteredMessages;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "entries={0}")
+@ValueSource(ints = {100, 1000, 5000, 10_000, 50_000, 100_000})
 public class IndexQueryPaginationTest extends GridCommonAbstractTest {
     /** */
     private static final int PAGE_SIZE = 512;
@@ -53,14 +55,8 @@ public class IndexQueryPaginationTest extends GridCommonAbstractTest {
     private IgniteCache<Integer, Person> cache;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter
     public int entries;
-
-    /** */
-    @Parameterized.Parameters(name = "entries={0}")
-    public static Object[] params() {
-        return new Object[] {100, 1000, 5000, 10_000, 50_000, 100_000};
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

@@ -41,9 +41,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -58,7 +60,8 @@ import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lte;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "qryPar={0} atomicity={1} mode={2} node={3} backups={4} idxName={5} duplicates={6}")
+@MethodSource("allTypesArgs")
 public class IndexQueryRangeTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
@@ -79,45 +82,44 @@ public class IndexQueryRangeTest extends GridCommonAbstractTest {
     private IgniteCache<Long, Person> cache;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter
     public int qryParallelism;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public CacheAtomicityMode atomicityMode;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public CacheMode cacheMode;
 
     /** */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public String node;
 
     /** */
-    @Parameterized.Parameter(4)
+    @Parameter(4)
     public int backups;
 
     /** */
-    @Parameterized.Parameter(5)
+    @Parameter(5)
     public String idxName;
 
     /** Number of duplicates of indexed value. */
-    @Parameterized.Parameter(6)
+    @Parameter(6)
     public int duplicates;
 
     /** */
-    @Parameterized.Parameters(name = "qryPar={0} atomicity={1} mode={2} node={3} backups={4} idxName={5} duplicates={6}")
-    public static Collection<Object[]> testParams() {
-        List<Object[]> params = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         Stream.of("CRD", "CLN").forEach(node ->
             Stream.of(0, 2).forEach(backups ->
                 Stream.of(1, 10).forEach(duplicates ->
                     Stream.of(IDX, DESC_IDX).forEach(idx -> {
-                        params.add(new Object[] {1, TRANSACTIONAL, REPLICATED, node, backups, idx, duplicates});
-                        params.add(new Object[] {1, TRANSACTIONAL, PARTITIONED, node, backups, idx, duplicates});
-                        params.add(new Object[] {4, TRANSACTIONAL, PARTITIONED, node, backups, idx, duplicates});
+                        params.add(Arguments.of(1, TRANSACTIONAL, REPLICATED, node, backups, idx, duplicates));
+                        params.add(Arguments.of(1, TRANSACTIONAL, PARTITIONED, node, backups, idx, duplicates));
+                        params.add(Arguments.of(4, TRANSACTIONAL, PARTITIONED, node, backups, idx, duplicates));
                     })
                 )
             )
