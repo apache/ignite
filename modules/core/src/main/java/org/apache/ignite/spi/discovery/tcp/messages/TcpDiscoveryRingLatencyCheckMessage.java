@@ -30,11 +30,11 @@ public class TcpDiscoveryRingLatencyCheckMessage extends TcpDiscoveryAbstractMes
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Maximal hops number. */
     @Order(value = 5, method = "maximalHops")
     private int maxHops;
 
-    /** */
+    /** Current hops reached. */
     @Order(value = 6, method = "currentHops")
     private int curHops;
 
@@ -45,7 +45,7 @@ public class TcpDiscoveryRingLatencyCheckMessage extends TcpDiscoveryAbstractMes
 
     /**
      * @param creatorNodeId Creator node ID.
-     * @param maxHops Max hops for this message.
+     * @param maxHops Maximal hops number for this message.
      */
     public TcpDiscoveryRingLatencyCheckMessage(UUID creatorNodeId, int maxHops) {
         super(creatorNodeId);
@@ -73,7 +73,7 @@ public class TcpDiscoveryRingLatencyCheckMessage extends TcpDiscoveryAbstractMes
     }
 
     /**
-     * @return Maximal hops.
+     * @return Maximal hops number.
      */
     public int maximalHops() {
         return maxHops;
@@ -85,7 +85,7 @@ public class TcpDiscoveryRingLatencyCheckMessage extends TcpDiscoveryAbstractMes
     }
 
     /**
-     * @return {@code True} if max hops has been reached.
+     * @return {@code True} if max hops reached.
      */
     public boolean maxHopsReached() {
         return curHops == maxHops;
@@ -93,7 +93,7 @@ public class TcpDiscoveryRingLatencyCheckMessage extends TcpDiscoveryAbstractMes
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 8;
+        return 7;
     }
 
     /** {@inheritDoc} */
