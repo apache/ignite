@@ -92,6 +92,9 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
     private final long totalTimeout;
 
     /** */
+    private final String initiatorId;
+
+    /** */
     private volatile long locQryId;
 
     /** Query start timestamp (millis). */
@@ -113,7 +116,8 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
         BiConsumer<Query<RowT>, Throwable> unregister,
         IgniteLogger log,
         long plannerTimeout,
-        long totalTimeout
+        long totalTimeout,
+        String initiatorId
     ) {
         super(
             UUID.randomUUID(),
@@ -135,6 +139,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
 
         this.plannerTimeout = totalTimeout > 0 ? Math.min(plannerTimeout, totalTimeout) : plannerTimeout;
         this.totalTimeout = totalTimeout;
+        this.initiatorId = initiatorId;
 
         Context parent = Commons.convert(qryCtx);
 
@@ -172,7 +177,9 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
             unregister,
             log,
             plannerTimeout,
-            totalTimeout);
+            totalTimeout,
+            initiatorId
+        );
     }
 
     /** */
@@ -444,6 +451,7 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
             .append(", type=CALCITE")
             .append(", state=").append(state)
             .append(", schema=").append(ctx.schemaName())
+            .append(", initiatorId=").append(initiatorId)
             .append(", sql='").append(sql);
 
         msgSb.append(']');
@@ -466,6 +474,13 @@ public class RootQuery<RowT> extends Query<RowT> implements TrackableQuery {
         long curTimeout = totalTimeout - (U.currentTimeMillis() - startTs);
 
         return curTimeout <= 0 ? 0 : curTimeout;
+    }
+
+    /**
+     * @return Query initiator ID.
+     */
+    public String initiatorId() {
+        return initiatorId;
     }
 
     /** */

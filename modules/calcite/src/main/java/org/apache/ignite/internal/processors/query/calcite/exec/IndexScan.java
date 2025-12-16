@@ -210,7 +210,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
             if (key != ectx.unspecifiedValue()) {
                 key = TypeUtils.fromInternal(ectx, key, fieldsStoreTypes[fieldIdx]);
 
-                keys[i] = IndexKeyFactory.wrap(key, idxRowHnd.indexKeyDefinitions().get(i).idxType(),
+                keys[i] = IndexKeyFactory.wrap(key, idxRowHnd.indexKeyDefinitions().get(i).indexKeyType(),
                     cctx.cacheObjectContext(), idxRowHnd.indexKeyTypeSettings());
 
                 nullSearchRow = false;
