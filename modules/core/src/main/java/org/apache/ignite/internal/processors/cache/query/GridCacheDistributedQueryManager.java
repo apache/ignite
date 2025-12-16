@@ -233,12 +233,10 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 GridCacheQueryResponse res = new GridCacheQueryResponse(
                         cctx.cacheId(),
                         req.id(),
-                        new QueryCancelledException("Iterator has been closed."),
+                        new QueryCancelledException("Query has been cancelled."),
                         cctx.deploymentEnabled()
                 );
-
                 sendQueryResponse(sndId, res, 0);
-
             }
         }
     }

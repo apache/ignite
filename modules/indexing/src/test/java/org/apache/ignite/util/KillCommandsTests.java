@@ -17,7 +17,6 @@
 
 package org.apache.ignite.util;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -163,6 +162,8 @@ class KillCommandsTests {
         // Cancel first query.
         qryCanceler.accept(qryInfo);
 
+        checkRequestFutureMapEmpty(srvs, qryInfo.get1(), qryInfo.get3());
+
         // Fetch of the next page should throw the exception. New page is delivered in parallel to iterating.
         try {
             for (int i = 0; i < PAGE_SZ * PAGES_CNT - 1; i++)
@@ -187,8 +188,6 @@ class KillCommandsTests {
         checkScanQueryResources(cli, srvs, qryInfo.get3());
 
         qry2.close();
-
-        checkRequestFutureMapEmpty(cli, srvs, qryInfo.get1());
     }
 
     /**
@@ -270,35 +269,39 @@ class KillCommandsTests {
     /**
      * Checks that RequestFutureMap is empty on all nodes after query cancellation.
      *
-     * @param cli Client node.
      * @param srvs Server nodes.
      * @param originNodeId Origin node ID.
+     * @param cancelledReqId Cancel request ID
      */
     private static void checkRequestFutureMapEmpty(
-            IgniteEx cli,
             List<IgniteEx> srvs,
-            UUID originNodeId
-    ) {
-        List<IgniteEx> allNodes = new ArrayList<>(srvs);
-        allNodes.add(cli);
+            UUID originNodeId,
+            long cancelledReqId
+    ) throws Exception {
+        assertTrue(
+                "Cancelled request future was not removed",
+                GridTestUtils.waitForCondition(() -> {
+                    for (IgniteEx node : srvs) {
+                        int cacheId = CU.cacheId(DEFAULT_CACHE_NAME);
 
-        for (IgniteEx node : allNodes) {
-            int cacheId = CU.cacheId(DEFAULT_CACHE_NAME);
-            GridCacheContext<?, ?> ctx = node.context().cache().context().cacheContext(cacheId);
+                        GridCacheContext<?, ?> ctx =
+                                node.context().cache().context().cacheContext(cacheId);
 
-            if (ctx == null) {
-                continue;
-            }
+                        if (ctx == null)
+                            continue;
 
-            GridCacheQueryManager<?, ?> qryMgr = ctx.queries();
+                        Map<UUID, GridCacheQueryManager.RequestFutureMap> qryIters =
+                                GridTestUtils.getFieldValue(ctx.queries(), "qryIters");
 
-            Map<UUID, GridCacheQueryManager.RequestFutureMap> qryIters = GridTestUtils.getFieldValue(qryMgr, "qryIters");
-            GridCacheQueryManager.RequestFutureMap futMap = qryIters.get(originNodeId);
+                        GridCacheQueryManager.RequestFutureMap futMap =
+                                qryIters.get(originNodeId);
 
-            if (futMap != null) {
-                assertTrue("RequestFutureMap not empty on node " + node.localNode().id() + ": size = " + futMap.size(), futMap.isEmpty());
-            }
-        }
+                        if (futMap != null && futMap.containsKey(cancelledReqId))
+                            return false;
+                    }
+                    return true;
+                }, TIMEOUT)
+        );
     }
 
     /**
