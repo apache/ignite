@@ -18,11 +18,11 @@
 package org.apache.ignite.internal;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -43,7 +43,7 @@ public class IgniteDiagnosticRequest implements Message {
 
     /** Infos to send to a remote node. */
     @Order(2)
-    private @Nullable LinkedHashSet<DiagnosticBaseInfo> infos;
+    private @Nullable Set<DiagnosticBaseInfo> infos;
 
     /** Local message related to remote info. */
     private final Map<Object, List<String>> msgs = new LinkedHashMap<>();
@@ -71,12 +71,12 @@ public class IgniteDiagnosticRequest implements Message {
      * @param nodeId Node ID.
      * @param infos Diagnostic infos.
      */
-    public IgniteDiagnosticRequest(long futId, UUID nodeId, @Nullable Collection<DiagnosticBaseInfo> infos) {
+    public IgniteDiagnosticRequest(long futId, UUID nodeId, @Nullable Set<DiagnosticBaseInfo> infos) {
         this(nodeId);
 
         this.futId = futId;
 
-        infos(infos);
+        this.infos = infos;
     }
 
     /**
@@ -142,21 +142,13 @@ public class IgniteDiagnosticRequest implements Message {
     }
 
     /** @return Compound diagnostic infos. */
-    public @Nullable Collection<DiagnosticBaseInfo> infos() {
+    public @Nullable Set<DiagnosticBaseInfo> infos() {
         return infos;
     }
 
     /** Sets compound diagnostic infos. */
-    public void infos(@Nullable Collection<DiagnosticBaseInfo> infos) {
-        // Deserialization supports only `Collection` interface in MessageReader#readCollection.
-        this.infos = toLinkedHashSet(infos);
-    }
-
-    /** */
-    private static @Nullable LinkedHashSet<DiagnosticBaseInfo> toLinkedHashSet(@Nullable Collection<DiagnosticBaseInfo> infos) {
-        return infos == null
-            ? null
-            : infos instanceof LinkedHashSet ? (LinkedHashSet<DiagnosticBaseInfo>)infos : new LinkedHashSet<>(infos);
+    public void infos(@Nullable Set<DiagnosticBaseInfo> infos) {
+        this.infos = infos;
     }
 
     /** {@inheritDoc} */
