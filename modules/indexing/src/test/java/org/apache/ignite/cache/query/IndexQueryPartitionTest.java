@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.query;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,36 +37,37 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "mode={0}, client={1}")
+@MethodSource("allTypesArgs")
 public class IndexQueryPartitionTest extends GridCommonAbstractTest {
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public CacheMode cacheMode;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean client;
 
     /** */
     private static Map<Integer, Person> data;
 
     /** */
-    @Parameterized.Parameters(name = "mode={0}, client={1}")
-    public static List<Object[]> params() {
-        return F.asList(
-            new Object[]{ CacheMode.PARTITIONED, false },
-            new Object[]{ CacheMode.PARTITIONED, true },
-            new Object[]{ CacheMode.REPLICATED, false },
-            new Object[]{ CacheMode.REPLICATED, true }
+    private static Collection<Arguments> allTypesArgs() {
+        return List.of(
+            Arguments.of(CacheMode.PARTITIONED, false),
+            Arguments.of(CacheMode.PARTITIONED, true),
+            Arguments.of(CacheMode.REPLICATED, false),
+            Arguments.of(CacheMode.REPLICATED, true)
         );
     }
 

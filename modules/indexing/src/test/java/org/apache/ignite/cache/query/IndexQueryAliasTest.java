@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.query;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,14 +36,13 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 
 /** */
-@RunWith(Parameterized.class)
 public class IndexQueryAliasTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
@@ -56,20 +56,11 @@ public class IndexQueryAliasTest extends GridCommonAbstractTest {
     /** */
     private static final int CNT = 10_000;
 
-    /** Query index, {@code null} or index name. */
-    @Parameterized.Parameter
-    public String qryIdx;
-
-    /** Query desc index, {@code null} or index name. */
-    @Parameterized.Parameter(1)
-    public String qryDescIdx;
-
     /** */
-    @Parameterized.Parameters(name = "qryIdx={0}, qryDescIdx={1}")
-    public static List<Object[]> params() {
-        return F.asList(
-            new Object[] {null, null},
-            new Object[] {ID_IDX, DESC_ID_IDX}
+    private static Collection<Arguments> allTypesArgs() {
+        return List.of(
+                Arguments.of(null, null),
+                Arguments.of(ID_IDX, DESC_ID_IDX)
         );
     }
 
@@ -111,8 +102,9 @@ public class IndexQueryAliasTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testAliasRangeQueries() {
+    @ParameterizedTest(name = "qryIdx={0}, qryDescIdx={1}")
+    @MethodSource("allTypesArgs")
+    public void testAliasRangeQueries(String qryIdx, String qryDescIdx) {
         int pivot = new Random().nextInt(CNT);
 
         // Lt.
@@ -128,9 +120,9 @@ public class IndexQueryAliasTest extends GridCommonAbstractTest {
         check(cache.query(descQry), 0, pivot, true);
     }
 
-    /** */
-    @Test
-    public void testAliasCaseRangeQueries() {
+    @ParameterizedTest(name = "qryIdx={0}, qryDescIdx={1}")
+    @MethodSource("allTypesArgs")
+    public void testAliasCaseRangeQueries(String qryIdx, String qryDescIdx) {
         int pivot = new Random().nextInt(CNT);
 
         String idIdx = qryIdx != null ? qryIdx.toLowerCase() : null;

@@ -40,9 +40,11 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.between;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
@@ -52,7 +54,8 @@ import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lte;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedСlass(name = "nodesCnt={0}")
+@ValueSource(ints = {1, 2})
 public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
@@ -67,36 +70,14 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     private static final int CNT = 10_000;
 
     /** */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public int nodesCnt;
-
-    /** Query index, {@code null} or index name. */
-    @Parameterized.Parameter(1)
-    public String qryIdx;
-
-    /** Query desc index, {@code null} or index name. */
-    @Parameterized.Parameter(2)
-    public String qryDescIdx;
-
-    /** Query key PK index, {@code null} or index name. */
-    @Parameterized.Parameter(3)
-    public String qryKeyPKIdx;
 
     /** */
     private Ignite ignite;
 
     /** */
     private IgniteCache<Object, Object> cache;
-
-    /** */
-    @Parameterized.Parameters(name = "nodesCnt={0} qryIdx={1}")
-    public static Collection<Object[]> testParams() {
-        return Arrays.asList(
-            new Object[] {1, null, null, null},
-            new Object[] {2, null, null, null},
-            new Object[] {1, INDEX, DESC_INDEX, "_key_PK"},
-            new Object[] {2, INDEX, DESC_INDEX, "_key_PK"});
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -126,8 +107,9 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testQueryKeyPKIndex() {
+    @ParameterizedTest(name = "qryKeyPKIdx={1}")
+    @CsvSource(value = "null, _key_PK", nullValues={"null"})
+    public void testQueryKeyPKIndex(String qryKeyPKIdx) {
         insertData();
 
         int pivot = new Random().nextInt(CNT);
@@ -139,8 +121,9 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testEmptyCacheQuery() {
+    @ParameterizedTest(name = "qryIdx={1}")
+    @CsvSource(value = "null, " + INDEX, nullValues={"null"})
+    public void testEmptyCacheQuery(String qryIdx) {
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
             .setCriteria(lt("id", Integer.MAX_VALUE), lt("secId", Integer.MAX_VALUE));
 
@@ -155,9 +138,9 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
         assertTrue(cache.query(qry).getAll().isEmpty());
     }
 
-    /** */
-    @Test
-    public void testCheckBoundaries() {
+    @ParameterizedTest(name = "qryIdx={1}")
+    @CsvSource(value = "null, " + INDEX, nullValues={"null"})
+    public void testCheckBoundaries(String qryIdx) {
         cache.put(1L, new Person(0, 1));
         cache.put(2L, new Person(1, 0));
         cache.put(3L, new Person(1, 1));
@@ -179,8 +162,9 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testQuerySingleField() {
+    @ParameterizedTest(name = "qryIdx={1}, qryDescIdx={2}")
+    @CsvSource(value = {"null, null", INDEX + " ," + DESC_INDEX}, nullValues={"null"})
+    public void testQuerySingleField(String qryIdx, String qryDescIdx) {
         insertData();
 
         // Should return empty result for ID that less any inserted.
@@ -208,8 +192,9 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testLtQueryMultipleField() {
+    @ParameterizedTest(name = "qryIdx={1}")
+    @CsvSource(value = "null, " + INDEX, nullValues={"null"})
+    public void testLtQueryMultipleField(String qryIdx) {
         insertData();
 
         int pivot = new Random().nextInt(CNT);
@@ -240,8 +225,9 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testLtQueryMultipleFieldReverseFieldsOrder() {
+    @ParameterizedTest(name = "qryIdx={1}")
+    @CsvSource(value = "null, " + INDEX, nullValues={"null"})
+    public void testLtQueryMultipleFieldReverseFieldsOrder(String qryIdx) {
         insertData();
 
         int pivot = new Random().nextInt(CNT);
@@ -272,14 +258,16 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testLegalDifferentCriteriaAscIndex() {
+    @ParameterizedTest(name = "qryIdx={1}")
+    @CsvSource(value = "null, " + INDEX, nullValues={"null"})
+    public void testLegalDifferentCriteriaAscIndex(String qryIdx) {
         testLegalDifferentCriteria(qryIdx, "secId", false);
     }
 
     /** */
-    @Test
-    public void testLegalDifferentCriteriaWithDescIdx() {
+    @ParameterizedTest(name = "qryDescIdx={1}")
+    @CsvSource(value = "null, " + DESC_INDEX, nullValues={"null"})
+    public void testLegalDifferentCriteriaWithDescIdx(String qryDescIdx) {
         testLegalDifferentCriteria(qryDescIdx, "descId", true);
     }
 
@@ -410,8 +398,9 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testNoRightIndexRangeDifferentCriteria() {
+    @ParameterizedTest(name = "qryIdx={1}")
+    @CsvSource(value = "null, " + INDEX, nullValues={"null"})
+    public void testNoRightIndexRangeDifferentCriteria(String qryIdx) {
         insertData();
 
         int pivot = new Random().nextInt(CNT);
@@ -438,8 +427,9 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testWrongBoundaryClass() {
+    @ParameterizedTest(name = "qryIdx={1}")
+    @CsvSource(value = "null, " + INDEX, nullValues={"null"})
+    public void testWrongBoundaryClass(String qryIdx) {
         insertData();
 
         // Use long boundary instead of int.
@@ -454,8 +444,9 @@ public class MultifieldIndexQueryTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testQueryIndexWithKeyQuery() {
+    @ParameterizedTest(name = "qryIdx={1}")
+    @CsvSource(value = "null, " + INDEX, nullValues={"null"})
+    public void testQueryIndexWithKeyQuery(String qryIdx) {
         insertData();
 
         int pivot = new Random().nextInt(CNT);

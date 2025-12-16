@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.query;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -31,11 +30,9 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gte;
@@ -43,7 +40,6 @@ import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lte;
 
 /** */
-@RunWith(Parameterized.class)
 public class MultiTableIndexQuery extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
@@ -59,26 +55,6 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
 
     /** */
     private static IgniteCache<Long, Object> cache;
-
-    /** */
-    @Parameterized.Parameter(value = 0)
-    public String qryPersIdx;
-
-    /** */
-    @Parameterized.Parameter(value = 1)
-    public String qrySecPersIdx;
-
-    /** */
-    @Parameterized.Parameter(value = 2)
-    public String qryKeyPkIdx;
-
-    /** */
-    @Parameterized.Parameters(name = "IDX={0}, SEC_IDX={1}, PK={2}")
-    public static Collection<Object[]> params() {
-        return F.asList(
-            new Object[] {null, null, null},
-            new Object[] {IDX, SEC_IDX, "_key_PK"});
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -108,8 +84,9 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testEmptyCache() {
+    @ParameterizedTest(name = "qryPersIdx={0}, qrySecPersIdx={1}")
+    @CsvSource(value = {"null, null",  IDX + "," + SEC_IDX}, nullValues={"null"})
+    public void testEmptyCache(String qryPersIdx, String qrySecPersIdx) {
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryPersIdx)
             .setCriteria(lt("id", Integer.MAX_VALUE));
 
@@ -126,8 +103,9 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testLtQuery() {
+    @ParameterizedTest(name = "qryPersIdx={0}, qrySecPersIdx={1}")
+    @CsvSource(value = {"null, null",  IDX + "," + SEC_IDX}, nullValues={"null"})
+    public void testLtQuery(String qryPersIdx, String qrySecPersIdx) {
         insertData(cache);
 
         int pivot = new Random().nextInt(CNT);
@@ -178,8 +156,9 @@ public class MultiTableIndexQuery extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testKeyPK() {
+    @ParameterizedTest(name = "qryKeyPkIdx={0}")
+    @CsvSource(value = {"null, _key_PK"}, nullValues={"null"})
+    public void testKeyPK(String qryKeyPkIdx) {
         insertData(cache);
 
         int pivot = new Random().nextInt(CNT);
