@@ -41,9 +41,13 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
     @Order(5)
     private long order;
 
+    /** */
+    @Order(value = 6, method = "previousNodeAliveFlag")
+    private boolean prevNodeAliveFlag;
+
     /** Redirect addresses messages serialization holder. */
-    @Order(value = 6, method = "redirectHostAddressesMessages")
-    private @Nullable Collection<HostAddressMessage> redirectAddrsMsgs;
+    @Order(value = 7, method = "redirectAddressesMessages")
+    private @Nullable Collection<InetAddressMessage> redirectAddrsMsgs;
 
     /** Redirect addresses. */
     private @Nullable Collection<InetSocketAddress> redirectAddrs;
@@ -74,17 +78,17 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
      * @return previous node alive flag.
      */
     public boolean previousNodeAlive() {
-        return getFlag(CHANGE_TOPOLOGY_FLAG_POS);
+        return prevNodeAliveFlag;
     }
 
     /**
      * Sets topology change flag.<br>
      * {@code True} means node has connectivity to it's previous node in a ring.
      *
-     * @param prevNodeAlive previous node alive flag.
+     * @param prevNodeAliveFlag previous node alive flag.
      */
-    public void previousNodeAlive(boolean prevNodeAlive) {
-        setFlag(CHANGE_TOPOLOGY_FLAG_POS, prevNodeAlive);
+    public void previousNodeAlive(boolean prevNodeAliveFlag) {
+        this.prevNodeAliveFlag = prevNodeAliveFlag;
     }
 
     /**
@@ -115,17 +119,17 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
         redirectAddrs = sockAddrs;
     }
 
-    /** @return Collection of {@link HostAddressMessage}. */
-    public @Nullable Collection<HostAddressMessage> redirectHostAddressesMessages() {
+    /** @return Collection of {@link InetAddressMessage}. */
+    public @Nullable Collection<InetAddressMessage> redirectAddressesMessages() {
         if (redirectAddrs == null)
             return null;
 
-        return redirectAddrs.stream().map(addrs -> new HostAddressMessage(addrs.getAddress(), addrs.getPort()))
+        return redirectAddrs.stream().map(addrs -> new InetAddressMessage(addrs.getAddress(), addrs.getPort()))
             .collect(Collectors.toList());
     }
 
-    /** @param redirectAddrsMsgs Collection of {@link HostAddressMessage}. */
-    public void redirectHostAddressesMessages(@Nullable Collection<HostAddressMessage> redirectAddrsMsgs) {
+    /** @param redirectAddrsMsgs Collection of {@link InetAddressMessage}. */
+    public void redirectAddressesMessages(@Nullable Collection<InetAddressMessage> redirectAddrsMsgs) {
         if (redirectAddrsMsgs == null) {
             redirectAddrs = null;
 
@@ -144,9 +148,19 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
         });
     }
 
+    /** @return Previous node aliveness flag. */
+    public boolean previousNodeAliveFlag() {
+        return prevNodeAliveFlag;
+    }
+
+    /** @param prevNodeAliveFlag Previous node aliveness flag. */
+    public void previousNodeAliveFlag(boolean prevNodeAliveFlag) {
+        this.prevNodeAliveFlag = prevNodeAliveFlag;
+    }
+
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 5;
+        return 9;
     }
 
     /** {@inheritDoc} */

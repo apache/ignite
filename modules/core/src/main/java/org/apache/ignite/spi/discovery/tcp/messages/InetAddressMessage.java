@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** */
-public class HostAddressMessage implements Message {
+public class InetAddressMessage implements Message {
     /** */
     @Order(0)
     private String hostName;
@@ -41,7 +41,7 @@ public class HostAddressMessage implements Message {
     /**
      * Default constructor for {@link DiscoveryMessageFactory}.
      */
-    public HostAddressMessage() {
+    public InetAddressMessage() {
         // No-op.
     }
 
@@ -51,7 +51,7 @@ public class HostAddressMessage implements Message {
      * @param addr Address.
      * @param port Port.
      */
-    public HostAddressMessage(InetAddress addr, int port) {
+    public InetAddressMessage(InetAddress addr, int port) {
         hostName = addr.getHostName();
         this.port = port;
         addrBytes = addr.getAddress();
@@ -87,7 +87,7 @@ public class HostAddressMessage implements Message {
         this.hostName = hostName;
     }
 
-    /** @return {@link InetAddress#getByAddress(byte[])} */
+    /** @return {@link InetAddress#getByAddress(String, byte[])} */
     public InetAddress address() throws UnknownHostException {
         return addrBytes == null ? null : InetAddress.getByAddress(hostName, addrBytes);
     }
@@ -99,6 +99,6 @@ public class HostAddressMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(HostAddressMessage.class, this);
+        return S.toString(InetAddressMessage.class, this);
     }
 }
