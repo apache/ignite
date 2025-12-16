@@ -26,6 +26,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.ReadRepairStrategy;
@@ -48,9 +50,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -72,7 +76,8 @@ import static org.apache.ignite.testframework.LogListener.matches;
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "cmdHnd={0}, strategy={1}, explicitGrp={2}, callByGrp={3}, withSecurityEnabled={4}")
+@MethodSource("allTypesArgs")
 public class GridCommandHandlerConsistencyTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** Default cache name atomic. */
     private static final String DEFAULT_CACHE_NAME_ATOMIC = DEFAULT_CACHE_NAME + "Atomic";
@@ -105,11 +110,10 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** */
-    @Parameterized.Parameters(name = "cmdHnd={0}, strategy={1}, explicitGrp={2}, callByGrp={3}, withSecurityEnabled={4}")
-    public static Iterable<Object[]> data() {
-        List<Object[]> res = new ArrayList<>();
+    private static Stream<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
-        for (String invoker : commandHandlers()) {
+        for (String invoker : CMD_HNDS.keySet()) {
             for (ReadRepairStrategy strategy : ReadRepairStrategy.values()) {
                 for (boolean explicitGrp : new boolean[] {false, true}) {
                     for (boolean callByGrp : new boolean[] {false, true}) {
@@ -117,38 +121,38 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
                             if (!explicitGrp && callByGrp || invoker.equals(JMX_CMD_HND) && withSecurityEnabled)
                                 continue;
 
-                            res.add(new Object[] {invoker, strategy, explicitGrp, callByGrp, withSecurityEnabled});
+                            params.add(Arguments.of(invoker, strategy, explicitGrp, callByGrp, withSecurityEnabled));
                         }
                     }
                 }
             }
         }
 
-        return res;
+        return params.stream();
     }
 
     /**
      *
      */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public ReadRepairStrategy strategy;
 
     /**
      * True when cache defined via group.
      */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean explicitGrp;
 
     /**
      * True when cache consistency repair called by group name.
      */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public boolean callByGrp;
 
     /**
      * True if security checks enabled.
      */
-    @Parameterized.Parameter(4)
+    @Parameter(4)
     public boolean withSecurityEnabled;
 
     /**

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Arrays;
-import java.util.Collection;
 import javax.cache.configuration.Factory;
 import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
@@ -28,40 +26,21 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.objectweb.jotm.Current;
 import org.objectweb.jotm.Jotm;
 import org.objectweb.jotm.rmi.RmiLocalConfiguration;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 
 /**
  * JTA Tx Manager test.
  */
-@RunWith(Parameterized.class)
 public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
     /** Java Open Transaction Manager facade. */
     private static Jotm jotm;
-
-    /**
-     * @return Test parameters.
-     */
-    @Parameterized.Parameters(name = "txConcurrency={0}")
-    public static Collection parameters() {
-        return Arrays.asList(
-            new TransactionConcurrency[] {OPTIMISTIC},
-            new TransactionConcurrency[] {PESSIMISTIC}
-        );
-    }
-
-    /** Tx concurrency. */
-    @Parameterized.Parameter
-    public TransactionConcurrency txConcurrency;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -94,8 +73,9 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
-    public void testJtaTxContextSwitch() throws Exception {
+    @ParameterizedTest(name = "txConcurrency={0}")
+    @EnumSource
+    public void testJtaTxContextSwitch(TransactionConcurrency txConcurrency) throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
             TransactionConfiguration cfg = grid().context().config().getTransactionConfiguration();
 
@@ -169,8 +149,9 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Test
-    public void testJtaTxContextSwitchWithExistingTx() throws Exception {
+    @ParameterizedTest(name = "txConcurrency={0}")
+    @EnumSource
+    public void testJtaTxContextSwitchWithExistingTx(TransactionConcurrency txConcurrency) throws Exception {
         for (TransactionIsolation isolation : TransactionIsolation.values()) {
             TransactionConfiguration cfg = grid().context().config().getTransactionConfiguration();
 

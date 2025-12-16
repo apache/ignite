@@ -35,9 +35,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.between;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
@@ -45,18 +46,24 @@ import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gte;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lte;
+import static org.apache.ignite.cache.query.RepeatedFieldIndexQueryTest.DESC_ID_IDX;
+import static org.apache.ignite.cache.query.RepeatedFieldIndexQueryTest.ID_IDX;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "idx={0} fldName={1}")
+@CsvSource({
+        ID_IDX + ", id",
+        DESC_ID_IDX + ", descId"
+})
 public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
 
     /** */
-    private static final String ID_IDX = "ID_IDX";
+    static final String ID_IDX = "ID_IDX";
 
     /** */
-    private static final String DESC_ID_IDX = "DESC_ID_IDX";
+    static final String DESC_ID_IDX = "DESC_ID_IDX";
 
     /** */
     private static final int CNT = 10_000;
@@ -65,21 +72,12 @@ public class RepeatedFieldIndexQueryTest extends GridCommonAbstractTest {
     private static IgniteCache<Integer, Person> cache;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public String idxName;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public String fldName;
-
-    /** */
-    @Parameterized.Parameters(name = "idx={0} fldName={1}")
-    public static List<Object[]> params() {
-        return F.asList(
-            new Object[] {ID_IDX, "id"},
-            new Object[] {DESC_ID_IDX, "descId"}
-        );
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

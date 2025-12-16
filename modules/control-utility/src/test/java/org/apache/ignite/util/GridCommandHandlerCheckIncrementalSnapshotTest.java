@@ -17,10 +17,10 @@
 
 package org.apache.ignite.util;
 
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -47,9 +47,11 @@ import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
@@ -59,7 +61,8 @@ import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "cmdHnd={0},nodesCnt={1},primNodesCnt={2},backupsCnt={3}")
+@MethodSource("allTypesArgs")
 public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandHandlerClusterPerMethodAbstractTest {
     /** */
     private static final String CACHE = "testCache";
@@ -77,34 +80,33 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
     private volatile IgniteBiPredicate<Object, DataRecord> skipDataRec;
 
     /** Count of server nodes to start. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public int nodesCnt;
 
     /** Count of primary nodes participated in a transaction. */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public int txPrimNodesCnt;
 
     /** Count of primary nodes participated in a transaction. */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public int backupsCnt;
 
     /** */
-    @Parameterized.Parameters(name = "cmdHnd={0},nodesCnt={1},primNodesCnt={2},backupsCnt={3}")
-    public static List<Object[]> params() {
+    private static Stream<Arguments> allTypesArgs() {
         return F.asList(
             new Object[]{2, 1, 1},
             new Object[]{2, 2, 1},
             new Object[]{3, 1, 1},
             new Object[]{3, 1, 2}
-        ).stream().flatMap(row -> commandHandlers().stream().map(invoker -> {
+        ).stream().flatMap(row -> CMD_HNDS.keySet().stream().map(invoker -> {
             Object[] res = new Object[row.length + 1];
 
             res[0] = invoker;
 
             System.arraycopy(row, 0, res, 1, row.length);
 
-            return res;
-        })).collect(Collectors.toList());
+            return Arguments.of(res);
+        }));
     }
 
 

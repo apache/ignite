@@ -21,11 +21,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
-import com.google.common.collect.ImmutableList;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
@@ -44,12 +42,19 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /** Non-stable topology tests. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "awaitExchange={0}, idxSlowDown={1}")
+@CsvSource({
+        "true, true",
+        "true, false",
+        "false, true",
+        "false, false",
+})
 public class UnstableTopologyIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     private static final String POI_CACHE_NAME = "POI_CACHE";
@@ -78,23 +83,12 @@ public class UnstableTopologyIntegrationTest extends AbstractBasicIntegrationTes
     /** */
     private static final int NUM_ENTITIES = 2_000;
 
-    /** Test parameters. */
-    @Parameterized.Parameters(name = "awaitExchange={0}, idxSlowDown={1}")
-    public static List<Object[]> parameters() {
-        return ImmutableList.of(
-            new Object[]{true, true},
-            new Object[]{true, false},
-            new Object[]{false, false},
-            new Object[]{false, true}
-        );
-    }
-
     /** */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public boolean awaitExchange;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean idxSlowDown;
 
     /** {@inheritDoc} */

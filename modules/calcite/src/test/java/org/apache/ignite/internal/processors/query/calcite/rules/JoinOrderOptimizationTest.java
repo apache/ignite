@@ -26,9 +26,8 @@ import org.apache.ignite.internal.processors.query.calcite.RuleApplyListener;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.IgniteMultiJoinOptimizeRule;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition.ENFORCE_JOIN_ORDER;
 
@@ -38,18 +37,7 @@ import static org.apache.ignite.internal.processors.query.calcite.hint.HintDefin
  * @see JoinToMultiJoinRule
  * @see IgniteMultiJoinOptimizeRule
  */
-@RunWith(Parameterized.class)
 public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
-    /** Test query. */
-    @Parameterized.Parameter
-    public String qry;
-
-    /** Test queries. */
-    @Parameterized.Parameters
-    public static Collection<String> runConfig() {
-        return testQueries();
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -117,8 +105,9 @@ public class JoinOrderOptimizationTest extends AbstractBasicIntegrationTest {
     }
 
     /** Tests that query result doesn't change with the joins order optimization. */
-    @Test
-    public void testTheSameResults() {
+    @ParameterizedTest(name = "query={0}")
+    @MethodSource("testQueries")
+    public void testTheSameResults(String qry) {
         assert !qry.contains(ENFORCE_JOIN_ORDER.name());
         assert qry.startsWith("SELECT ");
 

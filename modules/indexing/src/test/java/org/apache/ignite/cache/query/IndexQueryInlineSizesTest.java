@@ -23,8 +23,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
@@ -36,9 +37,11 @@ import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
@@ -46,7 +49,8 @@ import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.in;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "inlineSize={0}")
+@MethodSource("allTypesArgs")
 public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
     /** */
     private static final String TABLE_CACHE = "TEST_CACHE_TABLE";
@@ -64,13 +68,12 @@ public class IndexQueryInlineSizesTest extends GridCommonAbstractTest {
     private static IgniteEx crd;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public int inlineSize;
 
     /** */
-    @Parameterized.Parameters(name = "inlineSize={0}")
-    public static Iterable<Integer> parameters() {
-        return IntStream.range(0, 20).boxed().collect(Collectors.toList());
+    private static Stream<Arguments> allTypesArgs() {
+        return IntStream.range(0, 20).boxed().map(Arguments::of);
     }
 
     /** {@inheritDoc} */

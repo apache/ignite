@@ -23,11 +23,12 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.Query;
@@ -52,21 +53,23 @@ import org.apache.ignite.spi.systemview.view.SqlPlanHistoryView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.AssumptionViolatedException;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.configuration.SqlConfiguration.DFLT_SQL_PLAN_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.startCollectStatistics;
 import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_PLAN_HIST_VIEW;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** Tests for SQL plan history. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "sqlEngine={0}, isClient={1} loc={2}, isFullyFetched={3}, isPerfStatsEnabled={4}")
+@MethodSource("allTypesArgs")
 public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** SQL plan history size excess. */
     private static final int PLAN_HISTORY_EXCESS = 2;
@@ -119,30 +122,29 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     private int planHistorySize = 10;
 
     /** SQL engine. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public String sqlEngine;
 
     /** Client mode flag. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean isClient;
 
     /** Local query flag. */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean loc;
 
     /** Fully-fetched query flag. */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public boolean isFullyFetched;
 
     /** Flag indicating whether the collection of performance statistics is enabled. */
-    @Parameterized.Parameter(4)
+    @Parameter(4)
     public boolean isPerfStatsEnabled;
 
     /**
      * @return Test parameters.
      */
-    @Parameterized.Parameters(name = "sqlEngine={0}, isClient={1} loc={2}, isFullyFetched={3}, isPerfStatsEnabled={4}")
-    public static Collection<Object[]> params() {
+    private static Stream<Arguments> allTypesArgs() {
         return Arrays.stream(new Object[][]{
             {CalciteQueryEngineConfiguration.ENGINE_NAME},
             {IndexingQueryEngineConfiguration.ENGINE_NAME}
@@ -151,8 +153,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
             .flatMap(isClient -> Arrays.stream(isClient ? new Boolean[]{false} : new Boolean[]{true, false})
             .flatMap(loc -> Arrays.stream(new Boolean[]{true, false})
             .flatMap(isFullyFetched -> Arrays.stream(new Boolean[]{true, false})
-            .map(isPerfStatsEnabled -> new Object[]{sqlEngine[0], isClient, loc, isFullyFetched, isPerfStatsEnabled}))))
-        ).collect(Collectors.toList());
+            .map(isPerfStatsEnabled -> Arguments.of(sqlEngine[0], isClient, loc, isFullyFetched, isPerfStatsEnabled)))))
+        );
     }
 
     /** {@inheritDoc} */
@@ -299,10 +301,10 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testSqlFieldsQueryWithReducePhase() throws Exception {
-        assumeTrue("Map/reduce queries are only applicable to H2 engine",
-            sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME);
+        assumeTrue(sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME,
+                "Map/reduce queries are only applicable to H2 engine");
 
-        assumeFalse("Only distributed queries have map and reduce phases", loc);
+        assumeFalse(loc, "Only distributed queries have map and reduce phases");
 
         startTestGrid();
 
@@ -510,8 +512,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      */
     @Test
     public void testNoScanCountSuffix() throws Exception {
-        assumeTrue("ScanCount suffix can only be present in H2 local query plans",
-            sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME && loc);
+        assumeTrue(sqlEngine == IndexingQueryEngineConfiguration.ENGINE_NAME && loc,
+                "ScanCount suffix can only be present in H2 local query plans");
 
         assumeFalse(isPerfStatsEnabled);
 
@@ -540,8 +542,8 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
     /** Tests that H2 query plans for UNION operations do not contain 'scanCount' suffix. */
     @Test
     public void testNoScanCountSuffixForUNION() throws Exception {
-        assumeTrue("ScanCount suffix can only be present in H2 local query plans",
-            IndexingQueryEngineConfiguration.ENGINE_NAME.equals(sqlEngine) && loc);
+        assumeTrue(IndexingQueryEngineConfiguration.ENGINE_NAME.equals(sqlEngine) && loc,
+                "ScanCount suffix can only be present in H2 local query plans");
 
         startTestGrid();
 
@@ -595,7 +597,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param qryText Query text.
      */
     private void jdbcQuery(String qryText) throws Exception {
-        assumeFalse("There is no 'local query' parameter for JDBC queries", loc);
+        assumeFalse(loc, "There is no 'local query' parameter for JDBC queries");
 
         if (Ignition.allGrids().isEmpty())
             startTestGrid();
@@ -635,7 +637,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param qrysInfo DML commands info (command text, simple query flag).
      */
     public void runJdbcDml(IgniteBiTuple<List<String>, Boolean> qrysInfo) throws Exception {
-        assumeFalse("There is no 'local query' parameter for JDBC queries", loc);
+        assumeFalse(loc, "There is no 'local query' parameter for JDBC queries");
 
         executeDml(qrysInfo, (cmds) -> {
             try (
@@ -667,7 +669,7 @@ public class SqlPlanHistoryIntegrationTest extends GridCommonAbstractTest {
      * @param task Task to be executed.
      */
     public void executeDml(IgniteBiTuple<List<String>, Boolean> qrysInfo, Consumer<List<String>> task) throws Exception {
-        assumeTrue("There is no lazy mode for DML operations", isFullyFetched);
+        assumeTrue(isFullyFetched, "There is no lazy mode for DML operations");
 
         startTestGrid();
 
