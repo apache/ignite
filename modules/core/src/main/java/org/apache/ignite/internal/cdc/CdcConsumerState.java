@@ -160,7 +160,7 @@ public class CdcConsumerState {
      * @return Saved state.
      */
     public Map<Integer, Long> loadCaches() {
-        Map<Integer, Long> state = load(ft.cdcCachesState(), HashMap::new, true);
+        Map<Integer, Long> state = loadOrDefaultIfCorrupted(ft.cdcCachesState(), HashMap::new, true);
 
         log.info("Initial caches state loaded [cachesCnt=" + state.size() + ']');
 
@@ -186,7 +186,7 @@ public class CdcConsumerState {
      * @return Saved state.
      */
     public Set<T2<Integer, Byte>> loadMappingsState() {
-        Set<T2<Integer, Byte>> state = load(ft.cdcMappingsState(), HashSet::new, true);
+        Set<T2<Integer, Byte>> state = loadOrDefaultIfCorrupted(ft.cdcMappingsState(), HashSet::new, true);
 
         assert state != null;
 
@@ -206,7 +206,7 @@ public class CdcConsumerState {
      * @return Saved state.
      */
     public Map<Integer, Long> loadTypesState() {
-        Map<Integer, Long> state = load(ft.cdcTypesState(), HashMap::new, true);
+        Map<Integer, Long> state = loadOrDefaultIfCorrupted(ft.cdcTypesState(), HashMap::new, true);
 
         assert state != null;
 
@@ -232,10 +232,10 @@ public class CdcConsumerState {
     /**
      * Loads data from path.
      * @param state Path to load data from.
-     * @param dflt Default value, if given file not exist.
+     * @param dflt Default value, if given file not exist or corrupted.
      * @param delIfCorrupted Delete given file if corrupted and return {@code dlft} value.
      */
-    private <D> D load(Path state, Supplier<D> dflt, boolean delIfCorrupted) {
+    private <D> D loadOrDefaultIfCorrupted(Path state, Supplier<D> dflt, boolean delIfCorrupted) {
         if (!Files.exists(state))
             return dflt.get();
 
@@ -269,7 +269,7 @@ public class CdcConsumerState {
      * @return CDC mode state.
      */
     public CdcMode loadCdcMode() {
-        CdcMode state = load(ft.cdcModeState(), () -> CdcMode.IGNITE_NODE_ACTIVE, false);
+        CdcMode state = loadOrDefaultIfCorrupted(ft.cdcModeState(), () -> CdcMode.IGNITE_NODE_ACTIVE, false);
 
         log.info("CDC mode loaded [" + state + ']');
 
