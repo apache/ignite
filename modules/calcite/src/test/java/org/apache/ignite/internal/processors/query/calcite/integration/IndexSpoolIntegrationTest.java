@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -34,39 +32,24 @@ import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 
 
 /**
  * Index spool test.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "Rows: {0}")
+@ValueSource(ints = {1, 10, 512, 513, 2000})
 public class IndexSpoolIntegrationTest extends GridCommonAbstractTest {
-    /** Rows. */
-    private static final int[] ROWS = {1, 10, 512, 513, 2000};
-
     /** */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public int rows;
-
-    /**
-     * @return List of versions pairs to test.
-     */
-    @Parameterized.Parameters(name = "Rows: {0}")
-    public static Collection<Object[]> testData() {
-        List<Object[]> params = new ArrayList<>();
-
-        for (int rs : ROWS)
-            params.add(new Object[]{rs});
-
-        return params;
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

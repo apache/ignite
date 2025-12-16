@@ -33,6 +33,7 @@ import java.util.ServiceLoader;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
@@ -55,8 +56,10 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_COMPLETED_WITH_WARNINGS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
@@ -73,7 +76,8 @@ import static org.apache.ignite.internal.management.api.CommandUtils.visitComman
 import static org.apache.ignite.internal.processors.odbc.ClientListenerProcessor.CLIENT_LISTENER_PORT;
 
 /** Class to check command execution via all available handlers. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "cmdHnd={0}")
+@MethodSource("allTypesArgs")
 public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTest {
     /** @see JmxCommandHandler */
     public static final String JMX_CMD_HND = "jmx";
@@ -84,7 +88,9 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
     /** */
     public static final Map<String, Function<IgniteLogger, TestCommandHandler>> CMD_HNDS = new HashMap<>();
 
-    static {
+    private static Stream<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
+
         ServiceLoader<TestCommandHandler> svc = ServiceLoader.load(TestCommandHandler.class);
 
         for (TestCommandHandler hnd : svc) {
@@ -98,17 +104,15 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
                 }
             });
         }
+
+        CMD_HNDS.keySet().forEach(k -> params.add(Arguments.of(k)));
+
+        return params.stream();
     }
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public String commandHandler;
-
-    /** */
-    @Parameterized.Parameters(name = "cmdHnd={0}")
-    public static List<String> commandHandlers() {
-        return new ArrayList<>(CMD_HNDS.keySet());
-    }
 
     /** */
     protected TestCommandHandler newCommandHandler() {

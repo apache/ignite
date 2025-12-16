@@ -35,12 +35,15 @@ import org.apache.ignite.internal.processors.query.QueryContext;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "local = {0}, partSz = {1}")
+@MethodSource("allTypesArgs")
 public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
     private static final int ENTRIES_COUNT = 10000;
@@ -49,20 +52,18 @@ public class QueryWithPartitionsIntegrationTest extends AbstractBasicIntegration
     private volatile int[] parts;
 
     /** */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public boolean local;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public int partSz;
 
     /** */
-    @Parameterized.Parameters(name = "local = {0}, partSz = {1}")
-    public static List<Object[]> parameters() {
+    private static Stream<Arguments> allTypesArgs() {
         return Stream.of(true, false)
             .flatMap(isLocal -> Stream.of(1, 2, 5, 10, 20)
-                .map(i -> new Object[]{isLocal, i}))
-            .collect(Collectors.toList());
+                .map(i -> Arguments.of(isLocal, i)));
     }
 
     /** {@inheritDoc} */

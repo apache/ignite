@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
@@ -36,32 +33,20 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceH
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
 public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
-    /** Algorithm. */
-    @Parameterized.Parameter
-    public AggregateAlgorithm algo;
-
-    /** */
-    @Parameterized.Parameters(name = "Algorithm = {0}")
-    public static List<Object[]> parameters() {
-        return Stream.of(AggregateAlgorithm.values()).map(a -> new Object[]{a}).collect(Collectors.toList());
-    }
-
     /**
      *
      * @throws Exception If failed.
      */
-    @Test
-    public void mapReduceDistinctWithIndex() throws Exception {
+    @ParameterizedTest(name = "Algorithm = {0}")
+    @EnumSource
+    public void mapReduceDistinctWithIndex(AggregateAlgorithm algo) throws Exception {
         TestTable tbl = createAffinityTable().addIndex("val0_val1", 1, 2);
 
         IgniteSchema publicSchema = new IgniteSchema("PUBLIC");
@@ -84,11 +69,11 @@ public class AggregateDistinctPlannerTest extends AbstractAggregatePlannerTest {
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys, SqlExplainLevel.ALL_ATTRIBUTES), rdcAgg);
         assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), mapAgg);
 
-        Assert.assertTrue(
+        assertTrue(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.isEmpty(rdcAgg.getAggregateCalls()));
 
-        Assert.assertTrue(
+        assertTrue(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.isEmpty(mapAgg.getAggCallList()));
 

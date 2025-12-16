@@ -19,46 +19,43 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.CsvSource;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test {@link ZkIgnitePaths#validatePath} implementation.
  */
-@RunWith(Enclosed.class)
 public class ZookeeperValidatePathsTest {
     /**
      *  Parameterized test for testing common cases, excluding unprintable characters.
      */
-    @RunWith(Parameterized.class)
-    public static class ZoookeperCommonValidatePathsTest extends GridCommonAbstractTest {
-        /** */
-        @Parameterized.Parameters(name = "input string = {0}, expected error = {1}")
-        public static Collection<Object[]> parameters() {
-            return Arrays.asList(
-                new Object[] {"/apacheIgnite", null},
-                new Object[] {null, "Path cannot be null"},
-                new Object[] {"", "Path length must be > 0"},
-                new Object[] {"/apacheIgnite/../root", "relative paths not allowed @15"},
-                new Object[] {"/apacheIgnite/./root", "relative paths not allowed @14"},
-                new Object[] {"/apacheIgnite//root", "empty node name specified @14"},
-                new Object[] {"/apacheIgnite/", "Path must not end with / character"}
-            );
-        }
-
+    @ParameterizedClass(name = "input string = {0}, expected error = {1}")
+    @CsvSource({
+            "/apacheIgnite, null",
+            "null, Path cannot be null",
+            "'', Path length must be > 0",
+            "/apacheIgnite/../root, relative paths not allowed @15",
+            "/apacheIgnite/./root, relative paths not allowed @14",
+            "/apacheIgnite//root, empty node name specified @14",
+            "/apacheIgnite/, Path must not end with / character"
+    })
+    @Nested
+    class ZoookeperCommonValidatePathsTest extends GridCommonAbstractTest {
         /** Zookeeper path to validate. */
-        @Parameterized.Parameter
+        @Parameter(0)
         public String zkPath;
 
         /** Expected error. If {@code null}, path is correct. */
-        @Parameterized.Parameter(1)
+        @Parameter(1)
         public String errMsg;
 
         /** */
@@ -72,7 +69,8 @@ public class ZookeeperValidatePathsTest {
      * Test validate path with unprintable characters. Should move it to separate test because of
      * surefire report problems on TC.
      */
-    public static class ZookeeperUnprintableCharactersValidatePathTest extends GridCommonAbstractTest {
+    @Nested
+    class ZookeeperUnprintableCharactersValidatePathTest extends GridCommonAbstractTest {
         /** */
         @Test
         public void testValidatePathWithUnprintableCharacters() {
@@ -89,16 +87,15 @@ public class ZookeeperValidatePathsTest {
             ZkIgnitePaths.validatePath(path);
 
             if (msg != null)
-                Assert.fail(String.format("Expected failure containing \"%s\" in message did't occur", msg));
+                fail(String.format("Expected failure containing \"%s\" in message did't occur", msg));
         }
         catch (IllegalArgumentException e) {
             if (msg == null) {
-                Assert.fail(String.format("Path \"%s\" should be considering as valid, but failing with \"%s\"",
+                fail(String.format("Path \"%s\" should be considering as valid, but failing with \"%s\"",
                     path, e.getMessage()));
             }
             else {
-                Assert.assertTrue(String.format("Error messages \"%s\" does't contains \"%s\"", e.getMessage(), msg),
-                    e.getMessage().contains(msg));
+                assertTrue(e.getMessage().contains(msg), String.format("Error messages \"%s\" does't contains \"%s\"", e.getMessage(), msg));
             }
         }
     }
