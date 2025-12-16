@@ -85,7 +85,7 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage im
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 7;
+        return 8;
     }
 
     /** {@inheritDoc} */
