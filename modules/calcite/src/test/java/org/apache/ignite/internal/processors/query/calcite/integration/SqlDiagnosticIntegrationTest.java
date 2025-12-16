@@ -1002,7 +1002,7 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
         }
     }
 
-    /** Verifies that user-defined query initiator ID is present in the SQL_QUERY_HISTORY system view. */
+    /** Verifies that user-defined query initiator ID is present in the SQL_QUERY_HISTORY system view and logs. */
     @Test
     public void testSqlFieldsQueryWithInitiatorId() throws Exception {
         IgniteEx grid = grid(0);
@@ -1027,6 +1027,18 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
                 return testId.equals(view.initiatorId());
             }, 3_000));
         }
+
+        String initiatorId = "testId2";
+
+        LogListener logLsnr = LogListener.matches(LONG_QUERY_FINISHED_MSG)
+            .andMatches("initiatorId=" + initiatorId).build();
+
+        log.registerListener(logLsnr);
+
+        cache.query(new SqlFieldsQuery("SELECT sleep(?)").setArgs(LONG_QRY_TIMEOUT).setQueryInitiatorId(initiatorId))
+            .getAll();
+
+        assertTrue(logLsnr.check(1000));
     }
 
     /**
@@ -1132,6 +1144,16 @@ public class SqlDiagnosticIntegrationTest extends AbstractBasicIntegrationTest {
             catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
+
+            return true;
+        }
+
+        /** */
+        @QuerySqlFunction
+        public static boolean sleep(int sleep) {
+            doSleep(sleep);
+
+            GridTestClockTimer.update();
 
             return true;
         }

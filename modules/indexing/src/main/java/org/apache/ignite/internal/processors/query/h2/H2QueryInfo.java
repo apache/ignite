@@ -72,7 +72,10 @@ public class H2QueryInfo implements TrackableQuery {
     private final UUID nodeId;
 
     /** Query id. */
-    private final long queryId;
+    private final long qryId;
+
+    /** Query initiator ID. */
+    private final String initiatorId;
 
     /** Query SQL plan. */
     private volatile String plan;
@@ -82,16 +85,18 @@ public class H2QueryInfo implements TrackableQuery {
      * @param stmt Query statement.
      * @param sql Query statement.
      * @param nodeId Originator node id.
-     * @param queryId Query id.
+     * @param qryId Query id.
+     * @param initiatorId Query initiator id.
      */
-    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, UUID nodeId, long queryId) {
+    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, UUID nodeId, long qryId, String initiatorId) {
         try {
             assert stmt != null;
 
             this.type = type;
             this.sql = sql;
             this.nodeId = nodeId;
-            this.queryId = queryId;
+            this.qryId = qryId;
+            this.initiatorId = initiatorId;
 
             beginTs = U.currentTimeMillis();
 
@@ -116,7 +121,7 @@ public class H2QueryInfo implements TrackableQuery {
 
     /** */
     public long queryId() {
-        return queryId;
+        return qryId;
     }
 
     /** */
@@ -183,10 +188,10 @@ public class H2QueryInfo implements TrackableQuery {
     @Override public String queryInfo(@Nullable String additionalInfo) {
         StringBuilder msgSb = new StringBuilder();
 
-        if (queryId == RunningQueryManager.UNDEFINED_QUERY_ID)
+        if (qryId == RunningQueryManager.UNDEFINED_QUERY_ID)
             msgSb.append(" [globalQueryId=(undefined), node=").append(nodeId);
         else
-            msgSb.append(" [globalQueryId=").append(QueryUtils.globalQueryId(nodeId, queryId));
+            msgSb.append(" [globalQueryId=").append(QueryUtils.globalQueryId(nodeId, qryId));
 
         if (additionalInfo != null)
             msgSb.append(", ").append(additionalInfo);
@@ -197,6 +202,7 @@ public class H2QueryInfo implements TrackableQuery {
                 .append(", enforceJoinOrder=").append(enforceJoinOrder)
                 .append(", lazy=").append(lazy)
                 .append(", schema=").append(schema)
+                .append(", initiatorId=").append(initiatorId)
                 .append(", sql='").append(sql)
                 .append("', plan=").append(plan());
 
