@@ -6879,7 +6879,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             }
                         }
                     }
-                    else if (req.changeTopology()) {
+                    else if (req.previousNodeId() != null) {
                         // Node cannot connect to it's next (for local node it's previous).
                         // Need to check connectivity to it.
                         long rcvdTime = lastRingMsgReceivedTime;

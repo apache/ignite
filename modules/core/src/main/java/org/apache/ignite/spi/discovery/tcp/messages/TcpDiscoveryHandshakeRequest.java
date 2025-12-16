@@ -56,16 +56,6 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage im
     }
 
     /**
-     * Gets topology change flag.<br>
-     * {@code True} means node intent to fail nodes in a ring.
-     *
-     * @return Change topology flag.
-     */
-    public boolean changeTopology() {
-        return getFlag(CHANGE_TOPOLOGY_FLAG_POS);
-    }
-
-    /**
      * Gets expected previous node ID to check.
      *
      * @return Previous node ID to check.
@@ -75,13 +65,11 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage im
     }
 
     /**
-     * Sets topology change flag and previous node ID to check.<br>
+     * Sets topology change request and previous node ID to check.<br>
      *
-     * @param prevNodeId If not {@code null}, will set topology check flag and set node ID to check.
+     * @param prevNodeId If not {@code null}, will set topology check request and node ID to check.
      */
     public void previousNodeId(@Nullable UUID prevNodeId) {
-        setFlag(CHANGE_TOPOLOGY_FLAG_POS, prevNodeId != null);
-
         this.prevNodeId = prevNodeId;
     }
 
@@ -97,12 +85,12 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage im
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 5;
+        return 7;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryHandshakeRequest.class, this, "super", super.toString(),
-            "isChangeTopology", changeTopology());
+            "isChangeTopology", prevNodeId != null);
     }
 }

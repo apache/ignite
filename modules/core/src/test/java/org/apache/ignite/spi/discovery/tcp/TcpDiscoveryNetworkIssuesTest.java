@@ -307,7 +307,7 @@ public class TcpDiscoveryNetworkIssuesTest extends GridCommonAbstractTest {
 
         // Request to establish new permanent cluster connection from doubting node0 to node2.
         testSpi(doubtNode0).hsRqLsnr.set((s, hsRq) -> {
-            if (hsRq.changeTopology() && frozenNodeId.equals(hsRq.previousNodeId())) {
+            if (hsRq.previousNodeId() != null && frozenNodeId.equals(hsRq.previousNodeId())) {
                 // Continue simulation of node1 freeze at GC and processes no discovery messages.
                 testSpi(frozenNode1).addrsToBlock = Collections.emptyList();
             }
