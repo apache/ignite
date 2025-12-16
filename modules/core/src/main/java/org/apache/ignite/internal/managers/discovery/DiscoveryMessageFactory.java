@@ -46,6 +46,6 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)5, TcpDiscoveryLoopbackProblemMessage::new, new TcpDiscoveryLoopbackProblemMessageSerializer());
 
 
-        factory.register((short)5, TcpDiscoveryRingLatencyCheckMessage::new, new TcpDiscoveryRingLatencyCheckMessageSerializer());
+        factory.register((short)8, TcpDiscoveryRingLatencyCheckMessage::new, new TcpDiscoveryRingLatencyCheckMessageSerializer());
     }
 }

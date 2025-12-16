@@ -93,7 +93,7 @@ public class TcpDiscoveryRingLatencyCheckMessage extends TcpDiscoveryAbstractMes
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 5;
+        return 8;
     }
 
     /** {@inheritDoc} */
