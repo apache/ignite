@@ -45,7 +45,7 @@ class ClusterNodeMetrics {
     }
 
     /** */
-    public ClusterNodeMetrics(NodeCompoundMetricsMessage msg) {
+    public ClusterNodeMetrics(NodeFullMetricsMessage msg) {
         nodeMetrics = new ClusterMetricsSnapshot(msg.nodeMetricsMsg());
 
         cacheMetrics = new HashMap<>(msg.cachesMetrics().size(), 1.0f);

@@ -671,7 +671,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
         }
         else {
             // All-nodes metrics messages.
-            Map<UUID, NodeCompoundMetricsMessage> allNodesMetrics = msg.allNodesMetrics();
+            Map<UUID, NodeFullMetricsMessage> allNodesMetrics = msg.allNodesMetrics();
 
             assert allNodesMetrics != null;
 

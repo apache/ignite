@@ -35,11 +35,11 @@ public final class ClusterMetricsUpdateMessage implements Message {
 
     /** Single node metrics message. */
     @Order(0)
-    @Nullable private NodeCompoundMetricsMessage singleNodeMetricsMsg;
+    @Nullable private NodeFullMetricsMessage singleNodeMetricsMsg;
 
     /** All-nodes cache metrics messages. */
     @Order(1)
-    @Nullable private Map<UUID, NodeCompoundMetricsMessage> allNodesMetrics;
+    @Nullable private Map<UUID, NodeFullMetricsMessage> allNodesMetrics;
 
     /** Default constructor. Required for {@link GridIoMessageFactory}. */
     public ClusterMetricsUpdateMessage() {
@@ -48,35 +48,35 @@ public final class ClusterMetricsUpdateMessage implements Message {
 
     /** Single node metrics constructor. */
     public ClusterMetricsUpdateMessage(ClusterMetrics nodeMetrics, Map<Integer, CacheMetrics> cacheMetrics) {
-        singleNodeMetricsMsg = new NodeCompoundMetricsMessage(nodeMetrics, cacheMetrics);
+        singleNodeMetricsMsg = new NodeFullMetricsMessage(nodeMetrics, cacheMetrics);
     }
 
     /** All-nodes metrics constructor. */
     public ClusterMetricsUpdateMessage(Map<UUID, ClusterNodeMetrics> allNodesMetrics) {
         this.allNodesMetrics = new HashMap<>(allNodesMetrics.size(), 1.0f);
 
-        allNodesMetrics.forEach((id, e) -> this.allNodesMetrics.put(id, new NodeCompoundMetricsMessage(e.nodeMetrics(), e.cacheMetrics())));
+        allNodesMetrics.forEach((id, e) -> this.allNodesMetrics.put(id, new NodeFullMetricsMessage(e.nodeMetrics(), e.cacheMetrics())));
     }
 
     /** */
-    public @Nullable Map<UUID, NodeCompoundMetricsMessage> allNodesMetrics() {
+    public @Nullable Map<UUID, NodeFullMetricsMessage> allNodesMetrics() {
         return allNodesMetrics;
     }
 
     /** */
-    public void allNodesMetrics(@Nullable Map<UUID, NodeCompoundMetricsMessage> allNodesMetrics) {
+    public void allNodesMetrics(@Nullable Map<UUID, NodeFullMetricsMessage> allNodesMetrics) {
         assert allNodesMetrics == null || singleNodeMetricsMsg == null;
 
         this.allNodesMetrics = allNodesMetrics;
     }
 
     /** */
-    public @Nullable NodeCompoundMetricsMessage singleNodeMetricsMsg() {
+    public @Nullable NodeFullMetricsMessage singleNodeMetricsMsg() {
         return singleNodeMetricsMsg;
     }
 
     /** */
-    public void singleNodeMetricsMsg(@Nullable NodeCompoundMetricsMessage singleNodeMetricsMsg) {
+    public void singleNodeMetricsMsg(@Nullable NodeFullMetricsMessage singleNodeMetricsMsg) {
         assert singleNodeMetricsMsg == null || allNodesMetrics == null;
 
         this.singleNodeMetricsMsg = singleNodeMetricsMsg;

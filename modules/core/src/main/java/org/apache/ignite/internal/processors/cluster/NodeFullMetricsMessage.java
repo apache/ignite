@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Node compound metrics message. */
-public final class NodeCompoundMetricsMessage implements Message {
+public final class NodeFullMetricsMessage implements Message {
     /** */
     public static final short TYPE_CODE = 138;
 
@@ -40,12 +40,12 @@ public final class NodeCompoundMetricsMessage implements Message {
     private Map<Integer, CacheMetricsMessage> cachesMetrics;
 
     /** Empty constructor for {@link GridIoMessageFactory}. */
-    public NodeCompoundMetricsMessage() {
+    public NodeFullMetricsMessage() {
 
     }
 
     /** */
-    public NodeCompoundMetricsMessage(ClusterMetrics nodeMetrics, Map<Integer, CacheMetrics> cacheMetrics) {
+    public NodeFullMetricsMessage(ClusterMetrics nodeMetrics, Map<Integer, CacheMetrics> cacheMetrics) {
         nodeMetricsMsg = new NodeMetricsMessage(nodeMetrics);
 
         cachesMetrics = new HashMap<>(cacheMetrics.size(), 1.0f);
@@ -80,6 +80,6 @@ public final class NodeCompoundMetricsMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(NodeCompoundMetricsMessage.class, this);
+        return S.toString(NodeFullMetricsMessage.class, this);
     }
 }
