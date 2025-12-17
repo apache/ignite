@@ -58,7 +58,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.WALPoi
  * @see CdcMain
  */
 public class CdcConsumerState {
-
     /** Log. */
     private final IgniteLogger log;
 
@@ -161,7 +160,7 @@ public class CdcConsumerState {
      * @return Saved state.
      */
     public Map<Integer, Long> loadCaches() {
-        Map<Integer, Long> state = load(ft.cdcCachesState(), HashMap::new);
+        Map<Integer, Long> state = loadOrDefaultIfCorrupted(ft.cdcCachesState(), HashMap::new, true);
 
         log.info("Initial caches state loaded [cachesCnt=" + state.size() + ']');
 
@@ -187,7 +186,7 @@ public class CdcConsumerState {
      * @return Saved state.
      */
     public Set<T2<Integer, Byte>> loadMappingsState() {
-        Set<T2<Integer, Byte>> state = load(ft.cdcMappingsState(), HashSet::new);
+        Set<T2<Integer, Byte>> state = loadOrDefaultIfCorrupted(ft.cdcMappingsState(), HashSet::new, true);
 
         assert state != null;
 
@@ -207,7 +206,7 @@ public class CdcConsumerState {
      * @return Saved state.
      */
     public Map<Integer, Long> loadTypesState() {
-        Map<Integer, Long> state = load(ft.cdcTypesState(), HashMap::new);
+        Map<Integer, Long> state = loadOrDefaultIfCorrupted(ft.cdcTypesState(), HashMap::new, true);
 
         assert state != null;
 
@@ -230,16 +229,36 @@ public class CdcConsumerState {
         Files.move(tmp, file, ATOMIC_MOVE, REPLACE_EXISTING);
     }
 
-    /** Loads data from path. */
-    private <D> D load(Path state, Supplier<D> dflt) {
+    /**
+     * Loads data from path.
+     * @param state Path to load data from.
+     * @param dflt Default value, if given file not exist or corrupted.
+     * @param delIfCorrupted Delete given file if corrupted and return {@code dlft} value.
+     */
+    private <D> D loadOrDefaultIfCorrupted(Path state, Supplier<D> dflt, boolean delIfCorrupted) {
         if (!Files.exists(state))
             return dflt.get();
 
         try (ObjectInputStream ois = new ObjectInputStream(Files.newInputStream(state))) {
-
             return (D)ois.readObject();
         }
-        catch (IOException | ClassNotFoundException e) {
+        catch (IOException e) {
+            if (delIfCorrupted) {
+                try {
+                    log.warning("State file was corrupted. Will remove the file and restore state with default [file=" + state + ']');
+
+                    Files.delete(state);
+                }
+                catch (IOException ioe) {
+                    throw new RuntimeException(e);
+                }
+
+                return dflt.get();
+            }
+
+            throw new RuntimeException(e);
+        }
+        catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
@@ -250,7 +269,7 @@ public class CdcConsumerState {
      * @return CDC mode state.
      */
     public CdcMode loadCdcMode() {
-        CdcMode state = load(ft.cdcModeState(), () -> CdcMode.IGNITE_NODE_ACTIVE);
+        CdcMode state = loadOrDefaultIfCorrupted(ft.cdcModeState(), () -> CdcMode.IGNITE_NODE_ACTIVE, false);
 
         log.info("CDC mode loaded [" + state + ']');
 
