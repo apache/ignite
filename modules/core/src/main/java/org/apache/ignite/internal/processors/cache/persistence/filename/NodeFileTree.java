@@ -599,11 +599,11 @@ public class NodeFileTree extends SharedFileTree {
             if (idxPathEmpty)
                 return new File[]{cs};
 
-            File is = cacheStorage(idxPath, cacheDirName);
+            File idxStorage = cacheStorage(idxPath, cacheDirName);
 
-            return is.equals(cs)
+            return idxStorage.equals(cs)
                 ? new File[]{cs}
-                : new File[]{cs, is};
+                : new File[]{cs, idxStorage};
         }
 
         File[] cs = new File[csp.length + (idxPathEmpty ? 0 : 1)];
@@ -612,12 +612,12 @@ public class NodeFileTree extends SharedFileTree {
             cs[i] = cacheStorage(csp[i], cacheDirName);
 
         if (!idxPathEmpty) {
-            File idxDir = cacheStorage(idxPath, cacheDirName);
+            File idxStorage = cacheStorage(idxPath, cacheDirName);
 
             for (int i = 0; i < csp.length; i++) {
                 // indexPath equals to some storagePath.
                 // No need to add twice.
-                if (cs[i].equals(idxDir)) {
+                if (cs[i].equals(idxStorage)) {
                     File[] cs2 = new File[csp.length];
 
                     System.arraycopy(cs, 0, cs2, 0, cs2.length);
@@ -626,7 +626,7 @@ public class NodeFileTree extends SharedFileTree {
                 }
             }
 
-            cs[cs.length - 1] = idxDir;
+            cs[cs.length - 1] = idxStorage;
         }
 
         return cs;
