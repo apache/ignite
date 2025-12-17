@@ -347,13 +347,7 @@ public class DirectByteBufferStream {
     private byte cacheObjType;
 
     /** */
-    private boolean compressFinished;
-
-    /** */
     private boolean uncompressFinished;
-
-    /** */
-    private boolean serializeFinished;
 
     /**
      * Constructror for stream used for writing messages.
@@ -905,43 +899,16 @@ public class DirectByteBufferStream {
         }
 
         if (msg != null) {
-            if (compress && compressFinished && serializeFinished) {
-                lastFinished = true;
-                compressFinished = false;
-
-                return;
-            }
-
             if (buf.hasRemaining()) {
                 try {
                     writer.beforeInnerMessageWrite();
 
-                    if (compress) {
-                        if (!serializeFinished)
-                            lastFinished = msgFactory.serializer(msg.directType()).writeTo(msg, writer);
+                    boolean finished = msgFactory.serializer(msg.directType()).writeTo(msg, writer);
 
-                        if (lastFinished) {
-                            if (!compressFinished) {
-                                compressData();
+                    if (compress)
+                        compressData();
 
-                                lastFinished = false;
-                                compressFinished = true;
-                                serializeFinished = true;
-                            }
-                            else {
-                                lastFinished = true;
-                                compressFinished = false;
-                                serializeFinished = false;
-                            }
-                        }
-                        else {
-                            compressData();
-
-                            lastFinished = false;
-                        }
-                    }
-                    else
-                        lastFinished = msgFactory.serializer(msg.directType()).writeTo(msg, writer);
+                    lastFinished = finished;
                 }
                 finally {
                     writer.afterInnerMessageWrite(lastFinished);
@@ -951,24 +918,10 @@ public class DirectByteBufferStream {
                 lastFinished = false;
         }
         else {
-            if (!compress) {
+            if (compress)
+                writeInt(-1);
+            else
                 writeShort(Short.MIN_VALUE);
-
-                return;
-            }
-
-            if (!compressFinished) {
-                writeShort(Short.MIN_VALUE);
-
-                compressData();
-
-                lastFinished = false;
-                compressFinished = true;
-            }
-            else {
-                lastFinished = true;
-                compressFinished = false;
-            }
         }
     }
 
@@ -1144,43 +1097,13 @@ public class DirectByteBufferStream {
                 keyDone = false;
             }
 
-            if (compress) {
-                if (!compressFinished) {
-                    compressData();
-
-                    lastFinished = false;
-                    compressFinished = true;
-
-                    return;
-                }
-                else {
-                    lastFinished = true;
-                    compressFinished = false;
-                }
-            }
+            if (compress)
+                compressData();
 
             mapIt = null;
         }
-        else {
-            if (!compress) {
-                writeInt(-1);
-
-                return;
-            }
-
-            if (!compressFinished) {
-                writeInt(-1);
-
-                compressData();
-
-                lastFinished = false;
-                compressFinished = true;
-            }
-            else {
-                lastFinished = true;
-                compressFinished = false;
-            }
-        }
+        else
+            writeInt(-1);
     }
 
     /**
@@ -1648,6 +1571,16 @@ public class DirectByteBufferStream {
      */
     public <T extends Message> T readMessage(MessageReader reader, boolean compress) {
         if (compress && !uncompressFinished) {
+            int startPos = buf.position();
+
+            if (readInt() == -1) {
+                lastFinished = true;
+
+                return null;
+            }
+
+            buf.position(startPos);
+
             boolean uncompressed = uncompressData();
 
             if (!lastFinished || !uncompressed)
@@ -1820,6 +1753,16 @@ public class DirectByteBufferStream {
     public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType, MessageCollectionItemType valType,
                                            boolean linked, MessageReader reader, boolean compress) {
         if (compress && !uncompressFinished) {
+            int startPos = buf.position();
+
+            if (readInt() == -1) {
+                lastFinished = true;
+
+                return null;
+            }
+
+            buf.position(startPos);
+
             boolean uncompressed = uncompressData();
 
             if (!lastFinished || !uncompressed)
