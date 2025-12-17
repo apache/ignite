@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests check appropriate security context when the scan query, remote filter, or

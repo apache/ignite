@@ -19,7 +19,7 @@ package org.apache.ignite.kubernetes.configuration;
 
 import org.apache.ignite.spi.IgniteSpiException;
 import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** Class checks required fields for {@link KubernetesConnectionConfiguration} */
 public class KubernetesConnectionConfigurationTest {

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.binary;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass1;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

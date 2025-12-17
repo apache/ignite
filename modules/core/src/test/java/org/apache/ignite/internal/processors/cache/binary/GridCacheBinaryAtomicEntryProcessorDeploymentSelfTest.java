@@ -24,7 +24,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicEntryProcessorDeploymentSelfTest;
 import org.apache.ignite.internal.util.typedef.X;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Cache EntryProcessor + Deployment.

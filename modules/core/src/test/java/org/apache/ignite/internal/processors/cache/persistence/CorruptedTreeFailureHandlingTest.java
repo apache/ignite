@@ -61,7 +61,7 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** */
 public class CorruptedTreeFailureHandlingTest extends GridCommonAbstractTest implements Serializable {

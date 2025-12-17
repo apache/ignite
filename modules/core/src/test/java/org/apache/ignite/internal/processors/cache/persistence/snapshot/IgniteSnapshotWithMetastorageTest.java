@@ -45,7 +45,7 @@ import org.apache.ignite.internal.processors.metastorage.persistence.DmsDataWrit
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Cluster-wide snapshot with distributed metastorage test.

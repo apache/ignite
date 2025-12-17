@@ -23,7 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import com.google.common.collect.Sets;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.IgniteEx;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

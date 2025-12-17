@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.security.sandbox;
 import javax.cache.Cache;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Checks that a remote filter and transformer of {@code ContinuousQueryWithTransformer} run on a remote node inside the

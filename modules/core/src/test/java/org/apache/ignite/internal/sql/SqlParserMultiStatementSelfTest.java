@@ -20,7 +20,7 @@ package org.apache.ignite.internal.sql;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Parser test for multi-statement queries.

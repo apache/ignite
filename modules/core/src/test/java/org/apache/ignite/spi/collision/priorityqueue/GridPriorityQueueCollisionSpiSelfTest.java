@@ -29,7 +29,7 @@ import org.apache.ignite.spi.collision.GridTestCollisionTaskSession;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.spi.collision.priorityqueue.PriorityQueueCollisionSpi.DFLT_JOB_PRIORITY_ATTRIBUTE_KEY;
 import static org.apache.ignite.spi.collision.priorityqueue.PriorityQueueCollisionSpi.DFLT_PARALLEL_JOBS_NUM;

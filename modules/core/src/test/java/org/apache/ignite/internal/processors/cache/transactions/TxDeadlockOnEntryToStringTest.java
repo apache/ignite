@@ -44,7 +44,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.TestDependencyResolver;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * GridDhtCacheEntry::toString leads to system "deadlock" on the timeoutWorker.

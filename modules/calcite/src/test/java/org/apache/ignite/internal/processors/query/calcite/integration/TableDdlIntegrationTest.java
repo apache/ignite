@@ -48,7 +48,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
 import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.TestUtils.hasSize;
 import static org.hamcrest.CoreMatchers.equalTo;

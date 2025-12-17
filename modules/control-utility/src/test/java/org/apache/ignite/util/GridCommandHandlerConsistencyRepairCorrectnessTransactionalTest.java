@@ -40,9 +40,10 @@ import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGen
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -52,8 +53,9 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 /**
  *
  */
-@RunWith(Parameterized.class)
 @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
+@ParameterizedClass(name = "cmdHnd={0}, misses={1}, nulls={2}, strategy={3}, parallel={4}")
+@MethodSource("allTypesArgs")
 public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest extends GridCommandHandlerAbstractTest {
     /** */
     public static final String CACHE = "--cache";
@@ -68,12 +70,8 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
     public static final String PARALLEL = "--parallel";
 
     /** Test parameters. */
-    @Parameterized.Parameters(name = "cmdHnd={0}, misses={1}, nulls={2}, strategy={3}, parallel={4}")
-    public static Iterable<Object[]> parameters() {
-        List<Object[]> res = new ArrayList<>();
-
-        int cntr = 0;
-        List<String> invokers = commandHandlers();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         for (boolean misses : new boolean[] {false, true}) {
             for (boolean nulls : new boolean[] {false, true}) {
@@ -82,29 +80,29 @@ public class GridCommandHandlerConsistencyRepairCorrectnessTransactionalTest ext
                         if (parallel && strategy != ReadRepairStrategy.CHECK_ONLY)
                             continue; // see https://issues.apache.org/jira/browse/IGNITE-15316
 
-                        res.add(new Object[] {invokers.get(cntr++ % invokers.size()), misses, nulls, strategy, parallel});
+                        params.add(Arguments.of(misses, nulls, strategy, parallel));
                     }
                 }
             }
         }
 
-        return res;
+        return params;
     }
 
     /** Misses. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean misses;
 
     /** Nulls. */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean nulls;
 
     /** Strategy. */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public ReadRepairStrategy strategy;
 
     /** Parallel consistency check. */
-    @Parameterized.Parameter(4)
+    @Parameter(4)
     public boolean parallel;
 
     /** Partitions. */

@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * GridTcpDiscoverySharedFsIpFinder test.

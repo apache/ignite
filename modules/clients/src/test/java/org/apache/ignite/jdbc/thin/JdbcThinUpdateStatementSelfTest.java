@@ -21,7 +21,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

@@ -28,7 +28,7 @@ import org.apache.ignite.internal.cache.query.index.sorted.maintenance.Maintenan
 import org.apache.ignite.internal.cache.query.index.sorted.maintenance.MaintenanceRebuildIndexUtils;
 import org.apache.ignite.maintenance.MaintenanceTask;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;

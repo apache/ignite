@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test discovery SPI with address filter present

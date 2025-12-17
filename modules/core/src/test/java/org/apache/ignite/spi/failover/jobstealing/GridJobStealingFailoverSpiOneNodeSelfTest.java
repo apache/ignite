@@ -30,7 +30,7 @@ import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Job stealing failover SPI test for one node.

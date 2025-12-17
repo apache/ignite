@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.service.inner.LongInitializedTestSe
 import org.apache.ignite.internal.util.lang.gridfunc.AlwaysTruePredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests that requests of change service's state won't be missed and will be handled correctly on a node left.

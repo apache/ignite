@@ -32,7 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Checks behavior on exception while unmarshalling key.

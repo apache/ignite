@@ -31,7 +31,7 @@ import org.apache.ignite.client.events.RequestSuccessEvent;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
 import org.apache.ignite.internal.client.thin.ClientOperation;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests query event listeners of a thin client.

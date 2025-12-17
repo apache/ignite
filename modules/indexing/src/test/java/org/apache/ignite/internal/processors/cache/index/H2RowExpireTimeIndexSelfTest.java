@@ -35,7 +35,7 @@ import org.h2.engine.Session;
 import org.h2.result.SearchRow;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static java.util.Arrays.asList;
 

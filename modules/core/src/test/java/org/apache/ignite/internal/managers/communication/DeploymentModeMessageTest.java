@@ -19,7 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;

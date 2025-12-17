@@ -29,7 +29,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *  Dynamic parameters types inference test.

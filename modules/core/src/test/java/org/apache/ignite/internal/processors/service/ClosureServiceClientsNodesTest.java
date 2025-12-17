@@ -37,7 +37,7 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test that compute and service run only on server nodes by default.

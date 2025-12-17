@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.store.jdbc.dialect;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;

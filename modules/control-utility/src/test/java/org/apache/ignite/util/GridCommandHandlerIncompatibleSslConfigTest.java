@@ -19,7 +19,7 @@ package org.apache.ignite.util;
 
 import java.util.List;
 import org.junit.Assume;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_INVALID_ARGUMENTS;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;

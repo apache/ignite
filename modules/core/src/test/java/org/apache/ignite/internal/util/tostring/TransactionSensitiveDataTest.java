@@ -36,7 +36,7 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.nonNull;

@@ -21,7 +21,7 @@ import java.util.Collection;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CollectionConfiguration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests specific methods of {@link IgniteSet} behaviour if cluster in a {@link ClusterState#ACTIVE_READ_ONLY} state.

@@ -17,9 +17,10 @@
 
 package org.apache.ignite.util;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -92,23 +93,14 @@ public class GridCommandHandlerCheckIncrementalSnapshotTest extends GridCommandH
     public int backupsCnt;
 
     /** */
-    private static Stream<Arguments> allTypesArgs() {
-        return F.asList(
-            new Object[]{2, 1, 1},
-            new Object[]{2, 2, 1},
-            new Object[]{3, 1, 1},
-            new Object[]{3, 1, 2}
-        ).stream().flatMap(row -> CMD_HNDS.keySet().stream().map(invoker -> {
-            Object[] res = new Object[row.length + 1];
-
-            res[0] = invoker;
-
-            System.arraycopy(row, 0, res, 1, row.length);
-
-            return Arguments.of(res);
-        }));
+    private static Collection<Arguments> allTypesArgs() {
+        return List.of(
+            Arguments.of(2, 1, 1),
+            Arguments.of(2, 2, 1),
+            Arguments.of(3, 1, 1),
+            Arguments.of(3, 1, 2)
+        );
     }
-
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {

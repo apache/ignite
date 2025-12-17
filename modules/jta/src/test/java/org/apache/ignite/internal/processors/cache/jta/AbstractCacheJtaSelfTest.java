@@ -29,7 +29,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.testframework.GridTestSafeThreadFactory;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.objectweb.jotm.Jotm;
 import org.objectweb.jotm.rmi.RmiLocalConfiguration;
 

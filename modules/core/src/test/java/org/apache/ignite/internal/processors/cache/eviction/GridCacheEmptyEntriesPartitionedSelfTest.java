@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.eviction;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test allow empty entries flag on partitioned cache.

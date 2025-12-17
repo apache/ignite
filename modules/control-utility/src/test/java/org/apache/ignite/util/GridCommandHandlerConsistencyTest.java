@@ -26,7 +26,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -110,7 +109,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
     protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** */
-    private static Stream<Arguments> allTypesArgs() {
+    private static Collection<Arguments> allTypesArgs() {
         List<Arguments> params = new ArrayList<>();
 
         for (String invoker : CMD_HNDS.keySet()) {
@@ -128,7 +127,7 @@ public class GridCommandHandlerConsistencyTest extends GridCommandHandlerCluster
             }
         }
 
-        return params.stream();
+        return params;
     }
 
     /**

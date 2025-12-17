@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.testframework.config.GridTestProperties;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for Messaging public API with disabled

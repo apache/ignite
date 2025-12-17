@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** */
 public class ServiceStaticConfigTest extends AbstractSecurityTest {

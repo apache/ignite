@@ -27,7 +27,7 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests entry wrappers after preloading happened.

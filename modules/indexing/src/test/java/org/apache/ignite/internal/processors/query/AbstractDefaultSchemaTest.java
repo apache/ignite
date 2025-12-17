@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** Abstract test to verify default sql schema. */
 public abstract class AbstractDefaultSchemaTest extends AbstractIndexingCommonTest {

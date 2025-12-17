@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** Abstract test to verify custom sql schema. */
 public abstract class AbstractCustomSchemaTest extends AbstractIndexingCommonTest {

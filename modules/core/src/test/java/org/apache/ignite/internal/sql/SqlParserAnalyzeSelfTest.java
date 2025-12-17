@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 
 import org.apache.ignite.internal.processors.query.stat.StatisticsTarget;
 import org.apache.ignite.internal.sql.command.SqlAnalyzeCommand;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for sql parser: ANALYZE command.

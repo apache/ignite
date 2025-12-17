@@ -29,7 +29,7 @@ import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeStatus
 import org.apache.ignite.internal.management.rollingupgrade.RollingUpgradeTaskResult;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;

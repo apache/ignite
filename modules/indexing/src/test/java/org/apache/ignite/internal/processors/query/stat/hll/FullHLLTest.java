@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.query.stat.hll.util.BitVector;
 import org.apache.ignite.internal.processors.query.stat.hll.util.HLLUtil;
 import org.apache.ignite.internal.processors.query.stat.hll.util.LongIterator;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

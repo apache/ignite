@@ -45,7 +45,7 @@ import org.apache.ignite.internal.processors.query.schema.IndexRebuildCancelToke
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;

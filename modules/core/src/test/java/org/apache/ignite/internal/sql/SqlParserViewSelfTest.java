@@ -19,7 +19,7 @@ package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.internal.sql.command.SqlCreateViewCommand;
 import org.apache.ignite.internal.sql.command.SqlDropViewCommand;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for SQL parser: CREATE VIEW.

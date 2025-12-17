@@ -19,7 +19,7 @@ package org.apache.ignite.internal.util.collection;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;

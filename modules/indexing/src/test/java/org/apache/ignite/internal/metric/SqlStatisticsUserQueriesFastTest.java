@@ -30,7 +30,7 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 

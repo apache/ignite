@@ -31,7 +31,7 @@ import org.apache.ignite.sqltests.SqlDataTypesCoverageTests;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**

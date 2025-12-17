@@ -51,9 +51,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.between;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
@@ -64,7 +65,8 @@ import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lte;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "keepBinary={0}")
+@ValueSource(booleans = {true, false})
 public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
     /** */
     private static final int CNT = 10_000;
@@ -85,14 +87,8 @@ public class ThinClientIndexQueryTest extends GridCommonAbstractTest {
     private static final String IDX_FLD3 = "IDX_FLD3";
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean keepBinary;
-
-    /** */
-    @Parameterized.Parameters(name = "keepBinary={0}")
-    public static Object[] params() {
-        return new Object[] { false, true };
-    }
 
     /** @inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {

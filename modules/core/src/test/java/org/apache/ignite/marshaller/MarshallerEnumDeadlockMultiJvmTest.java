@@ -25,7 +25,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Contains test of Enum marshalling with various {@link Marshaller}s. See IGNITE-8547 for details.

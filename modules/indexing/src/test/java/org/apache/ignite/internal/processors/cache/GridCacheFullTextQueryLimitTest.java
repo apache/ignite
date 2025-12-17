@@ -17,39 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import javax.cache.Cache;
 import org.apache.ignite.cache.query.TextQuery;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** */
-@RunWith(Parameterized.class)
 public class GridCacheFullTextQueryLimitTest extends GridCacheFullTextQueryAbstractTest {
     /** Cache size. */
     private static final int MAX_ITEM_PER_NODE_COUNT = 100;
-
-    /** Number of nodes. */
-    @Parameterized.Parameter
-    public int nodesCnt;
-
-    /** */
-    @Parameterized.Parameters(name = "nodesCnt={0}")
-    public static Iterable<Object[]> params() {
-        List<Object[]> params = new ArrayList<>();
-
-        for (int i = 1; i <= 8; i++) {
-            Object[] p = new Object[1];
-            p[0] = i;
-
-            params.add(p);
-        }
-
-        return params;
-    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -59,8 +37,9 @@ public class GridCacheFullTextQueryLimitTest extends GridCacheFullTextQueryAbstr
     }
 
     /** */
-    @Test
-    public void testResultOrderedByScore() throws Exception {
+    @ParameterizedTest(name = "nodesCnt={0}")
+    @ValueSource(ints = {1, 2, 3, 4, 5, 6, 7, 8})
+    public void testResultOrderedByScore(int nodesCnt) throws Exception {
         startGrids(nodesCnt);
 
         int items = MAX_ITEM_PER_NODE_COUNT * nodesCnt;

@@ -25,7 +25,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.spi.metric.log.LogExporterSpi;
 import org.apache.ignite.testframework.ListeningTestLogger;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;

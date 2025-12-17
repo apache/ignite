@@ -39,7 +39,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.platform.model.Department;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.result.ResultInterface;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * H2 engine adds extra column in results set.

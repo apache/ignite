@@ -18,7 +18,7 @@ package org.apache.ignite.spi.discovery.zk;
 
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerAtomicTest;
 import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Class is added to mute {@link #testConcurrentRegisterDeregister} test in ZooKeeper suite

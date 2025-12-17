@@ -50,7 +50,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteSqlCall
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.PluginContext;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests SQL engine extension with plugin.

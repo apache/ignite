@@ -30,7 +30,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** Test verifies custom sql schema behavior when PDS is enabled. */
 public class IgniteSqlCustomSchemaWithPdsEnabled extends AbstractIndexingCommonTest {

@@ -18,7 +18,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsPageReplacementTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Page replacement light variant of test for native direct IO (wastes real IOPs on agents)

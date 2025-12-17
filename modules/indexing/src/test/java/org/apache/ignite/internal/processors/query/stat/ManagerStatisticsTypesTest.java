@@ -25,7 +25,7 @@ import java.time.LocalTime;
 import java.time.Month;
 import java.util.UUID;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.convertToSqlDate;
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.DateValueUtils.convertToSqlTime;

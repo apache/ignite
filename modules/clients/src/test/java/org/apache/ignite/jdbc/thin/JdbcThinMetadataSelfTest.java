@@ -53,7 +53,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.systemview.view.sql.SqlIndexView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static java.sql.Types.DATE;
 import static java.sql.Types.DECIMAL;

@@ -19,7 +19,7 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** Test for Sql plan history configuration. */
 public class SqlPlanHistoryConfigTest extends GridCommonAbstractTest {

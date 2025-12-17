@@ -22,7 +22,7 @@ import java.util.Random;
 import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;

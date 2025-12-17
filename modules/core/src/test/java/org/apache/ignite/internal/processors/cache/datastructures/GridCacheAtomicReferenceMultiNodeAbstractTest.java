@@ -22,7 +22,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.lang.IgniteCallable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * AtomicReference and AtomicStamped multi node tests.

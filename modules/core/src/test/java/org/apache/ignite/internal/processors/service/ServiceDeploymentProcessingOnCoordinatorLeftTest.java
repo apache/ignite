@@ -22,7 +22,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.service.inner.LongInitializedTestService;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests that requests of change service's state won't be missed and will be handled correctly on a coordinator change.

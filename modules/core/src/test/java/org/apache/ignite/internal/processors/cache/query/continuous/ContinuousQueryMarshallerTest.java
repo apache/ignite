@@ -39,7 +39,7 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.custom.DummyEventFilterFactory;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Checks that Optimized Marshaller is not used on any stage of Continuous Query handling.

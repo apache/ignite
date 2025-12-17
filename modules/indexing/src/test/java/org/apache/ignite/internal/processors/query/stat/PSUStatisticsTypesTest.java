@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.stat;
 
 import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Planner statistics usage test: check statistics usage by different types and distributions.

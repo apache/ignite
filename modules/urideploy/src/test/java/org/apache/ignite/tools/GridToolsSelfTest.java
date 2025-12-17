@@ -30,7 +30,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for Ant task generating GAR file.

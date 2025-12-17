@@ -30,7 +30,7 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.failure.FailureProcessor.FAILURE_LOG_MSG;
 import static org.apache.ignite.internal.processors.failure.FailureProcessor.IGNORED_FAILURE_LOG_MSG;

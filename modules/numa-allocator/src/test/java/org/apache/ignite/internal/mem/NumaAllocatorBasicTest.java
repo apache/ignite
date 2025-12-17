@@ -35,7 +35,7 @@ import org.apache.ignite.mem.NumaAllocationStrategy;
 import org.apache.ignite.mem.NumaAllocator;
 import org.apache.ignite.mem.SimpleNumaAllocationStrategy;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 

@@ -37,7 +37,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.TestFailureHandler;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** */
 public class KeyClassChangeIntegrationTest extends AbstractMultiEngineIntegrationTest {

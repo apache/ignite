@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.websession;
 
 import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests web sessions with TRANSACTIONAL cache.

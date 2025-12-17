@@ -18,7 +18,7 @@
 package org.apache.ignite.jdbc;
 
 import java.sql.ResultSet;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 

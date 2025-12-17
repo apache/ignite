@@ -21,7 +21,7 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileLock;
 import javax.swing.JOptionPane;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Java file locks test.

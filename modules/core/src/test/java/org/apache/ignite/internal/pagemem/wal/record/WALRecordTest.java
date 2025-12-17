@@ -20,7 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record;
 import java.util.Arrays;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.testframework.wal.record.RecordUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;

@@ -26,7 +26,7 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask;
 import org.apache.tools.ant.Project;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

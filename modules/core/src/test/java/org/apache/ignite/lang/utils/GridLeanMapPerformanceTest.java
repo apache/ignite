@@ -20,7 +20,7 @@ package org.apache.ignite.lang.utils;
 import java.util.Map;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Performance test for {@link GridLeanMap}.

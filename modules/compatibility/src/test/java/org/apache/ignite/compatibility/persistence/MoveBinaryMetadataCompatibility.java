@@ -26,7 +26,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test for moving binary_meta and marshaller folders to PDS.

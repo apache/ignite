@@ -38,7 +38,7 @@ import org.apache.ignite.client.Person;
 import org.apache.ignite.client.PersonBinarylizable;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Thin client async cache tests.

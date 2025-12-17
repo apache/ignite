@@ -19,7 +19,7 @@ package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.internal.processors.query.stat.StatisticsTarget;
 import org.apache.ignite.internal.sql.command.SqlRefreshStatitsicsCommand;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test for SQL parser: REFRESH STATISTICS command.

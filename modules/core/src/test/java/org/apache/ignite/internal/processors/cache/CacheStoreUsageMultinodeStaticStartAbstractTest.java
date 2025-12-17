@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

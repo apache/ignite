@@ -89,7 +89,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static java.util.Arrays.fill;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;

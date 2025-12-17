@@ -25,7 +25,7 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionExcludeNeighborsAbstractSelfTest;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests exclude neighbors flag for rendezvous affinity function.

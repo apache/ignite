@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.standbycluster.j
 
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.AbstractNodeJoinTemplate;
 import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

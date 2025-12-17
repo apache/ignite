@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.security.sandbox;
 
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ScanQuery;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Checks that a remote filter of {@code ContinuousQueries} runs on a remote node inside the Ignite Sandbox.

@@ -26,7 +26,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test different scenario with column statistics collection.

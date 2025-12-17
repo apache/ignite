@@ -39,7 +39,7 @@ import org.apache.ignite.spi.metric.IntMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.configuration.ConnectorConfiguration.DFLT_TCP_PORT;
 import static org.apache.ignite.internal.processors.rest.AbstractRestProcessorSelfTest.LOC_HOST;

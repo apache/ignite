@@ -28,7 +28,7 @@ import org.apache.ignite.spi.deployment.DeploymentResource;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Redundancy for URI deployment test

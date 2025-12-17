@@ -33,14 +33,20 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
+import static org.apache.ignite.cache.query.RepeatedFieldIndexQueryTest.DESC_ID_IDX;
+import static org.apache.ignite.cache.query.RepeatedFieldIndexQueryTest.ID_IDX;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "qryIdx={0}, qryDescIdx={1}")
+@CsvSource(value = {
+        "null, null",
+        ID_IDX + ", " + DESC_ID_IDX}, nullValues = {"null"})
 public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
@@ -61,21 +67,12 @@ public class IndexQueryQueryEntityTest extends GridCommonAbstractTest {
     private static final int CNT = 10_000;
 
     /** Query index, {@code null} or index name. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public String qryIdx;
 
     /** Query desc index, {@code null} or index name. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public String qryDescIdx;
-
-    /** */
-    @Parameterized.Parameters(name = "qryIdx={0}, qryDescIdx={1}")
-    public static List<Object[]> params() {
-        return F.asList(
-            new Object[] {null, null},
-            new Object[] {ID_IDX, DESC_ID_IDX}
-        );
-    }
 
     /** */
     private static IgniteCache<Long, Person> cache;

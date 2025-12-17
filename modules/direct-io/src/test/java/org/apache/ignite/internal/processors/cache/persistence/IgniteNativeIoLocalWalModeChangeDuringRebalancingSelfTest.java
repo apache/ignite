@@ -16,7 +16,7 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Version of test to be executed in Direct IO suite.

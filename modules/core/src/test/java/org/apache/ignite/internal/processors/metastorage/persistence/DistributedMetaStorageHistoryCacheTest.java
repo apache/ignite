@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.metastorage.persistence;
 
 import java.util.LinkedList;
 import java.util.List;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;

@@ -29,7 +29,7 @@ import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests compatibility for compound indexes.

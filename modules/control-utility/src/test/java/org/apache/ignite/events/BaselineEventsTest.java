@@ -32,7 +32,7 @@ import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.util.GridCommandHandlerFactoryAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** */
 public abstract class BaselineEventsTest extends GridCommandHandlerFactoryAbstractTest {

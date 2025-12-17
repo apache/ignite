@@ -29,7 +29,7 @@ import org.apache.ignite.internal.sql.optimizer.affinity.PartitionDataTypeUtils;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionParameterType;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.value.Value;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Data conversion tests.

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query.h2;
 import java.util.concurrent.CompletableFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

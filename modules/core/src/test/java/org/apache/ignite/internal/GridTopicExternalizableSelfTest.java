@@ -23,7 +23,7 @@ import org.apache.ignite.GridTestIoUtils;
 import org.apache.ignite.IgniteExternalizableAbstractTest;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Grid topic externalization test.

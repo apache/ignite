@@ -21,7 +21,7 @@ import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.util.Properties;
 import org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * {@link ConnectionPropertiesImpl} unit tests.

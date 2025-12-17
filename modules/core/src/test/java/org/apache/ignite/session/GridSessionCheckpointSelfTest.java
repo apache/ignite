@@ -27,7 +27,7 @@ import org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.hsqldb.jdbc.jdbcDataSource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Grid session checkpoint self test.

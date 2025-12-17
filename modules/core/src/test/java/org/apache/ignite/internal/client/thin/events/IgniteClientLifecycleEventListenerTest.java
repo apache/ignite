@@ -28,7 +28,7 @@ import org.apache.ignite.client.events.ClientStartEvent;
 import org.apache.ignite.client.events.ClientStopEvent;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests lifecycle event listeners of a thin client.

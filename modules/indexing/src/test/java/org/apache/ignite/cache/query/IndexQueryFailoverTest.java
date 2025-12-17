@@ -19,7 +19,6 @@ package org.apache.ignite.cache.query;
 
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 import javax.cache.Cache;
@@ -35,12 +34,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.cache.query.index.IndexName;
 import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.between;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.eq;
@@ -48,7 +46,6 @@ import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 
 /** */
-@RunWith(Parameterized.class)
 public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
@@ -61,16 +58,6 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
 
     /** */
     private static IgniteCache<Long, Person> cache;
-
-    /** Query index, {@code null} or index name. */
-    @Parameterized.Parameter
-    public String qryIdx;
-
-    /** */
-    @Parameterized.Parameters(name = "qryIdx={0}")
-    public static List<String> params() {
-        return F.asList(null, IDX);
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -99,8 +86,9 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testQueryWithWrongCriteria() {
+    @ParameterizedTest(name = "qryIdx={0}")
+    @CsvSource(value = {"null, " + IDX}, nullValues={"null"})
+    public void testQueryWithWrongCriteria(String qryIdx) {
         GridTestUtils.assertThrowsAnyCause(null, () -> {
             IndexQuery<Long, Person> qryNullCriteria = new IndexQuery<Long, Person>(Person.class, qryIdx)
                 .setCriteria(lt(null, 12));
@@ -110,8 +98,9 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testQueryWrongType() {
+    @ParameterizedTest(name = "qryIdx={0}")
+    @CsvSource(value = {"null, " + IDX}, nullValues={"null"})
+    public void testQueryWrongType(String qryIdx) {
         GridTestUtils.assertThrows(null, () -> new IndexQuery<Long, Integer>((String)null, qryIdx),
             NullPointerException.class, "Ouch! Argument cannot be null: valType");
 
@@ -145,8 +134,9 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testQueryWrongQuery() {
+    @ParameterizedTest(name = "qryIdx={0}")
+    @CsvSource(value = {"null, " + IDX}, nullValues={"null"})
+    public void testQueryWrongQuery(String qryIdx) {
         String errMsg = qryIdx != null ? "Index doesn't match criteria." : "No index found for criteria.";
 
         GridTestUtils.assertThrowsAnyCause(null, () -> {
@@ -191,8 +181,9 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testStopNode() {
+    @ParameterizedTest(name = "qryIdx={0}")
+    @CsvSource(value = {"null, " + IDX}, nullValues={"null"})
+    public void testStopNode(String qryIdx) {
         insertData(0, CNT);
 
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
@@ -208,8 +199,9 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testDestroyIndex() {
+    @ParameterizedTest(name = "qryIdx={0}")
+    @CsvSource(value = {"null, " + IDX}, nullValues={"null"})
+    public void testDestroyIndex(String qryIdx) {
         insertData(0, CNT);
 
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)
@@ -233,8 +225,9 @@ public class IndexQueryFailoverTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testConcurrentUpdateIndex() {
+    @ParameterizedTest(name = "qryIdx={0}")
+    @CsvSource(value = {"null, " + IDX}, nullValues={"null"})
+    public void testConcurrentUpdateIndex(String qryIdx) {
         insertData(0, CNT);
 
         IndexQuery<Long, Person> qry = new IndexQuery<Long, Person>(Person.class, qryIdx)

@@ -32,7 +32,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Checks cluster groups for thin client.

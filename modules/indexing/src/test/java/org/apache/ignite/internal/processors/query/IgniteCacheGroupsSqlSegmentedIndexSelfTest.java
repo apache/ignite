@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

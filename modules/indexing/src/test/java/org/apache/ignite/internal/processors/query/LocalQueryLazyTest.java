@@ -35,7 +35,7 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.testframework.GridTestUtils;
 import org.h2.result.LazyResult;
 import org.h2.result.ResultInterface;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for local query execution in lazy mode.

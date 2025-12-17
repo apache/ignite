@@ -19,7 +19,7 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

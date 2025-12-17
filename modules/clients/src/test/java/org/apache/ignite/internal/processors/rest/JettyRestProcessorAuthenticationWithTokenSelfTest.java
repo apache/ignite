@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.rest;
 
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test REST with enabled authentication and token.

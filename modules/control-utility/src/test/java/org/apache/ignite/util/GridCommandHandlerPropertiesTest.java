@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.Ignition.startClient;
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.CONN_DISABLED_BY_ADMIN_ERR_MSG;

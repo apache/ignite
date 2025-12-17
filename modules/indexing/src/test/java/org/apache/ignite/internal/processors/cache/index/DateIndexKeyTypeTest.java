@@ -35,7 +35,7 @@ import org.h2.util.LocalDateTimeUtils;
 import org.h2.value.ValueDate;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests that core IndexKey values calculation compatible with H2 date/time values calculation.

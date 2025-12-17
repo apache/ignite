@@ -26,7 +26,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** Test that thin client connects to cluster with {@link ThinClientKubernetesAddressFinder}. */
 @SuppressWarnings({"rawtypes", "unchecked"})

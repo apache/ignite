@@ -25,7 +25,7 @@ import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.logging.log4j.Level.DEBUG;
 import static org.hamcrest.MatcherAssert.assertThat;

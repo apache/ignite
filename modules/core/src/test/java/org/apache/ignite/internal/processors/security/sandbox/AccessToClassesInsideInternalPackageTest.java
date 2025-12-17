@@ -30,7 +30,7 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.security.SecurityUtils.IGNITE_INTERNAL_PACKAGE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;

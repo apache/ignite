@@ -20,7 +20,7 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.Serializable;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test for {@link IgniteConfiguration#consistentId}.

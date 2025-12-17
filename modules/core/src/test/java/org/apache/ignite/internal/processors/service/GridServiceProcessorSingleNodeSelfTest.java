@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteEx;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Single node services test.

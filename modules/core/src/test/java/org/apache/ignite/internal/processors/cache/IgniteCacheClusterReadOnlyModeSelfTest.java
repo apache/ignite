@@ -28,7 +28,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;

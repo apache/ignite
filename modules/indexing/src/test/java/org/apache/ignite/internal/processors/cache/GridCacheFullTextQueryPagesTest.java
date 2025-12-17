@@ -33,7 +33,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test pages loading for text queries tests.

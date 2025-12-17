@@ -18,7 +18,7 @@
 package org.apache.ignite.compatibility.testframework.util;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.compatibility.testframework.util.MavenUtils.escapeSpaceCharsInPath;
 

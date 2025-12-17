@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.jdbc2;
 
 import java.io.IOException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.jdbc2.JdbcBinaryBuffer.MIN_CAP;
 import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;

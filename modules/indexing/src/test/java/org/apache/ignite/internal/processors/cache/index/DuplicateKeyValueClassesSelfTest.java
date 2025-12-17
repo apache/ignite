@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.index;
 import java.util.UUID;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Make sure that cache can start with multiple key-value classes of the same type.

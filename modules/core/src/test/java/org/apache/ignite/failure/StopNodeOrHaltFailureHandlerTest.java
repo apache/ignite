@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.PE;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * {@link StopNodeOrHaltFailureHandler} tests.

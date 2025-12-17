@@ -17,7 +17,7 @@
 
 package org.apache.ignite.util;
 
-import org.junit.Assume;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  *
@@ -30,7 +30,7 @@ public class GridCommandHandlerClusterByClassWithSSLTest extends GridCommandHand
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Assume.assumeTrue(cliCommandHandler());
+        assumeTrue(cliCommandHandler());
 
         super.beforeTest();
     }

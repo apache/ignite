@@ -28,7 +28,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.UUID;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test for {@link JdbcTypesDefaultTransformer}.

@@ -23,7 +23,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import org.apache.ignite.cache.CachePeekMode;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * MERGE statement test.

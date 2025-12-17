@@ -20,7 +20,7 @@ package org.apache.ignite.logger.jcl;
 import org.apache.commons.logging.LogFactory;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Jcl logger test.

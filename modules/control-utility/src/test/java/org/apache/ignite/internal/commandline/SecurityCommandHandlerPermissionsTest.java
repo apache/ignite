@@ -56,7 +56,7 @@ import org.apache.ignite.spi.systemview.view.ComputeTaskView;
 import org.apache.ignite.util.GridCommandHandlerAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runners.Parameterized;
 
 import static java.util.Arrays.asList;

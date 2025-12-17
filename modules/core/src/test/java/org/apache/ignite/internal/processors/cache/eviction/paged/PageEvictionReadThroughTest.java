@@ -29,7 +29,7 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

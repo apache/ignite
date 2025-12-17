@@ -22,7 +22,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import org.apache.ignite.jdbc.JdbcErrorsAbstractSelfTest;
 import org.apache.ignite.lang.IgniteCallable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test SQLSTATE codes propagation with thin client driver.

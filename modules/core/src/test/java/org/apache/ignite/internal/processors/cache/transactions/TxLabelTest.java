@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests transaction labels.

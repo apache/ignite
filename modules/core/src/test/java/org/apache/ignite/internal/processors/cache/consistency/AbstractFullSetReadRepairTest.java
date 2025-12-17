@@ -33,7 +33,7 @@ import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.InconsistentMapping;
 import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.ReadRepairData;
 import org.apache.ignite.internal.processors.cache.distributed.near.consistency.IgniteIrreparableConsistencyViolationException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

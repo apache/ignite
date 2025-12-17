@@ -24,7 +24,7 @@ import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test checks that metrics will be export without exceptions during node start.

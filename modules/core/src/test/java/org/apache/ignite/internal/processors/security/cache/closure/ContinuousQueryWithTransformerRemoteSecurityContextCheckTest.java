@@ -22,7 +22,7 @@ import javax.cache.Cache;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests check appropriate security context when the scan query, transformer factory}, or remote filter factory of a

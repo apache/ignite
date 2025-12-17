@@ -39,7 +39,7 @@ import org.h2.util.DateTimeUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.index.BasicSqlTypesIndexTest.IndexType.PK;
 import static org.apache.ignite.internal.processors.cache.index.BasicSqlTypesIndexTest.IndexType.SECONDARY_ASC;

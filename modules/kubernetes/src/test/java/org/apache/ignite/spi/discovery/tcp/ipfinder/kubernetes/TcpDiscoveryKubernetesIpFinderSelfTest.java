@@ -19,7 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes;
 
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * TcpDiscoveryKubernetesIpFinder test.

@@ -37,7 +37,7 @@ import org.apache.ignite.maintenance.MaintenanceTask;
 import org.apache.ignite.mxbean.DefragmentationMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 

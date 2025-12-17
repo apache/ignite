@@ -18,7 +18,7 @@
 package org.apache.ignite.spi;
 
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test for {@link ExponentialBackoffTimeoutStrategyTest}.

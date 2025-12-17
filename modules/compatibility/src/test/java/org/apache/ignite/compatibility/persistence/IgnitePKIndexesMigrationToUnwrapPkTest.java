@@ -24,7 +24,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.compatibility.testframework.junits.SkipTestIfIsJdkNewer;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test to check that starting node with PK index of the old format present doesn't break anything.

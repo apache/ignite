@@ -21,7 +21,7 @@ import java.util.Set;
 import org.apache.ignite.internal.util.GridLeanIdentitySet;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for {@link org.apache.ignite.internal.util.GridLeanMap}.

@@ -73,7 +73,7 @@ import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.CANT_BE_COMPARE;
 

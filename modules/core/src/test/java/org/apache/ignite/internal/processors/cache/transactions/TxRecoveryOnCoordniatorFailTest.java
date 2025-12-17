@@ -27,7 +27,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests failure handler is not triggered after client node and coordinator left cluster.

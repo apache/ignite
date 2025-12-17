@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.GridAtomicInteger;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.lang.IgniteFuture;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Checks that number of concurrent asynchronous operations is limited when configuration parameter is set.

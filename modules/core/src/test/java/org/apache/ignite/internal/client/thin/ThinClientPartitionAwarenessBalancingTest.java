@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.BitSet;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test requests to connections distribution by thin client.

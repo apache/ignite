@@ -49,7 +49,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test to reproduce corrupted indexes problem after partition file eviction and truncation.

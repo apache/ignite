@@ -24,7 +24,7 @@ import java.util.TreeSet;
 import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.ignite.internal.processors.query.calcite.sql.generated.IgniteSqlParserImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test reserved keywords.

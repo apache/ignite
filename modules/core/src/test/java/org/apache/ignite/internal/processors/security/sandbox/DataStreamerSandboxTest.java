@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.lang.RunnableX;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Checks that user-defined code for data streamer is executed inside the sandbox.

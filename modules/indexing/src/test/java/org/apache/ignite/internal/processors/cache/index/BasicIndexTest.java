@@ -61,7 +61,7 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.h2.index.Index;
 import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THROTTLE_INLINE_SIZE_CALCULATION;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_IDX_NAME;

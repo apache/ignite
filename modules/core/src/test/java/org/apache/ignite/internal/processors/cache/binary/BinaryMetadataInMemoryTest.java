@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.binary;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test binary metadata for in-memory cluster.

@@ -37,7 +37,7 @@ import org.apache.ignite.plugin.security.SecurityBasicPermissionSet;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static java.sql.DriverManager.getConnection;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;

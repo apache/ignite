@@ -38,7 +38,7 @@ import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 

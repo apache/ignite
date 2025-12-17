@@ -30,7 +30,7 @@ import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ResourceHandler;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test http scanner.

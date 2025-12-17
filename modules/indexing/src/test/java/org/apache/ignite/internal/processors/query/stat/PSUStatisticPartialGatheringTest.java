@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.stat;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Planner statistics usage test: partial statistics collection (by set of columns) tests.

@@ -26,7 +26,7 @@ import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** Verifies custom sql schema within different configurations. */
 public class IgniteSqlSchemasDiffConfigurationsTest extends AbstractIndexingCommonTest {

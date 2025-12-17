@@ -30,7 +30,7 @@ import org.apache.ignite.client.Config;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
 import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static java.sql.DriverManager.getConnection;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;

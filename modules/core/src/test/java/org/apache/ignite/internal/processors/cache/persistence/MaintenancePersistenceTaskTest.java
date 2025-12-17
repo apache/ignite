@@ -32,7 +32,7 @@ import org.apache.ignite.internal.management.persistence.PersistenceTask;
 import org.apache.ignite.internal.management.persistence.PersistenceTaskResult;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.deleteLastCheckpointEndMarker;
 

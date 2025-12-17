@@ -41,7 +41,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.rules.Timeout;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;

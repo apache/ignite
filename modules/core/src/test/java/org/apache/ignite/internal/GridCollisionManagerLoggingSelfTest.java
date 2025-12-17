@@ -22,7 +22,7 @@ import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.spi.collision.noop.NoopCollisionSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;

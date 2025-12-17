@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.stat;
 
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Planner statistics usage test.

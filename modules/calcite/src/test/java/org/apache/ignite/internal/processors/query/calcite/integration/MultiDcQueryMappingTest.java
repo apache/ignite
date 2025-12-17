@@ -39,7 +39,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** */
 public class MultiDcQueryMappingTest extends AbstractBasicIntegrationTest {

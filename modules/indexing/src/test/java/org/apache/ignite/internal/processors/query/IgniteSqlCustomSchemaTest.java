@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.query;
 import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** Verifies custom sql schema through SqlFieldsQuery API. */
 public class IgniteSqlCustomSchemaTest extends AbstractCustomSchemaTest {

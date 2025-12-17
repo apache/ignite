@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * The test check that lock properly work after client node reconnected.

@@ -30,7 +30,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests that not all nodes in cluster need user's service and interceptor definition (only nodes according to filter).

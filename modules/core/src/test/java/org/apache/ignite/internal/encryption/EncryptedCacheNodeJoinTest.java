@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 

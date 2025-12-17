@@ -38,7 +38,7 @@ import org.apache.ignite.spi.deployment.DeploymentResource;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.jsr166.ConcurrentLinkedHashMap;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Local deployment SPI test.

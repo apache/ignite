@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
 import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

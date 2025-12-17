@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.standbycluster.j
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.AbstractNodeJoinTemplate;
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.join.JoinActiveNodeToActiveCluster;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

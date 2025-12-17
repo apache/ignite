@@ -20,7 +20,7 @@ package org.apache.ignite.util;
 import java.util.Iterator;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentLinkedDeque8;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.jsr166.ConcurrentLinkedDeque8.Node;
 

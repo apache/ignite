@@ -24,7 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.processors.security.AbstractRemoteSecurityContextCheckTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Testing operation security context when the scheduler closure is executed on remote nodes.

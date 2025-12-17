@@ -41,7 +41,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.p2p.P2PScanQueryUndeployTest.PREDICATE_CLASSNAME;
 import static org.apache.ignite.p2p.SharedDeploymentTest.RUN_LAMBDA;

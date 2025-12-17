@@ -45,7 +45,7 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** Tests for the computation inline size. */
 public class ComputeInlineSizeTest extends AbstractIndexingCommonTest {

@@ -18,7 +18,7 @@
 package org.apache.ignite.spi;
 
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Base SPI start-stop test class.

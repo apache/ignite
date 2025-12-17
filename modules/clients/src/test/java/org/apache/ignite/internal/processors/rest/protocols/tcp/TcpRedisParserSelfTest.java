@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

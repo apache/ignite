@@ -19,7 +19,7 @@ package org.apache.ignite.util;
 
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.management.cache.CacheCheckIndexInlineSizesCommand.INDEXES_INLINE_SIZE_ARE_THE_SAME;

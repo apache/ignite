@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.util.deque.FastSizeDeque;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

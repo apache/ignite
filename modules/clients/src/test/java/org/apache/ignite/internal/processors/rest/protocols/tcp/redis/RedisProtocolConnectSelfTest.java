@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import redis.clients.jedis.Jedis;
 
 import static org.apache.ignite.internal.util.IgniteUtils.KB;

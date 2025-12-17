@@ -46,7 +46,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Abs
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.client.Config.SERVER;
 import static org.apache.ignite.internal.cdc.SqlCdcTest.executeSql;

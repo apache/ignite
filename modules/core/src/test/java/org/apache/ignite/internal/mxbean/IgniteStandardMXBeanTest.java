@@ -24,7 +24,7 @@ import javax.management.NotCompliantMBeanException;
 import org.apache.ignite.mxbean.MXBeanParameter;
 import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
 import org.apache.ignite.mxbean.MXBeanParametersNames;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.Assert.assertEquals;
 

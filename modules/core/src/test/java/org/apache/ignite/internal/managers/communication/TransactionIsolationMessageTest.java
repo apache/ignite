@@ -19,7 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.junit.Assert.assertEquals;

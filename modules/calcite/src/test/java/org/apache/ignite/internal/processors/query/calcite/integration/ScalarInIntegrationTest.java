@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.integration;
 
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test scalar IN operator.

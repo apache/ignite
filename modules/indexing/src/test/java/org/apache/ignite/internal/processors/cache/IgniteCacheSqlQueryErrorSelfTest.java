@@ -21,7 +21,7 @@ import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Java API query error messages test.

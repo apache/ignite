@@ -23,7 +23,7 @@ import java.util.Collections;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.lang.GridIterableAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test that user defined classes can't be wrapped into priveleged proxy.

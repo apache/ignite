@@ -21,7 +21,7 @@ import javax.sql.DataSource;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.hsqldb.jdbc.jdbcDataSource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi.DFLT_CHECKPOINT_TABLE_NAME;
 import static org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi.DFLT_EXPIRE_DATE_FIELD_NAME;

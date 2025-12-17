@@ -40,7 +40,7 @@ import org.apache.ignite.session.SessionContext;
 import org.apache.ignite.session.SessionContextProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** */
 public class JdbcSetClientInfoTest extends GridCommonAbstractTest {

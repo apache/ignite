@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.persistence.standbycluster.Ab
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Assert;
 import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

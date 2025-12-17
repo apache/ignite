@@ -38,7 +38,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

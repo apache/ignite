@@ -20,7 +20,7 @@ package org.apache.ignite.internal.sql;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for SQL parser: CREATE INDEX.

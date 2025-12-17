@@ -26,7 +26,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for statistics related views.

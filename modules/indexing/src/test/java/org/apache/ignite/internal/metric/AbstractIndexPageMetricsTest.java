@@ -34,21 +34,17 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Base class for testing index pages metrics.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "numCaches = {0}")
+@ValueSource(ints = {1, 3})
 public abstract class AbstractIndexPageMetricsTest extends GridCommonAbstractTest {
-    /** */
-    @Parameterized.Parameters(name = "numCaches = {0}")
-    public static Object[] data() {
-        return new Object[] { 1, 3 };
-    }
-
     /** */
     private IgniteEx grid;
 
@@ -61,7 +57,7 @@ public abstract class AbstractIndexPageMetricsTest extends GridCommonAbstractTes
     /**
      * Number of caches that will be created on the test Ignite node.
      */
-    @Parameterized.Parameter
+    @Parameter
     public int numCaches;
 
     /** {@inheritDoc} */

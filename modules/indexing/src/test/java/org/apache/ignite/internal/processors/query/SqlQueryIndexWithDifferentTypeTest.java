@@ -24,7 +24,7 @@ import java.util.TimeZone;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** Tests query indexed field by value of another type. */
 public class SqlQueryIndexWithDifferentTypeTest extends GridCommonAbstractTest {

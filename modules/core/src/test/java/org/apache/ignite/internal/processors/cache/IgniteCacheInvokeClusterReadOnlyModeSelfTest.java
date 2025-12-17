@@ -24,7 +24,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterState;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests that {@link IgniteCache#invoke(Object, EntryProcessor, Object...)}, {@link IgniteCache#invokeAll(Map, Object...)}

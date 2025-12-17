@@ -19,7 +19,7 @@ package org.apache.ignite.internal.util.io;
 
 import java.nio.file.Path;
 import org.apache.ignite.IgniteException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static org.apache.ignite.internal.util.io.GridFileUtils.ensureHardLinkAvailable;

@@ -44,7 +44,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.util.GridCommandHandlerIndexingUtils.Organization;
 import org.apache.ignite.util.GridCommandHandlerIndexingUtils.Person;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static java.lang.String.valueOf;
 import static java.util.Arrays.asList;

@@ -20,7 +20,7 @@ package org.apache.ignite.spi.checkpoint.sharedfs;
 import java.util.LinkedList;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Grid shared file system checkpoint SPI config self test.

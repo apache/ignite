@@ -19,7 +19,7 @@ package org.apache.ignite.spi.checkpoint.cache;
 
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Grid cache checkpoint SPI config self test.

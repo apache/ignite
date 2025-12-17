@@ -19,7 +19,7 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for Zookeeper SPI discovery.

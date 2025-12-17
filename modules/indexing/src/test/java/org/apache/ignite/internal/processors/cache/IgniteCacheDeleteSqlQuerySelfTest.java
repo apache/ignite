@@ -22,7 +22,7 @@ import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

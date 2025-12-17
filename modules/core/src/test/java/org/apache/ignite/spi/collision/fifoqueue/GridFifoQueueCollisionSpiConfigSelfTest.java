@@ -19,7 +19,7 @@ package org.apache.ignite.spi.collision.fifoqueue;
 
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for {@link FifoQueueCollisionSpi} config.

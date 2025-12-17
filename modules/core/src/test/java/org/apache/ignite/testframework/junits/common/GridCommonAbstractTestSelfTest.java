@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.function.Consumer;
 import org.apache.ignite.testframework.config.GridTestProperties;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.config.GridTestProperties.findTestResource;
 

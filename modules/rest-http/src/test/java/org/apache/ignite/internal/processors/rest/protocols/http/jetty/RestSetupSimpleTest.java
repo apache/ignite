@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Integration test for Grid REST functionality; Jetty is under the hood.

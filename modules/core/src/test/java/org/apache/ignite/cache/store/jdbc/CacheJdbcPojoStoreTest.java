@@ -55,7 +55,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.cache.GridAbstractCacheStoreSelfTest;
 import org.h2.jdbcx.JdbcConnectionPool;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Class for {@code PojoCacheStore} tests.

@@ -27,7 +27,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Random;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests pure round trip time on network.

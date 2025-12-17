@@ -36,7 +36,7 @@ import javax.management.MBeanTrustPermission;
 import javax.net.ssl.SSLPermission;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cluster.ClusterState;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;

@@ -19,7 +19,7 @@ package org.apache.ignite.spi.communication.tcp;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.communication.CommunicationSpi;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  *

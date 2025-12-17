@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests for statistics of user initiated queries execution, that require grid restart.

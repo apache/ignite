@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
 import java.util.HashMap;
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import redis.clients.jedis.Jedis;
 
 /**

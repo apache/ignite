@@ -22,7 +22,7 @@ import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionKey;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /** */
 public class EncryptedCacheRestartTest extends AbstractEncryptionTest {

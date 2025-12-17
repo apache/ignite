@@ -32,7 +32,7 @@ import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Testing that if {@link ComputeTask#result(ComputeJobResult, List)} throws an {@link IgniteException}

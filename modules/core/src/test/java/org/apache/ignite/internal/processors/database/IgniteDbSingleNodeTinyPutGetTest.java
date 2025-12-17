@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.database;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test for

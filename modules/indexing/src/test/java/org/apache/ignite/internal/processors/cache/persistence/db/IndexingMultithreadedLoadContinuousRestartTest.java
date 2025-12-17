@@ -38,7 +38,7 @@ import org.apache.ignite.internal.management.cache.ValidateIndexesClosure;
 import org.apache.ignite.internal.management.cache.ValidateIndexesJobResult;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Tests that continuous non-graceful node stop under load doesn't break SQL indexes.

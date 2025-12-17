@@ -28,7 +28,7 @@ import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.cdc.TypeMappingImpl;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Metadata registration test.

@@ -25,7 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.marshaller.GridMarshallerAbstractTest;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.Marshallers;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test that Optimized Marshaller works with classes with serialPersistentFields.

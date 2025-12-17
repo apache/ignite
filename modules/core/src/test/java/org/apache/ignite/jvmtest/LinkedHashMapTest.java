@@ -20,7 +20,7 @@ package org.apache.ignite.jvmtest;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.X;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test for {@link LinkedHashMap}.

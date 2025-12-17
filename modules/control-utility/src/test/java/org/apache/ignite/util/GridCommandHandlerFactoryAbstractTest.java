@@ -23,6 +23,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -33,7 +34,6 @@ import java.util.ServiceLoader;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Stream;
 import javax.management.DynamicMBean;
 import javax.management.MBeanException;
 import javax.management.ReflectionException;
@@ -88,7 +88,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
     /** */
     public static final Map<String, Function<IgniteLogger, TestCommandHandler>> CMD_HNDS = new HashMap<>();
 
-    private static Stream<Arguments> allTypesArgs() {
+    private static Collection<Arguments> allTypesArgs() {
         List<Arguments> params = new ArrayList<>();
 
         ServiceLoader<TestCommandHandler> svc = ServiceLoader.load(TestCommandHandler.class);
@@ -107,7 +107,7 @@ public class GridCommandHandlerFactoryAbstractTest extends GridCommonAbstractTes
 
         CMD_HNDS.keySet().forEach(k -> params.add(Arguments.of(k)));
 
-        return params.stream();
+        return params;
     }
 
     /** */
