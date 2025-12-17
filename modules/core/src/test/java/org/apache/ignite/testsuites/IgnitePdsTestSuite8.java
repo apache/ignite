@@ -50,8 +50,8 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.OffHeapLockStackTest;
 import org.apache.ignite.internal.processors.cache.persistence.filename.CacheConfigStoragePathTest;
 import org.apache.ignite.internal.processors.cache.persistence.filename.CustomCacheStorageConfigurationSelfTest;
-import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotRestoreIndexPathTest;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotCreationNonDefaultStoragePathTest;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotRestoreIndexPathTest;
 import org.apache.ignite.internal.processors.cache.warmup.LoadAllWarmUpStrategySelfTest;
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
