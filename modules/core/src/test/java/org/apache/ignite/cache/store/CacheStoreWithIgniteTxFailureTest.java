@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.store;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,8 +39,10 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -47,7 +50,8 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
  * Tests to check scenarios with system failures during transaction commit. Internal system failures are simulated by
  * {@link CacheInterceptor} custom implementation throwing an exception during final commit phase.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "faultyNodeType={0}, faultyNodeRole={1}, withFaulireHandler={2}")
+@MethodSource("allTypesArgs")
 public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int GRID_COUNT = 3;
@@ -82,31 +86,30 @@ public class CacheStoreWithIgniteTxFailureTest extends GridCacheAbstractSelfTest
     }
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public FaultyNodeType faultyNodeType;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public FaultyNodeRole faultyNodeRole;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean withFaulireHnd;
 
     /** */
-    @Parameterized.Parameters(name = "faultyNodeType={0}, faultyNodeRole={1}, withFaulireHandler={2}")
-    public static List<Object[]> parameters() {
-        List<Object[]> params = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
-        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.REGULAR, true});
-        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.REGULAR, false});
-        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.REGULAR, true});
-        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.REGULAR, false});
+        params.add(Arguments.of(FaultyNodeType.PRIMARY, FaultyNodeRole.REGULAR, true));
+        params.add(Arguments.of(FaultyNodeType.PRIMARY, FaultyNodeRole.REGULAR, false));
+        params.add(Arguments.of(FaultyNodeType.BACKUP, FaultyNodeRole.REGULAR, true));
+        params.add(Arguments.of(FaultyNodeType.BACKUP, FaultyNodeRole.REGULAR, false));
 
-        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, false});
-        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.TX_COORDINATOR, false});
-        params.add(new Object[] {FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, true});
-        params.add(new Object[] {FaultyNodeType.BACKUP, FaultyNodeRole.TX_COORDINATOR, true});
+        params.add(Arguments.of(FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, false));
+        params.add(Arguments.of(FaultyNodeType.BACKUP, FaultyNodeRole.TX_COORDINATOR, false));
+        params.add(Arguments.of(FaultyNodeType.PRIMARY, FaultyNodeRole.TX_COORDINATOR, true));
+        params.add(Arguments.of(FaultyNodeType.BACKUP, FaultyNodeRole.TX_COORDINATOR, true));
 
         return params;
     }

@@ -16,7 +16,6 @@
  */
 package org.apache.ignite.p2p;
 
-import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -28,11 +27,9 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import static com.google.common.primitives.Ints.asList;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
@@ -40,7 +37,6 @@ import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 /**
  * Tests of extended logging of class loading problems.
  */
-@RunWith(Parameterized.class)
 public class ClassLoadingProblemExtendedLoggingTest extends GridCommonAbstractTest {
     /** */
     private ListeningTestLogger listeningLog = new ListeningTestLogger(log);
@@ -50,16 +46,6 @@ public class ClassLoadingProblemExtendedLoggingTest extends GridCommonAbstractTe
 
     /** */
     private IgniteEx client;
-
-    /** */
-    @Parameterized.Parameter(0)
-    public Integer allowSuccessfulClassRequestsCnt;
-
-    /** */
-    @Parameterized.Parameters(name = "{0}")
-    public static List<Integer> allowSuccessfulClassRequestsCntList() {
-        return asList(0, 1);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -96,8 +82,9 @@ public class ClassLoadingProblemExtendedLoggingTest extends GridCommonAbstractTe
     }
 
     /** Tests logging when executing job with communication problems. */
-    @Test
-    public void testTimeout() throws ClassNotFoundException {
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(ints = {0, 1})
+    public void testTimeout(int allowSuccessfulClassRequestsCnt) throws ClassNotFoundException {
         LogListener lsnr1 = LogListener
             .matches(msg -> msg
                 .replace("\n", "")
@@ -142,8 +129,9 @@ public class ClassLoadingProblemExtendedLoggingTest extends GridCommonAbstractTe
     }
 
     /** Tests logging when executing job and class is not found on initiator. */
-    @Test
-    public void testCNFE() throws Exception {
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(ints = {0, 1})
+    public void testCNFE(int allowSuccessfulClassRequestsCnt) throws Exception {
         LogListener srvLsnr1 = LogListener.matches("Failed to get resource from node").build();
         LogListener srvLsnr2 = LogListener.matches("Failed to find class on remote node").build();
         LogListener clientLsnr = LogListener.matches("Failed to resolve class").build();

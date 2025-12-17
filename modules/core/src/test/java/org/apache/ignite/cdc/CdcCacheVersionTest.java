@@ -17,11 +17,7 @@
 
 package org.apache.ignite.cdc;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -70,14 +66,12 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.junitpioneer.jupiter.cartesian.CartesianTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.DATA_RECORD_V2;
 import static org.apache.ignite.internal.processors.cache.CacheMetricsImpl.CACHE_METRICS;
@@ -86,7 +80,8 @@ import static org.apache.ignite.internal.processors.cache.version.GridCacheVersi
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "persistenceEnabled={0}")
+@ValueSource(booleans = {true, false})
 public class CdcCacheVersionTest extends AbstractCdcTest {
     /** */
     public static final byte DFLT_CLUSTER_ID = 1;
@@ -104,19 +99,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     public static final String CDC = "cdc";
 
     /** */
-    @Parameterized.Parameter
-    public CacheAtomicityMode atomicityMode;
-
-    /** */
-    @Parameterized.Parameter(1)
-    public CacheMode cacheMode;
-
-    /** */
-    @Parameterized.Parameter(2)
-    public int gridCnt;
-
-    /** */
-    @Parameterized.Parameter(3)
+    @Parameter(0)
     public boolean persistenceEnabled;
 
     /** */
@@ -130,20 +113,6 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
 
     /** */
     private volatile Supplier<CacheVersionConflictResolver> conflictResolutionMgrSupplier;
-
-    /** */
-    @Parameterized.Parameters(name = "atomicity={0}, mode={1}, gridCnt={2}, persistenceEnabled={3}")
-    public static Collection<?> parameters() {
-        List<Object[]> params = new ArrayList<>();
-
-        for (CacheAtomicityMode atomicity : EnumSet.of(ATOMIC, TRANSACTIONAL))
-            for (CacheMode mode : EnumSet.of(PARTITIONED, REPLICATED))
-                for (int gridCnt : new int[] {1, 3})
-                    for (boolean persistenceEnabled : new boolean[] {false, true})
-                        params.add(new Object[] {atomicity, mode, gridCnt, persistenceEnabled});
-
-        return params;
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -193,9 +162,13 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         return cfg;
     }
 
-    /** Test that conflict version is writtern to WAL. */
-    @Test
-    public void testConflictVersionWritten() throws Exception {
+    /** Test that conflict version is written to WAL. */
+    @CartesianTest(name = "persistenceEnabled={0}, gridCnt={1}, cacheMode={2}, atomicity={3}")
+    public void testConflictVersionWritten(
+        @CartesianTest.Values(ints = {1, 3}) int gridCnt,
+        @CartesianTest.Enum(value = CacheMode.class) CacheMode cacheMode,
+        @CartesianTest.Enum(value = CacheAtomicityMode.class) CacheAtomicityMode atomicityMode
+    ) throws Exception {
         walProvider = (ctx) -> new FileWriteAheadLogManager(ctx) {
             @Override public WALPointer log(WALRecord rec) throws IgniteCheckedException {
                 if (rec.type() != DATA_RECORD_V2)
@@ -267,15 +240,15 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
                 .setBackups(Integer.MAX_VALUE));
 
         if (atomicityMode == ATOMIC)
-            putRemoveCheck(cli, cache, null, null);
+            putRemoveCheck(cli, cache, null, null, gridCnt, atomicityMode);
         else {
             // Check operations for transaction cache without explicit transaction.
-            putRemoveCheck(cli, cache, null, null);
+            putRemoveCheck(cli, cache, null, null, gridCnt, atomicityMode);
 
             // Check operations for transaction cache with explicit transaction in all modes.
             for (TransactionConcurrency concurrency : TransactionConcurrency.values())
                 for (TransactionIsolation isolation : TransactionIsolation.values())
-                    putRemoveCheck(cli, cache, concurrency, isolation);
+                    putRemoveCheck(cli, cache, concurrency, isolation, gridCnt, atomicityMode);
         }
 
         for (int i = 0; i < gridCnt; i++) {
@@ -305,7 +278,9 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         IgniteEx cli,
         IgniteCache<Integer, User> cache,
         TransactionConcurrency concurrency,
-        TransactionIsolation isolation
+        TransactionIsolation isolation,
+        int gridCnt,
+        CacheAtomicityMode atomicityMode
     ) throws Exception {
         conflictCheckedCntr.set(0);
         walRecCheckedCntr.set(0);
@@ -314,21 +289,21 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         // Conflict version will be checked during WAL record and conflict resolution.
         addConflictData(cli, cache, 0, KEYS_CNT, concurrency, isolation);
 
-        checkResolverAndWal();
+        checkResolverAndWal(gridCnt, atomicityMode);
 
         // Replacing existing data.
         addConflictData(cli, cache, 0, KEYS_CNT, concurrency, isolation);
 
-        checkResolverAndWal();
+        checkResolverAndWal(gridCnt, atomicityMode);
 
         // Removing existing data with conflict version.
         removeConflictData(cli, cache, 0, KEYS_CNT, concurrency, isolation);
 
-        checkResolverAndWal();
+        checkResolverAndWal(gridCnt, atomicityMode);
     }
 
     /** */
-    private void checkResolverAndWal() throws IgniteInterruptedCheckedException {
+    private void checkResolverAndWal(int gridCnt, CacheAtomicityMode atomicityMode) throws IgniteInterruptedCheckedException {
         // Conflict resolver for ATOMIC caches invoked only on primary.
         long expConflictResolverCnt = atomicityMode == ATOMIC ? KEYS_CNT : (KEYS_CNT * (long)gridCnt);
 
@@ -345,8 +320,11 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
     }
 
     /** */
-    @Test
-    public void testOrderIncrease() throws Exception {
+    @CartesianTest(name = "persistenceEnabled={0}, cacheMode={1}, atomicity={2}")
+    public void testOrderIncrease(
+            @CartesianTest.Enum(value = CacheMode.class) CacheMode cacheMode,
+            @CartesianTest.Enum(value = CacheAtomicityMode.class) CacheAtomicityMode atomicityMode
+    ) throws Exception {
         walProvider = (ctx) -> new FileWriteAheadLogManager(ctx) {
             /** */
             private long prevOrder = -1;
@@ -389,7 +367,7 @@ public class CdcCacheVersionTest extends AbstractCdcTest {
         walRecCheckedCntr.set(0);
 
         // Update the same key several time.
-        // Expect {@link CacheEntryVersion#order()} will monotically increase.
+        // Expect {@link CacheEntryVersion#order()} will monotonously increase.
         for (int i = 0; i < KEYS_CNT; i++) {
             cache.put(KEY_TO_UPD, createUser(i));
             notCdcCache.put(KEY_TO_UPD, createUser(i));

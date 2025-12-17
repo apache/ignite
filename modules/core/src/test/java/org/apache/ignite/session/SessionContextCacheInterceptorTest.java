@@ -45,36 +45,39 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "mode={0}, syncMode={1}, clnNode={2}, dynamicCache={3}, backups={4}")
+@MethodSource("allTypesArgs")
 public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
     /** */
     private static final int KEYS = 10;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public CacheAtomicityMode mode;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public CacheWriteSynchronizationMode syncMode;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean clnNode;
 
     /** */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public boolean dynamicCache;
 
     /** */
-    @Parameterized.Parameter(4)
+    @Parameter(4)
     public int backups;
 
     /** */
@@ -84,9 +87,8 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
     private IgniteCache<Integer, String> cache;
 
     /** */
-    @Parameterized.Parameters(name = "mode={0}, syncMode={1}, clnNode={2}, dynamicCache={3}, backups={4}")
-    public static Collection<Object[]> params() {
-        List<Object[]> params = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         for (CacheAtomicityMode m: CacheAtomicityMode.values()) {
             for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
@@ -94,10 +96,10 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
                     for (boolean dynCache : new boolean[] {true, false}) {
                         if (m == CacheAtomicityMode.TRANSACTIONAL) {
                             for (int backupCnt = 0; backupCnt <= 2; backupCnt++)
-                                params.add(new Object[] {m, syncMode, cln, dynCache, backupCnt});
+                                params.add(Arguments.of(m, syncMode, cln, dynCache, backupCnt));
                         }
                         else
-                            params.add(new Object[] {m, syncMode, cln, dynCache, 1});
+                            params.add(Arguments.of(m, syncMode, cln, dynCache, 1));
                     }
                 }
             }
@@ -110,17 +112,18 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        Collection<Object[]> params = params();
+        Collection<Arguments> params = allTypesArgs();
 
         List<CacheConfiguration<?, ?>> ccfgs = new ArrayList<>();
 
-        for (Object[] param : params) {
-            boolean cln = (boolean)param[2];
-            boolean dyn = (boolean)param[3];
+        for (Arguments param : params) {
+            boolean cln = (boolean)param.get()[2];
+            boolean dyn = (boolean)param.get()[3];
 
             if (!dyn && !cln) {
                 ccfgs.add(
-                    cacheConfig((CacheAtomicityMode)param[0], (CacheWriteSynchronizationMode)param[1], (int)param[4], false, false)
+                    cacheConfig((CacheAtomicityMode)param.get()[0], (CacheWriteSynchronizationMode)param.get()[1],
+                            (int)param.get()[4], false, false)
                 );
             }
         }
@@ -160,7 +163,7 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
     @Test
     public void testGetOperations() {
         // CacheInterceptor#onGet doesn't work for client nodes.
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-23810", clnNode);
+        assumeFalse(clnNode, "https://issues.apache.org/jira/browse/IGNITE-23810");
 
         for (int i = 0; i < KEYS; i++)
             cache.put(i, String.valueOf(i));
@@ -408,7 +411,7 @@ public class SessionContextCacheInterceptorTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testMultipleApplicationAttributes() {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-23810", clnNode);
+        assumeFalse(clnNode, "https://issues.apache.org/jira/browse/IGNITE-23810");
 
         IgniteCache<Integer, String> cacheApp = ign
             .withApplicationAttributes(F.asMap(

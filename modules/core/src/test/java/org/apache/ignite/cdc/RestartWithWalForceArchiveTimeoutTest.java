@@ -17,8 +17,6 @@
 
 package org.apache.ignite.cdc;
 
-import java.util.Collection;
-import java.util.EnumSet;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -28,17 +26,19 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.apache.ignite.cdc.CdcSelfTest.addData;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "walMode={0}")
+@EnumSource(value = WALMode.class, names = {"NONE"}, mode = EnumSource.Mode.EXCLUDE)
 public class RestartWithWalForceArchiveTimeoutTest extends GridCommonAbstractTest {
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public WALMode walMode;
 
     /** */
@@ -56,12 +56,6 @@ public class RestartWithWalForceArchiveTimeoutTest extends GridCommonAbstractTes
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true)));
 
         return cfg;
-    }
-
-    /** */
-    @Parameterized.Parameters(name = "walMode={0}")
-    public static Collection<?> parameters() {
-        return EnumSet.of(WALMode.FSYNC, WALMode.LOG_ONLY, WALMode.BACKGROUND);
     }
 
     /** {@inheritDoc} */

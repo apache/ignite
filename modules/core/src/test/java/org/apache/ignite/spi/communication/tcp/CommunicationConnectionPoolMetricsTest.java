@@ -18,13 +18,14 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import java.nio.ByteBuffer;
-import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -57,8 +58,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.METRIC_NAME_ACQUIRING_THREADS_CNT;
 import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool.METRIC_NAME_AVG_LIFE_TIME;
@@ -71,7 +74,8 @@ import static org.apache.ignite.spi.communication.tcp.internal.ConnectionClientP
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Tests metrics of {@link ConnectionClientPool}. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "connsPerNode={0}, pairedConns={1}, msgQueueLimit={2}, clientLdr={3}")
+@MethodSource("allTypesArgs")
 public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTest {
     /** */
     private static final int MIN_LOAD_THREADS = 2;
@@ -86,30 +90,29 @@ public class CommunicationConnectionPoolMetricsTest extends GridCommonAbstractTe
     private volatile int createClientDelay;
 
     /** */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public int connsPerNode;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean pairedConns;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public int msgQueueLimit;
 
     /** */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public boolean clientLdr;
 
     /** */
-    @Parameterized.Parameters(name = "connsPerNode={0}, pairedConns={1}, msgQueueLimit={2}, clientLdr={3}")
-    public static Collection<Object[]> params() {
+    private static Stream<Arguments> allTypesArgs() {
         return GridTestUtils.cartesianProduct(
-            F.asList(1, 4), // Connections per node.
-            F.asList(false, true), // Paired connections.
-            F.asList(0, 100), // Message queue limit.
-            F.asList(true, false) // Use client as a load.
-        );
+                F.asList(1, 4), // Connections per node.
+                F.asList(false, true), // Paired connections.
+                F.asList(0, 100), // Message queue limit.
+                F.asList(true, false) // Use client as a load.
+        ).stream().map(Arguments::of);
     }
 
     /** {@inheritDoc} */

@@ -53,13 +53,15 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.cdc.CdcManagerTest.TestCdcManager.cdcMgr;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "persistentEnabled={0}")
+@ValueSource(booleans = {true, false})
 public class CdcManagerTest extends GridCommonAbstractTest {
     /** */
     private static final int WAL_SEG_SIZE = 64 * (int)U.MB;
@@ -83,14 +85,8 @@ public class CdcManagerTest extends GridCommonAbstractTest {
     private static volatile boolean failCollect;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean persistentEnabled;
-
-    /** */
-    @Parameterized.Parameters(name = "persistentEnabled={0}")
-    public static Object[] params() {
-        return new Object[] {false, true};
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
