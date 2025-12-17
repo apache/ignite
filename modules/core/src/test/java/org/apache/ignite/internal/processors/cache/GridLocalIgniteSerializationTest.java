@@ -82,17 +82,23 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    private void checkPutGet(final Object obj, final String igniteInstanceName) throws Exception {
+    private void checkPutGet(final TestObject obj, final String igniteInstanceName) throws Exception {
 
         // Run async to emulate user thread.
         GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 try (final Ignite ignite = startGrid(igniteInstanceName)) {
-                    final IgniteCache<Integer, Object> cache = ignite.getOrCreateCache(CACHE_NAME);
+                    final IgniteCache<Integer, TestObject> cache = ignite.getOrCreateCache(CACHE_NAME);
+
+                    assertNull(obj.ignite());
 
                     cache.put(1, obj);
 
-                    final Object loadedObj = cache.get(1);
+                    assertNotNull(obj.ignite());
+
+                    final TestObject loadedObj = cache.get(1);
+
+                    assertNotNull(loadedObj.ignite());
 
                     assertEquals(obj, loadedObj);
                 }
@@ -103,11 +109,24 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Simple Test object.
+     *
      */
-    private static class SimpleTestObject {
+    private interface TestObject {
+        /**
+         * @return Ignite instance.
+         */
+        Ignite ignite();
+    }
+
+    /**
+     * Test object.
+     */
+    private static class SimpleTestObject implements TestObject {
         /** */
         private final String val;
+
+        /** */
+        private transient Ignite ignite;
 
         /** */
         private SimpleTestObject(final String val) {
@@ -119,6 +138,8 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
          */
         @SuppressWarnings("unused")
         private Object readResolve() {
+            ignite = Ignition.localIgnite();
+
             return this;
         }
 
@@ -127,6 +148,8 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
          */
         @SuppressWarnings("unused")
         private Object writeReplace() {
+            ignite = Ignition.localIgnite();
+
             return this;
         }
 
@@ -145,17 +168,25 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
         @Override public int hashCode() {
             return val != null ? val.hashCode() : 0;
         }
+
+        /** {@inheritDoc} */
+        @Override public Ignite ignite() {
+            return ignite;
+        }
     }
 
     /**
      *
      */
-    private static class SerializableTestObject implements Serializable {
+    private static class SerializableTestObject implements Serializable, TestObject {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
         private String val;
+
+        /** */
+        private transient Ignite ignite;
 
         /**
          *
@@ -176,6 +207,8 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
          */
         private void writeObject(ObjectOutputStream out) throws IOException {
             U.writeString(out, val);
+
+            ignite = Ignition.localIgnite();
         }
 
         /**
@@ -184,6 +217,8 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
          */
         private void readObject(ObjectInputStream in) throws IOException {
             val = U.readString(in);
+
+            ignite = Ignition.localIgnite();
         }
 
         /** {@inheritDoc} */
@@ -201,17 +236,25 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
         @Override public int hashCode() {
             return val != null ? val.hashCode() : 0;
         }
+
+        /** {@inheritDoc} */
+        @Override public Ignite ignite() {
+            return ignite;
+        }
     }
 
     /**
      *
      */
-    private static class ExternalizableTestObject implements Externalizable {
+    private static class ExternalizableTestObject implements Externalizable, TestObject {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** */
         private String val;
+
+        /** */
+        private transient Ignite ignite;
 
         /**
          *
@@ -229,11 +272,15 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void writeExternal(final ObjectOutput out) throws IOException {
             U.writeString(out, val);
+
+            ignite = Ignition.localIgnite();
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {
             val = U.readString(in);
+
+            ignite = Ignition.localIgnite();
         }
 
         /** {@inheritDoc} */
@@ -251,14 +298,22 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
         @Override public int hashCode() {
             return val != null ? val.hashCode() : 0;
         }
+
+        /** {@inheritDoc} */
+        @Override public Ignite ignite() {
+            return ignite;
+        }
     }
 
     /**
      *
      */
-    private static class BinarylizableTestObject implements Binarylizable {
+    private static class BinarylizableTestObject implements Binarylizable, TestObject {
         /** */
         private String val;
+
+        /** */
+        private transient Ignite ignite;
 
         /**
          *
@@ -276,11 +331,15 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void writeBinary(final BinaryWriter writer) throws BinaryObjectException {
             writer.rawWriter().writeString(val);
+
+            ignite = Ignition.localIgnite();
         }
 
         /** {@inheritDoc} */
         @Override public void readBinary(final BinaryReader reader) throws BinaryObjectException {
             val = reader.rawReader().readString();
+
+            ignite = Ignition.localIgnite();
         }
 
         /** {@inheritDoc} */
@@ -297,6 +356,11 @@ public class GridLocalIgniteSerializationTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return val != null ? val.hashCode() : 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Ignite ignite() {
+            return ignite;
         }
     }
 }
