@@ -97,6 +97,6 @@ public class TcpDiscoveryDiscardMessage extends TcpDiscoveryAbstractMessage impl
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 8;
+        return 9;
     }
 }
