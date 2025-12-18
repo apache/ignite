@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -33,14 +31,11 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junitpioneer.jupiter.cartesian.CartesianTest;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /** */
-@RunWith(Parameterized.class)
 public class MdcCacheReadRequestsRoutingTest extends GridCommonAbstractTest {
     /** */
     private static final String DC_ID_0 = "DC0";
@@ -53,28 +48,6 @@ public class MdcCacheReadRequestsRoutingTest extends GridCommonAbstractTest {
 
     /** */
     private static final String VAL = "val";
-
-    /** */
-    @Parameterized.Parameters(name = "atomicity={0}, replicated={1}")
-    public static Iterable<Object[]> data() {
-        List<Object[]> res = new ArrayList<>();
-
-        for (CacheAtomicityMode mode : CacheAtomicityMode.values()) {
-            for (boolean replicated : new boolean[] {true, false}) {
-                res.add(new Object[] {mode, replicated});
-            }
-        }
-
-        return res;
-    }
-
-    /** */
-    @Parameterized.Parameter()
-    public CacheAtomicityMode atomicityMode;
-
-    /** */
-    @Parameterized.Parameter(1)
-    public boolean replicated;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -91,7 +64,7 @@ public class MdcCacheReadRequestsRoutingTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
-        // Enforce different mac adresses to emulate distributed environment by default.
+        // Enforce different mac addresses to emulate distributed environment by default.
         cfg.setUserAttributes(Collections.singletonMap(
             IgniteNodeAttributes.ATTR_MACS_OVERRIDE, UUID.randomUUID().toString()));
 
@@ -99,8 +72,11 @@ public class MdcCacheReadRequestsRoutingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testReadFromCache() throws Exception {
+    @CartesianTest(name = "atomicity={0}, replicated={1}")
+    public void testReadFromCache(
+            @CartesianTest.Enum(value = CacheAtomicityMode.class) CacheAtomicityMode atomicityMode,
+            @CartesianTest.Values(booleans = {true, false}) boolean replicated
+    ) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         boolean bool = rnd.nextBoolean();

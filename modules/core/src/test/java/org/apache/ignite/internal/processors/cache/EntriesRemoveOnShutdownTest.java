@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -25,19 +24,20 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Tests entries removal after shutdown/deactivation on in-memory/persistence grid.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "persistenceEnabled={0}")
+@ValueSource(booleans = {true, false})
 public class EntriesRemoveOnShutdownTest extends GridCommonAbstractTest {
     /** Persistence. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean pds;
 
     /** Is any entry removed from the cache. */
@@ -45,12 +45,6 @@ public class EntriesRemoveOnShutdownTest extends GridCommonAbstractTest {
 
     /** Ignite instance. */
     IgniteEx ignite;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "pds={0}")
-    public static Collection<?> parameters() {
-        return F.asList(true, false);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

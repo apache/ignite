@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -37,23 +36,19 @@ import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.PluginContext;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Topology validator test.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "isPluginTopValidatorProvider={0}")
+@ValueSource(booleans = {true, false})
 public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCacheAbstractTest implements Serializable {
     /** */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public Boolean isPluginTopValidatorProvider;
-
-    /** */
-    @Parameterized.Parameters(name = "isPluginTopValidatorProvider={0}")
-    public static Iterable<Object[]> data() {
-        return Arrays.asList(new Object[] {true}, new Object[] {false});
-    }
 
     /** key-value used at test. */
     private static String KEY_VAL = "1";

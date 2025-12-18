@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,10 +45,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SEND_RETRY_CNT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
@@ -57,7 +55,8 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "retryCnt={0}")
+@ValueSource(ints = {0, 1, DFLT_SEND_RETRY_CNT, 10})
 public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
     /** Remote node. */
     private static final ClusterNode REMOTE_NODE = new GridTestNode(UUID.randomUUID());
@@ -66,14 +65,8 @@ public class GridCacheIoManagerRetryTest extends GridCommonAbstractTest {
     private static final ClusterNode LOCAL_NODE = new GridTestNode(UUID.randomUUID());
 
     /** Retry count. */
-    @Parameter
+    @Parameter(0)
     public int retryCnt;
-
-    /** */
-    @Parameters(name = "retryCnt={0}")
-    public static Iterable<Integer> parameters() {
-        return Arrays.asList(0, 1, DFLT_SEND_RETRY_CNT, 10);
-    }
 
     /** */
     @Test

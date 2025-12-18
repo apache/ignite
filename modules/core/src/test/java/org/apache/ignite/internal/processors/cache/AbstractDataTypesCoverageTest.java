@@ -26,12 +26,11 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import javax.cache.configuration.Factory;
@@ -50,8 +49,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.IgniteCommonsSystemProperties.DFLT_IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
@@ -59,7 +60,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 /**
  * Abstract data types coverage  test.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "atomicityMode={1}, cacheMode={2}, ttlFactory={3}, backups={4}," +
+        " evictionFactory={5}, onheapCacheEnabled={6}, writeSyncMode={7}, persistenceEnabled={8}, useBinaryArrays={9}")
+@MethodSource("allTypesArgs")
 public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTest {
     /** */
     @SuppressWarnings("unchecked")
@@ -113,52 +116,50 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
     private static UUID prevParamLineId;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter
     public UUID paramLineId;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public CacheAtomicityMode atomicityMode;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public CacheMode cacheMode;
 
     /** */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public Factory<? extends ExpiryPolicy> ttlFactory;
 
     /** */
-    @Parameterized.Parameter(4)
+    @Parameter(4)
     public int backups;
 
     /** */
-    @Parameterized.Parameter(5)
+    @Parameter(5)
     public Factory evictionFactory;
 
     /** */
-    @Parameterized.Parameter(6)
+    @Parameter(6)
     public boolean onheapCacheEnabled;
 
     /** */
-    @Parameterized.Parameter(7)
+    @Parameter(7)
     public CacheWriteSynchronizationMode writeSyncMode;
 
     /** */
-    @Parameterized.Parameter(8)
+    @Parameter(8)
     public boolean persistenceEnabled;
 
     /** */
-    @Parameterized.Parameter(9)
+    @Parameter(9)
     public boolean useBinaryArrays;
 
     /**
      * @return Test parameters.
      */
-    @Parameterized.Parameters(name = "atomicityMode={1}, cacheMode={2}, ttlFactory={3}, backups={4}," +
-        " evictionFactory={5}, onheapCacheEnabled={6}, writeSyncMode={7}, persistenceEnabled={8}, useBinaryArrays={9}")
-    public static Collection parameters() {
-        Set<Object[]> params = new HashSet<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         Object[] baseParamLine = {
             null, CacheAtomicityMode.ATOMIC, CacheMode.PARTITIONED, null, 2, null,
@@ -171,7 +172,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
 
             paramLine[1] = atomicityMode;
 
-            params.add(paramLine);
+            params.add(Arguments.of(paramLine));
         }
 
         for (CacheMode cacheMode : CacheMode.values()) {
@@ -179,7 +180,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
 
             paramLine[2] = cacheMode;
 
-            params.add(paramLine);
+            params.add(Arguments.of(paramLine));
         }
 
         assert paramLine != null;
@@ -189,7 +190,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
 
             paramLine[3] = ttlFactory;
 
-            params.add(paramLine);
+            params.add(Arguments.of(paramLine));
         }
 
         for (int backups : new int[] {0, 1, 2}) {
@@ -197,7 +198,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
 
             paramLine[4] = backups;
 
-            params.add(paramLine);
+            params.add(Arguments.of(paramLine));
         }
 
         for (Factory evictionFactory : EVICTION_FACTORIES) {
@@ -205,7 +206,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
 
             paramLine[5] = evictionFactory;
 
-            params.add(paramLine);
+            params.add(Arguments.of(paramLine));
         }
 
         for (Boolean onheapCacheEnabled : BOOLEANS) {
@@ -213,7 +214,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
 
             paramLine[6] = onheapCacheEnabled;
 
-            params.add(paramLine);
+            params.add(Arguments.of(paramLine));
         }
 
         for (CacheWriteSynchronizationMode writeSyncMode : CacheWriteSynchronizationMode.values()) {
@@ -221,7 +222,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
 
             paramLine[7] = writeSyncMode;
 
-            params.add(paramLine);
+            params.add(Arguments.of(paramLine));
         }
 
         for (boolean persistenceEnabled : BOOLEANS) {
@@ -229,7 +230,7 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
 
             paramLine[8] = persistenceEnabled;
 
-            params.add(paramLine);
+            params.add(Arguments.of(paramLine));
         }
 
         for (boolean useTypedArrays : BOOLEANS) {
@@ -237,11 +238,11 @@ public abstract class AbstractDataTypesCoverageTest extends GridCommonAbstractTe
 
             paramLine[9] = useTypedArrays;
 
-            params.add(paramLine);
+            params.add(Arguments.of(paramLine));
         }
 
-        for (Object[] pLine : params)
-            pLine[0] = UUID.randomUUID();
+        for (Arguments pLine : params)
+            pLine.get()[0] = UUID.randomUUID();
 
         return params;
     }

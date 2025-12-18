@@ -19,32 +19,32 @@ package org.apache.ignite.internal.cluster;
 
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Collection;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
 import org.apache.ignite.internal.cluster.graph.FullyConnectedComponentSearcher;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.Timeout;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.apache.ignite.testframework.GridTestUtils.DFLT_TEST_TIMEOUT;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Class to test correctness of fully-connected component searching algorithm.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "{index}: search({0}) >= {1}")
+@MethodSource("allTypesArgs")
 public class FullyConnectedComponentSearcherTest {
-    /** Per test timeout */
-    @Rule
-    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
-
     /** Adjacency matrix provider for each test. */
     private AdjacencyMatrixProvider provider;
 
-    /** Minimul acceptable result of size of fully-connected component for each test. */
+    /** Minimal acceptable result of size of fully-connected component for each test. */
     private int minAcceptableRes;
 
     /**
@@ -60,6 +60,7 @@ public class FullyConnectedComponentSearcherTest {
      *
      */
     @Test
+    @Timeout(value = DFLT_TEST_TIMEOUT, unit = TimeUnit.MILLISECONDS)
     public void testFind() {
         BitSet[] matrix = provider.provide();
 
@@ -74,51 +75,45 @@ public class FullyConnectedComponentSearcherTest {
         BitSet res = searcher.findLargest(all);
         int size = res.cardinality();
 
-        Assert.assertTrue("Actual = " + size + ", Expected = " + minAcceptableRes,
-            size >= minAcceptableRes);
+        assertTrue(size >= minAcceptableRes, "Actual = " + size + ", Expected = " + minAcceptableRes);
     }
 
     /**
      * @return Test dataset.
      */
-    @Parameterized.Parameters(name = "{index}: search({0}) >= {1}")
-    public static Collection<Object[]> data() {
-        return Arrays.asList(new Object[][]{
-            {new StaticMatrix(new String[] {
+    private static Stream<Arguments> allTypesArgs() {
+        return Stream.of(
+            Arguments.of(new StaticMatrix(new String[] {
                 "100",
                 "010",
-                "001",
-            }), 1},
-            {new StaticMatrix(new String[] {
+                "001"}), 1),
+            Arguments.of(new StaticMatrix(new String[] {
                 "101",
                 "010",
-                "101",
-            }), 2},
-            {new StaticMatrix(new String[] {
+                "101"}), 2),
+            Arguments.of(new StaticMatrix(new String[] {
                 "1101",
                 "1111",
                 "0110",
-                "1101",
-            }), 3},
-            {new StaticMatrix(new String[] {
+                "1101"}), 3),
+            Arguments.of(new StaticMatrix(new String[] {
                 "1111001",
                 "1111000",
                 "1111000",
                 "1111000",
                 "0000111",
                 "0000111",
-                "1000111",
-            }), 4},
-            {new AlmostSplittedMatrix(30, 100, 200), 200},
-            {new AlmostSplittedMatrix(500, 1000, 2000), 2000},
-            {new AlmostSplittedMatrix(1000, 2000, 3000), 3000},
-            {new AlmostSplittedMatrix(30, 22, 25, 33, 27), 33},
-            {new AlmostSplittedMatrix(1000, 400, 1000, 800), 1000},
-            {new SeveralConnectionsAreLostMatrix(200, 10), 190},
-            {new SeveralConnectionsAreLostMatrix(2000, 100), 1900},
-            {new SeveralConnectionsAreLostMatrix(2000, 500), 1500},
-            {new SeveralConnectionsAreLostMatrix(4000, 2000), 2000}
-        });
+                "1000111",}), 4),
+            Arguments.of(new AlmostSplittedMatrix(30, 100, 200), 200),
+            Arguments.of(new AlmostSplittedMatrix(500, 1000, 2000), 2000),
+            Arguments.of(new AlmostSplittedMatrix(1000, 2000, 3000), 3000),
+            Arguments.of(new AlmostSplittedMatrix(30, 22, 25, 33, 27), 33),
+            Arguments.of(new AlmostSplittedMatrix(1000, 400, 1000, 800), 1000),
+            Arguments.of(new SeveralConnectionsAreLostMatrix(200, 10), 190),
+            Arguments.of(new SeveralConnectionsAreLostMatrix(2000, 100), 1900),
+            Arguments.of(new SeveralConnectionsAreLostMatrix(2000, 500), 1500),
+            Arguments.of(new SeveralConnectionsAreLostMatrix(4000, 2000), 2000)
+        );
     }
 
     /**

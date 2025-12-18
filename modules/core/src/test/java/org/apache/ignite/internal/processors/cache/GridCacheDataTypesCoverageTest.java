@@ -46,22 +46,19 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Data types coverage for basic cache operations.
  */
-@RunWith(Parameterized.class)
 @SuppressWarnings("ZeroLengthArrayAllocation")
 public class GridCacheDataTypesCoverageTest extends AbstractDataTypesCoverageTest {
     /** @inheritDoc */
-    @Before
+    @BeforeEach
     @Override public void init() throws Exception {
         super.init();
     }
@@ -181,7 +178,7 @@ public class GridCacheDataTypesCoverageTest extends AbstractDataTypesCoverageTes
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12314")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-12314")
     @Test
     public void testByteArrayDataType() throws Exception {
         checkBasicCacheOperations(
@@ -228,7 +225,7 @@ public class GridCacheDataTypesCoverageTest extends AbstractDataTypesCoverageTes
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12315")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-12315")
     @Test
     public void testQueueDataType() throws Exception {
         ArrayBlockingQueue<Integer> queueToCheck = new ArrayBlockingQueue<>(5);

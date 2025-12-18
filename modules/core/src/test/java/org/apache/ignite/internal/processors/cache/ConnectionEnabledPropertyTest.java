@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterState;
@@ -27,15 +26,17 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationProcessor.toMetaStorageKey;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "persistence={0}")
+@ValueSource(booleans = {true, false})
 public class ConnectionEnabledPropertyTest extends GridCommonAbstractTest {
     /** */
     public static final String THIN_CONN_ENABLED_PROP = "newThinConnectionsEnabled";
@@ -47,14 +48,8 @@ public class ConnectionEnabledPropertyTest extends GridCommonAbstractTest {
     private static final String CLI_CONN_ENABLED_PROP = "newClientNodeConnectionsEnabled";
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean persistence;
-
-    /** */
-    @Parameterized.Parameters(name = "persistence={0}")
-    public static Iterable<Boolean> parameters() {
-        return Arrays.asList(true, false);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -90,7 +85,7 @@ public class ConnectionEnabledPropertyTest extends GridCommonAbstractTest {
             }
         };
 
-        // Two iteration to check successfull restart when newServerNodeConnectionsEnabled=false.
+        // Two iteration to check successfully restart when newServerNodeConnectionsEnabled=false.
         for (int i = 0; i < 2; i++) {
             try (IgniteEx srv = startGrid(0)) {
                 srv.cluster().state(ClusterState.ACTIVE);

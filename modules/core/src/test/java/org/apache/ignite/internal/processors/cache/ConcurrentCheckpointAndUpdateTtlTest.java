@@ -40,13 +40,16 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "dataStreamer={0}, touchQuery={1}, cacheMode={2}")
+@MethodSource("allTypesArgs")
 public class ConcurrentCheckpointAndUpdateTtlTest extends GridCommonAbstractTest {
     /** */
     private static final int KEY = 0;
@@ -55,26 +58,25 @@ public class ConcurrentCheckpointAndUpdateTtlTest extends GridCommonAbstractTest
     private final ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean updateWithDataStreamer;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean touchWithScanQuery;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public CacheAtomicityMode mode;
 
     /** */
-    @Parameterized.Parameters(name = "dataStreamer={0}, touchQuery={1}, cacheMode={2}")
-    public static Collection<Object[]> params() {
-        Collection<Object[]> params = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        Collection<Arguments> params = new ArrayList<>();
 
         for (CacheAtomicityMode cacheMode: CacheAtomicityMode.values()) {
             for (boolean updateMode: new boolean[] {true, false}) {
                 for (boolean touchMode: new boolean[] {true, false})
-                    params.add(new Object[] { updateMode, touchMode, cacheMode });
+                    params.add(Arguments.of(updateMode, touchMode, cacheMode));
             }
         }
 

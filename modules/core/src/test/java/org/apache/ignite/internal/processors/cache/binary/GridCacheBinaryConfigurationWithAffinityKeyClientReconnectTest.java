@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.ignite.Ignite;
@@ -32,35 +30,35 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-/**
- *
- */
-@RunWith(Parameterized.class)
+/** */
+@ParameterizedClass(name = "with binary config = {0}, key = {1}")
+@MethodSource("allTypesArgs")
 public class GridCacheBinaryConfigurationWithAffinityKeyClientReconnectTest extends IgniteClientReconnectAbstractTest {
     /** */
     private static final String PAYLOAD = RandomStringUtils.random(100);
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean binaryConfig;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public Object key;
 
     /** */
     private IgniteEx cli;
 
     /** */
-    @Parameterized.Parameters(name = "with binary config = {0}, key = {1}")
-    public static Collection<Object[]> parameters() {
+    private static Stream<Arguments> allTypesArgs() {
         return Stream.of(true, false).flatMap(withBinary -> Stream.of(
-                new Object[] { withBinary, TestNotAnnotatedKey.of(1)},
-                new Object[] { withBinary, TestAnnotatedKey.of(1)}
-        )).collect(Collectors.toList());
+            Arguments.of(withBinary, TestNotAnnotatedKey.of(1)),
+            Arguments.of(withBinary, TestAnnotatedKey.of(1))
+        ));
     }
 
     /** {@inheritDoc} */

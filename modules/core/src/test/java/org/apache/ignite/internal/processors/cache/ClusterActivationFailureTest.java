@@ -29,15 +29,14 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
 
 /** */
-@RunWith(Parameterized.class)
 public class ClusterActivationFailureTest extends GridCommonAbstractTest {
     /** */
     private static final int TEST_NODES_CNT = 3;
@@ -46,18 +45,13 @@ public class ClusterActivationFailureTest extends GridCommonAbstractTest {
     private final TestPluginProvider plugin = new TestPluginProvider();
 
     /** */
-    @Parameterized.Parameter()
-    public int activationInitiatorIdx;
-
-    /** */
-    @Parameterized.Parameters(name = "activationInitiatorIdx={0}")
-    public static Iterable<Object[]> data() {
-        Collection<Object[]> data = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        Collection<Arguments> params = new ArrayList<>();
 
         for (int activationInitiatorIdx = 0; activationInitiatorIdx < TEST_NODES_CNT; activationInitiatorIdx++)
-            data.add(new Object[] {activationInitiatorIdx});
+            params.add(Arguments.of(activationInitiatorIdx));
 
-        return data;
+        return params;
     }
 
     /** {@inheritDoc} */
@@ -85,8 +79,9 @@ public class ClusterActivationFailureTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testErrorOnActivation() throws Exception {
+    @ParameterizedTest(name = "activationInitiatorIdx={0}")
+    @MethodSource("allTypesArgs")
+    public void testErrorOnActivation(int activationInitiatorIdx) throws Exception {
         startGrids(TEST_NODES_CNT);
 
         plugin.markActivationBroken(true);

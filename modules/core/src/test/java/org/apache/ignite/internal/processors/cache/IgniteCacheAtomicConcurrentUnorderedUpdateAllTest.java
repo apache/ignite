@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CyclicBarrier;
@@ -32,13 +31,12 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 
 /** Test concurrent putAll/removeAll operations with unordered set of keys on atomic caches. */
-@RunWith(Parameterized.class)
 public class IgniteCacheAtomicConcurrentUnorderedUpdateAllTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES_CNT = 3;
@@ -52,30 +50,6 @@ public class IgniteCacheAtomicConcurrentUnorderedUpdateAllTest extends GridCommo
     /** */
     private static final int CACHE_SIZE = 1_000;
 
-    /** Parameters. */
-    @Parameterized.Parameters(name = "cacheMode={0}, writeThrough={1}, near={2}")
-    public static Iterable<Object[]> data() {
-        return Arrays.asList(
-            new Object[] {CacheMode.PARTITIONED, Boolean.FALSE, Boolean.FALSE},
-            new Object[] {CacheMode.PARTITIONED, Boolean.TRUE, Boolean.FALSE},
-            new Object[] {CacheMode.PARTITIONED, Boolean.FALSE, Boolean.TRUE},
-            new Object[] {CacheMode.REPLICATED, Boolean.FALSE, Boolean.FALSE},
-            new Object[] {CacheMode.REPLICATED, Boolean.TRUE, Boolean.FALSE}
-        );
-    }
-
-    /** Cache mode. */
-    @Parameterized.Parameter()
-    public CacheMode cacheMode;
-
-    /** Write through. */
-    @Parameterized.Parameter(1)
-    public Boolean writeThrough;
-
-    /** Near cache. */
-    @Parameterized.Parameter(2)
-    public Boolean near;
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -86,8 +60,15 @@ public class IgniteCacheAtomicConcurrentUnorderedUpdateAllTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    @Test
-    public void testConcurrentUpdateAll() throws Exception {
+    @ParameterizedTest(name = "cacheMode={0}, writeThrough={1}, near={2}")
+    @CsvSource({
+            "PARTITIONED, false, false",
+            "PARTITIONED, true, false",
+            "PARTITIONED, false, true",
+            "REPLICATED, false, false",
+            "REPLICATED, true, false",
+    })
+    public void testConcurrentUpdateAll(CacheMode cacheMode, boolean writeThrough, boolean near) throws Exception {
         Ignite ignite = startGridsMultiThreaded(NODES_CNT);
 
         Factory<CacheStore<Object, Object>> cacheStoreFactory = writeThrough ?

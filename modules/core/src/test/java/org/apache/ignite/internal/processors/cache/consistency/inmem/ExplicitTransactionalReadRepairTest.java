@@ -17,73 +17,68 @@
 
 package org.apache.ignite.internal.processors.cache.consistency.inmem;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.consistency.AbstractFullSetReadRepairTest;
 import org.apache.ignite.internal.processors.cache.consistency.ReadRepairDataGenerator.ReadRepairData;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "concurrency={0}, isolation={1}, getEntry={2}, async={3}, misses={4}, nulls={5}, binary={6}")
+@MethodSource("allTypesArgs")
 public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepairTest {
     /** Test parameters. */
-    @Parameterized.Parameters(name = "concurrency={0}, isolation={1}, getEntry={2}, async={3}, misses={4}, nulls={5}, binary={6}")
-    public static Iterable<Object[]> parameters() {
-        List<Object[]> res = new ArrayList<>();
-
-        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
-            for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                for (boolean raw : new boolean[] {false, true}) {
-                    for (boolean async : new boolean[] {false, true}) {
-                        for (boolean misses : new boolean[] {false, true}) {
-                            for (boolean nulls : new boolean[] {false, true}) {
-                                for (boolean binary : new boolean[] {false, true})
-                                    res.add(new Object[] {concurrency, isolation, raw, async, misses, nulls, binary});
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return res;
+    private static Stream<Arguments> allTypesArgs() {
+        return GridTestUtils.cartesianProduct(
+                List.of(TransactionConcurrency.OPTIMISTIC, TransactionConcurrency.PESSIMISTIC),
+                List.of(TransactionIsolation.READ_COMMITTED, TransactionIsolation.SERIALIZABLE, TransactionIsolation.REPEATABLE_READ),
+                List.of(true, false), // raw
+                List.of(true, false), // async
+                List.of(true, false), // misses
+                List.of(true, false), // nulls
+                List.of(true, false)  // binary
+        ).stream().map(Arguments::of);
     }
 
     /** Concurrency. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public TransactionConcurrency concurrency;
 
     /** Isolation. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public TransactionIsolation isolation;
 
     /** GetEntry or just get. */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean raw;
 
     /** Async. */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public boolean async;
 
     /** Misses. */
-    @Parameterized.Parameter(4)
+    @Parameter(4)
     public boolean misses;
 
     /** Nulls. */
-    @Parameterized.Parameter(5)
+    @Parameter(5)
     public boolean nulls;
 
     /** With binary. */
-    @Parameterized.Parameter(6)
+    @Parameter(6)
     public boolean binary;
 
     /** {@inheritDoc} */

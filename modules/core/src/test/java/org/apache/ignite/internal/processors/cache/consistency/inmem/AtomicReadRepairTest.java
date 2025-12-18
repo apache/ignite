@@ -18,13 +18,8 @@
 package org.apache.ignite.internal.processors.cache.consistency.inmem;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-/**
- *
- */
-@RunWith(Parameterized.class)
+/** */
 public class AtomicReadRepairTest extends ImplicitTransactionalReadRepairTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {

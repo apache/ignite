@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -27,8 +25,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -36,17 +35,12 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "txMode={0}")
+@EnumSource(value = AbstractTransactionalQueryTest.TestTransactionMode.class)
 public abstract class AbstractTransactionalQueryTest extends GridCommonAbstractTest {
     /** */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public TestTransactionMode txMode;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "txMode={0}")
-    public static Collection<?> parameters() {
-        return Arrays.asList(TestTransactionMode.values());
-    }
 
     /** */
     protected static TestTransactionMode currentMode;

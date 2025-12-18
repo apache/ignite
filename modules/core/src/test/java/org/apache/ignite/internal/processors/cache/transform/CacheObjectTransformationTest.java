@@ -28,28 +28,19 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "mode={0}")
+@EnumSource(value = CacheAtomicityMode.class)
 public class CacheObjectTransformationTest extends AbstractCacheObjectTransformationTest {
     /** Atomicity mode. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public CacheAtomicityMode mode;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "mode={0}")
-    public static Collection<?> parameters() {
-        List<Object[]> res = new ArrayList<>();
-
-        for (CacheAtomicityMode mode : CacheAtomicityMode.values())
-            res.add(new Object[] {mode});
-
-        return res;
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

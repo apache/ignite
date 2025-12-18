@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.apache.ignite.Ignite;
@@ -40,15 +39,18 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED;
 
 /**
  * Checks transformation works via public and private cache API.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "mode={0}, persistence={1}, gen={2}")
+@MethodSource("allTypesArgs")
 public class CacheObjectTransformationCacheApiTest extends GridCommonAbstractTest {
     /** Region name. */
     private static final String REGION_NAME = "region";
@@ -60,28 +62,27 @@ public class CacheObjectTransformationCacheApiTest extends GridCommonAbstractTes
     protected static final int NODES = 3;
 
     /** Atomicity mode. */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public CacheAtomicityMode mode;
 
     /** Persistence enabled flag. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean persistence;
 
     /** Generator. */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public Gen gen;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "mode={0}, persistence={1}, gen={2}")
-    public static Collection<?> parameters() {
-        List<Object[]> res = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        Collection<Arguments> params = new ArrayList<>();
 
         for (CacheAtomicityMode mode : CacheAtomicityMode.values())
             for (boolean persistence : new boolean[] {true, false})
                 for (Gen gen : Gen.values())
-                    res.add(new Object[] {mode, persistence, gen});
+                    params.add(Arguments.of(mode, persistence, gen));
 
-        return res;
+        return params;
     }
 
     /** {@inheritDoc} */
@@ -250,7 +251,7 @@ public class CacheObjectTransformationCacheApiTest extends GridCommonAbstractTes
     }
 
     /** */
-    private enum Gen {
+    public enum Gen {
         /** */
         INT((i) -> i),
 
