@@ -72,7 +72,7 @@ class QueryTasksQueue {
     /** All tasks blocked by currently running queries. Can be false-negative. */
     private boolean allTasksBlocked;
 
-    /** Count of not parked task processing threads. */
+    /** Count of not parked and not currently busy task processing threads. */
     private int freeThreadsCnt;
 
     /**
@@ -101,7 +101,7 @@ class QueryTasksQueue {
 
             int tasksCnt = cnt.incrementAndGet();
 
-            // Do not wake up new threads if it's enough free treads to process the new task.
+            // Do not wake up new threads if it's enough free threads to process the new task.
             if (tasksCnt > freeThreadsCnt && !(allTasksBlocked && freeThreadsCnt > 0))
                 notEmpty.signal();
 
@@ -113,9 +113,7 @@ class QueryTasksQueue {
     }
 
     /** Poll task and block query. */
-    public QueryAwareTask pollTaskAndBlockQuery(long timeout, TimeUnit unit) throws InterruptedException {
-        long nanos = unit.toNanos(timeout);
-
+    public @Nullable QueryAwareTask pollTaskAndBlockQuery(long nanos) throws InterruptedException {
         lock.lockInterruptibly();
 
         try {
@@ -139,7 +137,7 @@ class QueryTasksQueue {
 
             return res;
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             freeThreadsCnt++;
 
             throw e;
@@ -313,11 +311,11 @@ class QueryTasksQueue {
             }
 
             @Override public @NotNull Runnable take() throws InterruptedException {
-                return pollTaskAndBlockQuery(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+                return pollTaskAndBlockQuery(Long.MAX_VALUE);
             }
 
             @Override public @Nullable Runnable poll(long timeout, @NotNull TimeUnit unit) throws InterruptedException {
-                return pollTaskAndBlockQuery(0, TimeUnit.NANOSECONDS);
+                return pollTaskAndBlockQuery(unit.toNanos(timeout));
             }
 
             @Override public Runnable remove() {
