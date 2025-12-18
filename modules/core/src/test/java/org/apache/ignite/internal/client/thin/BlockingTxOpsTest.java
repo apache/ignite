@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.processor.EntryProcessor;
@@ -33,19 +32,20 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
-import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  * Thin client blocking transactional operations tests.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "concurrency={0}, isolation={1}")
+@CsvSource({
+        "PESSIMISTIC, REPEATABLE_READ",
+        "OPTIMISTIC, SERIALIZABLE"
+})
 public class BlockingTxOpsTest extends AbstractThinClientTest {
     /** Default tx timeout value. */
     private static final long TX_TIMEOUT = 5_000L;
@@ -57,22 +57,12 @@ public class BlockingTxOpsTest extends AbstractThinClientTest {
     private int poolSize;
 
     /** */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public TransactionConcurrency txConcurrency;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public TransactionIsolation txIsolation;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "concurrency={0}, isolation={1}")
-    public static List<Object[]> params() {
-        return F.asList(
-            new Object[]{ PESSIMISTIC, REPEATABLE_READ },
-            new Object[]{ OPTIMISTIC, SERIALIZABLE }
-        );
-    }
-
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

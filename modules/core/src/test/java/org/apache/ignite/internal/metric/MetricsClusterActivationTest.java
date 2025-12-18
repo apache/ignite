@@ -16,8 +16,6 @@
  */
 package org.apache.ignite.internal.metric;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
@@ -38,8 +36,9 @@ import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ObjectMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.internal.processors.cache.CacheGroupMetricsImpl.CACHE_GROUP_METRICS_PREFIX;
@@ -50,7 +49,8 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 /**
  * Tests metrics on a cluster activation.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "isPersistenceEnabled={0}")
+@ValueSource(booleans = {true, false})
 public class MetricsClusterActivationTest extends GridCommonAbstractTest {
     /** */
     public static final int ENTRY_CNT = 50;
@@ -59,14 +59,8 @@ public class MetricsClusterActivationTest extends GridCommonAbstractTest {
     public static final int BACKUPS = 2;
 
     /** Persistence enabled flag. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean isPersistenceEnabled;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "isPersistenceEnabled={0}")
-    public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {{false}, {true}});
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

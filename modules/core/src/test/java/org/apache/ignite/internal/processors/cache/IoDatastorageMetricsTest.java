@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Arrays;
-import java.util.Collection;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -28,28 +27,19 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /**
  * The test shows that the WalWritingRate metric is not calculated when walMode in all modes.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "walMode={0}")
+@EnumSource(value = WALMode.class, names = {"NONE"}, mode = EnumSource.Mode.EXCLUDE)
 public class IoDatastorageMetricsTest extends GridCommonAbstractTest {
-
     /** WALMode. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public WALMode walMode;
-
-    /** WALMode values. */
-    @Parameterized.Parameters(name = "walMode={0}")
-    public static Collection<Object> parameters() {
-        return Arrays.asList(
-            WALMode.FSYNC,
-            WALMode.BACKGROUND,
-            WALMode.LOG_ONLY
-        );
-    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

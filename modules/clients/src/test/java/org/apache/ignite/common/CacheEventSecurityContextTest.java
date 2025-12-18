@@ -26,8 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -50,10 +48,11 @@ import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Assume;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static com.google.common.collect.ImmutableSet.of;
 import static java.util.Arrays.asList;
@@ -84,9 +83,11 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_R
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REMOVE_VALUE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REPLACE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REPLACE_VALUE;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** Tests that security information specified in cache events belongs to the operation initiator. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "cacheAtomicity={0}, txConcurrency={1}, txIsolation={2}")
+@MethodSource("allTypesArgs")
 public class CacheEventSecurityContextTest extends AbstractEventSecurityContextTest {
     /** Counter of inserted cache keys. */
     private static final AtomicInteger KEY_COUNTER = new AtomicInteger();
@@ -111,31 +112,30 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
     }
 
     /** */
-    @Parameterized.Parameters(name = "cacheAtomicity={0}, txConcurrency={1}, txIsolation={2}")
-    public static Iterable<Object[]> data() {
-        List<Object[]> res = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         for (TransactionConcurrency txConcurrency : TransactionConcurrency.values()) {
             for (TransactionIsolation txIsolation : TransactionIsolation.values())
-                res.add(new Object[] {TRANSACTIONAL_CACHE, txIsolation, txConcurrency});
+                params.add(Arguments.of(TRANSACTIONAL_CACHE, txIsolation, txConcurrency));
         }
 
-        res.add(new Object[] {TRANSACTIONAL_CACHE, null, null});
-        res.add(new Object[] {ATOMIC_CACHE, null, null});
+        params.add(Arguments.of(TRANSACTIONAL_CACHE, null, null));
+        params.add(Arguments.of(ATOMIC_CACHE, null, null));
 
-        return res;
+        return params;
     }
 
     /** */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public String cacheName;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public TransactionIsolation txIsolation;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public TransactionConcurrency txConcurrency;
 
     /** */
@@ -226,7 +226,7 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
     /** Tests cache event security context in case operation is initiated from the REST client. */
     @Test
     public void testRestClient() throws Exception {
-        Assume.assumeTrue(txIsolation == null && txConcurrency == null);
+        assumeTrue(txIsolation == null && txConcurrency == null);
 
         operationInitiatorLogin = REST_CLIENT_LOGIN;
 
@@ -320,12 +320,10 @@ public class CacheEventSecurityContextTest extends AbstractEventSecurityContextT
 
         checkEvents(() -> cache.query(new ScanQuery<>()).getAll(), asList(EVT_CACHE_QUERY_EXECUTED, EVT_CACHE_QUERY_OBJECT_READ));
 
-        CacheEntryProcessor<Integer, String, Void> proc = new CacheEntryProcessor<Integer, String, Void>() {
-            @Override public Void process(MutableEntry<Integer, String> entry, Object... arguments) throws EntryProcessorException {
-                entry.setValue(entry.getValue() + "_new_val");
+        CacheEntryProcessor<Integer, String, Void> proc = (entry, arguments) -> {
+            entry.setValue(entry.getValue() + "_new_val");
 
-                return null;
-            }
+            return null;
         };
 
         checkEvents(ignite, k -> cache.invoke(k, proc), true, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT);

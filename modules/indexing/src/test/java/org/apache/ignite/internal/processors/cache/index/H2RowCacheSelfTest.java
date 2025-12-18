@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -46,14 +44,16 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jsr166.ConcurrentLinkedHashMap;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Tests H2RowCacheRegistry.
  */
-@RunWith(Parameterized.class)
 @SuppressWarnings({"unchecked", "ConstantConditions"})
+@ParameterizedClass(name = "persistenceEnabled={0}")
+@ValueSource(booleans = {true, false})
 public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int ENTRIES = 1_000;
@@ -62,13 +62,7 @@ public class H2RowCacheSelfTest extends AbstractIndexingCommonTest {
     private static final Random RND = new Random(System.currentTimeMillis());
 
     /** */
-    @Parameterized.Parameters(name = "persistenceEnabled={0}")
-    public static Collection<Object[]> testParams() {
-        return Arrays.asList(new Object[]{true}, new Object[]{false});
-    }
-
-    /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean persistenceEnabled;
 
     /** {@inheritDoc} */
