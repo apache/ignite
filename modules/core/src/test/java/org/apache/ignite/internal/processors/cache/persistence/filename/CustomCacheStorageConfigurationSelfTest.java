@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
@@ -224,6 +225,19 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
                     .setGroupName("grp-3")
                     .setStoragePaths(myPath2.getAbsolutePath(), myPath3.getAbsolutePath())
                     .setIndexPath(myPath.getAbsolutePath())),
+                IgniteCheckedException.class
+            );
+
+            assertThrowsWithCause(
+                () -> srv.createCache(new CacheConfiguration<>("my-cache4")
+                    .setStoragePaths(myPath2.getAbsolutePath(), myPath3.getAbsolutePath(), myPath2.getAbsolutePath())),
+                CacheException.class
+            );
+
+            assertThrowsWithCause(
+                () -> srv.createCache(new CacheConfiguration<>("my-cache4")
+                    .setGroupName("grp-4")
+                    .setStoragePaths(myPath2.getAbsolutePath(), myPath3.getAbsolutePath(), myPath2.getAbsolutePath())),
                 IgniteCheckedException.class
             );
         };
