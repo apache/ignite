@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.codegen;
 
 import org.apache.ignite.internal.CustomMapperEnumFieldsMessage;
-import org.apache.ignite.internal.TransactionIsolationCustomMapper;
+import org.apache.ignite.internal.TransactionIsolationEnumMapper;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.plugin.extensions.communication.mappers.CustomMapper;
+import org.apache.ignite.plugin.extensions.communication.mappers.EnumMapper;
 import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
@@ -33,7 +33,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
  */
 public class CustomMapperEnumFieldsMessageSerializer implements MessageSerializer {
     /** */
-    private final CustomMapper<TransactionIsolation> transactionIsolationMapper = new TransactionIsolationCustomMapper();
+    private final EnumMapper<TransactionIsolation> transactionIsolationMapper = new TransactionIsolationEnumMapper();
 
     /** */
     @Override public boolean writeTo(Message m, MessageWriter writer) {

@@ -34,10 +34,11 @@ import org.apache.ignite.transactions.TransactionIsolation;
 public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializer {
     /** */
     private final GridCacheOperation[] gridCacheOperationVals = GridCacheOperation.values();
+
     /** */
     private final TransactionIsolation[] transactionIsolationVals = TransactionIsolation.values();
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean writeTo(Message m, MessageWriter writer) {
         DefaultMapperEnumFieldsMessage msg = (DefaultMapperEnumFieldsMessage)m;
 
@@ -65,7 +66,7 @@ public class DefaultMapperEnumFieldsMessageSerializer implements MessageSerializ
         return true;
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public boolean readFrom(Message m, MessageReader reader) {
         DefaultMapperEnumFieldsMessage msg = (DefaultMapperEnumFieldsMessage)m;
 

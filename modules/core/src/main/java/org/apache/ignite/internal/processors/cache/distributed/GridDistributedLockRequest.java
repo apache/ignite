@@ -81,7 +81,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     @Order(value = 14, method = "txRead")
     private boolean isRead;
 
-    /** Transaction isolation message. */
+    /** Transaction isolation level. */
     @Order(15)
     private TransactionIsolation isolation;
 
@@ -357,14 +357,14 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @return Transaction isolation message.
+     * @return Transaction isolation level.
      */
     public TransactionIsolation isolation() {
         return isolation;
     }
 
     /**
-     * @param isolation Transaction isolation message.
+     * @param isolation Transaction isolation level.
      */
     public void isolation(TransactionIsolation isolation) {
         this.isolation = isolation;

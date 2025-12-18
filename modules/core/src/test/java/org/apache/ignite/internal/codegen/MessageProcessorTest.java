@@ -194,7 +194,7 @@ public class MessageProcessorTest {
     /** */
     @Test
     public void testCustomMapperEnumFieldsMessage() {
-        Compilation compilation = compile("CustomMapperEnumFieldsMessage.java", "TransactionIsolationCustomMapper.java");
+        Compilation compilation = compile("CustomMapperEnumFieldsMessage.java", "TransactionIsolationEnumMapper.java");
 
         assertThat(compilation).succeeded();
 

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.mappers.CustomMapper;
+import org.apache.ignite.plugin.extensions.communication.mappers.EnumMapper;
 import org.apache.ignite.transactions.TransactionIsolation;
 
-public class TransactionIsolationCustomMapper implements CustomMapper<TransactionIsolation> {
+public class TransactionIsolationEnumMapper implements EnumMapper<TransactionIsolation> {
     @Override public byte encode(TransactionIsolation val) {
         return 0;
     }

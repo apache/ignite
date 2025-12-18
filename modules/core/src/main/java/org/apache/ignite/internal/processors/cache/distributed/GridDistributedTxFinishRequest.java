@@ -95,7 +95,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     @Order(16)
     private byte flags;
 
-    /** Write synchronization mode wrapper message. */
+    /** Write synchronization mode. */
     @Order(value = 17)
     private CacheWriteSynchronizationMode syncMode;
 
@@ -159,14 +159,14 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
-     * @return Transaction write synchronization mode (can be null is message sent from old nodes).
+     * @return Transaction write synchronization mode.
      */
     @Nullable public final CacheWriteSynchronizationMode syncMode() {
         return syncMode;
     }
 
     /**
-     * @param syncMode Transaction write synchronization mode wrapper message.
+     * @param syncMode Transaction write synchronization mode.
      */
     public void syncMode(CacheWriteSynchronizationMode syncMode) {
         this.syncMode = syncMode;

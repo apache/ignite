@@ -22,7 +22,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 
 public class CustomMapperEnumFieldsMessage implements Message {
     @Order(0)
-    @CustomMapper("org.apache.ignite.internal.TransactionIsolationCustomMapper")
+    @CustomMapper("org.apache.ignite.internal.TransactionIsolationEnumMapper")
     private TransactionIsolation txMode;
 
     public TransactionIsolation txMode() {

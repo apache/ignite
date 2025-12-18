@@ -66,7 +66,7 @@ package org.apache.ignite.plugin.extensions.communication.mappers;
  * @see org.apache.ignite.internal.CustomMapper
  * @see DefaultEnumMapper
  */
-public interface CustomMapper<T extends Enum<T>> {
+public interface EnumMapper<T extends Enum<T>> {
     /**
      * Encodes given enum value into a {@code byte} representation to be sent over the network.
      *

@@ -84,7 +84,7 @@ class MessageSerializerGenerator {
     private static final String METHOD_JAVADOC = "/** */";
 
     /** */
-    public static final String RETURN_FALSE_STMT = "return false;";
+    private static final String RETURN_FALSE_STMT = "return false;";
 
     /** Collection of lines for {@code writeTo} method. */
     private final List<String> write = new ArrayList<>();
@@ -416,16 +416,16 @@ class MessageSerializerGenerator {
                 if (custMapperAnn != null) {
                     String fullMapperName = custMapperAnn.value();
                     if (fullMapperName == null || fullMapperName.isEmpty())
-                        throw new IllegalArgumentException("Please specify a not-null not-empty CustomMapper class name");
+                        throw new IllegalArgumentException("Please specify a not-null not-empty EnumMapper class name");
 
-                    imports.add("org.apache.ignite.plugin.extensions.communication.mappers.CustomMapper");
+                    imports.add("org.apache.ignite.plugin.extensions.communication.mappers.EnumMapper");
                     imports.add(fullMapperName);
 
                     String simpleName = fullMapperName.substring(fullMapperName.lastIndexOf('.') + 1);
 
                     String mapperFieldName = enumFieldPrefix + "Mapper";
 
-                    fields.add("private final CustomMapper<" + enumName + "> " + mapperFieldName + " = new " + simpleName + "();");
+                    fields.add("private final EnumMapper<" + enumName + "> " + mapperFieldName + " = new " + simpleName + "();");
 
                     mapperCallStmnt = mapperFieldName + ".encode";
                 }
@@ -601,7 +601,6 @@ class MessageSerializerGenerator {
             }
 
             else if (enumType(type)) {
-                //TODO check CustomMapper annotation
                 String enumName = env.getTypeUtils().asElement(type).getSimpleName().toString();
 
                 char[] chars = enumName.toCharArray();
@@ -609,17 +608,10 @@ class MessageSerializerGenerator {
 
                 String enumFieldPrefix = new String(chars);
 
-                CustomMapper custMapperAnn = field.getAnnotation(CustomMapper.class);
+                boolean hasCustMapperAnn = field.getAnnotation(CustomMapper.class) != null;
 
-                String mapperCallStmnt;
-                String enumValsFieldName = null;
-
-                if (custMapperAnn == null) {
-                    mapperCallStmnt = "DefaultEnumMapper.INSTANCE.decode";
-                    enumValsFieldName = enumFieldPrefix + "Vals";
-                }
-                else
-                    mapperCallStmnt = enumFieldPrefix + "Mapper.decode";
+                String mapperCallStmnt = hasCustMapperAnn ? enumFieldPrefix + "Mapper.decode" : "DefaultEnumMapper.INSTANCE.decode";
+                String enumValsFieldName = hasCustMapperAnn ? null : enumFieldPrefix + "Vals";
 
                 returnFalseIfEnumReadFailed(name, mapperCallStmnt, enumValsFieldName);
             }
@@ -795,8 +787,11 @@ class MessageSerializerGenerator {
         return sb.toString();
     }
 
-    /** Write header of serializer class: license, imports, class declaration. */
+    /** Write serializer class fields: enum values, custom enum mappers. */
     private void writeClassFields(Writer writer) throws IOException {
+        if (fields.isEmpty())
+            return;
+
         indent = 1;
 
         for (String field: fields) {
