@@ -18,9 +18,9 @@
 
 package org.apache.ignite.cache.store;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -31,16 +31,15 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Checks that array keys are supported.
  */
-@RunWith(Parameterized.class)
 public class StoreArrayKeyTest extends GridCommonAbstractTest {
     /** Cache. */
     private static final String CACHE = "cache-1";
@@ -51,49 +50,32 @@ public class StoreArrayKeyTest extends GridCommonAbstractTest {
     /** Node 1. */
     private IgniteEx node1;
 
-    /** Node 2. */
-    private IgniteEx node2;
-
-    /** First key. */
-    @Parameterized.Parameter(0)
-    public Object firstKey;
-
-    /** Second key. */
-    @Parameterized.Parameter(1)
-    public Object secondKey;
-
-    /** Like first key but other object. */
-    @Parameterized.Parameter(2)
-    public Object likeFirstKey;
-
-    /**
-     *
-     */
-    @Parameterized.Parameters()
-    public static Collection<Object[]> dataset() {
-        return Arrays.asList(
-            new byte[][] {new byte[] {1, 2, 3}, new byte[] {3, 2, 1}, new byte[] {1, 2, 3}},
-            new short[][] {new short[] {1, 2, 3}, new short[] {3, 2, 1}, new short[] {1, 2, 3}},
-            new int[][] {new int[] {1, 2, 3}, new int[] {3, 2, 1}, new int[] {1, 2, 3}},
-            new long[][] {new long[] {1, 2, 3}, new long[] {3, 2, 1}, new long[] {1, 2, 3}},
-            new float[][] {new float[] {1, 2, 3}, new float[] {3, 2, 1}, new float[] {1, 2, 3}},
-            new double[][] {new double[] {1, 2, 3}, new double[] {3, 2, 1}, new double[] {1, 2, 3}},
-            new char[][] {new char[] {1, 2, 3}, new char[] {3, 2, 1}, new char[] {1, 2, 3}},
-            new boolean[][] {new boolean[] {true, false, true}, new boolean[] {false, true, false}, new boolean[] {true, false, true}},
-            new String[][] {new String[] {"a", "b", "c"}, new String[] {"c", "b", "a"}, new String[] {"a", "b", "c"}},
-            new Object[][] {
-                new String[][] {
-                    new String[] {"a", "b", null},
-                    new String[] {"a", null, "c"},
-                    new String[] {null, "b", "c"}
+    /** */
+    private static Collection<Arguments> allTypesArgs() {
+        return List.of(
+            Arguments.of(new byte[] {1, 2, 3}, new byte[] {3, 2, 1}, new byte[] {1, 2, 3},
+            Arguments.of(new short[] {1, 2, 3}, new short[] {3, 2, 1}, new short[] {1, 2, 3}),
+            Arguments.of(new int[] {1, 2, 3}, new int[] {3, 2, 1}, new int[] {1, 2, 3}),
+            Arguments.of(new long[] {1, 2, 3}, new long[] {3, 2, 1}, new long[] {1, 2, 3}),
+            Arguments.of(new float[] {1, 2, 3}, new float[] {3, 2, 1}, new float[] {1, 2, 3}),
+            Arguments.of(new double[] {1, 2, 3}, new double[] {3, 2, 1}, new double[] {1, 2, 3}),
+            Arguments.of(new char[] {1, 2, 3}, new char[] {3, 2, 1}, new char[] {1, 2, 3}),
+            Arguments.of(new boolean[] {true, false, true}, new boolean[] {false, true, false}, new boolean[] {true, false, true}),
+            Arguments.of(new String[] {"a", "b", "c"}, new String[] {"c", "b", "a"}, new String[] {"a", "b", "c"}),
+            Arguments.of(
+                new String[][]{
+                    new String[]{"a", "b", null},
+                    new String[]{"a", null, "c"},
+                    new String[]{null, "b", "c"}
                 },
                 new String[] {null, null, null},
                 new String[][] {
                     new String[] {"a", "b", null},
                     new String[] {"a", null, "c"},
                     new String[] {null, "b", "c"}
-                }}
-        );
+                }
+            )
+        ));
     }
 
     /** {@inheritDoc} */
@@ -122,10 +104,10 @@ public class StoreArrayKeyTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         node1 = startGrid(0);
-        node2 = startGrid(1);
+        startGrid(1);
 
         node1.cluster().state(ClusterState.ACTIVE);
     }
@@ -133,7 +115,7 @@ public class StoreArrayKeyTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         stopAllGrids();
         cleanPersistenceDir();
@@ -142,8 +124,9 @@ public class StoreArrayKeyTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Test
-    public void shouldReadWriteKey() {
+    @ParameterizedTest
+    @MethodSource("allTypesArgs")
+    public void shouldReadWriteKey(Object firstKey, Object secondKey, Object likeFirstKey) {
         IgniteCache<Object, Object> cache = node1.getOrCreateCache(CACHE);
 
         cache.put(firstKey, 1);
@@ -164,8 +147,9 @@ public class StoreArrayKeyTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Test
-    public void shouldRemoveBySameKey() {
+    @ParameterizedTest
+    @MethodSource("allTypesArgs")
+    public void shouldRemoveBySameKey(Object firstKey, Object secondKey, Object likeFirstKey) {
         IgniteCache<Object, Object> cache = node1.getOrCreateCache(CACHE);
 
         cache.put(firstKey, 1);
@@ -183,8 +167,9 @@ public class StoreArrayKeyTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Test
-    public void shouldRemoveAllCache() {
+    @ParameterizedTest
+    @MethodSource("allTypesArgs")
+    public void shouldRemoveAllCache(Object firstKey) {
         IgniteCache<Object, Object> cache = node1.getOrCreateCache(CACHE);
 
         cache.put(firstKey, "val");
@@ -201,8 +186,9 @@ public class StoreArrayKeyTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Test
-    public void shouldClearCache() {
+    @ParameterizedTest
+    @MethodSource("allTypesArgs")
+    public void shouldClearCache(Object firstKey) {
         IgniteCache<Object, Object> cache = node1.getOrCreateCache(CACHE);
 
         cache.put(firstKey, "val");

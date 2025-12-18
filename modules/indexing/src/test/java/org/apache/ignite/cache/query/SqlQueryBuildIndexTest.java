@@ -39,12 +39,10 @@ import org.apache.ignite.internal.cache.query.index.IndexProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** */
-@RunWith(Parameterized.class)
 public class SqlQueryBuildIndexTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
@@ -57,16 +55,6 @@ public class SqlQueryBuildIndexTest extends GridCommonAbstractTest {
 
     /** */
     private static final int CNT = 10_000;
-
-    /** */
-    @Parameterized.Parameter
-    public String qryNode;
-
-    /** */
-    @Parameterized.Parameters(name = "qryNode={0}")
-    public static Object[] parameters() {
-        return new Object[] {"CRD", "CLN"};
-    }
 
     /**
      * {@inheritDoc}
@@ -114,13 +102,14 @@ public class SqlQueryBuildIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testConcurrentCreateIndex() throws Exception {
+    @ParameterizedTest(name = "qryNode={0}")
+    @ValueSource(strings = {"CRD", "CLN"})
+    public void testConcurrentCreateIndex(String qryNode) throws Exception {
         IgniteEx crd = startGrids(3);
 
         crd.cluster().state(ClusterState.ACTIVE);
 
-        IgniteCache<Long, Integer> cache = cache();
+        IgniteCache<Long, Integer> cache = cache(qryNode);
 
         insertData();
 
@@ -195,7 +184,7 @@ public class SqlQueryBuildIndexTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private IgniteCache<Long, Integer> cache() throws Exception {
+    private IgniteCache<Long, Integer> cache(String qryNode) throws Exception {
         Ignite n = "CRD".equals(qryNode) ? grid(0) : startClientGrid();
         return n.cache(CACHE);
     }

@@ -17,25 +17,20 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.util.Arrays;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
 
 /** Base test to check both mode for {@link IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS}. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "useBinaryArrays = {0}")
+@ValueSource(booleans = {true, false})
 public abstract class AbstractBinaryArraysTest extends GridCommonAbstractTest {
-    /** Generates values for the {@link #useBinaryArrays} parameter. */
-    @Parameterized.Parameters(name = "useBinaryArrays = {0}")
-    public static Iterable<Object[]> useBinaryArrays() {
-        return Arrays.asList(new Object[][] {{true}, {false}});
-    }
-
     /** @see IgniteSystemProperties#IGNITE_USE_BINARY_ARRAYS */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean useBinaryArrays;
 
     /** {@inheritDoc} */

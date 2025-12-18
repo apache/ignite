@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -42,11 +43,14 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "innerObjectType={0}, outerObjectType={1}, isCompactFooterEnabled={2}, serializationMode={3}")
+@MethodSource("allTypesArgs")
 public class CrossObjectReferenceSerializationTest extends GridCommonAbstractTest {
     /** */
     private static boolean prevFieldsSortedOrderFlag;
@@ -64,36 +68,35 @@ public class CrossObjectReferenceSerializationTest extends GridCommonAbstractTes
     private static ClientCache<Object, Object> cliCache;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public ObjectType innerObjType;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public ObjectType outerObjType;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean isCompactFooterEnabled;
 
     /** */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public SerializationMode serializationMode;
 
     /** Test parameters. */
-    @Parameterized.Parameters(name = "innerObjectType={0}, outerObjectType={1}, isCompactFooterEnabled={2}, serializationMode={3}")
-    public static Iterable<Object[]> parameters() {
-        List<Object[]> res = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         for (ObjectType innerObjType : ObjectType.values()) {
             for (ObjectType outerObjType : ObjectType.values()) {
                 for (boolean isCompactFooterEnabled : new boolean[] {true, false}) {
                     for (SerializationMode serializationMode : SerializationMode.values())
-                        res.add(new Object[] {innerObjType, outerObjType, isCompactFooterEnabled, serializationMode});
+                        params.add(Arguments.of(innerObjType, outerObjType, isCompactFooterEnabled, serializationMode));
                 }
             }
         }
 
-        return res;
+        return params;
     }
 
     /** {@inheritDoc} */

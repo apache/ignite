@@ -30,8 +30,10 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -40,7 +42,8 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Data replication operations test.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "binary={0}, cacheMode={1}")
+@MethodSource("allTypesArgs")
 public class DataReplicationOperationsTest extends AbstractThinClientTest {
     /** Keys count. */
     private static final int KEYS_CNT = 10;
@@ -58,21 +61,19 @@ public class DataReplicationOperationsTest extends AbstractThinClientTest {
     private final GridCacheVersion otherVer = new GridCacheVersion(1, 1, 1, 2);
 
     /** {@code True} if operate with binary objects. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean binary;
 
     /** Cache mode. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public CacheAtomicityMode mode;
 
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "binary={0}, cacheMode={1}")
-    public static Collection<Object[]> parameters() {
-        List<Object[]> params = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         for (boolean binary : new boolean[]{false, true})
             for (CacheAtomicityMode mode : new CacheAtomicityMode[]{TRANSACTIONAL, ATOMIC})
-                params.add(new Object[]{binary, mode});
+                params.add(Arguments.of(binary, mode));
 
         return params;
     }
