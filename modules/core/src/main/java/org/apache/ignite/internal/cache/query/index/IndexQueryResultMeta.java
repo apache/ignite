@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.cache.query.index;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -107,7 +108,7 @@ public class IndexQueryResultMeta implements Message {
         assert idxDefs == null : "Index definitions should not be initialized yet.";
         assert idxDefsMap == null : "Index definitions map should not be initialized yet.";
 
-        this.idxNames = idxNames;
+        this.idxNames = idxNames == null ? Collections.emptyList() : idxNames;
     }
 
     /** @return Index definitions with proper order. */
@@ -122,12 +123,11 @@ public class IndexQueryResultMeta implements Message {
      * Should be called once and after the setting of the index names.
      */
     public void orderedIndexDefinitions(@Nullable List<IndexKeyDefinition> idxDefs) {
-        assert idxDefs != null || idxNames == null : "Both index names and index definitions must be null or not null.";
-        assert idxDefs == null || idxNames.size() == idxDefs.size() : "Number of index names and index definitions must be equal.";
-
         if (idxDefs == null)
-            return;
+            idxDefs = Collections.emptyList();
 
+        assert idxNames != null : "The index names should be initialized already.";
+        assert idxNames.size() == idxDefs.size() : "Number of index names and index definitions must be equal.";
         assert idxDefsMap == null : "Index definitions map should not be initialized yet.";
 
         idxDefsMap = U.newLinkedHashMap(idxDefs.size());
