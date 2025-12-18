@@ -24,14 +24,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 /**
  * Test suite to check that user-defined parameters (marked as {@link org.apache.ignite.configuration.SerializeSeparately})
  * for static cache configurations are not explicitly deserialized on non-affinity nodes.
  */
-@RunWith(Parameterized.class)
 public class CacheConfigurationSerializationOnDiscoveryTest extends CacheConfigurationSerializationAbstractTest {
     /** Caches. */
     private CacheConfiguration[] caches;

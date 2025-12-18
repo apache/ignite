@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -42,13 +41,13 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.util.typedef.CAX;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -57,20 +56,15 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * TTL manager self test.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "persistenceEnabled={0}")
+@ValueSource(booleans = {true, false})
 public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
     /** Test cache mode. */
     protected CacheMode cacheMode;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean pds;
-
-    /** */
-    @Parameterized.Parameters(name = "pds={0}")
-    public static Collection<?> parameters() {
-        return F.asList(false, true);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

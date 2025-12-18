@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.metric;
 
-import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
+
 import com.google.common.collect.Iterators;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterState;
@@ -31,18 +33,22 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.metric.impl.MetricUtils;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.HistogramMetric;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "cacheMode={0},nearEnabled={1}")
+@MethodSource("allTypesArgs")
 public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_GETS = "CacheGets";
@@ -57,22 +63,19 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
     public static final long[] BOUNDS = new long[] {50, 100};
 
     /** Cache modes. */
-    @Parameterized.Parameters(name = "cacheMode={0},nearEnabled={1}")
-    public static Iterable<Object[]> params() {
-        return Arrays.asList(
-            new Object[] {CacheMode.PARTITIONED, false},
-            new Object[] {CacheMode.PARTITIONED, true},
-            new Object[] {CacheMode.REPLICATED, false},
-            new Object[] {CacheMode.REPLICATED, true}
-        );
+    private static Stream<Arguments> allTypesArgs() {
+        return GridTestUtils.cartesianProduct(
+                List.of(CacheMode.PARTITIONED, CacheMode.REPLICATED),
+                List.of(true, false)
+        ).stream().map(Arguments::of);
     }
 
     /** . */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public CacheMode mode;
 
     /** Use index. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean nearEnabled;
 
     /** {@inheritDoc} */
