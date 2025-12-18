@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
+
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -38,18 +39,20 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.util.AttributeNodeFilter;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.internal.processors.cache.distributed.CachePartitionLossWithPersistenceTest.checkLostPartitionAcrossCluster;
 
-/**
- *
- */
-@RunWith(Parameterized.class)
+/** */
+@ParameterizedClass(name = "nonAffIdx={0}, startClientCache={1}, dfltRegionPersistence={2}, clientIdx={3}")
+@MethodSource("allTypesArgs")
 public class CachePartitionLossWithRestartsTest extends GridCommonAbstractTest {
     /** */
     private static final int PARTS_CNT = 32;
@@ -58,45 +61,28 @@ public class CachePartitionLossWithRestartsTest extends GridCommonAbstractTest {
     private static final String START_CACHE_ATTR = "has_cache";
 
     /** Possible values: -1, 0, 2 */
-    @Parameterized.Parameter(value = 0)
+    @Parameter(value = 0)
     public int nonAffIdx;
 
     /** Possible values: true, false */
-    @Parameterized.Parameter(value = 1)
+    @Parameter(value = 1)
     public boolean startClientCache;
 
     /** Possible values: true, false */
-    @Parameterized.Parameter(value = 2)
+    @Parameter(value = 2)
     public boolean dfltRegionPersistence;
 
     /** Possible values: 3, -1 */
-    @Parameterized.Parameter(value = 3)
+    @Parameter(value = 3)
     public int clientIdx;
 
-    /** */
-    @Parameterized.Parameters(name = "{0} {1} {2}")
-    public static List<Object[]> parameters() {
-        ArrayList<Object[]> params = new ArrayList<>();
-
-        for (boolean persistent : new boolean[] {false, true}) {
-            params.add(new Object[] {-1, false, persistent, 3});
-            params.add(new Object[] {0, false, persistent, 3});
-            params.add(new Object[] {2, false, persistent, 3});
-
-            params.add(new Object[] {-1, false, persistent, -1});
-            params.add(new Object[] {0, false, persistent, -1});
-            params.add(new Object[] {2, false, persistent, -1});
-
-            params.add(new Object[] {-1, true, persistent, 3});
-            params.add(new Object[] {0, true, persistent, 3});
-            params.add(new Object[] {2, true, persistent, 3});
-
-            params.add(new Object[] {-1, true, persistent, -1});
-            params.add(new Object[] {0, true, persistent, -1});
-            params.add(new Object[] {2, true, persistent, -1});
-        }
-
-        return params;
+    private static Stream<Arguments> allTypesArgs() {
+        return GridTestUtils.cartesianProduct(
+                List.of(-1, 0, 2), // nonAffIdx
+                List.of(true, false), // startClientCache
+                List.of(true, false), // dfltRegionPersistence
+                List.of(3, -1) // clientIdx
+        ).stream().map(Arguments::of);
     }
 
     /** {@inheritDoc} */

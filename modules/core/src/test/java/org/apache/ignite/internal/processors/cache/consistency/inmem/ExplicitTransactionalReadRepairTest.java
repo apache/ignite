@@ -43,8 +43,8 @@ public class ExplicitTransactionalReadRepairTest extends AbstractFullSetReadRepa
     /** Test parameters. */
     private static Stream<Arguments> allTypesArgs() {
         return GridTestUtils.cartesianProduct(
-                List.of(TransactionConcurrency.OPTIMISTIC, TransactionConcurrency.PESSIMISTIC),
-                List.of(TransactionIsolation.READ_COMMITTED, TransactionIsolation.SERIALIZABLE, TransactionIsolation.REPEATABLE_READ),
+                List.of(TransactionConcurrency.values()),
+                List.of(TransactionIsolation.values()),
                 List.of(true, false), // raw
                 List.of(true, false), // async
                 List.of(true, false), // misses

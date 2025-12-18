@@ -18,8 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -28,34 +29,36 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.apache.ignite.internal.util.lang.GridFunc.asList;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 
 /**
  * Test cache directory name validation.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "persistenceEnabled={0}, isGroupName={1}")
+@MethodSource("allTypesArgs")
 public class CacheDirectoryNameTest extends GridCommonAbstractTest {
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean persistenceEnabled;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean checkGroup;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "persistenceEnabled={0}, isGroupName={1}")
-    public static Collection<?> parameters() {
-        return cartesianProduct(
-            asList(false, true), asList(false, true)
-        );
+    private static Stream<Arguments> allTypesArgs() {
+        return GridTestUtils.cartesianProduct(
+                List.of(true, false),
+                List.of(true, false)
+        ).stream().map(Arguments::of);
     }
 
     /** {@inheritDoc} */

@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -34,50 +36,37 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-/**
- *
- */
-@RunWith(Parameterized.class)
+/** */
 public class GridExchangeFreeCellularSwitchComplexOperationsTest extends GridExchangeFreeCellularSwitchAbstractTest {
-    /** Concurrency. */
-    @Parameterized.Parameter(0)
-    public TransactionConcurrency concurrency;
+    private static Stream<Arguments> allTypesArgs() {
+        Collection<Object[]> res = GridTestUtils.cartesianProduct(
+                List.of(TransactionConcurrency.values()),
+                List.of(TransactionIsolation.values()),
+                List.of(TransactionCoordinatorNode.values())
+        );
 
-    /** Isolation. */
-    @Parameterized.Parameter(1)
-    public TransactionIsolation isolation;
-
-    /** Start from. */
-    @Parameterized.Parameter(2)
-    public TransactionCoordinatorNode startFrom;
-
-    /**
-     *
-     */
-    @Parameterized.Parameters(name = "Isolation = {0}, Concurrency = {1}, Started from = {2}")
-    public static Collection<Object[]> runConfig() {
-        ArrayList<Object[]> params = new ArrayList<>();
-        for (TransactionConcurrency concurrency : TransactionConcurrency.values())
-            for (TransactionIsolation isolation : TransactionIsolation.values())
-                for (TransactionCoordinatorNode from : TransactionCoordinatorNode.values())
-                    params.add(new Object[] {concurrency, isolation, from});
-
-        return params;
+        return res.stream().map(Arguments::of);
     }
 
     /**
      * Test checks that txs will be recovered on Cellular switch if prepared, regardless of their content,
      * as well as upcoming txs will be committed.
      */
-    @Test
-    public void testComplexOperationsRecoveryOnCellularSwitch() throws Exception {
+    @ParameterizedTest(name = "Isolation = {0}, Concurrency = {1}, Started from = {2}")
+    @MethodSource("allTypesArgs")
+    public void testComplexOperationsRecoveryOnCellularSwitch(
+            TransactionConcurrency concurrency,
+            TransactionIsolation isolation,
+            TransactionCoordinatorNode startFrom
+    ) throws Exception {
         int nodes = 6;
 
         startGridsMultiThreaded(nodes);

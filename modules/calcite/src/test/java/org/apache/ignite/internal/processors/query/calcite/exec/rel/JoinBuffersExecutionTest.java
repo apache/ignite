@@ -33,8 +33,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static org.apache.calcite.rel.core.JoinRelType.ANTI;
 import static org.apache.calcite.rel.core.JoinRelType.FULL;
@@ -46,7 +44,6 @@ import static org.apache.calcite.rel.core.JoinRelType.SEMI;
 /**
  *
  */
-@RunWith(Parameterized.class)
 public class JoinBuffersExecutionTest extends AbstractExecutionTest {
     /** Tests merge join with input bigger that the buffer size. */
     @Test

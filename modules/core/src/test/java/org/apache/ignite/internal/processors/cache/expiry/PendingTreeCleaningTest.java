@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.expiry;
 
-import java.util.Collection;
 import javax.cache.configuration.FactoryBuilder;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
@@ -29,26 +28,19 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
-/**
- *
- */
-@RunWith(Parameterized.class)
+/** */
+@ParameterizedClass(name = "persistenceEnabled={0}")
+@ValueSource(booleans = {true, false})
 public class PendingTreeCleaningTest extends GridCommonAbstractTest {
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean pds;
-
-    /** */
-    @Parameterized.Parameters(name = "pds={0}")
-    public static Collection<?> parameters() {
-        return F.asList(false, true);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

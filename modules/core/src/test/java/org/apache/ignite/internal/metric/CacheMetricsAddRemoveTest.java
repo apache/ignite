@@ -65,7 +65,7 @@ public class CacheMetricsAddRemoveTest extends GridCommonAbstractTest {
     /** Cache modes. */
     private static Stream<Arguments> allTypesArgs() {
         return GridTestUtils.cartesianProduct(
-                List.of(CacheMode.PARTITIONED, CacheMode.REPLICATED),
+                List.of(CacheMode.values()),
                 List.of(true, false)
         ).stream().map(Arguments::of);
     }

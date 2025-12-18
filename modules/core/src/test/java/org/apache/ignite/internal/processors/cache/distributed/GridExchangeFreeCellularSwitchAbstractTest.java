@@ -330,7 +330,7 @@ public abstract class GridExchangeFreeCellularSwitchAbstractTest extends GridCom
     /**
      * Specifies node starts the transaction (originating node).
      */
-    protected enum TransactionCoordinatorNode {
+    public enum TransactionCoordinatorNode {
         /** Failed. */
         FAILED,
 
