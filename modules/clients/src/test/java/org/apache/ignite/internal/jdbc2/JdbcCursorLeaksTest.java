@@ -20,10 +20,9 @@ package org.apache.ignite.internal.jdbc2;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -32,49 +31,51 @@ import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonT
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 
 /**
  * Test for cursors leak on JDBC v2.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "remote={0}, multipleStatement={1}, distributedJoin={2}")
+@MethodSource("allTypesArgs")
 public class JdbcCursorLeaksTest extends AbstractIndexingCommonTest {
     /** Keys count. */
     private static final int KEYS = 100;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean remote;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean multipleStatement;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean distributedJoin;
 
     /**
      * @return Test parameters.
      */
-    @Parameterized.Parameters(name = "remote={0}, multipleStatement={1}, distributedJoin={2}")
-    public static Collection parameters() {
-        Set<Object[]> paramsSet = new LinkedHashSet<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         for (int i = 0; i < 8; ++i) {
-            Object[] params = new Object[3];
+            Object[] res = new Object[3];
 
-            params[0] = (i & 1) != 0;
-            params[1] = (i & 2) != 0;
-            params[2] = (i & 4) != 0;
+            res[0] = (i & 1) != 0;
+            res[1] = (i & 2) != 0;
+            res[2] = (i & 4) != 0;
 
-            paramsSet.add(params);
+            params.add(Arguments.of(params));
         }
 
-        return paramsSet;
+        return params;
     }
 
     /** {@inheritDoc} */

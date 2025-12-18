@@ -17,7 +17,6 @@
 
 package org.apache.ignite.client;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -57,44 +56,45 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Assume;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.events.EventType.EVTS_CACHE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * High Availability tests.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "partitionAware={0}, async={1}")
+@MethodSource("allTypesArgs")
 public class ReliabilityTest extends AbstractThinClientTest {
     /** Service name. */
     private static final String SERVICE_NAME = "svc";
 
     /** Partition awareness. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean partitionAware;
 
     /** Async operations. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean async;
 
     /**
      * @return List of parameters to test.
      */
-    @Parameterized.Parameters(name = "partitionAware={0}, async={1}")
-    public static Collection<Object[]> testData() {
-        List<Object[]> res = new ArrayList<>();
+    private static Stream<Arguments> allTypesArgs() {
+        Collection<Object[]> res = GridTestUtils.cartesianProduct(
+                List.of(true, false),
+                List.of(true, false)
+        );
 
-        res.add(new Object[] {false, false});
-        res.add(new Object[] {false, true});
-        res.add(new Object[] {true, false});
-        res.add(new Object[] {true, true});
-
-        return res;
+        return res.stream().map(Arguments::of);
     }
 
     /**
@@ -102,7 +102,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      */
     @Test
     public void testFailover() throws Exception {
-        Assume.assumeFalse(partitionAware);
+        assumeFalse(partitionAware);
 
         final int CLUSTER_SIZE = 3;
 
@@ -192,7 +192,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Test single server failover.
      */
     @Test
-    public void testSingleServerFailover() throws Exception {
+    public void testSingleServerFailover() {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setAddresses(cluster.clientAddresses().iterator().next()))
@@ -214,7 +214,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Test single server can be used multiple times in configuration.
      */
     @Test
-    public void testSingleServerDuplicatedFailover() throws Exception {
+    public void testSingleServerDuplicatedFailover() {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
                  .setAddresses(F.first(cluster.clientAddresses()))
@@ -262,7 +262,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      */
     @Test
     public void testExceptionInRetryPolicyPropagatesToCaller() {
-        Assume.assumeFalse(partitionAware);
+        assumeFalse(partitionAware);
 
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(getClientConfiguration()
@@ -369,7 +369,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Test that failover doesn't lead to silent query inconsistency.
      */
     @Test
-    public void testQueryConsistencyOnFailover() throws Exception {
+    public void testQueryConsistencyOnFailover() {
         int CLUSTER_SIZE = 2;
 
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(CLUSTER_SIZE);
@@ -411,7 +411,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
     public void testTxWithIdIntersection() throws Exception {
         // Partition-aware client connects to all known servers at the start, and dropAllThinClientConnections
         // causes failure on all channels, so the logic in this test is not applicable.
-        Assume.assumeFalse(partitionAware);
+        assumeFalse(partitionAware);
 
         int CLUSTER_SIZE = 2;
 
@@ -480,7 +480,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
     @SuppressWarnings("ThrowableNotThrown")
     public void testReconnectionThrottling() throws Exception {
         // If partition awareness is enabled, channels are restored asynchronously without applying throttling.
-        Assume.assumeFalse(partitionAware);
+        assumeFalse(partitionAware);
 
         int throttlingRetries = 5;
         long throttlingPeriod = 3_000L;
@@ -646,8 +646,8 @@ public class ReliabilityTest extends AbstractThinClientTest {
      * Tests service proxy failover.
      */
     @Test
-    public void testServiceProxyFailover() throws Exception {
-        Assume.assumeTrue(partitionAware);
+    public void testServiceProxyFailover() {
+        assumeTrue(partitionAware);
 
         final int CLUSTER_SIZE = 3;
 
@@ -737,7 +737,7 @@ public class ReliabilityTest extends AbstractThinClientTest {
     }
 
     /** */
-    public static interface TestServiceInterface {
+    public interface TestServiceInterface {
         /** */
         public String testMethod(PersonExternalizable person);
     }

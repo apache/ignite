@@ -29,31 +29,18 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.TEST_PROCESS;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /** */
-@RunWith(Parameterized.class)
 public class DistributedProcessErrorHandlingTest extends GridCommonAbstractTest {
     /** */
     private static final int SRV_NODES = 3;
-
-    /** If {@code true} then client fails, otherwise server node fails. */
-    @Parameterized.Parameter
-    public boolean failClient;
-
-    /** */
-    @Parameterized.Parameters(name = "failClient={0}")
-    public static Iterable<Boolean> params() {
-        return F.asList(false, true);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
@@ -77,12 +64,13 @@ public class DistributedProcessErrorHandlingTest extends GridCommonAbstractTest 
     }
 
     /** */
-    @Test
-    public void testBackgroundExecFailureHandled() throws Exception {
+    @ParameterizedTest(name = "failClient={0}")
+    @ValueSource(booleans = {true, false})
+    public void testBackgroundExecFailureHandled(boolean failClient) throws Exception {
         checkDistributedProcess((ign, latch) ->
             new DistributedProcess<>(ign.context(), TEST_PROCESS,
                 req -> runAsync(() -> {
-                    failOnNode(ign);  // Fails processing request in a spawned thread.
+                    failOnNode(ign, failClient);  // Fails processing request in a spawned thread.
 
                     return 0;
                 }),
@@ -100,12 +88,13 @@ public class DistributedProcessErrorHandlingTest extends GridCommonAbstractTest 
     }
 
     /** */
-    @Test
-    public void testExecFailureHandled() throws Exception {
+    @ParameterizedTest(name = "failClient={0}")
+    @ValueSource(booleans = {true, false})
+    public void testExecFailureHandled(boolean failClient) throws Exception {
         checkDistributedProcess((ign, latch) ->
             new DistributedProcess<>(ign.context(), TEST_PROCESS,
                 req -> {
-                    failOnNode(ign);  // Fails processing request in the discovery thread.
+                    failOnNode(ign, failClient);  // Fails processing request in the discovery thread.
 
                     return new GridFinishedFuture<>(0);
                 },
@@ -123,8 +112,9 @@ public class DistributedProcessErrorHandlingTest extends GridCommonAbstractTest 
     }
 
     /** */
-    @Test
-    public void testFinishFailureHandled() throws Exception {
+    @ParameterizedTest(name = "failClient={0}")
+    @ValueSource(booleans = {true, false})
+    public void testFinishFailureHandled(boolean failClient) throws Exception {
         checkDistributedProcess((ign, latch) ->
             new DistributedProcess<>(ign.context(), TEST_PROCESS,
                 req -> new GridFinishedFuture<>(0),
@@ -132,7 +122,7 @@ public class DistributedProcessErrorHandlingTest extends GridCommonAbstractTest 
                     assertEquals(SRV_NODES, res.values().size());
                     latch.countDown();
 
-                    failOnNode(ign);
+                    failOnNode(ign, failClient);
                 }));
     }
 
@@ -160,7 +150,7 @@ public class DistributedProcessErrorHandlingTest extends GridCommonAbstractTest 
     }
 
     /** Checks whether to fail on specified node. */
-    private void failOnNode(IgniteEx ign) {
+    private void failOnNode(IgniteEx ign, boolean failClient) {
         if (failClient)
             assert !ign.configuration().isClientMode();
         else

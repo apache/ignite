@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client.thin;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -38,13 +37,15 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.junit.Assume;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Checks entry processor invocation for thin client.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "atomic: {0}")
+@ValueSource(booleans = {true, false})
 public class InvokeTest extends AbstractThinClientTest {
     /** */
     private static final int NODE_CNT = 3;
@@ -56,14 +57,8 @@ public class InvokeTest extends AbstractThinClientTest {
     private static ClientCache<Integer, Object> cache;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean atomic;
-
-    /** */
-    @Parameterized.Parameters(name = "Atomic: {0}")
-    public static Collection<Object> params() {
-        return F.asList(true, false);
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

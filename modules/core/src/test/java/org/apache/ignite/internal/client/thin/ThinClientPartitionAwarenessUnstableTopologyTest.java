@@ -19,10 +19,11 @@ package org.apache.ignite.internal.client.thin;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
+
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientConnectionException;
@@ -39,8 +40,10 @@ import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.mxbean.ClientProcessorMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.stream.IntStream.range;
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
@@ -50,24 +53,24 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Test partition awareness of thin client on unstable topology.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "sslEnabled={0},cache={1}")
+@MethodSource("allTypesArgs")
 public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClientAbstractPartitionAwarenessTest {
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean sslEnabled;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public String cacheName;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "sslEnabled={0},cache={1}")
-    public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {
-            {false, PART_CACHE_NAME},
-            {false, PART_CACHE_1_BACKUPS_NF_NAME},
-            {true, PART_CACHE_NAME}
-        });
+    private static Stream<Arguments> allTypesArgs() {
+        return Stream.of(
+            Arguments.of(false, PART_CACHE_NAME),
+            Arguments.of(false, PART_CACHE_1_BACKUPS_NF_NAME),
+            Arguments.of(true, PART_CACHE_NAME)
+        );
     }
 
     /** {@inheritDoc} */
@@ -331,7 +334,7 @@ public class ThinClientPartitionAwarenessUnstableTopologyTest extends ThinClient
         }, getClientConfiguration(0))) {
             GridNioServer<ByteBuffer> srv = getFieldValue(client.reliableChannel(), "connMgr", "srv");
 
-            // Make sure handshake data will not be recieved.
+            // Make sure handshake data will not be received.
             setFieldValue(srv, "skipRead", true);
 
             GridTestUtils.runAsync(() -> {

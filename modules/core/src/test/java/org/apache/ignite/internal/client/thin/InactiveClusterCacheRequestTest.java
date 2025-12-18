@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.client.thin;
 
-import java.util.List;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
@@ -28,25 +27,12 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** */
-@RunWith(Parameterized.class)
 public class InactiveClusterCacheRequestTest extends AbstractThinClientTest {
-    /** */
-    @Parameterized.Parameter
-    public boolean partitionAwarenessEnabled;
-
-    /** */
-    @Parameterized.Parameters(name = "partitionAwareness={0}")
-    public static List<Boolean> params() {
-        return F.asList(false, true);
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() {
         stopAllGrids();
@@ -65,8 +51,9 @@ public class InactiveClusterCacheRequestTest extends AbstractThinClientTest {
     }
 
     /** */
-    @Test
-    public void testCacheOperationReturnErrorOnInactiveCluster() throws Exception {
+    @ParameterizedTest(name = "partitionAwareness={0}")
+    @ValueSource(booleans = {true, false})
+    public void testCacheOperationReturnErrorOnInactiveCluster(boolean partitionAwarenessEnabled) throws Exception {
         startGrids(2);
 
         ClientConfiguration ccfg = getClientConfiguration(grid(0), grid(1))
