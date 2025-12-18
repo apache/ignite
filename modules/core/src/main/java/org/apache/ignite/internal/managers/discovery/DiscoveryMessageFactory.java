@@ -23,6 +23,7 @@ import org.apache.ignite.internal.codegen.TcpDiscoveryClientPingRequestSerialize
 import org.apache.ignite.internal.codegen.TcpDiscoveryClientPingResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryConnectionCheckMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryHandshakeRequestSerializer;
+import org.apache.ignite.internal.codegen.TcpDiscoveryHandshakeResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryLoopbackProblemMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryPingRequestSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryPingResponseSerializer;
@@ -35,12 +36,11 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingReques
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
-import org.apache.ignite.internal.codegen.TcpDiscoveryHandshakeResponseSerializer;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 
 /** Message factory for discovery messages. */
 public class DiscoveryMessageFactory implements MessageFactoryProvider {
