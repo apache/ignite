@@ -392,7 +392,11 @@ class MessageSerializerGenerator {
 
                 imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
-                returnFalseIfWriteFailed(write, "writer.writeCollection", getExpr,
+                String collectionWriter = assignableFrom(erasedType(type), type(Set.class.getName()))
+                    ? "writer.writeSet"
+                    : "writer.writeCollection";
+
+                returnFalseIfWriteFailed(write, collectionWriter, getExpr,
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
 
@@ -588,7 +592,11 @@ class MessageSerializerGenerator {
 
                 assert typeArgs.size() == 1;
 
-                returnFalseIfReadFailed(name, "reader.readCollection",
+                String collectionReader = assignableFrom(erasedType(type), type(Set.class.getName()))
+                    ? "reader.readSet"
+                    : "reader.readCollection";
+
+                returnFalseIfReadFailed(name, collectionReader,
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
 
