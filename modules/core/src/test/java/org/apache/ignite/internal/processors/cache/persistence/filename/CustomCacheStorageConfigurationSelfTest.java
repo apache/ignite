@@ -113,6 +113,48 @@ public class CustomCacheStorageConfigurationSelfTest extends GridCommonAbstractT
 
     /** */
     @Test
+    public void testIncorrectSnapshotPathsThrows() {
+        assertThrows(
+            log,
+            () -> startGrid(new IgniteConfiguration().setDataStorageConfiguration(new DataStorageConfiguration()
+                .setStoragePath(myPath.getAbsolutePath())
+                .setExtraStoragePaths(myPath2.getAbsolutePath())
+                .setExtraSnapshotPaths("snppath1", "snppath2"))),
+            IgniteCheckedException.class,
+            "DataStorageConfiguration error. Size of extraSnapshotPaths must be equal to extraStoragePath"
+        );
+
+        assertThrows(
+            log,
+            () -> startGrid(new IgniteConfiguration().setDataStorageConfiguration(new DataStorageConfiguration()
+                .setStoragePath(myPath.getAbsolutePath())
+                .setExtraSnapshotPaths("snppath1"))),
+            IgniteCheckedException.class,
+            "DataStorageConfiguration error. Size of extraSnapshotPaths must be equal to extraStoragePath"
+        );
+
+        assertThrows(
+            log,
+            () -> startGrid(new IgniteConfiguration().setDataStorageConfiguration(new DataStorageConfiguration()
+                .setStoragePath(myPath.getAbsolutePath())
+                .setExtraSnapshotPaths("snppath1", "snppath2"))),
+            IgniteCheckedException.class,
+            "DataStorageConfiguration error. Size of extraSnapshotPaths must be equal to extraStoragePath"
+        );
+
+        assertThrows(
+            log,
+            () -> startGrid(new IgniteConfiguration().setDataStorageConfiguration(new DataStorageConfiguration()
+                .setStoragePath(myPath.getAbsolutePath())
+                .setExtraStoragePaths(myPath2.getAbsolutePath(), myPath3.getAbsolutePath())
+                .setExtraSnapshotPaths("snppath1", "snppath1"))),
+            IgniteCheckedException.class,
+            "DataStorageConfiguration contains duplicates [extraSnapshotPaths="
+        );
+    }
+
+    /** */
+    @Test
     public void testCacheUnknownStoragePathThrows() throws Exception {
         ConsumerX<IgniteEx> check = srv -> {
             assertThrowsWithCause(
