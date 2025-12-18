@@ -1985,74 +1985,78 @@ public class JdbcThinConnection implements Connection {
      */
     private IgniteProductVersion connectInBestEffortAffinityMode(
         IgniteProductVersion baseEndpointVer) throws SQLException {
-        List<Exception> exceptions = null;
+        try {
+            List<Exception> exceptions = null;
 
-        for (int i = 0; i < connProps.getAddresses().length; i++) {
-            HostAndPortRange srv = connProps.getAddresses()[i];
+            for (int i = 0; i < connProps.getAddresses().length; i++) {
+                HostAndPortRange srv = connProps.getAddresses()[i];
 
-            try {
-                InetAddress[] addrs = InetAddress.getAllByName(srv.host());
+                try {
+                    InetAddress[] addrs = InetAddress.getAllByName(srv.host());
 
-                for (InetAddress addr : addrs) {
-                    for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
-                        try {
-                            JdbcThinTcpIo cliIo =
-                                new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port), ctx, 0);
+                    for (InetAddress addr : addrs) {
+                        for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
+                            try {
+                                JdbcThinTcpIo cliIo =
+                                    new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port), ctx, 0);
 
-                            if (!cliIo.isPartitionAwarenessSupported()) {
-                                cliIo.close();
+                                if (!cliIo.isPartitionAwarenessSupported()) {
+                                    cliIo.close();
 
-                                throw new SQLException("Failed to connect to Ignite node [url=" +
-                                    connProps.getUrl() + "]. address = [" + addr + ':' + port + "]." +
-                                    "Node doesn't support partition awareness mode.",
-                                    INTERNAL_ERROR);
+                                    throw new SQLException("Failed to connect to Ignite node [url=" +
+                                        connProps.getUrl() + "]. address = [" + addr + ':' + port + "]." +
+                                        "Node doesn't support partition awareness mode.",
+                                        INTERNAL_ERROR);
+                                }
+
+                                IgniteProductVersion endpointVer = cliIo.igniteVersion();
+
+                                if (baseEndpointVer != null && baseEndpointVer.compareTo(endpointVer) > 0) {
+                                    cliIo.close();
+
+                                    throw new SQLException("Failed to connect to Ignite node [url=" +
+                                        connProps.getUrl() + "], address = [" + addr + ':' + port + "]," +
+                                        "the node version [" + endpointVer + "] " +
+                                        "is smaller than the base one [" + baseEndpointVer + "].",
+                                        INTERNAL_ERROR);
+                                }
+
+                                cliIo.timeout(netTimeout);
+
+                                JdbcThinTcpIo ioToSameNode = ios.putIfAbsent(cliIo.nodeId(), cliIo);
+
+                                // This can happen if the same node has several IPs or if connection manager background
+                                // timer task runs concurrently.
+                                if (ioToSameNode != null)
+                                    cliIo.close();
+                                else
+                                    connCnt.incrementAndGet();
+
+                                return cliIo.igniteVersion();
                             }
+                            catch (Exception exception) {
+                                if (exceptions == null)
+                                    exceptions = new ArrayList<>();
 
-                            IgniteProductVersion endpointVer = cliIo.igniteVersion();
-
-                            if (baseEndpointVer != null && baseEndpointVer.compareTo(endpointVer) > 0) {
-                                cliIo.close();
-
-                                throw new SQLException("Failed to connect to Ignite node [url=" +
-                                    connProps.getUrl() + "], address = [" + addr + ':' + port + "]," +
-                                    "the node version [" + endpointVer + "] " +
-                                    "is smaller than the base one [" + baseEndpointVer + "].",
-                                    INTERNAL_ERROR);
+                                exceptions.add(exception);
                             }
-
-                            cliIo.timeout(netTimeout);
-
-                            JdbcThinTcpIo ioToSameNode = ios.putIfAbsent(cliIo.nodeId(), cliIo);
-
-                            // This can happen if the same node has several IPs or if connection manager background
-                            // timer task runs concurrently.
-                            if (ioToSameNode != null)
-                                cliIo.close();
-                            else
-                                connCnt.incrementAndGet();
-
-                            return cliIo.igniteVersion();
-                        }
-                        catch (Exception exception) {
-                            if (exceptions == null)
-                                exceptions = new ArrayList<>();
-
-                            exceptions.add(exception);
                         }
                     }
                 }
-            }
-            catch (Exception exception) {
-                if (exceptions == null)
-                    exceptions = new ArrayList<>();
+                catch (Exception exception) {
+                    if (exceptions == null)
+                        exceptions = new ArrayList<>();
 
-                exceptions.add(exception);
+                    exceptions.add(exception);
+                }
             }
+
+            handleConnectExceptions(exceptions);
         }
-
-        handleConnectExceptions(exceptions);
-
-        isTxAwareQueriesSupported = defaultIo().isTxAwareQueriesSupported();
+        finally {
+            if (!ios.isEmpty())
+                isTxAwareQueriesSupported = defaultIo().isTxAwareQueriesSupported();
+        }
 
         return null;
     }
