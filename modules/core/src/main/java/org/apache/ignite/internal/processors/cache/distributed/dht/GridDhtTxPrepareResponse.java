@@ -32,15 +32,12 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.mappers.EnumMapper;
-import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * DHT transaction prepare response.
  */
 public class GridDhtTxPrepareResponse extends GridDistributedTxPrepareResponse {
-
     /** Evicted readers. */
     @GridToStringInclude
     @Order(9)
