@@ -162,7 +162,7 @@ class KillCommandsTests {
         // Cancel first query.
         qryCanceler.accept(qryInfo);
 
-        checkRequestFutureMapEmpty(srvs, qryInfo.get1(), qryInfo.get3());
+        checkScanQueryResources(cli, srvs, qryInfo.get3());
 
         // Fetch of the next page should throw the exception. New page is delivered in parallel to iterating.
         try {
@@ -264,44 +264,6 @@ class KillCommandsTests {
             assertNotNull(futs);
             assertFalse(futs.containsKey(qryId));
         }
-    }
-
-    /**
-     * Checks that RequestFutureMap is empty on all nodes after query cancellation.
-     *
-     * @param srvs Server nodes.
-     * @param originNodeId Origin node ID.
-     * @param cancelledReqId Cancel request ID
-     */
-    private static void checkRequestFutureMapEmpty(
-            List<IgniteEx> srvs,
-            UUID originNodeId,
-            long cancelledReqId
-    ) throws Exception {
-        assertTrue(
-                "Cancelled request future was not removed",
-                GridTestUtils.waitForCondition(() -> {
-                    for (IgniteEx node : srvs) {
-                        int cacheId = CU.cacheId(DEFAULT_CACHE_NAME);
-
-                        GridCacheContext<?, ?> ctx =
-                                node.context().cache().context().cacheContext(cacheId);
-
-                        if (ctx == null)
-                            continue;
-
-                        Map<UUID, GridCacheQueryManager.RequestFutureMap> qryIters =
-                                GridTestUtils.getFieldValue(ctx.queries(), "qryIters");
-
-                        GridCacheQueryManager.RequestFutureMap futMap =
-                                qryIters.get(originNodeId);
-
-                        if (futMap != null && futMap.containsKey(cancelledReqId))
-                            return false;
-                    }
-                    return true;
-                }, TIMEOUT)
-        );
     }
 
     /**
