@@ -39,6 +39,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientAckResponse;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
@@ -141,6 +142,8 @@ public class TcpDiscoveryIoSession {
             out.write(MESSAGE_SERIALIZATION);
 
             serializeMessage((Message)msg, out);
+
+            out.flush();
         }
         catch (Exception e) {
             // Keep logic similar to `U.marshal(...)`.
@@ -270,7 +273,8 @@ public class TcpDiscoveryIoSession {
 
             out.write(msgBuf.array(), 0, msgBuf.position());
 
-            out.flush();
+            if (m instanceof TcpDiscoveryClientAckResponse)
+                out.flush();
         }
         while (!finished);
     }
