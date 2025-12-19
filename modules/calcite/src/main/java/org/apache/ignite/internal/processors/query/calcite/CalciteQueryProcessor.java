@@ -63,6 +63,9 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedConfigurationLifecycleListener;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -98,6 +101,7 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.CacheKey;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ExplainPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.FieldsMetadata;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgnitePlanner;
 import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteTypeCoercion;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MultiStepPlan;
 import org.apache.ignite.internal.processors.query.calcite.prepare.PrepareServiceImpl;
@@ -315,6 +319,29 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         }
 
         distrCfg = new DistributedCalciteConfiguration(ctx, log);
+
+        ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(new DistributedConfigurationLifecycleListener() {
+            @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
+                // No-op.
+            }
+
+            @Override public void onReadyToWrite() {
+                assert distrCfg.disabledRulesProperty() != null;
+
+                distrCfg.disabledRulesProperty().addListener(new DistributePropertyListener<>() {
+                    @Override public void onUpdate(String name, String[] oldVal, String[] newVal) {
+                        assert name != null;
+
+                        if (oldVal != null && F.compareArrays(oldVal, newVal) != 0) {
+                            log.warning("Cleaning Calcite's cache plan by setting changing of the property '"
+                                + distrCfg.disabledRulesProperty().getName() + "'.");
+
+                            qryPlanCache.clear();
+                        }
+                    }
+                });
+            }
+        });
     }
 
     /**
@@ -755,6 +782,11 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             timeout,
             fldsQry != null ? fldsQry.getQueryInitiatorId() : null
         );
+
+        String[] disbledRules = distrCfg.disabledRules();
+
+        if (!F.isEmpty(disbledRules))
+            qry.planningContext().addRulesFilter(new IgnitePlanner.DisabledRuleFilter(disbledRules));
 
         if (qrys != null)
             qrys.add(qry);

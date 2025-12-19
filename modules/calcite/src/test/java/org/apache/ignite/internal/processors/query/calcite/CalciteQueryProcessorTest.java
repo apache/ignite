@@ -44,11 +44,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
 import org.apache.ignite.internal.processors.query.calcite.exec.MailboxRegistryImpl;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Inbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
+import org.apache.ignite.internal.processors.query.calcite.rule.logical.ExposeIndexRule;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
@@ -1165,6 +1167,91 @@ public class CalciteQueryProcessorTest extends GridCommonAbstractTest {
             names.add(cursor.getFieldName(i));
 
         return names;
+    }
+
+    /**
+     * Tests the ability to disable planning rules globally.
+     *
+     * @see DistributedCalciteConfiguration#disabledRules()}.
+     */
+    @Test
+    public void testDisableRuleDistributedProperty() throws Exception {
+        sql( "drop table if exists test_tbl", true);
+        sql( "create table test_tbl (c1 int, c2 int, c3 int)", true);
+        sql( "create index idx2 on test_tbl(c2)", true);
+        sql( "create index idx3 on test_tbl(c3)", true);
+
+        assertQuery(client, "select * from test_tbl order by c2")
+            .matches(containsIndexScan("PUBLIC", "TEST_TBL", "IDX2"))
+            .matches(not(containsSubPlan("IgniteSort")))
+            .check();
+        assertQuery(client, "select * from test_tbl order by c3")
+            .matches(containsIndexScan("PUBLIC", "TEST_TBL", "IDX3"))
+            .matches(not(containsSubPlan("IgniteSort")))
+            .check();
+
+        DistributedChangeableProperty<String[]> prop = client.context().distributedConfiguration()
+            .property(DistributedCalciteConfiguration.DISABLED_RULES_PROPERTY_NAME);
+
+        assert prop != null;
+        assert prop.get() != null;
+        assert prop.get().length == 0;
+
+        // Disable index scanning at all.
+        assertTrue(prop.propagate(new String[]{ExposeIndexRule.INSTANCE.toString()}));
+
+        assertTrue(waitForCondition(
+            () -> {
+                for (Ignite g : G.allGrids()) {
+                    DistributedChangeableProperty<String[]> prop0 = ((IgniteEx)g).context().distributedConfiguration()
+                        .property(DistributedCalciteConfiguration.DISABLED_RULES_PROPERTY_NAME);
+
+                    if (F.isEmpty(prop0.get()))
+                        return false;
+                }
+
+                return true;
+            },
+            getTestTimeout()
+        ));
+
+        // Check that there are no index scans now.
+        assertQuery(client, "select * from test_tbl order by c2")
+            .matches(not(containsIndexScan("PUBLIC", "TEST_TBL", "IDX2")))
+            .matches(containsSubPlan("IgniteSort"))
+            .check();
+        assertQuery(client, "select * from test_tbl order by c3")
+            .matches(not(containsIndexScan("PUBLIC", "TEST_TBL", "IDX3")))
+            .matches(containsSubPlan("IgniteSort"))
+            .check();
+
+        // Swith on the index scanning back.
+        prop.propagate(new String[0]);
+
+        assertTrue(waitForCondition(
+            () -> {
+                for (Ignite g : G.allGrids()) {
+                    DistributedChangeableProperty<String[]> prop0 = ((IgniteEx)g).context().distributedConfiguration()
+                        .property(DistributedCalciteConfiguration.DISABLED_RULES_PROPERTY_NAME);
+
+                    if (!F.isEmpty(prop0.get()))
+                        return false;
+                }
+
+                return true;
+            },
+            getTestTimeout()
+        ));
+
+        // Check that the index are available again.
+        assertQuery(client, "select * from test_tbl order by c2")
+            .matches(containsIndexScan("PUBLIC", "TEST_TBL", "IDX2"))
+            .matches(not(containsSubPlan("IgniteSort")))
+            .check();
+        assertQuery(client, "select * from test_tbl order by c3")
+            .matches(containsIndexScan("PUBLIC", "TEST_TBL", "IDX3"))
+            .matches(not(containsSubPlan("IgniteSort")))
+            .check();
     }
 
     /** for test purpose only. */
