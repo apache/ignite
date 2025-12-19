@@ -670,8 +670,6 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
         }
 
-        addrs.clear();
-
         return new T2<>(false, null);
     }
 
