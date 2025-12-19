@@ -65,7 +65,7 @@ public class DistributedCalciteConfiguration extends DistributedSqlConfiguration
             prop -> disabledRules = prop,
             () -> new SimpleDistributedProperty<>(
                 DISABLED_RULES_PROPERTY_NAME,
-                str -> Stream.of(str.split(",")).map(String::trim).toArray(String[]::new),
+                str -> Stream.of(str.split(",")).filter(s -> !s.isBlank()).toArray(String[]::new),
                 "Comma-separated list of Calcite's disabled planning rules. NOTE: cleans the planning cache!"
             ),
             log
