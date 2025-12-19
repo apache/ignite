@@ -94,9 +94,7 @@ public class IndexQueryResultMeta implements Message {
 
     /** @return Index names with proper order. */
     public Collection<String> orderedIndexNames() {
-        assert idxDefsMap != null;
-
-        return idxDefsMap.keySet();
+        return idxDefsMap == null ? Collections.emptyList() : idxDefsMap.keySet();
     }
 
     /**
@@ -104,18 +102,14 @@ public class IndexQueryResultMeta implements Message {
      * Should be called once and before the setting of the definitions and the map.
      */
     public void orderedIndexNames(@Nullable List<String> idxNames) {
-        assert this.idxNames == null : "Index names should be set once.";
-        assert idxDefs == null : "Index definitions should not be initialized yet.";
-        assert idxDefsMap == null : "Index definitions map should not be initialized yet.";
+        idxDefsMap = null;
 
-        this.idxNames = idxNames == null ? Collections.emptyList() : idxNames;
+        this.idxNames = idxNames;
     }
 
     /** @return Index definitions with proper order. */
     public Collection<IndexKeyDefinition> orderedIndexDefinitions() {
-        assert idxDefsMap != null;
-
-        return idxDefsMap.values();
+        return idxDefsMap == null ? Collections.emptyList() : idxDefsMap.values();
     }
 
     /**
@@ -123,12 +117,11 @@ public class IndexQueryResultMeta implements Message {
      * Should be called once and after the setting of the index names.
      */
     public void orderedIndexDefinitions(@Nullable List<IndexKeyDefinition> idxDefs) {
-        if (idxDefs == null)
-            idxDefs = Collections.emptyList();
+        assert idxNames != null || idxDefs == null : "The index names should be initialized already.";
+        assert idxNames == null || idxNames.size() == idxDefs.size() : "Number of index names and index definitions must be equal.";
 
-        assert idxNames != null : "The index names should be initialized already.";
-        assert idxNames.size() == idxDefs.size() : "Number of index names and index definitions must be equal.";
-        assert idxDefsMap == null : "Index definitions map should not be initialized yet.";
+        if (idxDefs == null)
+            return;
 
         idxDefsMap = U.newLinkedHashMap(idxDefs.size());
 
