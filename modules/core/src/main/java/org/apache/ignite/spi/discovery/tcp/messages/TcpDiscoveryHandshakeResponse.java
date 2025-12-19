@@ -19,13 +19,12 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -48,9 +47,6 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
     /** Redirect addresses messages serialization holder. */
     @Order(value = 7, method = "redirectAddressesMessages")
     private @Nullable Collection<InetAddressMessage> redirectAddrsMsgs;
-
-    /** Redirect addresses. */
-    private @Nullable Collection<InetSocketAddress> redirectAddrs;
 
     /**
      * Default constructor for {@link DiscoveryMessageFactory}.
@@ -111,41 +107,33 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
 
     /** @return Socket addresses list for redirect. */
     public @Nullable Collection<InetSocketAddress> redirectAddresses() {
-        return redirectAddrs;
+        return F.isEmpty(redirectAddrsMsgs)
+            ? null
+            : F.transform(redirectAddrsMsgs, msg -> {
+                try {
+                    return new InetSocketAddress(msg.address(), msg.port());
+                }
+                catch (UnknownHostException e) {
+                    throw new IgniteException("Failed to read host address.", e);
+                }
+            });
     }
 
     /** @param sockAddrs Socket addresses list for redirect. */
     public void redirectAddresses(@Nullable Collection<InetSocketAddress> sockAddrs) {
-        redirectAddrs = sockAddrs;
+        redirectAddrsMsgs = sockAddrs == null
+            ? null
+            : F.viewReadOnly(sockAddrs, addr -> new InetAddressMessage(addr.getAddress(), addr.getPort()));
     }
 
     /** @return Collection of {@link InetAddressMessage}. */
     public @Nullable Collection<InetAddressMessage> redirectAddressesMessages() {
-        if (redirectAddrs == null)
-            return null;
-
-        return redirectAddrs.stream().map(addrs -> new InetAddressMessage(addrs.getAddress(), addrs.getPort()))
-            .collect(Collectors.toList());
+        return redirectAddrsMsgs;
     }
 
     /** @param redirectAddrsMsgs Collection of {@link InetAddressMessage}. */
     public void redirectAddressesMessages(@Nullable Collection<InetAddressMessage> redirectAddrsMsgs) {
-        if (redirectAddrsMsgs == null) {
-            redirectAddrs = null;
-
-            return;
-        }
-
-        redirectAddrs = new ArrayList<>(redirectAddrsMsgs.size());
-
-        redirectAddrsMsgs.forEach(aMsg -> {
-            try {
-                redirectAddrs.add(new InetSocketAddress(aMsg.address(), aMsg.port()));
-            }
-            catch (UnknownHostException e) {
-                throw new IgniteException("Failed to read host address.", e);
-            }
-        });
+        this.redirectAddrsMsgs = redirectAddrsMsgs;
     }
 
     /** @return Previous node aliveness flag. */
