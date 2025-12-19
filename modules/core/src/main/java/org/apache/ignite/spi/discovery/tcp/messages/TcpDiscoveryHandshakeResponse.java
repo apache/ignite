@@ -160,7 +160,7 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 9;
+        return 10;
     }
 
     /** {@inheritDoc} */
