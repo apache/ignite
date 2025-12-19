@@ -6110,7 +6110,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processDiscardMessage(TcpDiscoveryDiscardMessage msg) {
             assert msg != null;
 
-            IgniteUuid msgId = msg.msgId();
+            IgniteUuid msgId = msg.messageId();
 
             assert msgId != null;
 
