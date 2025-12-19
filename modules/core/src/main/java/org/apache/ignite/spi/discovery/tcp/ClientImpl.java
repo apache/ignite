@@ -739,13 +739,16 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(ses, ackTimeout0);
 
-                if (res.redirectAddresses() != null) {
+                // Convert the addresses once.
+                Collection<InetSocketAddress> redirectAddrs = res.redirectAddresses();
+
+                if (redirectAddrs != null) {
                     U.closeQuiet(sock);
 
                     if (log.isInfoEnabled())
-                        log.info("Reconnecting to the addresses of a proper DC [addrs=" + res.redirectAddresses() + ']');
+                        log.info("Reconnecting to the addresses of a proper DC [addrs=" + redirectAddrs + ']');
 
-                    T2<Boolean, T2<SocketStream, Integer>> redirectedRes = sendJoinRequests(recon, res.redirectAddresses());
+                    T2<Boolean, T2<SocketStream, Integer>> redirectedRes = sendJoinRequests(recon, redirectAddrs);
 
                     return redirectedRes.get2();
                 }
