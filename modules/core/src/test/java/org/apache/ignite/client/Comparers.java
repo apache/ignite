@@ -36,8 +36,8 @@ public final class Comparers {
 
         return Arrays.equals(a.getAddresses(), b.getAddresses()) &&
             a.isTcpNoDelay() == b.isTcpNoDelay() &&
-            a.getConnTimeout() == b.getConnTimeout() &&
-            a.getReqTimeout() == b.getReqTimeout() &&
+            a.getConnectionTimeout() == b.getConnectionTimeout() &&
+            a.getRequestTimeout() == b.getRequestTimeout() &&
             a.getSendBufferSize() == b.getSendBufferSize() &&
             a.getReceiveBufferSize() == b.getReceiveBufferSize();
     }

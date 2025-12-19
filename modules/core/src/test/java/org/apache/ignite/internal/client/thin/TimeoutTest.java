@@ -67,7 +67,7 @@ public class TimeoutTest extends AbstractThinClientTest {
 
     /** {@inheritDoc} */
     @Override protected ClientConfiguration getClientConfiguration() {
-        return super.getClientConfiguration().setConnTimeout(TIMEOUT).setReqTimeout(TIMEOUT);
+        return super.getClientConfiguration().setConnectionTimeout(TIMEOUT).setRequestTimeout(TIMEOUT);
     }
 
     /**

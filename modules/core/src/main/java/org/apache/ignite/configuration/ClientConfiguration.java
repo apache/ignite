@@ -230,16 +230,16 @@ public final class ClientConfiguration implements Serializable {
     }
 
     /**
-     * @deprecated Use {@link #getConnTimeout()} and {@link #getReqTimeout()} instead.
+     * @deprecated Use {@link #getConnectionTimeout()} and {@link #getRequestTimeout()} instead.
      * @return Send/receive timeout in milliseconds.
      */
     @Deprecated
     public int getTimeout() {
-        return Math.max(connTimeout, reqTimeout);
+        return reqTimeout;
     }
 
     /**
-     * @deprecated Use {@link #setConnTimeout(int)} and {@link #setReqTimeout(int)} instead.
+     * @deprecated Use {@link #setConnectionTimeout(int)} and {@link #setRequestTimeout(int)} instead.
      * @param timeout Send/receive timeout in milliseconds.
      * @return {@code this} for chaining.
      */
@@ -253,7 +253,7 @@ public final class ClientConfiguration implements Serializable {
     /**
      * @return Connection timeout in milliseconds. 0 means infinite.
      */
-    public int getConnTimeout() {
+    public int getConnectionTimeout() {
         return connTimeout;
     }
 
@@ -261,7 +261,7 @@ public final class ClientConfiguration implements Serializable {
      * @param connTimeout Connection timeout in milliseconds. 0 means infinite.
      * @return {@code this} for chaining.
      */
-    public ClientConfiguration setConnTimeout(int connTimeout) {
+    public ClientConfiguration setConnectionTimeout(int connTimeout) {
         this.connTimeout = connTimeout;
         return this;
     }
@@ -269,7 +269,7 @@ public final class ClientConfiguration implements Serializable {
     /**
      * @return Request timeout in milliseconds. 0 means infinite.
      */
-    public int getReqTimeout() {
+    public int getRequestTimeout() {
         return reqTimeout;
     }
 
@@ -277,7 +277,7 @@ public final class ClientConfiguration implements Serializable {
      * @param reqTimeout Request timeout in milliseconds. 0 means infinite.
      * @return {@code this} for chaining.
      */
-    public ClientConfiguration setReqTimeout(int reqTimeout) {
+    public ClientConfiguration setRequestTimeout(int reqTimeout) {
         this.reqTimeout = reqTimeout;
         return this;
     }

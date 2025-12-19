@@ -198,8 +198,8 @@ class TcpClientChannel implements ClientChannel, ClientMessageHandler, ClientCon
         Executor cfgExec = cfg.getAsyncContinuationExecutor();
         asyncContinuationExecutor = cfgExec != null ? cfgExec : ForkJoinPool.commonPool();
 
-        connTimeout = cfg.getConnTimeout();
-        reqTimeout = cfg.getReqTimeout();
+        connTimeout = cfg.getConnectionTimeout();
+        reqTimeout = cfg.getRequestTimeout();
 
         List<InetSocketAddress> addrs = cfg.getAddresses();
 

@@ -89,7 +89,7 @@ public class GridNioClientConnectionMultiplexer implements ClientConnectionMulti
         else
             filters = new GridNioFilter[] {codecFilter};
 
-        connTimeout = cfg.getConnTimeout();
+        connTimeout = cfg.getConnectionTimeout();
 
         try {
             srv = GridNioServer.<ByteBuffer>builder()
