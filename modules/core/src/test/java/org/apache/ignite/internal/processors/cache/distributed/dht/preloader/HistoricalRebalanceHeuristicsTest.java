@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterState;
@@ -33,9 +30,8 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
@@ -44,33 +40,15 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_
  * if number of updates to rebalance is greater than partition size, full rebalance should be used.
  */
 @WithSystemProperty(key = IGNITE_PDS_WAL_REBALANCE_THRESHOLD, value = "0")
-@RunWith(Parameterized.class)
 public class HistoricalRebalanceHeuristicsTest extends GridCommonAbstractTest {
     /** Initial keys. */
     private static final int INITIAL_KEYS = 5000;
-
-    /** Atomicity mode. */
-    @Parameterized.Parameter()
-    public boolean historical;
 
     /** Full rebalancing happened flag. */
     private final AtomicBoolean fullRebalancingHappened = new AtomicBoolean(false);
 
     /** Historical rebalancing happened flag. */
     private final AtomicBoolean historicalRebalancingHappened = new AtomicBoolean(false);
-
-    /**
-     * @return List of versions pairs to test.
-     */
-    @Parameterized.Parameters(name = "historical = {0}")
-    public static Collection<Object[]> testData() {
-        List<Object[]> res = new ArrayList<>();
-
-        res.add(new Object[] {true});
-        res.add(new Object[] {false});
-
-        return res;
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -141,8 +119,9 @@ public class HistoricalRebalanceHeuristicsTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Test
-    public void testPutRemoveReorderingConsistency() throws Exception {
+    @ParameterizedTest(name = "historical = {0}")
+    @ValueSource(booleans = {true, false})
+    public void testPutRemoveReorderingConsistency(boolean historical) throws Exception {
         IgniteEx grid = startGrids(2);
 
         grid.cluster().state(ClusterState.ACTIVE);

@@ -16,8 +16,6 @@
 */
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -45,18 +43,22 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import static org.apache.ignite.configuration.DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE;
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_COMPACTED;
+import static org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionNotificationsTest.SEGMENT_SIZE;
 
 /**
  * WAL compaction notifications test.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "archiveSize={0}")
+@ValueSource(longs = {UNLIMITED_WAL_ARCHIVE, SEGMENT_SIZE})
 public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
     /** WAL segment size. */
-    private static final int SEGMENT_SIZE = 512 * 1024;
+    static final int SEGMENT_SIZE = 512 * 1024;
 
     /** Maximum WAL segments count. */
     private static final int MAX_WAL_SEGMENTS = 200;
@@ -68,17 +70,8 @@ public class WalCompactionNotificationsTest extends GridCommonAbstractTest {
     private final EventListener evtLsnr = new EventListener();
 
     /** WAL archive size. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public long archiveSize;
-
-    /** Test run parameters. */
-    @Parameterized.Parameters(name = "archiveSize={0}")
-    public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][] {
-            { DataStorageConfiguration.UNLIMITED_WAL_ARCHIVE },
-            { SEGMENT_SIZE },
-        });
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {

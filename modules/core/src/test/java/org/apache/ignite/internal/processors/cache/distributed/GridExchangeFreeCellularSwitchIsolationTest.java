@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -39,8 +38,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.testframework.LogListener.matches;
@@ -48,24 +48,12 @@ import static org.apache.ignite.testframework.LogListener.matches;
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "Started from = {0}")
+@EnumSource(value = GridExchangeFreeCellularSwitchAbstractTest.TransactionCoordinatorNode.class)
 public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFreeCellularSwitchAbstractTest {
     /** Start from. */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public TransactionCoordinatorNode startFrom;
-
-    /**
-     *
-     */
-    @Parameterized.Parameters(name = "Started from = {0}")
-    public static Collection<Object[]> runConfig() {
-        ArrayList<Object[]> params = new ArrayList<>();
-
-        for (TransactionCoordinatorNode from : TransactionCoordinatorNode.values())
-            params.add(new Object[] {from});
-
-        return params;
-    }
 
     /**
      * Tests checks that switch finished only when all transactions required recovery are recovered.
@@ -75,7 +63,7 @@ public class GridExchangeFreeCellularSwitchIsolationTest extends GridExchangeFre
      * Tx with put(k1,v1) and put(k2,v2) started and prepared.
      * Then node from the first cell, which is the primary for k1, failed.
      * The second cell (with key2) should NOT finish the cellular switch before tx recovered,
-     * otherwice stale data read is possible.
+     * otherwise stale data read is possible.
      */
     @Test
     public void testMutliKeyTxRecoveryHappenBeforeTheSwitchOnCellularSwitch() throws Exception {

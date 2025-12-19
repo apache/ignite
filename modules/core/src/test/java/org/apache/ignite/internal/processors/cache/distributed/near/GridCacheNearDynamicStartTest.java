@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -28,15 +26,12 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junitpioneer.jupiter.cartesian.CartesianTest;
 
 /**
  * Tests that dynamically started caches with near configurations actually start with near caches on all nodes:
  * affinity, non-affinity and clients.
  */
-@RunWith(Parameterized.class)
 public class GridCacheNearDynamicStartTest extends GridCommonAbstractTest {
     /** */
     private static final int SRV_CNT = 3;
@@ -46,27 +41,6 @@ public class GridCacheNearDynamicStartTest extends GridCommonAbstractTest {
 
     /** */
     private static final int NUM_ENTRIES = 1000;
-
-    /** */
-    @Parameterized.Parameters(name = "nodeCacheStart = {0}, nodeNearCheck = {1}")
-    public static Iterable<Object[]> testParameters() {
-        List<Object[]> params = new ArrayList<>();
-
-        for (NODE_TYPE nodeStart: NODE_TYPE.values()) {
-            for (NODE_TYPE nodeNearCheck: NODE_TYPE.values())
-                params.add(new Object[]{ nodeStart, nodeNearCheck});
-        }
-
-        return params;
-    }
-
-    /** */
-    @Parameterized.Parameter(0)
-    public NODE_TYPE nodeStart;
-
-    /** */
-    @Parameterized.Parameter(1)
-    public NODE_TYPE nodeCheck;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -87,9 +61,12 @@ public class GridCacheNearDynamicStartTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void test() throws Exception {
-        startCache();
+    @CartesianTest(name = "nodeCacheStart = {0}, nodeNearCheck = {1}")
+    public void test(
+            @CartesianTest.Enum(value = NODE_TYPE.class) NODE_TYPE nodeStart,
+            @CartesianTest.Enum(value = NODE_TYPE.class) NODE_TYPE nodeCheck
+    ) throws Exception {
+        startCache(nodeStart);
 
         IgniteEx ign = testNode(nodeCheck);
 
@@ -106,7 +83,7 @@ public class GridCacheNearDynamicStartTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void startCache() {
+    private void startCache(NODE_TYPE nodeStart) {
         Ignite ign = testNode(nodeStart);
 
         ign.createCache(
@@ -145,7 +122,7 @@ public class GridCacheNearDynamicStartTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private enum NODE_TYPE {
+    public enum NODE_TYPE {
         /** Affinity node. */
         AFFINITY,
 

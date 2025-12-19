@@ -23,8 +23,6 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Arrays;
-import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -42,10 +40,8 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFile
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
 import static java.nio.file.Files.walkFileTree;
@@ -57,24 +53,7 @@ import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
 /***
  *
  */
-@RunWith(Parameterized.class)
 public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTest {
-    /** Crash point. */
-    private NodeStopPoint nodeStopPoint;
-
-    /**
-     * Default constructor to avoid BeforeFirstAndAfterLastTestRule.
-     */
-    private IgniteNodeStoppedDuringDisableWALTest() {
-    }
-
-    /**
-     * @param nodeStopPoint Crash point.
-     */
-    public IgniteNodeStoppedDuringDisableWALTest(NodeStopPoint nodeStopPoint) {
-        this.nodeStopPoint = nodeStopPoint;
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
@@ -106,8 +85,9 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
      *
      * @throws Exception If failed.
      */
-    @Test
-    public void test() throws Exception {
+    @ParameterizedTest(name = "nodeStopPoint = {0}")
+    @EnumSource(value = NodeStopPoint.class)
+    public void test(NodeStopPoint nodeStopPoint) throws Exception {
         testStopNodeWithDisableWAL(nodeStopPoint);
 
         stopAllGrids();
@@ -195,7 +175,7 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
                 fail = true;
         }
 
-        Assert.assertEquals(nodeStopPoint.needCleanUp, fail);
+        assertEquals(nodeStopPoint.needCleanUp, fail);
 
         Ignite ig1 = startGrid(0);
 
@@ -254,14 +234,6 @@ public class IgniteNodeStoppedDuringDisableWALTest extends GridCommonAbstractTes
         stopGrid(0, true);
 
         throw new IgniteCheckedException(nodeStopPoint.toString());
-    }
-
-    /**
-     * @return Node stop point.
-     */
-    @Parameterized.Parameters(name = "{0}")
-    public static Iterable<Object[]> providedTestData() {
-        return Arrays.stream(NodeStopPoint.values()).map(it -> new Object[] {it}).collect(Collectors.toList());
     }
 
     /**

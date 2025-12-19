@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.IgniteEx;
@@ -37,37 +39,40 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "Isolation = {0}, Concurrency = {1}, Started from = {2}")
+@MethodSource("allTypesArgs")
 public class GridExchangeFreeCellularSwitchTxContinuationTest extends GridExchangeFreeCellularSwitchAbstractTest {
     /** Concurrency. */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public TransactionConcurrency concurrency;
 
     /** Isolation. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public TransactionIsolation isolation;
 
     /** Start from. */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public TransactionCoordinatorNode startFrom;
 
     /**
      *
      */
-    @Parameterized.Parameters(name = "Isolation = {0}, Concurrency = {1}, Started from = {2}")
-    public static Collection<Object[]> runConfig() {
-        ArrayList<Object[]> params = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
+
         for (TransactionConcurrency concurrency : TransactionConcurrency.values())
             for (TransactionIsolation isolation : TransactionIsolation.values())
                 for (TransactionCoordinatorNode from : TransactionCoordinatorNode.values())
-                    if (from != TransactionCoordinatorNode.FAILED) // Impossible to continue tx started at failed node :)
-                        params.add(new Object[] {concurrency, isolation, from});
+                    if (from != TransactionCoordinatorNode.FAILED) // Impossible to continue tx started at failed node
+                        params.add(Arguments.of(concurrency, isolation, from));
 
         return params;
     }

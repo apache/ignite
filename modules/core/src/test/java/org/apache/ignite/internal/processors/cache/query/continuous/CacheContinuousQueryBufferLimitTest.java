@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import javax.cache.configuration.FactoryBuilder;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -52,11 +52,13 @@ import org.apache.ignite.spi.systemview.view.ContinuousQueryView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -71,7 +73,8 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "cacheMode={0}, atomicityMode={1}")
+@MethodSource("allTypesArgs")
 public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest {
     /** Cache partitions count. */
     private static final int PARTS = 1;
@@ -89,22 +92,42 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
     private final AtomicInteger msgCntr = new AtomicInteger();
 
     /** Cache mode. */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public CacheMode cacheMode;
 
     /** Cache atomicity mode. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public CacheAtomicityMode atomicityMode;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "cacheMode={0}, atomicityMode={1}")
-    public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {
-            {REPLICATED, ATOMIC},
-            {PARTITIONED, ATOMIC},
-            {REPLICATED, TRANSACTIONAL},
-            {PARTITIONED, TRANSACTIONAL}
-        });
+    public static Stream<Arguments> allTypesArgs() {
+        return GridTestUtils.cartesianProduct(
+                List.of(REPLICATED, PARTITIONED),
+                List.of(ATOMIC, TRANSACTIONAL)
+        ).stream().map(Arguments::of);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        return super.getConfiguration(igniteInstanceName)
+                .setCommunicationSpi(new TestRecordingCommunicationSpi())
+                .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+                        .setAtomicityMode(atomicityMode)
+                        .setCacheMode(cacheMode)
+                        .setBackups(1)
+                        .setAffinity(new RendezvousAffinityFunction(false, PARTS)));
+    }
+
+    /** */
+    @BeforeEach
+    public void resetMessageCounter() {
+        msgCntr.set(0);
+    }
+
+    /** */
+    @AfterEach
+    public void stopAllInstances() {
+        stopAllGrids();
     }
 
     /**
@@ -182,29 +205,6 @@ public class CacheContinuousQueryBufferLimitTest extends GridCommonAbstractTest 
 
         if (err.get() != null)
             throw new Exception(err.get());
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        return super.getConfiguration(igniteInstanceName)
-            .setCommunicationSpi(new TestRecordingCommunicationSpi())
-            .setCacheConfiguration(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
-                .setAtomicityMode(atomicityMode)
-                .setCacheMode(cacheMode)
-                .setBackups(1)
-                .setAffinity(new RendezvousAffinityFunction(false, PARTS)));
-    }
-
-    /** */
-    @Before
-    public void resetMessageCounter() {
-        msgCntr.set(0);
-    }
-
-    /** */
-    @After
-    public void stopAllInstances() {
-        stopAllGrids();
     }
 
     /**

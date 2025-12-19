@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -43,11 +42,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.EnumSource;
 
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
@@ -57,7 +55,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.near.GridN
  * Tests check a result of commit when a node fail before send {@link GridNearTxFinishResponse} to transaction
  * coordinator
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "syncMode={0}")
+@EnumSource(value = CacheWriteSynchronizationMode.class, names = {"FULL_ASYNC"}, mode = EnumSource.Mode.EXCLUDE)
 public class IgniteTxExceptionNodeFailTest extends GridCommonAbstractTest {
     /** Client node name. */
     private static final String CLIENT = "client";
@@ -65,14 +64,8 @@ public class IgniteTxExceptionNodeFailTest extends GridCommonAbstractTest {
     /** Node leave events for discovery event listener. */
     private static final int[] TYPES = {EVT_NODE_LEFT, EVT_NODE_FAILED};
 
-    /** Parameters. */
-    @Parameterized.Parameters(name = "syncMode={0}")
-    public static Iterable<CacheWriteSynchronizationMode> data() {
-        return Arrays.asList(PRIMARY_SYNC, FULL_SYNC);
-    }
-
     /** syncMode */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public CacheWriteSynchronizationMode syncMode;
 
     /** Amount backups for cache. */

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -60,8 +61,10 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -75,7 +78,9 @@ import static org.apache.ignite.cache.PartitionLossPolicy.READ_WRITE_SAFE;
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "atomicityMode={0}, partLossPlc={1}, backups={2}, autoAdjust={3}, " +
+        "nodes={4}, stopNodes={5}, persistence={6}")
+@MethodSource("allTypesArgs")
 public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTest {
     /** */
     private static final int PARTS_CNT = 32;
@@ -84,51 +89,50 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
     private boolean client;
 
     /** */
-    @Parameterized.Parameter(value = 0)
+    @Parameter(value = 0)
     public CacheAtomicityMode atomicityMode;
 
     /** */
-    @Parameterized.Parameter(value = 1)
+    @Parameter(value = 1)
     public PartitionLossPolicy partLossPlc;
 
     /** */
-    @Parameterized.Parameter(value = 2)
+    @Parameter(value = 2)
     public int backups;
 
     /** */
-    @Parameterized.Parameter(value = 3)
+    @Parameter(value = 3)
     public boolean autoAdjust;
 
     /** */
-    @Parameterized.Parameter(value = 4)
+    @Parameter(value = 4)
     public int nodes;
 
     /** */
-    @Parameterized.Parameter(value = 5)
+    @Parameter(value = 5)
     public int[] stopNodes;
 
     /** */
-    @Parameterized.Parameter(value = 6)
+    @Parameter(value = 6)
     public boolean persistence;
 
     /** */
     private static final String[] CACHES = new String[]{"cache1", "cache2"};
 
     /** */
-    @Parameterized.Parameters(name = "{0} {1} {2} {3} {4} {6}")
-    public static List<Object[]> parameters() {
-        ArrayList<Object[]> params = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         Random r = new Random();
         System.out.println("Seed: " + U.field(r, "seed"));
 
         for (CacheAtomicityMode mode : Arrays.asList(TRANSACTIONAL, ATOMIC)) {
             // Test always scenarios.
-            params.add(new Object[]{mode, IGNORE, 0, false, 3, new int[]{2}, false});
-            params.add(new Object[]{mode, IGNORE, 0, false, 3, new int[]{2}, true});
-            params.add(new Object[]{mode, READ_ONLY_SAFE, 1, true, 4, new int[]{2, 0}, false});
-            params.add(new Object[]{mode, IGNORE, 1, false, 4, new int[]{0, 2}, false});
-            params.add(new Object[]{mode, READ_WRITE_SAFE, 2, true, 5, new int[]{1, 0, 2}, false});
+            params.add(Arguments.of(mode, IGNORE, 0, false, 3, new int[]{2}, false));
+            params.add(Arguments.of(mode, IGNORE, 0, false, 3, new int[]{2}, true));
+            params.add(Arguments.of(mode, READ_ONLY_SAFE, 1, true, 4, new int[]{2, 0}, false));
+            params.add(Arguments.of(mode, IGNORE, 1, false, 4, new int[]{0, 2}, false));
+            params.add(Arguments.of(mode, READ_WRITE_SAFE, 2, true, 5, new int[]{1, 0, 2}, false));
 
             // Random scenarios.
             for (Integer backups : Arrays.asList(0, 1, 2)) {
@@ -141,25 +145,25 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
                 for (int i = 0; i < stopIdxs.length; i++)
                     stopIdxs[i] = tmp.get(i);
 
-                params.add(new Object[]{mode, READ_WRITE_SAFE, backups, false, nodes, stopIdxs, false});
-                params.add(new Object[]{mode, IGNORE, backups, false, nodes, stopIdxs, false});
-                params.add(new Object[]{mode, READ_ONLY_SAFE, backups, false, nodes, stopIdxs, false});
-                params.add(new Object[]{mode, READ_ONLY_ALL, backups, false, nodes, stopIdxs, false});
-                params.add(new Object[]{mode, READ_WRITE_SAFE, backups, true, nodes, stopIdxs, false});
-                params.add(new Object[]{mode, IGNORE, backups, true, nodes, stopIdxs, false});
-                params.add(new Object[]{mode, READ_ONLY_SAFE, backups, true, nodes, stopIdxs, false});
-                params.add(new Object[]{mode, READ_ONLY_ALL, backups, true, nodes, stopIdxs, false});
+                params.add(Arguments.of(mode, READ_WRITE_SAFE, backups, false, nodes, stopIdxs, false));
+                params.add(Arguments.of(mode, IGNORE, backups, false, nodes, stopIdxs, false));
+                params.add(Arguments.of(mode, READ_ONLY_SAFE, backups, false, nodes, stopIdxs, false));
+                params.add(Arguments.of(mode, READ_ONLY_ALL, backups, false, nodes, stopIdxs, false));
+                params.add(Arguments.of(mode, READ_WRITE_SAFE, backups, true, nodes, stopIdxs, false));
+                params.add(Arguments.of(mode, IGNORE, backups, true, nodes, stopIdxs, false));
+                params.add(Arguments.of(mode, READ_ONLY_SAFE, backups, true, nodes, stopIdxs, false));
+                params.add(Arguments.of(mode, READ_ONLY_ALL, backups, true, nodes, stopIdxs, false));
 
                 boolean ignored = false; // Autoadjust is currently ignored for persistent mode.
 
-                params.add(new Object[]{mode, READ_WRITE_SAFE, backups, ignored, nodes, stopIdxs, true});
-                params.add(new Object[]{mode, IGNORE, backups, ignored, nodes, stopIdxs, true});
-                params.add(new Object[]{mode, READ_ONLY_SAFE, backups, ignored, nodes, stopIdxs, true});
-                params.add(new Object[]{mode, READ_ONLY_ALL, backups, ignored, nodes, stopIdxs, true});
-                params.add(new Object[]{mode, READ_WRITE_SAFE, backups, ignored, nodes, stopIdxs, true});
-                params.add(new Object[]{mode, IGNORE, backups, ignored, nodes, stopIdxs, true});
-                params.add(new Object[]{mode, READ_ONLY_SAFE, backups, ignored, nodes, stopIdxs, true});
-                params.add(new Object[]{mode, READ_ONLY_ALL, backups, ignored, nodes, stopIdxs, true});
+                params.add(Arguments.of(mode, READ_WRITE_SAFE, backups, ignored, nodes, stopIdxs, true));
+                params.add(Arguments.of(mode, IGNORE, backups, ignored, nodes, stopIdxs, true));
+                params.add(Arguments.of(mode, READ_ONLY_SAFE, backups, ignored, nodes, stopIdxs, true));
+                params.add(Arguments.of(mode, READ_ONLY_ALL, backups, ignored, nodes, stopIdxs, true));
+                params.add(Arguments.of(mode, READ_WRITE_SAFE, backups, ignored, nodes, stopIdxs, true));
+                params.add(Arguments.of(mode, IGNORE, backups, ignored, nodes, stopIdxs, true));
+                params.add(Arguments.of(mode, READ_ONLY_SAFE, backups, ignored, nodes, stopIdxs, true));
+                params.add(Arguments.of(mode, READ_ONLY_ALL, backups, ignored, nodes, stopIdxs, true));
             }
         }
 

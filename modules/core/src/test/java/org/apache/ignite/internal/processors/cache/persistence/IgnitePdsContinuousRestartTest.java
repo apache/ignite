@@ -28,6 +28,7 @@ import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -55,8 +56,10 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -66,7 +69,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  * Cause by https://issues.apache.org/jira/browse/IGNITE-7278
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "restartDelay={0}, cpDelay={1}, threads={2}, batchSize={3}")
+@MethodSource("allTypesArgs")
 public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 4;
@@ -78,41 +82,40 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     protected static final String CACHE_NAME = "cache1";
 
     /** Restart delay. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public int restartDelay;
 
     /** Checkpoint delay. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public int cpDelay;
 
     /** Load threads count. */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public int threads;
 
     /** Batch size. */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public int batchSize;
 
     /** */
-    @Parameterized.Parameters(name = "restartDelay={0}, cpDelay={1}, threads={2}, batchSize={3}")
-    public static Collection<Object[]> data() {
-        List<Object[]> params = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
-        params.add(new Object[] {4000, 4000, 2, 4});
+        params.add(Arguments.of(4000, 4000, 2, 4));
 
         for (int threads: new int[] { 1, 2 }) {
             for (int batchSize: new int[] { 1, 4 }) {
                 // Covered scenarios:
                 // 1. Frequent restarts with no checkpoint.
-                params.add(new Object[] {10, 20000, threads, batchSize});
+                params.add(Arguments.of(10, 20000, threads, batchSize));
                 // 2. Frequent restarts while trying checkpointing.
-                params.add(new Object[] {10, 10, threads, batchSize});
+                params.add(Arguments.of(10, 10, threads, batchSize));
                 // 3. Restart after single checkpoint.
-                params.add(new Object[] {1000, 500, threads, batchSize});
+                params.add(Arguments.of(1000, 500, threads, batchSize));
                 // 4. Restart after multiple checkpoints.
-                params.add(new Object[] {4000, 500, threads, batchSize});
+                params.add(Arguments.of(4000, 500, threads, batchSize));
                 // 5. Restart while trying checkpointing with more data.
-                params.add(new Object[] {4000, 4000, threads, batchSize});
+                params.add(Arguments.of(4000, 4000, threads, batchSize));
             }
         }
 
@@ -311,12 +314,12 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         /** */
         @GridToStringInclude
         @QuerySqlField(index = true, groups = "full_name")
-        private String fName;
+        private final String fName;
 
         /** */
         @GridToStringInclude
         @QuerySqlField(index = true, groups = "full_name")
-        private String lName;
+        private final String lName;
 
         /**
          * @param fName First name.

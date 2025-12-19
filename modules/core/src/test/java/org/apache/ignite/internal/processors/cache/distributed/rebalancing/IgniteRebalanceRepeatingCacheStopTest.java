@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
 
-import java.util.Collection;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -30,35 +29,21 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Test rebalance during repeating caches stop (due to deactivation or explicit call).
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "persistence={0}")
+@ValueSource(booleans = {true, false})
 public class IgniteRebalanceRepeatingCacheStopTest extends GridCommonAbstractTest {
     /** */
-    @Parameterized.Parameter()
-    public boolean sharedGrp;
-
-    /** */
-    @Parameterized.Parameter(1)
+    @Parameter(0)
     public boolean pds = true;
-
-    /** */
-    @Parameterized.Parameters(name = "sharedGroup={0}, persistence={1}")
-    public static Collection<Object[]> parameters() {
-        return F.asList(
-            new Object[] {Boolean.FALSE, Boolean.FALSE},
-            new Object[] {Boolean.FALSE, Boolean.TRUE},
-            new Object[] {Boolean.TRUE, Boolean.FALSE},
-            new Object[] {Boolean.TRUE, Boolean.TRUE}
-        );
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -79,23 +64,25 @@ public class IgniteRebalanceRepeatingCacheStopTest extends GridCommonAbstractTes
     }
 
     /** */
-    @Test
-    public void testRebalanceOnDeactivate() throws Exception {
+    @ParameterizedTest(name = "sharedGroup={1}")
+    @ValueSource(booleans = {true, false})
+    public void testRebalanceOnDeactivate(boolean sharedGrp) throws Exception {
         doTest(ignite -> {
             ignite.cluster().state(ClusterState.INACTIVE);
 
             ignite.cluster().state(ClusterState.ACTIVE);
-        });
+        }, sharedGrp);
     }
 
     /** */
-    @Test
-    public void testRebalanceOnCacheStop() throws Exception {
-        doTest(ignite -> ignite.cache(DEFAULT_CACHE_NAME).destroy());
+    @ParameterizedTest(name = "sharedGroup={1}")
+    @ValueSource(booleans = {true, false})
+    public void testRebalanceOnCacheStop(boolean sharedGrp) throws Exception {
+        doTest(ignite -> ignite.cache(DEFAULT_CACHE_NAME).destroy(), sharedGrp);
     }
 
     /** */
-    private void doTest(Consumer<Ignite> action) throws Exception {
+    private void doTest(Consumer<Ignite> action, boolean sharedGrp) throws Exception {
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
         ignite0.cluster().state(ClusterState.ACTIVE);
