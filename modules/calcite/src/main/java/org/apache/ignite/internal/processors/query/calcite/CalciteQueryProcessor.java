@@ -320,6 +320,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
         distrCfg = new DistributedCalciteConfiguration(ctx, log);
 
+        // A listener to clean the plans cache if a rule was disabled.
         ctx.internalSubscriptionProcessor().registerDistributedConfigurationListener(new DistributedConfigurationLifecycleListener() {
             @Override public void onReadyToRegister(DistributedPropertyDispatcher dispatcher) {
                 // No-op.
@@ -330,8 +331,6 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
 
                 distrCfg.disabledRulesProperty().addListener(new DistributePropertyListener<>() {
                     @Override public void onUpdate(String name, String[] oldVal, String[] newVal) {
-                        assert name != null;
-
                         if (oldVal != null && F.compareArrays(oldVal, newVal) != 0) {
                             log.warning("Cleaning Calcite's cache plan by setting changing of the property '"
                                 + distrCfg.disabledRulesProperty().getName() + "'.");
