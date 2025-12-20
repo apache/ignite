@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
@@ -31,15 +31,17 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestNode;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests of {@link ServiceDeploymentProcessId}.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "Test event class={0}")
+@MethodSource("allTypesArgs")
 public class ServiceDeploymentProcessIdSelfTest {
     /** Logger. */
     private static final Logger LOG = Logger.getLogger(ServiceDeploymentProcessIdSelfTest.class.getName());
@@ -73,8 +75,7 @@ public class ServiceDeploymentProcessIdSelfTest {
     /**
      * @return Tests data.
      */
-    @Parameterized.Parameters(name = "Test event class={0}")
-    public static Collection<Object[]> instancesToTest() {
+    private static Collection<Arguments> allTypesArgs() {
         DiscoveryEvent evt = new DiscoveryEvent(
             new GridTestNode(UUID.randomUUID()), "", 10, new GridTestNode(UUID.randomUUID()));
 
@@ -90,11 +91,11 @@ public class ServiceDeploymentProcessIdSelfTest {
         customEvt.node(node);
         customEvt.eventNode(node);
 
-        return Arrays.asList(new Object[][] {
-            {customEvt.getClass().getSimpleName(),
-                new IgniteBiTuple<>(customEvt, new AffinityTopologyVersion(ThreadLocalRandom.current().nextLong()))},
-            {evt.getClass().getSimpleName(),
-                new IgniteBiTuple<>(evt, new AffinityTopologyVersion(ThreadLocalRandom.current().nextLong()))}});
+        return List.of(
+            Arguments.of(customEvt.getClass().getSimpleName(),
+                new IgniteBiTuple<>(customEvt, new AffinityTopologyVersion(ThreadLocalRandom.current().nextLong()))),
+            Arguments.of(evt.getClass().getSimpleName(),
+                new IgniteBiTuple<>(evt, new AffinityTopologyVersion(ThreadLocalRandom.current().nextLong()))));
     }
 
     /** */

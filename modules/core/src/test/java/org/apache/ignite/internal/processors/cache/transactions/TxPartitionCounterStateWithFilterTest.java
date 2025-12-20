@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.Ignite;
@@ -32,8 +31,10 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -42,36 +43,36 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test if NOOP tx operation skips incrementing update counter for entry partition.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "cacheMode={0}, backups={1}, sameTx={2}")
+@MethodSource("allTypesArgs")
 public class TxPartitionCounterStateWithFilterTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES = 4;
 
     /** */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public CacheMode cacheMode;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public int backups;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean sameTx;
 
     /** */
-    @Parameterized.Parameters(name = "cacheMode={0}, backups={1}, sameTx={2}")
-    public static Collection parameters() {
-        return Arrays.asList(new Object[][] {
-            {REPLICATED, -1, false},
-            {REPLICATED, -1, true},
-            {PARTITIONED, 2, false},
-            {PARTITIONED, 2, true},
-            {PARTITIONED, 1, false},
-            {PARTITIONED, 1, true},
-            {PARTITIONED, 0, false},
-            {PARTITIONED, 0, true}
-        });
+    private static Collection<Arguments> allTypesArgs() {
+        return List.of(
+            Arguments.of(REPLICATED, -1, false),
+            Arguments.of(REPLICATED, -1, true),
+            Arguments.of(PARTITIONED, 2, false),
+            Arguments.of(PARTITIONED, 2, true),
+            Arguments.of(PARTITIONED, 1, false),
+            Arguments.of(PARTITIONED, 1, true),
+            Arguments.of(PARTITIONED, 0, false),
+            Arguments.of(PARTITIONED, 0, true)
+        );
     }
 
     /** {@inheritDoc} */
@@ -160,6 +161,6 @@ public class TxPartitionCounterStateWithFilterTest extends GridCommonAbstractTes
         if (cacheMode == PARTITIONED)
             ccfg.setBackups(backups);
 
-        return (CacheConfiguration)ccfg;
+        return ccfg;
     }
 }

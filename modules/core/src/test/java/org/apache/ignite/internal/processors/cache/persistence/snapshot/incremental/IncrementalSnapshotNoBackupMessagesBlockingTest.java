@@ -17,46 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
-import java.util.ArrayList;
+import org.junitpioneer.jupiter.cartesian.CartesianTest;
 import java.util.List;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
+import static org.junitpioneer.jupiter.cartesian.CartesianTest.Enum.Mode.EXCLUDE;
 
 /** */
-@RunWith(Parameterized.class)
 public class IncrementalSnapshotNoBackupMessagesBlockingTest extends AbstractIncrementalSnapshotMessagesBlockingTest {
     /** */
-    @Parameterized.Parameter
-    public BlkNodeType txNodeBlkType;
-
-    /** */
-    @Parameterized.Parameter(1)
-    public BlkSnpType snpBlkType;
-
-    /** */
-    @Parameterized.Parameter(2)
-    public BlkNodeType snpNodeBlkType;
-
-    /** */
-    @Parameterized.Parameters(name = "txNodeBlk={0}, snpBlkAt={1}, snpNodeBlk={2}")
-    public static List<Object[]> params() {
-        List<Object[]> p = new ArrayList<>();
-
-        Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY).forEach(txN ->
-            Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY).forEach(snpN -> {
-                for (BlkSnpType c : BlkSnpType.values())
-                    p.add(new Object[] {txN, c, snpN});
-            })
-        );
-
-        return p;
-    }
-
-    /** */
-    @Test
-    public void testMultipleCases() throws Exception {
+    @CartesianTest(name = "txNodeBlk={0}, snpBlkAt={1}, snpNodeBlk={2}")
+    public void testMultipleCases(
+            @CartesianTest.Enum(value = BlkNodeType.class, mode = EXCLUDE, names = "BACKUP") BlkNodeType txNodeBlkType,
+            @CartesianTest.Enum(value = BlkNodeType.class, mode = EXCLUDE, names = "BACKUP") BlkNodeType snpNodeBlkType,
+            @CartesianTest.Enum(value = BlkSnpType.class) BlkSnpType snpBlkType
+    ) throws Exception {
         List<TransactionTestCase> cases = TransactionTestCase.buildTestCases(nodes(), false);
 
         List<Class<?>> msgs = messages(false);

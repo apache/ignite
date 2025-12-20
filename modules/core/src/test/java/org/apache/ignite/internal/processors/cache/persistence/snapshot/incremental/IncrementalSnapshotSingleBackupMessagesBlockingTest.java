@@ -18,44 +18,32 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /** */
-@RunWith(Parameterized.class)
 public class IncrementalSnapshotSingleBackupMessagesBlockingTest extends AbstractIncrementalSnapshotMessagesBlockingTest {
     /** */
-    @Parameterized.Parameter
-    public BlkNodeType txNodeBlkType;
-
-    /** */
-    @Parameterized.Parameter(1)
-    public BlkSnpType snpBlkType;
-
-    /** */
-    @Parameterized.Parameter(2)
-    public BlkNodeType snpNodeBlkType;
-
-    /** */
-    @Parameterized.Parameters(name = "txNodeBlk={0}, snpBlkAt={1}, snpNodeBlk={2}")
-    public static List<Object[]> params() {
-        List<Object[]> p = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         for (BlkNodeType txN: BlkNodeType.values()) {
             for (BlkNodeType snpN: BlkNodeType.values()) {
                 for (BlkSnpType c : BlkSnpType.values())
-                    p.add(new Object[] {txN, c, snpN});
+                    params.add(Arguments.of(txN, c, snpN));
             }
         }
 
-        return p;
+        return params;
     }
 
     /** */
-    @Test
-    public void testMultipleCases() throws Exception {
+    @ParameterizedTest(name = "txNodeBlk={0}, snpBlkAt={1}, snpNodeBlk={2}")
+    @MethodSource("allTypesArgs")
+    public void testMultipleCases(BlkNodeType txNodeBlkType, BlkSnpType snpBlkType, BlkNodeType snpNodeBlkType) throws Exception {
         List<TransactionTestCase> cases = TransactionTestCase.buildTestCases(nodes(), true);
 
         List<Class<?>> msgs = messages(true);

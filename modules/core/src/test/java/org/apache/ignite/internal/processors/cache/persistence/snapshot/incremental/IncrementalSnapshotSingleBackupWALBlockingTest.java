@@ -18,11 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
 import java.util.List;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 /** */
-@RunWith(Parameterized.class)
 public class IncrementalSnapshotSingleBackupWALBlockingTest extends IncrementalSnapshotNoBackupWALBlockingTest {
     /** */
     @Override protected List<TransactionTestCase> cases() {
