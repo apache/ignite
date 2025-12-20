@@ -100,7 +100,7 @@ public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoClose
     }
 
     /** */
-    private synchronized void reserve() {
+    protected synchronized void reserve() {
         if (reservation != null)
             return;
 
@@ -151,7 +151,7 @@ public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoClose
     }
 
     /** */
-    private synchronized void release() {
+    protected synchronized void release() {
         if (reservation != null)
             reservation.release();
 

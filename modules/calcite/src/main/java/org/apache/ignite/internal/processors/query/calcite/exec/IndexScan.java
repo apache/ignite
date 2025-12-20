@@ -56,7 +56,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Scan on index.
  */
-public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
+public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
     /** */
     private final GridKernalContext kctx;
 
@@ -109,7 +109,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
         for (int i = 0; i < srcRowType.getFieldCount(); i++)
             fieldsStoreTypes[i] = typeFactory.getResultClass(srcRowType.getFieldList().get(i).getType());
 
-        fieldIdxMapping = fieldToInlinedKeysMapping(srcRowType.getFieldCount());
+        fieldIdxMapping = fieldToInlinedKeysMapping();
 
         if (!F.isEmpty(ectx.getQryTxEntries())) {
             InlineIndexRowHandler rowHnd = idx.segment(0).rowHandler();
@@ -131,7 +131,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
      * @return Mapping from target row fields to inlined index keys, or {@code null} if inlined index keys
      * should not be used.
      */
-    private int[] fieldToInlinedKeysMapping(int srcFieldsCnt) {
+    private int[] fieldToInlinedKeysMapping() {
         List<InlineIndexKeyType> inlinedKeys = idx.segment(0).rowHandler().inlineIndexKeyTypes();
 
         // Since inline scan doesn't check expire time, allow it only if expired entries are eagerly removed.
@@ -141,7 +141,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
         // Even if we need some subset of inlined keys we are required to the read full inlined row, since this row
         // is also participated in comparison with other rows when cursor processing the next index page.
         if (inlinedKeys.size() < idx.segment(0).rowHandler().indexKeyDefinitions().size() ||
-            inlinedKeys.size() < (requiredColumns == null ? srcFieldsCnt : requiredColumns.cardinality()))
+            inlinedKeys.size() < fieldColMapping.length)
             return null;
 
         for (InlineIndexKeyType keyType : inlinedKeys) {
@@ -153,14 +153,11 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
                 return null;
         }
 
-        ImmutableBitSet reqCols = requiredColumns == null ? ImmutableBitSet.range(0, srcFieldsCnt) :
-            requiredColumns;
-
         int[] fieldIdxMapping = new int[rowType.getFieldCount()];
 
-        for (int i = 0, j = reqCols.nextSetBit(0); j != -1; j = reqCols.nextSetBit(j + 1), i++) {
+        for (int i = 0; i < fieldColMapping.length; i++) {
             // j = source field index, i = target field index.
-            int keyIdx = idxFieldMapping.indexOf(j);
+            int keyIdx = idxFieldMapping.indexOf(fieldColMapping[i]);
 
             if (keyIdx >= 0 && keyIdx < inlinedKeys.size())
                 fieldIdxMapping[i] = keyIdx;
@@ -173,6 +170,11 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
 
     /** {@inheritDoc} */
     @Override protected Iterator<Row> createIterator() {
+        return F.iterator(createTableRowIterator(), this::indexRow2Row, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Iterator<IndexRow> createTableRowIterator() {
         RangeIterable<IndexRow> ranges0 = ranges == null ? null : new TransformRangeIterable<>(ranges, this::row2indexRow);
 
         TreeIndex<IndexRow> treeIdx = treeIndex();
@@ -180,7 +182,20 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
         if (!txChanges.changedKeysEmpty())
             treeIdx = new TxAwareTreeIndexWrapper(treeIdx);
 
-        return F.iterator(new TreeIndexIterable<>(treeIdx, ranges0), this::indexRow2Row, true);
+        return new TreeIndexIterable<>(treeIdx, ranges0).iterator();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Row enrichRow(IndexRow idxRow, Row row, int[] fieldColMapping) {
+        try {
+            if (idxRow.indexPlainRow())
+                return inlineIndexRow2Row(idxRow, row, fieldColMapping);
+            else
+                return desc.toRow(ectx, idxRow.cacheDataRow(), row, fieldColMapping);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** */
@@ -221,28 +236,23 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<Row> {
     }
 
     /** From IndexRow to Row convertor. */
-    protected Row indexRow2Row(IndexRow row) {
-        try {
-            if (row.indexPlainRow())
-                return inlineIndexRow2Row(row);
-            else
-                return desc.toRow(ectx, row.cacheDataRow(), factory, requiredColumns);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+    protected Row indexRow2Row(IndexRow idxRow) {
+        Row row = factory.create();
+
+        return enrichRow(idxRow, row, fieldColMapping);
     }
 
     /** */
-    private Row inlineIndexRow2Row(IndexRow row) {
+    private Row inlineIndexRow2Row(IndexRow idxRow, Row row, int[] fieldColMapping) {
         RowHandler<Row> hnd = ectx.rowHandler();
 
-        Row res = factory.create();
+        for (int i = 0; i < fieldColMapping.length; i++) {
+            // Skip not required fields.
+            if (fieldColMapping[i] >= 0)
+                hnd.set(i, row, TypeUtils.toInternal(ectx, idxRow.key(fieldIdxMapping[i]).key()));
+        }
 
-        for (int i = 0; i < fieldIdxMapping.length; i++)
-            hnd.set(i, res, TypeUtils.toInternal(ectx, row.key(fieldIdxMapping[i]).key()));
-
-        return res;
+        return row;
     }
 
     /** Query context. */

@@ -34,13 +34,13 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
     private final Iterable<Row> src;
 
     /** */
-    @Nullable private final Predicate<Row> filter;
+    @Nullable protected final Predicate<Row> filter;
 
     /** */
-    @Nullable private final Function<Row, Row> rowTransformer;
+    @Nullable protected final Function<Row, Row> rowTransformer;
 
     /** */
-    private Iterator<Row> it;
+    protected Iterator<?> it;
 
     /** */
     private int requested;
@@ -147,23 +147,41 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
     }
 
     /**
+     * @return Next row, or {@code null} if row was filtered out.
+     */
+    protected Row processNextRow() {
+        Row r = (Row)it.next();
+
+        if (filter == null || filter.test(r)) {
+            if (rowTransformer != null)
+                r = rowTransformer.apply(r);
+
+            return r;
+        }
+
+        return null;
+    }
+
+    /** */
+    protected Iterator<?> sourceIterator() {
+        return src.iterator();
+    }
+
+    /**
      * @return Count of processed rows.
      */
     protected int processNextBatch() throws Exception {
         if (it == null)
-            it = src.iterator();
+            it = sourceIterator();
 
         int processed = 0;
         while (requested > 0 && it.hasNext()) {
             checkState();
 
-            Row r = it.next();
+            Row r = processNextRow();
 
-            if (filter == null || filter.test(r)) {
+            if (r != null) {
                 requested--;
-
-                if (rowTransformer != null)
-                    r = rowTransformer.apply(r);
 
                 downstream().push(r);
             }

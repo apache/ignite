@@ -70,7 +70,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -248,36 +247,28 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     /** {@inheritDoc} */
     @Override public <Row> Row toRow(
         ExecutionContext<Row> ectx,
-        CacheDataRow row,
-        RowHandler.RowFactory<Row> factory,
-        @Nullable ImmutableBitSet requiredColumns
+        CacheDataRow tableRow,
+        Row row,
+        int[] fieldColMapping
     ) throws IgniteCheckedException {
-        RowHandler<Row> hnd = factory.handler();
+        RowHandler<Row> hnd = ectx.rowHandler();
 
-        assert hnd == ectx.rowHandler();
+        assert hnd.columnCount(row) == fieldColMapping.length :
+            "Unexpected row column count: " + hnd.columnCount(row) + " expected: " + fieldColMapping.length;
 
-        Row res = factory.create();
+        for (int i = 0; i < fieldColMapping.length; i++) {
+            int colIdx = fieldColMapping[i];
 
-        assert hnd.columnCount(res) == (requiredColumns == null ? descriptors.length : requiredColumns.cardinality());
+            // Skip not required fields.
+            if (colIdx < 0)
+                continue;
 
-        if (requiredColumns == null) {
-            for (int i = 0; i < descriptors.length; i++) {
-                CacheColumnDescriptor desc = descriptors[i];
+            CacheColumnDescriptor desc = descriptors[colIdx];
 
-                hnd.set(i, res, TypeUtils.toInternal(ectx,
-                    desc.value(ectx, cacheContext(), row), desc.storageType()));
-            }
-        }
-        else {
-            for (int i = 0, j = requiredColumns.nextSetBit(0); j != -1; j = requiredColumns.nextSetBit(j + 1), i++) {
-                CacheColumnDescriptor desc = descriptors[j];
-
-                hnd.set(i, res, TypeUtils.toInternal(ectx,
-                    desc.value(ectx, cacheContext(), row), desc.storageType()));
-            }
+            hnd.set(i, row, TypeUtils.toInternal(ectx, desc.value(ectx, cacheContext(), tableRow), desc.storageType()));
         }
 
-        return res;
+        return row;
     }
 
     /** {@inheritDoc} */
