@@ -105,13 +105,13 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     private final RexBuilder rexBuilder;
 
     /** */
-    private final RelDataType emptyType;
+    private static final RelDataType emptyType = new RelDataTypeFactory.Builder(Commons.typeFactory()).build();
 
     /** */
-    private final RelDataType nullType;
+    private static final RelDataType nullType = Commons.typeFactory().createSqlType(SqlTypeName.NULL);
 
     /** */
-    private final RelDataType booleanType;
+    private static final RelDataType booleanType = Commons.typeFactory().createJavaType(Boolean.class);
 
     /** */
     private final ExecutionContext<Row> ctx;
@@ -127,10 +127,6 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         this.typeFactory = typeFactory;
         this.conformance = conformance;
         this.rexBuilder = rexBuilder;
-
-        emptyType = new RelDataTypeFactory.Builder(this.typeFactory).build();
-        nullType = typeFactory.createSqlType(SqlTypeName.NULL);
-        booleanType = typeFactory.createJavaType(Boolean.class);
     }
 
     /** {@inheritDoc} */

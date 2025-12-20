@@ -59,6 +59,24 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
      *
      * @param ctx Kernal context.
      * @param topVer Topology version.
+     * @param parts Partitions set.
+     */
+    public IndexingQueryFilterImpl(
+        GridKernalContext ctx,
+        @Nullable AffinityTopologyVersion topVer,
+        @Nullable BitSet parts
+    ) {
+        this.ctx = ctx;
+        this.topVer = topVer != null ? topVer : AffinityTopologyVersion.NONE;
+        this.parts = parts;
+        treatReplicatedAsPartitioned = false;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param ctx Kernal context.
+     * @param topVer Topology version.
      * @param partsArr Partitions array.
      * @param treatReplicatedAsPartitioned If true, only primary partitions of replicated caches will be used.
      */

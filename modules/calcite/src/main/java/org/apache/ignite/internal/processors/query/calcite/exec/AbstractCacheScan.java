@@ -17,19 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
-import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
-import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionReservation;
+import org.apache.ignite.internal.util.collection.IntSet;
 
 /** */
 public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoCloseable {
@@ -43,16 +41,13 @@ public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoClose
     protected final AffinityTopologyVersion topVer;
 
     /** */
-    protected final int[] parts;
+    protected final BitSet parts;
 
     /** */
-    protected final boolean explicitParts;
+    private final int[] explicitParts;
 
     /** */
     private PartitionReservation reservation;
-
-    /** */
-    protected volatile List<GridDhtLocalPartition> reservedParts;
 
     /** */
     AbstractCacheScan(ExecutionContext<Row> ectx, GridCacheContext<?, ?> cctx, int[] parts) {
@@ -61,18 +56,37 @@ public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoClose
 
         topVer = ectx.topologyVersion();
 
-        explicitParts = parts != null;
+        explicitParts = parts;
 
-        if (cctx.isReplicated())
-            this.parts = IntStream.range(0, cctx.affinity().partitions()).toArray();
+        int partsCnt = cctx.affinity().partitions();
+
+        if (cctx.isReplicated()) {
+            BitSet partsSet = new BitSet(partsCnt);
+            partsSet.set(0, partsCnt);
+            this.parts = partsSet;
+        }
         else {
-            if (parts != null)
-                this.parts = parts;
+            if (parts != null) {
+                BitSet partsSet = new BitSet(partsCnt);
+
+                for (int i = 0; i < parts.length; i++)
+                    partsSet.set(parts[i]);
+
+                this.parts = partsSet;
+            }
             else {
                 Collection<Integer> primaryParts = cctx.affinity().primaryPartitions(
                     cctx.kernalContext().localNodeId(), topVer);
 
-                this.parts = primaryParts.stream().mapToInt(Integer::intValue).toArray();
+                if (primaryParts instanceof IntSet)
+                    this.parts = ((IntSet)primaryParts).toBitSet();
+                else {
+                    BitSet partsSet = new BitSet(partsCnt);
+
+                    primaryParts.forEach(partsSet::set);
+
+                    this.parts = partsSet;
+                }
             }
         }
     }
@@ -124,7 +138,7 @@ public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoClose
 
             try {
                 reservation = cctx.kernalContext().query().partitionReservationManager().reservePartitions(
-                    cctx, topVer, explicitParts ? parts : null, ectx.originatingNodeId(), "qryId=" + ectx.queryId());
+                    cctx, topVer, explicitParts, ectx.originatingNodeId(), "qryId=" + ectx.queryId());
             }
             catch (IgniteCheckedException e) {
                 throw new ClusterTopologyException("Failed to reserve partition for query execution", e);
@@ -138,16 +152,16 @@ public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoClose
 
             this.reservation = reservation;
 
-            List<GridDhtLocalPartition> reservedParts = new ArrayList<>(parts.length);
-
-            for (int i = 0; i < parts.length; i++)
-                reservedParts.add(top.localPartition(parts[i]));
-
-            this.reservedParts = reservedParts;
+            processReservedTopology(top);
         }
         finally {
             top.readUnlock();
         }
+    }
+
+    /** */
+    protected void processReservedTopology(GridDhtPartitionTopology top) {
+        // No-op.
     }
 
     /** */
