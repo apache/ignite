@@ -30,36 +30,12 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junitpioneer.jupiter.cartesian.CartesianTest;
 
 /**
  * Test partitions consistency in case of noop operations.
  */
-@RunWith(Parameterized.class)
 public class TxPartitionCounterStateConsistencyNoopInvokeTest extends TxPartitionCounterStateAbstractTest {
-    /** Transaction concurrency. */
-    @Parameterized.Parameter()
-    public TransactionConcurrency concurrency = TransactionConcurrency.PESSIMISTIC;
-
-    /** Transaction isolation. */
-    @Parameterized.Parameter(1)
-    public TransactionIsolation isolation = TransactionIsolation.SERIALIZABLE;
-
-    /** Test parameters. */
-    @Parameterized.Parameters(name = "concurrency={0}, isolation={1}")
-    public static Object[][] getParameters() {
-        return new Object[][] {
-            new Object[] {TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ},
-            new Object[] {TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED},
-            new Object[] {TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE},
-            new Object[] {TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ},
-            new Object[] {TransactionConcurrency.PESSIMISTIC, TransactionIsolation.READ_COMMITTED},
-            new Object[] {TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE}
-        };
-    }
-
     /**{@inheritDoc} */
     @Override protected int partitions() {
         return 1;
@@ -68,8 +44,11 @@ public class TxPartitionCounterStateConsistencyNoopInvokeTest extends TxPartitio
     /**
      * Test primary-backup partitions consistency when entry processor produce NOOP results.
      */
-    @Test
-    public void testPartitionConsistencyAfterNoopInvoke() throws Exception {
+    @CartesianTest(name = "concurrency={0}, isolation={1}")
+    public void testPartitionConsistencyAfterNoopInvoke(
+        @CartesianTest.Enum(value = TransactionConcurrency.class) TransactionConcurrency concurrency,
+        @CartesianTest.Enum(value = TransactionIsolation.class) TransactionIsolation isolation
+    ) throws Exception {
         backups = 2;
 
         startGrids(2).cluster().state(ClusterState.ACTIVE);
@@ -104,19 +83,19 @@ public class TxPartitionCounterStateConsistencyNoopInvokeTest extends TxPartitio
             tx.commit();
         }
 
-        valudateCounters();
+        validateCounters();
 
         // Restart grid and check WAL records correctly applied.
         stopAllGrids();
         startGrids(2).cluster().state(ClusterState.ACTIVE);
 
-        valudateCounters();
+        validateCounters();
     }
 
     /**
      * Validates partition has same counters on both nodes.
      */
-    private void valudateCounters() {
+    private void validateCounters() {
         Map<Integer, Long> cntrs = new HashMap<>();
 
         grid(0).context().cache().context()

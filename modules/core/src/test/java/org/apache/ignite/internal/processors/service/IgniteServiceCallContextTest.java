@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -38,13 +40,18 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
  * Tests service caller context.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "clusterSingleton={0}, sticky={1}")
+@MethodSource("allTypesArgs")
 public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
     /** String attribute name. */
     private static final String STR_ATTR_NAME = "str.attr";
@@ -65,11 +72,11 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
     private static final int SVC_PER_NODE = 2;
 
     /** Flag to deploy single service instance per cluster. */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public boolean clusterSingleton;
 
     /** Whether or not Ignite should always contact the same remote service instance. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean sticky;
 
     /** {@inheritDoc} */
@@ -79,13 +86,12 @@ public class IgniteServiceCallContextTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Parameterized.Parameters(name = "clusterSingleton={0}, sticky={1}")
-    public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {
-            {false, false},
-            {false, true},
-            {true, true},
-        });
+    private static Stream<Arguments> allTypesArgs() {
+        return Stream.of(
+            Arguments.of(false, false),
+            Arguments.of(false, true),
+            Arguments.of(true, true)
+        );
     }
 
     /** {@inheritDoc} */

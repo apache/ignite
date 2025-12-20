@@ -18,12 +18,10 @@
 package org.apache.ignite.internal.processors.service;
 
 import java.io.Externalizable;
-import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
@@ -46,14 +44,13 @@ import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Tests service call interceptor.
  */
-@RunWith(Parameterized.class)
 public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -82,28 +79,10 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest imp
     /** Ignite client node. */
     private static Ignite client;
 
-    /** Flag to deploy single service instance per cluster. */
-    @Parameterized.Parameter(0)
-    public boolean clusterSingleton;
-
-    /** Whether Ignite should always contact the same remote service instance. */
-    @Parameterized.Parameter(1)
-    public boolean sticky;
-
     /** {@inheritDoc} */
     @Override public void beforeTestsStarted() throws Exception {
         startGrids(NODES_CNT - 1);
         client = startClientGrid(NODES_CNT - 1);
-    }
-
-    /** */
-    @Parameterized.Parameters(name = "clusterSingleton={0}, sticky={1}")
-    public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {
-            {false, false},
-            {false, true},
-            {true, true},
-        });
     }
 
     /** {@inheritDoc} */
@@ -130,8 +109,9 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest imp
     /**
      * Validates configuration comparison during service deployment.
      */
-    @Test
-    public void testRedeploy() {
+    @ParameterizedTest(name = "clusterSingleton = {0}")
+    @ValueSource(booleans = {true, false})
+    public void testRedeploy(boolean clusterSingleton) {
         ServiceCallInterceptor interceptor = (mtd, args, ctx, next) -> "1";
 
         ServiceConfiguration cfg = serviceCfg(SVC_NAME_INTERCEPTED, new TestServiceImpl(), clusterSingleton, interceptor);
@@ -178,8 +158,13 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest imp
     /**
      * Checks if an interceptor exception is being passed to the user.
      */
-    @Test
-    public void testException() {
+    @ParameterizedTest(name = "clusterSingleton = {0}, sticky = {0}")
+    @CsvSource({
+            "false, false",
+            "false, true",
+            "true, true",
+    })
+    public void testException(boolean clusterSingleton, boolean sticky) {
         interceptorCallCntr.set(0);
         svcCallCntr.set(0);
 
@@ -221,8 +206,13 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest imp
     /**
      * Ensures that the interceptor can completely override the call and prevent the service method invocation.
      */
-    @Test
-    public void testBasicInterception() {
+    @ParameterizedTest(name = "clusterSingleton = {0}, sticky = {0}")
+    @CsvSource({
+            "false, false",
+            "false, true",
+            "true, true",
+    })
+    public void testBasicInterception(boolean clusterSingleton, boolean sticky) {
         svcCallCntr.set(0);
 
         String expMsg = "intercepted";
@@ -242,8 +232,13 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest imp
      *
      * @throws Exception If failed.
      */
-    @Test
-    public void testOrder() throws Exception {
+    @ParameterizedTest(name = "clusterSingleton = {0}, sticky = {0}")
+    @CsvSource({
+            "false, false",
+            "false, true",
+            "true, true",
+    })
+    public void testOrder(boolean clusterSingleton, boolean sticky) throws Exception {
         int interceptorsCnt = 8;
         int threadCnt = 16;
 
@@ -429,12 +424,12 @@ public class IgniteServiceCallInterceptorTest extends GridCommonAbstractTest imp
         }
 
         /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
+        @Override public void writeExternal(ObjectOutput out) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        @Override public void readExternal(ObjectInput in) {
             throw new AssertionError("Expected critical error.");
         }
     }

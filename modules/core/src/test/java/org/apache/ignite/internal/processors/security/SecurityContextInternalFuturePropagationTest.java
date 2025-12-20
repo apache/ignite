@@ -18,12 +18,13 @@
 package org.apache.ignite.internal.processors.security;
 
 import java.security.Permissions;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
 import com.google.common.collect.ImmutableSet;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.client.ClientAuthorizationException;
@@ -47,8 +48,10 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -63,7 +66,8 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass
+@MethodSource("allTypesArgs")
 public class SecurityContextInternalFuturePropagationTest extends GridCommonAbstractTest {
     /** */
     private static final int PRELOADED_KEY_CNT = 100;
@@ -72,13 +76,12 @@ public class SecurityContextInternalFuturePropagationTest extends GridCommonAbst
     private static final AtomicInteger KEY_CNTR = new AtomicInteger();
 
     /** */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public Function<ClientCache<Object, Object>, IgniteClientFuture<?>> op;
 
     /** */
-    @Parameterized.Parameters()
-    public static List<Function<ClientCache<Object, Object>, IgniteClientFuture<?>>> data() {
-        return Arrays.asList(
+    private static Stream<Arguments> allTypesArgs() {
+        List<Function<ClientCache<Object, Object>, IgniteClientFuture<?>>> res = List.of(
             cache -> cache.getAllAsync(ImmutableSet.of(nextKey(), nextKey())), // 0
             cache -> cache.getAndPutAsync(nextKey(), 0), // 1
             cache -> cache.getAndPutIfAbsentAsync(nextKey(), 0), // 2
@@ -101,6 +104,8 @@ public class SecurityContextInternalFuturePropagationTest extends GridCommonAbst
                 return cache.replaceAsync(key, key, 0);
             } // 13
         );
+
+        return res.stream().map(Arguments::of);
     }
 
     /** {@inheritDoc} */

@@ -16,8 +16,6 @@
  */
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.calcite.CalciteQueryEngineConfiguration;
@@ -25,21 +23,17 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.indexing.IndexingQueryEngineConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "Query engine={0}")
+@ValueSource(strings = {CalciteQueryEngineConfiguration.ENGINE_NAME, IndexingQueryEngineConfiguration.ENGINE_NAME})
 public class AbstractMultiEngineIntegrationTest extends AbstractBasicIntegrationTest {
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public String engine;
-
-    /** */
-    @Parameterized.Parameters(name = "Query engine={0}")
-    public static Collection<?> params() {
-        return Arrays.asList(CalciteQueryEngineConfiguration.ENGINE_NAME, IndexingQueryEngineConfiguration.ENGINE_NAME);
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
