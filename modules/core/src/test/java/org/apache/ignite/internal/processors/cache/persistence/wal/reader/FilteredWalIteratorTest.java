@@ -22,6 +22,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
@@ -33,8 +35,9 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRec
 import org.apache.ignite.internal.processors.cache.persistence.wal.WALPointer;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 import static java.util.stream.Collectors.toList;
@@ -46,14 +49,15 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.PART_META_UPDATE_STATE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScannerTest.dummyPage;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "{0} case №{index}")
+@MethodSource("allTypesArgs")
 public class FilteredWalIteratorTest {
     /** Count of different records sequence per filter. */
     private static final int ITERATORS_COUNT_PER_FILTER = 20;
@@ -117,14 +121,11 @@ public class FilteredWalIteratorTest {
     /**
      * @return Datas for test.
      */
-    @Parameterized.Parameters(name = "{0} case №{index}")
-    public static Iterable<Object[]> providedTestData() {
-        ArrayList<Object[]> res = new ArrayList<>();
-
-        res.addAll(prepareTestCaseData("PhysicalFilter", r -> r.get2().type().purpose() == PHYSICAL));
-        res.addAll(prepareTestCaseData("CheckpointFilter", r -> r.get2() instanceof CheckpointRecord));
-
-        return res;
+    private static Stream<Arguments> allTypesArgs() {
+        return Stream.of(
+            Arguments.of(prepareTestCaseData("PhysicalFilter", r -> r.get2().type().purpose() == PHYSICAL)),
+            Arguments.of(prepareTestCaseData("CheckpointFilter", r -> r.get2() instanceof CheckpointRecord))
+        );
     }
 
     /**

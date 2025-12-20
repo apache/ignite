@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -59,8 +58,10 @@ import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
 import static org.apache.ignite.testframework.GridTestUtils.DFLT_BUSYWAIT_SLEEP_INTERVAL;
@@ -70,7 +71,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 /**
  * A set of tests that check correctness of logical recovery performed during node start.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "nodesCnt={0}, singleNodeTx={1}, backups={2}")
+@MethodSource("allTypesArgs")
 public class IgniteLogicalRecoveryWithParamsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -115,30 +117,29 @@ public class IgniteLogicalRecoveryWithParamsTest extends GridCommonAbstractTest 
     }
 
     /** Parametrized run param : server nodes. */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public Integer numSrvNodes;
 
     /** Parametrized run param : single node tx. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public Boolean singleNodeTx;
 
     /** Parametrized run param : backups count. */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public Integer backups;
 
     /** Test run configurations: Cache mode, atomicity type, is near. */
-    @Parameterized.Parameters(name = "nodesCnt={0}, singleNodeTx={1}, backups={2}")
-    public static Collection<Object[]> runConfig() {
-        return Arrays.asList(new Object[][] {
-            {1, true, 0},
-            {1, true, 1},
-            {1, false, 0},
-            {1, false, 1},
-            {2, true, 0},
-            {2, true, 1},
-            //{2, false, 0}, such case is not fixed by now
-            {2, false, 1},
-        });
+    public static Collection<Arguments> runConfig() {
+        return List.of(
+            Arguments.of(1, true, 0),
+            Arguments.of(1, true, 1),
+            Arguments.of(1, false, 0),
+            Arguments.of(1, false, 1),
+            Arguments.of(2, true, 0),
+            Arguments.of(2, true, 1),
+            //Arguments.of((2, false, 0), such case is not fixed by now
+            Arguments.of(2, false, 1)
+        );
     }
 
     /**Tests partially commited transactions with further recovery. */

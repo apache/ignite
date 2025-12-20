@@ -74,8 +74,10 @@ import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_THREAD_CNT;
@@ -90,7 +92,8 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "nodes={0},backups={1},persistence={2},mode={3},useDataStreamer={4},onlyPrimary={5},encrypted={6}")
+@MethodSource("allTypesArgs")
 public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     /** */
     public static final String GRP = "grp";
@@ -118,37 +121,36 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
     private static final String DFLT_STORAGE = "default_storage";
 
     /** */
-    @Parameterized.Parameter
+    @Parameter
     public int nodes;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public int backups;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean persistence;
 
     /** */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public CacheAtomicityMode mode;
 
     /** */
-    @Parameterized.Parameter(4)
+    @Parameter(4)
     public boolean useDataStreamer;
 
     /** */
-    @Parameterized.Parameter(5)
+    @Parameter(5)
     public boolean onlyPrimary;
 
     /** */
-    @Parameterized.Parameter(6)
+    @Parameter(6)
     public boolean encrypted;
 
     /** */
-    @Parameterized.Parameters(name = "nodes={0},backups={1},persistence={2},mode={3},useDataStreamer={4},onlyPrimary={5},encrypted={6}")
-    public static List<Object[]> params() {
-        List<Object[]> params = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         for (int nodes : new int[]{1, 3})
             for (int backups : new int[]{0, 1})
@@ -159,11 +161,11 @@ public abstract class AbstractCacheDumpTest extends GridCommonAbstractTest {
                                 continue;
 
                             if (backups > 0) {
-                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, false, false});
-                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, true, false});
+                                params.add(Arguments.of(nodes, backups, persistence, mode, useDataStreamer, false, false));
+                                params.add(Arguments.of(nodes, backups, persistence, mode, useDataStreamer, true, false));
                             }
                             else
-                                params.add(new Object[]{nodes, backups, persistence, mode, useDataStreamer, false, false});
+                                params.add(Arguments.of(nodes, backups, persistence, mode, useDataStreamer, false, false));
                         }
                     }
 

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.OpenOption;
-import java.util.Collection;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,14 +46,14 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecora
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeTestUtils;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CP_RECOVERY_DATA_COMRESSION;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointRecoveryFileStorage.FILE_NAME_PATTERN;
@@ -62,7 +61,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.checkpoint
 /**
  * Class containing tests for applying checkpoint recovery data.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "encrypt={0}")
+@ValueSource(booleans = {true, false})
 public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
     /** */
     private static final int KEYS_CNT = 20_000;
@@ -80,14 +80,8 @@ public class IgnitePdsCheckpointRecoveryTest extends GridCommonAbstractTest {
     private Pattern spoilFilePattern;
 
     /** */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public boolean encrypt;
-
-    /** */
-    @Parameterized.Parameters(name = "encrypt={0}")
-    public static Collection<Object[]> parameters() {
-        return F.asList(new Object[] {false}, new Object[] {true});
-    }
 
     /** */
     protected DiskPageCompression getCompression() {

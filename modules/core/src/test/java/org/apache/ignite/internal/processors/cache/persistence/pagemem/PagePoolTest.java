@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -26,6 +24,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Stream;
+
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -33,71 +33,73 @@ import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "PageSize={0}, segment={1}")
+@MethodSource("allTypesArgs")
 public class PagePoolTest extends GridCommonAbstractTest {
     /**
      * @return Test parameters.
      */
-    @Parameterized.Parameters(name = "PageSize={0}, segment={1}")
-    public static Collection<Object[]> parameters() {
-        return Arrays.asList(
-            new Object[] {1024 + PageMemoryImpl.PAGE_OVERHEAD, 0},
-            new Object[] {1024 + PageMemoryImpl.PAGE_OVERHEAD, 1},
-            new Object[] {1024 + PageMemoryImpl.PAGE_OVERHEAD, 2},
-            new Object[] {1024 + PageMemoryImpl.PAGE_OVERHEAD, 4},
-            new Object[] {1024 + PageMemoryImpl.PAGE_OVERHEAD, 8},
-            new Object[] {1024 + PageMemoryImpl.PAGE_OVERHEAD, 16},
-            new Object[] {1024 + PageMemoryImpl.PAGE_OVERHEAD, 31},
+    private static Stream<Arguments> allTypesArgs() {
+        return Stream.of(
+            Arguments.of(1024 + PageMemoryImpl.PAGE_OVERHEAD, 0),
+            Arguments.of(1024 + PageMemoryImpl.PAGE_OVERHEAD, 1),
+            Arguments.of(1024 + PageMemoryImpl.PAGE_OVERHEAD, 2),
+            Arguments.of(1024 + PageMemoryImpl.PAGE_OVERHEAD, 4),
+            Arguments.of(1024 + PageMemoryImpl.PAGE_OVERHEAD, 8),
+            Arguments.of(1024 + PageMemoryImpl.PAGE_OVERHEAD, 16),
+            Arguments.of(1024 + PageMemoryImpl.PAGE_OVERHEAD, 31),
 
-            new Object[] {2048 + PageMemoryImpl.PAGE_OVERHEAD, 0},
-            new Object[] {2048 + PageMemoryImpl.PAGE_OVERHEAD, 1},
-            new Object[] {2048 + PageMemoryImpl.PAGE_OVERHEAD, 2},
-            new Object[] {2048 + PageMemoryImpl.PAGE_OVERHEAD, 4},
-            new Object[] {2048 + PageMemoryImpl.PAGE_OVERHEAD, 8},
-            new Object[] {2048 + PageMemoryImpl.PAGE_OVERHEAD, 16},
-            new Object[] {2048 + PageMemoryImpl.PAGE_OVERHEAD, 31},
+            Arguments.of(2048 + PageMemoryImpl.PAGE_OVERHEAD, 0),
+            Arguments.of(2048 + PageMemoryImpl.PAGE_OVERHEAD, 1),
+            Arguments.of(2048 + PageMemoryImpl.PAGE_OVERHEAD, 2),
+            Arguments.of(2048 + PageMemoryImpl.PAGE_OVERHEAD, 4),
+            Arguments.of(2048 + PageMemoryImpl.PAGE_OVERHEAD, 8),
+            Arguments.of(2048 + PageMemoryImpl.PAGE_OVERHEAD, 16),
+            Arguments.of(2048 + PageMemoryImpl.PAGE_OVERHEAD, 31),
 
-            new Object[] {4096 + PageMemoryImpl.PAGE_OVERHEAD, 0},
-            new Object[] {4096 + PageMemoryImpl.PAGE_OVERHEAD, 1},
-            new Object[] {4096 + PageMemoryImpl.PAGE_OVERHEAD, 2},
-            new Object[] {4096 + PageMemoryImpl.PAGE_OVERHEAD, 4},
-            new Object[] {4096 + PageMemoryImpl.PAGE_OVERHEAD, 8},
-            new Object[] {4096 + PageMemoryImpl.PAGE_OVERHEAD, 16},
-            new Object[] {4096 + PageMemoryImpl.PAGE_OVERHEAD, 31},
+            Arguments.of(4096 + PageMemoryImpl.PAGE_OVERHEAD, 0),
+            Arguments.of(4096 + PageMemoryImpl.PAGE_OVERHEAD, 1),
+            Arguments.of(4096 + PageMemoryImpl.PAGE_OVERHEAD, 2),
+            Arguments.of(4096 + PageMemoryImpl.PAGE_OVERHEAD, 4),
+            Arguments.of(4096 + PageMemoryImpl.PAGE_OVERHEAD, 8),
+            Arguments.of(4096 + PageMemoryImpl.PAGE_OVERHEAD, 16),
+            Arguments.of(4096 + PageMemoryImpl.PAGE_OVERHEAD, 31),
 
-            new Object[] {8192 + PageMemoryImpl.PAGE_OVERHEAD, 0},
-            new Object[] {8192 + PageMemoryImpl.PAGE_OVERHEAD, 1},
-            new Object[] {8192 + PageMemoryImpl.PAGE_OVERHEAD, 2},
-            new Object[] {8192 + PageMemoryImpl.PAGE_OVERHEAD, 4},
-            new Object[] {8192 + PageMemoryImpl.PAGE_OVERHEAD, 8},
-            new Object[] {8192 + PageMemoryImpl.PAGE_OVERHEAD, 16},
-            new Object[] {8192 + PageMemoryImpl.PAGE_OVERHEAD, 31},
+            Arguments.of(8192 + PageMemoryImpl.PAGE_OVERHEAD, 0),
+            Arguments.of(8192 + PageMemoryImpl.PAGE_OVERHEAD, 1),
+            Arguments.of(8192 + PageMemoryImpl.PAGE_OVERHEAD, 2),
+            Arguments.of(8192 + PageMemoryImpl.PAGE_OVERHEAD, 4),
+            Arguments.of(8192 + PageMemoryImpl.PAGE_OVERHEAD, 8),
+            Arguments.of(8192 + PageMemoryImpl.PAGE_OVERHEAD, 16),
+            Arguments.of(8192 + PageMemoryImpl.PAGE_OVERHEAD, 31),
 
-            new Object[] {16384 + PageMemoryImpl.PAGE_OVERHEAD, 0},
-            new Object[] {16384 + PageMemoryImpl.PAGE_OVERHEAD, 1},
-            new Object[] {16384 + PageMemoryImpl.PAGE_OVERHEAD, 2},
-            new Object[] {16384 + PageMemoryImpl.PAGE_OVERHEAD, 4},
-            new Object[] {16384 + PageMemoryImpl.PAGE_OVERHEAD, 8},
-            new Object[] {16384 + PageMemoryImpl.PAGE_OVERHEAD, 16},
-            new Object[] {16384 + PageMemoryImpl.PAGE_OVERHEAD, 31}
+            Arguments.of(16384 + PageMemoryImpl.PAGE_OVERHEAD, 0),
+            Arguments.of(16384 + PageMemoryImpl.PAGE_OVERHEAD, 1),
+            Arguments.of(16384 + PageMemoryImpl.PAGE_OVERHEAD, 2),
+            Arguments.of(16384 + PageMemoryImpl.PAGE_OVERHEAD, 4),
+            Arguments.of(16384 + PageMemoryImpl.PAGE_OVERHEAD, 8),
+            Arguments.of(16384 + PageMemoryImpl.PAGE_OVERHEAD, 16),
+            Arguments.of(16384 + PageMemoryImpl.PAGE_OVERHEAD, 31)
         );
     }
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public int sysPageSize;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public int segment;
 
     /** */
@@ -117,7 +119,7 @@ public class PagePoolTest extends GridCommonAbstractTest {
 
     /**
      */
-    @Before
+    @BeforeEach
     public void prepare() {
         provider = new UnsafeMemoryProvider(log);
         provider.initialize(new long[] {sysPageSize * PAGES + 16});
@@ -129,7 +131,7 @@ public class PagePoolTest extends GridCommonAbstractTest {
 
     /**
      */
-    @After
+    @AfterEach
     public void cleanup() {
         provider.shutdown(true);
     }

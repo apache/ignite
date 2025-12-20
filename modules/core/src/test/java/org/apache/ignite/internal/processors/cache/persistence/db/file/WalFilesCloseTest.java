@@ -38,26 +38,22 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /**
- * Ckeck that WAL manager closes File IO interfaces.
+ * Check that WAL manager closes File IO interfaces.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "mode={0}")
+@EnumSource(value = WALMode.class, names = {"NONE"}, mode = EnumSource.Mode.EXCLUDE)
 public class WalFilesCloseTest extends GridCommonAbstractTest {
     /** Opened File IO interfaces. */
     private final List<FileIO> opened = new CopyOnWriteArrayList<>();
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public WALMode mode;
-
-    /** */
-    @Parameterized.Parameters(name = "mode={0}")
-    public static Object[] parameters() {
-        return new Object[] {WALMode.FSYNC, WALMode.LOG_ONLY, WALMode.BACKGROUND};
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

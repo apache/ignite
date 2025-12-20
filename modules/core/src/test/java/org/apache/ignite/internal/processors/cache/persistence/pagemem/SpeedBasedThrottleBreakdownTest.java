@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -29,8 +28,9 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 
@@ -39,20 +39,12 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
  *
  * @see PagesWriteSpeedBasedThrottle
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "Use speed-based throttling: {0}")
+@ValueSource(booleans = {true, false})
 public class SpeedBasedThrottleBreakdownTest extends GridCommonAbstractTest {
     /***/
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean useSpeedBasedThrottling;
-
-    /** Parameters. */
-    @Parameterized.Parameters(name = "Use speed-based throttling: {0}")
-    public static Iterable<Boolean[]> data() {
-        return Arrays.asList(
-            new Boolean[] {true},
-            new Boolean[] {false}
-        );
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

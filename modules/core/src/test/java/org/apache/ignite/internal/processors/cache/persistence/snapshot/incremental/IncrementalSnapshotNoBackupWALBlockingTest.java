@@ -18,45 +18,48 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 import org.apache.ignite.transactions.TransactionState;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "txStateBlk={0}, txNodeBlk={1}, snpBlkType={2}, snpBlkNode={3}")
+@MethodSource("allTypesArgs")
 public class IncrementalSnapshotNoBackupWALBlockingTest extends AbstractIncrementalSnapshotWalBlockingTest {
     /** */
-    @Parameterized.Parameter
-    public TransactionState txBlkState;
+    @Parameter
+    private TransactionState txBlkState;
 
     /** */
-    @Parameterized.Parameter(1)
-    public BlkNodeType txBlkNode;
+    @Parameter(1)
+    private BlkNodeType txBlkNode;
 
     /** */
-    @Parameterized.Parameter(2)
-    public BlkSnpType snpBlkType;
+    @Parameter(2)
+    private BlkSnpType snpBlkType;
 
     /** */
-    @Parameterized.Parameter(3)
-    public BlkNodeType snpBlkNode;
+    @Parameter(3)
+    private BlkNodeType snpBlkNode;
 
     /** */
-    @Parameterized.Parameters(name = "txStateBlk={0}, txNodeBlk={1}, snpBlkType={2}, snpBlkNode={3}")
-    public static List<Object[]> params() {
-        List<Object[]> params = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         Stream.of(PREPARED, COMMITTED).forEach((tx) ->
             Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY).forEach((nt) ->
                 Stream.of(BlkNodeType.NEAR, BlkNodeType.PRIMARY).forEach(nc -> {
                     for (BlkSnpType c : BlkSnpType.values())
-                        params.add(new Object[] {tx, nt, c, nc});
+                        params.add(Arguments.of(tx, nt, c, nc));
                 })
             )
         );

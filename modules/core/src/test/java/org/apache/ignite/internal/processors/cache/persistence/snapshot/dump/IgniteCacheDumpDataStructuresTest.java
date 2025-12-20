@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot.dump;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -55,8 +56,10 @@ import org.apache.ignite.internal.processors.datastructures.DataStructuresProces
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.configuration.AtomicConfiguration.DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE;
 import static org.apache.ignite.dump.DumpReaderConfiguration.DFLT_THREAD_CNT;
@@ -65,39 +68,39 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.d
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "nodes={0},backups={1},amode={2},cmode={3},grp={4}")
+@MethodSource("allTypesArgs")
 public class IgniteCacheDumpDataStructuresTest extends GridCommonAbstractTest {
     /** */
-    @Parameterized.Parameter
+    @Parameter
     public int nodes;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public int backups;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public CacheAtomicityMode amode;
 
     /** */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public CacheMode cmode;
 
     /** */
-    @Parameterized.Parameter(4)
+    @Parameter(4)
     @Nullable public String grp;
 
     /** */
-    @Parameterized.Parameters(name = "nodes={0},backups={1},amode={2},cmode={3},grp={4}")
-    public static List<Object[]> params() {
-        List<Object[]> params = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         for (int nodes : new int[]{1, 3})
             for (int backups : nodes == 1 ? new int[] {0} : new int[]{0, 2})
                 for (CacheAtomicityMode amode : CacheAtomicityMode.values()) {
                     for (CacheMode cmode : CacheMode.values()) {
                         for (String grp : new String[]{null, "mygroup"})
-                            params.add(new Object[]{nodes, backups, amode, cmode, grp});
+                            params.add(Arguments.of(nodes, backups, amode, cmode, grp));
                     }
                 }
 

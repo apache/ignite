@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -37,13 +38,16 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
 
 /** Load Ignite with transactions and starts incremental snapshots concurrently. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "nodes={0}, backups={1}, withNearCache={2}")
+@MethodSource("allTypesArgs")
 public class ConcurrentTxsIncrementalSnapshotTest extends AbstractIncrementalSnapshotTest {
     /** Amount of incremental snapshots to run. */
     private static final int SNP_CNT = 20;
@@ -61,31 +65,30 @@ public class ConcurrentTxsIncrementalSnapshotTest extends AbstractIncrementalSna
     private volatile CountDownLatch stopLoadLatch;
 
     /** Number of server nodes. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public int nodes;
 
     /** Number of backups. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public int backups;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean withNearCache;
 
     /** */
-    @Parameterized.Parameters(name = "nodes={0}, backups={1}, withNearCache={2}")
-    public static List<Object[]> params() {
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
+
         int[][] nodesAndBackupsCnt = new int[][] {
             new int[] {3, 0},
             new int[] {2, 1},
             new int[] {3, 2}
         };
 
-        List<Object[]> params = new ArrayList<>();
-
         for (int[] nb: nodesAndBackupsCnt) {
             for (boolean near: new boolean[] {false, true})
-                params.add(new Object[] {nb[0], nb[1], near});
+                params.add(Arguments.of(nb[0], nb[1], near));
         }
 
         return params;

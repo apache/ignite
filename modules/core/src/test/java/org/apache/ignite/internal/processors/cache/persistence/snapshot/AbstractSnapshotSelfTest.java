@@ -104,10 +104,12 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.nio.file.Files.newDirectoryStream;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE;
@@ -124,7 +126,8 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Base snapshot tests.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "encryption={0}, onlyPrimay={1}")
+@MethodSource("allTypesArgs")
 public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     /** Default snapshot name. */
     public static final String SNAPSHOT_NAME = "testSnapshot";
@@ -172,16 +175,17 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** Enable encryption of all caches in {@code IgniteConfiguration} before start. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean encryption;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean onlyPrimary;
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}")
-    public static Collection<Object[]> params() {
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
+
         boolean[] encVals = DISK_PAGE_COMPRESSION != DiskPageCompression.DISABLED
             ? new boolean[] {false}
             : new boolean[] {false, true};
@@ -190,9 +194,9 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
 
         for (boolean enc: encVals)
             for (boolean onlyPrimary: new boolean[] {true, false})
-                res.add(new Object[] { enc, onlyPrimary});
+                params.add(Arguments.of(enc, onlyPrimary));
 
-        return res;
+        return params;
     }
 
     /** {@inheritDoc} */
@@ -249,7 +253,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If fails. */
-    @Before
+    @BeforeEach
     public void beforeTestSnapshot() throws Exception {
         cleanPersistenceDir();
 
@@ -258,7 +262,7 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If fails. */
-    @After
+    @AfterEach
     public void afterTestSnapshot() throws Exception {
         try {
             for (Ignite ig : G.allGrids()) {

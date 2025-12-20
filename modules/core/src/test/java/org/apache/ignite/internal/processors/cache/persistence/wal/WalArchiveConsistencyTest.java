@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterState;
@@ -31,8 +30,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -40,24 +40,14 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Class for testing cases when WAL archive configuration was changed and the node was able to start.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "mode={0}")
+@EnumSource(value = WALMode.class, names = {"NONE", "BACKGROUND"}, mode = EnumSource.Mode.EXCLUDE)
 public class WalArchiveConsistencyTest extends GridCommonAbstractTest {
     /**
      * WAL mode.
      */
-    @Parameterized.Parameter
+    @Parameter(0)
     public WALMode walMode;
-
-    /**
-     * @return Test parameters.
-     */
-    @Parameterized.Parameters(name = "walMode={0}")
-    public static Collection<Object[]> parameters() {
-        return Arrays.asList(
-            new Object[] {WALMode.LOG_ONLY},
-            new Object[] {WALMode.FSYNC}
-        );
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

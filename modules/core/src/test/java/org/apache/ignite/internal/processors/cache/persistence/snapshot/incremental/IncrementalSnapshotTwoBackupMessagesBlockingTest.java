@@ -18,34 +18,37 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot.incremental;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "txNodeBlk={0}, snpBlkAt={1}, nodeBlk={2}, blkMsgCls={3}")
+@MethodSource("allTypesArgs")
 public class IncrementalSnapshotTwoBackupMessagesBlockingTest extends AbstractIncrementalSnapshotMessagesBlockingTest {
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public BlkNodeType txNodeBlkType;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public BlkSnpType snpBlkType;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public BlkNodeType snpNodeBlkType;
 
     /** */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public Class<?> blkMsgCls;
 
     /** */
-    @Parameterized.Parameters(name = "txNodeBlk={0}, snpBlkAt={1}, nodeBlk={2}, blkMsgCls={3}")
-    public static List<Object[]> params() {
-        List<Object[]> p = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         List<Class<?>> msgs = messages(true);
 
@@ -53,12 +56,12 @@ public class IncrementalSnapshotTwoBackupMessagesBlockingTest extends AbstractIn
             for (BlkNodeType snpN: BlkNodeType.values()) {
                 for (BlkSnpType c : BlkSnpType.values()) {
                     for (Class<?> m: msgs)
-                        p.add(new Object[] {txN, c, snpN, m});
+                        params.add(Arguments.of(txN, c, snpN, m));
                 }
             }
         }
 
-        return p;
+        return params;
     }
 
     /** */

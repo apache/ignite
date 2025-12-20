@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.filename;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.ObjIntConsumer;
 import java.util.stream.Collectors;
@@ -38,13 +39,16 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Test cases when {@link CacheConfiguration#setStoragePaths(String...)} used to set custom data region storage path.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "path={0},severalCacheStorages={1},idxStorage={2}")
+@MethodSource("allTypesArgs")
 public abstract class AbstractDataRegionRelativeStoragePathTest extends GridCommonAbstractTest {
     /** Custom storage path . */
     static final String STORAGE_PATH = "storage";
@@ -65,30 +69,29 @@ public abstract class AbstractDataRegionRelativeStoragePathTest extends GridComm
     protected static final int GRID_CNT = 3;
 
     /** */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public PathMode pathMode;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean severalCacheStorages;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean idxStorage;
 
     /** */
-    @Parameterized.Parameters(name = "path={0},severalCacheStorages={1},idxStorage={2}")
-    public static List<Object[]> params() {
-        List<Object[]> res = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         for (PathMode absPathMode : PathMode.values()) {
             for (boolean severalCacheStorages : new boolean[]{true, false}) {
                 for (boolean idxStorage : new boolean[]{true, false})
-                    res.add(new Object[]{absPathMode, severalCacheStorages, idxStorage});
+                    params.add(Arguments.of(absPathMode, severalCacheStorages, idxStorage));
             }
         }
 
-        return res;
+        return params;
     }
 
     /** {@inheritDoc} */

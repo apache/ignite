@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.mem;
 
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
@@ -36,11 +35,14 @@ import org.apache.ignite.mem.NumaAllocator;
 import org.apache.ignite.mem.SimpleNumaAllocationStrategy;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "allocationStrategy={0}, defaultConfig={1}")
+@MethodSource("allTypesArgs")
 public class NumaAllocatorBasicTest extends GridCommonAbstractTest {
     /** */
     private static final long INITIAL_SIZE = 30L * 1024 * 1024;
@@ -62,8 +64,7 @@ public class NumaAllocatorBasicTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Parameterized.Parameters(name = "allocationStrategy={0}, defaultConfig={1}")
-    public static Iterable<Object[]> data() {
+    private static Stream<Arguments> allTypesArgs() {
         return Stream.of(
             new LocalNumaAllocationStrategy(),
             new InterleavedNumaAllocationStrategy(),
@@ -71,16 +72,15 @@ public class NumaAllocatorBasicTest extends GridCommonAbstractTest {
             new SimpleNumaAllocationStrategy(),
             new SimpleNumaAllocationStrategy(NumaAllocUtil.NUMA_NODES_CNT - 1)
             )
-            .flatMap(strategy -> Stream.of(new Object[]{strategy, true}, new Object[]{strategy, false}))
-            .collect(Collectors.toList());
+            .flatMap(strategy -> Stream.of(Arguments.of(strategy, true), Arguments.of(strategy, false)));
     }
 
     /** */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public NumaAllocationStrategy strategy;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean defaultConfig;
 
     /** {@inheritDoc} */

@@ -43,6 +43,10 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -51,35 +55,17 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.partDeltaIndexFile;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DeltaSortedIterator.DELTA_SORT_BATCH_SIZE;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  * Cluster snapshot delta tests.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "encryption={0}, onlyPrimary={1}, sequentialWrite={1}")
+@ValueSource(booleans = {true, false})
 public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean sequentialWrite;
-
-    /** Parameters. */
-    @Parameterized.Parameters(name = "encryption={0}, onlyPrimary={1}, sequentialWrite={1}")
-    public static Collection<Object[]> parameters() {
-        Collection<Object[]> baseParams = params();
-
-        List<Object[]> res = new ArrayList<>();
-
-        for (boolean seqWrite : new boolean[] {false, true}) {
-            for (Object[] baseParam : baseParams) {
-                Object[] res0 = Arrays.copyOf(baseParam, baseParam.length + 1);
-
-                res0[baseParam.length] = seqWrite;
-
-                res.add(res0);
-            }
-        }
-
-        return res;
-    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

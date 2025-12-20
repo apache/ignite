@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -53,8 +54,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -68,7 +71,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.A
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /** Tests the consistency of taken snapshots across multiple nodes. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "isClient={0}, atomicity={1}, backups={2}, txConcurrency={3}, onlyPrimayr={4}")
+@MethodSource("allTypesArgs")
 public class IgniteSnapshotConsistencyTest extends GridCommonAbstractTest {
     /** */
     private final AtomicInteger keyCntr = new AtomicInteger(0);
@@ -77,42 +81,41 @@ public class IgniteSnapshotConsistencyTest extends GridCommonAbstractTest {
     private final Map<Integer, BlockingCheckpointListener> blockedCheckpointNodes = new ConcurrentHashMap<>();
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean isOpInitiatorClient;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public CacheAtomicityMode atomicity;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public int backups;
 
     /** */
-    @Parameterized.Parameter(3)
+    @Parameter(3)
     public TransactionConcurrency txConcurrency;
 
     /** */
-    @Parameterized.Parameter(4)
+    @Parameter(4)
     public boolean onlyPrimary;
 
     /** */
-    @Parameterized.Parameters(name = "isClient={0}, atomicity={1}, backups={2}, txConcurrency={3}, onlyPrimayr={4}")
-    public static Iterable<Object[]> data() {
-        List<Object[]> res = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         for (boolean isClient : Arrays.asList(true, false)) {
             for (int backups = 1; backups <= 2; ++backups) {
                 for (boolean onlyPrimary : Arrays.asList(true, false)) {
-                    res.add(new Object[]{isClient, ATOMIC, backups, null, onlyPrimary});
+                    params.add(Arguments.of(isClient, ATOMIC, backups, null, onlyPrimary));
 
                     for (TransactionConcurrency txConcurrency : TransactionConcurrency.values())
-                        res.add(new Object[]{isClient, TRANSACTIONAL, backups, txConcurrency, onlyPrimary});
+                        params.add(Arguments.of(isClient, TRANSACTIONAL, backups, txConcurrency, onlyPrimary));
                 }
             }
         }
 
-        return res;
+        return params;
     }
 
     /** {@inheritDoc} */
