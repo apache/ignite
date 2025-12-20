@@ -606,6 +606,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             T2<Boolean, T2<SocketStream, Integer>> waitAndRes = sendJoinRequests(prevAddr != null, addrs);
 
+            addrs.clear();
+
             boolean wait = waitAndRes.get1();
             T2<SocketStream, Integer> res = waitAndRes.get2();
 
@@ -747,6 +749,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                         log.info("Reconnecting to the addresses of a proper DC [addrs=" + redirectAddrs + ']');
 
                     T2<Boolean, T2<SocketStream, Integer>> redirectedRes = sendJoinRequests(recon, redirectAddrs);
+
+                    //redirectAddrs.clear();
 
                     return redirectedRes.get2();
                 }
