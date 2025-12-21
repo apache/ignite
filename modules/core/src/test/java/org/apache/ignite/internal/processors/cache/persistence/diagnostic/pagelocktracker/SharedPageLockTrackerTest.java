@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -37,37 +35,31 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_LOG;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_STACK;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.OFF_HEAP_LOG;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.OFF_HEAP_STACK;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "trackerType={0}")
+@ValueSource(ints = {HEAP_STACK, HEAP_LOG, OFF_HEAP_STACK, OFF_HEAP_LOG})
 public class SharedPageLockTrackerTest extends AbstractPageLockTest {
     /** Tracker types. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public int trackerType;
 
     /** */
     private final int defaultType = PageLockTrackerFactory.DEFAULT_TYPE;
-
-    /**
-     * @return Test parameters.
-     */
-    @Parameterized.Parameters(name = "trackerType={0}")
-    public static Collection<Object> getParameters() {
-        return Arrays.asList(HEAP_STACK, HEAP_LOG, OFF_HEAP_STACK, OFF_HEAP_LOG);
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

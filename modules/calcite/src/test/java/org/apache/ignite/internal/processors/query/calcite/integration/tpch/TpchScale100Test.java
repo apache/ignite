@@ -17,22 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration.tpch;
 
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Test;
 
 /** */
-@RunWith(Parameterized.class)
 public class TpchScale100Test extends AbstractTpchTest {
-    /** TODO Revise after https://issues.apache.org/jira/browse/IGNITE-25129 */
-    @Parameterized.Parameters(name = "queryId={0}")
-    public static Collection<Integer> params() {
-        Collection<Integer> res = new LinkedHashSet<>(USED_TESTS);
+    @Test
+    public void test() {
+        // TODO Revise after https://issues.apache.org/jira/browse/IGNITE-25129
+        Assumptions.assumeFalse(qryId == 16);
 
-        res.remove(16);
-
-        return res;
+        super.test();
     }
 
     /** {@inheritDoc} */
