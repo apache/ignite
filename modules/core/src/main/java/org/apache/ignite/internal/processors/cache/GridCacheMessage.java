@@ -229,7 +229,12 @@ public abstract class GridCacheMessage implements Message {
                 skipPrepare = true;
             }
             else {
-                Class<?> cls = U.detectClass(o);
+                Object realObject = o ;
+                if (o instanceof EntryProcessorResourceInjectorProxy){
+                    EntryProcessorResourceInjectorProxy proxy = (EntryProcessorResourceInjectorProxy)o ;
+                    realObject = proxy.delegate() ;
+                }
+                Class<?> cls = U.detectClass(realObject);
 
                 ctx.deploy().registerClass(cls);
 
