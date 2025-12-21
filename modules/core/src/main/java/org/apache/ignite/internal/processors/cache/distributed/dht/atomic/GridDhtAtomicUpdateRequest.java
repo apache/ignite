@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
@@ -640,7 +639,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
      * @return Serialized near entry processors.
      */
     public List<byte[]> nearEntryProcessorsBytes() {
-        return Collections.unmodifiableList(nearEntryProcessorsBytes);
+        return nearEntryProcessorsBytes;
     }
 
     /**
