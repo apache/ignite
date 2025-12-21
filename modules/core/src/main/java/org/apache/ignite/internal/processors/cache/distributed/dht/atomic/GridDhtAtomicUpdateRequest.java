@@ -301,7 +301,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 nearTtls.add(CU.TTL_NOT_CHANGED);
         }
 
-
         if (nearTtls != null)
             nearTtls.add(ttl);
 
@@ -311,7 +310,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
             for (int i = 0; i < nearKeys.size() - 1; i++)
                 nearExpireTimes.add(CU.EXPIRE_TIME_CALCULATE);
         }
-
 
         if (nearExpireTimes != null)
             nearExpireTimes.add(expireTime);
