@@ -21,7 +21,9 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Reducer of cache query results, no ordering of results is provided.
@@ -37,14 +39,14 @@ public class UnsortedCacheQueryReducer<R> extends CacheQueryReducer<R> {
     private final CompletableFuture<NodePage<R>>[] futs;
 
     /** */
-    public UnsortedCacheQueryReducer(Map<UUID, NodePageStream<R>> pageStreams) {
-        super(pageStreams);
+    public UnsortedCacheQueryReducer(Map<UUID, NodePageStream<R>> pageStreams, int limit) {
+        super(pageStreams, limit);
 
         futs = new CompletableFuture[pageStreams.size()];
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasNextX() throws IgniteCheckedException {
+    @Override protected boolean hasNext0() throws IgniteCheckedException {
         while (page == null || !page.hasNext()) {
             int pendingNodesCnt = 0;
 
@@ -78,7 +80,21 @@ public class UnsortedCacheQueryReducer<R> extends CacheQueryReducer<R> {
     }
 
     /** {@inheritDoc} */
-    @Override public R nextX() throws IgniteCheckedException {
+    @Override protected R next0() {
         return page.next();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkLimit(int cnt) {
+        int rcvdCnt = 0;
+
+        for (NodePageStream<R> s: pageStreams.values()) {
+            rcvdCnt += s.dataSize();
+
+            if (rcvdCnt >= limit)
+                return true;
+        }
+
+        return false;
     }
 }
