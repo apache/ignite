@@ -903,21 +903,9 @@ final class ReliableChannel implements AutoCloseable {
                 curChannelsGuard.readLock().lock();
 
                 try {
-                    if (!partitionAwarenessEnabled || channelsCnt.get() <= 1 || F.size(failures) > 0)
-                        hld = channels.get(curChIdx);
-                    else {
-                        // Make first attempt with the random open channel.
-                        int idx = ThreadLocalRandom.current().nextInt(channels.size());
-                        int idx0 = idx;
-
-                        do {
-                            hld = channels.get(idx);
-
-                            if (++idx == channels.size())
-                                idx = 0;
-                        }
-                        while (hld.ch == null && idx != idx0);
-                    }
+                    // round-robin balancing
+                    hld = channels.get(curChIdx);
+                    curChIdx = (curChIdx + 1) % channels.size();
                 }
                 finally {
                     curChannelsGuard.readLock().unlock();
