@@ -116,7 +116,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
 
     /** Entry processor arguments bytes. */
     @Order(25)
-    private byte[][] invokeArgsBytes;
+    private List<byte[]> invokeArgsBytes;
 
     /** Partition. */
     @Order(value = 26, method = "updateCounters")
@@ -234,25 +234,21 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         else if (conflictVers != null)
             conflictVers.add(null);
 
-        if (ttl >= 0) {
-            if (ttls == null) {
-                ttls = new GridLongList(keys.size());
+        if (ttl >= 0 && ttls == null) {
+            ttls = new GridLongList(keys.size());
 
-                for (int i = 0; i < keys.size() - 1; i++)
-                    ttls.add(CU.TTL_NOT_CHANGED);
-            }
+            for (int i = 0; i < keys.size() - 1; i++)
+                ttls.add(CU.TTL_NOT_CHANGED);
         }
 
         if (ttls != null)
             ttls.add(ttl);
 
-        if (conflictExpireTime >= 0) {
-            if (conflictExpireTimes == null) {
-                conflictExpireTimes = new GridLongList(keys.size());
+        if (conflictExpireTime >= 0 && conflictExpireTimes == null) {
+            conflictExpireTimes = new GridLongList(keys.size());
 
-                for (int i = 0; i < keys.size() - 1; i++)
-                    conflictExpireTimes.add(CU.EXPIRE_TIME_CALCULATE);
-            }
+            for (int i = 0; i < keys.size() - 1; i++)
+                conflictExpireTimes.add(CU.EXPIRE_TIME_CALCULATE);
         }
 
         if (conflictExpireTimes != null)
@@ -299,26 +295,24 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
         else
             nearVals.add(val);
 
-        if (ttl >= 0) {
-            if (nearTtls == null) {
-                nearTtls = new GridLongList(nearKeys.size());
+        if (ttl >= 0 && nearTtls == null) {
+            nearTtls = new GridLongList(nearKeys.size());
 
-                for (int i = 0; i < nearKeys.size() - 1; i++)
-                    nearTtls.add(CU.TTL_NOT_CHANGED);
-            }
+            for (int i = 0; i < nearKeys.size() - 1; i++)
+                nearTtls.add(CU.TTL_NOT_CHANGED);
         }
+
 
         if (nearTtls != null)
             nearTtls.add(ttl);
 
-        if (expireTime >= 0) {
-            if (nearExpireTimes == null) {
-                nearExpireTimes = new GridLongList(nearKeys.size());
+        if (expireTime >= 0 && nearExpireTimes == null) {
+            nearExpireTimes = new GridLongList(nearKeys.size());
 
-                for (int i = 0; i < nearKeys.size() - 1; i++)
-                    nearExpireTimes.add(CU.EXPIRE_TIME_CALCULATE);
-            }
+            for (int i = 0; i < nearKeys.size() - 1; i++)
+                nearExpireTimes.add(CU.EXPIRE_TIME_CALCULATE);
         }
+
 
         if (nearExpireTimes != null)
             nearExpireTimes.add(expireTime);
@@ -659,14 +653,14 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     /**
      * @return Serialized optional entry processor arguments.
      */
-    public byte[][] invokeArgsBytes() {
+    public List<byte[]> invokeArgsBytes() {
         return invokeArgsBytes;
     }
 
     /**
      * @param invokeArgsBytes New serialized optional entry processor arguments.
      */
-    public void invokeArgsBytes(byte[][] invokeArgsBytes) {
+    public void invokeArgsBytes(List<byte[]> invokeArgsBytes) {
         this.invokeArgsBytes = invokeArgsBytes;
     }
 
@@ -697,7 +691,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 addDepInfo = true;
 
             if (invokeArgsBytes == null)
-                invokeArgsBytes = marshalInvokeArguments(invokeArgs, cctx);
+                invokeArgsBytes = F.asList(marshalInvokeArguments(invokeArgs, cctx));
 
             if (entryProcessorsBytes == null)
                 entryProcessorsBytes = marshalCollection(entryProcessors, cctx);
@@ -728,7 +722,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
                 entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);
 
             if (invokeArgs == null)
-                invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
+                invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), ctx, ldr);
 
             if (nearEntryProcessors == null)
                 nearEntryProcessors = unmarshalCollection(nearEntryProcessorsBytes, ctx, ldr);
