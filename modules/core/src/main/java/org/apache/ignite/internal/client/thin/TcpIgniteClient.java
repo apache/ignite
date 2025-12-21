@@ -372,7 +372,7 @@ public class TcpIgniteClient implements IgniteClient {
             else
                 out.writeByte(flags);
 
-            serDes.write(qry, out);
+            serDes.write(qry, out, payloadCh.clientChannel().protocolCtx());
         };
 
         return new ClientFieldsQueryCursor<>(new ClientFieldsQueryPager(

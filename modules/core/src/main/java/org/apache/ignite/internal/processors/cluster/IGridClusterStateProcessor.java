@@ -128,7 +128,7 @@ public interface IGridClusterStateProcessor extends GridProcessor {
      * @param errs Errors.
      * @param req State change request.
      */
-    void onStateChangeError(Map<UUID, Exception> errs, StateChangeRequest req);
+    void onStateChangeError(Map<UUID, Throwable> errs, StateChangeRequest req);
 
     /**
      * @param exchangeActions Exchange actions.

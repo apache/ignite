@@ -172,14 +172,13 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
 
     /** {@inheritDoc} */
     @Override public BinaryObject build() {
-        try (BinaryWriterEx writer = BinaryUtils.writer(ctx)) {
-            Thread curThread = Thread.currentThread();
+        Thread curThread = Thread.currentThread();
 
-            if (curThread instanceof IgniteThread)
-                writer.failIfUnregistered(((IgniteThread)curThread).isForbiddenToRequestBinaryMetadata());
-
-            writer.typeId(typeId);
-
+        try (BinaryWriterEx writer = BinaryUtils.writer(
+            ctx,
+            curThread instanceof IgniteThread && ((IgniteThread)curThread).isForbiddenToRequestBinaryMetadata(),
+            typeId)
+        ) {
             BinaryBuilderSerializer serializationCtx = new BinaryBuilderSerializer();
 
             serializationCtx.registerObjectWriting(this, 0);

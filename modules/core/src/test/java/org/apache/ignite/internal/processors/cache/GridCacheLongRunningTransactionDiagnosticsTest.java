@@ -171,7 +171,7 @@ public class GridCacheLongRunningTransactionDiagnosticsTest extends GridCommonAb
 
         client.context().io().addMessageListener(
             GridTopic.TOPIC_JOB,
-            (nodeId, msg, plc) -> taskNameContainer.append(((GridJobExecuteRequest)msg).getTaskName())
+            (nodeId, msg, plc) -> taskNameContainer.append(((GridJobExecuteRequest)msg).taskName())
         );
 
         try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, TX_TIMEOUT, 1)) {

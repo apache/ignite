@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -41,7 +42,7 @@ import static java.lang.Integer.MAX_VALUE;
 import static org.junit.Assert.assertEquals;
 
 /** */
-public abstract class AbstractCommunicationMessageSerializationTest {
+public abstract class AbstractMessageSerializationTest {
     /** */
     @Test
     public void testMessageSerializationAndDeserializationConsistency() throws Exception {
@@ -300,6 +301,11 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
+        @Override public <T> boolean writeSet(Set<T> set, MessageCollectionItemType itemType) {
+            return writeField(Set.class);
+        }
+
+        /** {@inheritDoc} */
         @Override public <K, V> boolean writeMap(Map<K, V> map, MessageCollectionItemType keyType,
             MessageCollectionItemType valType) {
             return writeField(Map.class);
@@ -549,6 +555,13 @@ public abstract class AbstractCommunicationMessageSerializationTest {
         /** {@inheritDoc} */
         @Override public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType) {
             readField(Collection.class);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public <S extends Set<?>> S readSet(MessageCollectionItemType itemType) {
+            readField(Set.class);
 
             return null;
         }

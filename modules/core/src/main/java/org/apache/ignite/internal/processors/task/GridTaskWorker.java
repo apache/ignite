@@ -88,7 +88,6 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.jetbrains.annotations.Nullable;
@@ -115,7 +114,6 @@ import static org.apache.ignite.internal.processors.job.ComputeJobStatusEnum.FIN
 import static org.apache.ignite.internal.processors.security.SecurityUtils.authorizeAll;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.unwrap;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
-import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_KILL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_CANCEL;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 
@@ -1388,48 +1386,38 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
 
                     boolean forceLocDep = internal || !ctx.deploy().enabled();
 
-                    try {
-                        MarshallerUtils.jobReceiverVersion(node.version());
-
-                        req = new GridJobExecuteRequest(
-                            ses.getId(),
-                            res.getJobContext().getJobId(),
-                            ses.getTaskName(),
-                            ses.getUserVersion(),
-                            ses.getTaskClassName(),
-                            loc ? null : U.marshal(marsh, res.getJob()),
-                            loc ? res.getJob() : null,
-                            ses.getStartTime(),
-                            timeout,
-                            ses.getTopology(),
-                            loc ? ses.getTopologyPredicate() : null,
-                            loc ? null : U.marshal(marsh, ses.getTopologyPredicate()),
-                            loc ? null : U.marshal(marsh, ses.getJobSiblings()),
-                            loc ? ses.getJobSiblings() : null,
-                            loc ? null : U.marshal(marsh, sesAttrs),
-                            loc ? sesAttrs : null,
-                            loc ? null : U.marshal(marsh, jobAttrs),
-                            loc ? jobAttrs : null,
-                            ses.getCheckpointSpi(),
-                            dep.classLoaderId(),
-                            dep.deployMode(),
-                            continuous,
-                            dep.participants(),
-                            forceLocDep,
-                            ses.isFullSupport(),
-                            internal,
-                            affCacheIds,
-                            affPartId,
-                            mapTopVer,
-                            ses.executorName());
-                    }
-                    finally {
-                        MarshallerUtils.jobReceiverVersion(null);
-                    }
+                    req = new GridJobExecuteRequest(
+                        ses.getId(),
+                        res.getJobContext().getJobId(),
+                        ses.getTaskName(),
+                        ses.getUserVersion(),
+                        ses.getTaskClassName(),
+                        res.getJob(),
+                        ses.getStartTime(),
+                        timeout,
+                        ses.getTopology(),
+                        ses.getTopologyPredicate(),
+                        ses.getJobSiblings(),
+                        sesAttrs,
+                        jobAttrs,
+                        ses.getCheckpointSpi(),
+                        dep.classLoaderId(),
+                        dep.deployMode(),
+                        continuous,
+                        dep.participants(),
+                        forceLocDep,
+                        ses.isFullSupport(),
+                        internal,
+                        affCacheIds,
+                        affPartId,
+                        mapTopVer,
+                        ses.executorName());
 
                     if (loc)
                         ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req);
                     else {
+                        req.prepareMarshal(marsh);
+
                         byte plc;
 
                         if (internal)
@@ -1791,16 +1779,8 @@ public class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObjec
                 ses.initiatorSecurityContext().subject().id(),
                 ctx.security().securityContext().subject().id());
 
-            for (GridJobResultImpl jobRes : jobRes.values()) {
-                Object executable = unwrap(jobRes.getJob());
-
-                if (!ctx.security().isSystemType(executable.getClass()))
-                    ctx.security().authorize(executable.getClass().getName(), TASK_CANCEL);
-                else if (executable instanceof PlatformSecurityAwareJob)
-                    ctx.security().authorize(((PlatformSecurityAwareJob)executable).name(), TASK_CANCEL);
-                else if (!isClosedByInitiator)
-                    ctx.security().authorize(ADMIN_KILL);
-            }
+            for (GridJobResultImpl jobRes : jobRes.values())
+                ctx.job().authorizeJobCancel(jobRes.getJob(), isClosedByInitiator);
         }
     }
 }

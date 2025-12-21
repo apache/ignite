@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.io.Externalizable;
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -66,20 +65,21 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
      * left message are processed by other nodes only after coordinator
      * verification.
      */
+    @Order(1)
     private UUID verifierNodeId;
 
     /** Topology version. */
+    @Order(value = 2, method = "topologyVersion")
     private long topVer;
 
     /** Flags. */
     @GridToStringExclude
+    @Order(3)
     private int flags;
-
-    /** Pending message index. */
-    private short pendingIdx;
 
     /** */
     @GridToStringInclude
+    @Order(4)
     private Set<UUID> failedNodes;
 
     /**
@@ -102,11 +102,10 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
      * @param msg Message.
      */
     protected TcpDiscoveryAbstractMessage(TcpDiscoveryAbstractMessage msg) {
-        this.id = msg.id;
-        this.verifierNodeId = msg.verifierNodeId;
-        this.topVer = msg.topVer;
-        this.flags = msg.flags;
-        this.pendingIdx = msg.pendingIdx;
+        id = msg.id;
+        verifierNodeId = msg.verifierNodeId;
+        topVer = msg.topVer;
+        flags = msg.flags;
     }
 
     /**
@@ -184,7 +183,7 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
      *
      * @param verifierNodeId Verifier node ID.
      */
-    public void verify(UUID verifierNodeId) {
+    public void verifierNodeId(UUID verifierNodeId) {
         this.verifierNodeId = verifierNodeId;
     }
 
@@ -240,20 +239,6 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
      */
     public void force(boolean force) {
         setFlag(FORCE_FAIL_FLAG_POS, force);
-    }
-
-    /**
-     * @return Pending message index.
-     */
-    public short pendingIndex() {
-        return pendingIdx;
-    }
-
-    /**
-     * @param pendingIdx Pending message index.
-     */
-    public void pendingIndex(short pendingIdx) {
-        this.pendingIdx = pendingIdx;
     }
 
     /**
@@ -314,8 +299,22 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     /**
      * @return Failed nodes IDs.
      */
-    @Nullable public Collection<UUID> failedNodes() {
+    @Nullable public Set<UUID> failedNodes() {
         return failedNodes;
+    }
+
+    /**
+     * @return Flags.
+     */
+    public int flags() {
+        return flags;
+    }
+
+    /**
+     * @param flags New flags.
+     */
+    public void flags(int flags) {
+        this.flags = flags;
     }
 
     /** {@inheritDoc} */

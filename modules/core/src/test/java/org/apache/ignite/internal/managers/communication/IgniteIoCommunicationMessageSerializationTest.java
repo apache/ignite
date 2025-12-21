@@ -27,7 +27,7 @@ import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import static org.apache.ignite.internal.util.IgniteUtils.toBytes;
 
 /** */
-public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommunicationMessageSerializationTest {
+public class IgniteIoCommunicationMessageSerializationTest extends AbstractMessageSerializationTest {
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
         return new GridIoMessageFactory();
