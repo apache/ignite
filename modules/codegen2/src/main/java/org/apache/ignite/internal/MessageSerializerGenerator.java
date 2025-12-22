@@ -86,6 +86,9 @@ class MessageSerializerGenerator {
     /** */
     private static final String RETURN_FALSE_STMT = "return false;";
 
+    /** */
+    static final String DLFT_ENUM_MAPPER_CLS = "org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper";
+
     /** Collection of lines for {@code writeTo} method. */
     private final List<String> write = new ArrayList<>();
 
@@ -430,7 +433,7 @@ class MessageSerializerGenerator {
                     mapperCallStmnt = mapperFieldName + ".encode";
                 }
                 else {
-                    imports.add("org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper");
+                    imports.add(DLFT_ENUM_MAPPER_CLS);
                     String enumValuesFieldName = enumFieldPrefix + "Vals";
 
                     fields.add("private final " + enumName + "[] " + enumValuesFieldName + " = " + enumName + ".values();");

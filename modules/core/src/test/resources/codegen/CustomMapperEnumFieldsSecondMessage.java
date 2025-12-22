@@ -18,18 +18,19 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.transactions.TransactionIsolation;
 
-public class CustomEnumMapperOnWrongFieldMessage implements Message {
+public class CustomMapperEnumFieldsSecondMessage implements Message {
     @Order(0)
-    @CustomMapper("org.apache.ignite.internal.CustomMapper")
-    private int intField;
+    @CustomMapper("org.apache.ignite.internal.TransactionIsolationEnumMapper")
+    private TransactionIsolation txMode;
 
-    public int intField() {
-        return intField;
+    public TransactionIsolation txMode() {
+        return txMode;
     }
 
-    public void intField(int intField) {
-        this.intField = intField;
+    public void txMode(TransactionIsolation txMode) {
+        this.txMode = txMode;
     }
 
     public short directType() {
