@@ -19,20 +19,28 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterMetrics;
-import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Metrics update message.
  * <p>
  * Client sends his metrics in this message.
  */
-public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstractMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final byte[] metrics;
+    @Order(value = 5, method = "metricsMessage")
+    private TcpDiscoveryClusterMetricsHolderMessage metricsMsg;
+
+    /** Constructor for {@link DiscoveryMessageFactory}. */
+    public TcpDiscoveryClientMetricsUpdateMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -43,16 +51,30 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
     public TcpDiscoveryClientMetricsUpdateMessage(UUID creatorNodeId, ClusterMetrics metrics) {
         super(creatorNodeId);
 
-        this.metrics = ClusterMetricsSnapshot.serialize(metrics);
+        metricsMsg = new TcpDiscoveryClusterMetricsHolderMessage(metrics);
     }
 
     /**
-     * Gets metrics map.
+     * Gets the metrics message.
      *
-     * @return Metrics map.
+     * @return Metrics holder message.
      */
-    public ClusterMetrics metrics() {
-        return ClusterMetricsSnapshot.deserialize(metrics, 0);
+    public TcpDiscoveryClusterMetricsHolderMessage metricsMessage() {
+        return metricsMsg;
+    }
+
+    /**
+     * Sets the metrics message.
+     *
+     * @param metricsMsg Metrics holder message.
+     */
+    public void metricsMessage(TcpDiscoveryClusterMetricsHolderMessage metricsMsg) {
+        this.metricsMsg = metricsMsg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 10;
     }
 
     /** {@inheritDoc} */
