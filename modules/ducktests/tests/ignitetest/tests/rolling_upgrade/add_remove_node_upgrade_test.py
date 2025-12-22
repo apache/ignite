@@ -22,8 +22,7 @@ from ignitetest.services.ignite import IgniteService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_configuration.discovery import from_ignite_services
 from ignitetest.tests.rebalance.persistent_test import await_and_check_rebalance
-from ignitetest.tests.rebalance.util import NUM_NODES
-from ignitetest.tests.rolling_upgrade.util import BaseRollingUpgradeTest, PRELOADERS_COUNT
+from ignitetest.tests.rolling_upgrade.util import BaseRollingUpgradeTest, PRELOADERS_COUNT, NUM_NODES
 from ignitetest.utils import cluster, ignite_versions
 from ignitetest.utils.version import LATEST, DEV_BRANCH, IgniteVersion
 

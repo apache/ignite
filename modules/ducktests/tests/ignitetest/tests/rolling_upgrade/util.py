@@ -27,7 +27,7 @@ from ignitetest.services.utils.ignite_configuration.discovery import from_ignite
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import IgniteVersion
 
-NUM_NODES = 2
+NUM_NODES = 4
 PRELOADERS_COUNT = 1
 JAVA_CLASS_NAME = "org.apache.ignite.internal.ducktest.tests.persistence_upgrade_test.DataLoaderAndCheckerApplication"
 
