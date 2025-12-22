@@ -2,16 +2,21 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+import javax.cache.Cache;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -31,6 +36,8 @@ public class GridCacheQueryManagerExecuteFieldsQueryTest extends GridCommonAbstr
 
         CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<>(CACHE_NAME);
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+
+        ccfg.setBackups(0);
 
         ccfg.setIndexedTypes(Integer.class, Person.class);
 
@@ -147,6 +154,111 @@ public class GridCacheQueryManagerExecuteFieldsQueryTest extends GridCommonAbstr
         assertFalse(ignite1.affinity(CACHE_NAME).isPrimary(ignite1.cluster().localNode(), kOn0));
 
         assertEquals(0, GridCacheQueryManager.executeFieldsQueryHitCount());
+    }
+
+    @Test
+    public void testLocalSqlQueryDoesNotHitExecuteFieldsQuery() throws Exception {
+        startGrids(2);
+
+        Ignite ignite0 = grid(0);
+        Ignite ignite1 = grid(1);
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<Integer, Person> cache0 = ignite0.cache(CACHE_NAME);
+
+        int[] keys = pickKeysForDifferentPrimaries(ignite0, ignite1);
+        int k0 = keys[0];
+        int k1 = keys[1];
+
+        cache0.put(k0, new Person("On0", 10));
+        cache0.put(k1, new Person("On1", 20));
+
+        GridCacheQueryManager.resetExecuteFieldsQueryHitCount();
+
+        SqlQuery<Integer, Person> qry = new SqlQuery<>(Person.class, "age >= ?");
+        qry.setArgs(0);
+        qry.setLocal(true);
+
+        List<Cache.Entry<Integer, Person>> res0;
+        try (QueryCursor<Cache.Entry<Integer, Person>> cur = ignite0.cache(CACHE_NAME).query(qry)) {
+            res0 = cur.getAll();
+        }
+
+        List<Cache.Entry<Integer, Person>> res1;
+        try (QueryCursor<Cache.Entry<Integer, Person>> cur = ignite1.cache(CACHE_NAME).query(qry)) {
+            res1 = cur.getAll();
+        }
+
+        assertEquals(1, res0.size());
+        assertEquals(1, res1.size());
+
+        assertEquals(k0, res0.get(0).getKey().intValue());
+        assertEquals(k1, res1.get(0).getKey().intValue());
+
+        assertEquals(0, GridCacheQueryManager.executeFieldsQueryHitCount());
+    }
+
+    /**
+     * The same intent, but also verify we got exactly the keys we inserted.
+     */
+    @Test
+    public void testDistributedSqlQueryDoesNotHitExecuteFieldsQuery() throws Exception {
+        Ignite ignite0 = startGrid(0);
+        Ignite ignite1 = startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<Integer, Person> cache0 = ignite0.cache(CACHE_NAME);
+
+        int[] keys = pickKeysForDifferentPrimaries(ignite0, ignite1);
+        int k0 = keys[0];
+        int k1 = keys[1];
+
+        cache0.put(k0, new Person("Kirill", 10));
+        cache0.put(k1, new Person("Michailo", 20));
+
+        GridCacheQueryManager.resetExecuteFieldsQueryHitCount();
+
+        SqlQuery<Integer, Person> qry = new SqlQuery<>(Person.class, "age >= ?");
+        qry.setArgs(0);
+        qry.setLocal(false);
+
+        List<Cache.Entry<Integer, Person>> res;
+        try (QueryCursor<Cache.Entry<Integer, Person>> cur = cache0.query(qry)) {
+            res = cur.getAll();
+        }
+
+        assertEquals(2, res.size());
+
+        Set<Integer> gotKeys = res.stream().map(Cache.Entry::getKey).collect(Collectors.toSet());
+
+        assertTrue("Expected to get both keys back [k0 = " + k0 + ", k1 = " + k1 + ", got = " + gotKeys + ']',
+                gotKeys.contains(k0) && gotKeys.contains(k1));
+
+        assertEquals(0, GridCacheQueryManager.executeFieldsQueryHitCount());
+    }
+
+    private int[] pickKeysForDifferentPrimaries(Ignite ignite0, Ignite ignite1) {
+        int k0 = -1, k1 = -1;
+
+        UUID id0 = ignite0.cluster().localNode().id();
+        UUID id1 = ignite1.cluster().localNode().id();
+
+        for (int k = 1; k < 100000; k++) {
+            UUID primaryId = ignite0.affinity(CACHE_NAME).mapKeyToNode(k).id();
+
+            if (primaryId.equals(id0) && k0 < 0) k0 = k;
+            if (primaryId.equals(id1) && k1 < 0) k1 = k;
+
+            if (k0 > 0 && k1 > 0)
+                break;
+        }
+
+        assertTrue("Failed to pick keys for different primaries [k0 = " + k0 + ", k1 = " + k1 + ']',
+                k0 > 0 && k1 > 0);
+
+        return new int[]{k0, k1};
     }
 
     /**
