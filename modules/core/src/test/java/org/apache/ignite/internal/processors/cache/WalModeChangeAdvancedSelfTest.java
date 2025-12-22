@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -734,12 +735,21 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
             "Cannot change WAL mode because not all cache names belonging to the group are provided"
         );
 
+        assertThrows(
+            () -> {
+                srv.cluster().disableWal(Collections.singleton(CACHE_NAME_2));
+                return null;
+            },
+            IgniteException.class,
+            "Cannot change WAL mode because not all cache names belonging to the group are provided"
+        );
+
         assertForAllNodes(CACHE_NAME, true);
         assertForAllNodes(CACHE_NAME_2, true);
 
         assertThrows(
             () -> {
-                srv.cluster().enableWal(CACHE_NAME);
+                srv.cluster().enableWal(Collections.singleton(CACHE_NAME));
                 return null;
             },
             IgniteException.class,
@@ -753,7 +763,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         assertThrows(
             () -> {
-                srv.cluster().enableWal(CACHE_NAME);
+                srv.cluster().enableWal(CACHE_NAME_2);
                 return null;
             },
             IgniteException.class,
