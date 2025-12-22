@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -33,26 +31,22 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Tests cache start operation.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "persistence={0}")
+@ValueSource(booleans = {true, false})
 public class CacheStartTest extends AbstractPerformanceStatisticsTest {
     /** Static configured cache name. */
     private static final String STATIC_CACHE_NAME = "static-cache";
 
     /** Persistence enabled flag. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean persistence;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "persistence={0}")
-    public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {{false}, {true}});
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

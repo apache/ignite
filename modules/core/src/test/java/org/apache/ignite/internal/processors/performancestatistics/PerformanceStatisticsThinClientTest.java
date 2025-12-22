@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,10 +45,10 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.EnumSource;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_ALL;
@@ -62,12 +61,13 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE_ALL;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE_ALL_CONFLICT;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Tests thin client performance statistics.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "atomicityMode={0}")
+@EnumSource(value = CacheAtomicityMode.class)
 public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStatisticsTest {
     /** Test task name. */
     public static final String TEST_TASK_NAME = "TestTask";
@@ -82,14 +82,8 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
     private static IgniteClient thinClient;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public CacheAtomicityMode atomicityMode;
-
-    /** */
-    @Parameterized.Parameters(name = "atomicityMode={0}")
-    public static Collection<?> parameters() {
-        return EnumSet.of(ATOMIC, TRANSACTIONAL);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

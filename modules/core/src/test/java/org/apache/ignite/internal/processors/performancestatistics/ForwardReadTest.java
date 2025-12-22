@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.performancestatistics;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,8 +30,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static com.google.common.collect.Collections2.permutations;
 import static com.google.common.collect.Lists.cartesianProduct;
@@ -46,20 +45,15 @@ import static org.apache.ignite.internal.processors.performancestatistics.FilePe
 /**
  * Tests strings caching.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "unknownStrs={0}")
+@ValueSource(booleans = {true, false})
 public class ForwardReadTest extends AbstractPerformanceStatisticsTest {
     /** Read buffer size. */
     private static final int BUFFER_SIZE = 100;
 
     /** {@code True} If test with strings that can't be found during forward read. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean unknownStrs;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "unknownStrs={0}")
-    public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {{false}, {true}});
-    }
 
     /** @throws Exception If failed. */
     @Test

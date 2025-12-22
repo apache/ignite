@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,10 +38,10 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.EnumSource;
 
-import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.CLIENT;
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.SERVER;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_GET_ALL;
@@ -59,7 +58,8 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 /**
  * Tests performance statistics.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "clientType={0}")
+@EnumSource(value = AbstractPerformanceStatisticsTest.ClientType.class, names = {"THIN_CLIENT"}, mode = EnumSource.Mode.EXCLUDE)
 @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
 public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatisticsTest {
     /** Nodes count. */
@@ -79,22 +79,11 @@ public class PerformanceStatisticsSelfTest extends AbstractPerformanceStatistics
 
     /** Test cache entry processor. */
     private static final CacheEntryProcessor<Object, Object, Object> CACHE_ENTRY_PROC =
-        new CacheEntryProcessor<Object, Object, Object>() {
-            @Override public Object process(MutableEntry<Object, Object> entry, Object... arguments)
-                throws EntryProcessorException {
-                return null;
-            }
-        };
+            (entry, arguments) -> null;
 
     /** Client type to run operations from. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public ClientType clientType;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "clientType={0}")
-    public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {{SERVER}, {CLIENT}});
-    }
 
     /** Ignite. */
     private static IgniteEx srv;

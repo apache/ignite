@@ -43,8 +43,10 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Test {@link PagesList.CutTail#run} ensuring that the optimization by the C2 Jit compiler was done for it.
@@ -53,7 +55,8 @@ import org.junit.runners.Parameterized;
  * If method is broken by the C2 Jit compiler (see <a href="https://issues.apache.org/jira/browse/IGNITE-17734">IGNITE-17734</a>)
  * it would fail during row put and cache clear.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "{0}")
+@MethodSource("allTypesArgs")
 public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
     /** Name of Ignite atomic to inform job in remove server node about C2 compilation. */
     private static final String COMPILED_ATOMIC_NAME = "compiled";
@@ -68,18 +71,17 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
     private int pageSize;
 
     /** JVM options to start the server node in remote JVM. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public List<String> jvmOpts;
 
     /** */
-    @Parameterized.Parameters(name = "{0}")
-    public static Iterable<List<String>> params() {
-        ArrayList<List<String>> params = new ArrayList<>(List.of(
-            List.of("-XX:+UseShenandoahGC"),
-            List.of("-XX:+UseShenandoahGC", "-ea"),
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>(List.of(
+                Arguments.of("-XX:+UseShenandoahGC"),
+                Arguments.of("-XX:+UseShenandoahGC", "-ea"),
 
-            List.of("-XX:+UseG1GC"),
-            List.of("-XX:+UseG1GC", "-ea")
+                Arguments.of("-XX:+UseG1GC"),
+                Arguments.of("-XX:+UseG1GC", "-ea")
         ));
 
         if (Runtime.version().feature() >= 17 || U.isLinux())
@@ -245,17 +247,17 @@ public class FreeListCutTailDifferentGcTest extends GridCommonAbstractTest {
     /**
      * Add test parameters for the ZGC garbage collector.
      */
-    private static void addZgc(ArrayList<List<String>> params) {
-        ArrayList<String> opts = new ArrayList<>();
+    private static void addZgc(List<Arguments> params) {
+        ArrayList<Arguments> opts = new ArrayList<>();
 
         if (Runtime.version().feature() < 12)
-            opts.add("-XX:+UnlockExperimentalVMOptions");
+            opts.add(Arguments.of("-XX:+UnlockExperimentalVMOptions"));
 
-        opts.add("-XX:+UseZGC");
-        params.add(new ArrayList<>(opts));
+        opts.add(Arguments.of("-XX:+UseZGC"));
+        params.addAll(opts);
 
-        opts.add("-ea");
-        params.add(new ArrayList<>(opts));
+        opts.add(Arguments.of("-ea"));
+        params.addAll(opts);
     }
 
     /** {@inheritDoc} */

@@ -25,23 +25,19 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Tests topology changes during collecting performance statistics.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "persistence={0}")
+@ValueSource(booleans = {true, false})
 public class TopologyChangesTest extends AbstractPerformanceStatisticsTest {
     /** Persistence enabled flag. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean persistence;
-
-    /** @return Test parameters. */
-    @Parameterized.Parameters(name = "persistence={0}")
-    public static Collection<?> parameters() {
-        return Arrays.asList(new Object[][] {{false}, {true}});
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
