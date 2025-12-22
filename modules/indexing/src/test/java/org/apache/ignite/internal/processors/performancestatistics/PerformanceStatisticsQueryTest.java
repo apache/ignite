@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.QueryEntity;
@@ -48,10 +49,11 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.IndexQueryDesc;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.junit.Assume;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.gt;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -65,10 +67,12 @@ import static org.apache.ignite.internal.processors.performancestatistics.Abstra
 import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor.indexQueryText;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** Tests query performance statistics. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "pageSize={0}, clientType={1}")
+@MethodSource("allTypesArgs")
 public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatisticsTest {
     /** Cache entry count. */
     private static final int ENTRY_COUNT = 100;
@@ -80,24 +84,23 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     private static final String SQL_TABLE = "test";
 
     /** Page size. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public int pageSize;
 
     /** Client type to run queries from. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public ClientType clientType;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "pageSize={0}, clientType={1}")
-    public static Collection<?> parameters() {
-        List<Object[]> res = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         for (Integer pageSize : new Integer[] {ENTRY_COUNT, ENTRY_COUNT / 10}) {
             for (ClientType clientType : new ClientType[] {SERVER, CLIENT, THIN_CLIENT})
-                res.add(new Object[] {pageSize, clientType});
+                params.add(Arguments.of(pageSize, clientType));
         }
 
-        return res;
+        return params;
     }
 
     /** Server. */
@@ -233,7 +236,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     /** @throws Exception If failed. */
     @Test
     public void testSqlFieldsLocalQuery() throws Exception {
-        Assume.assumeTrue(clientType == SERVER);
+        assumeTrue(clientType == SERVER);
 
         String sql = "select * from " + DEFAULT_CACHE_NAME;
 
@@ -428,8 +431,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
     /** @throws Exception If failed. */
     @Test
     public void testMultipleStatementsSql() throws Exception {
-        assumeFalse("Multiple statements queries are not supported by thin client.",
-            clientType == THIN_CLIENT);
+        assumeFalse(clientType == THIN_CLIENT, "Multiple statements queries are not supported by thin client.");
 
         long startTime = U.currentTimeMillis();
 

@@ -27,28 +27,16 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** */
-@RunWith(Parameterized.class)
 public class AffinityAliasKeyTest extends GridCommonAbstractTest {
     /** */
     private static final String PERSON_CACHE = "PERSON";
 
     /** */
     private static IgniteEx ignite;
-
-    /** */
-    @Parameterized.Parameter
-    public boolean sqlEscape;
-
-    /** */
-    @Parameterized.Parameters(name = "escape = {0}")
-    public static Object[] params() {
-        return new Object[] { false, true };
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -69,18 +57,19 @@ public class AffinityAliasKeyTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test
-    public void testAliasAffinityKeyForIndexedTypes() {
+    @ParameterizedTest(name = "escape = {0}")
+    @ValueSource(booleans = {true, false})
+    public void testAliasAffinityKeyForIndexedTypes(boolean sqlEscape) {
         IgniteCache<PersonKey, Object> cache = ignite.createCache(new CacheConfiguration<PersonKey, Object>()
             .setName(PERSON_CACHE)
             .setSqlEscapeAll(sqlEscape)
             .setIndexedTypes(PersonKey.class, Object.class));
 
-        checkAffinityColumnName(cache);
+        checkAffinityColumnName(cache, sqlEscape);
     }
 
     /** */
-    private void checkAffinityColumnName(IgniteCache<PersonKey, Object> cache) {
+    private void checkAffinityColumnName(IgniteCache<PersonKey, Object> cache, boolean sqlEscape) {
         String expAffColName = sqlEscape ? "city_id" : "CITY_ID";
 
         try (FieldsQueryCursor<List<?>> cursor = cache.query(

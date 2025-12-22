@@ -18,8 +18,9 @@
 package org.apache.ignite.internal.processors.security.cluster;
 
 import java.security.Permissions;
-import java.util.Collection;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteException;
@@ -41,8 +42,10 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE_READ_ONLY;
@@ -57,7 +60,8 @@ import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
 /**
  * Tests permissions of cluster state change.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "initiator={0}, persistence={1}")
+@MethodSource("allTypesArgs")
 public class ClusterStatePermissionTest extends AbstractSecurityTest {
     /** */
     private static final SecurityPermission[] EMPTY_PERMS = new SecurityPermission[0];
@@ -66,17 +70,16 @@ public class ClusterStatePermissionTest extends AbstractSecurityTest {
     private SecurityPermission[] permissions = EMPTY_PERMS;
 
     /** The initiator parameter. */
-    @Parameterized.Parameter
-    public Initiator initiator;
+    @Parameter(0)
+    private Initiator initiator;
 
     /** Persistence flag parameter. */
-    @Parameterized.Parameter(1)
-    public boolean persistence;
+    @Parameter(1)
+    private boolean persistence;
 
     /** @return Test parameters. */
-    @Parameterized.Parameters(name = "initiator={0}, persistence={1}")
-    public static Collection<?> parameters() {
-        return cartesianProduct(asList(Initiator.values()), asList(false, true));
+    private static Stream<Arguments> allTypesArgs() {
+        return cartesianProduct(asList(Initiator.values()), asList(false, true)).stream().map(Arguments::of);
     }
 
     /** {@inheritDoc} */

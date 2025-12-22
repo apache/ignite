@@ -38,16 +38,23 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 
 /** Check different variants of erroneous QueryEntity configuration on server and client sides. */
-@RunWith(Parameterized.class)
 @WithSystemProperty(key = IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK, value = "true")
+@ParameterizedClass(name = "persistent = {0}")
+@ValueSource(booleans = {true, false})
 public class ErroneousQueryEntityConfigurationTest extends AbstractIndexingCommonTest {
     /** Default client name. */
     private static final String CLIENT_NAME = "client";
+
+    /** */
+    @Parameter(0)
+    public Boolean persistent;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -81,23 +88,6 @@ public class ErroneousQueryEntityConfigurationTest extends AbstractIndexingCommo
         cleanPersistenceDir();
 
         super.afterTest();
-    }
-
-    /** */
-    @Parameterized.Parameter()
-    public Boolean persistent;
-
-    /**
-     * @return List of versions pairs to test.
-     */
-    @Parameterized.Parameters(name = "persistent = {0}")
-    public static Collection<Object[]> testData() {
-        List<Object[]> res = new ArrayList<>();
-
-        res.add(new Object[] {true});
-        res.add(new Object[] {false});
-
-        return res;
     }
 
     /** Start client node with erroneous configuration, if persistence enabled -

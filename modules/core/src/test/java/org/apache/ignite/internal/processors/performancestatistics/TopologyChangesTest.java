@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.performancestatistics;
 
-import java.util.Arrays;
-import java.util.Collection;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;

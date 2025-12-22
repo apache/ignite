@@ -39,13 +39,15 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.between;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "qryNode={0}")
+@ValueSource(strings = {"CRD", "CLN"})
 public class IndexQueryBuildIndexTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
@@ -60,14 +62,8 @@ public class IndexQueryBuildIndexTest extends GridCommonAbstractTest {
     private static final int CNT = 10_000;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public String qryNode;
-
-    /** */
-    @Parameterized.Parameters(name = "qryNode={0}")
-    public static Object[] parameters() {
-        return new Object[] { "CRD", "CLN" };
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

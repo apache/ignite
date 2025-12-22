@@ -28,10 +28,9 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
@@ -40,16 +39,11 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 /**
  * Test cache permissions for Data Streamer.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "clientMode={0}")
+@ValueSource(booleans = {true, false})
 public class DataStreamerPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
-    /** Parameters. */
-    @Parameters(name = "clientMode={0}")
-    public static Iterable<Boolean[]> data() {
-        return Arrays.asList(new Boolean[] {true}, new Boolean[] {false});
-    }
-
     /** Client mode. */
-    @Parameter()
+    @Parameter(0)
     public boolean clientMode;
 
     /** */

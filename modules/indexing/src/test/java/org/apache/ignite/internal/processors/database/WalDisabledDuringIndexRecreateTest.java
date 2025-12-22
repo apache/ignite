@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.database;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import org.apache.ignite.IgniteCache;
@@ -56,8 +55,9 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.cluster.ClusterState.INACTIVE;
@@ -68,7 +68,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId
 import static org.apache.ignite.internal.processors.query.schema.management.SortedIndexDescriptorFactory.H2_TREE;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "cacheGroups={0}")
+@ValueSource(booleans = {true, false})
 public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
     /** Batches count. */
     public static final int ENTRIES_CNT = 1_000;
@@ -86,14 +87,8 @@ public class WalDisabledDuringIndexRecreateTest extends GridCommonAbstractTest {
     private ListeningTestLogger testLog;
 
     /** */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public boolean cacheGrps;
-
-    /** */
-    @Parameterized.Parameters(name = "cacheGroups={0}")
-    public static Iterable<Object> data() {
-        return Arrays.asList(true, false);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

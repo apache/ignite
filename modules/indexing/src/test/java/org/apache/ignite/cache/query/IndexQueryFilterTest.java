@@ -41,19 +41,21 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.apache.ignite.cache.query.IndexQueryCriteriaBuilder.lt;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "idxName={0}")
+@CsvSource(value = {"null", IndexQueryFilterTest.IDX}, nullValues = {"null"})
 public class IndexQueryFilterTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE = "TEST_CACHE";
 
     /** */
-    private static final String IDX = "IDX";
+    public static final String IDX = "IDX";
 
     /** */
     private static final int CNT = 10_000;
@@ -62,14 +64,8 @@ public class IndexQueryFilterTest extends GridCommonAbstractTest {
     private static final int MAX_AGE = 100;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public String idxName;
-
-    /** */
-    @Parameterized.Parameters(name = "idxName={0}")
-    public static List<String> params() {
-        return F.asList(null, IDX);
-    }
 
     /** */
     private static IgniteCache<Integer, Person> cache;
@@ -222,6 +218,7 @@ public class IndexQueryFilterTest extends GridCommonAbstractTest {
     }
 
     /** */
+    @SuppressWarnings("ThrowableNotThrown")
     @Test
     public void testFilterException() {
         IgniteBiPredicate<Integer, Person> nameFilter = (k, v) -> {

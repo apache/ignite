@@ -46,13 +46,15 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "backups_count={0}")
+@ValueSource(ints = {0, 1, 2})
 public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
     /** */
     private static final String POI_CACHE_NAME = "POI_CACHE";
@@ -81,20 +83,10 @@ public class SqlPartitionEvictionTest extends GridCommonAbstractTest {
     /** */
     private static final int NUM_ENTITIES = 1_000;
 
-    /** Test parameters. */
-    @Parameterized.Parameters(name = "backups_count={0}")
-    public static Iterable<Object[]> params() {
-        return Arrays.asList(
-                new Object[] { 0 },
-                new Object[] { 1 },
-                new Object[] { 2 }
-            );
-    }
-
     /**
      * Number of partition backups.
      */
-    @Parameterized.Parameter
+    @Parameter(0)
     public int backupsCount;
 
     /**

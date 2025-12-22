@@ -35,8 +35,9 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.internal.cdc.SqlCdcTest.executeSql;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -45,7 +46,8 @@ import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 /**
  * Tests cache events for CDC.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "persistence={0}")
+@ValueSource(booleans = {true, false})
 public class CacheEventsCdcTest extends AbstractCdcTest {
     /** Ignite node. */
     private IgniteEx node;
@@ -60,14 +62,8 @@ public class CacheEventsCdcTest extends AbstractCdcTest {
     private TrackCacheEventsConsumer cnsmr;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean persistenceEnabled;
-
-    /** */
-    @Parameterized.Parameters(name = "persistence={0}")
-    public static Object[] parameters() {
-        return new Object[] {true, false};
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

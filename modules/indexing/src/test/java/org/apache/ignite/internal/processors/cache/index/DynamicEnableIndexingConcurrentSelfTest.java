@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,6 +27,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -59,31 +60,25 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Test different scnerarions on concurrent enabling indexing.
+ * Test different scenarios on concurrent enabling indexing.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "cacheMode={0},atomicityMode={1}")
+@MethodSource("allTypesArgs")
 public class DynamicEnableIndexingConcurrentSelfTest extends DynamicEnableIndexingAbstractTest {
     /** Test parameters. */
-    @Parameters(name = "cacheMode={0},atomicityMode={1}")
-    public static Iterable<Object[]> params() {
-        CacheMode[] cacheModes = new CacheMode[] {CacheMode.PARTITIONED, CacheMode.REPLICATED};
-
-        CacheAtomicityMode[] atomicityModes = CacheAtomicityMode.values();
-
-        List<Object[]> res = new ArrayList<>();
-        for (CacheMode cacheMode : cacheModes) {
-            for (CacheAtomicityMode atomicityMode : atomicityModes)
-                res.add(new Object[] {cacheMode, atomicityMode});
-        }
-
-        return res;
+    private static Stream<Arguments> allTypesArgs() {
+        return GridTestUtils.cartesianProduct(
+                List.of(CacheMode.values()),
+                List.of(CacheAtomicityMode.values())
+        ).stream().map(Arguments::of);
     }
 
     /** Latches to block certain index operations. */

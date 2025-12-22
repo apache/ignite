@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache.index;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -31,37 +33,37 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Tests basic functionality of enabling indexing.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "hasNear={0},nodeIdx={1},cacheMode={2},atomicityMode={3}")
+@MethodSource("allTypesArgs")
 public class DynamicEnableIndexingBasicSelfTest extends DynamicEnableIndexingAbstractTest {
     /** Test parameters. */
-    @Parameters(name = "hasNear={0},nodeIdx={1},cacheMode={2},atomicityMode={3}")
-    public static Iterable<Object[]> params() {
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
+
         int[] opNodes = new int[] {IDX_CLI, IDX_SRV_CRD, IDX_SRV_NON_CRD, IDX_SRV_FILTERED};
 
         CacheMode[] cacheModes = new CacheMode[] {CacheMode.PARTITIONED, CacheMode.REPLICATED};
 
         CacheAtomicityMode[] atomicityModes = CacheAtomicityMode.values();
 
-        List<Object[]> res = new ArrayList<>();
-
         for (int node : opNodes) {
             for (CacheMode cacheMode : cacheModes) {
                 for (CacheAtomicityMode atomicityMode : atomicityModes) {
-                    res.add(new Object[] {true, node, cacheMode, atomicityMode});
-                    res.add(new Object[] {false, node, cacheMode, atomicityMode});
+                    params.add(Arguments.of(true, node, cacheMode, atomicityMode));
+                    params.add(Arguments.of(false, node, cacheMode, atomicityMode));
                 }
             }
         }
 
-        return res;
+        return params;
     }
 
     /** */

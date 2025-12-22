@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.security.service;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
@@ -48,8 +47,9 @@ import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.JOIN_AS_SERVER;
@@ -63,7 +63,8 @@ import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /** Tests permissions that are required to perform service operations. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "isClient={0}")
+@ValueSource(booleans = {true, false})
 public class ServiceAuthorizationTest extends AbstractSecurityTest {
     /** Name of the test service.*/
     private static final String TEST_SERVICE_NAME = "test-service-name";
@@ -83,14 +84,8 @@ public class ServiceAuthorizationTest extends AbstractSecurityTest {
     private CountDownLatch authErrLatch;
 
     /** Whether a client node is an initiator of the test operations. */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public boolean isClient;
-
-    /** */
-    @Parameterized.Parameters(name = "isClient={0}")
-    public static Iterable<Object[]> data() {
-        return Arrays.asList(new Object[] {true}, new Object[] {false});
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

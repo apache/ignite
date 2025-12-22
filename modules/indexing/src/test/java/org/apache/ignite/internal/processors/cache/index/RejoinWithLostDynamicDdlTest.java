@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
+
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -30,17 +31,18 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /** Tests the scenario when a node rejoins cluster with lost knowladge of previously created dynamic schema. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "gridToRestart={0}, recreateTable={1}")
+@MethodSource("allTypesArgs")
 public class RejoinWithLostDynamicDdlTest extends GridCommonAbstractTest {
     /** */
     private static final int SERVERS_CNT = 2;
@@ -55,21 +57,19 @@ public class RejoinWithLostDynamicDdlTest extends GridCommonAbstractTest {
     private IgniteEx sqlClient;
 
     /** Grid to test (restart). */
-    @Parameterized.Parameter
+    @Parameter(0)
     public int gridToRestart;
 
     /** Enables create-if-not-exist table with the rejoining. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean recreateTable;
 
     /** */
-    @Parameterized.Parameters(name = "gridToRestart={0}, recreateTable={1}")
-    public static Collection<?> runConfig() {
-        // Restart coordinator, another server node and client.
-        return cartesianProduct(
-            F.asList(0, 1, SERVERS_CNT),
-            F.asList(false, true)
-        );
+    private static Stream<Arguments> allTypesArgs() {
+        return GridTestUtils.cartesianProduct(
+                List.of(0, 1, SERVERS_CNT),
+                List.of(true, false)
+        ).stream().map(Arguments::of);
     }
 
     /** {@inheritDoc} */
@@ -139,7 +139,7 @@ public class RejoinWithLostDynamicDdlTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests the scenario when a node rejoins cluster with lost knowladge of previously created dynamic table over
+     * Tests the scenario when a node rejoins cluster with lost knowledge of previously created dynamic table over
      * a predefined cache in {@link IgniteConfiguration}.
      *
      * @param persistence Flag to test with persistence or in-memory cluster.

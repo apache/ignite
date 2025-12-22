@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -35,8 +34,10 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -44,34 +45,28 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "cacheMode={0}, atomicityMode={1}, eagerTtl={2}")
+@MethodSource("allTypesArgs")
 public class CacheQueryFilterExpiredTest extends GridCommonAbstractTest {
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public CacheMode cacheMode;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public CacheAtomicityMode cacheAtomicityMode;
 
     /** */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean eagerTtl;
 
     /** */
-    @Parameterized.Parameters(name = "cacheMode={0}, atomicityMode={1}, eagerTtl={2}")
-    public static List<Object[]> params() {
-        List<Object[]> params = new ArrayList<>();
-
-        Stream.of(REPLICATED, PARTITIONED).forEach(cacheMode ->
-            Stream.of(ATOMIC, TRANSACTIONAL).forEach(cacheAtomicityMode ->
-                Stream.of(false, true).forEach(eagerTtl ->
-                    params.add(new Object[] {cacheMode, cacheAtomicityMode, eagerTtl})
-                )
-            )
-        );
-
-        return params;
+    public static Stream<Arguments> allTypesArgs() {
+        return GridTestUtils.cartesianProduct(
+                List.of(REPLICATED, PARTITIONED),
+                List.of(ATOMIC, TRANSACTIONAL),
+                List.of(true, false)
+        ).stream().map(Arguments::of);
     }
 
     /** {@inheritDoc} */
