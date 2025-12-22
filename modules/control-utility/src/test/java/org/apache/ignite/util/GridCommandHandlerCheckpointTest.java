@@ -17,10 +17,11 @@
 
 package org.apache.ignite.util;
 
-import java.util.Objects;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -29,7 +30,6 @@ import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
-import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
 
 /** Test for checkpoint in control.sh command. */
 public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstractTest {
@@ -38,6 +38,12 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
     /** */
     private final LogListener checkpointFinishedLsnr = LogListener.matches("Checkpoint finished").build();
+
+    /** */
+    private boolean mixedConfig = false;
+
+    /** */
+    private static final String persistentRegionName = "pds-reg";
 
     /** */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -49,6 +55,26 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         listeningLog.registerListener(checkpointFinishedLsnr);
 
         cfg.setGridLogger(listeningLog);
+
+        if (mixedConfig) {
+            DataStorageConfiguration storageCfg = new DataStorageConfiguration();
+
+            DataRegionConfiguration dfltRegionCfg = new DataRegionConfiguration();
+            dfltRegionCfg.setName("default_in_memory_region");
+            dfltRegionCfg.setPersistenceEnabled(false);
+
+            storageCfg.setDefaultDataRegionConfiguration(dfltRegionCfg);
+
+            if (igniteInstanceName.contains("persistent_instance")) {
+                DataRegionConfiguration persistentRegionCfg = new DataRegionConfiguration();
+                persistentRegionCfg.setName(persistentRegionName);
+                persistentRegionCfg.setPersistenceEnabled(true);
+
+                storageCfg.setDataRegionConfigurations(persistentRegionCfg);
+            }
+
+            cfg.setDataStorageConfiguration(storageCfg);
+        }
 
         return cfg;
     }
@@ -62,6 +88,14 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         injectTestSystemOut();
 
         checkpointFinishedLsnr.reset();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+        cleanPersistenceDir();
+
+        super.afterTest();
     }
 
     /** Test checkpoint command with persistence enabled. */
@@ -81,12 +115,9 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint"));
 
-        outputContains("Checkpoint triggered on all nodes");
-        assertTrue(GridTestUtils.waitForCondition(checkpointFinishedLsnr::check, 10_000));
+        assertTrue(testOut.toString(), GridTestUtils.waitForCondition(checkpointFinishedLsnr::check, 10_000));
 
-        String out = testOut.toString();
-        assertFalse(out.contains(cli.localNode().id().toString()));
-        assertFalse(out.contains(Objects.toString(cli.localNode().consistentId())));
+        assertFalse(testOut.toString().contains("PDS disabled"));
 
         testOut.reset();
         checkpointFinishedLsnr.reset();
@@ -96,13 +127,12 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--reason", "test_reason"));
 
-        outputContains("Checkpoint triggered on all nodes");
-
         LogListener checkpointReasonLsnr = LogListener.matches("reason='test_reason'").build();
         listeningLog.registerListener(checkpointReasonLsnr);
 
         assertTrue(GridTestUtils.waitForCondition(checkpointFinishedLsnr::check, 10_000));
         assertTrue(GridTestUtils.waitForCondition(checkpointReasonLsnr::check, 10_000));
+        assertFalse(testOut.toString().contains("PDS disabled"));
 
         testOut.reset();
         checkpointFinishedLsnr.reset();
@@ -112,8 +142,8 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--wait-for-finish"));
 
-        outputContains("Checkpoint triggered on all nodes");
         assertTrue(checkpointFinishedLsnr.check());
+        assertFalse(testOut.toString().contains("PDS disabled"));
     }
 
     /** Test checkpoint command with in-memory cluster. */
@@ -122,18 +152,15 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         persistenceEnable(false);
 
         IgniteEx srv = startGrids(2);
-        IgniteEx cli = startClientGrid("client");
+        startClientGrid("client");
         srv.cluster().state(ClusterState.ACTIVE);
 
         srv.createCache("testCache");
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--checkpoint"));
+        assertEquals(EXIT_CODE_OK, execute("--checkpoint"));
 
-        outputContains("Can't checkpoint on in-memory node");
         assertFalse(checkpointFinishedLsnr.check());
 
-        String out = testOut.toString();
-        assertFalse(out.contains(cli.localNode().id().toString()));
-        assertFalse(out.contains(Objects.toString(cli.localNode().consistentId())));
+        outputContains("PDS disabled");
     }
 
     /** Test checkpoint with timeout. */
@@ -146,8 +173,47 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--wait-for-finish", "--timeout", "1000"));
 
-        outputContains("Checkpoint triggered on all nodes");
         assertTrue(checkpointFinishedLsnr.check());
+
+        assertFalse(testOut.toString().contains("PDS disabled"));
+    }
+
+    /** Mixed cluster test. */
+    @Test
+    public void testMixedCluster() throws Exception {
+        mixedConfig = true;
+
+        IgniteEx node0 = startGrid("in-memory_instance");
+        node0.cluster().baselineAutoAdjustEnabled(false);
+
+        IgniteEx node1 = startGrid("persistent_instance");
+
+        node0.cluster().state(ClusterState.ACTIVE);
+
+        assertEquals(2, node0.cluster().nodes().size());
+
+        DataStorageConfiguration node0Storage = node0.configuration().getDataStorageConfiguration();
+        DataStorageConfiguration node1Storage = node1.configuration().getDataStorageConfiguration();
+
+        DataRegionConfiguration node0Dflt = node0Storage.getDefaultDataRegionConfiguration();
+        DataRegionConfiguration node1Dflt = node1Storage.getDefaultDataRegionConfiguration();
+
+        assertEquals(node0Dflt.getName(), node1Dflt.getName());
+        assertEquals(node0Dflt.isPersistenceEnabled(), node1Dflt.isPersistenceEnabled());
+        assertEquals(node0Dflt.getMaxSize(), node1Dflt.getMaxSize());
+
+        DataRegionConfiguration[] node1Regions = node1Storage.getDataRegionConfigurations();
+        assertEquals(1, node1Regions.length);
+
+        DataRegionConfiguration persistentRegion = node1Regions[0];
+        assertEquals(persistentRegionName, persistentRegion.getName());
+        assertEquals(true, persistentRegion.isPersistenceEnabled());
+
+        assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--wait-for-finish"));
+
+        assertTrue(checkpointFinishedLsnr.check());
+        outputContains("PDS disabled");
+        outputContains("Checkpoint finished");
     }
 
     /** */

@@ -31,27 +31,29 @@ import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.jetbrains.annotations.Nullable;
 
 /** Checkpoint task. */
-public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, String, Void> {
+public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, String, String> {
     /** */
     private static final long serialVersionUID = 0;
 
     /** {@inheritDoc} */
-    @Override protected VisorJob<CheckpointCommandArg, Void> job(CheckpointCommandArg arg) {
+    @Override protected VisorJob<CheckpointCommandArg, String> job(CheckpointCommandArg arg) {
         return new CheckpointJob(arg, false);
     }
 
     /** {@inheritDoc} */
     @Override protected @Nullable String reduce0(List<ComputeJobResult> results) throws IgniteException {
+        StringBuilder result = new StringBuilder();
         for (ComputeJobResult res : results) {
             if (res.getException() != null)
                 throw res.getException();
+            result.append(res.getData().toString()).append('\n');
         }
 
-        return "Checkpoint triggered on all nodes";
+        return result.toString();
     }
 
     /** Checkpoint job. */
-    private static class CheckpointJob extends VisorJob<CheckpointCommandArg, Void> {
+    private static class CheckpointJob extends VisorJob<CheckpointCommandArg, String> {
         /** */
         private static final long serialVersionUID = 0;
 
@@ -61,9 +63,9 @@ public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, Str
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(CheckpointCommandArg arg) throws IgniteException {
+        @Override protected String run(CheckpointCommandArg arg) throws IgniteException {
             if (!CU.isPersistenceEnabled(ignite.configuration()))
-                throw new IgniteException("Can't checkpoint on in-memory node");
+                  return ignite.localNode().id() + ": PDS disabled, checkpoint skipped";
 
             try {
                 GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ignite.context().cache().context().database();
@@ -77,13 +79,13 @@ public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, Str
                         checkpointfut.futureFor(CheckpointState.FINISHED).get(timeout, TimeUnit.MILLISECONDS);
                     else
                         checkpointfut.futureFor(CheckpointState.FINISHED).get();
+                    return ignite.localNode().id() + ": Checkpoint finished";
                 }
+                return ignite.localNode().id() + ": Checkpoint started";
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to force checkpoint on node: " + ignite.localNode().id(), e);
             }
-
-            return null;
         }
     }
 }
