@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.security.cache;
 
-import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_CREATE;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_DESTROY;
@@ -35,16 +35,11 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 /**
  * Test create and destroy cache permissions.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "clientMode={0}")
+@ValueSource(booleans = {true, false})
 public class CacheOperationPermissionCreateDestroyCheckTest extends AbstractSecurityTest {
     /** */
-    @Parameterized.Parameters(name = "clientMode={0}")
-    public static Iterable<Boolean[]> data() {
-        return Arrays.asList(new Boolean[] {true}, new Boolean[] {false});
-    }
-
-    /** */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public boolean clientMode;
 
     /** */

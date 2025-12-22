@@ -21,9 +21,10 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Stream;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -36,20 +37,23 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.junit.Assume;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_12_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_6_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.since;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
- * Tests that upgrade version on persisted inline index is successfull.
+ * Tests that upgrade version on persisted inline index is successfully.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "ver={0}, cfgInlineSize={1}")
+@MethodSource("runConfig")
 public class InlineJavaObjectCompatibilityTest extends IndexAbstractCompatibilityTest {
     /** */
     private static final String TEST_CACHE_NAME = InlineJavaObjectCompatibilityTest.class.getSimpleName();
@@ -64,18 +68,17 @@ public class InlineJavaObjectCompatibilityTest extends IndexAbstractCompatibilit
     private static final String INDEX_SIZED_NAME = "intval1_val_intval2_sized";
 
     /** Parametrized run param: Ignite version. */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public String igniteVer;
 
     /** Parametrized run param: Inline size is configured by user. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean cfgInlineSize;
 
     /** Test run configurations: Ignite version, Inline size configuration. */
-    @Parameterized.Parameters(name = "ver={0}, cfgInlineSize={1}")
-    public static Collection<Object[]> runConfig() {
+    private static Stream<Arguments> runConfig() {
         /** 2.6.0 is a last version where POJO inlining isn't enabled. */
-        return cartesianProduct(since(VER_2_6_0), F.asList(false, true));
+        return cartesianProduct(since(VER_2_6_0), F.asList(false, true)).stream().map(Arguments::of);
     }
 
     /** */
@@ -84,8 +87,8 @@ public class InlineJavaObjectCompatibilityTest extends IndexAbstractCompatibilit
         int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
 
         if (majorJavaVer > 11) {
-            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
-                VER_2_12_0.compareTo(IgniteReleasedVersion.fromString(igniteVer)) < 0);
+            assumeTrue(VER_2_12_0.compareTo(IgniteReleasedVersion.fromString(igniteVer)) < 0,
+                    "Skipped on jdk " + U.jdkVersion());
         }
 
         PostStartupClosure closure = cfgInlineSize ? new PostStartupClosureSized() : new PostStartupClosure();

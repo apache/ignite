@@ -17,13 +17,14 @@
 
 package org.apache.ignite.common;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Stream;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
@@ -50,11 +51,14 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.Ignition.allGrids;
@@ -74,7 +78,8 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.RESULT;
 
 /** Tests that compute tasks are executed with the security context of the task initiator. */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "async={0} failWithTimeout={1} mapAsync={2}")
+@MethodSource("allTypesArgs")
 public class ComputeTaskRemoteSecurityContextTest extends AbstractEventSecurityContextTest {
     /** Task timeout.*/
     private static final long TEST_TASK_TIMEOUT = 500;
@@ -113,31 +118,24 @@ public class ComputeTaskRemoteSecurityContextTest extends AbstractEventSecurityC
         return true;
     }
 
-    /** */
-    @Parameterized.Parameters(name = "async={0} failWithTimeout={1} mapAsync={2}")
-    public static Iterable<Boolean[]> data() {
-        List<Boolean[]> res = new ArrayList<>();
-
-        for (Boolean async : Arrays.asList(false, true)) {
-            for (Boolean failWithTimeout : Arrays.asList(false, true)) {
-                for (Boolean mapAsync : Arrays.asList(false, true))
-                    res.add(new Boolean[] {async, failWithTimeout, mapAsync});
-            }
-        }
-
-        return res;
+    public static Stream<Arguments> allTypesArgs() {
+        return GridTestUtils.cartesianProduct(
+                List.of(true, false),
+                List.of(true, false),
+                List.of(true, false)
+        ).stream().map(Arguments::of);
     }
 
     /** Whether task is executed asynchronously. */
-    @Parameterized.Parameter()
+    @Parameter(0)
     public boolean async;
 
     /** Whether task fails with timeout exception. */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public boolean failWithTimeout;
 
     /** Whether task mapping is processed asynchronously. */
-    @Parameterized.Parameter(2)
+    @Parameter(2)
     public boolean mapAsync;
 
 

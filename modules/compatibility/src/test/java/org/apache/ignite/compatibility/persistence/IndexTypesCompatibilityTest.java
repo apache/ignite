@@ -25,12 +25,13 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -41,20 +42,23 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.junit.Assume;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_12_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_6_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.since;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Checks all basic sql types work correctly.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "ver={0}")
+@MethodSource("allTypesArgs")
 public class IndexTypesCompatibilityTest extends IndexAbstractCompatibilityTest {
     /** */
     private static final String TEST_CACHE_NAME = IndexTypesCompatibilityTest.class.getSimpleName();
@@ -98,13 +102,12 @@ public class IndexTypesCompatibilityTest extends IndexAbstractCompatibilityTest 
     }
 
     /** Parametrized run param: Ignite version. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public String igniteVer;
 
     /** Test run configurations: Ignite version, Inline size configuration. */
-    @Parameterized.Parameters(name = "ver={0}")
-    public static Collection<Object[]> runConfig() {
-        return cartesianProduct(since(VER_2_6_0));
+    private static Stream<Arguments> allTypesArgs() {
+        return cartesianProduct(since(VER_2_6_0)).stream().map(Arguments::of);
     }
 
     /** */
@@ -113,8 +116,8 @@ public class IndexTypesCompatibilityTest extends IndexAbstractCompatibilityTest 
         int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
 
         if (majorJavaVer > 11) {
-            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
-                    VER_2_12_0.compareTo(IgniteReleasedVersion.fromString(igniteVer)) < 0);
+            assumeTrue(VER_2_12_0.compareTo(IgniteReleasedVersion.fromString(igniteVer)) < 0,
+                    "Skipped on jdk " + U.jdkVersion());
         }
 
         doTestStartupWithOldVersion(igniteVer, new PostStartupClosure());

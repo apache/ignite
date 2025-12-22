@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.UUID;
+import java.util.stream.Stream;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -41,21 +41,24 @@ import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfT
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.junit.Assume;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_12_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_1_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_3_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.since;
 import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Saves data using previous version of ignite and then load this data using actual version.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "version={0}")
+@MethodSource("parameters")
 public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** */
     protected static final String TEST_CACHE_NAME = PersistenceBasicCompatibilityTest.class.getSimpleName();
@@ -64,13 +67,12 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
     protected volatile boolean compactFooter;
 
     /** Old Ignite version. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public String version;
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "version={0}")
-    public static Collection<Object[]> parameters() {
-        return cartesianProduct(since(VER_2_1_0));
+    private static Stream<Arguments> parameters() {
+        return cartesianProduct(since(VER_2_1_0)).stream().map(Arguments::of);
     }
 
     /** {@inheritDoc} */
@@ -106,12 +108,12 @@ public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatib
         int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
 
         if (majorJavaVer > 11) {
-            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
-                VER_2_12_0.compareTo(IgniteReleasedVersion.fromString(version)) < 0);
+            assumeTrue(VER_2_12_0.compareTo(IgniteReleasedVersion.fromString(version)) < 0,
+                    "Skipped on jdk " + U.jdkVersion());
         }
         else if (majorJavaVer == 11) {
-            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
-                VER_2_3_0.compareTo(IgniteReleasedVersion.fromString(version)) < 0);
+            assumeTrue(VER_2_3_0.compareTo(IgniteReleasedVersion.fromString(version)) < 0,
+                    "Skipped on jdk " + U.jdkVersion());
         }
 
         doTestStartupWithOldVersion(version);

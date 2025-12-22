@@ -19,7 +19,6 @@ package org.apache.ignite.compatibility.persistence;
 
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -30,6 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -55,11 +55,14 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /** */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "customConsId={0}, oldNodesCnt={1}")
+@MethodSource("data")
 public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** */
     private static final String OLD_IGNITE_VERSION = Collections.max(
@@ -90,20 +93,19 @@ public class SnapshotCompatibilityTest extends IgnitePersistenceCompatibilityAbs
     private String customSnpPath;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean customConsId;
 
     /** */
-    @Parameterized.Parameter(1)
+    @Parameter(1)
     public int oldNodesCnt;
 
     /** */
-    @Parameterized.Parameters(name = "customConsId={0}, oldNodesCnt={1}")
-    public static Collection<Object[]> data() {
+    private static Stream<Arguments> data() {
         return GridTestUtils.cartesianProduct(
             List.of(true, false),
             List.of(1, 3)
-        );
+        ).stream().map(Arguments::of);
     }
 
     /** {@inheritDoc} */

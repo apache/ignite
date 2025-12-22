@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.security.cache;
 
-import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -26,10 +25,9 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -37,16 +35,11 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 /**
  * Test cache permission for invoking of Scan Query.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "clientMode={0}")
+@ValueSource(booleans = {true, false})
 public class ScanQueryPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
-    /** Parameters. */
-    @Parameters(name = "clientMode={0}")
-    public static Iterable<Boolean[]> data() {
-        return Arrays.asList(new Boolean[] {true}, new Boolean[] {false});
-    }
-
     /** Client mode. */
-    @Parameter()
+    @Parameter(0)
     public boolean clientMode;
 
     /** */

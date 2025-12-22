@@ -79,8 +79,9 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST;
@@ -109,27 +110,22 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
  * Tests for Jetty REST protocol.
  */
 @SuppressWarnings("unchecked")
-@RunWith(Parameterized.class)
 @WithSystemProperty(key = IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION, value = "false")
+@ParameterizedClass(name = "useBinaryArrays = {0}")
+@ValueSource(booleans = {true, false})
 public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProcessorCommonSelfTest {
     /** */
     private static boolean memoryMetricsEnabled;
 
     /** */
-    protected static final String CASHE_STORE_ENABLED_CACHE_NAME = "cache-store-enabled-cache";
+    protected static final String CACHE_STORE_ENABLED_CACHE_NAME = "cache-store-enabled-cache";
 
     /** */
     protected static volatile Map<String, String> thirdPartyStore;
 
     /** */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean useBinaryArrays;
-
-    /** Generates values for the {@link #useBinaryArrays} parameter. */
-    @Parameterized.Parameters(name = "useBinaryArrays = {0}")
-    public static Iterable<Object[]> useBinaryArrays() {
-        return Arrays.asList(new Object[][] {{true}, {false}});
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -161,7 +157,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         grid(0).cluster().state(ACTIVE);
 
         grid(0).cache(DEFAULT_CACHE_NAME).removeAll();
-        grid(0).cache(CASHE_STORE_ENABLED_CACHE_NAME).removeAll();
+        grid(0).cache(CACHE_STORE_ENABLED_CACHE_NAME).removeAll();
 
         if (memoryMetricsEnabled) {
             memoryMetricsEnabled = false;
@@ -355,12 +351,12 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         assertNull(
                 "The value should be empty before the test.",
-                grid(0).cache(CASHE_STORE_ENABLED_CACHE_NAME).get(key));
+                grid(0).cache(CACHE_STORE_ENABLED_CACHE_NAME).get(key));
 
         thirdPartyStore.put(key, val);
 
         String skipStoreRet = content(
-                CASHE_STORE_ENABLED_CACHE_NAME,
+                CACHE_STORE_ENABLED_CACHE_NAME,
                 GridRestCommand.CACHE_GET,
                 "key",
                 key,
@@ -372,7 +368,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         assertCacheOperation(skipStoreRet, null);
 
         String ret = content(
-                CASHE_STORE_ENABLED_CACHE_NAME,
+                CACHE_STORE_ENABLED_CACHE_NAME,
                 GridRestCommand.CACHE_GET,
                 "key",
                 key);
@@ -1372,7 +1368,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         String val2 = "testPutSkipStoreValue2";
 
         String skipStoreRet = content(
-                CASHE_STORE_ENABLED_CACHE_NAME,
+                CACHE_STORE_ENABLED_CACHE_NAME,
                 GridRestCommand.CACHE_PUT,
                 "key",
                 key,
@@ -1388,7 +1384,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
         assertNull("Third party cache store should be skipped.", thirdPartyStore.get(key));
 
         String ret = content(
-                CASHE_STORE_ENABLED_CACHE_NAME,
+                CACHE_STORE_ENABLED_CACHE_NAME,
                 GridRestCommand.CACHE_PUT,
                 "key",
                 key,
@@ -3638,7 +3634,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
         CacheConfiguration[] cacheCfgs = Arrays.copyOf(cfg.getCacheConfiguration(), sz + 1);
 
-        CacheConfiguration<String, String> cacheCfg = new CacheConfiguration<>(CASHE_STORE_ENABLED_CACHE_NAME);
+        CacheConfiguration<String, String> cacheCfg = new CacheConfiguration<>(CACHE_STORE_ENABLED_CACHE_NAME);
         cacheCfg.setCopyOnRead(false)
                 .setCacheMode(CacheMode.REPLICATED)
                 .setReadThrough(true)

@@ -73,18 +73,15 @@ import org.apache.ignite.services.ServiceCallContext;
 import org.apache.ignite.services.ServiceContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assume;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.GET_SERVICE_DESCRIPTORS;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.SERVICE_INVOKE_CALLCTX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Tests java thin client compatibility. This test only checks that thin client can perform basic operations with
  * different client and server versions. Whole API not checked, corner cases not checked.
  */
-@RunWith(Parameterized.class)
 public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     /** Thin client endpoint. */
     public static final String ADDR = "127.0.0.1:10800";
@@ -108,8 +105,8 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
         int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
 
         if (majorJavaVer > 11) {
-            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
-                    VER_2_12_0.compareTo(IgniteProductVersion.fromString(verFormatted)) < 0);
+            assumeTrue(VER_2_12_0.compareTo(IgniteProductVersion.fromString(verFormatted)) < 0,
+                    "Skipped on jdk " + U.jdkVersion());
         }
     }
 
@@ -141,14 +138,14 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
 
     /** {@inheritDoc} */
     @Override public void testOldClientToCurrentServer() throws Exception {
-        Assume.assumeTrue("Java thin client exists only from 2.5.0 release", ver.compareTo(VER_2_5_0) >= 0);
+        assumeTrue(ver.compareTo(VER_2_5_0) >= 0, "Java thin client exists only from 2.5.0 release");
 
         super.testOldClientToCurrentServer();
     }
 
     /** {@inheritDoc} */
     @Override public void testCurrentClientToOldServer() throws Exception {
-        Assume.assumeTrue("Java thin client exists only from 2.5.0 release", ver.compareTo(VER_2_5_0) >= 0);
+        assumeTrue(ver.compareTo(VER_2_5_0) >= 0, "Java thin client exists only from 2.5.0 release");
 
         super.testCurrentClientToOldServer();
     }
@@ -157,7 +154,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     private void testCacheConfiguration(
         boolean checkFieldsPrecessionAndScale,
         boolean checkExpiryPlc
-    ) throws Exception {
+    ) {
         X.println(">>>> Testing cache configuration");
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
@@ -212,7 +209,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     }
 
     /** */
-    private void testCacheApi() throws Exception {
+    private void testCacheApi() {
         X.println(">>>> Testing cache API");
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
@@ -231,7 +228,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     }
 
     /** */
-    private void testAuthentication() throws Exception {
+    private void testAuthentication() {
         X.println(">>>> Testing authentication");
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR)
@@ -242,7 +239,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     }
 
     /** */
-    private void testTransactions() throws Exception {
+    private void testTransactions() {
         X.println(">>>> Testing transactions");
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
@@ -264,7 +261,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     }
 
     /** */
-    private void testBinary() throws Exception {
+    private void testBinary() {
         X.println(">>>> Testing binary");
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
@@ -286,7 +283,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     }
 
     /** */
-    private void testQueries() throws Exception {
+    private void testQueries() {
         X.println(">>>> Testing queries");
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
@@ -303,7 +300,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     }
 
     /** */
-    private void testExpiryPolicy() throws Exception {
+    private void testExpiryPolicy() {
         X.println(">>>> Testing expiry policy");
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
@@ -319,7 +316,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     }
 
     /** */
-    private void testUserAttributes() throws Exception {
+    private void testUserAttributes() {
         X.println(">>>> Testing user attributes");
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR)
@@ -329,7 +326,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     }
 
     /** */
-    private void testClusterAPI() throws Exception {
+    private void testClusterAPI() {
         X.println(">>>> Testing cluster API");
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
@@ -338,7 +335,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     }
 
     /** */
-    private void testClusterGroups() throws Exception {
+    private void testClusterGroups() {
         X.println(">>>> Testing cluster groups");
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {
@@ -356,7 +353,7 @@ public class JavaThinCompatibilityTest extends AbstractClientCompatibilityTest {
     }
 
     /** */
-    private void testServices() throws Exception {
+    private void testServices() {
         X.println(">>>> Testing services");
 
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(ADDR))) {

@@ -18,6 +18,8 @@
 package org.apache.ignite.compatibility.clients;
 
 import java.util.Collection;
+import java.util.stream.Stream;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.compatibility.testframework.junits.Dependency;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
@@ -35,8 +37,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.VER_2_4_0;
 import static org.apache.ignite.compatibility.IgniteReleasedVersion.since;
@@ -46,7 +50,8 @@ import static org.apache.ignite.testframework.GridTestUtils.cartesianProduct;
  * Tests that current client version can connect to the server with specified version and
  * specified client version can connect to the current server version.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "Version {0}")
+@MethodSource("allTypesArgs")
 public abstract class AbstractClientCompatibilityTest extends IgniteCompatibilityAbstractTest {
     /** Version 2.5.0. */
     protected static final IgniteProductVersion VER_2_5_0 = IgniteProductVersion.fromString("2.5.0");
@@ -82,13 +87,12 @@ public abstract class AbstractClientCompatibilityTest extends IgniteCompatibilit
     protected static final IgniteProductVersion VER_2_18_0 = IgniteProductVersion.fromString("2.18.0");
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "Version {0}")
-    public static Iterable<Object[]> versions() {
-        return cartesianProduct(F.concat(true, IgniteVersionUtils.VER_STR, since(VER_2_4_0)));
+    private static Stream<Arguments> allTypesArgs() {
+        return cartesianProduct(F.concat(true, IgniteVersionUtils.VER_STR, since(VER_2_4_0))).stream().map(Arguments::of);
     }
 
     /** Old Ignite version. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public String verFormatted;
 
     /** */

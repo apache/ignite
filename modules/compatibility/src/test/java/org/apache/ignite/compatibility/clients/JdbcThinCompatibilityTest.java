@@ -26,14 +26,12 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.junit.Assume;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Tests JDBC thin compatibility.
  */
-@RunWith(Parameterized.class)
 public class JdbcThinCompatibilityTest extends AbstractClientCompatibilityTest {
     /** Table name. */
     private static final String TABLE_NAME = "test_table";
@@ -56,8 +54,8 @@ public class JdbcThinCompatibilityTest extends AbstractClientCompatibilityTest {
         int majorJavaVer = U.majorJavaVersion(U.jdkVersion());
 
         if (majorJavaVer > 11) {
-            Assume.assumeTrue("Skipped on jdk " + U.jdkVersion(),
-                VER_2_12_0.compareTo(IgniteProductVersion.fromString(verFormatted)) < 0);
+            assumeTrue(VER_2_12_0.compareTo(IgniteProductVersion.fromString(verFormatted)) < 0,
+                    "Skipped on jdk " + U.jdkVersion());
         }
     }
 
