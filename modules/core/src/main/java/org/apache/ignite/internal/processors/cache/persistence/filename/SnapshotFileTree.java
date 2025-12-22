@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SNAPSHOT_DIRECTORY;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils.resolveStorage;
 
 /**
@@ -134,7 +135,7 @@ public class SnapshotFileTree extends NodeFileTree {
         this.path = path;
         this.consId = consId;
 
-        Map<String, File> snpExtraStorages = snapshotExtraStorages(ft, cfg.getSnapshotPath());
+        Map<String, File> snpExtraStorages = snapshotExtraStorages(ft, cfg);
 
         if (snpExtraStorages.isEmpty())
             extraStorages.clear();
@@ -380,13 +381,36 @@ public class SnapshotFileTree extends NodeFileTree {
      * This will distribute workload to all physical device on host.
      *
      * @param ft Node file tree.
-     * @param snpDfltPath Snapshot default path.
+     * @param cfg Ignite configuration.
      */
-    private Map<String, File> snapshotExtraStorages(NodeFileTree ft, String snpDfltPath) {
+    private Map<String, File> snapshotExtraStorages(NodeFileTree ft, IgniteConfiguration cfg) {
+        String snpDfltPath = cfg.getSnapshotPath();
+
+        DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
+        boolean hasExtraSnpPaths = dsCfg != null && dsCfg.getExtraSnapshotPaths() != null && dsCfg.getExtraSnapshotPaths().length > 0;
+
         // If path provided then create snapshot inside it, only.
-        // Same rule applies if absolute path to the snapshot root dir configured.
-        if (path != null || new File(snpDfltPath).isAbsolute())
+        // Same rule applies if absolute path to the snapshot root dir configured and no extra snapshot paths.
+        if (path != null || (new File(snpDfltPath).isAbsolute() && !hasExtraSnpPaths))
             return Collections.emptyMap();
+
+        if (hasExtraSnpPaths) {
+            String[] extraSnpPaths = dsCfg.getExtraSnapshotPaths();
+            String[] extraStorages = dsCfg.getExtraStoragePaths();
+
+            assert extraSnpPaths.length == extraStorages.length;
+
+            Map<String, File> snpExtraStorages = new HashMap<>();
+
+            for (int i = 0; i < extraSnpPaths.length; i++) {
+                snpExtraStorages.put(
+                    extraStorages[i],
+                    ft.resolveDirectory(Path.of(extraSnpPaths[i], DFLT_SNAPSHOT_DIRECTORY, name, DB_DIR).toString())
+                );
+            }
+
+            return snpExtraStorages;
+        }
 
         Map<String, File> snpExtraStorages = new HashMap<>();
 

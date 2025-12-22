@@ -403,10 +403,7 @@ public class NodeFileTree extends SharedFileTree {
             walCdc = rootRelative(DFLT_WAL_CDC_PATH);
         }
 
-        extraStorages = extraStorages(
-            dsCfg,
-            storagePath -> resolveDirectory(Path.of(storagePath, DB_DIR).toString())
-        );
+        extraStorages = extraStorages(dsCfg);
     }
 
     /** @return Node storage directory. */
@@ -989,12 +986,15 @@ public class NodeFileTree extends SharedFileTree {
      * @return Node storages.
      * @see DataStorageConfiguration#setExtraStoragePaths(String...)
      */
-    private Map<String, File> extraStorages(@Nullable DataStorageConfiguration dsCfg, Function<String, File> resolver) {
+    private Map<String, File> extraStorages(@Nullable DataStorageConfiguration dsCfg) {
         if (dsCfg == null || F.isEmpty(dsCfg.getExtraStoragePaths()))
             return Collections.emptyMap();
 
         return Arrays.stream(dsCfg.getExtraStoragePaths())
-            .collect(Collectors.toMap(Function.identity(), resolver));
+            .collect(Collectors.toMap(
+                Function.identity(),
+                p -> resolveDirectory(Path.of(p, DB_DIR).toString()))
+            );
     }
 
     /**
@@ -1129,7 +1129,7 @@ public class NodeFileTree extends SharedFileTree {
      * @param cfg Configured directory path.
      * @return Initialized directory.
      */
-    private File resolveDirectory(String cfg) {
+    protected File resolveDirectory(String cfg) {
         File sharedDir = new File(cfg);
 
         return sharedDir.isAbsolute()
