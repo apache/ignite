@@ -217,4 +217,120 @@ public class TimeoutTest extends AbstractThinClientTest {
             }
         }
     }
+
+    /**
+     * Test that connection timeout is independent of request timeout during connection establishment.
+     */
+    @Test
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testConnectionTimeoutIndependentOfRequest() throws Exception {
+        ServerSocket sock = new ServerSocket();
+        sock.bind(new InetSocketAddress("127.0.0.1", DFLT_PORT));
+
+        CountDownLatch connectionAccepted = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            try {
+                Socket accepted = sock.accept();
+                connectionAccepted.countDown();
+
+                Thread.sleep(2000);
+
+                U.closeQuiet(accepted);
+            }
+            catch (Exception e) {
+                throw new IgniteException("Accept thread failed: " + e.getMessage(), e);
+            }
+        });
+
+        long startTime = System.currentTimeMillis();
+
+        try {
+            ClientConfiguration cfg = new ClientConfiguration()
+                .setAddresses("127.0.0.1:" + DFLT_PORT)
+                .setConnectionTimeout(500)
+                .setRequestTimeout(10000);
+
+            GridTestUtils.assertThrowsWithCause(
+                () -> Ignition.startClient(cfg),
+                ClientConnectionException.class
+            );
+        }
+        finally {
+            U.closeQuiet(sock);
+        }
+
+        long elapsed = System.currentTimeMillis() - startTime;
+
+        assertTrue("Should fail around connection timeout (500ms), not request timeout",
+            elapsed >= 450 && elapsed < 2000);
+
+        assertTrue("Connection should have been accepted", connectionAccepted.await(1, TimeUnit.SECONDS));
+
+        fut.get();
+    }
+
+    /**
+     * Test that request timeout is independent of connection timeout during operations.
+     */
+    @Test
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testRequestTimeoutIndependentOfConnection() throws Exception {
+        try (Ignite ignite = startGrid(0)) {
+            ClientConfiguration cfg = getClientConfiguration()
+                .setAddresses("127.0.0.1:" + DFLT_PORT)
+                .setConnectionTimeout(10000)
+                .setRequestTimeout(500);
+
+            try (IgniteClient client = Ignition.startClient(cfg)) {
+                ClientCache<Object, Object> cache = client.getOrCreateCache("testTimeoutCache");
+
+                ClientCacheConfiguration txCacheCfg = new ClientCacheConfiguration()
+                    .setName("txCache")
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+                ClientCache<Object, Object> txCache = client.getOrCreateCache(txCacheCfg);
+
+                CyclicBarrier barrier = new CyclicBarrier(2);
+
+                IgniteInternalFuture<?> blockingThread = GridTestUtils.runAsync(() -> {
+                    try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        txCache.put(1, "blocked");
+
+                        barrier.await(2, TimeUnit.SECONDS);
+
+                        Thread.sleep(2000);
+
+                        barrier.await(2, TimeUnit.SECONDS);
+                    }
+                    catch (Exception e) {
+                        throw new IgniteException(e);
+                    }
+                });
+
+                barrier.await(2, TimeUnit.SECONDS);
+
+                long startTime = System.currentTimeMillis();
+
+                try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    GridTestUtils.assertThrowsWithCause(
+                        () -> txCache.put(1, "should timeout"),
+                        ClientException.class
+                    );
+                }
+
+                long elapsed = System.currentTimeMillis() - startTime;
+
+                assertTrue("Should fail around request timeout (500ms), not connection timeout",
+                    elapsed >= 450 && elapsed < 2000);
+
+                barrier.await(2, TimeUnit.SECONDS);
+
+                cache.put(2, "still works");
+                assertEquals("still works", cache.get(2));
+
+                blockingThread.get();
+            }
+        }
+    }
 }
