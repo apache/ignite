@@ -118,6 +118,7 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         assertTrue(GridTestUtils.waitForCondition(checkpointFinishedLsnr::check, 10_000));
 
         assertFalse(testOut.toString().contains("PDS disabled"));
+        outputContains(": Checkpoint started");
 
         testOut.reset();
         checkpointFinishedLsnr.reset();
@@ -133,6 +134,7 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         assertTrue(GridTestUtils.waitForCondition(checkpointFinishedLsnr::check, 10_000));
         assertTrue(GridTestUtils.waitForCondition(checkpointReasonLsnr::check, 10_000));
         assertFalse(testOut.toString().contains("PDS disabled"));
+        outputContains(": Checkpoint started");
 
         testOut.reset();
         checkpointFinishedLsnr.reset();
