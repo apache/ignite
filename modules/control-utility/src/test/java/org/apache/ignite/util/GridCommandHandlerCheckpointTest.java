@@ -115,7 +115,7 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint"));
 
-        assertTrue(testOut.toString(), GridTestUtils.waitForCondition(checkpointFinishedLsnr::check, 10_000));
+        assertTrue(GridTestUtils.waitForCondition(checkpointFinishedLsnr::check, 10_000));
 
         assertFalse(testOut.toString().contains("PDS disabled"));
 
