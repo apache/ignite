@@ -408,9 +408,7 @@ class MessageSerializerGenerator {
                 imports.add(element.toString());
 
                 String enumName = element.getSimpleName().toString();
-                char[] enumNameChars = enumName.toCharArray();
-                enumNameChars[0] = Character.toLowerCase(enumNameChars[0]);
-                String enumFieldPrefix = new String(enumNameChars);
+                String enumFieldPrefix = typeNameToFieldName(enumName);
 
                 String mapperCallStmnt;
 
@@ -451,6 +449,15 @@ class MessageSerializerGenerator {
         }
 
         throw new IllegalArgumentException("Unsupported type kind: " + type.getKind());
+    }
+
+    /**
+     * Converts type name to camel case field name. Example: {@code "MyType"} -> {@code "myType"}.
+     */
+    private String typeNameToFieldName(String typeName) {
+        char[] typeNameChars = typeName.toCharArray();
+        typeNameChars[0] = Character.toLowerCase(typeNameChars[0]);
+        return new String(typeNameChars);
     }
 
     /**
@@ -604,17 +611,12 @@ class MessageSerializerGenerator {
             }
 
             else if (enumType(type)) {
-                String enumName = env.getTypeUtils().asElement(type).getSimpleName().toString();
-
-                char[] chars = enumName.toCharArray();
-                chars[0] = Character.toLowerCase(chars[0]);
-
-                String enumFieldPrefix = new String(chars);
+                String fieldPrefix = typeNameToFieldName(env.getTypeUtils().asElement(type).getSimpleName().toString());
 
                 boolean hasCustMapperAnn = field.getAnnotation(CustomMapper.class) != null;
 
-                String mapperCallStmnt = hasCustMapperAnn ? enumFieldPrefix + "Mapper.decode" : "DefaultEnumMapper.INSTANCE.decode";
-                String enumValsFieldName = hasCustMapperAnn ? null : enumFieldPrefix + "Vals";
+                String mapperCallStmnt = hasCustMapperAnn ? fieldPrefix + "Mapper.decode" : "DefaultEnumMapper.INSTANCE.decode";
+                String enumValsFieldName = hasCustMapperAnn ? null : fieldPrefix + "Vals";
 
                 returnFalseIfEnumReadFailed(name, mapperCallStmnt, enumValsFieldName);
             }

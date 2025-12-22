@@ -203,10 +203,7 @@ public class MessageProcessor extends AbstractProcessor {
     private boolean enumField(Element el) {
         TypeMirror elType = el.asType();
 
-        if (elType.getKind().isPrimitive())
-            return false;
-
-        if (elType.getKind() == TypeKind.ARRAY)
+        if (elType.getKind() != TypeKind.DECLARED)
             return false;
 
         return processingEnv.getTypeUtils().asElement(el.asType()).getKind() == ElementKind.ENUM;
