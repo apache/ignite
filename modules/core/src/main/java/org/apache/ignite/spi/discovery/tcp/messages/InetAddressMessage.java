@@ -24,7 +24,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** */
+/** Address utility container message. Is not a pure {@link TcpDiscoveryAbstractMessage}. */
 public class InetAddressMessage implements Message {
     /** */
     @Order(0)
