@@ -20,10 +20,13 @@ package org.apache.ignite.internal.processors.query.calcite;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedPropertyDispatcher;
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
 import org.apache.ignite.internal.processors.query.DistributedSqlConfiguration;
+import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.setDefaultValue;
 
@@ -35,12 +38,17 @@ public class DistributedCalciteConfiguration extends DistributedSqlConfiguration
     /** Default value of the disabled rules. */
     public static final String[] DFLT_DISABLED_RULES = new String[0];
 
-    /** Query timeout. */
+    /** Globally disabled rules. */
     private volatile DistributedChangeableProperty<String[]> disabledRules;
 
     /** */
-    public DistributedCalciteConfiguration(GridKernalContext ctx, IgniteLogger log) {
+    private final QueryPlanCache qryPlanCache;
+
+    /** */
+    public DistributedCalciteConfiguration(GridKernalContext ctx, QueryPlanCache qryPlanCache, IgniteLogger log) {
         super(ctx, log);
+
+        this.qryPlanCache = qryPlanCache;
     }
 
     /**
@@ -66,10 +74,21 @@ public class DistributedCalciteConfiguration extends DistributedSqlConfiguration
             () -> new SimpleDistributedProperty<>(
                 DISABLED_RULES_PROPERTY_NAME,
                 str -> Stream.of(str.split(",")).map(String::trim).filter(s -> !s.isBlank()).toArray(String[]::new),
-                "Comma-separated list of Calcite's disabled planning rules. NOTE: cleans the planning cache!"
+                "Comma-separated list of Calcite's disabled planning rules. NOTE: cleans the planning cache on cnage."
             ),
             log
         );
+
+        disabledRules.addListener(new DistributePropertyListener<>() {
+            @Override public void onUpdate(String name, String[] oldVal, String[] newVal) {
+                if (oldVal != null && F.compareArrays(oldVal, newVal) != 0) {
+                    log.warning("Cleaning Calcite's cache plan by setting changing of the property '"
+                        + DISABLED_RULES_PROPERTY_NAME + "'.");
+
+                    qryPlanCache.clear();
+                }
+            }
+        });
     }
 
     /** {@inheritDoc} */

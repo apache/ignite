@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.prepare;
 
 import java.util.List;
-
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.type.RelDataType;
@@ -35,11 +34,13 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.calcite.DistributedCalciteConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.prepare.ddl.DdlSqlToCommandConverter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.AbstractService;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,14 +59,18 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
     /** */
     private final PlanExtractor planExtractor;
 
+    /** */
+    private final DistributedCalciteConfiguration distrCfg;
+
     /**
      * @param ctx Kernal.
      */
-    public PrepareServiceImpl(GridKernalContext ctx) {
+    public PrepareServiceImpl(GridKernalContext ctx, DistributedCalciteConfiguration distrCfg) {
         super(ctx);
 
         planExtractor = new PlanExtractor(ctx);
         ddlConverter = new DdlSqlToCommandConverter();
+        this.distrCfg = distrCfg;
     }
 
     /** {@inheritDoc} */
@@ -79,6 +84,11 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
             assert single(sqlNode);
 
             ctx.planner().reset();
+
+            String[] disbledRules = distrCfg.disabledRules();
+
+            if (!F.isEmpty(disbledRules))
+                ctx.addRulesFilter(new IgnitePlanner.DisabledRuleFilter(disbledRules));
 
             if (SqlKind.DDL.contains(sqlNode.getKind()))
                 return prepareDdl(sqlNode, ctx);
