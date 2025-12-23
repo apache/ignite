@@ -39,6 +39,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpdateMessage;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
@@ -181,6 +182,9 @@ public class TcpDiscoveryIoSession {
             msgReader.reset();
             msgReader.setBuffer(msgBuf);
 
+            if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
+                System.err.println("TEST | received TcpDiscoveryClientMetricsUpdateMessage");
+
             MessageSerializer msgSer = spi.messageFactory().serializer(msg.directType());
 
             boolean finished;
@@ -190,6 +194,9 @@ public class TcpDiscoveryIoSession {
                 msgBuf.clear();
 
                 int read = in.read(msgBuf.array(), 0, msgBuf.limit());
+
+                if(msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
+                    System.err.println("TEST | read TcpDiscoveryClientMetricsUpdateMessage");
 
                 if (read == -1)
                     throw new EOFException("Connection closed before message was fully read.");

@@ -1307,6 +1307,8 @@ class ClientImpl extends TcpDiscoveryImpl {
          */
         private void sendMessage(TcpDiscoveryAbstractMessage msg) {
             synchronized (mux) {
+                log.error("TEST | enqueue TcpDiscoveryClientMetricsUpdateMessage, msg=" + msg.id());
+
                 queue.add(msg);
 
                 mux.notifyAll();
@@ -1422,7 +1424,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                             msg = queue.poll();
 
                         if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
-                            log.error("TEST | msg = queue.poll() - TcpDiscoveryClientMetricsUpdateMessage");
+                            log.error("TEST | polled TcpDiscoveryClientMetricsUpdateMessage, msgId: " + msg.id());
 
                         if (msg == null) {
                             mux.wait();
@@ -1434,6 +1436,9 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 for (IgniteInClosure<TcpDiscoveryAbstractMessage> msgLsnr : spi.sndMsgLsnrs)
                     msgLsnr.apply(msg);
+
+                if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
+                    log.error("TEST | TcpDiscoveryClientMetricsUpdateMessage - after listeners, msgId: " + msg.id());
 
                 boolean ack = !(msg instanceof TcpDiscoveryPingResponse);
 
@@ -1447,7 +1452,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     }
 
                     if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
-                        log.error("TEST | spi.writeMessage() - TcpDiscoveryClientMetricsUpdateMessage");
+                        log.error("TEST | spi.writeMessage() - TcpDiscoveryClientMetricsUpdateMessage, msgId: " + msg.id());
 
                     spi.writeMessage(ses, msg, sockTimeout);
 
@@ -1469,14 +1474,13 @@ class ClientImpl extends TcpDiscoveryImpl {
                             long nowNanos = System.nanoTime();
 
                             while (unackedMsg != null && waitEndNanos - nowNanos > 0) {
-                                log.error("TEST | waitUnacked, msgId: " + unackedMsg.id());
+                                if(unackedMsg instanceof TcpDiscoveryClientMetricsUpdateMessage)
+                                    log.error("TEST | waitUnacked, msgId: " + unackedMsg.id());
 
                                 mux.wait(U.nanosToMillis(waitEndNanos - nowNanos));
 
                                 nowNanos = System.nanoTime();
                             }
-
-                            log.error("TEST | passed unacked");
 
                             unacked = unackedMsg;
 

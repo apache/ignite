@@ -145,7 +145,7 @@ public class NodeMetricsMessage implements Message {
     private double load = -1;
 
     /** */
-    //@Order(value = 27, method = "averageCpuLoad")
+    @Order(value = 27, method = "averageCpuLoad")
     private double avgCpuLoad = -1;
 
     /** */

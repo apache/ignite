@@ -7067,7 +7067,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         TcpDiscoveryAbstractMessage msg = spi.readMessage(ses, 0);
 
                         if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
-                            log.error("TEST | raw received TcpDiscoveryClientMetricsUpdateMessage");
+                            log.error("TEST | received TcpDiscoveryClientMetricsUpdateMessage 1, msgId: " + msg.id());
 
                         msg.senderNodeId(nodeId);
 
@@ -7295,7 +7295,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
 
                         if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
-                            log.error("TEST | received TcpDiscoveryClientMetricsUpdateMessage");
+                            log.error("TEST | received TcpDiscoveryClientMetricsUpdateMessage 2, msgId: " + msg.id());
 
                         // Send receipt back.
                         if (clientMsgWrk != null) {
@@ -7592,7 +7592,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
 
             if (wrk != null)
-                wrk.metrics(new ClusterMetricsSnapshot(msg.metricsMessage()));
+                wrk.metrics(new ClusterMetricsSnapshot());
             else if (log.isDebugEnabled())
                 log.debug("Received client metrics update message from unknown client node: " + msg);
         }
