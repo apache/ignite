@@ -99,8 +99,10 @@ public class DistributedCalciteConfiguration extends DistributedSqlConfiguration
             @Override public void onUpdate(String name, String[] oldVal, String[] newVal) {
                 if (oldVal != null && F.compareArrays(oldVal, newVal) != 0) {
                     if (qryPlanCache != null) {
-                        log.info("Cleaning Calcite's cache plan by changing of the property '"
-                            + DISABLED_RULES_PROPERTY_NAME + "'.");
+                        if (log.isInfoEnabled()) {
+                            log.info("Cleaning Calcite's cache plan by changing of the property '"
+                                + DISABLED_RULES_PROPERTY_NAME + "'.");
+                        }
 
                         qryPlanCache.clear();
                     }
