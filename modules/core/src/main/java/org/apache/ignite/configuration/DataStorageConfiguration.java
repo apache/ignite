@@ -624,6 +624,7 @@ public class DataStorageConfiguration implements Serializable {
     /**
      * Sets a paths to the root directories where the snapshot files stored.
      * By default, {@link IgniteConfiguration#getSnapshotPath()} used.
+     * Length of {@code extraSnapshotPaths} must be equal to the length of {@link #getExtraStoragePaths()}.
      *
      * @param extraSnapshotPaths Extra snapshot paths where snapshot files can be stored.
      * @return {@code this} for chaining.
