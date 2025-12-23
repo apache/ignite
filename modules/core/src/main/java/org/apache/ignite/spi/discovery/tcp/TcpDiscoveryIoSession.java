@@ -39,7 +39,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientMetricsUpdateMessage;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
@@ -182,29 +181,52 @@ public class TcpDiscoveryIoSession {
             msgReader.reset();
             msgReader.setBuffer(msgBuf);
 
-            if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
-                System.err.println("TEST | received TcpDiscoveryClientMetricsUpdateMessage");
-
             MessageSerializer msgSer = spi.messageFactory().serializer(msg.directType());
 
             boolean finished;
+
+            byte[] unprocessedBytes = null;
+            int unprocessedBytesLen = 0;
 
             do {
                 // Should be cleared before first operation.
                 msgBuf.clear();
 
-                int read = in.read(msgBuf.array(), 0, msgBuf.limit());
+                if (unprocessedBytes != null) {
+                    assert unprocessedBytesLen == unprocessedBytes.length;
 
-                if(msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
-                    System.err.println("TEST | read TcpDiscoveryClientMetricsUpdateMessage");
+                    msgBuf.put(unprocessedBytes);
+
+                    unprocessedBytes = null;
+                }
+
+                int read = in.read(msgBuf.array(), msgBuf.position(), msgBuf.remaining());
 
                 if (read == -1)
                     throw new EOFException("Connection closed before message was fully read.");
 
-                msgBuf.limit(read);
+                if (unprocessedBytesLen > 0) {
+                    msgBuf.rewind();
+
+                    msgBuf.limit(read + unprocessedBytesLen);
+
+                    unprocessedBytesLen = 0;
+                }
+                else
+                    msgBuf.limit(read);
 
                 finished = msgSer.readFrom(msg, msgReader);
-            } while (!finished);
+
+                // We must keep uprocessed bytes read from the socked. Socket won't return it again.
+                if (!finished && msgBuf.position() > 0 && msgBuf.remaining() > 0) {
+                    unprocessedBytes = new byte[msgBuf.remaining()];
+
+                    unprocessedBytesLen = unprocessedBytes.length;
+
+                    msgBuf.get(unprocessedBytes, 0, msgBuf.remaining());
+                }
+            }
+            while (!finished);
 
             return (T)msg;
         }
@@ -270,12 +292,15 @@ public class TcpDiscoveryIoSession {
         msgWriter.setBuffer(msgBuf);
 
         boolean finished;
+        int totalWritten = 0;
 
         do {
             // Should be cleared before first operation.
             msgBuf.clear();
 
             finished = msgSer.writeTo(m, msgWriter);
+
+            totalWritten += msgBuf.position();
 
             out.write(msgBuf.array(), 0, msgBuf.position());
         }
