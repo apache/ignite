@@ -1273,11 +1273,9 @@ public class GridNioServerWrapper {
                 if (lastMsqQueueSizeWarningTs.compareAndSet(lastWarnTs, U.currentTimeMillis())) {
                     ConnectionKey id = ses.meta(CONN_IDX_META);
                     if (id != null) {
-                        String msg = "Outbound message queue size for node exceeded configured " +
+                        log.warning("Outbound message queue size for node exceeded configured " +
                             "messageQueueWarningSize value, it may be caused by node failure or a network problems " +
-                            "[node=" + id.nodeId() + ", msqQueueSize=" + msgQueueSize + ']';
-
-                        log.warning(msg);
+                            "[node=" + id.nodeId() + ", msqQueueSize=" + msgQueueSize + ']');
                     }
                 }
             }
