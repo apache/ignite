@@ -28,12 +28,12 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /** Address utility container message. Is not a pure {@link TcpDiscoveryAbstractMessage}. */
 public class InetAddressMessage implements Message {
     /** */
-    @Order(value = 0, method = "addressBytes")
-    private byte[] addrBytes;
+    @Order(0)
+    private String hostName;
 
     /** */
-    @Order(1)
-    private String hostName;
+    @Order(value = 1, method = "addressBytes")
+    private byte[] addrBytes;
 
     /** Default constructor for {@link DiscoveryMessageFactory}. */
     public InetAddressMessage() {
@@ -42,8 +42,8 @@ public class InetAddressMessage implements Message {
 
     /** @param addr Address. */
     public InetAddressMessage(InetAddress addr) {
-        addrBytes = addr.getAddress();
         hostName = addr.getHostName();
+        addrBytes = addr.getAddress();
     }
 
     /** @return {@link InetAddress#getAddress()} */
