@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 /**
  * Test snapshot can be created when {@link DataStorageConfiguration#setStoragePath(String)} used.
  */
-public class SnapshotCreationNonDefaultStoragePath2Test extends SnapshotCreationNonDefaultStoragePathTest {
+public class SnapshotExtraStoragesTest extends SnapshotCreationNonDefaultStoragePathTest {
     /** {@inheritDoc} */
     @Override protected DataStorageConfiguration dataStorageConfiguration() {
         extraSnpPaths = new String[] {
