@@ -57,7 +57,7 @@ class InPlaceNodeUpgradeTest(BaseRollingUpgradeTest):
 
             ignites.await_started([ignite])
 
-        self.logger.info(f"Cluster upgrade is complete.")
+        self.logger.info("Cluster upgrade is complete.")
 
         control_sh.disable_rolling_upgrade()
 

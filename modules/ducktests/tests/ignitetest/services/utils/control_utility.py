@@ -252,7 +252,7 @@ class ControlUtility:
         """
         Disable Rolling Upgrade.
         """
-        result = self.__run(f"--rolling-upgrade disable --enable-experimental --yes")
+        result = self.__run("--rolling-upgrade disable --enable-experimental --yes")
 
         assert "Rolling upgrade disabled" in result, f"Unexpected response: {result}"
 
