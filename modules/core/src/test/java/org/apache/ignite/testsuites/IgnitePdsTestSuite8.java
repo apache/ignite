@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.OffHeapLockStackTest;
 import org.apache.ignite.internal.processors.cache.persistence.filename.CacheConfigStoragePathTest;
 import org.apache.ignite.internal.processors.cache.persistence.filename.CustomCacheStorageConfigurationSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotCreationNonDefaultStoragePath2Test;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotCreationNonDefaultStoragePathTest;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTreeSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotRestoreIndexPathTest;
@@ -116,6 +117,7 @@ public class IgnitePdsTestSuite8 {
         GridTestUtils.addTestIfNeeded(suite, IgnitePdsCheckpointRecoveryTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheConfigStoragePathTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, SnapshotCreationNonDefaultStoragePathTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, SnapshotCreationNonDefaultStoragePath2Test.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, SnapshotRestoreIndexPathTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CustomCacheStorageConfigurationSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, SnapshotFileTreeSelfTest.class, ignoredTests);
