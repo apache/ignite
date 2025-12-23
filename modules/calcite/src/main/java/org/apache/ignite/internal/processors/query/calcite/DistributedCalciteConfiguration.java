@@ -90,7 +90,7 @@ public class DistributedCalciteConfiguration extends DistributedSqlConfiguration
             () -> new SimpleDistributedProperty<>(
                 DISABLED_RULES_PROPERTY_NAME,
                 str -> Stream.of(str.split(",")).map(String::trim).filter(s -> !s.isBlank()).toArray(String[]::new),
-                "Comma-separated list of Calcite's disabled planning rules. NOTE: cleans the planning cache on cnage."
+                "Comma-separated list of Calcite's disabled planning rules. NOTE: cleans the planning cache on change."
             ),
             log
         );
@@ -98,12 +98,12 @@ public class DistributedCalciteConfiguration extends DistributedSqlConfiguration
         disabledRules.addListener(new DistributePropertyListener<>() {
             @Override public void onUpdate(String name, String[] oldVal, String[] newVal) {
                 if (oldVal != null && F.compareArrays(oldVal, newVal) != 0) {
-                    log.warning("Cleaning Calcite's cache plan by setting changing of the property '"
-                        + DISABLED_RULES_PROPERTY_NAME + "'.");
+                    if (qryPlanCache != null) {
+                        log.warning("Cleaning Calcite's cache plan by setting changing of the property '"
+                            + DISABLED_RULES_PROPERTY_NAME + "'.");
 
-                    assert qryPlanCache != null;
-
-                    qryPlanCache.clear();
+                        qryPlanCache.clear();
+                    }
                 }
             }
         });
