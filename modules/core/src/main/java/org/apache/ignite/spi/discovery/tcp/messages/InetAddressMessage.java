@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -27,34 +28,22 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 /** Address utility container message. Is not a pure {@link TcpDiscoveryAbstractMessage}. */
 public class InetAddressMessage implements Message {
     /** */
-    @Order(0)
-    private String hostName;
+    @Order(value = 0, method = "addressBytes")
+    private byte[] addrBytes;
 
     /** */
     @Order(1)
-    private int port;
+    private String hostName;
 
-    /** */
-    @Order(value = 2, method = "addressBytes")
-    private byte[] addrBytes;
-
-    /**
-     * Default constructor for {@link DiscoveryMessageFactory}.
-     */
+    /** Default constructor for {@link DiscoveryMessageFactory}. */
     public InetAddressMessage() {
         // No-op.
     }
 
-    /**
-     * Constructor.
-     *
-     * @param addr Address.
-     * @param port Port.
-     */
-    public InetAddressMessage(InetAddress addr, int port) {
-        hostName = addr.getHostName();
-        this.port = port;
+    /** @param addr Address. */
+    public InetAddressMessage(InetAddress addr) {
         addrBytes = addr.getAddress();
+        hostName = addr.getHostName();
     }
 
     /** @return {@link InetAddress#getAddress()} */
@@ -67,14 +56,14 @@ public class InetAddressMessage implements Message {
         this.addrBytes = addrBytes;
     }
 
-    /** @return port. */
-    public int port() {
-        return port;
-    }
-
-    /** @param port port. */
-    public void port(int port) {
-        this.port = port;
+    /** @return {@link InetAddress#getByAddress(String, byte[])} */
+    public InetAddress address() {
+        try {
+            return addrBytes == null ? null : InetAddress.getByAddress(hostName, addrBytes);
+        }
+        catch (UnknownHostException e) {
+            throw new IgniteException("Failed to read host address.", e);
+        }
     }
 
     /** @return Host name. */
@@ -87,14 +76,9 @@ public class InetAddressMessage implements Message {
         this.hostName = hostName;
     }
 
-    /** @return {@link InetAddress#getByAddress(String, byte[])} */
-    public InetAddress address() throws UnknownHostException {
-        return addrBytes == null ? null : InetAddress.getByAddress(hostName, addrBytes);
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -100;
+        return -101;
     }
 
     /** {@inheritDoc} */

@@ -17,26 +17,32 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Message telling joining node that its authentication failed on coordinator.
  */
-public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Coordinator address. */
-    private transient InetAddress addr;
+    @Order(value = 5, method = "addressMessage")
+    private InetAddressMessage addr;
 
     /** Node id for which authentication was failed. */
+    @Order(6)
     private UUID targetNodeId;
+
+    /** Default constructor for {@link DiscoveryMessageFactory}. */
+    public TcpDiscoveryAuthFailedMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -48,40 +54,38 @@ public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage {
     public TcpDiscoveryAuthFailedMessage(UUID creatorNodeId, InetAddress addr, UUID targetNodeId) {
         super(creatorNodeId);
 
-        this.addr = addr;
+        this.addr = new InetAddressMessage(addr);
         this.targetNodeId = targetNodeId;
     }
 
-    /**
-     * @return Node for which authentication was failed.
-     */
-    public UUID getTargetNodeId() {
+    /** @return Node for which authentication was failed. */
+    public UUID targetNodeId() {
         return targetNodeId;
     }
 
-    /**
-     * @return Coordinator address.
-     */
-    public InetAddress address() {
+    /** @param targetNodeId Node for which authentication was failed. */
+    public void targetNodeId(UUID targetNodeId) {
+        this.targetNodeId = targetNodeId;
+    }
+
+    /** @return Coordinator address. */
+    public InetAddressMessage addressMessage() {
         return addr;
     }
 
-    /**
-     * Serialize this message.
-     */
-    private void writeObject(ObjectOutputStream out) throws IOException {
-        out.defaultWriteObject();
-
-        U.writeByteArray(out, addr.getAddress());
+    /** @param addr Coordinator address. */
+    public void addressMessage(InetAddressMessage addr) {
+        this.addr = addr;
     }
 
-    /**
-     * Deserialize this message.
-     */
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        in.defaultReadObject();
+    /** @return Coordinator address. */
+    public InetAddress address() {
+        return addr.address();
+    }
 
-        addr = InetAddress.getByAddress(U.readByteArray(in));
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 11;
     }
 
     /** {@inheritDoc} */

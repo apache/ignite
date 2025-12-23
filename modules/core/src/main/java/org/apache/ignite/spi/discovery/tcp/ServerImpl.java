@@ -3340,7 +3340,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void processAuthFailedMessage(TcpDiscoveryAuthFailedMessage authFailedMsg) {
             try {
-                sendDirectlyToClient(authFailedMsg.getTargetNodeId(), authFailedMsg);
+                sendDirectlyToClient(authFailedMsg.targetNodeId(), authFailedMsg);
             }
             catch (IgniteSpiException ex) {
                 log.warning(
@@ -7174,7 +7174,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     mux.notifyAll();
                                 }
                                 else {
-                                    UUID targetNode = ((TcpDiscoveryAuthFailedMessage)msg).getTargetNodeId();
+                                    UUID targetNode = ((TcpDiscoveryAuthFailedMessage)msg).targetNodeId();
 
                                     if (targetNode == null || targetNode.equals(locNodeId)) {
                                         if (log.isDebugEnabled())
