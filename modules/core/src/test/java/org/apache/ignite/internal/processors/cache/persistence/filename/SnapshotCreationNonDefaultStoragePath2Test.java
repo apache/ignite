@@ -25,6 +25,11 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 public class SnapshotCreationNonDefaultStoragePath2Test extends SnapshotCreationNonDefaultStoragePathTest {
     /** {@inheritDoc} */
     @Override protected DataStorageConfiguration dataStorageConfiguration() {
+        extraSnpPaths = new String[] {
+            "snp_path",
+            "snp_path2"
+        };
+
         return super.dataStorageConfiguration().setExtraSnapshotPaths(storagePath("snp_path"), storagePath("snp_path2"));
     }
 }

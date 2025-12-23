@@ -474,8 +474,7 @@ public class SnapshotFileTreeSelfTest {
             "/path/to/storage3"
         );
 
-        NodeFileTree ft = fileTree(cfg)
-;
+        NodeFileTree ft = fileTree(cfg);
 
         checkSnapshotTempDirs(
             ft,
