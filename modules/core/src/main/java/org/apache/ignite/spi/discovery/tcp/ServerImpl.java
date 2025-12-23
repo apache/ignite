@@ -5277,7 +5277,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             UUID locNodeId = getLocalNodeId();
 
             if (locNodeCoord) {
-                if (msg.verified()) {
+                if (msg.verified() && msg.verifierNodeId().equals(locNodeId)) {
                     addMessage(new TcpDiscoveryDiscardMessage(locNodeId, msg.id(), false));
 
                     return;
