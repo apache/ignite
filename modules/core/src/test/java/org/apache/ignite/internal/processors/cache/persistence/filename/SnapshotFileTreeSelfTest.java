@@ -535,10 +535,80 @@ public class SnapshotFileTreeSelfTest {
     }
 
     /** */
+    @Test
+    public void testAbsoluteDeafultSnapshotPath() {
+        IgniteConfiguration cfg = config(
+            "/path/to/storage1",
+            "/path/to/storage2",
+            "/path/to/storage3"
+        ).setSnapshotPath("/path/to/snapshots");
+
+        NodeFileTree ft = fileTree(cfg);
+
+        checkSnapshotTempDirs(
+            ft,
+            "/path/to/storage1/node1/",
+            "/path/to/storage2/db/node1/",
+            "/path/to/storage3/db/node1/"
+        );
+
+        checkSnapshotDirs(
+            cfg,
+            ft,
+            "/path/to/snapshots/snap/db/node1"
+        );
+
+        checkSnapshotDirs(
+            "node2",
+            cfg,
+            ft,
+            "/path/to/snapshots/snap/db/node2"
+        );
+    }
+
+    /** */
+    @Test
+    public void testAbsoluteDeafultSnapshotPath_extraSnapshotPaths() {
+        IgniteConfiguration cfg = config(
+            "/path/to/storage1",
+            new String[]{
+                "/path/to/storage2",
+                "/path/to/storage3"
+            },
+            new String[]{
+                "/extra_snp2",
+                "/extra_snp3"
+            }
+        ).setSnapshotPath("/extra_snp");
+
+        NodeFileTree ft = fileTree(cfg);
+
+        checkSnapshotDirs(
+            cfg,
+            ft,
+            "/extra_snp/snap/db/node1",
+            "/extra_snp2/snap/db/node1",
+            "/extra_snp3/snap/db/node1"
+        );
+
+        checkSnapshotDirs(
+            "node2",
+            cfg,
+            ft,
+            "/extra_snp/snap/db/node2",
+            "/extra_snp2/snap/db/node2",
+            "/extra_snp3/snap/db/node2"
+        );
+    }
+
+    /** */
     private NodeFileTree fileTree(IgniteConfiguration cfg) {
         NodeFileTree ft = new NodeFileTree(cfg, TEST_CONSISTENT_ID);
 
-        assertEquals(new File(workDir + "/snapshots"), ft.snapshotsRoot());
+        if (new File(cfg.getSnapshotPath()).isAbsolute())
+            assertEquals(new File(cfg.getSnapshotPath()), ft.snapshotsRoot());
+        else
+            assertEquals(new File(workDir, cfg.getSnapshotPath()), ft.snapshotsRoot());
 
         return ft;
     }

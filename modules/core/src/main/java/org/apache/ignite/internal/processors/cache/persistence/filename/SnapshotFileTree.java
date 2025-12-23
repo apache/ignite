@@ -383,51 +383,51 @@ public class SnapshotFileTree extends NodeFileTree {
      * @param cfg Ignite configuration.
      */
     private Map<String, File> snapshotExtraStorages(NodeFileTree ft, IgniteConfiguration cfg) {
-        String snpDfltPath = cfg.getSnapshotPath();
-
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
-        boolean hasExtraSnpPaths = dsCfg != null && dsCfg.getExtraSnapshotPaths() != null && dsCfg.getExtraSnapshotPaths().length > 0;
 
         // If path provided then create snapshot inside it, only.
-        // Same rule applies if absolute path to the snapshot root dir configured and no extra snapshot paths.
-        if (path != null || (new File(snpDfltPath).isAbsolute() && !hasExtraSnpPaths))
+        if (path != null || dsCfg == null)
             return Collections.emptyMap();
 
-        if (hasExtraSnpPaths) {
-            String[] extraSnpPaths = dsCfg.getExtraSnapshotPaths();
-            String[] extraStorages = dsCfg.getExtraStoragePaths();
+        String[] extraStorages = dsCfg.getExtraStoragePaths();
 
-            assert extraSnpPaths.length == extraStorages.length;
+        if (extraStorages == null)
+            return Collections.emptyMap();
 
-            Map<String, File> snpExtraStorages = new HashMap<>();
+        String[] extraSnpPaths = dsCfg.getExtraSnapshotPaths();
 
-            for (int i = 0; i < extraSnpPaths.length; i++) {
+        boolean hasExtraSnpPaths = extraSnpPaths != null && extraSnpPaths.length > 0;
+
+        String snpDfltPath = cfg.getSnapshotPath();
+
+        boolean snpDfltPathAbsolute = new File(snpDfltPath).isAbsolute();
+
+        // If absolute path to the snapshot root dir configured and no extra snapshot paths, then use snapshot root, only.
+        if (snpDfltPathAbsolute && !hasExtraSnpPaths)
+            return Collections.emptyMap();
+
+        Map<String, File> snpRoots = new HashMap<>();
+
+        String snpUniqSuffix = snpDfltPathAbsolute
+            ? Path.of(name, DB_DIR, folderName()).toString()
+            : Path.of(snpDfltPath, name, DB_DIR, folderName()).toString();
+
+        for (int i = 0; i < extraStorages.length; i++) {
+            File snpRoot = hasExtraSnpPaths
                 // Extra snapshot paths configured as "root" related.
-                File snpDir = ft.resolveDirectory(Path.of(extraSnpPaths[i], snpDfltPath, name, DB_DIR).toString());
+                // folderName can be different from local (NodeFileTree ft) one in case snapshot restored on smaller topology
+                // and data from some node copied to local.
+                // resolveDirectory returns in form {root}/{extra_snp_path}/{folder_name} so parent required.
+                ? ft.resolveDirectory(extraSnpPaths[i]).getParentFile()
+                // In case we want to make snapshot in several folders the paths will be the following:
+                // {storage_path}/db/{folder_name} - node cache storage.
+                // {storage_path} - snapshot root.
+                : ft.extraStorages.get(extraStorages[i]).getParentFile().getParentFile();
 
-                // folderName can be different from local (NodeFileTree ft) one.
-                // In case snapshot restored on smaller topology and data from some node copied to local.
-                snpDir = new File(snpDir.getParent(), folderName());
-
-                snpExtraStorages.put(extraStorages[i], snpDir);
-            }
-
-            return snpExtraStorages;
+            snpRoots.put(extraStorages[i], new File(snpRoot, snpUniqSuffix));
         }
 
-        Map<String, File> snpExtraStorages = new HashMap<>();
-
-        ft.extraStorages().forEach((cfgStoragePath, storagePath) -> {
-            // In case we want to make snapshot in several folders the paths will be the following:
-            // {storage_path}/db/{folder_name} - node cache storage.
-            // {storage_path}/snapshots/{snp_name}/db/{folder_name} - snapshot cache storage.
-            snpExtraStorages.put(
-                cfgStoragePath,
-                new File(storagePath.getParentFile().getParentFile(), Path.of(snpDfltPath, name, DB_DIR, folderName()).toString())
-            );
-        });
-
-        return snpExtraStorages;
+        return snpRoots;
     }
 
     /**
