@@ -40,6 +40,13 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
  */
 public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegionRelativeStoragePathTest {
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        U.delete(new File(U.defaultWorkDirectory()));
+    }
+
+    /** {@inheritDoc} */
     @Override protected DataStorageConfiguration dataStorageConfiguration() {
         return new DataStorageConfiguration()
             .setStoragePath(storagePath(STORAGE_PATH))
@@ -121,11 +128,13 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
 
         srv.context().cache().context().snapshotMgr().createSnapshot("mysnp2", fullPathSnp.getAbsolutePath(), false, false).get();
 
-        String grid1ConsId = consId(grid(1).configuration());
+        NodeFileTree ft = grid(1).context().pdsFolderResolver().fileTree();
 
         stopGrid(1);
 
         resetBaselineTopology();
+
+        ft.allStorages().forEach(U::delete);
 
         BiConsumer<String, String> check = (name, path) -> {
             for (CacheConfiguration<?, ?> ccfg : ccfgs())
@@ -163,7 +172,7 @@ public class SnapshotCreationNonDefaultStoragePathTest extends AbstractDataRegio
 
             for (Path copyPath : copyStoppedNodeData) {
                 FileUtils.copyDirectory(
-                    Path.of(U.defaultWorkDirectory(), grid1ConsId, copyPath.toString()).toFile(),
+                    Path.of(U.defaultWorkDirectory(), ft.folderName(), copyPath.toString()).toFile(),
                     Path.of(U.defaultWorkDirectory(), consId(grid(0).configuration()), copyPath.toString()).toFile()
                 );
             }

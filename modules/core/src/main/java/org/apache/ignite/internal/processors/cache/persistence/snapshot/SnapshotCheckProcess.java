@@ -406,8 +406,11 @@ public class SnapshotCheckProcess {
         AtomicInteger metasProcessed = new AtomicInteger(ctx.metas.size());
 
         for (SnapshotMetadata meta : ctx.metas) {
-            CompletableFuture<Map<String, SnapshotHandlerResult<Object>>> metaFut = snpChecker.invokeCustomHandlers(meta,
-                ctx.locFileTree.get(meta.consistentId()), ctx.req.groups(), ctx.req.fullCheck());
+            SnapshotFileTree sft = ctx.locFileTree.get(meta.consistentId());
+            Collection<String> grps = ctx.req.groups();
+            boolean check = ctx.req.fullCheck();
+
+            CompletableFuture<Map<String, SnapshotHandlerResult<Object>>> metaFut = snpChecker.invokeCustomHandlers(meta, sft, grps, check);
 
             metaFut.whenComplete((res, err) -> {
                 if (err != null)

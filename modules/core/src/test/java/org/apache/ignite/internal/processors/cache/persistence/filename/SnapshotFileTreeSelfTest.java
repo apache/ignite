@@ -76,6 +76,15 @@ public class SnapshotFileTreeSelfTest {
             "/path/to/storage2/snapshots/snap/db/node1",
             "/path/to/storage3/snapshots/snap/db/node1"
         );
+
+        checkSnapshotDirs(
+            "node2",
+            cfg,
+            ft,
+            workDir + "/snapshots/snap/db/node2",
+            "/path/to/storage2/snapshots/snap/db/node2",
+            "/path/to/storage3/snapshots/snap/db/node2"
+        );
     }
 
     /** */
@@ -99,6 +108,15 @@ public class SnapshotFileTreeSelfTest {
             workDir + "/snapshots/snap/db/node1",
             "/extra_snp2/snapshots/snap/db/node1",
             "/extra_snp3/snapshots/snap/db/node1"
+        );
+
+        checkSnapshotDirs(
+            "node2",
+            cfg,
+            fileTree(cfg),
+            workDir + "/snapshots/snap/db/node2",
+            "/extra_snp2/snapshots/snap/db/node2",
+            "/extra_snp3/snapshots/snap/db/node2"
         );
     }
 
@@ -127,6 +145,15 @@ public class SnapshotFileTreeSelfTest {
             workDir + "/storage2/snapshots/snap/db/node1",
             workDir + "/storage3/snapshots/snap/db/node1"
         );
+
+        checkSnapshotDirs(
+            "node2",
+            cfg,
+            ft,
+            workDir + "/snapshots/snap/db/node2",
+            workDir + "/storage2/snapshots/snap/db/node2",
+            workDir + "/storage3/snapshots/snap/db/node2"
+        );
     }
 
     /** */
@@ -150,6 +177,15 @@ public class SnapshotFileTreeSelfTest {
             workDir + "/snapshots/snap/db/node1",
             workDir + "/extra_snp2/snapshots/snap/db/node1",
             workDir + "/extra_snp3/snapshots/snap/db/node1"
+        );
+
+        checkSnapshotDirs(
+            "node2",
+            cfg,
+            fileTree(cfg),
+            workDir + "/snapshots/snap/db/node2",
+            workDir + "/extra_snp2/snapshots/snap/db/node2",
+            workDir + "/extra_snp3/snapshots/snap/db/node2"
         );
     }
 
@@ -178,6 +214,15 @@ public class SnapshotFileTreeSelfTest {
             workDir + "/storage2/snapshots/snap/db/node1",
             workDir + "/storage3/snapshots/snap/db/node1"
         );
+
+        checkSnapshotDirs(
+            "node2",
+            cfg,
+            ft,
+            workDir + "/snapshots/snap/db/node2",
+            workDir + "/storage2/snapshots/snap/db/node2",
+            workDir + "/storage3/snapshots/snap/db/node2"
+        );
     }
 
     /** */
@@ -201,6 +246,15 @@ public class SnapshotFileTreeSelfTest {
             workDir + "/snapshots/snap/db/node1",
             workDir + "/extra_snp2/snapshots/snap/db/node1",
             workDir + "/extra_snp3/snapshots/snap/db/node1"
+        );
+
+        checkSnapshotDirs(
+            "node2",
+            cfg,
+            fileTree(cfg),
+            workDir + "/snapshots/snap/db/node2",
+            workDir + "/extra_snp2/snapshots/snap/db/node2",
+            workDir + "/extra_snp3/snapshots/snap/db/node2"
         );
     }
 
@@ -229,6 +283,15 @@ public class SnapshotFileTreeSelfTest {
             "/path/to/storage2/snapshots/snap/db/node1",
             "/path/to/storage3/snapshots/snap/db/node1"
         );
+
+        checkSnapshotDirs(
+            "node2",
+            cfg,
+            ft,
+            workDir + "/snapshots/snap/db/node2",
+            "/path/to/storage2/snapshots/snap/db/node2",
+            "/path/to/storage3/snapshots/snap/db/node2"
+        );
     }
 
     /** */
@@ -252,6 +315,15 @@ public class SnapshotFileTreeSelfTest {
             workDir + "/snapshots/snap/db/node1",
             "/path/to/extra_snp2/snapshots/snap/db/node1",
             "/path/to/extra_snp3/snapshots/snap/db/node1"
+        );
+
+        checkSnapshotDirs(
+            "node2",
+            cfg,
+            fileTree(cfg),
+            workDir + "/snapshots/snap/db/node2",
+            "/path/to/extra_snp2/snapshots/snap/db/node2",
+            "/path/to/extra_snp3/snapshots/snap/db/node2"
         );
     }
 
@@ -280,6 +352,15 @@ public class SnapshotFileTreeSelfTest {
             "/path/to/storage2/snapshots/snap/db/node1",
             "/path/to/storage3/snapshots/snap/db/node1"
         );
+
+        checkSnapshotDirs(
+            "node2",
+            cfg,
+            ft,
+            workDir + "/snapshots/snap/db/node2",
+            "/path/to/storage2/snapshots/snap/db/node2",
+            "/path/to/storage3/snapshots/snap/db/node2"
+        );
     }
 
     /** */
@@ -303,6 +384,15 @@ public class SnapshotFileTreeSelfTest {
             workDir + "/snapshots/snap/db/node1",
             "/path/to/extra_snp2/snapshots/snap/db/node1",
             "/path/to/extra_snp3/snapshots/snap/db/node1"
+        );
+
+        checkSnapshotDirs(
+            "node2",
+            cfg,
+            fileTree(cfg),
+            workDir + "/snapshots/snap/db/node2",
+            "/path/to/extra_snp2/snapshots/snap/db/node2",
+            "/path/to/extra_snp3/snapshots/snap/db/node2"
         );
     }
 
@@ -331,6 +421,15 @@ public class SnapshotFileTreeSelfTest {
             workDir + "/storage2/snapshots/snap/db/node1",
             workDir + "/storage3/snapshots/snap/db/node1"
         );
+
+        checkSnapshotDirs(
+            "node2",
+            cfg,
+            ft,
+            workDir + "/snapshots/snap/db/node2",
+            workDir + "/storage2/snapshots/snap/db/node2",
+            workDir + "/storage3/snapshots/snap/db/node2"
+        );
     }
 
     /** */
@@ -355,6 +454,15 @@ public class SnapshotFileTreeSelfTest {
             workDir + "/extra_snp2/snapshots/snap/db/node1",
             workDir + "/extra_snp3/snapshots/snap/db/node1"
         );
+
+        checkSnapshotDirs(
+            "node2",
+            cfg,
+            fileTree(cfg),
+            workDir + "/snapshots/snap/db/node2",
+            workDir + "/extra_snp2/snapshots/snap/db/node2",
+            workDir + "/extra_snp3/snapshots/snap/db/node2"
+        );
     }
 
     /** */
@@ -366,7 +474,8 @@ public class SnapshotFileTreeSelfTest {
             "/path/to/storage3"
         );
 
-        NodeFileTree ft = fileTree(cfg);
+        NodeFileTree ft = fileTree(cfg)
+;
 
         checkSnapshotTempDirs(
             ft,
@@ -381,6 +490,15 @@ public class SnapshotFileTreeSelfTest {
             workDir + "/snapshots/snap/db/node1",
             workDir + "/storage2/snapshots/snap/db/node1",
             "/path/to/storage3/snapshots/snap/db/node1"
+        );
+
+        checkSnapshotDirs(
+            "node2",
+            cfg,
+            ft,
+            workDir + "/snapshots/snap/db/node2",
+            workDir + "/storage2/snapshots/snap/db/node2",
+            "/path/to/storage3/snapshots/snap/db/node2"
         );
     }
 
@@ -405,6 +523,15 @@ public class SnapshotFileTreeSelfTest {
             workDir + "/snapshots/snap/db/node1",
             workDir + "/extra_snp2/snapshots/snap/db/node1",
             "/path/to/extra_snp3/snapshots/snap/db/node1"
+        );
+
+        checkSnapshotDirs(
+            "node2",
+            cfg,
+            fileTree(cfg),
+            workDir + "/snapshots/snap/db/node2",
+            workDir + "/extra_snp2/snapshots/snap/db/node2",
+            "/path/to/extra_snp3/snapshots/snap/db/node2"
         );
     }
 
@@ -458,9 +585,12 @@ public class SnapshotFileTreeSelfTest {
 
     /** */
     private void checkSnapshotDirs(IgniteConfiguration cfg, NodeFileTree ft, String... expSnpStoragesStr) {
-        String snpPath = snpAbsPath ? "/snpdir" : null;
+        checkSnapshotDirs(ft.folderName(), cfg, ft, expSnpStoragesStr);
+    }
 
-        SnapshotFileTree sft = new SnapshotFileTree(cfg, ft, "snap", snpPath, ft.folderName(), TEST_CONSISTENT_ID);
+    /** */
+    private void checkSnapshotDirs(String folderName, IgniteConfiguration cfg, NodeFileTree ft, String... expSnpStoragesStr) {
+        SnapshotFileTree sft = new SnapshotFileTree(cfg, ft, "snap", snpAbsPath ? "/snpdir" : null, folderName, TEST_CONSISTENT_ID);
 
         Set<File> snpStorages = sft.allStorages().collect(Collectors.toSet());
         List<File> expSnpStorages = Arrays.stream(expSnpStoragesStr).map(File::new).collect(Collectors.toList());
@@ -472,11 +602,17 @@ public class SnapshotFileTreeSelfTest {
         if (!snpAbsPath) {
             snpAbsPath = true;
 
-            checkSnapshotDirs(
-                cfg,
-                ft,
-                "/snpdir/snap/db/node1"
-            );
+            try {
+                checkSnapshotDirs(
+                    folderName,
+                    cfg,
+                    ft,
+                    "/snpdir/snap/db/" + folderName
+                );
+            }
+            finally {
+                snpAbsPath = false;
+            }
         }
     }
 }

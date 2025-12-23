@@ -403,10 +403,14 @@ public class SnapshotFileTree extends NodeFileTree {
             Map<String, File> snpExtraStorages = new HashMap<>();
 
             for (int i = 0; i < extraSnpPaths.length; i++) {
-                snpExtraStorages.put(
-                    extraStorages[i],
-                    ft.resolveDirectory(Path.of(extraSnpPaths[i], DFLT_SNAPSHOT_DIRECTORY, name, DB_DIR).toString())
-                );
+                // Extra snapshot paths configured as "root" related.
+                File snpDir = ft.resolveDirectory(Path.of(extraSnpPaths[i], DFLT_SNAPSHOT_DIRECTORY, name, DB_DIR).toString());
+
+                // folderName can be different from local (NodeFileTree ft) one.
+                // In case snapshot restored on smaller topology and data from some node copied to local.
+                snpDir = new File(snpDir.getParent(), folderName());
+
+                snpExtraStorages.put(extraStorages[i], snpDir);
             }
 
             return snpExtraStorages;
