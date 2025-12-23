@@ -39,6 +39,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientAckResponse;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
@@ -271,6 +272,9 @@ public class TcpDiscoveryIoSession {
             finished = msgSer.writeTo(m, msgWriter);
 
             out.write(msgBuf.array(), 0, msgBuf.position());
+
+            if (m instanceof TcpDiscoveryClientAckResponse)
+                out.flush();
         }
         while (!finished);
     }
