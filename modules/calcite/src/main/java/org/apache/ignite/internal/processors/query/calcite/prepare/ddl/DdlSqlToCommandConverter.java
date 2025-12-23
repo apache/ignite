@@ -222,6 +222,8 @@ public class DdlSqlToCommandConverter {
                 RelDataType type = planner.convert(col.dataType);
                 Object dflt = null;
 
+                System.out.println(">>>> Create table col type: " + type + " col.expression " + col.expression);
+
                 assert col.expression == null || col.expression instanceof SqlLiteral;
 
                 if (col.expression != null

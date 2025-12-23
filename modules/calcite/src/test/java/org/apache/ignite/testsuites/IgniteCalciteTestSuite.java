@@ -17,13 +17,10 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplementorTest;
-import org.apache.ignite.internal.processors.query.calcite.exec.NumericTypesPrecisionsTest;
-import org.apache.ignite.internal.processors.query.calcite.message.CalciteCommunicationMessageSerializationTest;
-import org.apache.ignite.internal.processors.query.calcite.sql.SqlCustomParserTest;
-import org.apache.ignite.internal.processors.query.calcite.sql.SqlReservedWordsTest;
-import org.apache.ignite.internal.processors.tx.SqlTransactionsIsolationTest;
-import org.apache.ignite.internal.processors.tx.SqlTransactionsUnsupportedModesTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.DataTypesTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTest;
+import org.apache.ignite.internal.processors.query.calcite.integration.UserDefinedFunctionsIntegrationTransactionalTest;
+import org.apache.ignite.internal.processors.query.calcite.jdbc.JdbcQueryTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -32,23 +29,10 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    PlannerTestSuite.class,
-    ExecutionTestSuite.class,
-    IntegrationTestSuite.class,
-    UtilTestSuite.class,
-    JdbcTestSuite.class,
-
-    SqlCustomParserTest.class,
-    SqlReservedWordsTest.class,
-    LogicalRelImplementorTest.class,
-
-    ScriptTestSuite.class,
-    CalciteCommunicationMessageSerializationTest.class,
-
-    NumericTypesPrecisionsTest.class,
-
-    SqlTransactionsIsolationTest.class,
-    SqlTransactionsUnsupportedModesTest.class,
+    DataTypesTest.class,
+    UserDefinedFunctionsIntegrationTest.class,
+    UserDefinedFunctionsIntegrationTransactionalTest.class,
+    JdbcQueryTest.class,
 })
 public class IgniteCalciteTestSuite {
 }
