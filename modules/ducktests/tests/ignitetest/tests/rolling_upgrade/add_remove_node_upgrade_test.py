@@ -45,7 +45,7 @@ class AddRemoveNodeUpgradeTest(BaseRollingUpgradeTest):
 
         control_sh.enable_rolling_upgrade(IgniteVersion(upgrade_version).vstring, force)
 
-        self.logger.info(f"Starting rolling upgrade.")
+        self.logger.info("Starting rolling upgrade.")
 
         upgraded_nodes = []
 
@@ -73,7 +73,7 @@ class AddRemoveNodeUpgradeTest(BaseRollingUpgradeTest):
             if with_persistence:
                 control_sh.remove_from_baseline([ignite])
 
-        self.logger.info(f"Cluster upgrade is complete.")
+        self.logger.info("Cluster upgrade is complete.")
 
         control_sh.disable_rolling_upgrade()
 
