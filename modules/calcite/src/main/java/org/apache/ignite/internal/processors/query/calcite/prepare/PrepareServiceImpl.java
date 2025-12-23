@@ -93,6 +93,8 @@ public class PrepareServiceImpl extends AbstractService implements PrepareServic
 
             ctx.planner().reset();
 
+            assert distrCfg != null;
+
             String[] disbledRules = distrCfg.disabledRules();
 
             if (!F.isEmpty(disbledRules))

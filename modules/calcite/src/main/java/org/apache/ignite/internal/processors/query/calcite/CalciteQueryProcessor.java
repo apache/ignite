@@ -398,6 +398,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
     /** {@inheritDoc} */
     @Override public void onKernalStart(boolean active) {
         onStart(ctx,
+            distrCfg,
             executionSvc,
             mailboxRegistry,
             partSvc,
@@ -408,7 +409,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             qryPlanCache,
             exchangeSvc,
             qryReg,
-            distrCfg
+            prepareSvc
         );
 
         started = true;
@@ -420,6 +421,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             started = false;
 
             onStop(
+                prepareSvc,
                 qryReg,
                 executionSvc,
                 mailboxRegistry,
