@@ -7066,6 +7066,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         // Use inifinite timeout for accepting new messages.
                         TcpDiscoveryAbstractMessage msg = spi.readMessage(ses, 0);
 
+                        if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
+                            log.error("TEST | raw received TcpDiscoveryClientMetricsUpdateMessage");
+
                         msg.senderNodeId(nodeId);
 
                         DebugLogger debugLog = messageLogger(msg);
@@ -7291,11 +7294,17 @@ class ServerImpl extends TcpDiscoveryImpl {
                             msgWorker.addMessage(msg, false, true);
                         }
 
+                        if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
+                            log.error("TEST | received TcpDiscoveryClientMetricsUpdateMessage");
+
                         // Send receipt back.
                         if (clientMsgWrk != null) {
                             TcpDiscoveryClientAckResponse ack = new TcpDiscoveryClientAckResponse(locNodeId, msg.id());
 
                             ack.verifierNodeId(locNodeId);
+
+                            if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
+                                log.error("TEST | prepare ack resp, msgId: " + msg.id());
 
                             clientMsgWrk.addMessage(ack);
                         }
@@ -7576,6 +7585,8 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Client metrics update message.
          */
         private void processClientMetricsUpdateMessage(TcpDiscoveryClientMetricsUpdateMessage msg) {
+            log.error("TEST | processClientMetricsUpdateMessage()");
+
             assert msg.client();
 
             ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());

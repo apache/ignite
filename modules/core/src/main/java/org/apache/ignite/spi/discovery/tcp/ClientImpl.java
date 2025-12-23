@@ -1368,6 +1368,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                 if (unackedMsg != null) {
                     assert unackedMsg.id().equals(res.messageId()) : unackedMsg;
 
+                    if (unackedMsg instanceof TcpDiscoveryClientMetricsUpdateMessage)
+                        log.error("TEST | ackReceived(), msgId: " + unackedMsg.id());
+
                     unackedMsg = null;
                 }
 
@@ -1418,6 +1421,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                         if (msg == null)
                             msg = queue.poll();
 
+                        if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
+                            log.error("TEST | msg = queue.poll() - TcpDiscoveryClientMetricsUpdateMessage");
+
                         if (msg == null) {
                             mux.wait();
 
@@ -1440,6 +1446,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                         }
                     }
 
+                    if (msg instanceof TcpDiscoveryClientMetricsUpdateMessage)
+                        log.error("TEST | spi.writeMessage() - TcpDiscoveryClientMetricsUpdateMessage");
+
                     spi.writeMessage(ses, msg, sockTimeout);
 
                     IgniteUuid latencyCheckId = msg instanceof TcpDiscoveryRingLatencyCheckMessage ?
@@ -1460,10 +1469,14 @@ class ClientImpl extends TcpDiscoveryImpl {
                             long nowNanos = System.nanoTime();
 
                             while (unackedMsg != null && waitEndNanos - nowNanos > 0) {
+                                log.error("TEST | waitUnacked, msgId: " + unackedMsg.id());
+
                                 mux.wait(U.nanosToMillis(waitEndNanos - nowNanos));
 
                                 nowNanos = System.nanoTime();
                             }
+
+                            log.error("TEST | passed unacked");
 
                             unacked = unackedMsg;
 

@@ -170,7 +170,7 @@ public class TcpDiscoveryIoSession {
             if (MESSAGE_SERIALIZATION != serMode) {
                 detectSslAlert(serMode, in);
 
-                throw new IgniteCheckedException("Received unexpected byte while reading discovery message: " + serMode);
+                throw new IOException("Received unexpected byte while reading discovery message: " + serMode);
             }
 
             byte b0 = (byte)in.read();

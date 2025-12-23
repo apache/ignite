@@ -145,115 +145,115 @@ public class NodeMetricsMessage implements Message {
     private double load = -1;
 
     /** */
-    @Order(value = 27, method = "averageCpuLoad")
-    private double avgLoad = -1;
+    //@Order(value = 27, method = "averageCpuLoad")
+    private double avgCpuLoad = -1;
 
     /** */
-    @Order(value = 28, method = "currentGcCpuLoad")
+    //@Order(value = 28, method = "currentGcCpuLoad")
     private double gcLoad = -1;
 
     /** */
-    @Order(value = 29, method = "heapMemoryInitialized")
+    //@Order(value = 29, method = "heapMemoryInitialized")
     private long heapInit = -1;
 
     /** */
-    @Order(value = 30, method = "heapMemoryUsed")
+    //@Order(value = 30, method = "heapMemoryUsed")
     private long heapUsed = -1;
 
     /** */
-    @Order(value = 31, method = "heapMemoryCommitted")
+    //@Order(value = 31, method = "heapMemoryCommitted")
     private long heapCommitted = -1;
 
     /** */
-    @Order(value = 32, method = "heapMemoryMaximum")
+    //@Order(value = 32, method = "heapMemoryMaximum")
     private long heapMax = -1;
 
     /** */
-    @Order(value = 33, method = "heapMemoryTotal")
+    //@Order(value = 33, method = "heapMemoryTotal")
     private long heapTotal = -1;
 
     /** */
-    @Order(value = 34, method = "heapMemoryInitialized")
+    //@Order(value = 34, method = "nonHeapMemoryInitialized")
     private long nonHeapInit = -1;
 
     /** */
-    @Order(value = 35, method = "heapMemoryUsed")
+    //@Order(value = 35, method = "nonHeapMemoryUsed")
     private long nonHeapUsed = -1;
 
     /** */
-    @Order(value = 36, method = "heapMemoryCommitted")
+    //@Order(value = 36, method = "nonHeapMemoryCommitted")
     private long nonHeapCommitted = -1;
 
     /** */
-    @Order(value = 37, method = "nonHeapMemoryMaximum")
+    //@Order(value = 37, method = "nonHeapMemoryMaximum")
     private long nonHeapMax = -1;
 
     /** */
-    @Order(value = 38, method = "nonHeapMemoryTotal")
+    //@Order(value = 38, method = "nonHeapMemoryTotal")
     private long nonHeapTotal = -1;
 
     /** */
-    @Order(value = 39)
+    //@Order(value = 39)
     private long upTime = -1;
 
     /** */
-    @Order(value = 40)
+    //@Order(value = 40)
     private long startTime = -1;
 
     /** */
-    @Order(value = 41)
+    //@Order(value = 41)
     private long nodeStartTime = -1;
 
     /** */
-    @Order(value = 42, method = "currentThreadCount")
+    //@Order(value = 42, method = "currentThreadCount")
     private int threadCnt = -1;
 
     /** */
-    @Order(value = 43, method = "maximumThreadCount")
+    //@Order(value = 43, method = "maximumThreadCount")
     private int peakThreadCnt = -1;
 
     /** */
-    @Order(value = 44, method = "totalStartedThreadCount")
+    //@Order(value = 44, method = "totalStartedThreadCount")
     private long startedThreadCnt = -1;
 
     /** */
-    @Order(value = 45, method = "currentDaemonThreadCount")
+    //@Order(value = 45, method = "currentDaemonThreadCount")
     private int daemonThreadCnt = -1;
 
     /** */
-    @Order(value = 46, method = "lastDataVersion")
+    //@Order(value = 46, method = "lastDataVersion")
     private long lastDataVer = -1;
 
     /** */
-    @Order(value = 47, method = "sentMessagesCount")
+    //@Order(value = 47, method = "sentMessagesCount")
     private int sentMsgsCnt = -1;
 
     /** */
-    @Order(value = 48, method = "sentBytesCount")
+    //@Order(value = 48, method = "sentBytesCount")
     private long sentBytesCnt = -1;
 
     /** */
-    @Order(value = 49, method = "receivedMessagesCount")
+    //@Order(value = 49, method = "receivedMessagesCount")
     private int rcvdMsgsCnt = -1;
 
     /** */
-    @Order(value = 50, method = "receivedBytesCount")
+    //@Order(value = 50, method = "receivedBytesCount")
     private long rcvdBytesCnt = -1;
 
     /** */
-    @Order(value = 51, method = "outboundMessagesQueueSize")
+    //@Order(value = 51, method = "outboundMessagesQueueSize")
     private int outMesQueueSize = -1;
 
     /** */
-    @Order(value = 52)
+    //@Order(value = 52)
     private int totalNodes = -1;
 
     /** */
-    @Order(value = 53, method = "totalJobsExecutionTime")
+    //@Order(value = 53, method = "totalJobsExecutionTime")
     private long totalJobsExecTime = -1;
 
     /** */
-    @Order(value = 54)
+    //@Order(value = 54)
     private long currentPmeDuration = -1;
 
     /** */
@@ -297,7 +297,7 @@ public class NodeMetricsMessage implements Message {
         curIdleTime = 0;
         availProcs = 0;
         load = 0;
-        avgLoad = 0;
+        avgCpuLoad = 0;
         gcLoad = 0;
         heapInit = 0;
         heapUsed = 0;
@@ -399,7 +399,7 @@ public class NodeMetricsMessage implements Message {
             rcvdBytesCnt += m.getReceivedBytesCount();
             outMesQueueSize += m.getOutboundMessagesQueueSize();
 
-            avgLoad += m.getCurrentCpuLoad();
+            avgCpuLoad += m.getCurrentCpuLoad();
 
             currentPmeDuration = max(currentPmeDuration, m.getCurrentPmeDuration());
         }
@@ -412,7 +412,7 @@ public class NodeMetricsMessage implements Message {
         avgWaitingJobs /= size;
         avgJobExecTime /= size;
         avgJobWaitTime /= size;
-        avgLoad /= size;
+        avgCpuLoad /= size;
 
         if (!F.isEmpty(nodes)) {
             ClusterMetrics oldestNodeMetrics = oldest(nodes).metrics();
@@ -466,7 +466,7 @@ public class NodeMetricsMessage implements Message {
 
         availProcs = metrics.getTotalCpus();
         load = metrics.getCurrentCpuLoad();
-        avgLoad = metrics.getAverageCpuLoad();
+        avgCpuLoad = metrics.getAverageCpuLoad();
         gcLoad = metrics.getCurrentGcCpuLoad();
 
         heapInit = metrics.getHeapMemoryInitialized();
@@ -895,7 +895,7 @@ public class NodeMetricsMessage implements Message {
 
     /** */
     public double averageCpuLoad() {
-        return avgLoad;
+        return avgCpuLoad;
     }
 
     /** */
@@ -1044,10 +1044,10 @@ public class NodeMetricsMessage implements Message {
     /**
      * Sets CPU load average over the metrics history.
      *
-     * @param avgLoad CPU load average.
+     * @param avgCpuLoad CPU load average.
      */
-    public void averageCpuLoad(double avgLoad) {
-        this.avgLoad = avgLoad;
+    public void averageCpuLoad(double avgCpuLoad) {
+        this.avgCpuLoad = avgCpuLoad;
     }
 
     /**
