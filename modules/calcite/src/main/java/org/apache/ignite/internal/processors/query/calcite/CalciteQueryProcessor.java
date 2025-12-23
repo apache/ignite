@@ -298,6 +298,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
         msgSvc = new MessageServiceImpl(ctx);
         mappingSvc = new MappingServiceImpl(ctx);
         exchangeSvc = new ExchangeServiceImpl(ctx);
+        prepareSvc = new PrepareServiceImpl(ctx);
         timeoutSvc = new TimeoutServiceImpl(ctx);
         qryReg = new QueryRegistryImpl(ctx);
         injectSvc = new InjectResourcesService(ctx);
@@ -313,8 +314,7 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 .orElse(new CalciteQueryEngineConfiguration());
         }
 
-        distrCfg = new DistributedCalciteConfiguration(ctx, qryPlanCache, log);
-        prepareSvc = new PrepareServiceImpl(ctx, distrCfg);
+        distrCfg = new DistributedCalciteConfiguration(ctx, log);
     }
 
     /**
@@ -407,7 +407,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
             mappingSvc,
             qryPlanCache,
             exchangeSvc,
-            qryReg
+            qryReg,
+            distrCfg
         );
 
         started = true;
@@ -428,7 +429,8 @@ public class CalciteQueryProcessor extends GridProcessorAdapter implements Query
                 taskExecutor,
                 mappingSvc,
                 qryPlanCache,
-                exchangeSvc
+                exchangeSvc,
+                distrCfg
             );
         }
     }

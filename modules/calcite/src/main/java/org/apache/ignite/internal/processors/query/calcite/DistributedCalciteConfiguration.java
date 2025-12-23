@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
+import java.util.Objects;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -26,12 +27,15 @@ import org.apache.ignite.internal.processors.configuration.distributed.Distribut
 import org.apache.ignite.internal.processors.configuration.distributed.SimpleDistributedProperty;
 import org.apache.ignite.internal.processors.query.DistributedSqlConfiguration;
 import org.apache.ignite.internal.processors.query.calcite.prepare.QueryPlanCache;
+import org.apache.ignite.internal.processors.query.calcite.util.Commons;
+import org.apache.ignite.internal.processors.query.calcite.util.LifecycleAware;
+import org.apache.ignite.internal.processors.query.calcite.util.Service;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.cluster.DistributedConfigurationUtils.setDefaultValue;
 
 /** Distributed Calcite-engine configuration. */
-public class DistributedCalciteConfiguration extends DistributedSqlConfiguration {
+public class DistributedCalciteConfiguration extends DistributedSqlConfiguration implements Service, LifecycleAware {
     /** Globally disabled rules property name. */
     public static final String DISABLED_RULES_PROPERTY_NAME = "sql.calcite.disabledRules";
 
@@ -42,13 +46,25 @@ public class DistributedCalciteConfiguration extends DistributedSqlConfiguration
     private volatile DistributedChangeableProperty<String[]> disabledRules;
 
     /** */
-    private final QueryPlanCache qryPlanCache;
+    private QueryPlanCache qryPlanCache;
 
     /** */
-    public DistributedCalciteConfiguration(GridKernalContext ctx, QueryPlanCache qryPlanCache, IgniteLogger log) {
+    public DistributedCalciteConfiguration(GridKernalContext ctx, IgniteLogger log) {
         super(ctx, log);
+    }
 
-        this.qryPlanCache = qryPlanCache;
+    /** {@inheritDoc} */
+    @Override public void onStart(GridKernalContext ctx) {
+        CalciteQueryProcessor proc = Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
+
+        assert proc != null;
+
+        qryPlanCache = proc.queryPlanCache();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onStop() {
+        // No-op.
     }
 
     /**
@@ -84,6 +100,8 @@ public class DistributedCalciteConfiguration extends DistributedSqlConfiguration
                 if (oldVal != null && F.compareArrays(oldVal, newVal) != 0) {
                     log.warning("Cleaning Calcite's cache plan by setting changing of the property '"
                         + DISABLED_RULES_PROPERTY_NAME + "'.");
+
+                    assert qryPlanCache != null;
 
                     qryPlanCache.clear();
                 }

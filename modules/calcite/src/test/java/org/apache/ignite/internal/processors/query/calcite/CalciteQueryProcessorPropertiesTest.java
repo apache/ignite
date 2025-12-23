@@ -178,7 +178,9 @@ public class CalciteQueryProcessorPropertiesTest extends AbstractBasicIntegratio
 
             changeDistributedProperty(propName, "MergeJoinConverter", pVal -> F.compareArrays(pVal, disabledRules) == 0);
 
-            // Unable to build plan. Only MergeJoin is forced by a hint, but this rule is disabled by the global property.
+            // Ensure that hint and global property are able to work together. The MergeJoin enforcing hint disables
+            // other join types. But it won't run because its rule is disabled by the global property. So, the planner is
+            // unable to build plan.
             GridTestUtils.assertThrows(
                 null,
                 () -> sql("select /*+ MERGE_JOIN */ t1.c1,t2.c3 from test_tbl1 t1, test_tbl2 t2 where t1.c2=t2.c3"),
