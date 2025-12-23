@@ -38,6 +38,8 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
 
+import org.apache.ignite.lang.IgniteBiTuple;
+
 import static org.apache.ignite.internal.MessageSerializerGenerator.DLFT_ENUM_MAPPER_CLS;
 
 /**
@@ -75,7 +77,7 @@ public class MessageProcessor extends AbstractProcessor {
     static final String HANDSHAKE_WAIT_MESSAGE = "org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage";
 
     /** */
-    private final Map<String, String> enumMappersInUse = new HashMap<>();
+    private final Map<String, IgniteBiTuple<String, String>> enumMappersInUse = new HashMap<>();
 
     /**
      * Processes all classes implementing the {@code Message} interface and generates corresponding serializer code.
@@ -142,41 +144,7 @@ public class MessageProcessor extends AbstractProcessor {
                             el);
                     }
 
-                    CustomMapper custMappAnn = el.getAnnotation(CustomMapper.class);
-                    if (enumField(el)) {
-                        String enumClsFullName = el.asType().toString();
-                        String enumMapperClsName = custMappAnn != null ? custMappAnn.value() : DLFT_ENUM_MAPPER_CLS;
-                        String msgClsName = type.toString();
-
-                        // Here I put into the map two pieces of information about enum mapper:
-                        // message class name where the mapper is used and mapper class name itself.
-                        // These names are joined with a colon as a separator symbol as it is prohibited in a class name in Java.
-                        String otherMsgAndMapperClassesNames =
-                            enumMappersInUse.put(enumClsFullName, msgClsName + ':' + enumMapperClsName);
-
-                        if (otherMsgAndMapperClassesNames != null) {
-                            String otherMsgClsName = otherMsgAndMapperClassesNames.split(":")[0];
-                            String otherEnumMapperClsName = otherMsgAndMapperClassesNames.split(":")[1];
-
-                            if (!otherEnumMapperClsName.equals(enumMapperClsName)) {
-                                processingEnv.getMessager().printMessage(
-                                    Diagnostic.Kind.ERROR,
-                                    "Enum " + enumClsFullName + " is declared with different mappers: " +
-                                        otherEnumMapperClsName + " in " + otherMsgClsName + " and " +
-                                        enumMapperClsName + " in " + msgClsName +
-                                        ". Only one mapper is allowed per enum type.",
-                                    el);
-                            }
-                        }
-                    }
-                    else {
-                        if (custMappAnn != null) {
-                            processingEnv.getMessager().printMessage(
-                                Diagnostic.Kind.ERROR,
-                                "Annotation @CustomMapper must only be used for enum fields.",
-                                el);
-                        }
-                    }
+                    validateEnumFieldMapping(type, el);
                 }
             }
 
@@ -199,13 +167,53 @@ public class MessageProcessor extends AbstractProcessor {
         return result;
     }
 
+    /**
+     * Validates consistency of enum field mappers configuration: the same mapper is used for the same enum in different messages,
+     * CustomMapper annotation is used only for enum fields.
+     *
+     * @param type Type implementing Message interface.
+     * @param el Enclosed element of the type.
+     */
+    private void validateEnumFieldMapping(TypeElement type, Element el) {
+        CustomMapper custMappAnn = el.getAnnotation(CustomMapper.class);
+        if (isEnumField(el)) {
+            String enumClsFullName = el.asType().toString();
+            String enumMapperClsName = custMappAnn != null ? custMappAnn.value() : DLFT_ENUM_MAPPER_CLS;
+            String msgClsName = type.toString();
+
+            IgniteBiTuple<String, String> otherMsgAndMapperClassesNames =
+                enumMappersInUse.put(enumClsFullName, new IgniteBiTuple<>(msgClsName, enumMapperClsName));
+
+            if (otherMsgAndMapperClassesNames != null) {
+                String otherMsgClsName = otherMsgAndMapperClassesNames.get1();
+                String otherEnumMapperClsName = otherMsgAndMapperClassesNames.get2();
+
+                if (!otherEnumMapperClsName.equals(enumMapperClsName)) {
+                    processingEnv.getMessager().printMessage(
+                        Diagnostic.Kind.ERROR,
+                        "Enum " + enumClsFullName + " is declared with different mappers: " +
+                            otherEnumMapperClsName + " in " + otherMsgClsName + " and " +
+                            enumMapperClsName + " in " + msgClsName +
+                            ". Only one mapper is allowed per enum type.",
+                        el);
+                }
+            }
+        }
+        else if (custMappAnn != null) {
+            processingEnv.getMessager().printMessage(
+                Diagnostic.Kind.ERROR,
+                "Annotation @CustomMapper must only be used for enum fields.",
+                el);
+        }
+    }
+
     /** */
-    private boolean enumField(Element el) {
+    private boolean isEnumField(Element el) {
         TypeMirror elType = el.asType();
 
         if (elType.getKind() != TypeKind.DECLARED)
             return false;
 
-        return processingEnv.getTypeUtils().asElement(el.asType()).getKind() == ElementKind.ENUM;
+        return processingEnv.getTypeUtils().asElement(elType).getKind() == ElementKind.ENUM;
     }
 }
