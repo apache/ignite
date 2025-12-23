@@ -750,8 +750,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     T2<Boolean, T2<SocketStream, Integer>> redirectedRes = sendJoinRequests(recon, redirectAddrs);
 
-                    //redirectAddrs.clear();
-
                     return redirectedRes.get2();
                 }
 
