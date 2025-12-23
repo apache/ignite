@@ -71,7 +71,7 @@ class AddRemoveNodeUpgradeTest(BaseRollingUpgradeTest):
             ignites.stop_node(ignite)
 
             if with_persistence:
-                control_sh.remove_from_baseline(ignite)
+                control_sh.remove_from_baseline([ignite])
 
         self.logger.info(f"Cluster upgrade is complete.")
 
