@@ -39,7 +39,7 @@ public class TcpDiscoveryClusterMetricsHolderMessage extends NodeMetricsMessage 
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -100;
+        return -101;
     }
 
     /** {@inheritDoc} */

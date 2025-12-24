@@ -74,7 +74,7 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 10;
+        return 11;
     }
 
     /** {@inheritDoc} */
