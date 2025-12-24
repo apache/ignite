@@ -219,7 +219,7 @@ public class TcpDiscoveryIoSession {
 
                 finished = msgSer.readFrom(msg, msgReader);
 
-                // We must keep uprocessed bytes read from the socked. Socket won't return it again.
+                // We must keepthe uprocessed bytes read from the socket. It won't return it again.
                 if (!finished && msgBuf.position() > 0 && msgBuf.remaining() > 0) {
                     unprocessedBytes = new byte[msgBuf.remaining()];
 
