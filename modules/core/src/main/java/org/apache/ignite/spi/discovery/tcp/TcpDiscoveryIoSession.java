@@ -170,8 +170,8 @@ public class TcpDiscoveryIoSession {
             if (MESSAGE_SERIALIZATION != serMode) {
                 detectSslAlert(serMode, in);
 
-                // There are many `X.hasCause` in the discovery errors processing which change connection recovery processing.
-                // It is better to throw an IOException on reading failures. Often happens at nodes stop and streams closing.
+                // IOException type is important for ServerImpl for connection error processing behavior.
+                // It may search the cause (X.hasCause).
                 throw new IOException("Received unexpected byte while reading discovery message: " + serMode);
             }
 
@@ -187,19 +187,48 @@ public class TcpDiscoveryIoSession {
 
             boolean finished;
 
+            byte[] unprocessedBytes = null;
+            int unprocessedBytesLen = 0;
+
             do {
                 // Should be cleared before first operation.
                 msgBuf.clear();
 
-                int read = in.read(msgBuf.array(), 0, msgBuf.limit());
+                if (unprocessedBytes != null) {
+                    assert unprocessedBytesLen == unprocessedBytes.length;
+
+                    msgBuf.put(unprocessedBytes);
+
+                    unprocessedBytes = null;
+                }
+
+                int read = in.read(msgBuf.array(), msgBuf.position(), msgBuf.remaining());
 
                 if (read == -1)
                     throw new EOFException("Connection closed before message was fully read.");
 
-                msgBuf.limit(read);
+                if (unprocessedBytesLen > 0) {
+                    msgBuf.rewind();
+
+                    msgBuf.limit(read + unprocessedBytesLen);
+
+                    unprocessedBytesLen = 0;
+                }
+                else
+                    msgBuf.limit(read);
 
                 finished = msgSer.readFrom(msg, msgReader);
-            } while (!finished);
+
+                // We must keep the uprocessed bytes read from the socket. It won't return them again.
+                if (!finished && msgBuf.position() > 0 && msgBuf.remaining() > 0) {
+                    unprocessedBytes = new byte[msgBuf.remaining()];
+
+                    unprocessedBytesLen = unprocessedBytes.length;
+
+                    msgBuf.get(unprocessedBytes, 0, msgBuf.remaining());
+                }
+            }
+            while (!finished);
 
             return (T)msg;
         }

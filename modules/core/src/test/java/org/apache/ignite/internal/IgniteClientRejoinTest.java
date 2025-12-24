@@ -264,7 +264,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testClientsRecocnnectDisabled() throws Exception {
+    public void testClientsReconnectDisabled() throws Exception {
         clientReconnectDisabled = true;
 
         Ignite srv1 = startGrid("server1");

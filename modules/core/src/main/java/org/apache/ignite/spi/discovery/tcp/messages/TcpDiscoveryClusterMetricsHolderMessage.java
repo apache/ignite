@@ -17,42 +17,33 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.util.UUID;
+import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
+import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- * Sent by node that is stopping to coordinator across the ring,
- * then sent by coordinator across the ring.
+ * Utility container message of the node metrics. Is not a pure {@link TcpDiscoveryAbstractMessage}.
+ * Reuses Communication's {@link NodeMetricsMessage}.
  */
-@TcpDiscoveryEnsureDelivery
-@TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeLeftMessage extends TcpDiscoveryAbstractTraceableMessage implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Default constructor for {@link DiscoveryMessageFactory}. */
-    public TcpDiscoveryNodeLeftMessage() {
+public class TcpDiscoveryClusterMetricsHolderMessage extends NodeMetricsMessage {
+    /** Constructor for {@link DiscoveryMessageFactory}. */
+    public TcpDiscoveryClusterMetricsHolderMessage() {
         // No-op.
     }
 
-    /**
-     * Constructor.
-     *
-     * @param creatorNodeId ID of the node that is about to leave the topology.
-     */
-    public TcpDiscoveryNodeLeftMessage(UUID creatorNodeId) {
-        super(creatorNodeId);
+    /** @param metrics Metrics. */
+    public TcpDiscoveryClusterMetricsHolderMessage(ClusterMetrics metrics) {
+        super(metrics);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return -101;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TcpDiscoveryNodeLeftMessage.class, this, "super", super.toString());
-    }
-
-    /** */
-    @Override public short directType() {
-        return 11;
+        return S.toString(TcpDiscoveryClusterMetricsHolderMessage.class, this, "super", super.toString());
     }
 }
