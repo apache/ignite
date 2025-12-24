@@ -59,7 +59,7 @@ public class InetSocketAddressMessage extends InetAddressMessage {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -100;
+        return -101;
     }
 
     /** {@inheritDoc} */

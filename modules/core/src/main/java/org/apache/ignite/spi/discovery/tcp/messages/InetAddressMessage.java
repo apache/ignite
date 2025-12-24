@@ -78,7 +78,7 @@ public class InetAddressMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -101;
+        return -100;
     }
 
     /** {@inheritDoc} */
