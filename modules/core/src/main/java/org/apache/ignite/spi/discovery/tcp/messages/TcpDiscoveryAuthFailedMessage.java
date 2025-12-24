@@ -25,15 +25,15 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- * Message telling joining node that its authentication failed on coordinator.
+ * Message telling joining node that its authentication failed.
  */
 public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Coordinator address. */
-    @Order(value = 5, method = "addressMessage")
-    private InetAddressMessage addr;
+    /** Creator address. */
+    @Order(value = 5, method = "creatorAddressMessage")
+    private InetAddressMessage creatorAddrMsg;
 
     /** Node id for which authentication was failed. */
     @Order(6)
@@ -48,13 +48,13 @@ public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage i
      * Constructor.
      *
      * @param creatorNodeId Creator node ID.
-     * @param addr Coordinator address.
+     * @param creatorAddr Creator address.
      * @param targetNodeId Node for which authentication was failed.
      */
-    public TcpDiscoveryAuthFailedMessage(UUID creatorNodeId, InetAddress addr, UUID targetNodeId) {
+    public TcpDiscoveryAuthFailedMessage(UUID creatorNodeId, InetAddress creatorAddr, UUID targetNodeId) {
         super(creatorNodeId);
 
-        this.addr = new InetAddressMessage(addr);
+        this.creatorAddrMsg = new InetAddressMessage(creatorAddr);
         this.targetNodeId = targetNodeId;
     }
 
@@ -68,19 +68,19 @@ public class TcpDiscoveryAuthFailedMessage extends TcpDiscoveryAbstractMessage i
         this.targetNodeId = targetNodeId;
     }
 
-    /** @return Coordinator address. */
-    public InetAddressMessage addressMessage() {
-        return addr;
+    /** @return Creator address message. */
+    public InetAddressMessage creatorAddressMessage() {
+        return creatorAddrMsg;
     }
 
-    /** @param addr Coordinator address. */
-    public void addressMessage(InetAddressMessage addr) {
-        this.addr = addr;
+    /** @param addr Creator address message. */
+    public void creatorAddressMessage(InetAddressMessage addr) {
+        this.creatorAddrMsg = addr;
     }
 
-    /** @return Coordinator address. */
-    public InetAddress address() {
-        return addr.address();
+    /** @return Creator address. */
+    public InetAddress creatorAddress() {
+        return creatorAddrMsg.address();
     }
 
     /** {@inheritDoc} */

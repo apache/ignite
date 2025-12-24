@@ -22,7 +22,7 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-/** Address utility container message. Is not a pure {@link TcpDiscoveryAbstractMessage}. */
+/** Socket address utility container message. Is not a pure {@link TcpDiscoveryAbstractMessage}. */
 public class InetSocketAddressMessage extends InetAddressMessage {
     /** */
     @Order(2)
@@ -47,12 +47,12 @@ public class InetSocketAddressMessage extends InetAddressMessage {
         this.port = port;
     }
 
-    /** @return port. */
+    /** @return Port. */
     public int port() {
         return port;
     }
 
-    /** @param port port. */
+    /** @param port Port. */
     public void port(int port) {
         this.port = port;
     }

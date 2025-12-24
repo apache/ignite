@@ -52,8 +52,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheck
 public class DiscoveryMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
-        factory.register((short)-101, InetAddressMessage::new, new InetAddressMessageSerializer());
-        factory.register((short)-100, InetSocketAddressMessage::new, new InetSocketAddressMessageSerializer());
+        factory.register((short)-101, InetSocketAddressMessage::new, new InetSocketAddressMessageSerializer());
+        factory.register((short)-100, InetAddressMessage::new, new InetAddressMessageSerializer());
 
         factory.register((short)0, TcpDiscoveryCheckFailedMessage::new, new TcpDiscoveryCheckFailedMessageSerializer());
         factory.register((short)1, TcpDiscoveryPingRequest::new, new TcpDiscoveryPingRequestSerializer());
