@@ -4212,7 +4212,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (isLocalNodeCoordinator()) {
                 TcpDiscoveryNode existingNode = ring.node(node.id());
 
-                if (existingNode != null) {
+                if (existingNode != null && existingNode.visible()) {
                     if (!node.socketAddresses().equals(existingNode.socketAddresses())) {
                         if (!pingNode(existingNode)) {
                             U.warn(log, "Sending node failed message for existing node: " + node);
@@ -4985,6 +4985,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (isLocalNodeCoordinator()) {
                 if (msg.verified()) {
+                    log.warning("YYYYYYYYYYYYYYYYYY "+msg);
+
                     TcpDiscoveryNodeAddFinishedMessage addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(locNodeId,
                         node.id());
 
@@ -5009,6 +5011,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     return;
                 }
+
+                log.warning("XXXXXXXXXXXXXXXXXX "+msg);
 
                 msg.verifierNodeId(locNodeId);
 
