@@ -4985,8 +4985,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (isLocalNodeCoordinator()) {
                 if (msg.verified()) {
-                    log.warning("YYYYYYYYYYYYYYYYYY "+msg);
-
                     TcpDiscoveryNodeAddFinishedMessage addFinishMsg = new TcpDiscoveryNodeAddFinishedMessage(locNodeId,
                         node.id());
 
@@ -5011,8 +5009,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     return;
                 }
-
-                log.warning("XXXXXXXXXXXXXXXXXX "+msg);
 
                 msg.verifierNodeId(locNodeId);
 
