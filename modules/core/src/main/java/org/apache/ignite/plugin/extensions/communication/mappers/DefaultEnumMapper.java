@@ -49,7 +49,7 @@ package org.apache.ignite.plugin.extensions.communication.mappers;
  *
  * @see Enum#ordinal()
  */
-public class DefaultEnumMapper {
+public final class DefaultEnumMapper {
     /** */
     public static final DefaultEnumMapper INSTANCE = new DefaultEnumMapper();
 
