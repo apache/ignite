@@ -19,9 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -569,7 +567,8 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                     String msg = e.getMessage();
 
                     assert msg.startsWith("Cache doesn't exist") ||
-                        msg.startsWith("Failed to change WAL mode because some caches no longer exist") :
+                        msg.startsWith("Failed to change WAL mode because some caches no longer exist") ||
+                        msg.startsWith("Cache names cannot be empty.") :
                         e.getMessage();
                 }
                 finally {
@@ -737,7 +736,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         assertThrows(
             () -> {
-                srv.cluster().disableWal(Collections.singleton(CACHE_NAME_2));
+                srv.cluster().disableWal(CACHE_NAME_2);
                 return null;
             },
             IgniteException.class,
@@ -749,14 +748,14 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         assertThrows(
             () -> {
-                srv.cluster().enableWal(Collections.singleton(CACHE_NAME));
+                srv.cluster().enableWal(CACHE_NAME);
                 return null;
             },
             IgniteException.class,
             "Cannot change WAL mode because not all cache names belonging to the group are provided"
         );
 
-        srv.cluster().disableWal(Arrays.asList(CACHE_NAME, CACHE_NAME_2));
+        srv.cluster().disableWal("testGroup");
 
         assertForAllNodes(CACHE_NAME, false);
         assertForAllNodes(CACHE_NAME_2, false);
@@ -770,7 +769,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
             "Cannot change WAL mode because not all cache names belonging to the group are provided"
         );
 
-        srv.cluster().enableWal(Arrays.asList(CACHE_NAME, CACHE_NAME_2));
+        srv.cluster().enableWal("testGroup");
 
         assertForAllNodes(CACHE_NAME, true);
         assertForAllNodes(CACHE_NAME_2, true);

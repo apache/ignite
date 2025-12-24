@@ -17,7 +17,6 @@
 
 package org.apache.ignite.util;
 
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import org.apache.ignite.cluster.ClusterState;
@@ -192,24 +191,15 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
         assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "testGroup"));
         outputContains(".*testGroup.*true.*true.*true.*true.*false");
 
-        // disableWal fails, but EXIT_CODE_OK
         assertEquals(EXIT_CODE_OK, execute("--wal", "disable", "--groups", "testGroup"));
 
-        // WAL is still enabled
+        assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "testGroup"));
+        outputContains(".*testGroup.*true.*false.*true.*true.*false");
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "enable", "--groups", "testGroup"));
+
         assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "testGroup"));
         outputContains(".*testGroup.*true.*true.*true.*true.*false");
-
-        srv.cluster().disableWal(Arrays.asList("cache1", "cache2"));
-
-        assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "testGroup"));
-        outputContains(".*testGroup.*true.*false.*true.*true.*false");
-
-        // enableWal fails
-        assertEquals(EXIT_CODE_OK, execute("--wal", "disable", "--groups", "testGroup"));
-
-        // WAL is still disabled
-        assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "testGroup"));
-        outputContains(".*testGroup.*true.*false.*true.*true.*false");
     }
 
     /** */

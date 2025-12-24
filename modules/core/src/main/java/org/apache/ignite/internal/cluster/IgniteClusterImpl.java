@@ -52,6 +52,7 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.BaselineAutoAdjustStatus;
@@ -631,39 +632,40 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enableWal(String cacheName) throws IgniteException {
-        return changeWalMode(Collections.singleton(cacheName), true);
+    @Override public boolean enableWal(String cacheOrGrpName) throws IgniteException {
+        return changeWalMode(cacheOrGrpName, true);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enableWal(Collection<String> cacheNames) throws IgniteException {
-        return changeWalMode(cacheNames, true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean disableWal(String cacheName) throws IgniteException {
-        return changeWalMode(Collections.singleton(cacheName), false);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean disableWal(Collection<String> cacheNames) throws IgniteException {
-        return changeWalMode(cacheNames, false);
+    @Override public boolean disableWal(String cacheOrGrpName) throws IgniteException {
+        return changeWalMode(cacheOrGrpName, false);
     }
 
     /**
      * Change WAL mode.
      *
-     * @param cacheNames Cache names.
+     * @param cacheOrGrpName Cache or cache group name.
      * @param enabled Enabled flag.
      * @return {@code True} if WAL mode was changed as a result of this call.
      */
-    private boolean changeWalMode(Collection<String> cacheNames, boolean enabled) {
-        A.notNull(cacheNames, "cacheNames");
-
-        if (cacheNames.isEmpty())
-            return false;
+    private boolean changeWalMode(String cacheOrGrpName, boolean enabled) {
+        A.notNull(cacheOrGrpName, "cacheOrGrpName");
 
         guard();
+
+        List<String> cacheNames = new ArrayList<>();
+
+        int cacheOrGrpId = CU.cacheId(cacheOrGrpName);
+        CacheGroupDescriptor grpDesc = ctx.cache().cacheGroupDescriptor(cacheOrGrpId);
+
+        if (grpDesc != null) {
+            for (DynamicCacheDescriptor cacheDesc : ctx.cache().cacheDescriptors().values()) {
+                if (cacheDesc.groupId() == cacheOrGrpId)
+                    cacheNames.add(cacheDesc.cacheName());
+            }
+        }
+        else
+            cacheNames.add(cacheOrGrpName);
 
         try {
             return ctx.cache().context().walState().changeWalMode(cacheNames, enabled).get();
