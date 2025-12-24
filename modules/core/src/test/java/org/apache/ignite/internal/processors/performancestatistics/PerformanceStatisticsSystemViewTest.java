@@ -60,7 +60,10 @@ public class PerformanceStatisticsSystemViewTest extends AbstractPerformanceStat
         "nodes",
         "cacheGroupPageLists",
         "dataRegionPageLists",
-        "partitionStates");
+        "partitionStates",
+        "statisticsPartitionData",
+        "metastorage",
+        "distributed.metastorage");
 
     /** */
     private static final int VALID_VIEWS_CNT = 10;
