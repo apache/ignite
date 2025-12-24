@@ -170,6 +170,8 @@ public class TcpDiscoveryIoSession {
             if (MESSAGE_SERIALIZATION != serMode) {
                 detectSslAlert(serMode, in);
 
+                // IOException type is important for ServerImpl for connection error processing behavior.
+                // It may search the cause (X.hasCause).
                 throw new IOException("Received unexpected byte while reading discovery message: " + serMode);
             }
 
