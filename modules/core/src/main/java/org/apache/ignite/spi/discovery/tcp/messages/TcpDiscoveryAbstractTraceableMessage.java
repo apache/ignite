@@ -17,10 +17,12 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.io.Externalizable;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.processors.tracing.messages.SpanContainer;
 import org.apache.ignite.internal.processors.tracing.messages.TraceableMessage;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Abstract traceable message for TCP discovery.
@@ -29,8 +31,12 @@ public abstract class TcpDiscoveryAbstractTraceableMessage extends TcpDiscoveryA
     /** Container. */
     private SpanContainer spanContainer = new SpanContainer();
 
+    /** Serialization holder of {@link #spanContainer}'s bytes. */
+    @Order(value = 5, method = "spanBytes")
+    private @Nullable byte[] spanBytesHolder;
+
     /**
-     * Default no-arg constructor for {@link Externalizable} interface.
+     * Default constructor for {@link DiscoveryMessageFactory}.
      */
     protected TcpDiscoveryAbstractTraceableMessage() {
         // No-op.
@@ -51,7 +57,7 @@ public abstract class TcpDiscoveryAbstractTraceableMessage extends TcpDiscoveryA
     protected TcpDiscoveryAbstractTraceableMessage(TcpDiscoveryAbstractTraceableMessage msg) {
         super(msg);
 
-        this.spanContainer = msg.spanContainer;
+        spanContainer = msg.spanContainer;
     }
 
     /**
@@ -65,6 +71,21 @@ public abstract class TcpDiscoveryAbstractTraceableMessage extends TcpDiscoveryA
             spanContainer = new SpanContainer();
 
         return this;
+    }
+
+    /** @return {@link #spanContainer}'s bytes. */
+    public @Nullable byte[] spanBytes() {
+        return spanContainer == null ? null : spanContainer.serializedSpanBytes();
+    }
+
+    /** @param spanBytes {@link #spanContainer}'s bytes. */
+    public void spanBytes(@Nullable byte[] spanBytes) {
+        if (spanBytes == null)
+            return;
+
+        readResolve();
+
+        spanContainer.serializedSpanBytes(spanBytes);
     }
 
     /** {@inheritDoc} */
