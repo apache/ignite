@@ -219,7 +219,7 @@ public class TcpDiscoveryIoSession {
 
                 finished = msgSer.readFrom(msg, msgReader);
 
-                // We must keepthe uprocessed bytes read from the socket. It won't return it again.
+                // We must keep the uprocessed bytes read from the socket. It won't return them again.
                 if (!finished && msgBuf.position() > 0 && msgBuf.remaining() > 0) {
                     unprocessedBytes = new byte[msgBuf.remaining()];
 
@@ -294,15 +294,12 @@ public class TcpDiscoveryIoSession {
         msgWriter.setBuffer(msgBuf);
 
         boolean finished;
-        int totalWritten = 0;
 
         do {
             // Should be cleared before first operation.
             msgBuf.clear();
 
             finished = msgSer.writeTo(m, msgWriter);
-
-            totalWritten += msgBuf.position();
 
             out.write(msgBuf.array(), 0, msgBuf.position());
         }
