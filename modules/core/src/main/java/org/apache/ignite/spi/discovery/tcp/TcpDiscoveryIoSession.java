@@ -170,7 +170,7 @@ public class TcpDiscoveryIoSession {
             if (MESSAGE_SERIALIZATION != serMode) {
                 detectSslAlert(serMode, in);
 
-                throw new IgniteCheckedException("Received unexpected byte while reading discovery message: " + serMode);
+                throw new IOException("Received unexpected byte while reading discovery message: " + serMode);
             }
 
             byte b0 = (byte)in.read();
@@ -185,19 +185,48 @@ public class TcpDiscoveryIoSession {
 
             boolean finished;
 
+            byte[] unprocessedBytes = null;
+            int unprocessedBytesLen = 0;
+
             do {
                 // Should be cleared before first operation.
                 msgBuf.clear();
 
-                int read = in.read(msgBuf.array(), 0, msgBuf.limit());
+                if (unprocessedBytes != null) {
+                    assert unprocessedBytesLen == unprocessedBytes.length;
+
+                    msgBuf.put(unprocessedBytes);
+
+                    unprocessedBytes = null;
+                }
+
+                int read = in.read(msgBuf.array(), msgBuf.position(), msgBuf.remaining());
 
                 if (read == -1)
                     throw new EOFException("Connection closed before message was fully read.");
 
-                msgBuf.limit(read);
+                if (unprocessedBytesLen > 0) {
+                    msgBuf.rewind();
+
+                    msgBuf.limit(read + unprocessedBytesLen);
+
+                    unprocessedBytesLen = 0;
+                }
+                else
+                    msgBuf.limit(read);
 
                 finished = msgSer.readFrom(msg, msgReader);
-            } while (!finished);
+
+                // We must keep uprocessed bytes read from the socked. Socket won't return it again.
+                if (!finished && msgBuf.position() > 0 && msgBuf.remaining() > 0) {
+                    unprocessedBytes = new byte[msgBuf.remaining()];
+
+                    unprocessedBytesLen = unprocessedBytes.length;
+
+                    msgBuf.get(unprocessedBytes, 0, msgBuf.remaining());
+                }
+            }
+            while (!finished);
 
             return (T)msg;
         }
@@ -263,12 +292,15 @@ public class TcpDiscoveryIoSession {
         msgWriter.setBuffer(msgBuf);
 
         boolean finished;
+        int totalWritten = 0;
 
         do {
             // Should be cleared before first operation.
             msgBuf.clear();
 
             finished = msgSer.writeTo(m, msgWriter);
+
+            totalWritten += msgBuf.position();
 
             out.write(msgBuf.array(), 0, msgBuf.position());
         }

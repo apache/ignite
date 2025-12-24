@@ -7581,7 +7581,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
 
             if (wrk != null)
-                wrk.metrics(new ClusterMetricsSnapshot(msg.metricsMessage()));
+                wrk.metrics(new ClusterMetricsSnapshot());
             else if (log.isDebugEnabled())
                 log.debug("Received client metrics update message from unknown client node: " + msg);
         }
