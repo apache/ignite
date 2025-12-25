@@ -662,8 +662,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
             if (grpDesc != null) {
                 Map<String, Integer> cachesInGrp = grpDesc.caches();
                 if (cachesInGrp.isEmpty())
-                    throw new IgniteException("Cache group '" + cacheOrGrpName +
-                        "' does not contain any caches.");
+                    throw new IgniteException("Cache group '" + cacheOrGrpName + "' does not contain any caches.");
                 else
                     cacheNames.addAll(cachesInGrp.keySet());
             }
