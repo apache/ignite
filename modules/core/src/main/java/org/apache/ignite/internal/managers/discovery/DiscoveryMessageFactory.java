@@ -25,6 +25,7 @@ import org.apache.ignite.internal.codegen.TcpDiscoveryClientPingRequestSerialize
 import org.apache.ignite.internal.codegen.TcpDiscoveryClientPingResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryConnectionCheckMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryDiscardMessageSerializer;
+import org.apache.ignite.internal.codegen.TcpDiscoveryDuplicateIdMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryHandshakeRequestSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryHandshakeResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryLoopbackProblemMessageSerializer;
@@ -41,6 +42,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingReques
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDiscardMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessage;
@@ -67,5 +69,6 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)9, TcpDiscoveryDiscardMessage::new, new TcpDiscoveryDiscardMessageSerializer());
         factory.register((short)10, TcpDiscoveryHandshakeResponse::new, new TcpDiscoveryHandshakeResponseSerializer());
         factory.register((short)11, TcpDiscoveryAuthFailedMessage::new, new TcpDiscoveryAuthFailedMessageSerializer());
+        factory.register((short)12, TcpDiscoveryDuplicateIdMessage::new, new TcpDiscoveryDuplicateIdMessageSerializer());
     }
 }
