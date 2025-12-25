@@ -632,28 +632,41 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
     /** {@inheritDoc} */
     @Override public boolean enableWal(String cacheName) throws IgniteException {
-        return changeWalMode(cacheName, true);
+        return changeWalMode(Collections.singleton(cacheName), true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean enableWal(Collection<String> cacheNames) throws IgniteException {
+        return changeWalMode(cacheNames, true);
     }
 
     /** {@inheritDoc} */
     @Override public boolean disableWal(String cacheName) throws IgniteException {
-        return changeWalMode(cacheName, false);
+        return changeWalMode(Collections.singleton(cacheName), false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean disableWal(Collection<String> cacheNames) throws IgniteException {
+        return changeWalMode(cacheNames, false);
     }
 
     /**
      * Change WAL mode.
      *
-     * @param cacheName Cache name.
+     * @param cacheNames Cache names.
      * @param enabled Enabled flag.
      * @return {@code True} if WAL mode was changed as a result of this call.
      */
-    private boolean changeWalMode(String cacheName, boolean enabled) {
-        A.notNull(cacheName, "cacheName");
+    private boolean changeWalMode(Collection<String> cacheNames, boolean enabled) {
+        A.notNull(cacheNames, "cacheNames");
+
+        if (cacheNames.isEmpty())
+            return false;
 
         guard();
 
         try {
-            return ctx.cache().context().walState().changeWalMode(Collections.singleton(cacheName), enabled).get();
+            return ctx.cache().context().walState().changeWalMode(cacheNames, enabled).get();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
