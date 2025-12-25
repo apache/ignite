@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.management.wal;
 
+import java.util.List;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.management.api.ComputeCommand;
 
 /** */
-public class WalDisableCommand implements ComputeCommand<WalDisableCommand.WalDisableCommandArg, Void> {
+public class WalDisableCommand implements ComputeCommand<WalDisableCommand.WalDisableCommandArg, WalSetStateTaskResult> {
     /** {@inheritDoc} */
     @Override public Class<WalSetStateTask> taskClass() {
         return WalSetStateTask.class;
@@ -39,6 +41,25 @@ public class WalDisableCommand implements ComputeCommand<WalDisableCommand.WalDi
     /** {@inheritDoc} */
     @Override public String confirmationPrompt(WalDisableCommandArg arg) {
         return "Are you sure? Any node failure without WAL can lead to the loss of all PDS data. CDC events will be lost without WAL.";
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printResult(WalDisableCommandArg arg, WalSetStateTaskResult res, Consumer<String> printer) {
+        String operation = arg instanceof WalDisableCommandArg ? "disable" : "enable";
+        List<String> successGrps = res.successGroups();
+        List<String> errors = res.errorMessages();
+
+        if (!successGrps.isEmpty()) {
+            printer.accept("Successfully " + operation + "d WAL for groups:");
+            for (String grp : successGrps)
+                printer.accept("  " + grp);
+        }
+
+        if (errors != null && !errors.isEmpty()) {
+            printer.accept("Errors occurred:");
+            for (String error : errors)
+                printer.accept("  " + error);
+        }
     }
 
     /** */
