@@ -17,22 +17,15 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.mappers.EnumMapper;
 import org.apache.ignite.transactions.TransactionIsolation;
 
-public class UnwrappedEnumFieldMessage implements Message {
-    @Order(0)
-    private TransactionIsolation isolation;
-
-    public TransactionIsolation isolation() {
-        return isolation;
-    }
-
-    public void isolation(TransactionIsolation isolation) {
-        this.isolation = isolation;
-    }
-
-    public short directType() {
+public class TransactionIsolationEnumMapper implements EnumMapper<TransactionIsolation> {
+    @Override public byte encode(TransactionIsolation val) {
         return 0;
+    }
+
+    @Override public TransactionIsolation decode(byte code) {
+        return null;
     }
 }
