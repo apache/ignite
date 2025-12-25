@@ -74,6 +74,6 @@ public class TcpDiscoveryDuplicateIdMessage extends TcpDiscoveryAbstractMessage 
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 11;
+        return 12;
     }
 }
