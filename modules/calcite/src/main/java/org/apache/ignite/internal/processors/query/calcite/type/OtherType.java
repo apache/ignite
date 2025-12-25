@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.type;
 
 import java.lang.reflect.Type;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /** OTHER SQL type for any value. */
 public class OtherType extends IgniteCustomType {
