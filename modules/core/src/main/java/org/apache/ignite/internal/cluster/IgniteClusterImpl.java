@@ -659,10 +659,11 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         CacheGroupDescriptor grpDesc = ctx.cache().cacheGroupDescriptor(cacheOrGrpId);
 
         if (grpDesc != null) {
-            for (DynamicCacheDescriptor cacheDesc : ctx.cache().cacheDescriptors().values()) {
-                if (cacheDesc.groupId() == cacheOrGrpId)
-                    cacheNames.add(cacheDesc.cacheName());
-            }
+            Map<String, Integer> cachesInGrp = grpDesc.caches();
+            if (!cachesInGrp.isEmpty())
+                cacheNames.addAll(cachesInGrp.keySet());
+            else
+                cacheNames.add(cacheOrGrpName);
         }
         else
             cacheNames.add(cacheOrGrpName);

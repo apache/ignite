@@ -567,8 +567,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
                     String msg = e.getMessage();
 
                     assert msg.startsWith("Cache doesn't exist") ||
-                        msg.startsWith("Failed to change WAL mode because some caches no longer exist") ||
-                        msg.startsWith("Cache names cannot be empty.") :
+                        msg.startsWith("Failed to change WAL mode because some caches no longer exist") :
                         e.getMessage();
                 }
                 finally {
