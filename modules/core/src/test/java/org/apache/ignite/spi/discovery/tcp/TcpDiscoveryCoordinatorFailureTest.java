@@ -39,7 +39,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedM
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -121,7 +120,6 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     @Test
-    @Ignore
     public void testClusterFailedNewCoordinatorInitialized() throws Exception {
         StallingJoinDiscoverySpi stallSpi = new StallingJoinDiscoverySpi();
 
