@@ -653,22 +653,23 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
 
         guard();
 
-        List<String> cacheNames = new ArrayList<>();
+        try {
+            List<String> cacheNames = new ArrayList<>();
 
-        int cacheOrGrpId = CU.cacheId(cacheOrGrpName);
-        CacheGroupDescriptor grpDesc = ctx.cache().cacheGroupDescriptor(cacheOrGrpId);
+            int cacheOrGrpId = CU.cacheId(cacheOrGrpName);
+            CacheGroupDescriptor grpDesc = ctx.cache().cacheGroupDescriptor(cacheOrGrpId);
 
-        if (grpDesc != null) {
-            Map<String, Integer> cachesInGrp = grpDesc.caches();
-            if (!cachesInGrp.isEmpty())
-                cacheNames.addAll(cachesInGrp.keySet());
+            if (grpDesc != null) {
+                Map<String, Integer> cachesInGrp = grpDesc.caches();
+                if (cachesInGrp.isEmpty())
+                    throw new IgniteException("Cache group '" + cacheOrGrpName +
+                        "' does not contain any caches.");
+                else
+                    cacheNames.addAll(cachesInGrp.keySet());
+            }
             else
                 cacheNames.add(cacheOrGrpName);
-        }
-        else
-            cacheNames.add(cacheOrGrpName);
 
-        try {
             return ctx.cache().context().walState().changeWalMode(cacheNames, enabled).get();
         }
         catch (IgniteCheckedException e) {
