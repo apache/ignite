@@ -263,6 +263,12 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
     /** Current IO policy. */
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
 
+    /** The default file limit transmittion rate per node instance (value is {@code 500 MB/sec}). */
+    public static final long DFLT_RATE_LIMIT_BYTES = 500 * 1024 * 1024;
+
+    /** The default timeout for waiting the permits. */
+    public static final int DFLT_ACQUIRE_TIMEOUT_MS = 5000;
+
     /**
      * Default chunk size in bytes used for sending\receiving files over a {@link SocketChannel}.
      * Setting the transfer chunk size more than <tt>1 MB</tt> is meaningless because there is
@@ -273,6 +279,20 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
      * Default value is {@code 256Kb}.
      */
     private static final int DFLT_CHUNK_SIZE_BYTES = 256 * 1024;
+
+    /**
+     * The total amount of permits for the 1 second period of time per the node instance for download.
+     * To limit the download speed of reading the stream of data we will acuire a permit per byte.
+     * <p>
+     * For instance, for the 128 Kb/sec rate you should specify total <tt>131_072</tt> permits.
+     */
+    private final TimedSemaphore inBytePermits;
+
+    /**
+     * The total amount of permits for the 1 second period of time per the node instance for upload.
+     * See for details descriptoin of {@link #inBytePermits}.
+     */
+    private final TimedSemaphore outBytePermits;
 
     /** Mutex to achieve consistency of transmission handlers and receiver contexts. */
     private final Object rcvMux = new Object();
@@ -392,6 +412,51 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
 
         retryCnt = ctx.config().getNetworkSendRetryCount();
         netTimeoutMs = (int)ctx.config().getNetworkTimeout();
+
+        inBytePermits = new TimedSemaphore(DFLT_RATE_LIMIT_BYTES);
+        outBytePermits = new TimedSemaphore(DFLT_RATE_LIMIT_BYTES);
+    }
+
+    /**
+     * Set the download rate per second in bytes. It is possible to modify the download rate at runtime.
+     * Reducing the speed takes effect immediately by blocking incoming requests on the
+     * semaphore {@link #inBytePermits}. If the speed is increased than waiting threads
+     * are not released immediately, but will be wake up when the next time period of
+     * {@link TimedSemaphore} runs out.
+     * <p>
+     * Setting the count to {@link TimedSemaphore#UNLIMITED_PERMITS} will switch off the
+     * configured {@link #inBytePermits} limit.
+     *
+     * @param count Number of bytes per second for the donwload speed.
+     */
+    public void downloadRate(int count) {
+        if (count <= 0)
+            inBytePermits.permitsPerSec(TimedSemaphore.UNLIMITED_PERMITS);
+        else
+            inBytePermits.permitsPerSec(count);
+
+        U.log(log, "The file download speed has been set to: " + count + " bytes per sec.");
+    }
+
+    /**
+     * Set the upload rate per second in bytes. It is possible to modify the download rate at runtime.
+     * Reducing the speed takes effect immediately by blocking incoming requests on the
+     * semaphore {@link #outBytePermits}. If the speed is increased than waiting threads
+     * are not released immediately, but will be wake up when the next time period of
+     * {@link TimedSemaphore} runs out.
+     * <p>
+     * Setting the count to {@link TimedSemaphore#UNLIMITED_PERMITS} will switch off the configured
+     * {@link #outBytePermits} limit.
+     *
+     * @param count Number of bytes per second for the upload speed.
+     */
+    public void uploadRate(int count) {
+        if (count <= 0)
+            outBytePermits.permitsPerSec(TimedSemaphore.UNLIMITED_PERMITS);
+        else
+            outBytePermits.permitsPerSec(count);
+
+        U.log(log, "The file upload speed has been set to: " + count + " bytes per sec.");
     }
 
     /**
@@ -1163,6 +1228,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 interruptReceiver(rctx, new NodeStoppingException("Local node io manager requested to be stopped: "
                     + ctx.localNodeId()));
             }
+
+            inBytePermits.shutdown();
+            outBytePermits.shutdown();
+
         }
         finally {
             busyLock.writeLock().unlock();
@@ -3004,7 +3073,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                     fileIoFactory,
                     hnd.fileHandler(nodeId, meta),
                     hnd.filePath(nodeId, meta),
-                    log);
+                    log,
+                    inBytePermits);
 
             case CHUNK:
                 return new ChunkReceiver(
@@ -3014,7 +3084,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                         .getPageSize(),
                     stopChecker,
                     hnd.chunkHandler(nodeId, meta),
-                    log);
+                    log,
+                    inBytePermits);
 
             default:
                 throw new IllegalStateException("The type of transmission policy is unknown. An implementation " +
@@ -3281,7 +3352,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
                 () -> stopping || senderStopFlags.get(sesKey).get(),
                 log,
                 fileIoFactory,
-                DFLT_CHUNK_SIZE_BYTES)
+                DFLT_CHUNK_SIZE_BYTES,
+                outBytePermits)
             ) {
                 if (log.isDebugEnabled()) {
                     log.debug("Start writing file to remote node [file=" + file.getName() +
