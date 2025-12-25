@@ -2019,7 +2019,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         assert msg != null;
 
         return new IgniteSpiException(new IgniteAuthenticationException("Authentication failed [nodeId=" +
-            msg.creatorNodeId() + ", addr=" + msg.address().getHostAddress() + ']'));
+            msg.creatorNodeId() + ", addr=" + msg.creatorAddress().getHostAddress() + ']'));
     }
 
     /**
