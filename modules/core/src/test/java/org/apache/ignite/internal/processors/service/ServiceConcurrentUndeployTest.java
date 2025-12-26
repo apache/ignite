@@ -32,7 +32,7 @@ public class ServiceConcurrentUndeployTest extends GridCommonAbstractTest {
     @Test
     public void test() throws Exception {
         try (IgniteEx ignite = startGrid(0); IgniteEx client0 = startClientGrid(1); IgniteEx client1 = startClientGrid(2)) {
-            for (int i=0; i<10; i++) {
+            for (int i = 0; i < 10; i++) {
                 IgniteFuture<Void> fut = client0.services().deployNodeSingletonAsync(
                     "myservice",
                     new LongInitializedTestService(ThreadLocalRandom.current().nextLong(1001))
@@ -40,6 +40,9 @@ public class ServiceConcurrentUndeployTest extends GridCommonAbstractTest {
 
                 fut.get();
 
+                // 1. Each client sees deployed service.
+                // 2. Each client sends request to undeploy service.
+                // 3. On second undeploy error throws.
                 IgniteFuture<Void> fut0 = client0.services().cancelAllAsync();
                 IgniteFuture<Void> fut1 = client1.services().cancelAllAsync();
 
