@@ -141,6 +141,11 @@ public final class PlatformFullTask extends PlatformAbstractTask {
         return taskSesFullSupport;
     }
 
+    /** @return Task name. */
+    public String taskName() {
+        return taskName;
+    }
+
     /**
      * Write topology information.
      *

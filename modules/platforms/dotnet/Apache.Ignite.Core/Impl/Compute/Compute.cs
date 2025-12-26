@@ -118,9 +118,21 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public TReduceRes Execute<TArg, TJobRes, TReduceRes>(string taskName, IComputeTask<TArg, TJobRes, TReduceRes> task, TArg taskArg)
+        {
+            return _compute.Execute(taskName, task, taskArg).Get();
+        }
+
+        /** <inheritDoc /> */
         public Task<TRes> ExecuteAsync<TArg, TJobRes, TRes>(IComputeTask<TArg, TJobRes, TRes> task, TArg taskArg)
         {
             return _compute.Execute(task, taskArg).Task;
+        }
+
+        /** <inheritDoc /> */
+        public Task<TRes> ExecuteAsync<TArg, TJobRes, TRes>(string taskName, IComputeTask<TArg, TJobRes, TRes> task, TArg taskArg)
+        {
+            return _compute.Execute(taskName, task, taskArg).Task;
         }
 
         /** <inheritDoc /> */
@@ -132,15 +144,35 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<TRes> ExecuteAsync<TArg, TJobRes, TRes>(string taskName, IComputeTask<TArg, TJobRes, TRes> task, TArg taskArg, 
+            CancellationToken cancellationToken)
+        {
+            return GetTaskIfAlreadyCancelled<TRes>(cancellationToken) ??
+                _compute.Execute(taskName, task, taskArg).GetTask(cancellationToken);
+        }
+
+        /** <inheritDoc /> */
         public TJobRes Execute<TArg, TJobRes>(IComputeTask<TArg, TJobRes> task)
         {
             return _compute.Execute(task, null).Get();
         }
 
         /** <inheritDoc /> */
+        public TJobRes Execute<TArg, TJobRes>(string taskName, IComputeTask<TArg, TJobRes> task)
+        {
+            return _compute.Execute(taskName, task, null).Get();
+        }
+
+        /** <inheritDoc /> */
         public Task<TRes> ExecuteAsync<TJobRes, TRes>(IComputeTask<TJobRes, TRes> task)
         {
             return _compute.Execute(task, null).Task;
+        }
+
+        /** <inheritDoc /> */
+        public Task<TRes> ExecuteAsync<TJobRes, TRes>(string taskName, IComputeTask<TJobRes, TRes> task)
+        {
+            return _compute.Execute(taskName, task, null).Task;
         }
 
         /** <inheritDoc /> */
@@ -152,15 +184,35 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<TRes> ExecuteAsync<TJobRes, TRes>(string taskName, IComputeTask<TJobRes, TRes> task, 
+            CancellationToken cancellationToken)
+        {
+            return GetTaskIfAlreadyCancelled<TRes>(cancellationToken) ??
+                _compute.Execute(taskName, task, null).GetTask(cancellationToken);
+        }
+
+        /** <inheritDoc /> */
         public TReduceRes Execute<TArg, TJobRes, TReduceRes>(Type taskType, TArg taskArg)
         {
             return _compute.Execute<TArg, TJobRes, TReduceRes>(taskType, taskArg).Get();
         }
 
         /** <inheritDoc /> */
+        public TReduceRes Execute<TArg, TJobRes, TReduceRes>(string taskName, Type taskType, TArg taskArg)
+        {
+            return _compute.Execute<TArg, TJobRes, TReduceRes>(taskName, taskType, taskArg).Get();
+        }
+
+        /** <inheritDoc /> */
         public Task<TReduceRes> ExecuteAsync<TArg, TJobRes, TReduceRes>(Type taskType, TArg taskArg)
         {
             return _compute.Execute<TArg, TJobRes, TReduceRes>(taskType, taskArg).Task;
+        }
+
+        /** <inheritDoc /> */
+        public Task<TReduceRes> ExecuteAsync<TArg, TJobRes, TReduceRes>(string taskName, Type taskType, TArg taskArg)
+        {
+            return _compute.Execute<TArg, TJobRes, TReduceRes>(taskName, taskType, taskArg).Task;
         }
 
         /** <inheritDoc /> */
@@ -172,9 +224,23 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<TReduceRes> ExecuteAsync<TArg, TJobRes, TReduceRes>(string taskName, Type taskType, TArg taskArg, 
+            CancellationToken cancellationToken)
+        {
+            return GetTaskIfAlreadyCancelled<TReduceRes>(cancellationToken) ??
+                _compute.Execute<TArg, TJobRes, TReduceRes>(taskName, taskType, taskArg).GetTask(cancellationToken);
+        }
+
+        /** <inheritDoc /> */
         public TReduceRes Execute<TArg, TReduceRes>(Type taskType)
         {
             return _compute.Execute<object, TArg, TReduceRes>(taskType, null).Get();
+        }
+
+        /** <inheritDoc /> */
+        public TReduceRes Execute<TArg, TReduceRes>(string taskName, Type taskType)
+        {
+            return _compute.Execute<object, TArg, TReduceRes>(taskName, taskType, null).Get();
         }
 
         /** <inheritDoc /> */
@@ -184,10 +250,23 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
+        public Task<TReduceRes> ExecuteAsync<TArg, TReduceRes>(string taskName, Type taskType)
+        {
+            return _compute.Execute<object, TArg, TReduceRes>(taskName, taskType, null).Task;
+        }
+
+        /** <inheritDoc /> */
         public Task<TReduceRes> ExecuteAsync<TArg, TReduceRes>(Type taskType, CancellationToken cancellationToken)
         {
             return GetTaskIfAlreadyCancelled<TReduceRes>(cancellationToken) ??
                 _compute.Execute<object, TArg, TReduceRes>(taskType, null).GetTask(cancellationToken);
+        }
+
+        /** <inheritDoc /> */
+        public Task<TReduceRes> ExecuteAsync<TArg, TReduceRes>(string taskName, Type taskType, CancellationToken cancellationToken)
+        {
+            return GetTaskIfAlreadyCancelled<TReduceRes>(cancellationToken) ??
+                _compute.Execute<object, TArg, TReduceRes>(taskName, taskType, null).GetTask(cancellationToken);
         }
 
         /** <inheritDoc /> */
