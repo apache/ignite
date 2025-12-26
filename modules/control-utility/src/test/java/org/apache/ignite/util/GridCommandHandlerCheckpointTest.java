@@ -34,16 +34,16 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 /** Test for checkpoint in control.sh command. */
 public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstractTest {
     /** */
+    private static final String PERSISTENT_REGION_NAME = "pds-reg";
+
+    /** */
     private final ListeningTestLogger listeningLog = new ListeningTestLogger(log);
 
     /** */
     private final LogListener checkpointFinishedLsnr = LogListener.matches("Checkpoint finished").build();
 
     /** */
-    private boolean mixedConfig = false;
-
-    /** */
-    private static final String persistentRegionName = "pds-reg";
+    private boolean mixedConfig;
 
     /** */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -53,22 +53,22 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
         cfg.setGridLogger(listeningLog);
 
-        if (!persistenceEnable())
-            cfg.setDataStorageConfiguration(null);
-
         if (mixedConfig) {
             DataStorageConfiguration storageCfg = new DataStorageConfiguration();
-            DataRegionConfiguration dfltRegionCfg = new DataRegionConfiguration();
 
-            storageCfg.setDefaultDataRegionConfiguration(dfltRegionCfg.setName("default_in_memory_region").setPersistenceEnabled(false));
+            storageCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setName("default_in_memory_region").setPersistenceEnabled(false));
 
             if (igniteInstanceName.contains("persistent_instance")) {
                 DataRegionConfiguration persistentRegionCfg = new DataRegionConfiguration();
 
-                storageCfg.setDataRegionConfigurations(persistentRegionCfg.setName(persistentRegionName).setPersistenceEnabled(true));
+                storageCfg.setDataRegionConfigurations(persistentRegionCfg.setName(PERSISTENT_REGION_NAME).setPersistenceEnabled(true));
             }
 
             cfg.setDataStorageConfiguration(storageCfg);
+        }
+        else {
+            if (!persistenceEnable())
+                cfg.setDataStorageConfiguration(null);
         }
 
         return cfg;
@@ -211,7 +211,7 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
         DataRegionConfiguration persistentRegion = node1Regions[0];
 
-        assertEquals(persistentRegionName, persistentRegion.getName());
+        assertEquals(PERSISTENT_REGION_NAME, persistentRegion.getName());
         assertEquals(true, persistentRegion.isPersistenceEnabled());
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--wait-for-finish"));
