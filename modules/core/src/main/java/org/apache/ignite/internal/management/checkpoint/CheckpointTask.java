@@ -92,6 +92,11 @@ public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, Str
             }
         }
 
+        /**
+         * Create result string with node id and given description
+         *
+         * @param desc info about node to be put in result.
+         */
         private String result(String desc) {
             return ignite.localNode().id() + ": " + desc;
         }
