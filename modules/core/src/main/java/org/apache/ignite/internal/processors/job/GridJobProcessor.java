@@ -1220,7 +1220,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             GridDeployment tmpDep = req.forceLocalDeployment() ?
                 ctx.deploy().getLocalDeployment(req.taskClassName()) :
                 ctx.deploy().getGlobalDeployment(
-                    req.getDeploymentMode(),
+                    req.deploymentMode(),
                     req.taskName(),
                     req.taskClassName(),
                     req.userVersion(),
@@ -1385,7 +1385,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                     IgniteException ex = new IgniteDeploymentException("Task was not deployed or was redeployed since " +
                         "task execution [taskName=" + req.taskName() + ", taskClsName=" + req.taskClassName() +
                         ", codeVer=" + req.userVersion() + ", clsLdrId=" + req.classLoaderId() +
-                        ", seqNum=" + req.classLoaderId().localId() + ", depMode=" + req.getDeploymentMode() +
+                        ", seqNum=" + req.classLoaderId().localId() + ", depMode=" + req.deploymentMode() +
                         ", dep=" + dep + ']');
 
                     U.error(log, ex.getMessage(), ex);
