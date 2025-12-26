@@ -63,8 +63,6 @@ public class TableModifyDistributedConverterRule extends AbstractIgniteConverter
         RelMetadataQuery mq,
         LogicalTableModify rel
     ) {
-        RelOptCluster cluster = rel.getCluster();
-
         // If transaction is explicitly started it's only allowed to perform table modify on initiator node.
         if (Commons.queryTransactionVersion(planner.getContext()) != null)
             return null;
@@ -78,10 +76,12 @@ public class TableModifyDistributedConverterRule extends AbstractIgniteConverter
         if (inputDistribution == IgniteDistributions.single())
             return null;
 
+        RelOptCluster cluster = rel.getCluster();
+
         switch (rel.getOperation()) {
             case MERGE:
-                // Merge contains insert fields as well as update fields, it's impossible to check input distribution
-                // over these two fields sets in common case, only corner cases can be implemented, skip it for now.
+                // Merge contains insert fields as well as update fields. It's impossible to check input distribution
+                // over these two fields sets in common case. Only corner cases can be implemented. Skip it for now.
                 return null;
 
             case INSERT:
@@ -91,7 +91,8 @@ public class TableModifyDistributedConverterRule extends AbstractIgniteConverter
                     if (affectsSrc)
                         return null;
                     else
-                        inputDistribution = IgniteDistributions.hash(ImmutableIntList.range(0, rowType.getFieldCount()));
+                        inputDistribution = IgniteDistributions.hash(ImmutableIntList.range(0,
+                            table.getRowType(cluster.getTypeFactory()).getFieldCount()));
                 }
 
                 break;
@@ -112,8 +113,6 @@ public class TableModifyDistributedConverterRule extends AbstractIgniteConverter
         }
 
         // Create distributed table modify.
-        RelBuilder relBuilder = relBuilderFactory.create(rel.getCluster(), null);
-
         RelTraitSet outputTraits = cluster.traitSetOf(IgniteConvention.INSTANCE)
             .replace(IgniteDistributions.random())
             .replace(RewindabilityTrait.ONE_WAY)
@@ -126,8 +125,12 @@ public class TableModifyDistributedConverterRule extends AbstractIgniteConverter
         RelNode tableModify = new IgniteTableModify(cluster, outputTraits, rel.getTable(), input, rel.getOperation(),
             rel.getUpdateColumnList(), rel.getSourceExpressionList(), rel.isFlattened(), affectsSrc);
 
+        assert rowType.getFieldCount() == 1 : "Unexpected field count: " + rowType.getFieldCount();
+
         // Create aggregate to pass affected rows count to initiator node.
         RelDataTypeField outFld = rowType.getFieldList().get(0);
+
+        RelBuilder relBuilder = relBuilderFactory.create(cluster, null);
 
         relBuilder.push(tableModify);
         relBuilder.aggregate(relBuilder.groupKey(),

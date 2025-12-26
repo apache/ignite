@@ -681,8 +681,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             if (!(fields[i + 1] instanceof Class) && !(fields[i + 1] instanceof SqlTypeName))
                 throw new IllegalArgumentException("'fields[" + i + "]' should be a class or a SqlTypeName");
 
-            RelDataType type = fields[i + 1] instanceof Class ? TYPE_FACTORY.createJavaType((Class<?>)fields[i + 1]) :
-                TYPE_FACTORY.createTypeWithNullability(TYPE_FACTORY.createSqlType((SqlTypeName)fields[i + 1]), true);
+            RelDataType type = fields[i + 1] instanceof Class
+                ? TYPE_FACTORY.createJavaType((Class<?>)fields[i + 1])
+                : TYPE_FACTORY.createTypeWithNullability(TYPE_FACTORY.createSqlType((SqlTypeName)fields[i + 1]), true);
 
             b.add((String)fields[i], type);
         }

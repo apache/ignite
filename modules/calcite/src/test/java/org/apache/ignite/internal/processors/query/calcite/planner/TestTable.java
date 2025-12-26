@@ -387,7 +387,7 @@ public class TestTable implements IgniteCacheTable, Wrapper {
         }
 
         /** {@inheritDoc} */
-        @Override public RelDataType rowType(IgniteTypeFactory factory, ImmutableBitSet usedColumns) {
+        @Override public RelDataType rowType(IgniteTypeFactory factory, @Nullable ImmutableBitSet usedColumns) {
             if (usedColumns == null)
                 return rowType;
             else {
@@ -398,7 +398,6 @@ public class TestTable implements IgniteCacheTable, Wrapper {
 
                 return b.build();
             }
-
         }
 
         /** {@inheritDoc} */
@@ -442,6 +441,7 @@ public class TestTable implements IgniteCacheTable, Wrapper {
         /** {@inheritDoc} */
         @Override public RelDataType insertRowType(IgniteTypeFactory factory) {
             ImmutableBitSet.Builder bitSetBuilder = ImmutableBitSet.builder();
+
             for (int i = 0; i < rowType.getFieldCount(); i++) {
                 String fldName = rowType.getFieldList().get(i).getName();
 
