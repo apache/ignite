@@ -33,7 +33,7 @@ public class CheckpointCommand implements ComputeCommand<CheckpointCommandArg, S
 
     /** {@inheritDoc} */
     @Override public String description() {
-        return "Trigger checkpoint with optional parameters";
+        return "Trigger checkpoint";
     }
 
     /** {@inheritDoc} */

@@ -43,9 +43,11 @@ public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, Str
     /** {@inheritDoc} */
     @Override protected @Nullable String reduce0(List<ComputeJobResult> results) throws IgniteException {
         StringBuilder result = new StringBuilder();
+
         for (ComputeJobResult res : results) {
             if (res.getException() != null)
                 throw res.getException();
+
             result.append(res.getData().toString()).append('\n');
         }
 
@@ -65,7 +67,7 @@ public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, Str
         /** {@inheritDoc} */
         @Override protected String run(CheckpointCommandArg arg) throws IgniteException {
             if (!CU.isPersistenceEnabled(ignite.configuration()))
-                  return ignite.localNode().id() + ": PDS disabled, checkpoint skipped";
+                  return result("persistence disabled, checkpoint skipped");
 
             try {
                 GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ignite.context().cache().context().database();
@@ -79,13 +81,19 @@ public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, Str
                         checkpointfut.futureFor(CheckpointState.FINISHED).get(timeout, TimeUnit.MILLISECONDS);
                     else
                         checkpointfut.futureFor(CheckpointState.FINISHED).get();
-                    return ignite.localNode().id() + ": Checkpoint finished";
+
+                    return result("Checkpoint finished");
                 }
-                return ignite.localNode().id() + ": Checkpoint started";
+
+                return result("Checkpoint started");
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to force checkpoint on node: " + ignite.localNode().id(), e);
+                throw new IgniteException(result("Failed to force checkpoint on node"), e);
             }
+        }
+
+        private String result(String desc) {
+            return ignite.localNode().id() + ": " + desc;
         }
     }
 }

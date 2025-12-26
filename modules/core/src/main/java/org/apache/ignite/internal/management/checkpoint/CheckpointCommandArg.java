@@ -30,7 +30,7 @@ public class CheckpointCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    @Argument(description = "Reason for checkpoint", optional = true)
+    @Argument(description = "Reason (visible in logs)", optional = true)
     private String reason;
 
     /** */
