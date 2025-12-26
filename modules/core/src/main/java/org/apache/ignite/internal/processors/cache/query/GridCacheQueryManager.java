@@ -85,7 +85,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridSetQueryPredicate;
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -1384,18 +1383,19 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * @param loc Local query or not.
      * @param qryInfo Query info.
-     * @param metaData Meta data.
      * @param entities Indexing entities.
      * @param data Data.
      * @param finished Last page or not.
      * @param e Exception in case of error.
      * @return {@code true} if page was processed right.
      */
-    protected abstract boolean onFieldsPageReady(boolean loc, GridCacheQueryInfo qryInfo,
-        @Nullable List<GridQueryFieldMetadata> metaData,
+    protected abstract boolean onFieldsPageReady(
+        boolean loc,
+        GridCacheQueryInfo qryInfo,
         @Nullable Collection<?> entities,
         @Nullable Collection<?> data,
-        boolean finished, @Nullable Throwable e);
+        boolean finished, @Nullable Throwable e
+    );
 
     /**
      * Gets cache queries metrics.
@@ -2131,34 +2131,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     *
+     * TODO: IGNITE-27326, remove
      */
     private static class FieldsResult<Q> extends CachedResult<Q> {
-        /** */
-        private List<GridQueryFieldMetadata> meta;
-
         /**
          * @param rcpt ID of the recipient.
          */
         FieldsResult(Object rcpt) {
             super(rcpt);
-        }
-
-        /**
-         * @return Metadata.
-         * @throws IgniteCheckedException On error.
-         */
-        public List<GridQueryFieldMetadata> metaData() throws IgniteCheckedException {
-            get(); // Ensure that result is ready.
-
-            return meta;
-        }
-
-        /**
-         * @param meta Metadata.
-         */
-        public void metaData(List<GridQueryFieldMetadata> meta) {
-            this.meta = meta;
         }
     }
 

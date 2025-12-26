@@ -133,7 +133,6 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
                 GridCacheLocalQueryFuture.this,
                 cctx.localNodeId(),
                 cctx.io().nextIoId(),
-                qry.query().includeMetadata(),
                 true,
                 qry.arguments()
             );

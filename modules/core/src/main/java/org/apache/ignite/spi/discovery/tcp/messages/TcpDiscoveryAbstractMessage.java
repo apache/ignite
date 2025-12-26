@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.io.Externalizable;
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -45,9 +44,6 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
 
     /** */
     protected static final int CLIENT_RECON_SUCCESS_FLAG_POS = 2;
-
-    /** */
-    protected static final int CHANGE_TOPOLOGY_FLAG_POS = 3;
 
     /** */
     protected static final int FORCE_FAIL_FLAG_POS = 4;
@@ -300,7 +296,7 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     /**
      * @return Failed nodes IDs.
      */
-    @Nullable public Collection<UUID> failedNodes() {
+    @Nullable public Set<UUID> failedNodes() {
         return failedNodes;
     }
 

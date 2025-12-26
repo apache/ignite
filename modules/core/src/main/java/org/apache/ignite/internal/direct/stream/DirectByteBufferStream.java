@@ -22,10 +22,12 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -1601,11 +1603,36 @@ public class DirectByteBufferStream {
     }
 
     /**
+     * Reads collection as an {@link ArrayList}.
+     *
      * @param itemType Item type.
      * @param reader Reader.
-     * @return Collection.
+     * @return {@link ArrayList}.
      */
-    public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType, MessageReader reader) {
+    public <L extends List<?>> L readList(MessageCollectionItemType itemType, MessageReader reader) {
+        return readCollection(itemType, reader, false);
+    }
+
+    /**
+     * Reads collection as a {@link HashSet}.
+     *
+     * @param itemType Item type.
+     * @param reader Reader.
+     * @return {@link HashSet}.
+     */
+    public <SET extends Set<?>> SET readSet(MessageCollectionItemType itemType, MessageReader reader) {
+        return readCollection(itemType, reader, true);
+    }
+
+    /**
+     * Reads collection eather as a {@link ArrayList} or a {@link HashSet}.
+     *
+     * @param itemType Item type.
+     * @param reader Reader.
+     * @param set Read-as-Set flag.
+     * @return {@link ArrayList} or a {@link HashSet}.
+     */
+    private <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType, MessageReader reader, boolean set) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1617,7 +1644,7 @@ public class DirectByteBufferStream {
 
         if (readSize >= 0) {
             if (col == null)
-                col = new ArrayList<>(readSize);
+                col = set ? U.newHashSet(readSize) : new ArrayList<>(readSize);
 
             for (int i = readItems; i < readSize; i++) {
                 Object item = read(itemType, reader);

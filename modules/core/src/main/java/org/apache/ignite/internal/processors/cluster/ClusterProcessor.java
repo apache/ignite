@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.Timer;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,13 +33,14 @@ import javax.management.ObjectName;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.ClusterTagUpdatedEvent;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteDiagnosticRequest;
@@ -154,7 +156,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
     private final AtomicLong diagFutId = new AtomicLong();
 
     /** */
-    private final Map<UUID, byte[]> allNodesMetrics = new ConcurrentHashMap<>();
+    private final Map<UUID, ClusterNodeMetrics> allNodesMetrics = new ConcurrentHashMap<>();
 
     /** */
     private DiscoveryMetricsProvider metricsProvider;
@@ -659,55 +661,57 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      * @param msg Message.
      */
     private void processMetricsUpdateMessage(UUID sndNodeId, ClusterMetricsUpdateMessage msg) {
-        byte[] nodeMetrics = msg.nodeMetrics();
+        // Single node metrics.
+        if (msg.singleNodeMetrics()) {
+            ClusterNodeMetrics metricsHolder = new ClusterNodeMetrics(msg.singleNodeMetricsMsg());
 
-        if (nodeMetrics != null) {
-            assert msg.allNodesMetrics() == null;
+            allNodesMetrics.put(sndNodeId, metricsHolder);
 
-            allNodesMetrics.put(sndNodeId, nodeMetrics);
-
-            updateNodeMetrics(ctx.discovery().discoCache(), sndNodeId, nodeMetrics);
+            updateNodeMetrics(ctx.discovery().discoCache(), sndNodeId, metricsHolder.nodeMetrics(), metricsHolder.cacheMetrics());
         }
         else {
-            Map<UUID, byte[]> allNodesMetrics = msg.allNodesMetrics();
+            // All-nodes metrics messages.
+            Map<UUID, NodeFullMetricsMessage> allNodesMetrics = msg.allNodesMetrics();
 
             assert allNodesMetrics != null;
 
             DiscoCache discoCache = ctx.discovery().discoCache();
 
-            for (Map.Entry<UUID, byte[]> e : allNodesMetrics.entrySet()) {
-                if (!ctx.localNodeId().equals(e.getKey()))
-                    updateNodeMetrics(discoCache, e.getKey(), e.getValue());
-            }
+            allNodesMetrics.entrySet().forEach(e -> {
+                if (!ctx.localNodeId().equals(e.getKey())) {
+                    ClusterNodeMetrics metricsHolder = new ClusterNodeMetrics(msg.singleNodeMetricsMsg());
+
+                    updateNodeMetrics(discoCache, e.getKey(), metricsHolder.nodeMetrics(), metricsHolder.cacheMetrics());
+                }
+            });
         }
     }
 
     /**
      * @param discoCache Discovery data cache.
      * @param nodeId Node ID.
-     * @param metricsBytes Marshalled metrics.
+     * @param nodeMetrics Node metrics.
+     * @param cacheMetrics Cache metrics.
      */
-    private void updateNodeMetrics(DiscoCache discoCache, UUID nodeId, byte[] metricsBytes) {
+    private void updateNodeMetrics(
+        DiscoCache discoCache,
+        UUID nodeId,
+        ClusterMetrics nodeMetrics,
+        Map<Integer, CacheMetrics> cacheMetrics
+    ) {
         ClusterNode node = discoCache.node(nodeId);
 
         if (node == null || !discoCache.alive(nodeId))
             return;
 
-        try {
-            ClusterNodeMetrics metrics = U.unmarshalZip(ctx.marshaller(), metricsBytes, null);
+        assert node instanceof IgniteClusterNode : node;
 
-            assert node instanceof IgniteClusterNode : node;
+        IgniteClusterNode node0 = (IgniteClusterNode)node;
 
-            IgniteClusterNode node0 = (IgniteClusterNode)node;
+        node0.setMetrics(nodeMetrics);
+        node0.setCacheMetrics(cacheMetrics);
 
-            node0.setMetrics(ClusterMetricsSnapshot.deserialize(metrics.metrics(), 0));
-            node0.setCacheMetrics(metrics.cacheMetrics());
-
-            ctx.discovery().metricsUpdateEvent(discoCache, node0);
-        }
-        catch (IgniteCheckedException e) {
-            U.warn(log, "Failed to unmarshal node metrics: " + e);
-        }
+        ctx.discovery().metricsUpdateEvent(discoCache, node0);
     }
 
     /**
@@ -730,20 +734,13 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
 
             ClusterNodeMetrics metrics = new ClusterNodeMetrics(locNode.metrics(), locNode.cacheMetrics());
 
-            try {
-                byte[] metricsBytes = U.zip(U.marshal(ctx.marshaller(), metrics));
-
-                allNodesMetrics.put(ctx.localNodeId(), metricsBytes);
-            }
-            catch (IgniteCheckedException e) {
-                U.warn(log, "Failed to marshal local node metrics: " + e, e);
-            }
+            allNodesMetrics.put(ctx.localNodeId(), metrics);
 
             ctx.discovery().metricsUpdateEvent(ctx.discovery().discoCache(), locNode);
 
             Collection<ClusterNode> allNodes = ctx.discovery().allNodes();
 
-            ClusterMetricsUpdateMessage msg = new ClusterMetricsUpdateMessage(new HashMap<>(allNodesMetrics));
+            ClusterMetricsUpdateMessage msg = new ClusterMetricsUpdateMessage(allNodesMetrics);
 
             for (ClusterNode node : allNodes) {
                 if (ctx.localNodeId().equals(node.id()) || !ctx.discovery().alive(node.id()))
@@ -762,12 +759,9 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
             }
         }
         else {
-            ClusterNodeMetrics metrics = new ClusterNodeMetrics(metricsProvider.metrics(), metricsProvider.cacheMetrics());
-
             try {
-                byte[] metricsBytes = U.zip(U.marshal(ctx.marshaller(), metrics));
-
-                ClusterMetricsUpdateMessage msg = new ClusterMetricsUpdateMessage(metricsBytes);
+                ClusterMetricsUpdateMessage msg = new ClusterMetricsUpdateMessage(metricsProvider.metrics(),
+                    metricsProvider.cacheMetrics());
 
                 ctx.io().sendToGridTopic(oldest, TOPIC_METRICS, msg, GridIoPolicy.SYSTEM_POOL);
             }
@@ -876,7 +870,7 @@ public class ClusterProcessor extends GridProcessorAdapter implements Distribute
      */
     private IgniteInternalFuture<String> sendDiagnosticMessage(
         UUID nodeId,
-        @Nullable Collection<IgniteDiagnosticRequest.DiagnosticBaseInfo> infos
+        @Nullable Set<IgniteDiagnosticRequest.DiagnosticBaseInfo> infos
     ) {
         try {
             IgniteDiagnosticRequest msg = new IgniteDiagnosticRequest(diagFutId.getAndIncrement(), nodeId, infos);

@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.systemview.view.sql;
 
 import java.util.stream.Collectors;
-import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
@@ -131,7 +130,7 @@ public class SqlIndexView {
     public String columns() {
         return idx.keyDefinitions().entrySet().stream()
             .map(fld -> '"' + fld.getKey() + '"' +
-                (fld.getValue().order().sortOrder() == SortOrder.DESC ? " DESC" : " ASC"))
+                (fld.getValue().ascending() ? " ASC" : " DESC"))
             .collect(Collectors.joining(", "));
     }
 

@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.processors.cache.DdlTransactionCalciteSelfTest;
 import org.apache.ignite.internal.processors.cache.QueryEntityValueColumnAliasTest;
 import org.apache.ignite.internal.processors.cache.SessionContextSqlFunctionTest;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorPropertiesTest;
 import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessorTest;
 import org.apache.ignite.internal.processors.query.calcite.CancelTest;
 import org.apache.ignite.internal.processors.query.calcite.IndexWithSameNameCalciteTest;
@@ -101,6 +102,7 @@ import org.junit.runners.Suite;
     OrToUnionRuleTest.class,
     ProjectScanMergeRuleTest.class,
     CalciteQueryProcessorTest.class,
+    CalciteQueryProcessorPropertiesTest.class,
     CalciteErrorHandlilngIntegrationTest.class,
     CalciteBasicSecondaryIndexIntegrationTest.class,
     CancelTest.class,

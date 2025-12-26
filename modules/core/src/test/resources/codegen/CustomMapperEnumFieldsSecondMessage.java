@@ -15,15 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query.index;
+package org.apache.ignite.internal;
 
-/**
- * Enum to store possible nulls ordering.
- */
-public enum NullsOrder {
-    /** */
-    NULLS_LAST,
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.transactions.TransactionIsolation;
 
-    /** */
-    NULLS_FIRST
+public class CustomMapperEnumFieldsSecondMessage implements Message {
+    @Order(0)
+    @CustomMapper("org.apache.ignite.internal.TransactionIsolationEnumMapper")
+    private TransactionIsolation txMode;
+
+    public TransactionIsolation txMode() {
+        return txMode;
+    }
+
+    public void txMode(TransactionIsolation txMode) {
+        this.txMode = txMode;
+    }
+
+    public short directType() {
+        return 0;
+    }
 }
