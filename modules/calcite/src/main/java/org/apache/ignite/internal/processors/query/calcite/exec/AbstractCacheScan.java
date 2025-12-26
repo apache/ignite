@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.PartitionReservation;
 import org.apache.ignite.internal.util.collection.IntSet;
+import org.jetbrains.annotations.Nullable;
 
 /** */
 public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoCloseable {
@@ -44,48 +45,43 @@ public abstract class AbstractCacheScan<Row> implements Iterable<Row>, AutoClose
     protected final BitSet parts;
 
     /** */
-    private final int[] explicitParts;
+    private final @Nullable int[] explicitParts;
 
     /** */
     private PartitionReservation reservation;
 
     /** */
-    AbstractCacheScan(ExecutionContext<Row> ectx, GridCacheContext<?, ?> cctx, int[] parts) {
+    AbstractCacheScan(ExecutionContext<Row> ectx, GridCacheContext<?, ?> cctx, @Nullable int[] explicitParts) {
         this.ectx = ectx;
         this.cctx = cctx;
 
         topVer = ectx.topologyVersion();
 
-        explicitParts = parts;
+        this.explicitParts = explicitParts;
 
         int partsCnt = cctx.affinity().partitions();
 
         if (cctx.isReplicated()) {
-            BitSet partsSet = new BitSet(partsCnt);
-            partsSet.set(0, partsCnt);
-            this.parts = partsSet;
+            parts = new BitSet(partsCnt);
+            parts.set(0, partsCnt);
         }
         else {
-            if (parts != null) {
-                BitSet partsSet = new BitSet(partsCnt);
+            if (explicitParts != null) {
+                parts = new BitSet(partsCnt);
 
-                for (int i = 0; i < parts.length; i++)
-                    partsSet.set(parts[i]);
-
-                this.parts = partsSet;
+                for (int i = 0; i < explicitParts.length; i++)
+                    parts.set(explicitParts[i]);
             }
             else {
                 Collection<Integer> primaryParts = cctx.affinity().primaryPartitions(
                     cctx.kernalContext().localNodeId(), topVer);
 
                 if (primaryParts instanceof IntSet)
-                    this.parts = ((IntSet)primaryParts).toBitSet();
+                    parts = ((IntSet)primaryParts).toBitSet();
                 else {
-                    BitSet partsSet = new BitSet(partsCnt);
+                    parts = new BitSet(partsCnt);
 
-                    primaryParts.forEach(partsSet::set);
-
-                    this.parts = partsSet;
+                    primaryParts.forEach(parts::set);
                 }
             }
         }

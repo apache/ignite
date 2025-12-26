@@ -98,18 +98,6 @@ public class IndexingQueryFilterImpl implements IndexingQueryFilter {
         this.treatReplicatedAsPartitioned = treatReplicatedAsPartitioned;
     }
 
-    /**
-     * Constructor.
-     *
-     * @param ctx Kernal context.
-     * @param topVer Topology version.
-     * @param partsArr Partitions array.
-     */
-    public IndexingQueryFilterImpl(GridKernalContext ctx, @Nullable AffinityTopologyVersion topVer,
-            @Nullable int[] partsArr) {
-        this(ctx, topVer, partsArr, false);
-    }
-
     /** {@inheritDoc} */
     @Nullable @Override public IndexingQueryCacheFilter forCache(String cacheName) {
         final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
