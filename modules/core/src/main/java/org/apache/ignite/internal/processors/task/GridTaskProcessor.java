@@ -641,6 +641,10 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
             }
         }
 
+        if (task instanceof PlatformFullTask) {
+            taskName = ((PlatformFullTask)task).taskName();
+        }
+
         assert taskName != null;
 
         if (log.isDebugEnabled())
