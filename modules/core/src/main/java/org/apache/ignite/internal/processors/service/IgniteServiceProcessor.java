@@ -1584,9 +1584,9 @@ public class IgniteServiceProcessor extends GridProcessorAdapter implements Igni
                 // Checking if there are successful deployments.
                 // If none, service not deployed and must be removed from descriptors.
                 if (e.getValue().entrySet().stream().allMatch(nodeTop -> nodeTop.getValue() == 0)) {
-                        removeFromServicesMap(registeredServices, registeredServicesByName, e.getKey());
+                    removeFromServicesMap(registeredServices, registeredServicesByName, e.getKey());
 
-                        removeFromServicesMap(deployedServices, deployedServicesByName, e.getKey());
+                    removeFromServicesMap(deployedServices, deployedServicesByName, e.getKey());
                 }
             }
         }

@@ -52,15 +52,18 @@ public class ServiceConcurrentUndeployTest extends GridCommonAbstractTest {
         disco.setInternalListener(new DiscoverySpiTestListener() {
             @Override public boolean beforeSendCustomEvent(DiscoverySpi spi, IgniteLogger log, DiscoverySpiCustomMessage msg) {
                 if (spi.isClientMode()) {
-                    if (msg instanceof CustomMessageWrapper && ((CustomMessageWrapper)msg).delegate() instanceof ServiceChangeBatchRequest) {
+                    boolean isUndeployMsg = msg instanceof CustomMessageWrapper
+                        && ((CustomMessageWrapper)msg).delegate() instanceof ServiceChangeBatchRequest;
+
+                    if (isUndeployMsg) {
                         ServiceChangeBatchRequest batch = (ServiceChangeBatchRequest)((CustomMessageWrapper)msg).delegate();
 
-                        long undeployReqCount = batch.requests().stream()
+                        long undeployReqCnt = batch.requests().stream()
                             .filter(r -> r instanceof ServiceUndeploymentRequest)
                             .count();
 
-                        if (undeployReqCount > 0) {
-                            assertEquals(1, undeployReqCount);
+                        if (undeployReqCnt > 0) {
+                            assertEquals(1, undeployReqCnt);
                             assertTrue(waitLatch.getCount() > 0);
 
                             waitLatch.countDown();
