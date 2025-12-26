@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentFail
 import org.apache.ignite.internal.processors.service.IgniteServiceDynamicCachesSelfTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceProxyTimeoutInitializedTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceReassignmentTest;
+import org.apache.ignite.internal.processors.service.ServiceConcurrentUndeployTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentDiscoveryListenerNotificationOrderTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentNonSerializableStaticConfigurationTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOnActivationTest;
@@ -113,6 +114,7 @@ import org.junit.runners.Suite;
     ServiceInfoSelfTest.class,
     ServiceDeploymentProcessIdSelfTest.class,
     ServiceHotRedeploymentViaDeploymentSpiTest.class,
+    ServiceConcurrentUndeployTest.class,
     GridServiceProxyTopologyInitializationTest.class,
     GridServiceDeployClusterReadOnlyModeTest.class,
     GridServiceClusterReadOnlyModeTest.class,
