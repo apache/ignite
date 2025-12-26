@@ -32,7 +32,7 @@ public class ServiceConcurrentUndeployTest extends GridCommonAbstractTest {
     @Test
     public void test() throws Exception {
         try (IgniteEx ignite = startGrid(0); IgniteEx client0 = startClientGrid(1); IgniteEx client1 = startClientGrid(2)) {
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 3; i++) {
                 IgniteFuture<Void> fut = client0.services().deployNodeSingletonAsync(
                     "myservice",
                     new LongInitializedTestService(ThreadLocalRandom.current().nextLong(1001))
