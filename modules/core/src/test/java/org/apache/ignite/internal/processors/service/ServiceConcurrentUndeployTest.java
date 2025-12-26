@@ -101,6 +101,8 @@ public class ServiceConcurrentUndeployTest extends GridCommonAbstractTest {
 
             fut0.get(1, TimeUnit.MINUTES);
             fut1.get(1, TimeUnit.MINUTES);
+
+            assertEquals(0, waitLatch.getCount());
         }
     }
 }
