@@ -1825,6 +1825,15 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
     public static final String IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES = "IGNITE_TCP_COMM_SET_ATTR_HOST_NAMES";
 
     /**
+     * When set to positive number warning will be produced when outgoing message queue size of TCP communication SPI
+     * exeeds provided value.
+     * Default is {@code 0} (do not print warning).
+     */
+    @SystemProperty(value = "When set to positive number warning will be produced when outgoing message queue size of " +
+        "TCP communication SPI exeeds provided value. Default is 0 (do not print warning).", type = Integer.class)
+    public static final String IGNITE_TCP_COMM_MSG_QUEUE_WARN_SIZE = "IGNITE_TCP_COMM_MSG_QUEUE_WARN_SIZE";
+
+    /**
      * When above zero, prints tx key collisions once per interval.
      * Each transaction besides OPTIMISTIC SERIALIZABLE capture locks on all enlisted keys, for some reasons
      * per key lock queue may rise. This property sets the interval during which statistics are collected.

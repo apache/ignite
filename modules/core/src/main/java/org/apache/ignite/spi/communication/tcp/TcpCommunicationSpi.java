@@ -751,12 +751,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
                 ", slowClientQueueLimit=" + cfg.slowClientQueueLimit() + ']');
         }
 
-        if (cfg.messageQueueWarningSize() > 0 && cfg.messageQueueLimit() > 0 && cfg.messageQueueWarningSize() >= cfg.messageQueueLimit()) {
-            U.quietAndWarn(log, "Message queue warning size is set to a value greater than or equal to message " +
-                "queue limit (message queue warning size will have no effect) [msgQueueLimit=" + cfg.messageQueueLimit() +
-                ", messageQueueWarningSize=" + cfg.messageQueueWarningSize() + ']');
-        }
-
         if (cfg.messageQueueLimit() == 0)
             U.quietAndWarn(log, "Message queue limit is set to 0 which may lead to " +
                 "potential OOMEs when running cache operations in FULL_ASYNC or PRIMARY_SYNC modes " +

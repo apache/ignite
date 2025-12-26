@@ -691,33 +691,6 @@ public abstract class TcpCommunicationConfigInitializer extends IgniteSpiAdapter
     }
 
     /**
-     * Sets message queue size to print warning.
-     * <p>
-     * When set to positive number warning will be produced when outgoing message queue size exeeds provided size.
-     * {@code 0} disables the warning.
-     * <p>
-     * If not provided, default is 0 (do not print warning).
-     *
-     * @param msgQueueWarnSize Outgoing messages queue size to print warning.
-     * @return {@code this} for chaining.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    public TcpCommunicationSpi setMessageQueueWarningSize(int msgQueueWarnSize) {
-        cfg.messageQueueWarningSize(msgQueueWarnSize);
-
-        return (TcpCommunicationSpi)this;
-    }
-
-    /**
-     * Gets outgoing messages queue size to print warning.
-     *
-     * @return Outgoing messages queue size to print warning.
-     */
-    public int getMessageQueueWarningSize() {
-        return cfg.messageQueueWarningSize();
-    }
-
-    /**
      * See {@link #setSlowClientQueueLimit(int)}.
      *
      * @return Slow client queue limit.

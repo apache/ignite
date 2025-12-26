@@ -206,8 +206,12 @@ public class GridNioServerWrapper {
     private volatile ThrowableSupplier<SocketChannel, IOException> socketChannelFactory = SocketChannel::open;
 
     /** Enable forcible node kill. */
-    private boolean forcibleNodeKillEnabled = IgniteSystemProperties
+    private final boolean forcibleNodeKillEnabled = IgniteSystemProperties
         .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+
+    /** Message queue size to print warning. */
+    private final int msgQueueWarningSize = IgniteSystemProperties.getInteger(
+        IgniteSystemProperties.IGNITE_TCP_COMM_MSG_QUEUE_WARN_SIZE, 0);
 
     /** NIO server. */
     private GridNioServer<Message> nioSrv;
@@ -892,8 +896,8 @@ public class GridNioServerWrapper {
                 boolean clientMode = Boolean.TRUE.equals(igniteCfg.isClientMode());
 
                 IgniteBiInClosure<GridNioSession, Integer> queueSizeMonitor =
-                    !clientMode && (cfg.slowClientQueueLimit() > 0 || cfg.messageQueueWarningSize() > 0)
-                        ? cfg.messageQueueWarningSize() > 0 ? this::checkNodeQueueSize : this::checkClientQueueSize
+                    !clientMode && (cfg.slowClientQueueLimit() > 0 || msgQueueWarningSize > 0)
+                        ? msgQueueWarningSize > 0 ? this::checkNodeQueueSize : this::checkClientQueueSize
                         : null;
 
                 List<GridNioFilter> filters = new ArrayList<>();
@@ -1266,7 +1270,7 @@ public class GridNioServerWrapper {
      * @param msgQueueSize Message queue size.
      */
     private void checkNodeQueueSize(GridNioSession ses, int msgQueueSize) {
-        if (cfg.messageQueueWarningSize() > 0 && msgQueueSize > cfg.messageQueueWarningSize()) {
+        if (msgQueueWarningSize > 0 && msgQueueSize > msgQueueWarningSize) {
             long lastWarnTs = lastMsqQueueSizeWarningTs.get();
 
             if (U.currentTimeMillis() > lastWarnTs + MIN_MSG_QUEUE_SIZE_WARN_FREQUENCY) {

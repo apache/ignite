@@ -97,9 +97,6 @@ public class TcpCommunicationConfiguration implements Serializable {
     /** Message queue limit. */
     private int msgQueueLimit = DFLT_MSG_QUEUE_LIMIT;
 
-    /** Message queue size to pring warning. */
-    private int msgQueueWarnSize;
-
     /** Use paired connections. */
     private boolean usePairedConnections;
 
@@ -334,20 +331,6 @@ public class TcpCommunicationConfiguration implements Serializable {
      */
     public void messageQueueLimit(int msgQueueLimit) {
         this.msgQueueLimit = msgQueueLimit;
-    }
-
-    /**
-     * @return Message queue size to print warning.
-     */
-    public int messageQueueWarningSize() {
-        return msgQueueWarnSize;
-    }
-
-    /**
-     * @param msgQueueWarnSize New message queue size to print warning.
-     */
-    public void messageQueueWarningSize(int msgQueueWarnSize) {
-        this.msgQueueWarnSize = msgQueueWarnSize;
     }
 
     /**
