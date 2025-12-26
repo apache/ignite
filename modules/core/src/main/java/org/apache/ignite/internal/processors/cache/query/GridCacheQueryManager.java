@@ -21,7 +21,6 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.sql.SQLException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -95,7 +94,6 @@ import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridLeanMap;
-import org.apache.ignite.internal.util.GridSpiCloseableIteratorWrapper;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1290,80 +1288,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         assert sndId != null;
 
         return new IgniteBiTuple<>(sndId, reqId);
-    }
-
-    /**
-     * @param qryInfo Info.
-     * @return Iterator.
-     * @throws IgniteCheckedException In case of error.
-     */
-    private FieldsResult fieldsQueryResult(GridCacheQueryInfo qryInfo, String taskName)
-        throws IgniteCheckedException {
-        final UUID sndId = qryInfo.senderId();
-
-        assert sndId != null;
-
-        Map<Long, GridFutureAdapter<FieldsResult>> iters = fieldsQryRes.get(sndId);
-
-        if (iters == null) {
-            iters = new LinkedHashMap<Long, GridFutureAdapter<FieldsResult>>(16, 0.75f, true) {
-                @Override protected boolean removeEldestEntry(Map.Entry<Long,
-                    GridFutureAdapter<FieldsResult>> e) {
-                    boolean rmv = size() > maxIterCnt;
-
-                    if (rmv) {
-                        try {
-                            e.getValue().get().closeIfNotShared(recipient(sndId, e.getKey()));
-                        }
-                        catch (IgniteCheckedException ex) {
-                            U.error(log, "Failed to close fields query iterator.", ex);
-                        }
-                    }
-
-                    return rmv;
-                }
-
-                @Override public boolean equals(Object o) {
-                    return o == this;
-                }
-            };
-
-            Map<Long, GridFutureAdapter<FieldsResult>> old = fieldsQryRes.putIfAbsent(sndId, iters);
-
-            if (old != null)
-                iters = old;
-        }
-
-        return fieldsQueryResult(iters, qryInfo, taskName);
-    }
-
-    /**
-     * @param resMap Results map.
-     * @param qryInfo Info.
-     * @return Fields query result.
-     * @throws IgniteCheckedException In case of error.
-     */
-    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    private FieldsResult fieldsQueryResult(Map<Long, GridFutureAdapter<FieldsResult>> resMap,
-        GridCacheQueryInfo qryInfo, String taskName) throws IgniteCheckedException {
-        assert resMap != null;
-        assert qryInfo != null;
-
-        GridFutureAdapter<FieldsResult> fut;
-
-        boolean exec = false;
-
-        synchronized (resMap) {
-            fut = resMap.get(qryInfo.requestId());
-
-            if (fut == null) {
-                resMap.put(qryInfo.requestId(), fut = new GridFutureAdapter<>());
-
-                exec = true;
-            }
-        }
-
-        return fut.get();
     }
 
     /**
