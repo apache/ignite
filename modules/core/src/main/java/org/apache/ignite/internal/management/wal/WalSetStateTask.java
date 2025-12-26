@@ -26,7 +26,6 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.wal.WalDisableCommand.WalDisableCommandArg;
 import org.apache.ignite.internal.management.wal.WalEnableCommand.WalEnableCommandArg;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -67,15 +66,10 @@ public class WalSetStateTask extends VisorMultiNodeTask<WalDisableCommandArg, Vo
                 if (grps != null && !grps.contains(grpName))
                     continue;
 
-                GridCacheContext<?, ?> cctx = F.first(gctx.caches());
-
-                if (cctx == null)
-                    continue;
-
                 if (arg instanceof WalEnableCommandArg)
-                    ignite.cluster().enableWal(cctx.name());
+                    ignite.cluster().enableWal(grpName);
                 else
-                    ignite.cluster().disableWal(cctx.name());
+                    ignite.cluster().disableWal(grpName);
             }
 
             return null;
