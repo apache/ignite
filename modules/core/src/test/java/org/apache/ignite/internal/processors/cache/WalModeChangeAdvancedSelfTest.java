@@ -773,5 +773,19 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         assertForAllNodes(CACHE_NAME, true);
         assertForAllNodes(CACHE_NAME_2, true);
+
+        srv.destroyCache(CACHE_NAME_2);
+
+        srv.cluster().disableWal(CACHE_NAME);
+        assertForAllNodes(CACHE_NAME, false);
+
+        srv.cluster().enableWal("testGroup");
+        assertForAllNodes(CACHE_NAME, true);
+
+        srv.cluster().disableWal("testGroup");
+        assertForAllNodes(CACHE_NAME, false);
+
+        srv.cluster().enableWal(CACHE_NAME);
+        assertForAllNodes(CACHE_NAME, true);
     }
 }

@@ -654,7 +654,7 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
         guard();
 
         try {
-            List<String> cacheNames = new ArrayList<>();
+            Collection<String> cacheNames;
 
             int cacheOrGrpId = CU.cacheId(cacheOrGrpName);
             CacheGroupDescriptor grpDesc = ctx.cache().cacheGroupDescriptor(cacheOrGrpId);
@@ -664,10 +664,10 @@ public class IgniteClusterImpl extends ClusterGroupAdapter implements IgniteClus
                 if (cachesInGrp.isEmpty())
                     throw new IgniteException("Cache group '" + cacheOrGrpName + "' does not contain any caches.");
                 else
-                    cacheNames.addAll(cachesInGrp.keySet());
+                    cacheNames = cachesInGrp.keySet();
             }
             else
-                cacheNames.add(cacheOrGrpName);
+                cacheNames = Collections.singleton(cacheOrGrpName);
 
             return ctx.cache().context().walState().changeWalMode(cacheNames, enabled).get();
         }

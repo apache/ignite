@@ -183,9 +183,9 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
         IgniteEx srv = startGrids(2);
         srv.cluster().state(ClusterState.ACTIVE);
 
-        srv.createCache(new CacheConfiguration("cache1")
+        srv.createCache(new CacheConfiguration<>("cache1")
             .setGroupName("testGroup"));
-        srv.createCache(new CacheConfiguration("cache2")
+        srv.createCache(new CacheConfiguration<>("cache2")
             .setGroupName("testGroup"));
 
         assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "testGroup"));
