@@ -41,7 +41,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
@@ -207,8 +206,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private final ConcurrentMap<UUID, Map<Long, GridFutureAdapter<FieldsResult>>> fieldsQryRes =
         new ConcurrentHashMap<>();
 
-    /** */
-    private volatile ConcurrentMap<Object, CachedResult<?>> qryResCache = new ConcurrentHashMap<>();
 
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -374,14 +371,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     *
-     */
-    private void invalidateResultCache() {
-        if (!qryResCache.isEmpty())
-            qryResCache = new ConcurrentHashMap<>();
-    }
-
-    /**
      * @param newRow New row.
      * @param prevRow Previous row.
      * @param prevRowAvailable Whether previous row is available.
@@ -410,8 +399,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 qryProc.store(cctx, newRow, prevRow, prevRowAvailable);
         }
         finally {
-            invalidateResultCache();
-
             leaveBusy();
         }
     }
@@ -441,8 +428,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 qryProc.remove(cctx, prevRow);
         }
         finally {
-            invalidateResultCache();
-
             leaveBusy();
         }
     }
@@ -636,79 +621,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         catch (Exception e) {
             res.onDone(e);
         }
-
-        return res;
-    }
-
-    /** Test-only hook: how many times executeFieldsQuery was hit. */
-    private static final AtomicInteger EXECUTE_FIELDS_QRY_HITS = new AtomicInteger();
-
-    /** Test-only hook. */
-    static void resetExecuteFieldsQueryHitCount() {
-        EXECUTE_FIELDS_QRY_HITS.set(0);
-    }
-
-    /** Test-only hook. */
-    static int executeFieldsQueryHitCount() {
-        return EXECUTE_FIELDS_QRY_HITS.get();
-    }
-
-    /**
-     * Performs fields query.
-     *
-     * @param qry Query.
-     * @param args Arguments.
-     * @param loc Local query or not.
-     * @param taskName Task name.
-     * @param rcpt ID of the recipient.
-     * @return Collection of found keys.
-     * @throws IgniteCheckedException In case of error.
-     */
-    private FieldsResult executeFieldsQuery(CacheQuery<?> qry, @Nullable Object[] args,
-        boolean loc, @Nullable String taskName, Object rcpt) throws IgniteCheckedException {
-        EXECUTE_FIELDS_QRY_HITS.incrementAndGet();
-        assert qry != null;
-        assert qry.type() == SQL_FIELDS : "Unexpected query type: " + qry.type();
-
-        if (qry.clause() == null) {
-            assert !loc;
-
-            throw new IgniteCheckedException("Received next page request after iterator was removed. " +
-                "Consider increasing maximum number of stored iterators (see " +
-                "CacheConfiguration.getMaxQueryIteratorsCount() configuration property).");
-        }
-
-        if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-            cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
-                    cctx.localNode(),
-                    "SQL fields query executed.",
-                    EVT_CACHE_QUERY_EXECUTED,
-                    CacheQueryType.SQL_FIELDS.name(),
-                    cctx.name(),
-                    null,
-                    qry.clause(),
-                    null,
-                    null,
-                    args,
-                    securitySubjectId(cctx),
-                    taskName));
-        }
-
-        // Attempt to get result from cache.
-        T2<String, List<Object>> resKey = new T2<>(qry.clause(), F.asList(args));
-
-        FieldsResult res = (FieldsResult)qryResCache.get(resKey);
-
-        if (res != null && res.addRecipient(rcpt))
-            return res; // Cached result found.
-
-        res = new FieldsResult(rcpt);
-
-        if (qryResCache.putIfAbsent(resKey, res) != null)
-            resKey = null; // Failed to cache result.
-
-        if (resKey != null)
-            qryResCache.remove(resKey, res);
 
         return res;
     }
@@ -907,10 +819,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 String taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
 
-                res = qryInfo.local() ?
-                    executeFieldsQuery(qry, qryInfo.arguments(), qryInfo.local(), taskName,
-                        recipient(qryInfo.senderId(), qryInfo.requestId())) :
-                    fieldsQueryResult(qryInfo, taskName);
+                res = fieldsQueryResult(qryInfo, taskName);
 
                 // If metadata needs to be returned to user and cleaned from internal fields - copy it.
                 List<GridQueryFieldMetadata> meta = qryInfo.includeMetaData() ?
@@ -1030,19 +939,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     throw (Error)e;
             }
             finally {
-                if (qryInfo.local()) {
-                    // Don't we need to always remove local iterators?
-                    if (rmvRes && res != null) {
-                        try {
-                            res.closeIfNotShared(recipient(qryInfo.senderId(), qryInfo.requestId()));
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to close local iterator [qry=" + qryInfo + ", node=" +
-                                cctx.nodeId() + "]", e);
-                        }
-                    }
-                }
-                else if (rmvRes)
+                if (rmvRes)
                     removeFieldsQueryResult(qryInfo.senderId(), qryInfo.requestId());
             }
         }
@@ -1640,16 +1537,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 resMap.put(qryInfo.requestId(), fut = new GridFutureAdapter<>());
 
                 exec = true;
-            }
-        }
-
-        if (exec) {
-            try {
-                fut.onDone(executeFieldsQuery(qryInfo.query(), qryInfo.arguments(), false,
-                    taskName, recipient(qryInfo.senderId(), qryInfo.requestId())));
-            }
-            catch (IgniteCheckedException e) {
-                fut.onDone(e);
             }
         }
 
