@@ -36,6 +36,7 @@ import org.apache.calcite.util.Util;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSortedIndexSpool;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
@@ -147,6 +148,13 @@ public class IgniteMdRowCount extends RelMdRowCount {
      * Estimation of row count for Limit operator.
      */
     public double getRowCount(IgniteLimit rel, RelMetadataQuery mq) {
+        return rel.estimateRowCount(mq);
+    }
+
+    /**
+     * Estimation of row count for Table modify operator.
+     */
+    public double getRowCount(IgniteTableModify rel, RelMetadataQuery mq) {
         return rel.estimateRowCount(mq);
     }
 }

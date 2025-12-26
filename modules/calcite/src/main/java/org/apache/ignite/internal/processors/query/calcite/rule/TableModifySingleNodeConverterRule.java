@@ -32,17 +32,17 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.trait.RewindabilityTrait;
 
 /**
- *
+ * Converts LogicalTableModify to single distribution IgniteTableModify (perform table modify on initiator node).
  */
-public class TableModifyConverterRule extends AbstractIgniteConverterRule<LogicalTableModify> {
+public class TableModifySingleNodeConverterRule extends AbstractIgniteConverterRule<LogicalTableModify> {
     /** */
-    public static final RelOptRule INSTANCE = new TableModifyConverterRule();
+    public static final RelOptRule INSTANCE = new TableModifySingleNodeConverterRule();
 
     /**
      * Creates a ConverterRule.
      */
-    public TableModifyConverterRule() {
-        super(LogicalTableModify.class, "TableModifyConverterRule");
+    public TableModifySingleNodeConverterRule() {
+        super(LogicalTableModify.class, TableModifySingleNodeConverterRule.class.getSimpleName());
     }
 
     /** {@inheritDoc} */
@@ -54,7 +54,7 @@ public class TableModifyConverterRule extends AbstractIgniteConverterRule<Logica
             .replace(RelCollations.EMPTY);
         RelNode input = convert(rel.getInput(), traits);
 
-        return new IgniteTableModify(cluster, traits, rel.getTable(), input,
-                rel.getOperation(), rel.getUpdateColumnList(), rel.getSourceExpressionList(), rel.isFlattened());
+        return new IgniteTableModify(cluster, traits, rel.getTable(), input, rel.getOperation(),
+            rel.getUpdateColumnList(), rel.getSourceExpressionList(), rel.isFlattened(), false);
     }
 }
