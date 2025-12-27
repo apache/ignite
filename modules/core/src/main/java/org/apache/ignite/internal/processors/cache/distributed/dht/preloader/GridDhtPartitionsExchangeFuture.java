@@ -2146,15 +2146,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             try {
                 cctx.io().send(node, msg, SYSTEM_POOL);
             }
-            catch (ClusterTopologyCheckedException ignored) {
-                if (log.isDebugEnabled()) {
-                    log.debug(
-                        "Failed to send local partitions on exchange [nodeId=" + node.id() + ", exchId=" + exchId + ']'
-                    );
-                }
+            catch (ClusterTopologyCheckedException e) {
+                long retryDelay = cctx.gridConfig().getNetworkSendRetryDelay();
+
+                log.warning(
+                    "Failed to send local partitions on exchange (node left) [nodeId=" + node.id() +
+                        ", exchId=" + exchId + ", retryDelay=" + retryDelay + "ms]", e
+                );
 
                 if (cctx.discovery().alive(node.id())) {
-                    U.sleep(cctx.gridConfig().getNetworkSendRetryDelay());
+                    U.sleep(retryDelay);
 
                     continue;
                 }
@@ -2286,10 +2287,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         try {
             sendLocalPartitions(oldestNode);
         }
-        catch (ClusterTopologyCheckedException ignore) {
-            if (log.isDebugEnabled())
-                log.debug("Coordinator left during partition exchange [nodeId=" + oldestNode.id() +
-                    ", exchId=" + exchId + ']');
+        catch (ClusterTopologyCheckedException e) {
+            log.warning("Coordinator left during partition exchange, will retry [nodeId=" + oldestNode.id() +
+                ", exchId=" + exchId + ']', e);
         }
         catch (IgniteCheckedException e) {
             if (reconnectOnError(e))
