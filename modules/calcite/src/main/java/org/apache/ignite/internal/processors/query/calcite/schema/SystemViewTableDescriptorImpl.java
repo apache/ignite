@@ -40,7 +40,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.rel.type.RelDataType.PRECISION_NOT_SPECIFIED;
 import static org.apache.calcite.rel.type.RelDataType.SCALE_NOT_SPECIFIED;
@@ -107,24 +106,28 @@ public class SystemViewTableDescriptorImpl<ViewRow> extends NullInitializerExpre
     /** {@inheritDoc} */
     @Override public <Row> Row toRow(
         ExecutionContext<Row> ectx,
-        ViewRow row,
-        RowHandler.RowFactory<Row> factory,
-        @Nullable ImmutableBitSet requiredColumns
+        ViewRow viewRow,
+        Row row,
+        int[] fieldColMapping
     ) {
-        RowHandler<Row> hnd = factory.handler();
+        RowHandler<Row> hnd = ectx.rowHandler();
 
-        assert hnd == ectx.rowHandler();
+        assert hnd.columnCount(row) == fieldColMapping.length :
+            "Unexpected row column count: " + hnd.columnCount(row) + " expected: " + fieldColMapping.length;
 
-        Row res = factory.create();
-
-        assert hnd.columnCount(res) == (requiredColumns == null ? descriptors.length : requiredColumns.cardinality());
-
-        sysView.walker().visitAll(row, new SystemViewRowAttributeWalker.AttributeWithValueVisitor() {
+        sysView.walker().visitAll(viewRow, new SystemViewRowAttributeWalker.AttributeWithValueVisitor() {
             private int colIdx;
 
             @Override public <T> void accept(int idx, String name, Class<T> clazz, T val) {
-                if (requiredColumns == null || requiredColumns.get(idx))
-                    hnd.set(colIdx++, res, TypeUtils.toInternal(ectx, val, descriptors[idx].storageType()));
+                // Assume fieldColMapping derived from required columns and sorted.
+                // Assume 'accept' is called with increasing 'idx'.
+
+                // Skip not required fields.
+                while (colIdx < fieldColMapping.length && fieldColMapping[colIdx] < 0)
+                    colIdx++;
+
+                if (colIdx < fieldColMapping.length && fieldColMapping[colIdx] == idx)
+                    hnd.set(colIdx++, row, TypeUtils.toInternal(ectx, val, descriptors[idx].storageType()));
             }
 
             @Override public void acceptBoolean(int idx, String name, boolean val) {
@@ -160,7 +163,7 @@ public class SystemViewTableDescriptorImpl<ViewRow> extends NullInitializerExpre
             }
         });
 
-        return res;
+        return row;
     }
 
     /** {@inheritDoc} */

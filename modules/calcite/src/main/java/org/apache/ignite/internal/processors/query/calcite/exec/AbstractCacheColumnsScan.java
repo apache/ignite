@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
+import java.util.Iterator;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
@@ -24,7 +25,8 @@ import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDesc
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public abstract class AbstractCacheColumnsScan<Row> extends AbstractCacheScan<Row> {
+public abstract class AbstractCacheColumnsScan<TableRow, Row> extends AbstractCacheScan<Row>
+    implements TableRowIterable<TableRow, Row> {
     /** */
     protected final CacheTableDescriptor desc;
 
@@ -34,8 +36,8 @@ public abstract class AbstractCacheColumnsScan<Row> extends AbstractCacheScan<Ro
     /** */
     protected final RelDataType rowType;
 
-    /** Participating columns. */
-    protected final ImmutableBitSet requiredColumns;
+    /** Row field to column mapping. */
+    protected final int[] fieldColMapping;
 
     /** */
     AbstractCacheColumnsScan(
@@ -47,9 +49,30 @@ public abstract class AbstractCacheColumnsScan<Row> extends AbstractCacheScan<Ro
         super(ectx, desc.cacheContext(), parts);
 
         this.desc = desc;
-        this.requiredColumns = requiredColumns;
 
         rowType = desc.rowType(ectx.getTypeFactory(), requiredColumns);
         factory = ectx.rowHandler().factory(ectx.getTypeFactory(), rowType);
+
+        ImmutableBitSet reqCols = requiredColumns == null ? ImmutableBitSet.range(0, rowType.getFieldCount())
+            : requiredColumns;
+
+        fieldColMapping = reqCols.toArray();
     }
+
+    /** {@inheritDoc} */
+    @Override public final Iterator<TableRow> tableRowIterator() {
+        reserve();
+
+        try {
+            return createTableRowIterator();
+        }
+        catch (Exception e) {
+            release();
+
+            throw e;
+        }
+    }
+
+    /** Table row iterator.*/
+    protected abstract Iterator<TableRow> createTableRowIterator();
 }

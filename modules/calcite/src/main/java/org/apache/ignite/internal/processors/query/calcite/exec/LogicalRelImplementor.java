@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.Outbox;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ProjectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanStorageNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanTableRowNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortAggregateNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolNode;
@@ -116,6 +117,7 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
 import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils.combinedRowType;
@@ -368,10 +370,10 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         ImmutableBitSet requiredColumns = rel.requiredColumns();
         List<SearchBounds> searchBounds = rel.searchBounds();
 
-        RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
+        RelDataType inputRowType = tbl.getRowType(typeFactory, requiredColumns);
 
-        Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rowType);
-        Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);
+        Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, inputRowType);
+        Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, inputRowType);
         RangeIterable<Row> ranges = searchBounds == null ? null :
             expressionFactory.ranges(searchBounds, rel.collation(), tbl.getRowType(typeFactory));
 
@@ -382,7 +384,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
             Iterable<Row> rowsIter = idx.scan(ctx, grp, ranges, requiredColumns);
 
-            return new ScanStorageNode<>(tbl.name() + '.' + idx.name(), ctx, rowType, rowsIter, filters, prj);
+            return createStorageScan(tbl.name() + '.' + idx.name(), rel.getRowType(), inputRowType,
+                rowsIter, filters, prj, requiredColumns, rel.conditionColumns());
         }
         else {
             // Index was invalidated after planning, workaround through table-scan -> sort -> index spool.
@@ -402,12 +405,10 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                 requiredColumns
             );
 
-            // If there are projects in the scan node - after the scan we already have target row type.
-            if (!spoolNodeRequired && projects != null)
-                rowType = rel.getRowType();
+            RelDataType rowType = projNodeRequired ? rel.getRowType() : inputRowType;
 
-            Node<Row> node = new ScanStorageNode<>(tbl.name(), ctx, rowType, rowsIter, filterHasCorrelation ? null : filters,
-                projNodeRequired ? null : prj);
+            Node<Row> node = createStorageScan(tbl.name(), rowType, inputRowType, rowsIter,
+                filterHasCorrelation ? null : filters, projNodeRequired ? null : prj, requiredColumns, rel.conditionColumns());
 
             RelCollation collation = rel.collation();
 
@@ -438,7 +439,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
                         remappedSearchBounds.add(searchBounds.get(i));
 
                     // Collation and row type are already remapped taking into account requiredColumns.
-                    ranges = expressionFactory.ranges(remappedSearchBounds, collation, rowType);
+                    ranges = expressionFactory.ranges(remappedSearchBounds, collation, inputRowType);
                 }
 
                 IndexSpoolNode<Row> spoolNode = IndexSpoolNode.createTreeSpool(
@@ -548,10 +549,10 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
 
-        RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
+        RelDataType inputRowType = tbl.getRowType(typeFactory, requiredColumns);
 
-        Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rowType);
-        Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);
+        Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, inputRowType);
+        Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, inputRowType);
 
         ColocationGroup grp = ctx.group(rel.sourceId());
 
@@ -560,12 +561,14 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
             Iterable<Row> rowsIter = idx.scan(ctx, grp, null, requiredColumns);
 
-            return new ScanStorageNode<>(tbl.name() + '.' + idx.name(), ctx, rowType, rowsIter, filters, prj);
+            return createStorageScan(tbl.name() + '.' + idx.name(), rel.getRowType(), inputRowType,
+                rowsIter, filters, prj, requiredColumns, rel.conditionColumns());
         }
         else {
             Iterable<Row> rowsIter = tbl.scan(ctx, grp, requiredColumns);
 
-            return new ScanStorageNode<>(tbl.name(), ctx, rowType, rowsIter, filters, prj);
+            return createStorageScan(tbl.name(), rel.getRowType(), inputRowType, rowsIter, filters, prj,
+                requiredColumns, rel.conditionColumns());
         }
     }
 
@@ -942,5 +945,47 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
     /** */
     public <T extends Node<Row>> T go(IgniteRel rel) {
         return (T)visit(rel);
+    }
+
+    /** */
+    private ScanStorageNode<Row> createStorageScan(
+        String storageName,
+        RelDataType outputRowType,
+        RelDataType inputRowType,
+        Iterable<Row> rowsIter,
+        @Nullable Predicate<Row> filter,
+        @Nullable Function<Row, Row> rowTransformer,
+        @Nullable ImmutableBitSet requiredColumns,
+        @Nullable ImmutableBitSet filterColumns
+    ) {
+        int fieldsCnt = outputRowType.getFieldCount();
+
+        if (filter == null || filterColumns == null || filterColumns.cardinality() == fieldsCnt
+            || !(rowsIter instanceof TableRowIterable))
+            return new ScanStorageNode<>(storageName, ctx, outputRowType, rowsIter, filter, rowTransformer);
+
+        ImmutableBitSet reqCols = requiredColumns == null ? ImmutableBitSet.range(0, fieldsCnt) : requiredColumns;
+
+        int[] filterColMapping = reqCols.toArray();
+        int[] otherColMapping = filterColMapping.clone();
+
+        for (int i = 0; i < filterColMapping.length; i++) {
+            if (filterColumns.get(i))
+                otherColMapping[i] = -1;
+            else
+                filterColMapping[i] = -1;
+        }
+
+        return new ScanTableRowNode<>(
+            storageName,
+            ctx,
+            outputRowType,
+            inputRowType,
+            (TableRowIterable<Object, Row>)rowsIter,
+            filter,
+            rowTransformer,
+            filterColMapping,
+            otherColMapping
+        );
     }
 }
