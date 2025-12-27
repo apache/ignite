@@ -151,14 +151,14 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
             new IgniteMessageFactoryImpl(new MessageFactoryProvider[]{new GridIoMessageFactory()});
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
-        DirectMessageWriter writer = new DirectMessageWriter(msgFactory);
+        DirectMessageWriter writer = new DirectMessageWriter(msgFactory, null);
 
         // Skip write class header.
         writer.onHeaderWritten();
         e0.writeTo(buf, writer);
 
         CacheContinuousQueryEntry e1 = new CacheContinuousQueryEntry();
-        e1.readFrom(ByteBuffer.wrap(buf.array()), new DirectMessageReader(msgFactory, null));
+        e1.readFrom(ByteBuffer.wrap(buf.array()), new DirectMessageReader(msgFactory, null, null));
 
         assertEquals(e0.cacheId(), e1.cacheId());
         assertEquals(e0.eventType(), e1.eventType());

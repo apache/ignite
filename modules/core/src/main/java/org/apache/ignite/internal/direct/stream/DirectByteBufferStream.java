@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.direct.stream;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -31,6 +32,9 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.UserObject;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -224,6 +228,9 @@ public class DirectByteBufferStream {
     @GridToStringExclude
     private final IgniteCacheObjectProcessor cacheObjProc;
 
+    /** Binary marshaller for marshalling user objects. */
+    private final BinaryMarshaller marsh;
+
     /** */
     @GridToStringExclude
     protected ByteBuffer buf;
@@ -343,9 +350,11 @@ public class DirectByteBufferStream {
      * Constructror for stream used for writing messages.
      *
      * @param msgFactory Message factory.
+     * @param marsh Binary marshaller
      */
-    public DirectByteBufferStream(MessageFactory msgFactory) {
+    public DirectByteBufferStream(MessageFactory msgFactory, BinaryMarshaller marsh) {
         this.msgFactory = msgFactory;
+        this.marsh = marsh;
 
         // Is not used while writing messages.
         cacheObjProc = null;
@@ -355,10 +364,13 @@ public class DirectByteBufferStream {
      * Constructror for stream used for reading messages.
      *
      * @param msgFactory Message factory.
+     * @param marsh Binary marshaller
      * @param cacheObjProc Cache object processor.
      */
-    public DirectByteBufferStream(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
+    public DirectByteBufferStream(MessageFactory msgFactory, BinaryMarshaller marsh, IgniteCacheObjectProcessor cacheObjProc
+    ) {
         this.msgFactory = msgFactory;
+        this.marsh = marsh;
         this.cacheObjProc = cacheObjProc;
     }
 
@@ -897,6 +909,16 @@ public class DirectByteBufferStream {
         }
         else
             writeShort(Short.MIN_VALUE);
+    }
+
+    /** */
+    public void writeUserObject(UserObject obj) {
+        try {
+            writeByteArray(marsh.marshal(obj.get()));
+        }
+        catch (IgniteCheckedException | BinaryObjectException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
@@ -1557,6 +1579,17 @@ public class DirectByteBufferStream {
         }
         else
             return null;
+    }
+
+    /** Reads bytes from the reader and returns a lazily deserialized UserObject. */
+    public UserObject readUserObject(MessageReader reader) {
+        byte[] arr = readByteArray();
+
+        return (UserObject)Proxy.newProxyInstance(
+            U.gridClassLoader(),
+            new Class<?>[]{UserObject.class},
+            new LazyUserObjectProxy(arr, marsh)
+        );
     }
 
     /**
