@@ -1332,7 +1332,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                 return node;
             }
             finally {
-                IgniteUtils.setCurrentIgniteName(null);
+                //IgniteUtils.setCurrentIgniteName(null);
             }
         }
         else
@@ -1587,7 +1587,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                     IgnitionEx.stop(igniteInstanceName, cancel, null, stopNotStarted);
                 }
                 finally {
-                    IgniteUtils.setCurrentIgniteName(null);
+                    //IgniteUtils.setCurrentIgniteName(null);
                 }
             }
             else
