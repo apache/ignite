@@ -506,7 +506,10 @@ public class TcpDiscoveryNodesRing {
             if (filtered.size() < 2)
                 return null;
 
-            Iterator<TcpDiscoveryNode> iter = filtered.iterator();
+            NavigableSet<TcpDiscoveryNode> sorted = new TreeSet<>(new MdcAwareNodesComparator());
+            sorted.addAll(filtered);
+
+            Iterator<TcpDiscoveryNode> iter = sorted.iterator();
 
             while (iter.hasNext()) {
                 TcpDiscoveryNode node = iter.next();
@@ -515,7 +518,7 @@ public class TcpDiscoveryNodesRing {
                     break;
             }
 
-            return iter.hasNext() ? iter.next() : F.first(filtered);
+            return iter.hasNext() ? iter.next() : F.first(sorted);
         }
         finally {
             rwLock.readLock().unlock();
@@ -541,10 +544,13 @@ public class TcpDiscoveryNodesRing {
             if (filtered.size() < 2)
                 return null;
 
+            NavigableSet<TcpDiscoveryNode> sorted = new TreeSet<>(new MdcAwareNodesComparator());
+            sorted.addAll(filtered);
+
             TcpDiscoveryNode previous = null;
 
             // Get last node that is previous in a ring
-            for (TcpDiscoveryNode node : filtered) {
+            for (TcpDiscoveryNode node : sorted) {
                 if (locNode.equals(node) && previous != null)
                     break;
 
@@ -569,11 +575,14 @@ public class TcpDiscoveryNodesRing {
         try {
             TcpDiscoveryNode prev = null;
 
-            for (TcpDiscoveryNode node : nodes) {
+            NavigableSet<TcpDiscoveryNode> sorted = new TreeSet<>(new MdcAwareNodesComparator());
+            sorted.addAll(nodes);
+
+            for (TcpDiscoveryNode node : sorted) {
                 if (node.equals(ringNode)) {
                     if (prev == null)
                         // ringNode is the first node, return last node in the ring.
-                        return nodes.last();
+                        return sorted.last();
 
                     return prev;
                 }
