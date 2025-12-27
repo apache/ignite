@@ -105,13 +105,13 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     private final RexBuilder rexBuilder;
 
     /** */
-    private final RelDataType emptyType;
+    private static final RelDataType EMPTY_TYPE = new RelDataTypeFactory.Builder(Commons.typeFactory()).build();
 
     /** */
-    private final RelDataType nullType;
+    private static final RelDataType NULL_TYPE = Commons.typeFactory().createSqlType(SqlTypeName.NULL);
 
     /** */
-    private final RelDataType booleanType;
+    private static final RelDataType BOOLEAN_TYPE = Commons.typeFactory().createJavaType(Boolean.class);
 
     /** */
     private final ExecutionContext<Row> ctx;
@@ -127,10 +127,6 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         this.typeFactory = typeFactory;
         this.conformance = conformance;
         this.rexBuilder = rexBuilder;
-
-        emptyType = new RelDataTypeFactory.Builder(this.typeFactory).build();
-        nullType = typeFactory.createSqlType(SqlTypeName.NULL);
-        booleanType = typeFactory.createJavaType(Boolean.class);
     }
 
     /** {@inheritDoc} */
@@ -296,7 +292,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     /** {@inheritDoc} */
     @Override public Supplier<Row> rowSource(List<RexNode> values) {
         return new ValuesImpl(scalar(values, null), ctx.rowHandler().factory(typeFactory,
-            Commons.transform(values, v -> v != null ? v.getType() : nullType)));
+            Commons.transform(values, v -> v != null ? v.getType() : NULL_TYPE)));
     }
 
     /** {@inheritDoc} */
@@ -494,7 +490,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     /** */
     private Scalar compile(List<RexNode> nodes, RelDataType type, boolean biInParams) {
         if (type == null)
-            type = emptyType;
+            type = EMPTY_TYPE;
 
         RexProgramBuilder programBuilder = new RexProgramBuilder(type, rexBuilder);
 
@@ -508,8 +504,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             else {
                 unspecifiedValues.set(i);
 
-                programBuilder.addProject(rexBuilder.makeNullLiteral(type == emptyType ?
-                    nullType : type.getFieldList().get(i).getType()), null);
+                programBuilder.addProject(rexBuilder.makeNullLiteral(type == EMPTY_TYPE ?
+                    NULL_TYPE : type.getFieldList().get(i).getType()), null);
             }
         }
 
@@ -637,7 +633,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         private AbstractScalarPredicate(T scalar) {
             this.scalar = scalar;
             hnd = ctx.rowHandler();
-            out = hnd.factory(typeFactory, booleanType).create();
+            out = hnd.factory(typeFactory, BOOLEAN_TYPE).create();
         }
     }
 

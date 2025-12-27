@@ -178,6 +178,11 @@ public class BitSetIntSet extends GridSerializableCollection<Integer> implements
     }
 
     /** {@inheritDoc} */
+    @Override public BitSet toBitSet() {
+        return (BitSet)bitSet.clone();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean containsAll(@NotNull Collection<?> c) {
         for (Object o : c) {
             if (!contains(o))
