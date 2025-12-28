@@ -370,7 +370,7 @@ class BinaryClassDescriptor {
                                 fields0.put(name, fieldInfo);
 
                                 if (metaDataEnabled)
-                                    stableFieldsMeta.put(name, new BinaryFieldMetadata(fieldInfo));
+                                    stableFieldsMeta.put(name, new BinaryFieldMetadata(fieldInfo.mode().typeId(), fieldInfo.id));
                             }
                         }
                     }
@@ -1051,7 +1051,7 @@ class BinaryClassDescriptor {
      *
      * @param writer Writer.
      */
-    private void postWrite(BinaryWriterExImpl writer) {
+    private void postWrite(BinaryWriterEx writer) {
         writer.postWrite(userType, registered);
     }
 
@@ -1061,7 +1061,7 @@ class BinaryClassDescriptor {
      * @param writer Writer.
      * @param obj Object.
      */
-    private void postWriteHashCode(BinaryWriterExImpl writer, Object obj) {
+    private void postWriteHashCode(BinaryWriterEx writer, Object obj) {
         boolean postWriteRequired = !(obj instanceof CacheObject) || ((CacheObject)obj).postWriteRequired();
         // No need to call "postWriteHashCode" here because we do not care about hash code.
         if (postWriteRequired)
