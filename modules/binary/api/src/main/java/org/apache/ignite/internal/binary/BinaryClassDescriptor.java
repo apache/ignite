@@ -20,7 +20,6 @@ package org.apache.ignite.internal.binary;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
@@ -46,7 +45,6 @@ import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.util.CommonUtils;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -365,12 +363,12 @@ class BinaryClassDescriptor {
                                 if (!ids.add(fieldId))
                                     throw new BinaryObjectException("Duplicate field ID: " + name);
 
-                                BinaryFieldAccessor fieldInfo = BinaryFieldAccessor.create(f, fieldId);
+                                BinaryFieldAccessor fieldInfo = BinaryUtils.binariesFactory.create(f, fieldId);
 
                                 fields0.put(name, fieldInfo);
 
                                 if (metaDataEnabled)
-                                    stableFieldsMeta.put(name, new BinaryFieldMetadata(fieldInfo.mode().typeId(), fieldInfo.id));
+                                    stableFieldsMeta.put(name, new BinaryFieldMetadata(fieldInfo.mode.typeId(), fieldInfo.id));
                             }
                         }
                     }
@@ -1011,12 +1009,7 @@ class BinaryClassDescriptor {
      * @throws BinaryObjectException In case of error.
      */
     Object newInstance() throws BinaryObjectException {
-        try {
-            return ctor != null ? ctor.newInstance() : GridUnsafe.allocateInstance(cls);
-        }
-        catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
-            throw new BinaryObjectException("Failed to instantiate instance: " + cls, e);
-        }
+        return BinaryUtils.binariesFactory.newInstance(ctor, cls);
     }
 
     /** */

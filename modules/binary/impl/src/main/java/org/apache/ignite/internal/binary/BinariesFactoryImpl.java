@@ -17,10 +17,15 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -85,5 +90,62 @@ public class BinariesFactoryImpl implements BinariesFactory {
     /** {@inheritDoc} */
     @Override public BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema) {
         return new BinaryWriterExImpl(ctx, out, schema, null, false, GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryFieldAccessor create(Field field, int id) {
+        BinaryWriteMode mode = BinaryUtils.mode(field.getType());
+
+        switch (mode) {
+            case P_BYTE:
+                return new BinaryFieldAccessor(field, id, mode, GridUnsafe.objectFieldOffset(field), false);
+
+            case BYTE:
+            case BOOLEAN:
+            case SHORT:
+            case CHAR:
+            case INT:
+            case LONG:
+            case FLOAT:
+            case DOUBLE:
+            case DECIMAL:
+            case STRING:
+            case UUID:
+            case DATE:
+            case TIMESTAMP:
+            case TIME:
+            case BYTE_ARR:
+            case SHORT_ARR:
+            case INT_ARR:
+            case LONG_ARR:
+            case FLOAT_ARR:
+            case DOUBLE_ARR:
+            case CHAR_ARR:
+            case BOOLEAN_ARR:
+            case DECIMAL_ARR:
+            case STRING_ARR:
+            case UUID_ARR:
+            case DATE_ARR:
+            case TIMESTAMP_ARR:
+            case TIME_ARR:
+            case ENUM_ARR:
+            case OBJECT_ARR:
+            case BINARY_OBJ:
+            case BINARY:
+                return new BinaryFieldAccessor(field, id, mode, -1L, false);
+
+            default:
+                return new BinaryFieldAccessor(field, id, mode, -1L, !CommonUtils.isFinal(field.getType()));
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object newInstance(@Nullable Constructor<?> ctor, Class<?> cls) throws BinaryObjectException {
+        try {
+            return ctor != null ? ctor.newInstance() : GridUnsafe.allocateInstance(cls);
+        }
+        catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
+            throw new BinaryObjectException("Failed to instantiate instance: " + cls, e);
+        }
     }
 }

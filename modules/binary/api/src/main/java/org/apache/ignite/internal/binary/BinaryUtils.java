@@ -89,7 +89,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.IgniteCommonsSystemProperties.DFLT_IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_USE_BINARY_ARRAYS;
-import static org.apache.ignite.internal.util.GridUnsafe.align;
 
 /**
  * Binary utils.
@@ -181,7 +180,7 @@ public class BinaryUtils {
     private static final int FNV1_PRIME = 0x01000193;
 
     /** */
-    private static final BinariesFactory binariesFactory;
+    public static final BinariesFactory binariesFactory;
 
     static {
         Iterator<BinariesFactory> factories = CommonUtils.loadService(BinariesFactory.class).iterator();
@@ -2821,7 +2820,7 @@ public class BinaryUtils {
                 private final long byteArrOffset = GridUnsafe.arrayBaseOffset(byte[].class);
 
                 @Override public int applyAsInt(Object bo) {
-                    return (int)align(byteArrOffset + ((BinaryObjectImpl)bo).bytes().length);
+                    return (int)GridUnsafe.align(byteArrOffset + ((BinaryObjectImpl)bo).bytes().length);
                 }
             },
             BinaryEnumObjectImpl.class, bo -> ((BinaryObject)bo).size()

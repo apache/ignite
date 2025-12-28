@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.binary;
 
 import java.lang.reflect.Field;
-import org.apache.ignite.internal.util.CommonUtils;
-import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
  * Field accessor to speedup access.
@@ -44,59 +42,6 @@ class BinaryFieldAccessor {
     protected final boolean dynamic;
 
     /**
-     * Create accessor for the field.
-     *
-     * @param field Field.
-     * @param id FIeld ID.
-     * @return Accessor.
-     */
-    public static BinaryFieldAccessor create(Field field, int id) {
-        BinaryWriteMode mode = BinaryUtils.mode(field.getType());
-
-        switch (mode) {
-            case P_BYTE:
-                return new BinaryFieldAccessor(field, id, mode, GridUnsafe.objectFieldOffset(field), false);
-
-            case BYTE:
-            case BOOLEAN:
-            case SHORT:
-            case CHAR:
-            case INT:
-            case LONG:
-            case FLOAT:
-            case DOUBLE:
-            case DECIMAL:
-            case STRING:
-            case UUID:
-            case DATE:
-            case TIMESTAMP:
-            case TIME:
-            case BYTE_ARR:
-            case SHORT_ARR:
-            case INT_ARR:
-            case LONG_ARR:
-            case FLOAT_ARR:
-            case DOUBLE_ARR:
-            case CHAR_ARR:
-            case BOOLEAN_ARR:
-            case DECIMAL_ARR:
-            case STRING_ARR:
-            case UUID_ARR:
-            case DATE_ARR:
-            case TIMESTAMP_ARR:
-            case TIME_ARR:
-            case ENUM_ARR:
-            case OBJECT_ARR:
-            case BINARY_OBJ:
-            case BINARY:
-                return new BinaryFieldAccessor(field, id, mode, -1L, false);
-
-            default:
-                return new BinaryFieldAccessor(field, id, mode, -1L, !CommonUtils.isFinal(field.getType()));
-        }
-    }
-
-    /**
      * Protected constructor.
      *
      * @param id Field ID.
@@ -113,14 +58,5 @@ class BinaryFieldAccessor {
         this.offset = offset;
         this.field = field;
         this.dynamic = dynamic;
-    }
-
-    /**
-     * Get mode.
-     *
-     * @return Mode.
-     */
-    public BinaryWriteMode mode() {
-        return mode;
     }
 }
