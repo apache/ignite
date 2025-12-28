@@ -602,7 +602,7 @@ class BinaryClassDescriptor {
      * @param writer Writer.
      * @throws BinaryObjectException In case of error.
      */
-    void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
+    void write(Object obj, BinaryWriterEx writer) throws BinaryObjectException {
         try {
             assert obj != null;
             assert writer != null;
@@ -870,8 +870,20 @@ class BinaryClassDescriptor {
 
                     if (preWrite(writer, obj)) {
                         try {
-                            for (BinaryFieldAccessor info : fields)
-                                info.write(obj, writer);
+                            for (BinaryFieldAccessor info : fields) {
+                                try {
+                                    writer.writeField(obj, info);
+                                }
+                                catch (UnregisteredClassException | UnregisteredBinaryTypeException ex) {
+                                    throw ex;
+                                }
+                                catch (Exception ex) {
+                                    if (S.includeSensitive() && !F.isEmpty(info.name))
+                                        throw new BinaryObjectException("Failed to write field [name=" + info.name + ']', ex);
+                                    else
+                                        throw new BinaryObjectException("Failed to write field [id=" + info.id + ']', ex);
+                                }
+                            }
 
                             writer.schemaId(stableSchema.schemaId());
 
@@ -963,7 +975,7 @@ class BinaryClassDescriptor {
      * @param obj Object.
      * @return Whether further write is needed.
      */
-    private boolean preWrite(BinaryWriterExImpl writer, Object obj) {
+    private boolean preWrite(BinaryWriterEx writer, Object obj) {
         if (writer.tryWriteAsHandle(obj))
             return false;
 

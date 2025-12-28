@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,5 +54,36 @@ public class BinariesFactoryImpl implements BinariesFactory {
         boolean forUnmarshal
     ) {
         return new BinaryReaderExImpl(ctx, in, ldr, hnds, skipHdrCheck, forUnmarshal);
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered, int typeId) {
+        BinaryThreadLocalContext locCtx = BinaryThreadLocalContext.get();
+
+        return new BinaryWriterExImpl(
+            ctx,
+            BinaryStreams.outputStream((int)CommonUtils.KB, locCtx.chunk()),
+            locCtx.schemaHolder(),
+            null,
+            failIfUnregistered,
+            typeId
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out) {
+        return new BinaryWriterExImpl(
+            ctx,
+            out,
+            BinaryThreadLocalContext.get().schemaHolder(),
+            null,
+            false,
+            GridBinaryMarshaller.UNREGISTERED_TYPE_ID
+        );
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema) {
+        return new BinaryWriterExImpl(ctx, out, schema, null, false, GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
     }
 }

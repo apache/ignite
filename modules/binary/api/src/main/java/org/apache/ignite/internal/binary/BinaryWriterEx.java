@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import java.io.InputStream;
 import java.io.ObjectOutput;
+import java.lang.reflect.Proxy;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryWriter;
@@ -132,6 +133,11 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
     public int schemaId();
 
     /**
+     * @param schemaId Schema ID.
+     */
+    public void schemaId(int schemaId);
+
+    /**
      * @return Binary context.
      */
     public BinaryContext context();
@@ -197,4 +203,52 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public void writeBinaryObject(@Nullable BinaryObjectEx po) throws BinaryObjectException;
+
+    /**
+     * Write field.
+     *
+     * @param obj Object.
+     * @param fld Field.
+     * @throws BinaryObjectException If failed.
+     */
+    public void writeField(Object obj, BinaryFieldAccessor fld) throws BinaryObjectException;
+
+    /**
+     * @return Current writer's schema.
+     */
+    public BinarySchema currentSchema();
+
+    /**
+     * Attempts to write the object as a handle.
+     *
+     * @param obj Object to write.
+     * @return {@code true} if the object has been written as a handle.
+     */
+    public boolean tryWriteAsHandle(Object obj);
+
+    /**
+     * @param val Array wrapper.
+     * @throws BinaryObjectException In case of error.
+     */
+    public void writeBinaryArray(BinaryArray val);
+
+    /**
+     * @param val Array.
+     */
+    public void doWriteEnumArray(Object[] val);
+
+    /**
+     * @param val Value.
+     */
+    public void writeBinaryEnum(BinaryEnumObjectImpl val);
+
+    /**
+     * @param val Class.
+     */
+    public void writeClass(Class val);
+
+    /**
+     * @param proxy Proxy.
+     */
+    public void writeProxy(Proxy proxy, Class<?>[] intfs);
 }

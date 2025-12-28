@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -65,4 +66,26 @@ public interface BinariesFactory {
                                  @Nullable BinaryReaderHandles hnds,
                                  boolean skipHdrCheck,
                                  boolean forUnmarshal);
+
+    /**
+     * @param ctx Context.
+     * @param failIfUnregistered Flag to fail while writing object of unregistered type.
+     * @param typeId Type id.
+     * @return Writer instance.
+     */
+    public BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered, int typeId);
+
+    /**
+     * @param ctx Context.
+     * @param out Output stream.
+     * @return Writer instance.
+     */
+    public BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out);
+
+    /**
+     * @param ctx Context.
+     * @param out Output stream.
+     * @return Writer instance.
+     */
+    public BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema);
 }

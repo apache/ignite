@@ -72,7 +72,6 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -2942,16 +2941,7 @@ public class BinaryUtils {
      * @return Writer instance.
      */
     public static BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered, int typeId) {
-        BinaryThreadLocalContext locCtx = BinaryThreadLocalContext.get();
-
-        return new BinaryWriterExImpl(
-            ctx,
-            BinaryStreams.outputStream((int)CommonUtils.KB, locCtx.chunk()),
-            locCtx.schemaHolder(),
-            null,
-            failIfUnregistered,
-            typeId
-        );
+        return binariesFactory.writer(ctx, failIfUnregistered, typeId);
     }
 
     /**
@@ -2960,14 +2950,7 @@ public class BinaryUtils {
      * @return Writer instance.
      */
     public static BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out) {
-        return new BinaryWriterExImpl(
-            ctx,
-            out,
-            BinaryThreadLocalContext.get().schemaHolder(),
-            null,
-            false,
-            GridBinaryMarshaller.UNREGISTERED_TYPE_ID
-        );
+        return binariesFactory.writer(ctx, out);
     }
 
     /**
@@ -2976,7 +2959,7 @@ public class BinaryUtils {
      * @return Writer instance.
      */
     public static BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema) {
-        return new BinaryWriterExImpl(ctx, out, schema, null, false, GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+        return binariesFactory.writer(ctx, out, schema);
     }
 
     /** @return Instance of caching handler. */
