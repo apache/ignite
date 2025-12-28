@@ -56,12 +56,14 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         if (mixedConfig) {
             DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
-            storageCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setName("default_in_memory_region").setPersistenceEnabled(false));
+            storageCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setName("default_in_memory_region")
+                                                                                      .setPersistenceEnabled(false));
 
             if (igniteInstanceName.contains("persistent_instance")) {
                 DataRegionConfiguration persistentRegionCfg = new DataRegionConfiguration();
 
-                storageCfg.setDataRegionConfigurations(persistentRegionCfg.setName(PERSISTENT_REGION_NAME).setPersistenceEnabled(true));
+                storageCfg.setDataRegionConfigurations(persistentRegionCfg.setName(PERSISTENT_REGION_NAME)
+                                                                          .setPersistenceEnabled(true));
             }
 
             cfg.setDataStorageConfiguration(storageCfg);
