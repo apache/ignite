@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Field accessor to speedup access.
@@ -45,6 +46,15 @@ abstract class BinaryFieldAccessor {
 
     /** Mode. */
     protected final BinaryWriteMode mode;
+
+    /** Offset. Used for primitive fields, only. */
+    protected final long offset;
+
+    /** Target field. Must be not null for non-primitive fields. */
+    protected final @Nullable Field field;
+
+    /** Dynamic accessor flag. */
+    protected final boolean dynamic;
 
     /**
      * Create accessor for the field.
@@ -126,7 +136,7 @@ abstract class BinaryFieldAccessor {
      * @param id Field ID.
      * @param mode Mode;
      */
-    protected BinaryFieldAccessor(Field field, int id, BinaryWriteMode mode) {
+    protected BinaryFieldAccessor(Field field, int id, BinaryWriteMode mode, long offset, Field fld, boolean dynamic) {
         assert field != null;
         assert id != 0;
         assert mode != null;
@@ -134,6 +144,9 @@ abstract class BinaryFieldAccessor {
         this.name = field.getName();
         this.id = id;
         this.mode = mode;
+        this.offset = offset;
+        this.field = fld;
+        this.dynamic = dynamic;
     }
 
     /**
@@ -177,40 +190,9 @@ abstract class BinaryFieldAccessor {
     protected abstract void write0(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException;
 
     /**
-     * Read field.
-     *
-     * @param obj Object.
-     * @param reader Reader.
-     * @throws BinaryObjectException If failed.
-     */
-    public void read(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
-        try {
-            read0(obj, reader);
-        }
-        catch (Exception ex) {
-            if (S.includeSensitive() && !F.isEmpty(name))
-                throw new BinaryObjectException("Failed to read field [name=" + name + ']', ex);
-            else
-                throw new BinaryObjectException("Failed to read field [id=" + id + ']', ex);
-        }
-    }
-
-    /**
-     * Read field.
-     *
-     * @param obj Object.
-     * @param reader Reader.
-     * @throws BinaryObjectException If failed.
-     */
-    protected abstract void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException;
-
-    /**
      * Base primitive field accessor.
      */
     private abstract static class AbstractPrimitiveAccessor extends BinaryFieldAccessor {
-        /** Offset. */
-        protected final long offset;
-
         /**
          * Constructor.
          *
@@ -219,9 +201,7 @@ abstract class BinaryFieldAccessor {
          * @param mode Mode.
          */
         protected AbstractPrimitiveAccessor(Field field, int id, BinaryWriteMode mode) {
-            super(field, id, mode);
-
-            offset = GridUnsafe.objectFieldOffset(field);
+            super(field, id, mode, GridUnsafe.objectFieldOffset(field), null, false);
         }
     }
 
@@ -246,13 +226,6 @@ abstract class BinaryFieldAccessor {
 
             writer.writeByteFieldPrimitive(val);
         }
-
-        /** {@inheritDoc} */
-        @Override protected void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
-            byte val = reader.readByte(id);
-
-            GridUnsafe.putByteField(obj, offset, val);
-        }
     }
 
     /**
@@ -275,13 +248,6 @@ abstract class BinaryFieldAccessor {
             boolean val = GridUnsafe.getBooleanField(obj, offset);
 
             writer.writeBooleanFieldPrimitive(val);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
-            boolean val = reader.readBoolean(id);
-
-            GridUnsafe.putBooleanField(obj, offset, val);
         }
     }
 
@@ -306,13 +272,6 @@ abstract class BinaryFieldAccessor {
 
             writer.writeShortFieldPrimitive(val);
         }
-
-        /** {@inheritDoc} */
-        @Override protected void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
-            short val = reader.readShort(id);
-
-            GridUnsafe.putShortField(obj, offset, val);
-        }
     }
 
     /**
@@ -335,13 +294,6 @@ abstract class BinaryFieldAccessor {
             char val = GridUnsafe.getCharField(obj, offset);
 
             writer.writeCharFieldPrimitive(val);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
-            char val = reader.readChar(id);
-
-            GridUnsafe.putCharField(obj, offset, val);
         }
     }
 
@@ -366,13 +318,6 @@ abstract class BinaryFieldAccessor {
 
             writer.writeIntFieldPrimitive(val);
         }
-
-        /** {@inheritDoc} */
-        @Override protected void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
-            int val = reader.readInt(id);
-
-            GridUnsafe.putIntField(obj, offset, val);
-        }
     }
 
     /**
@@ -395,13 +340,6 @@ abstract class BinaryFieldAccessor {
             long val = GridUnsafe.getLongField(obj, offset);
 
             writer.writeLongFieldPrimitive(val);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
-            long val = reader.readLong(id);
-
-            GridUnsafe.putLongField(obj, offset, val);
         }
     }
 
@@ -426,13 +364,6 @@ abstract class BinaryFieldAccessor {
 
             writer.writeFloatFieldPrimitive(val);
         }
-
-        /** {@inheritDoc} */
-        @Override protected void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
-            float val = reader.readFloat(id);
-
-            GridUnsafe.putFloatField(obj, offset, val);
-        }
     }
 
     /**
@@ -456,25 +387,12 @@ abstract class BinaryFieldAccessor {
 
             writer.writeDoubleFieldPrimitive(val);
         }
-
-        /** {@inheritDoc} */
-        @Override protected void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
-            double val = reader.readDouble(id);
-
-            GridUnsafe.putDoubleField(obj, offset, val);
-        }
     }
 
     /**
      * Default accessor.
      */
     private static class DefaultFinalClassAccessor extends BinaryFieldAccessor {
-        /** Target field. */
-        private final Field field;
-
-        /** Dynamic accessor flag. */
-        private final boolean dynamic;
-
         /**
          * Constructor.
          *
@@ -483,10 +401,7 @@ abstract class BinaryFieldAccessor {
          * @param mode Mode.
          */
         DefaultFinalClassAccessor(Field field, int id, BinaryWriteMode mode, boolean dynamic) {
-            super(field, id, mode);
-
-            this.field = field;
-            this.dynamic = dynamic;
+            super(field, id, mode, -1L, field, dynamic);
         }
 
         /** {@inheritDoc} */
@@ -696,223 +611,6 @@ abstract class BinaryFieldAccessor {
                 default:
                     assert false : "Invalid mode: " + mode;
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void read0(Object obj, BinaryReaderExImpl reader) throws BinaryObjectException {
-            Object val = dynamic ? reader.readField(id) : readFixedType(reader);
-
-            try {
-                if (val != null || !field.getType().isPrimitive())
-                    field.set(obj, val);
-            }
-            catch (IllegalAccessException e) {
-                throw new BinaryObjectException("Failed to set value for field: " + field, e);
-            }
-        }
-
-        /**
-         * Reads fixed type from the given reader with flags validation.
-         *
-         * @param reader Reader to read from.
-         * @return Read value.
-         * @throws BinaryObjectException If failed to read value from the stream.
-         */
-        protected Object readFixedType(BinaryReaderExImpl reader) throws BinaryObjectException {
-            Object val = null;
-
-            switch (mode) {
-                case BYTE:
-                    val = reader.readByteNullable(id);
-
-                    break;
-
-                case SHORT:
-                    val = reader.readShortNullable(id);
-
-                    break;
-
-                case INT:
-                    val = reader.readIntNullable(id);
-
-                    break;
-
-                case LONG:
-                    val = reader.readLongNullable(id);
-
-                    break;
-
-                case FLOAT:
-                    val = reader.readFloatNullable(id);
-
-                    break;
-
-                case DOUBLE:
-                    val = reader.readDoubleNullable(id);
-
-                    break;
-
-                case CHAR:
-                    val = reader.readCharNullable(id);
-
-                    break;
-
-                case BOOLEAN:
-                    val = reader.readBooleanNullable(id);
-
-                    break;
-
-                case DECIMAL:
-                    val = reader.readDecimal(id);
-
-                    break;
-
-                case STRING:
-                    val = reader.readString(id);
-
-                    break;
-
-                case UUID:
-                    val = reader.readUuid(id);
-
-                    break;
-
-                case DATE:
-                    val = reader.readDate(id);
-
-                    break;
-
-                case TIMESTAMP:
-                    val = reader.readTimestamp(id);
-
-                    break;
-
-                case TIME:
-                    val = reader.readTime(id);
-
-                    break;
-
-                case BYTE_ARR:
-                    val = reader.readByteArray(id);
-
-                    break;
-
-                case SHORT_ARR:
-                    val = reader.readShortArray(id);
-
-                    break;
-
-                case INT_ARR:
-                    val = reader.readIntArray(id);
-
-                    break;
-
-                case LONG_ARR:
-                    val = reader.readLongArray(id);
-
-                    break;
-
-                case FLOAT_ARR:
-                    val = reader.readFloatArray(id);
-
-                    break;
-
-                case DOUBLE_ARR:
-                    val = reader.readDoubleArray(id);
-
-                    break;
-
-                case CHAR_ARR:
-                    val = reader.readCharArray(id);
-
-                    break;
-
-                case BOOLEAN_ARR:
-                    val = reader.readBooleanArray(id);
-
-                    break;
-
-                case DECIMAL_ARR:
-                    val = reader.readDecimalArray(id);
-
-                    break;
-
-                case STRING_ARR:
-                    val = reader.readStringArray(id);
-
-                    break;
-
-                case UUID_ARR:
-                    val = reader.readUuidArray(id);
-
-                    break;
-
-                case DATE_ARR:
-                    val = reader.readDateArray(id);
-
-                    break;
-
-                case TIMESTAMP_ARR:
-                    val = reader.readTimestampArray(id);
-
-                    break;
-
-                case TIME_ARR:
-                    val = reader.readTimeArray(id);
-
-                    break;
-
-                case OBJECT_ARR:
-                    val = reader.readObjectArray(id);
-
-                    break;
-
-                case COL:
-                    val = reader.readCollection(id, null);
-
-                    break;
-
-                case MAP:
-                    val = reader.readMap(id, null);
-
-                    break;
-
-                case BINARY_OBJ:
-                    val = reader.readBinaryObject(id);
-
-                    break;
-
-                case ENUM:
-                    val = reader.readEnum(id, field.getType());
-
-                    break;
-
-                case ENUM_ARR:
-                    val = reader.readEnumArray(id, field.getType().getComponentType());
-
-                    break;
-
-                case BINARY_ENUM:
-                    val = reader.readBinaryEnum(id);
-
-                    break;
-
-                case BINARY:
-                case OBJECT:
-                    val = reader.readObject(id);
-
-                    break;
-
-                case CLASS:
-                    val = reader.readClass(id);
-
-                    break;
-
-                default:
-                    assert false : "Invalid mode: " + mode;
-            }
-
-            return val;
         }
 
         /**

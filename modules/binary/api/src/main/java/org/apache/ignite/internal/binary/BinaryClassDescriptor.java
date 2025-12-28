@@ -64,10 +64,10 @@ class BinaryClassDescriptor {
     private final BinaryContext ctx;
 
     /** */
-    private final Class<?> cls;
+    final Class<?> cls;
 
     /** Configured serializer. */
-    private final BinarySerializer serializer;
+    final BinarySerializer serializer;
 
     /** Serializer that is passed during BinaryClassDescriptor construction. Can differ from {@link #serializer}. */
     private final BinarySerializer initialSerializer;
@@ -76,7 +76,7 @@ class BinaryClassDescriptor {
     private final BinaryInternalMapper mapper;
 
     /** */
-    private final BinaryWriteMode mode;
+    final BinaryWriteMode mode;
 
     /** */
     private final boolean userType;
@@ -85,7 +85,7 @@ class BinaryClassDescriptor {
     private final int typeId;
 
     /** */
-    private final String typeName;
+    final String typeName;
 
     /** Affinity key field name. */
     private final String affKeyFieldName;
@@ -94,13 +94,13 @@ class BinaryClassDescriptor {
     private final Constructor<?> ctor;
 
     /** */
-    private final BinaryFieldAccessor[] fields;
+    final BinaryFieldAccessor[] fields;
 
     /** Write replacer. */
     private final BinaryWriteReplacer writeReplacer;
 
     /** */
-    private final Method readResolveMtd;
+    final Method readResolveMtd;
 
     /** */
     private final Map<String, BinaryFieldMetadata> stableFieldsMeta;
@@ -907,80 +907,6 @@ class BinaryClassDescriptor {
     }
 
     /**
-     * @param reader Reader.
-     * @return Object.
-     * @throws BinaryObjectException If failed.
-     */
-    Object read(BinaryReaderExImpl reader) throws BinaryObjectException {
-        try {
-            assert reader != null;
-            assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
-
-            Object res;
-
-            switch (mode) {
-                case BINARY:
-                    res = newInstance();
-
-                    reader.setHandle(res);
-
-                    if (serializer != null)
-                        serializer.readBinary(res, reader);
-                    else
-                        ((Binarylizable)res).readBinary(reader);
-
-                    break;
-
-                case OBJECT:
-                    res = newInstance();
-
-                    reader.setHandle(res);
-
-                    for (BinaryFieldAccessor info : fields)
-                        info.read(res, reader);
-
-                    break;
-
-                default:
-                    assert false : "Invalid mode: " + mode;
-
-                    return null;
-            }
-
-            if (readResolveMtd != null) {
-                try {
-                    res = readResolveMtd.invoke(res);
-
-                    reader.setHandle(res);
-                }
-                catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
-                catch (InvocationTargetException e) {
-                    if (e.getTargetException() instanceof BinaryObjectException)
-                        throw (BinaryObjectException)e.getTargetException();
-
-                    throw new BinaryObjectException("Failed to execute readResolve() method on " + res, e);
-                }
-            }
-
-            return res;
-        }
-        catch (Exception e) {
-            String msg;
-
-            if (S.includeSensitive() && !F.isEmpty(typeName))
-                msg = "Failed to deserialize object [typeName=" + typeName + ']';
-            else
-                msg = "Failed to deserialize object [typeId=" + typeId + ']';
-
-            CommonUtils.error(ctx.log(), msg, e);
-
-            throw new BinaryObjectException(msg, e);
-        }
-    }
-
-    /**
      * @return A copy of this {@code BinaryClassDescriptor} marked as registered.
      */
     BinaryClassDescriptor makeRegistered() {
@@ -1072,7 +998,7 @@ class BinaryClassDescriptor {
      * @return Instance.
      * @throws BinaryObjectException In case of error.
      */
-    private Object newInstance() throws BinaryObjectException {
+    Object newInstance() throws BinaryObjectException {
         try {
             return ctor != null ? ctor.newInstance() : GridUnsafe.allocateInstance(cls);
         }
