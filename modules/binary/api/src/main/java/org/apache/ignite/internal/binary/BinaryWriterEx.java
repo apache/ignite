@@ -240,7 +240,7 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
     /**
      * @param val Value.
      */
-    public void writeBinaryEnum(BinaryEnumObjectImpl val);
+    public void writeBinaryEnum(BinaryObjectEx val);
 
     /**
      * @param val Class.

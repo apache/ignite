@@ -1426,8 +1426,8 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @return Binary Enum
      * @throws BinaryObjectException If failed.
      */
-    @Nullable BinaryEnumObjectImpl readBinaryEnum(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) ? BinaryUtils.doReadBinaryEnum(in, ctx) : null;
+    @Nullable BinaryObjectEx readBinaryEnum(int fieldId) throws BinaryObjectException {
+        return findFieldById(fieldId) ? doReadBinaryEnum(in, ctx) : null;
     }
 
     /**
@@ -1937,7 +1937,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 break;
 
             case BINARY_ENUM:
-                obj = BinaryUtils.doReadBinaryEnum(in, ctx);
+                obj = doReadBinaryEnum(in, ctx);
 
                 break;
 
@@ -2720,6 +2720,17 @@ class BinaryReaderExImpl implements BinaryReaderEx {
         }
 
         return val;
+    }
+
+    /**
+     * Read binary enum.
+     *
+     * @param in Input stream.
+     * @param ctx Binary context.
+     * @return Enum.
+     */
+    private static BinaryObjectEx doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx) {
+        return BinaryUtils.doReadBinaryEnum(in, ctx, BinaryUtils.doReadEnumType(in));
     }
 
     /**

@@ -366,8 +366,8 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeBinaryEnum(BinaryEnumObjectImpl val) {
-        assert val != null;
+    @Override public void writeBinaryEnum(BinaryObjectEx val) {
+        assert val instanceof BinaryEnumObjectImpl;
 
         int typeId = val.typeId();
 
