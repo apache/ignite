@@ -115,7 +115,7 @@ public interface BinaryObjectEx extends BinaryObject {
     /**
      * @return Heap copy of the object.
      */
-    public default BinaryObject heapCopy() {
+    public default BinaryObjectEx heapCopy() {
         return this;
     }
 }
