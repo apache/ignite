@@ -23,6 +23,9 @@ import org.apache.ignite.transactions.TransactionIsolation;
 public class TransactionIsolationEnumMapper implements EnumMapper<TransactionIsolation> {
     /** {@inheritDoc} */
     @Override public byte encode(TransactionIsolation val) {
+        if (val == null)
+            return -1;
+
         switch (val) {
             case READ_COMMITTED:
                 return 0;
