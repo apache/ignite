@@ -107,7 +107,6 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         IgniteCache<Integer, Integer> cacheSrv = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, Integer> cacheCli = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        cacheSrv.put(1, 1);
         cacheCli.put(1, 1);
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint"));
@@ -120,7 +119,6 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
         checkpointFinishedLsnr.reset();
 
-        cacheSrv.put(2, 2);
         cacheCli.put(2, 2);
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--reason", "test_reason"));
@@ -139,7 +137,6 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
         checkpointFinishedLsnr.reset();
 
-        cacheSrv.put(3, 3);
         cacheCli.put(3, 3);
 
         assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--wait-for-finish"));
