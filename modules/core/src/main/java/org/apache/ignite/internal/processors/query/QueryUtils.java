@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
@@ -623,6 +624,8 @@ public class QueryUtils {
             desc.primaryKeyInlineSize(-1);
             desc.affinityFieldInlineSize(-1);
         }
+
+        desc.onInitialized();
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }
@@ -1697,6 +1700,11 @@ public class QueryUtils {
 
                 break;
 
+            case SchemaOperationException.CODE_INVALID_SCHEMA:
+                sqlCode = IgniteQueryErrorCode.INVALID_SCHEMA;
+
+                break;
+
             default:
                 sqlCode = IgniteQueryErrorCode.UNKNOWN;
         }
@@ -1782,6 +1790,14 @@ public class QueryUtils {
             return val instanceof java.time.LocalDateTime || val instanceof java.util.Date;
 
         return false;
+    }
+
+    /** */
+    public static <K, V> IgniteInternalCache<K, V> cacheForDML(IgniteInternalCache<K, V> c) {
+        if (!c.configuration().isReadThrough() || c.configuration().isLoadPreviousValue())
+            return c;
+        else
+            return c.withSkipReadThrough();
     }
 
     /**

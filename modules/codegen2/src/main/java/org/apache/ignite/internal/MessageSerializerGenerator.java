@@ -36,6 +36,7 @@ import java.util.UUID;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -182,10 +183,8 @@ class MessageSerializerGenerator {
     /**
      * Generates start of write/read methods:
      * <pre>
-     *     public boolean writeTo(Message m, ByteBuffer buf, MessageWriter writer) {
+     *     public boolean writeTo(Message m, MessageWriter writer) {
      *         TestMessage msg = (TestMessage)m;
-     *
-     *         writer.setBuffer(buf);
      *
      *         if (!writer.isHeaderWritten()) {
      *             if (!writer.writeHeader(msg.directType()))
@@ -203,16 +202,13 @@ class MessageSerializerGenerator {
 
         code.add(line(METHOD_JAVADOC));
 
-        code.add(line("@Override public boolean %s(Message m, ByteBuffer buf, %s) {",
+        code.add(line("@Override public boolean %s(Message m, %s) {",
             write ? "writeTo" : "readFrom",
             write ? "MessageWriter writer" : "MessageReader reader"));
 
         indent++;
 
         code.add(line("%s msg = (%s)m;", type.getSimpleName().toString(), type.getSimpleName().toString()));
-        code.add(EMPTY);
-        code.add(line("%s.setBuffer(buf);", write ? "writer" : "reader"));
-
         code.add(EMPTY);
 
         if (write) {
@@ -239,6 +235,13 @@ class MessageSerializerGenerator {
      * @param opt Case option.
      */
     private void processField(VariableElement field, int opt) throws Exception {
+        if (assignableFrom(field.asType(), type(Throwable.class.getName())))
+            throw new UnsupportedOperationException("You should use ErrorMessage for serialization of throwables.");
+
+        if (enumType(erasedType(field.asType())))
+            throw new IllegalArgumentException("Unsupported enum type: " + field.asType() +
+                    ". The enum must be wrapped into a Message (see, for example, TransactionIsolationMessage).");
+
         writeField(field, opt);
         readField(field, opt);
     }
@@ -385,7 +388,11 @@ class MessageSerializerGenerator {
 
                 imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
-                returnFalseIfWriteFailed(write, "writer.writeCollection", getExpr,
+                String collectionWriter = assignableFrom(erasedType(type), type(Set.class.getName()))
+                    ? "writer.writeSet"
+                    : "writer.writeCollection";
+
+                returnFalseIfWriteFailed(write, collectionWriter, getExpr,
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
 
@@ -523,7 +530,11 @@ class MessageSerializerGenerator {
 
                 assert typeArgs.size() == 1;
 
-                returnFalseIfReadFailed(name, "reader.readCollection",
+                String collectionReader = assignableFrom(erasedType(type), type(Set.class.getName()))
+                    ? "reader.readSet"
+                    : "reader.readCollection";
+
+                returnFalseIfReadFailed(name, collectionReader,
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
 
@@ -642,9 +653,10 @@ class MessageSerializerGenerator {
 
     /** */
     private void finish(List<String> code) {
-        // Remove the last empty line for the last "case".
-        String removed = code.remove(code.size() - 1);
-        assert EMPTY.equals(removed) : removed;
+        String lastLine = code.get(code.size() - 1);
+
+        if (EMPTY.equals(lastLine))
+            code.remove(code.size() - 1);
 
         code.add(line("}"));
         code.add(EMPTY);
@@ -684,7 +696,6 @@ class MessageSerializerGenerator {
         writer.write(NL);
         writer.write("package " + pkgName + ";" + NL + NL);
 
-        imports.add("java.nio.ByteBuffer");
         imports.add("org.apache.ignite.plugin.extensions.communication.Message");
         imports.add("org.apache.ignite.plugin.extensions.communication.MessageSerializer");
         imports.add("org.apache.ignite.plugin.extensions.communication.MessageWriter");
@@ -712,6 +723,17 @@ class MessageSerializerGenerator {
     /** */
     private boolean assignableFrom(TypeMirror type, TypeMirror superType) {
         return env.getTypeUtils().isAssignable(type, superType);
+    }
+
+    /** */
+    private boolean enumType(TypeMirror type) {
+        if (type.getKind() == TypeKind.DECLARED) {
+            Element element = env.getTypeUtils().asElement(type);
+
+            return element != null && element.getKind() == ElementKind.ENUM;
+        }
+
+        return false;
     }
 
     /** */

@@ -51,7 +51,7 @@ ARG APACHE_MIRROR="https://apache-mirror.rbc.ru/pub/apache/"
 ARG APACHE_ARCHIVE="https://archive.apache.org/dist/"
 
 # Install binary test dependencies.
-RUN for v in "2.7.6" "2.16.0"; \
+RUN for v in "2.7.6" "2.17.0"; \
     do cd /opt; \
     curl -O $APACHE_ARCHIVE/ignite/$v/apache-ignite-$v-bin.zip;\
     unzip apache-ignite-$v-bin.zip && mv /opt/apache-ignite-$v-bin /opt/ignite-$v;\
@@ -111,4 +111,4 @@ USER ducker
 CMD sudo service ssh start && tail -f /dev/null
 
 # Container port exposure
-EXPOSE 11211 47100 47500 49112 10800 8080 2888 3888 2181 1098 8082
+EXPOSE 11211 47100 47500 49112 10800 8080 2888 3888 2181 1098 8082 8083

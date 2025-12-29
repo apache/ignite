@@ -17,18 +17,43 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.util.Collection;
 import java.util.UUID;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Handshake response.
  */
-public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Order(5)
     private long order;
+
+    /** */
+    @Order(value = 6, method = "previousNodeAliveFlag")
+    private boolean prevNodeAliveFlag;
+
+    /** Redirect addresses messages serialization holder. */
+    @Order(value = 7, method = "redirectAddressesMessages")
+    private @Nullable Collection<InetAddressMessage> redirectAddrsMsgs;
+
+    /**
+     * Default constructor for {@link DiscoveryMessageFactory}.
+     */
+    public TcpDiscoveryHandshakeResponse() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -49,17 +74,17 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
      * @return previous node alive flag.
      */
     public boolean previousNodeAlive() {
-        return getFlag(CHANGE_TOPOLOGY_FLAG_POS);
+        return prevNodeAliveFlag;
     }
 
     /**
      * Sets topology change flag.<br>
      * {@code True} means node has connectivity to it's previous node in a ring.
      *
-     * @param prevNodeAlive previous node alive flag.
+     * @param prevNodeAliveFlag previous node alive flag.
      */
-    public void previousNodeAlive(boolean prevNodeAlive) {
-        setFlag(CHANGE_TOPOLOGY_FLAG_POS, prevNodeAlive);
+    public void previousNodeAlive(boolean prevNodeAliveFlag) {
+        this.prevNodeAliveFlag = prevNodeAliveFlag;
     }
 
     /**
@@ -80,18 +105,50 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
         this.order = order;
     }
 
-    /**
-     * @return {@code True} if server supports client message acknowledge.
-     */
-    public boolean clientAck() {
-        return getFlag(CLIENT_ACK_FLAG_POS);
+    /** @return Socket addresses list for redirect. */
+    public @Nullable Collection<InetSocketAddress> redirectAddresses() {
+        return F.isEmpty(redirectAddrsMsgs)
+            ? null
+            : F.transform(redirectAddrsMsgs, msg -> {
+                try {
+                    return new InetSocketAddress(msg.address(), msg.port());
+                }
+                catch (UnknownHostException e) {
+                    throw new IgniteException("Failed to read host address.", e);
+                }
+            });
     }
 
-    /**
-     * @param clientAck {@code True} if server supports client message acknowledge.
-     */
-    public void clientAck(boolean clientAck) {
-        setFlag(CLIENT_ACK_FLAG_POS, clientAck);
+    /** @param sockAddrs Socket addresses list for redirect. */
+    public void redirectAddresses(@Nullable Collection<InetSocketAddress> sockAddrs) {
+        redirectAddrsMsgs = sockAddrs == null
+            ? null
+            : F.viewReadOnly(sockAddrs, addr -> new InetAddressMessage(addr.getAddress(), addr.getPort()));
+    }
+
+    /** @return Collection of {@link InetAddressMessage}. */
+    public @Nullable Collection<InetAddressMessage> redirectAddressesMessages() {
+        return redirectAddrsMsgs;
+    }
+
+    /** @param redirectAddrsMsgs Collection of {@link InetAddressMessage}. */
+    public void redirectAddressesMessages(@Nullable Collection<InetAddressMessage> redirectAddrsMsgs) {
+        this.redirectAddrsMsgs = redirectAddrsMsgs;
+    }
+
+    /** @return Previous node aliveness flag. */
+    public boolean previousNodeAliveFlag() {
+        return prevNodeAliveFlag;
+    }
+
+    /** @param prevNodeAliveFlag Previous node aliveness flag. */
+    public void previousNodeAliveFlag(boolean prevNodeAliveFlag) {
+        this.prevNodeAliveFlag = prevNodeAliveFlag;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 10;
     }
 
     /** {@inheritDoc} */

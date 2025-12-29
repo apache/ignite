@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryInfoCollection;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -34,7 +35,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -67,13 +67,9 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     @Order(value = 9, method = "messageSize")
     private int msgSize;
 
-    /** Supplying process error. */
-    private Throwable err;
-
-    // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-26523
-    /** Serialized form of supplying process error. */
-    @Order(10)
-    private byte[] errBytes;
+    /** Supplying process error message. */
+    @Order(value = 10, method = "errorMessage")
+    private @Nullable ErrorMessage errMsg;
 
     /**
      * @param rebalanceId Rebalance id.
@@ -110,7 +106,9 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
         this.rebalanceId = rebalanceId;
         this.topVer = topVer;
         this.addDepInfo = addDepInfo;
-        this.err = err;
+
+        if (err != null)
+            errMsg = new ErrorMessage(err);
     }
 
     /**
@@ -178,13 +176,8 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
             msgSize += 12;
 
             // If partition is empty, we need to add it.
-            if (!getInfosSafe().containsKey(p)) {
-                CacheEntryInfoCollection infoCol = new CacheEntryInfoCollection();
-
-                infoCol.init();
-
-                getInfosSafe().put(p, infoCol);
-            }
+            if (!getInfosSafe().containsKey(p))
+                getInfosSafe().put(p, new CacheEntryInfoCollection());
         }
     }
 
@@ -239,21 +232,21 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
 
     /** Supplying process error. */
     @Nullable @Override public Throwable error() {
-        return err;
+        return ErrorMessage.error(errMsg);
     }
 
     /**
-     * @return Serialized form of supplying process error.
+     * @return Supplying process error message.
      */
-    public byte[] errBytes() {
-        return errBytes;
+    @Nullable public ErrorMessage errorMessage() {
+        return errMsg;
     }
 
     /**
-     * @param errBytes New serialized form of supplying process error.
+     * @param errMsg New supplying process error message.
      */
-    public void errBytes(byte[] errBytes) {
-        this.errBytes = errBytes;
+    public void errorMessage(@Nullable ErrorMessage errMsg) {
+        this.errMsg = errMsg;
     }
 
     /**
@@ -295,20 +288,9 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
             msgSize += 4;
 
             getInfosSafe().put(p, infoCol = new CacheEntryInfoCollection());
-
-            infoCol.init();
         }
 
         infoCol.add(info);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-26523
-        if (err != null && errBytes == null)
-            errBytes = U.marshal(ctx, err);
     }
 
     /** {@inheritDoc} */
@@ -326,10 +308,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
             for (int i = 0; i < entries.size(); i++)
                 entries.get(i).unmarshal(grp.cacheObjectContext(), ldr);
         }
-
-        // TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-26523
-        if (errBytes != null && err == null)
-            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */

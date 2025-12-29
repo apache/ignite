@@ -2921,12 +2921,21 @@ public class BinaryUtils {
 
     /**
      * @param ctx Context.
+     * @param failIfUnregistered Flag to fail while writing object of unregistered type.
+     * @param typeId Type id.
      * @return Writer instance.
      */
-    public static BinaryWriterEx writer(BinaryContext ctx) {
+    public static BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered, int typeId) {
         BinaryThreadLocalContext locCtx = BinaryThreadLocalContext.get();
 
-        return new BinaryWriterExImpl(ctx, BinaryStreams.outputStream((int)CommonUtils.KB, locCtx.chunk()), locCtx.schemaHolder(), null);
+        return new BinaryWriterExImpl(
+            ctx,
+            BinaryStreams.outputStream((int)CommonUtils.KB, locCtx.chunk()),
+            locCtx.schemaHolder(),
+            null,
+            failIfUnregistered,
+            typeId
+        );
     }
 
     /**
@@ -2935,7 +2944,14 @@ public class BinaryUtils {
      * @return Writer instance.
      */
     public static BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out) {
-        return new BinaryWriterExImpl(ctx, out, BinaryThreadLocalContext.get().schemaHolder(), null);
+        return new BinaryWriterExImpl(
+            ctx,
+            out,
+            BinaryThreadLocalContext.get().schemaHolder(),
+            null,
+            false,
+            GridBinaryMarshaller.UNREGISTERED_TYPE_ID
+        );
     }
 
     /**
@@ -2944,7 +2960,7 @@ public class BinaryUtils {
      * @return Writer instance.
      */
     public static BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema) {
-        return new BinaryWriterExImpl(ctx, out, schema, null);
+        return new BinaryWriterExImpl(ctx, out, schema, null, false, GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
     }
 
     /** @return Instance of caching handler. */

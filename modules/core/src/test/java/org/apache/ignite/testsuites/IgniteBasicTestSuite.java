@@ -37,6 +37,13 @@ import org.apache.ignite.internal.IgniteLocalNodeMapBeforeStartTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.codegen.MessageProcessorTest;
+import org.apache.ignite.internal.managers.communication.CacheEntryPredicateAdapterMessageTest;
+import org.apache.ignite.internal.managers.communication.CacheWriteSynchroizationModeMessageTest;
+import org.apache.ignite.internal.managers.communication.DeploymentModeMessageTest;
+import org.apache.ignite.internal.managers.communication.ErrorMessageSelfTest;
+import org.apache.ignite.internal.managers.communication.GridCacheOperationModeMessageTest;
+import org.apache.ignite.internal.managers.communication.IndexKeyTypeMessageTest;
+import org.apache.ignite.internal.managers.communication.TransactionIsolationMessageTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
@@ -143,7 +150,14 @@ import org.junit.runners.Suite;
     JavaVersionCommandParserTest.class,
     ClientSessionOutboundQueueLimitTest.class,
 
-    MessageProcessorTest.class
+    MessageProcessorTest.class,
+    ErrorMessageSelfTest.class,
+    TransactionIsolationMessageTest.class,
+    GridCacheOperationModeMessageTest.class,
+    CacheWriteSynchroizationModeMessageTest.class,
+    CacheEntryPredicateAdapterMessageTest.class,
+    DeploymentModeMessageTest.class,
+    IndexKeyTypeMessageTest.class
 })
 public class IgniteBasicTestSuite {
 }

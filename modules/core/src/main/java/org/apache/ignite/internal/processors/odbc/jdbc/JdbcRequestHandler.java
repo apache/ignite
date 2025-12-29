@@ -181,6 +181,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
      * @param replicatedOnly Replicated only flag.
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
+     * @param loc Local query flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param qryEngine Name of SQL query engine to use.
      * @param dataPageScanEnabled Enable scan data page mode.
@@ -202,6 +203,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
         boolean replicatedOnly,
         boolean autoCloseCursors,
         boolean lazy,
+        boolean loc,
         boolean skipReducerOnUpdate,
         @Nullable String qryEngine,
         @Nullable Boolean dataPageScanEnabled,
@@ -232,6 +234,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
             collocated,
             replicatedOnly,
             lazy,
+            loc,
             skipReducerOnUpdate,
             dataPageScanEnabled,
             updateBatchSize,
@@ -1118,6 +1121,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler, ClientT
         qry.setCollocated(cliCtx.isCollocated());
         qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
         qry.setLazy(cliCtx.isLazy());
+        qry.setLocal(cliCtx.isLocal());
         qry.setSchema(schemaName);
         qry.setQueryInitiatorId(connCtx.clientDescriptor());
 

@@ -46,6 +46,25 @@ class ClientFieldsQueryPager extends GenericQueryPager<List<?>> implements Field
         ClientOperation pageQryOp,
         Consumer<PayloadOutputChannel> qryWriter,
         boolean keepBinary,
+        ClientBinaryMarshaller marsh,
+        int cacheId,
+        int partId
+    ) {
+        super(ch, tx, qryOp, pageQryOp, qryWriter, cacheId, partId);
+
+        this.keepBinary = keepBinary;
+
+        serDes = new ClientUtils(marsh);
+    }
+
+    /** Constructor. */
+    ClientFieldsQueryPager(
+        ReliableChannel ch,
+        @Nullable TcpClientTransaction tx,
+        ClientOperation qryOp,
+        ClientOperation pageQryOp,
+        Consumer<PayloadOutputChannel> qryWriter,
+        boolean keepBinary,
         ClientBinaryMarshaller marsh
     ) {
         super(ch, tx, qryOp, pageQryOp, qryWriter);

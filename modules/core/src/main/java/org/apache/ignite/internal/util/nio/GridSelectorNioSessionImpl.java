@@ -28,6 +28,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
 import org.apache.ignite.internal.processors.metric.impl.MaxValueMetric;
@@ -443,12 +444,8 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
         return rmv;
     }
 
-    /**
-     * Gets number of write requests in a queue that have not been processed yet.
-     *
-     * @return Number of write requests.
-     */
-    int writeQueueSize() {
+    /** {@inheritDoc} */
+    @Override public int messagesQueueSize() {
         return queue.sizex();
     }
 
@@ -526,8 +523,8 @@ public class GridSelectorNioSessionImpl extends GridNioSessionImpl implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<Boolean> close() {
-        GridNioFuture<Boolean> fut = super.close();
+    @Override public IgniteInternalFuture<Boolean> close() {
+        IgniteInternalFuture<Boolean> fut = super.close();
 
         if (!fut.isDone()) {
             fut.listen(() -> {

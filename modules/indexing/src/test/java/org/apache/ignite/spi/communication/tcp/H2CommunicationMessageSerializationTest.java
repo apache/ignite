@@ -17,12 +17,12 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
-import org.apache.ignite.internal.managers.communication.AbstractCommunicationMessageSerializationTest;
+import org.apache.ignite.internal.managers.communication.AbstractMessageSerializationTest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2ValueMessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
 /** */
-public class H2CommunicationMessageSerializationTest extends AbstractCommunicationMessageSerializationTest {
+public class H2CommunicationMessageSerializationTest extends AbstractMessageSerializationTest {
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
         return new GridH2ValueMessageFactory();
