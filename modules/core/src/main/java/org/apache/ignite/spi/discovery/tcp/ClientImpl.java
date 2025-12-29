@@ -606,6 +606,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             T2<Boolean, T2<SocketStream, Integer>> waitAndRes = sendJoinRequests(prevAddr != null, addrs);
 
+            addrs.clear();
+
             boolean wait = waitAndRes.get1();
             T2<SocketStream, Integer> res = waitAndRes.get2();
 
@@ -669,8 +671,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                     U.closeQuiet(sock);
             }
         }
-
-        addrs.clear();
 
         return new T2<>(false, null);
     }
@@ -739,13 +739,16 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(ses, ackTimeout0);
 
-                if (res.redirectAddresses() != null) {
+                // Convert the addresses once.
+                Collection<InetSocketAddress> redirectAddrs = res.redirectAddresses();
+
+                if (redirectAddrs != null) {
                     U.closeQuiet(sock);
 
                     if (log.isInfoEnabled())
-                        log.info("Reconnecting to the addresses of a proper DC [addrs=" + res.redirectAddresses() + ']');
+                        log.info("Reconnecting to the addresses of a proper DC [addrs=" + redirectAddrs + ']');
 
-                    T2<Boolean, T2<SocketStream, Integer>> redirectedRes = sendJoinRequests(recon, res.redirectAddresses());
+                    T2<Boolean, T2<SocketStream, Integer>> redirectedRes = sendJoinRequests(recon, redirectAddrs);
 
                     return redirectedRes.get2();
                 }
@@ -2301,6 +2304,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                     }
 
                     locNode.setAttributes(msg.clientNodeAttributes());
+
+                    clearNodeSensitiveData(locNode);
+
                     locNode.visible(true);
 
                     long topVer = msg.topologyVersion();
@@ -2356,6 +2362,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                     assert topVer > 0 : msg;
 
                     if (!node.visible()) {
+                        clearNodeSensitiveData(node);
+
                         node.order(topVer);
                         node.visible(true);
 

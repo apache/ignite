@@ -568,7 +568,7 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
                     assert msg.startsWith("Cache doesn't exist") ||
                         msg.startsWith("Failed to change WAL mode because some caches no longer exist") ||
-                        msg.startsWith("Cache names cannot be empty.") :
+                        msg.startsWith("Cache group") && msg.contains("does not contain any caches") :
                         e.getMessage();
                 }
                 finally {
@@ -773,5 +773,19 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         assertForAllNodes(CACHE_NAME, true);
         assertForAllNodes(CACHE_NAME_2, true);
+
+        srv.destroyCache(CACHE_NAME_2);
+
+        srv.cluster().disableWal(CACHE_NAME);
+        assertForAllNodes(CACHE_NAME, false);
+
+        srv.cluster().enableWal("testGroup");
+        assertForAllNodes(CACHE_NAME, true);
+
+        srv.cluster().disableWal("testGroup");
+        assertForAllNodes(CACHE_NAME, false);
+
+        srv.cluster().enableWal(CACHE_NAME);
+        assertForAllNodes(CACHE_NAME, true);
     }
 }

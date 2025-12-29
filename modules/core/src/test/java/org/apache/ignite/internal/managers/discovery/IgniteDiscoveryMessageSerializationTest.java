@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query.index;
+package org.apache.ignite.internal.managers.discovery;
 
-/**
- * Enum to store possible nulls ordering.
- */
-public enum NullsOrder {
-    /** */
-    NULLS_LAST,
+import org.apache.ignite.internal.managers.communication.AbstractMessageSerializationTest;
+import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 
-    /** */
-    NULLS_FIRST
+/** Serialization test for discovery messages. */
+public class IgniteDiscoveryMessageSerializationTest extends AbstractMessageSerializationTest {
+    /** {@inheritDoc} */
+    @Override protected MessageFactoryProvider messageFactory() {
+        return new DiscoveryMessageFactory();
+    }
 }

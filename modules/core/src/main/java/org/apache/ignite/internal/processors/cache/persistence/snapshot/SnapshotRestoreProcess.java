@@ -1577,7 +1577,7 @@ public class SnapshotRestoreProcess {
      * @param metas Map of snapshot metadata distribution across the cluster.
      * @return Map of cache partitions per each node.
      */
-    private static Map<UUID, Map<Integer, Set<Integer>>> snapshotAffinity(
+    private Map<UUID, Map<Integer, Set<Integer>>> snapshotAffinity(
         Map<UUID, List<SnapshotMetadata>> metas,
         BiPredicate<Integer, Integer> filter
     ) {
@@ -1586,10 +1586,23 @@ public class SnapshotRestoreProcess {
         List<UUID> nodes = new ArrayList<>(metas.keySet());
         Collections.shuffle(nodes);
 
-        Map<UUID, List<SnapshotMetadata>> shuffleMetas = new LinkedHashMap<>();
-        nodes.forEach(k -> shuffleMetas.put(k, metas.get(k)));
+        Map<UUID, List<SnapshotMetadata>> orderedMetas = new LinkedHashMap<>();
 
-        for (Map.Entry<UUID, List<SnapshotMetadata>> e : shuffleMetas.entrySet()) {
+        String locDc = ctx.discovery().localNode().dataCenterId();
+
+        if (locDc != null) {
+            List<UUID> sameDcNodes = nodes.stream()
+                .map(uuid -> ctx.discovery().node(uuid))
+                .filter(node -> Objects.equals(node.dataCenterId(), locDc))
+                .map(ClusterNode::id)
+                .collect(Collectors.toList());
+
+            sameDcNodes.forEach(k -> orderedMetas.put(k, metas.get(k))); // Getting same DC files first.
+        }
+
+        nodes.forEach(k -> orderedMetas.put(k, metas.get(k)));
+
+        for (Map.Entry<UUID, List<SnapshotMetadata>> e : orderedMetas.entrySet()) {
             UUID nodeId = e.getKey();
 
             for (SnapshotMetadata meta : ofNullable(e.getValue()).orElse(Collections.emptyList())) {

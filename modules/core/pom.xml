@@ -387,6 +387,10 @@
                     <annotationProcessors>
                         <annotationProcessor>org.apache.ignite.internal.MessageProcessor</annotationProcessor>
                     </annotationProcessors>
+                    <compilerArgs combine.children="append">
+                        <arg>-Xmaxerrs</arg>
+                        <arg>1000</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
         </plugins>

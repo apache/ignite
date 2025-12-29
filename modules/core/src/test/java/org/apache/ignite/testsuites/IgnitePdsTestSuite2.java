@@ -27,6 +27,7 @@ import org.apache.ignite.cdc.CdcManagerTest;
 import org.apache.ignite.cdc.CdcNonDefaultWorkDirTest;
 import org.apache.ignite.cdc.CdcPushMetricsExporterTest;
 import org.apache.ignite.cdc.CdcSelfTest;
+import org.apache.ignite.cdc.CorruptedCdcConsumerStateTest;
 import org.apache.ignite.cdc.RestartWithWalForceArchiveTimeoutTest;
 import org.apache.ignite.cdc.TransformedCdcSelfTest;
 import org.apache.ignite.cdc.WalForCdcTest;
@@ -161,6 +162,7 @@ public class IgnitePdsTestSuite2 {
         GridTestUtils.addTestIfNeeded(suite, TransformedCdcSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CdcCacheVersionTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, RestartWithWalForceArchiveTimeoutTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CorruptedCdcConsumerStateTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, WalRolloverOnStopTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, WalForCdcTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CdcCacheConfigOnRestartTest.class, ignoredTests);
