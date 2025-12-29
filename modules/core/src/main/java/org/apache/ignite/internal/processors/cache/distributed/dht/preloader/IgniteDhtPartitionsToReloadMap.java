@@ -18,10 +18,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
@@ -42,9 +42,9 @@ public class IgniteDhtPartitionsToReloadMap implements Message {
     /**
      * @param nodeId Node ID.
      * @param cacheId Cache ID.
-     * @return Collection of partitions to reload.
+     * @return Set of partitions to reload.
      */
-    public synchronized Collection<Integer> get(UUID nodeId, int cacheId) {
+    public synchronized Set<Integer> get(UUID nodeId, int cacheId) {
         if (map == null)
             return Collections.emptySet();
 
@@ -58,7 +58,7 @@ public class IgniteDhtPartitionsToReloadMap implements Message {
         if (partsToReload == null)
             return Collections.emptySet();
 
-        return F.emptyIfNull(partsToReload.partitions());
+        return (Set<Integer>)F.emptyIfNull(partsToReload.partitions());
     }
 
     /**
