@@ -68,9 +68,8 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
             cfg.setDataStorageConfiguration(storageCfg);
         }
-        else {
-            if (!persistenceEnable())
-                cfg.setDataStorageConfiguration(null);
+        else if (!persistenceEnable()) {
+            cfg.setDataStorageConfiguration(null);
         }
 
         return cfg;
