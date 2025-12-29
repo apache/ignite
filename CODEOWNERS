@@ -1,0 +1,6 @@
+# This file specifies the code owners for the different parts of the repository.
+# See also: https://cwiki.apache.org/confluence/display/IGNITE/How+to+Contribute#HowtoContribute-AppendixA.Componentsandtheirmaintainers
+
+# Platforms and Clients
+/modules/platforms/dotnet/    ptupitsyn@apache.org
+/modules/platforms/cpp/       isapego@apache.org
