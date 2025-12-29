@@ -88,17 +88,17 @@ public class IndexRebuildIntegrationTest extends AbstractBasicIntegrationTest {
         client.cluster().state(ClusterState.ACTIVE);
 
         executeSql("CREATE TABLE tbl (id INT, id2 INT, val VARCHAR, val2 VARCHAR, PRIMARY KEY(id, id2)) " +
-            "WITH CACHE_NAME=\"test\"");
+            "WITH CACHE_NAME=\"test\",affinity_key=id");
         executeSql("CREATE INDEX idx_id_val ON tbl (id DESC, val)");
         executeSql("CREATE INDEX idx_id_val2 ON tbl (id, val2 DESC)");
 
         for (int i = 0; i < 100; i++)
             executeSql("INSERT INTO tbl VALUES (?, ?, ?, ?)", i, i, "val" + i, "val" + i);
 
-        executeSql("CREATE TABLE tbl2 (id INT PRIMARY KEY, val VARCHAR)");
+        executeSql("CREATE TABLE tbl2 (id INT, id2 INT, val VARCHAR, PRIMARY KEY(id, id2)) WITH affinity_key=id");
 
         for (int i = 0; i < 100; i++)
-            executeSql("INSERT INTO tbl2 VALUES (?, ?)", i, "val" + i);
+            executeSql("INSERT INTO tbl2 VALUES (?, ?, ?)", i, i, "val" + i);
     }
 
     /** */
