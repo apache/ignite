@@ -270,10 +270,8 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
         return detach(false);
     }
 
-    /**
-     * @return Detached binary object.
-     */
-    public BinaryObjectImpl detach(boolean checkCrossObjReferences) {
+    /** {@inheritDoc} */
+    @Override public BinaryObjectImpl detach(boolean checkCrossObjReferences) {
         if (!detachAllowed || detached())
             return this;
 
@@ -854,8 +852,8 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
      */
     @SuppressWarnings("unchecked")
     static int compareForDml(Object first, Object second) {
-        boolean firstBinary = BinaryUtils.isBinaryObjectImpl(first);
-        boolean secondBinary = BinaryUtils.isBinaryObjectImpl(second);
+        boolean firstBinary = first instanceof BinaryObjectImpl;
+        boolean secondBinary = second instanceof BinaryObjectImpl;
 
         if (firstBinary) {
             if (secondBinary)

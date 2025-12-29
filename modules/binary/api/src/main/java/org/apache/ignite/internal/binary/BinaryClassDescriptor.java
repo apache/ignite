@@ -802,7 +802,7 @@ class BinaryClassDescriptor {
                     break;
 
                 case BINARY_OBJ:
-                    writer.writeBinaryObject((BinaryObjectImpl)obj);
+                    writer.writeBinaryObject((BinaryObjectEx)obj);
 
                     break;
 

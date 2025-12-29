@@ -1512,7 +1512,7 @@ public class BinaryUtils {
             byte[] arr = doReadByteArray(in);
             int start = in.readInt();
 
-            BinaryObjectImpl binO = new BinaryObjectImpl(ctx, arr, start);
+            BinaryObject binO = binaryObject(ctx, arr, start);
 
             if (detach)
                 return (BinaryObject)detach(binO);
@@ -1880,7 +1880,7 @@ public class BinaryUtils {
                 BinaryObjectEx po;
 
                 if (detach) {
-                    BinaryObjectImpl binObj = new BinaryObjectImpl(ctx, in.array(), start);
+                    BinaryObjectEx binObj = binaryObject(ctx, in.array(), start);
 
                     binObj.detachAllowed(true);
 
@@ -1888,7 +1888,7 @@ public class BinaryUtils {
                 }
                 else {
                     if (in.offheapPointer() == 0)
-                        po = new BinaryObjectImpl(ctx, in.array(), start);
+                        po = binaryObject(ctx, in.array(), start);
                     else
                         po = binariesFactory.binaryOffheapObject(ctx, in.offheapPointer(), start,
                             in.remaining() + in.position());

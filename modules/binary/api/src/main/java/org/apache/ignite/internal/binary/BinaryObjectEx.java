@@ -127,6 +127,13 @@ public interface BinaryObjectEx extends BinaryObject {
     }
 
     /**
+     * @return Detached binary object.
+     */
+    public default BinaryObjectEx detach(boolean checkCrossObjReferences) {
+        return this;
+    }
+
+    /**
      * @param detachAllowed Detach allowed flag.
      */
     public default void detachAllowed(boolean detachAllowed) {
