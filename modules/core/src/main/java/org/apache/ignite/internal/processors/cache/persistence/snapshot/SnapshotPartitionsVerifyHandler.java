@@ -403,6 +403,7 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                 cctx.localNode().consistentId(),
                 null,
                 0,
+                0,
                 PartitionHashRecord.PartitionState.OWNING,
                 new VerifyPartitionContext()
             );
@@ -410,16 +411,19 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
 
         try {
             try (Dump.DumpedPartitionIterator iter = dump.iterator(folderName, CU.cacheId(grpName), part, null)) {
-                long size = 0;
+                long totalSize = 0;
+                long realSize = 0;
 
                 VerifyPartitionContext ctx = new VerifyPartitionContext();
 
                 while (iter.hasNext()) {
                     DumpEntry e = iter.next();
+                    totalSize++;
 
-                    ctx.update((KeyCacheObject)e.key(), (CacheObject)e.value(), e.version());
-
-                    size++;
+                    if (e.expireTime() <= 0) {
+                        ctx.update((KeyCacheObject)e.key(), (CacheObject)e.value(), e.version());
+                        realSize++;
+                    }
                 }
 
                 return new PartitionHashRecord(
@@ -427,7 +431,8 @@ public class SnapshotPartitionsVerifyHandler implements SnapshotHandler<Map<Part
                     false,
                     cctx.localNode().consistentId(),
                     null,
-                    size,
+                    totalSize,
+                    realSize,
                     PartitionHashRecord.PartitionState.OWNING,
                     ctx
                 );
