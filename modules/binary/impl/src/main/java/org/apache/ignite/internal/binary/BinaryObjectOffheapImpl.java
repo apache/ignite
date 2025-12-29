@@ -83,10 +83,8 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
         this.size = size;
     }
 
-    /**
-     * @return Heap-based copy.
-     */
-    public BinaryObject heapCopy() {
+    /** {@inheritDoc} */
+    @Override public BinaryObject heapCopy() {
         return new BinaryObjectImpl(ctx, GridUnsafe.copyMemory(ptr, size), start);
     }
 
