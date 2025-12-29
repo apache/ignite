@@ -144,19 +144,6 @@ namespace Apache.Ignite.Core.Compute
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
         /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
         /// </summary>
-        /// <param name="taskName">Task name</param>
-        /// <param name="task">Task to execute.</param>
-        /// <param name="taskArg">Optional task argument.</param>
-        /// <returns>Task result.</returns>
-        /// <typeparam name="TArg">Argument type.</typeparam>
-        /// <typeparam name="TJobRes">Type of job result.</typeparam>
-        /// <typeparam name="TRes">Type of final task result.</typeparam>
-        TRes Execute<TArg, TJobRes, TRes>(string taskName, IComputeTask<TArg, TJobRes, TRes> task, TArg taskArg);
-
-        /// <summary>
-        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
-        /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
-        /// </summary>
         /// <param name="task">Task to execute.</param>
         /// <param name="taskArg">Optional task argument.</param>
         /// <returns>Task result.</returns>
@@ -164,19 +151,6 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="TJobRes">Type of job result.</typeparam>
         /// <typeparam name="TRes">Type of final task result.</typeparam>
         Task<TRes> ExecuteAsync<TArg, TJobRes, TRes>(IComputeTask<TArg, TJobRes, TRes> task, TArg taskArg);
-
-        /// <summary>
-        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
-        /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
-        /// </summary>
-        /// <param name="taskName">Task name</param>
-        /// <param name="task">Task to execute.</param>
-        /// <param name="taskArg">Optional task argument.</param>
-        /// <returns>Task result.</returns>
-        /// <typeparam name="TArg">Argument type.</typeparam>
-        /// <typeparam name="TJobRes">Type of job result.</typeparam>
-        /// <typeparam name="TRes">Type of final task result.</typeparam>
-        Task<TRes> ExecuteAsync<TArg, TJobRes, TRes>(string taskName, IComputeTask<TArg, TJobRes, TRes> task, TArg taskArg);
 
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -196,23 +170,6 @@ namespace Apache.Ignite.Core.Compute
 
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
-        /// refer to <see cref="IComputeTask{A,T,R}" /> documentation.
-        /// </summary>
-        /// <typeparam name="TArg">Argument type.</typeparam>
-        /// <typeparam name="TJobRes">Type of job result.</typeparam>
-        /// <typeparam name="TRes">Type of final task result.</typeparam>
-        /// <param name="taskName">Task name</param>
-        /// <param name="task">Task to execute.</param>
-        /// <param name="taskArg">Optional task argument.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// Task result.
-        /// </returns>
-        Task<TRes> ExecuteAsync<TArg, TJobRes, TRes>(string taskName, IComputeTask<TArg, TJobRes, TRes> task, TArg taskArg, 
-            CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
         /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
         /// </summary>
         /// <param name="task">Task to execute.</param>
@@ -220,17 +177,6 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="TJobRes">Type of job result.</typeparam>
         /// <typeparam name="TRes">Type of reduce result.</typeparam>
         TRes Execute<TJobRes, TRes>(IComputeTask<TJobRes, TRes> task);
-
-        /// <summary>
-        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
-        /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
-        /// </summary>
-        /// <param name="taskName">Task name</param>
-        /// <param name="task">Task to execute.</param>
-        /// <returns>Task result.</returns>
-        /// <typeparam name="TJobRes">Type of job result.</typeparam>
-        /// <typeparam name="TRes">Type of reduce result.</typeparam>
-        TRes Execute<TJobRes, TRes>(string taskName, IComputeTask<TJobRes, TRes> task);
 
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -244,17 +190,6 @@ namespace Apache.Ignite.Core.Compute
 
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
-        /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
-        /// </summary>
-        /// <param name="taskName">Task name</param>
-        /// <param name="task">Task to execute.</param>
-        /// <returns>Task result.</returns>
-        /// <typeparam name="TJobRes">Type of job result.</typeparam>
-        /// <typeparam name="TRes">Type of reduce result.</typeparam>
-        Task<TRes> ExecuteAsync<TJobRes, TRes>(string taskName, IComputeTask<TJobRes, TRes> task);
-
-        /// <summary>
-        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
         /// refer to <see cref="IComputeTask{A,T,R}" /> documentation.
         /// </summary>
         /// <typeparam name="TJobRes">Type of job result.</typeparam>
@@ -265,20 +200,6 @@ namespace Apache.Ignite.Core.Compute
         /// Task result.
         /// </returns>
         Task<TRes> ExecuteAsync<TJobRes, TRes>(IComputeTask<TJobRes, TRes> task, CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
-        /// refer to <see cref="IComputeTask{A,T,R}" /> documentation.
-        /// </summary>
-        /// <typeparam name="TJobRes">Type of job result.</typeparam>
-        /// <typeparam name="TRes">Type of reduce result.</typeparam>
-        /// <param name="taskName">Task name</param>
-        /// <param name="task">Task to execute.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// Task result.
-        /// </returns>
-        Task<TRes> ExecuteAsync<TJobRes, TRes>(string taskName, IComputeTask<TJobRes, TRes> task, CancellationToken cancellationToken);
 
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -296,19 +217,6 @@ namespace Apache.Ignite.Core.Compute
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
         /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
         /// </summary>
-        /// <param name="taskName">Task name</param>
-        /// <param name="taskType">Task type.</param>
-        /// <param name="taskArg">Optional task argument.</param>
-        /// <returns>Task result.</returns>
-        /// <typeparam name="TArg">Argument type.</typeparam>
-        /// <typeparam name="TJobRes">Type of job result.</typeparam>
-        /// <typeparam name="TRes">Type of reduce result.</typeparam>
-        TRes Execute<TArg, TJobRes, TRes>(string taskName, Type taskType, TArg taskArg);
-
-        /// <summary>
-        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
-        /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
-        /// </summary>
         /// <param name="taskType">Task type.</param>
         /// <param name="taskArg">Optional task argument.</param>
         /// <returns>Task result.</returns>
@@ -316,19 +224,6 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="TJobRes">Type of job result.</typeparam>
         /// <typeparam name="TRes">Type of reduce result.</typeparam>
         Task<TRes> ExecuteAsync<TArg, TJobRes, TRes>(Type taskType, TArg taskArg);
-
-        /// <summary>
-        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
-        /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
-        /// </summary>
-        /// <param name="taskName">Task name</param>
-        /// <param name="taskType">Task type.</param>
-        /// <param name="taskArg">Optional task argument.</param>
-        /// <returns>Task result.</returns>
-        /// <typeparam name="TArg">Argument type.</typeparam>
-        /// <typeparam name="TJobRes">Type of job result.</typeparam>
-        /// <typeparam name="TRes">Type of reduce result.</typeparam>
-        Task<TRes> ExecuteAsync<TArg, TJobRes, TRes>(string taskName, Type taskType, TArg taskArg);
 
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -347,22 +242,6 @@ namespace Apache.Ignite.Core.Compute
 
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
-        /// refer to <see cref="IComputeTask{A,T,R}" /> documentation.
-        /// </summary>
-        /// <typeparam name="TArg">Argument type.</typeparam>
-        /// <typeparam name="TJobRes">Type of job result.</typeparam>
-        /// <typeparam name="TRes">Type of reduce result.</typeparam>
-        /// <param name="taskName">Task name</param>
-        /// <param name="taskType">Task type.</param>
-        /// <param name="taskArg">Optional task argument.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// Task result.
-        /// </returns>
-        Task<TRes> ExecuteAsync<TArg, TJobRes, TRes>(string taskName, Type taskType, TArg taskArg, CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
         /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
         /// </summary>
         /// <param name="taskType">Task type.</param>
@@ -370,17 +249,6 @@ namespace Apache.Ignite.Core.Compute
         /// <typeparam name="TJobRes">Type of job result.</typeparam>
         /// <typeparam name="TRes">Type of reduce result.</typeparam>
         TRes Execute<TJobRes, TRes>(Type taskType);
-
-        /// <summary>
-        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
-        /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
-        /// </summary>
-        /// <param name="taskName">Task name</param>
-        /// <param name="taskType">Task type.</param>
-        /// <returns>Task result.</returns>
-        /// <typeparam name="TJobRes">Type of job result.</typeparam>
-        /// <typeparam name="TRes">Type of reduce result.</typeparam>
-        TRes Execute<TJobRes, TRes>(string taskName, Type taskType);
 
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -394,17 +262,6 @@ namespace Apache.Ignite.Core.Compute
 
         /// <summary>
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
-        /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
-        /// </summary>
-        /// <param name="taskName">Task name</param>
-        /// <param name="taskType">Task type.</param>
-        /// <returns>Task result.</returns>
-        /// <typeparam name="TJobRes">Type of job result.</typeparam>
-        /// <typeparam name="TRes">Type of reduce result.</typeparam>
-        Task<TRes> ExecuteAsync<TJobRes, TRes>(string taskName, Type taskType);
-
-        /// <summary>
-        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
         /// refer to <see cref="IComputeTask{A,T,R}" /> documentation.
         /// </summary>
         /// <typeparam name="TJobRes">Type of job result.</typeparam>
@@ -415,20 +272,6 @@ namespace Apache.Ignite.Core.Compute
         /// Task result.
         /// </returns>
         Task<TRes> ExecuteAsync<TJobRes, TRes>(Type taskType, CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
-        /// refer to <see cref="IComputeTask{A,T,R}" /> documentation.
-        /// </summary>
-        /// <typeparam name="TJobRes">Type of job result.</typeparam>
-        /// <typeparam name="TRes">Type of reduce result.</typeparam>
-        /// <param name="taskName">Task name</param>
-        /// <param name="taskType">Task type.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// Task result.
-        /// </returns>
-        Task<TRes> ExecuteAsync<TJobRes, TRes>(string taskName, Type taskType, CancellationToken cancellationToken);
 
         /// <summary>
         /// Executes provided job on a node in this grid projection. The result of the

@@ -251,38 +251,6 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Executes given task on the grid projection. For step-by-step explanation of task execution process
         /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
         /// </summary>
-        /// <param name="taskName">Task name</param>
-        /// <param name="task">Task to execute.</param>
-        /// <param name="taskArg">Optional task argument.</param>
-        /// <returns>Task result.</returns>
-        public Future<TReduceRes> Execute<TArg, TJobRes, TReduceRes>(string taskName, IComputeTask<TArg, TJobRes,
-            TReduceRes> task, TArg taskArg)
-        {
-            IgniteArgumentCheck.NotNull(task, "task");
-
-            var holder = new ComputeTaskHolder<TArg, TJobRes, TReduceRes>((Ignite) _prj.Ignite, this, task, taskArg);
-
-            long ptr = Marshaller.Ignite.HandleRegistry.Allocate(holder);
-
-            var futTarget = DoOutOpObject(OpExecNative, s =>
-            {
-                s.WriteLong(ptr);
-                s.WriteLong(_prj.TopologyVersion);
-                s.WriteString(taskName);
-                s.WriteBoolean(holder.TaskSessionFullSupport);
-            });
-
-            var future = holder.Future;
-
-            future.SetTarget(new Listenable(futTarget));
-
-            return future;
-        }
-
-        /// <summary>
-        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
-        /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
-        /// </summary>
         /// <param name="taskType">Task type.</param>
         /// <param name="taskArg">Optional task argument.</param>
         /// <returns>Task result.</returns>
@@ -298,28 +266,6 @@ namespace Apache.Ignite.Core.Impl.Compute
                 throw new IgniteException("Task type doesn't implement IComputeTask: " + taskType.Name);
 
             return Execute(task0, taskArg);
-        }
-
-        /// <summary>
-        /// Executes given task on the grid projection. For step-by-step explanation of task execution process
-        /// refer to <see cref="IComputeTask{A,T,R}"/> documentation.
-        /// </summary>
-        /// <param name="taskName">Task name.</param>
-        /// <param name="taskType">Task type.</param>
-        /// <param name="taskArg">Optional task argument.</param>
-        /// <returns>Task result.</returns>
-        public Future<TReduceRes> Execute<TArg, TJobRes, TReduceRes>(string taskName, Type taskType, TArg taskArg)
-        {
-            IgniteArgumentCheck.NotNull(taskType, "taskType");
-
-            object task = FormatterServices.GetUninitializedObject(taskType);
-
-            var task0 = task as IComputeTask<TArg, TJobRes, TReduceRes>;
-
-            if (task0 == null)
-                throw new IgniteException("Task type doesn't implement IComputeTask: " + taskType.Name);
-
-            return Execute(taskName, task0, taskArg);
         }
 
         /// <summary>
