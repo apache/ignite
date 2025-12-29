@@ -170,15 +170,12 @@ public class TcpDiscoveryIoSession {
             if (MESSAGE_SERIALIZATION != serMode) {
                 detectSslAlert(serMode, in);
 
-                // IOException type is important for ServerImpl for connection error processing behavior.
-                // It may search the cause (X.hasCause).
+                // IOException type is important for ServerImpl. It may search the cause (X.hasCause).
+                // The connection error processing behavior depends on it.
                 throw new IOException("Received unexpected byte while reading discovery message: " + serMode);
             }
 
-            byte b0 = (byte)in.read();
-            byte b1 = (byte)in.read();
-
-            Message msg = spi.messageFactory().create(makeMessageType(b0, b1));
+            Message msg = spi.messageFactory().create(makeMessageType((byte)in.read(), (byte)in.read()));
 
             msgReader.reset();
             msgReader.setBuffer(msgBuf);
@@ -187,48 +184,40 @@ public class TcpDiscoveryIoSession {
 
             boolean finished;
 
-            byte[] unprocessedBytes = null;
-            int unprocessedBytesLen = 0;
+            msgBuf.clear();
 
             do {
-                // Should be cleared before first operation.
-                msgBuf.clear();
-
-                if (unprocessedBytes != null) {
-                    assert unprocessedBytesLen == unprocessedBytes.length;
-
-                    msgBuf.put(unprocessedBytes);
-
-                    unprocessedBytes = null;
-                }
-
                 int read = in.read(msgBuf.array(), msgBuf.position(), msgBuf.remaining());
 
                 if (read == -1)
                     throw new EOFException("Connection closed before message was fully read.");
 
-                if (unprocessedBytesLen > 0) {
-                    msgBuf.rewind();
-
-                    msgBuf.limit(read + unprocessedBytesLen);
-
-                    unprocessedBytesLen = 0;
-                }
-                else
-                    msgBuf.limit(read);
+                msgBuf.limit(msgBuf.position() > 0 ? msgBuf.position() + read + 1 : read);
 
                 finished = msgSer.readFrom(msg, msgReader);
 
+                // We assume that there is only one message in the socket because Discovery is a serial protocol with
+                // acking of each message before sending next.
+                assert msgBuf.remaining() == 0 || !finished : "Some data was read from the socket but left unprocessed.";
+
+                if (finished)
+                    break;
+
                 // We must keep the uprocessed bytes read from the socket. It won't return them again.
-                if (!finished && msgBuf.position() > 0 && msgBuf.remaining() > 0) {
-                    unprocessedBytes = new byte[msgBuf.remaining()];
+                if (msgBuf.remaining() > 0 && msgBuf.position() > 0) {
+                    // Shift left the bytes rest.
+                    byte[] unprocessedTail = new byte[msgBuf.remaining()];
 
-                    unprocessedBytesLen = unprocessedBytes.length;
+                    msgBuf.get(unprocessedTail, 0, msgBuf.remaining());
 
-                    msgBuf.get(unprocessedBytes, 0, msgBuf.remaining());
+                    msgBuf.clear();
+
+                    msgBuf.put(unprocessedTail);
                 }
+                else
+                    msgBuf.clear();
             }
-            while (!finished);
+            while (true);
 
             return (T)msg;
         }
