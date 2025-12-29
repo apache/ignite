@@ -3030,8 +3030,8 @@ public class BinaryUtils {
      * @return Detached object.
      */
     public static Object detach(Object o) {
-        ((BinaryObjectImpl)o).detachAllowed(true);
-        return ((BinaryObjectImpl)o).detach();
+        ((BinaryObjectEx)o).detachAllowed(true);
+        return ((BinaryObjectEx)o).detach();
     }
 
     /**
@@ -3039,7 +3039,7 @@ public class BinaryUtils {
      */
     public static void detachAllowedIfPossible(Object o) {
         if (isBinaryObjectImpl(o))
-            ((BinaryObjectImpl)o).detachAllowed(true);
+            ((BinaryObjectEx)o).detachAllowed(true);
     }
 
     /**

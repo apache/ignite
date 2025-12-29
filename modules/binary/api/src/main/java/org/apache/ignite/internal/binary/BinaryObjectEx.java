@@ -118,4 +118,18 @@ public interface BinaryObjectEx extends BinaryObject {
     public default BinaryObjectEx heapCopy() {
         return this;
     }
+
+    /**
+     * @return Detached binary object.
+     */
+    public default BinaryObjectEx detach() {
+        return this;
+    }
+
+    /**
+     * @param detachAllowed Detach allowed flag.
+     */
+    public default void detachAllowed(boolean detachAllowed) {
+        // No-op.
+    }
 }

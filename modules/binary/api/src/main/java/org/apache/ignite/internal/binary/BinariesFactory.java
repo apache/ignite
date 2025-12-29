@@ -136,6 +136,8 @@ public interface BinariesFactory {
      */
     public BinaryObjectEx binaryOffheapObject(BinaryContext ctx, long ptr, int start, int size);
 
+    public BinaryObjectEx binaryObject()
+
     /**
      * @return Binary enum class.
      */

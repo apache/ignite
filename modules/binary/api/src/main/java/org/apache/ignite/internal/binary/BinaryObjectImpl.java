@@ -217,7 +217,7 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
 
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
-        BinaryObjectImpl res = detached() ? this : detach();
+        BinaryObjectImpl res = detached() ? this : detach(false);
 
         res.prepareMarshal(ctx);
 
@@ -265,10 +265,8 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
         return BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.TOTAL_LEN_POS);
     }
 
-    /**
-     * @return Detached binary object.
-     */
-    public BinaryObjectImpl detach() {
+    /** {@inheritDoc} */
+    @Override public BinaryObjectEx detach() {
         return detach(false);
     }
 
@@ -307,10 +305,8 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
         return start == 0 && length() == arr.length;
     }
 
-    /**
-     * @param detachAllowed Detach allowed flag.
-     */
-    public void detachAllowed(boolean detachAllowed) {
+    /** {@inheritDoc} */
+    @Override public void detachAllowed(boolean detachAllowed) {
         this.detachAllowed = detachAllowed;
     }
 
