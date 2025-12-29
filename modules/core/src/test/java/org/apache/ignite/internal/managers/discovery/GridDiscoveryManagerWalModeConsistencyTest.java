@@ -39,20 +39,13 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
     /** */
     private WALMode walMode;
 
-    /** */
-    private boolean persistenceEnabled;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName)
                 .setGridLogger(testLog);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
-        dsCfg.setWalMode(walMode);
-
-        if (persistenceEnabled) {
-            dsCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
-        }
+        dsCfg.setWalMode(walMode).getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
 
         cfg.setDataStorageConfiguration(dsCfg);
 
@@ -64,7 +57,6 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
         super.beforeTest();
 
         walMode = null;
-        persistenceEnabled = false;
     }
 
     /** {@inheritDoc} */
@@ -82,7 +74,6 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
     @Test
     public void testSameWalModeJoinsSuccessfully() throws Exception {
         walMode = WALMode.LOG_ONLY;
-        persistenceEnabled = true;
 
         IgniteEx ignite0 = startGrid(0);
 
@@ -100,7 +91,6 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
     @Test
     public void testDifferentWalModesCannotJoin() throws Exception {
         walMode = WALMode.LOG_ONLY;
-        persistenceEnabled = true;
 
         IgniteEx ignite0 = startGrid(0);
 
