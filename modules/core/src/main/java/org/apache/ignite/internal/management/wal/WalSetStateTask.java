@@ -50,8 +50,7 @@ public class WalSetStateTask extends VisorMultiNodeTask<WalDisableCommandArg, Wa
         for (ComputeJobResult jobRes : res) {
             if (jobRes.getException() != null) {
                 Throwable e = jobRes.getException();
-                errors.add("Node " + jobRes.getNode().consistentId() +
-                    ": Task execution failed - " + e.getMessage());
+                errors.add("Node " + jobRes.getNode().consistentId() + ": Task execution failed - " + e.getMessage());
             }
             else {
                 WalSetStateTaskResult result = jobRes.getData();
