@@ -177,7 +177,7 @@ final class ClientChannelConfiguration {
 
     /**
      * @deprecated Use {@link #getConnectionTimeout()} and {@link #getRequestTimeout()} instead.
-     * @return Timeout.
+     * @return Request timeout.
      */
     @Deprecated
     public int getTimeout() {

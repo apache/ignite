@@ -39,6 +39,7 @@ import org.apache.ignite.client.SslMode;
 import org.apache.ignite.client.SslProtocol;
 import org.apache.ignite.internal.client.thin.TcpIgniteClient;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * {@link TcpIgniteClient} configuration.
@@ -231,10 +232,17 @@ public final class ClientConfiguration implements Serializable {
 
     /**
      * @deprecated Use {@link #getConnectionTimeout()} and {@link #getRequestTimeout()} instead.
-     * @return Send/receive timeout in milliseconds.
+     * @return Request timeout in milliseconds.
      */
     @Deprecated
     public int getTimeout() {
+        if (reqTimeout != connTimeout )
+            U.warn(logger, String.format(
+                "Deprecated getTimeout() API is used while request timeout (%d) differs from connection timeout (%d). " +
+                "Returning request timeout. Please use getRequestTimeout() and getConnectionTimeout() instead.",
+                reqTimeout, connTimeout
+            ));
+
         return reqTimeout;
     }
 

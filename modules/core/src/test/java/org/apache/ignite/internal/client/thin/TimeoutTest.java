@@ -39,6 +39,7 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
@@ -243,27 +244,20 @@ public class TimeoutTest extends AbstractThinClientTest {
             }
         });
 
-        long startTime = System.currentTimeMillis();
-
         try {
             ClientConfiguration cfg = new ClientConfiguration()
                 .setAddresses("127.0.0.1:" + DFLT_PORT)
                 .setConnectionTimeout(500)
-                .setRequestTimeout(10000);
+                .setRequestTimeout(Integer.MAX_VALUE);
 
             GridTestUtils.assertThrowsWithCause(
                 () -> Ignition.startClient(cfg),
-                ClientConnectionException.class
+                IgniteFutureTimeoutCheckedException.class
             );
         }
         finally {
             U.closeQuiet(sock);
         }
-
-        long elapsed = System.currentTimeMillis() - startTime;
-
-        assertTrue("Should fail around connection timeout (500ms), not request timeout",
-            elapsed >= 450 && elapsed < 2000);
 
         assertTrue("Connection should have been accepted", connectionAccepted.await(1, TimeUnit.SECONDS));
 
@@ -276,10 +270,12 @@ public class TimeoutTest extends AbstractThinClientTest {
     @Test
     @SuppressWarnings("ThrowableNotThrown")
     public void testRequestTimeoutIndependentOfConnection() throws Exception {
-        try (Ignite ignite = startGrid(0)) {
-            ClientConfiguration cfg = getClientConfiguration()
-                .setAddresses("127.0.0.1:" + DFLT_PORT)
-                .setConnectionTimeout(10000)
+        IgniteConfiguration igniteCfg = getConfiguration(getTestIgniteInstanceName());
+        igniteCfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setHandshakeTimeout(Integer.MAX_VALUE));
+
+        try (Ignite ignite = startGrid(igniteCfg)) {
+            ClientConfiguration cfg = getClientConfiguration(ignite)
+                .setConnectionTimeout(Integer.MAX_VALUE)
                 .setRequestTimeout(500);
 
             try (IgniteClient client = Ignition.startClient(cfg)) {
@@ -294,7 +290,7 @@ public class TimeoutTest extends AbstractThinClientTest {
                 CyclicBarrier barrier = new CyclicBarrier(2);
 
                 IgniteInternalFuture<?> blockingThread = GridTestUtils.runAsync(() -> {
-                    try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (ClientTransaction ignored1 = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         txCache.put(1, "blocked");
 
                         barrier.await(2, TimeUnit.SECONDS);
@@ -310,19 +306,12 @@ public class TimeoutTest extends AbstractThinClientTest {
 
                 barrier.await(2, TimeUnit.SECONDS);
 
-                long startTime = System.currentTimeMillis();
-
-                try (ClientTransaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                try (ClientTransaction ignored1 = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     GridTestUtils.assertThrowsWithCause(
                         () -> txCache.put(1, "should timeout"),
-                        ClientException.class
+                        IgniteFutureTimeoutCheckedException.class
                     );
                 }
-
-                long elapsed = System.currentTimeMillis() - startTime;
-
-                assertTrue("Should fail around request timeout (500ms), not connection timeout",
-                    elapsed >= 450 && elapsed < 2000);
 
                 barrier.await(2, TimeUnit.SECONDS);
 
