@@ -17,6 +17,7 @@
 
 package org.apache.ignite.util;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterState;
@@ -24,6 +25,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointListener;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -45,6 +48,9 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
     /** */
     private boolean mixedConfig;
 
+    /** Latch for blocking checkpoint in timeout test. */
+    private CountDownLatch blockCheckpointLatch;
+
     /** */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -57,13 +63,13 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
             DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
             storageCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setName("default_in_memory_region")
-                                                                                      .setPersistenceEnabled(false));
+                    .setPersistenceEnabled(false));
 
             if (igniteInstanceName.contains("persistent_instance")) {
                 DataRegionConfiguration persistentRegionCfg = new DataRegionConfiguration();
 
                 storageCfg.setDataRegionConfigurations(persistentRegionCfg.setName(PERSISTENT_REGION_NAME)
-                                                                          .setPersistenceEnabled(true));
+                        .setPersistenceEnabled(true));
             }
 
             cfg.setDataStorageConfiguration(storageCfg);
@@ -84,10 +90,16 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         injectTestSystemOut();
 
         checkpointFinishedLsnr.reset();
+        blockCheckpointLatch = null;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        // Release latch if test was interrupted
+        if (blockCheckpointLatch != null) {
+            blockCheckpointLatch.countDown();
+        }
+
         stopAllGrids();
         cleanPersistenceDir();
 
@@ -104,7 +116,6 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
         srv.cluster().state(ClusterState.ACTIVE);
 
-        IgniteCache<Integer, Integer> cacheSrv = srv.getOrCreateCache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, Integer> cacheCli = cli.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         cacheCli.put(1, 1);
@@ -163,7 +174,7 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         outputContains("persistence disabled");
     }
 
-    /** Test checkpoint with timeout. */
+    /** Test checkpoint with timeout when checkpoint completes within timeout. */
     @Test
     public void testCheckpointTimeout() throws Exception {
         persistenceEnable(true);
@@ -177,6 +188,47 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
         assertTrue(checkpointFinishedLsnr.check());
 
         assertFalse(testOut.toString().contains("persistence disabled"));
+    }
+
+    /** Test checkpoint timeout when checkpoint doesn't complete within timeout. */
+    @Test
+    public void testCheckpointTimeoutExceeded() throws Exception {
+        persistenceEnable(true);
+
+        IgniteEx srv = startGrids(1);
+
+        srv.cluster().state(ClusterState.ACTIVE);
+
+        blockCheckpointLatch = new CountDownLatch(1);
+
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)srv.context().cache().context().database();
+
+        dbMgr.addCheckpointListener(new CheckpointListener() {
+            @Override public void onMarkCheckpointBegin(Context ctx) {
+                try {
+                    blockCheckpointLatch.await();
+                }
+                catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            @Override public void onCheckpointBegin(Context ctx) {
+                // No-op
+            }
+
+            @Override public void beforeCheckpointBegin(Context ctx) {
+                // No-op
+            }
+        });
+
+        assertEquals(EXIT_CODE_OK, execute("--checkpoint", "--wait-for-finish", "--timeout", "500"));
+
+        outputContains("Checkpoint started but not finished within timeout 500 ms");
+
+        blockCheckpointLatch.countDown();
+
+        assertTrue(GridTestUtils.waitForCondition(checkpointFinishedLsnr::check, 10_000));
     }
 
     /** Mixed cluster test. */

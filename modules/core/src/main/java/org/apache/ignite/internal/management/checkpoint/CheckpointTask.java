@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointState;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointProgress;
@@ -77,12 +78,24 @@ public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, Str
                 if (arg.waitForFinish()) {
                     long timeout = arg.timeout();
 
-                    if (timeout > 0)
-                        checkpointfut.futureFor(CheckpointState.FINISHED).get(timeout, TimeUnit.MILLISECONDS);
-                    else
-                        checkpointfut.futureFor(CheckpointState.FINISHED).get();
+                    try {
+                        if (timeout > 0) {
+                            try {
+                                checkpointfut.futureFor(CheckpointState.FINISHED).get(timeout, TimeUnit.MILLISECONDS);
+                            }
+                            catch (IgniteFutureTimeoutCheckedException e) {
+                                return result("Checkpoint started but not finished within timeout " + timeout + " ms");
+                            }
+                        }
+                        else
+                            checkpointfut.futureFor(CheckpointState.FINISHED).get();
 
-                    return result("Checkpoint finished");
+                        return result("Checkpoint finished");
+                    }
+                    catch (IgniteFutureTimeoutCheckedException e) {
+                        return result("Checkpoint started, but not finished within timeout (" + timeout + " ms)");
+                    }
+
                 }
 
                 return result("Checkpoint started");
