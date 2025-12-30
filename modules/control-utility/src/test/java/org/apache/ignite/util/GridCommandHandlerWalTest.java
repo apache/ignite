@@ -20,6 +20,7 @@ package org.apache.ignite.util;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -169,6 +170,36 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
         outputContains(".*cache2.*false.*true.*true.*true.*true");
 
         assertFalse(testOut.toString().contains("cache3"));
+    }
+
+    /**
+     * Test WAL mode change for a cache group contains multiple caches.
+     * @throws Exception If failed.
+     */
+    @Test
+    public void testWalChangeForMultiCacheGroup() throws Exception {
+        clusterState = 0; // PDS cluster.
+
+        IgniteEx srv = startGrids(2);
+        srv.cluster().state(ClusterState.ACTIVE);
+
+        srv.createCache(new CacheConfiguration<>("cache1")
+            .setGroupName("testGroup"));
+        srv.createCache(new CacheConfiguration<>("cache2")
+            .setGroupName("testGroup"));
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "testGroup"));
+        outputContains(".*testGroup.*true.*true.*true.*true.*false");
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "disable", "--groups", "testGroup"));
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "testGroup"));
+        outputContains(".*testGroup.*true.*false.*true.*true.*false");
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "enable", "--groups", "testGroup"));
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "testGroup"));
+        outputContains(".*testGroup.*true.*true.*true.*true.*false");
     }
 
     /** */

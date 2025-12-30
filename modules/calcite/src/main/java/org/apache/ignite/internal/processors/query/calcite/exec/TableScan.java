@@ -18,14 +18,17 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.function.Function;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionChanges;
@@ -39,6 +42,9 @@ import org.jetbrains.annotations.Nullable;
 /** */
 public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
     /** */
+    protected volatile List<GridDhtLocalPartition> reservedParts;
+
+    /** */
     public TableScan(
         ExecutionContext<Row> ectx,
         CacheTableDescriptor desc,
@@ -51,6 +57,16 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
     /** {@inheritDoc} */
     @Override protected Iterator<Row> createIterator() {
         return new IteratorImpl();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void processReservedTopology(GridDhtPartitionTopology top) {
+        List<GridDhtLocalPartition> reservedParts = new ArrayList<>(parts.cardinality());
+
+        for (int part = parts.nextSetBit(0); part >= 0; part = parts.nextSetBit(part + 1))
+            reservedParts.add(top.localPartition(part));
+
+        this.reservedParts = reservedParts;
     }
 
     /**

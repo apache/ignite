@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -31,29 +32,17 @@ public class InetAddressMessage implements Message {
     private String hostName;
 
     /** */
-    @Order(1)
-    private int port;
-
-    /** */
-    @Order(value = 2, method = "addressBytes")
+    @Order(value = 1, method = "addressBytes")
     private byte[] addrBytes;
 
-    /**
-     * Default constructor for {@link DiscoveryMessageFactory}.
-     */
+    /** Default constructor for {@link DiscoveryMessageFactory}. */
     public InetAddressMessage() {
         // No-op.
     }
 
-    /**
-     * Constructor.
-     *
-     * @param addr Address.
-     * @param port Port.
-     */
-    public InetAddressMessage(InetAddress addr, int port) {
+    /** @param addr Address. */
+    public InetAddressMessage(InetAddress addr) {
         hostName = addr.getHostName();
-        this.port = port;
         addrBytes = addr.getAddress();
     }
 
@@ -67,14 +56,14 @@ public class InetAddressMessage implements Message {
         this.addrBytes = addrBytes;
     }
 
-    /** @return port. */
-    public int port() {
-        return port;
-    }
-
-    /** @param port port. */
-    public void port(int port) {
-        this.port = port;
+    /** @return {@link InetAddress#getByAddress(String, byte[])} */
+    public InetAddress address() {
+        try {
+            return addrBytes == null ? null : InetAddress.getByAddress(hostName, addrBytes);
+        }
+        catch (UnknownHostException e) {
+            throw new IgniteException("Failed to read host address.", e);
+        }
     }
 
     /** @return Host name. */
@@ -85,11 +74,6 @@ public class InetAddressMessage implements Message {
     /** @param hostName Host name. */
     public void hostName(String hostName) {
         this.hostName = hostName;
-    }
-
-    /** @return {@link InetAddress#getByAddress(String, byte[])} */
-    public InetAddress address() throws UnknownHostException {
-        return addrBytes == null ? null : InetAddress.getByAddress(hostName, addrBytes);
     }
 
     /** {@inheritDoc} */
