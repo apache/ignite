@@ -201,8 +201,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /** */
     private final ConcurrentMap<UUID, Map<Long, GridFutureAdapter<FieldsResult>>> fieldsQryRes =
         new ConcurrentHashMap<>();
-
-
+    
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
