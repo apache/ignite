@@ -45,9 +45,9 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
     private CachePartitionPartialCountersMap historical;
 
     /** Set of partitions that require full rebalancing. */
-    @Order(1)
+    @Order(value = 1, method = "fullSet")
     @GridToStringInclude
-    private Collection<Integer> full;
+    private Set<Integer> full;
 
     /**
      * @param historical Historical partition set.
@@ -165,15 +165,15 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
     }
 
     /** */
-    public Collection<Integer> full() {
+    public Set<Integer> fullSet() {
         if (full == null)
             return Collections.emptySet();
 
-        return Collections.unmodifiableCollection(full);
+        return Collections.unmodifiableSet(full);
     }
 
     /** */
-    public void full(Collection<Integer> full) {
+    public void fullSet(Set<Integer> full) {
         this.full = full;
     }
 
@@ -195,7 +195,7 @@ public class IgniteDhtDemandedPartitionsMap implements Serializable, Message {
 
     /** */
     public Collection<Integer> all() {
-        return F.concat(false, full(), historicalSet());
+        return F.concat(false, fullSet(), historicalSet());
     }
 
 
