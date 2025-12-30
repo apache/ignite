@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Metrics update message.
@@ -57,7 +58,7 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
     /** Servers full metrics: server id -> node metrics + node's caches metrics. */
     @GridToStringExclude
     @Order(value = 7, method = "serversFullMetricsMessages")
-    private Map<UUID, TcpDiscoveryNodeFullMetricsMessage> serversFullMetricsMsgs;
+    private @Nullable Map<UUID, TcpDiscoveryNodeFullMetricsMessage> serversFullMetricsMsgs;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryMetricsUpdateMessage() {
@@ -180,7 +181,7 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
     }
 
     /** */
-    public Map<UUID, TcpDiscoveryNodesMetricsMapMessage> connectedClientsMetricsMessages() {
+    public @Nullable Map<UUID, TcpDiscoveryNodesMetricsMapMessage> connectedClientsMetricsMessages() {
         return connectedClientsMetricsMsgs;
     }
 
