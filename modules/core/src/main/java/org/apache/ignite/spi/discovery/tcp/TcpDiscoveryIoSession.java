@@ -204,18 +204,17 @@ public class TcpDiscoveryIoSession {
                     break;
 
                 // We must keep the uprocessed bytes read from the socket. It won't return them again.
+                byte[] unprocessedTail = null;
+
                 if (msgBuf.remaining() > 0) {
-                    // Shift left the bytes rest.
-                    byte[] unprocessedTail = new byte[msgBuf.remaining()];
-
+                    unprocessedTail = new byte[msgBuf.remaining()];
                     msgBuf.get(unprocessedTail, 0, msgBuf.remaining());
-
-                    msgBuf.clear();
-
-                    msgBuf.put(unprocessedTail);
                 }
-                else
-                    msgBuf.clear();
+
+                msgBuf.clear();
+
+                if (unprocessedTail != null)
+                    msgBuf.put(unprocessedTail);
             }
             while (true);
 
