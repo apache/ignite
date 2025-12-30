@@ -27,17 +27,17 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Node compound metrics message. */
-public final class NodeFullMetricsMessage implements Message {
+public class NodeFullMetricsMessage implements Message {
     /** */
     public static final short TYPE_CODE = 138;
 
     /** Node metrics wrapper message. */
-    @Order(0)
+    @Order(value = 0, method = "nodeMetricsMessage")
     private NodeMetricsMessage nodeMetricsMsg;
 
     /** Cache metrics wrapper message. */
-    @Order(1)
-    private Map<Integer, CacheMetricsMessage> cachesMetrics;
+    @Order(value = 1, method = "cachesMetricsMessages")
+    private Map<Integer, CacheMetricsMessage> cachesMetricsMsgs;
 
     /** Empty constructor for {@link GridIoMessageFactory}. */
     public NodeFullMetricsMessage() {
@@ -46,30 +46,40 @@ public final class NodeFullMetricsMessage implements Message {
 
     /** */
     public NodeFullMetricsMessage(ClusterMetrics nodeMetrics, Map<Integer, CacheMetrics> cacheMetrics) {
-        nodeMetricsMsg = new NodeMetricsMessage(nodeMetrics);
+        nodeMetricsMsg = createNodeMetricsMessage(nodeMetrics);
 
-        cachesMetrics = new HashMap<>(cacheMetrics.size(), 1.0f);
+        cachesMetricsMsgs = new HashMap<>(cacheMetrics.size(), 1.0f);
 
-        cacheMetrics.forEach((key, value) -> cachesMetrics.put(key, new CacheMetricsMessage(value)));
+        cacheMetrics.forEach((key, value) -> cachesMetricsMsgs.put(key, createCacheMetricsMessage(value)));
     }
 
     /** */
-    public Map<Integer, CacheMetricsMessage> cachesMetrics() {
-        return cachesMetrics;
+    protected NodeMetricsMessage createNodeMetricsMessage(ClusterMetrics nodeMetrics) {
+        return new NodeMetricsMessage(nodeMetrics);
     }
 
     /** */
-    public void cachesMetrics(Map<Integer, CacheMetricsMessage> cacheMetricsMsg) {
-        cachesMetrics = cacheMetricsMsg;
+    protected CacheMetricsMessage createCacheMetricsMessage(CacheMetrics cacheMetrics) {
+        return new CacheMetricsMessage(cacheMetrics);
     }
 
     /** */
-    public NodeMetricsMessage nodeMetricsMsg() {
+    public Map<Integer, CacheMetricsMessage> cachesMetricsMessages() {
+        return cachesMetricsMsgs;
+    }
+
+    /** */
+    public void cachesMetricsMessages(Map<Integer, CacheMetricsMessage> cacheMetricsMsg) {
+        cachesMetricsMsgs = cacheMetricsMsg;
+    }
+
+    /** */
+    public NodeMetricsMessage nodeMetricsMessage() {
         return nodeMetricsMsg;
     }
 
     /** */
-    public void nodeMetricsMsg(NodeMetricsMessage nodeMetricsMsg) {
+    public void nodeMetricsMessage(NodeMetricsMessage nodeMetricsMsg) {
         this.nodeMetricsMsg = nodeMetricsMsg;
     }
 

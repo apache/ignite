@@ -27,6 +27,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -92,7 +93,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         TcpDiscoveryMetricsUpdateMessage msg = new TcpDiscoveryMetricsUpdateMessage(UUID.randomUUID());
 
-        msg.setCacheMetrics(UUID.randomUUID(), cacheMetrics);
+        msg.addServerCacheMetrics(UUID.randomUUID(), cacheMetrics);
 
         Marshaller marshaller = marshaller(grid(0));
 
@@ -104,11 +105,13 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         TcpDiscoveryMetricsUpdateMessage msg2 = (TcpDiscoveryMetricsUpdateMessage)readObj;
 
-        Map<Integer, CacheMetrics> cacheMetrics2 = msg2.cacheMetrics().values().iterator().next();
+        Map<Integer, CacheMetricsMessage> cacheMetrics2 = msg2.serversFullMetricsMessages().values().iterator().next()
+            .cachesMetricsMessages();
 
-        CacheMetrics cacheMetric2 = cacheMetrics2.values().iterator().next();
+        CacheMetrics cacheMetric2 = new CacheMetricsSnapshot(cacheMetrics2.values().iterator().next());
 
-        assertEquals("TcpDiscoveryMetricsUpdateMessage serialization error, cacheSize is different", size, cacheMetric2.getCacheSize());
+        assertEquals("TcpDiscoveryMetricsUpdateMessage serialization error, cacheSize is different", size,
+            cacheMetric2.getCacheSize());
 
         IgniteCache cacheNode1 = grid(1).cache(DEFAULT_CACHE_NAME);
 
