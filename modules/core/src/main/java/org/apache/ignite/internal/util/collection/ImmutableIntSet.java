@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.util.collection;
 
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
@@ -86,6 +87,19 @@ public class ImmutableIntSet implements IntSet {
     /** {@inheritDoc} */
     @NotNull @Override public Object[] toArray() {
         return delegate.toArray();
+    }
+
+    /** {@inheritDoc} */
+    @Override public BitSet toBitSet() {
+        if (delegate instanceof IntSet)
+            return ((IntSet)delegate).toBitSet();
+        else {
+            BitSet bitSet = new BitSet();
+
+            forEach(bitSet::set);
+
+            return bitSet;
+        }
     }
 
     /** {@inheritDoc} */
