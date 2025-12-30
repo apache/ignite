@@ -63,13 +63,13 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
             DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
             storageCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setName("default_in_memory_region")
-                    .setPersistenceEnabled(false));
+                                                                                      .setPersistenceEnabled(false));
 
             if (igniteInstanceName.contains("persistent_instance")) {
                 DataRegionConfiguration persistentRegionCfg = new DataRegionConfiguration();
 
                 storageCfg.setDataRegionConfigurations(persistentRegionCfg.setName(PERSISTENT_REGION_NAME)
-                        .setPersistenceEnabled(true));
+                                                                          .setPersistenceEnabled(true));
             }
 
             cfg.setDataStorageConfiguration(storageCfg);
@@ -95,7 +95,6 @@ public class GridCommandHandlerCheckpointTest extends GridCommandHandlerAbstract
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        // Release latch if test was interrupted
         if (blockCheckpointLatch != null) {
             blockCheckpointLatch.countDown();
         }
