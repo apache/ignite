@@ -78,24 +78,18 @@ public class CheckpointTask extends VisorMultiNodeTask<CheckpointCommandArg, Str
                 if (arg.waitForFinish()) {
                     long timeout = arg.timeout();
 
-                    try {
-                        if (timeout > 0) {
-                            try {
-                                checkpointfut.futureFor(CheckpointState.FINISHED).get(timeout, TimeUnit.MILLISECONDS);
-                            }
-                            catch (IgniteFutureTimeoutCheckedException e) {
-                                return result("Checkpoint started but not finished within timeout " + timeout + " ms");
-                            }
+                    if (timeout > 0) {
+                        try {
+                            checkpointfut.futureFor(CheckpointState.FINISHED).get(timeout, TimeUnit.MILLISECONDS);
                         }
-                        else
-                            checkpointfut.futureFor(CheckpointState.FINISHED).get();
-
-                        return result("Checkpoint finished");
+                        catch (IgniteFutureTimeoutCheckedException e) {
+                            return result("Checkpoint started but not finished within timeout " + timeout + " ms");
+                        }
                     }
-                    catch (IgniteFutureTimeoutCheckedException e) {
-                        return result("Checkpoint started, but not finished within timeout (" + timeout + " ms)");
-                    }
+                    else
+                        checkpointfut.futureFor(CheckpointState.FINISHED).get();
 
+                    return result("Checkpoint finished");
                 }
 
                 return result("Checkpoint started");
