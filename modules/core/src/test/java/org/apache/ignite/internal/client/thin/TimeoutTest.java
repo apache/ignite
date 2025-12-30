@@ -295,8 +295,7 @@ public class TimeoutTest extends AbstractThinClientTest {
 
                         barrier.await(2, TimeUnit.SECONDS);
 
-                        Thread.sleep(2000);
-
+                        // Wait for main thread to time out
                         barrier.await(2, TimeUnit.SECONDS);
                     }
                     catch (Exception e) {
