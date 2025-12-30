@@ -196,8 +196,9 @@ public class TcpDiscoveryIoSession {
 
                 finished = msgSer.readFrom(msg, msgReader);
 
-                // We assume that there is only one message in the socket because Discovery is a serial protocol with
-                // acking of each message before sending next.
+                // We rely on the fact that Discovery only sends next message upon receiving a receipt for the previous one.
+                // This behaviour guarantees that we never read a next message from the buffer right after the end of
+                // the previous message.
                 assert msgBuf.remaining() == 0 || !finished : "Some data was read from the socket but left unprocessed.";
 
                 if (finished)

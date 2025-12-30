@@ -23,17 +23,18 @@ import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Utility container message of the node metrics. Is not a pure {@link TcpDiscoveryAbstractMessage}.
- * Reuses Communication's {@link NodeMetricsMessage}.
+ * We cannot directly reuse `NodeMetricsMessage` in Discovery as it is registered in a message factory of Communication
+ * component and thus is unavailable in Discovery. We have to extend `NodeMetricsMessage` and register this subclass in
+ * message factory of Discovery component.
  */
-public class TcpDiscoveryClusterMetricsHolderMessage extends NodeMetricsMessage {
+public class TcpDiscoveryNodeMetricsMessage extends NodeMetricsMessage {
     /** Constructor for {@link DiscoveryMessageFactory}. */
-    public TcpDiscoveryClusterMetricsHolderMessage() {
+    public TcpDiscoveryNodeMetricsMessage() {
         // No-op.
     }
 
     /** @param metrics Metrics. */
-    public TcpDiscoveryClusterMetricsHolderMessage(ClusterMetrics metrics) {
+    public TcpDiscoveryNodeMetricsMessage(ClusterMetrics metrics) {
         super(metrics);
     }
 
@@ -44,6 +45,6 @@ public class TcpDiscoveryClusterMetricsHolderMessage extends NodeMetricsMessage 
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TcpDiscoveryClusterMetricsHolderMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryNodeMetricsMessage.class, this, "super", super.toString());
     }
 }

@@ -35,7 +35,7 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
 
     /** */
     @Order(value = 5, method = "metricsMessage")
-    private TcpDiscoveryClusterMetricsHolderMessage metricsMsg;
+    private TcpDiscoveryNodeMetricsMessage metricsMsg;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryClientMetricsUpdateMessage() {
@@ -51,7 +51,7 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
     public TcpDiscoveryClientMetricsUpdateMessage(UUID creatorNodeId, ClusterMetrics metrics) {
         super(creatorNodeId);
 
-        metricsMsg = new TcpDiscoveryClusterMetricsHolderMessage(metrics);
+        metricsMsg = new TcpDiscoveryNodeMetricsMessage(metrics);
     }
 
     /**
@@ -59,7 +59,7 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
      *
      * @return Metrics holder message.
      */
-    public TcpDiscoveryClusterMetricsHolderMessage metricsMessage() {
+    public TcpDiscoveryNodeMetricsMessage metricsMessage() {
         return metricsMsg;
     }
 
@@ -68,7 +68,7 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
      *
      * @param metricsMsg Metrics holder message.
      */
-    public void metricsMessage(TcpDiscoveryClusterMetricsHolderMessage metricsMsg) {
+    public void metricsMessage(TcpDiscoveryNodeMetricsMessage metricsMsg) {
         this.metricsMsg = metricsMsg;
     }
 
