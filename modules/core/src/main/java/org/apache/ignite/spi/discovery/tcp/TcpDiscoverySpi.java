@@ -2005,7 +2005,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             .append("(fix configuration and restart local node) [localNode=")
             .append(locNode)
             .append(", existingNode=")
-            .append(msg.node() == null ? msg.nodeId() : msg.node())
+            .append(msg.nodeId())
             .append(']');
 
         return new IgniteSpiException(errorMsgBldr.toString());
@@ -2019,7 +2019,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         assert msg != null;
 
         return new IgniteSpiException(new IgniteAuthenticationException("Authentication failed [nodeId=" +
-            msg.creatorNodeId() + ", addr=" + msg.address().getHostAddress() + ']'));
+            msg.creatorNodeId() + ", addr=" + msg.creatorAddress().getHostAddress() + ']'));
     }
 
     /**
