@@ -40,7 +40,7 @@ public class TcpDiscoveryNodeMetricsMessage extends NodeMetricsMessage {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -101;
+        return -102;
     }
 
     /** {@inheritDoc} */
