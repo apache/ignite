@@ -35,12 +35,12 @@ public class TcpDiscoveryNodesMetricsMapMessage implements Message {
         // No-op.
     }
 
-    /** */
+    /** @return Map of nodes metrics. */
     public Map<UUID, TcpDiscoveryNodeMetricsMessage> nodesMetricsMessages() {
         return nodesMetricsMsgs;
     }
 
-    /** */
+    /** @param nodesMetricsMsgs Map of nodes metrics. */
     public void nodesMetricsMessages(Map<UUID, TcpDiscoveryNodeMetricsMessage> nodesMetricsMsgs) {
         this.nodesMetricsMsgs = nodesMetricsMsgs;
     }

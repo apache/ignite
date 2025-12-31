@@ -33,9 +33,9 @@ public class TcpDiscoveryNodeMetricsMessage extends NodeMetricsMessage {
         // No-op.
     }
 
-    /** */
-    public TcpDiscoveryNodeMetricsMessage(ClusterMetrics metrics) {
-        super(metrics);
+    /** @param nodeMetrics Node metrics. */
+    public TcpDiscoveryNodeMetricsMessage(ClusterMetrics nodeMetrics) {
+        super(nodeMetrics);
     }
 
     /** {@inheritDoc} */

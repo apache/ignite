@@ -33,9 +33,9 @@ public class TcpDiscoveryCacheMetricsMessage extends CacheMetricsMessage {
         // No-op.
     }
 
-    /** */
-    public TcpDiscoveryCacheMetricsMessage(CacheMetrics m) {
-        super(m);
+    /** @param cacheMetricsMsg Cache metric message. */
+    public TcpDiscoveryCacheMetricsMessage(CacheMetrics cacheMetricsMsg) {
+        super(cacheMetricsMsg);
     }
 
     /** {@inheritDoc} */

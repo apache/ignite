@@ -170,22 +170,22 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
         serversFullMetricsMsgs.remove(srvrId);
     }
 
-    /** */
+    /** @return Map of server full metrics messages. */
     public Map<UUID, TcpDiscoveryNodeFullMetricsMessage> serversFullMetricsMessages() {
         return serversFullMetricsMsgs;
     }
 
-    /** */
+    /** @param serversFullMetricsMsgs Map of server full metrics messages. */
     public void serversFullMetricsMessages(Map<UUID, TcpDiscoveryNodeFullMetricsMessage> serversFullMetricsMsgs) {
         this.serversFullMetricsMsgs = serversFullMetricsMsgs;
     }
 
-    /** */
+    /** @return Map of nodes metrics messages. */
     public @Nullable Map<UUID, TcpDiscoveryNodesMetricsMapMessage> connectedClientsMetricsMessages() {
         return connectedClientsMetricsMsgs;
     }
 
-    /** */
+    /** @param connectedClientsMetricsMsgs Map of nodes metrics messages. */
     public void connectedClientsMetricsMessages(Map<UUID, TcpDiscoveryNodesMetricsMapMessage> connectedClientsMetricsMsgs) {
         this.connectedClientsMetricsMsgs = connectedClientsMetricsMsgs;
     }

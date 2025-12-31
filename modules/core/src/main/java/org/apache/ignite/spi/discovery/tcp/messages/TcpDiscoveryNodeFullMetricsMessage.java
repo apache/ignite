@@ -17,8 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
