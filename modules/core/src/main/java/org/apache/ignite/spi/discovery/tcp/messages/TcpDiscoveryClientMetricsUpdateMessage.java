@@ -19,28 +19,20 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterMetrics;
-import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Metrics update message.
  * <p>
  * Client sends his metrics in this message.
  */
-public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstractMessage implements Message {
+public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Order(value = 5, method = "metricsMessage")
-    private TcpDiscoveryClusterMetricsHolderMessage metricsMsg;
-
-    /** Constructor for {@link DiscoveryMessageFactory}. */
-    public TcpDiscoveryClientMetricsUpdateMessage() {
-        // No-op.
-    }
+    private final byte[] metrics;
 
     /**
      * Constructor.
@@ -51,30 +43,16 @@ public class TcpDiscoveryClientMetricsUpdateMessage extends TcpDiscoveryAbstract
     public TcpDiscoveryClientMetricsUpdateMessage(UUID creatorNodeId, ClusterMetrics metrics) {
         super(creatorNodeId);
 
-        metricsMsg = new TcpDiscoveryClusterMetricsHolderMessage(metrics);
+        this.metrics = ClusterMetricsSnapshot.serialize(metrics);
     }
 
     /**
-     * Gets the metrics message.
+     * Gets metrics map.
      *
-     * @return Metrics holder message.
+     * @return Metrics map.
      */
-    public TcpDiscoveryClusterMetricsHolderMessage metricsMessage() {
-        return metricsMsg;
-    }
-
-    /**
-     * Sets the metrics message.
-     *
-     * @param metricsMsg Metrics holder message.
-     */
-    public void metricsMessage(TcpDiscoveryClusterMetricsHolderMessage metricsMsg) {
-        this.metricsMsg = metricsMsg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 11;
+    public ClusterMetrics metrics() {
+        return ClusterMetricsSnapshot.deserialize(metrics, 0);
     }
 
     /** {@inheritDoc} */

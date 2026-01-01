@@ -57,7 +57,7 @@ public abstract class TcpDiscoveryAbstractTraceableMessage extends TcpDiscoveryA
     protected TcpDiscoveryAbstractTraceableMessage(TcpDiscoveryAbstractTraceableMessage msg) {
         super(msg);
 
-        spanContainer = msg.spanContainer;
+        this.spanContainer = msg.spanContainer;
     }
 
     /**

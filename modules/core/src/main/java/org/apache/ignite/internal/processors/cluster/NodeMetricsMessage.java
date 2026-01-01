@@ -137,20 +137,20 @@ public class NodeMetricsMessage implements Message {
     private long curIdleTime = -1;
 
     /** */
-    @Order(value = 25)
-    private int totalCpus = -1;
+    @Order(value = 25, method = "totalCpus")
+    private int availProcs = -1;
 
     /** */
     @Order(value = 26, method = "currentCpuLoad")
-    private double curCpuLoad = -1;
+    private double load = -1;
 
     /** */
     @Order(value = 27, method = "averageCpuLoad")
-    private double avgCpuLoad = -1;
+    private double avgLoad = -1;
 
     /** */
     @Order(value = 28, method = "currentGcCpuLoad")
-    private double curGcCpuLoad = -1;
+    private double gcLoad = -1;
 
     /** */
     @Order(value = 29, method = "heapMemoryInitialized")
@@ -173,15 +173,15 @@ public class NodeMetricsMessage implements Message {
     private long heapTotal = -1;
 
     /** */
-    @Order(value = 34, method = "nonHeapMemoryInitialized")
+    @Order(value = 34, method = "heapMemoryInitialized")
     private long nonHeapInit = -1;
 
     /** */
-    @Order(value = 35, method = "nonHeapMemoryUsed")
+    @Order(value = 35, method = "heapMemoryUsed")
     private long nonHeapUsed = -1;
 
     /** */
-    @Order(value = 36, method = "nonHeapMemoryCommitted")
+    @Order(value = 36, method = "heapMemoryCommitted")
     private long nonHeapCommitted = -1;
 
     /** */
@@ -253,8 +253,8 @@ public class NodeMetricsMessage implements Message {
     private long totalJobsExecTime = -1;
 
     /** */
-    @Order(value = 54, method = "currentPmeDuration")
-    private long curPmeDuration = -1;
+    @Order(value = 54)
+    private long currentPmeDuration = -1;
 
     /** */
     public NodeMetricsMessage() {
@@ -295,10 +295,10 @@ public class NodeMetricsMessage implements Message {
         totalExecTasks = 0;
         totalIdleTime = 0;
         curIdleTime = 0;
-        totalCpus = 0;
-        curCpuLoad = 0;
-        avgCpuLoad = 0;
-        curGcCpuLoad = 0;
+        availProcs = 0;
+        load = 0;
+        avgLoad = 0;
+        gcLoad = 0;
         heapInit = 0;
         heapUsed = 0;
         heapCommitted = 0;
@@ -323,7 +323,7 @@ public class NodeMetricsMessage implements Message {
         outMesQueueSize = 0;
         heapTotal = 0;
         totalNodes = nodes.size();
-        curPmeDuration = 0;
+        currentPmeDuration = 0;
 
         for (ClusterNode node : nodes) {
             ClusterMetrics m = node.metrics();
@@ -399,9 +399,9 @@ public class NodeMetricsMessage implements Message {
             rcvdBytesCnt += m.getReceivedBytesCount();
             outMesQueueSize += m.getOutboundMessagesQueueSize();
 
-            avgCpuLoad += m.getCurrentCpuLoad();
+            avgLoad += m.getCurrentCpuLoad();
 
-            curPmeDuration = max(curPmeDuration, m.getCurrentPmeDuration());
+            currentPmeDuration = max(currentPmeDuration, m.getCurrentPmeDuration());
         }
 
         curJobExecTime /= size;
@@ -412,7 +412,7 @@ public class NodeMetricsMessage implements Message {
         avgWaitingJobs /= size;
         avgJobExecTime /= size;
         avgJobWaitTime /= size;
-        avgCpuLoad /= size;
+        avgLoad /= size;
 
         if (!F.isEmpty(nodes)) {
             ClusterMetrics oldestNodeMetrics = oldest(nodes).metrics();
@@ -423,9 +423,9 @@ public class NodeMetricsMessage implements Message {
 
         Map<String, Collection<ClusterNode>> neighborhood = U.neighborhood(nodes);
 
-        curGcCpuLoad = currentGcCpuLoad(neighborhood);
-        curCpuLoad = currentCpuLoad(neighborhood);
-        totalCpus = cpuCnt(neighborhood);
+        gcLoad = gcCpus(neighborhood);
+        load = cpus(neighborhood);
+        availProcs = cpuCnt(neighborhood);
     }
 
     /** */
@@ -464,10 +464,10 @@ public class NodeMetricsMessage implements Message {
         curIdleTime = metrics.getCurrentIdleTime();
         totalIdleTime = metrics.getTotalIdleTime();
 
-        totalCpus = metrics.getTotalCpus();
-        curCpuLoad = metrics.getCurrentCpuLoad();
-        avgCpuLoad = metrics.getAverageCpuLoad();
-        curGcCpuLoad = metrics.getCurrentGcCpuLoad();
+        availProcs = metrics.getTotalCpus();
+        load = metrics.getCurrentCpuLoad();
+        avgLoad = metrics.getAverageCpuLoad();
+        gcLoad = metrics.getCurrentGcCpuLoad();
 
         heapInit = metrics.getHeapMemoryInitialized();
         heapUsed = metrics.getHeapMemoryUsed();
@@ -487,7 +487,7 @@ public class NodeMetricsMessage implements Message {
 
         lastDataVer = metrics.getLastDataVersion();
 
-        curPmeDuration = metrics.getCurrentPmeDuration();
+        currentPmeDuration = metrics.getCurrentPmeDuration();
 
         totalNodes = metrics.getTotalNodes();
 
@@ -885,22 +885,22 @@ public class NodeMetricsMessage implements Message {
 
     /** */
     public int totalCpus() {
-        return totalCpus;
+        return availProcs;
     }
 
     /** */
     public double currentCpuLoad() {
-        return curCpuLoad;
+        return load;
     }
 
     /** */
     public double averageCpuLoad() {
-        return avgCpuLoad;
+        return avgLoad;
     }
 
     /** */
     public double currentGcCpuLoad() {
-        return curGcCpuLoad;
+        return gcLoad;
     }
 
     /** */
@@ -1020,43 +1020,43 @@ public class NodeMetricsMessage implements Message {
 
     /** */
     public long currentPmeDuration() {
-        return curPmeDuration;
+        return currentPmeDuration;
     }
 
     /**
      * Sets available processors.
      *
-     * @param totalCpus Available processors.
+     * @param availProcs Available processors.
      */
-    public void totalCpus(int totalCpus) {
-        this.totalCpus = totalCpus;
+    public void totalCpus(int availProcs) {
+        this.availProcs = availProcs;
     }
 
     /**
      * Sets current CPU load.
      *
-     * @param curCpuLoad Current CPU load.
+     * @param load Current CPU load.
      */
-    public void currentCpuLoad(double curCpuLoad) {
-        this.curCpuLoad = curCpuLoad;
+    public void currentCpuLoad(double load) {
+        this.load = load;
     }
 
     /**
      * Sets CPU load average over the metrics history.
      *
-     * @param avgCpuLoad CPU load average.
+     * @param avgLoad CPU load average.
      */
-    public void averageCpuLoad(double avgCpuLoad) {
-        this.avgCpuLoad = avgCpuLoad;
+    public void averageCpuLoad(double avgLoad) {
+        this.avgLoad = avgLoad;
     }
 
     /**
      * Sets current GC load.
      *
-     * @param curGcCpuLoad Current GC load.
+     * @param gcLoad Current GC load.
      */
-    public void currentGcCpuLoad(double curGcCpuLoad) {
-        this.curGcCpuLoad = curGcCpuLoad;
+    public void currentGcCpuLoad(double gcLoad) {
+        this.gcLoad = gcLoad;
     }
 
     /**
@@ -1263,7 +1263,7 @@ public class NodeMetricsMessage implements Message {
      * @param curPmeDuration Execution duration for current partition map exchange.
      */
     public void currentPmeDuration(long curPmeDuration) {
-        this.curPmeDuration = curPmeDuration;
+        this.currentPmeDuration = curPmeDuration;
     }
 
     /**
@@ -1308,36 +1308,36 @@ public class NodeMetricsMessage implements Message {
      * @param neighborhood Cluster neighborhood.
      * @return CPU load.
      */
-    private static double currentCpuLoad(Map<String, Collection<ClusterNode>> neighborhood) {
-        double curCpuLoad = 0.0;
+    private static int cpus(Map<String, Collection<ClusterNode>> neighborhood) {
+        int cpus = 0;
 
         for (Collection<ClusterNode> nodes : neighborhood.values()) {
             ClusterNode first = F.first(nodes);
 
             // Projection can be empty if all nodes in it failed.
             if (first != null)
-                curCpuLoad += first.metrics().getCurrentCpuLoad();
+                cpus += first.metrics().getCurrentCpuLoad();
         }
 
-        return curCpuLoad;
+        return cpus;
     }
 
     /**
      * @param neighborhood Cluster neighborhood.
      * @return GC CPU load.
      */
-    private static double currentGcCpuLoad(Map<String, Collection<ClusterNode>> neighborhood) {
-        double curGcCpuLoad = 0;
+    private static int gcCpus(Map<String, Collection<ClusterNode>> neighborhood) {
+        int cpus = 0;
 
         for (Collection<ClusterNode> nodes : neighborhood.values()) {
             ClusterNode first = F.first(nodes);
 
             // Projection can be empty if all nodes in it failed.
             if (first != null)
-                curGcCpuLoad += first.metrics().getCurrentGcCpuLoad();
+                cpus += first.metrics().getCurrentGcCpuLoad();
         }
 
-        return curGcCpuLoad;
+        return cpus;
     }
 
     /** {@inheritDoc} */
