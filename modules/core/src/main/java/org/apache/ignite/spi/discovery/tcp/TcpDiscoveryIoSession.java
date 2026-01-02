@@ -192,7 +192,14 @@ public class TcpDiscoveryIoSession {
                 if (read == -1)
                     throw new EOFException("Connection closed before message was fully read.");
 
-                msgBuf.limit(msgBuf.position() > 0 ? msgBuf.position() + read + 1 : read);
+                if (msgBuf.position() > 0) {
+                    msgBuf.limit(msgBuf.position() + read);
+
+                    // We've stored an unprocessed tail before.
+                    msgBuf.rewind();
+                }
+                else
+                    msgBuf.limit(read);
 
                 finished = msgSer.readFrom(msg, msgReader);
 
