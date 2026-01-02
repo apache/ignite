@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -150,22 +148,22 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
                 }
             }
 
-            Collection<Integer> curFull = cntrMap.full();
+            Set<Integer> curFullSet = cntrMap.fullSet();
             Set<Integer> newFullSet = null;
 
-            if (!curFull.isEmpty()) {
+            if (!curFullSet.isEmpty()) {
                 int moving = 0;
 
                 // Fast-path check.
-                for (Integer partId : curFull) {
+                for (Integer partId : curFullSet) {
                     if (top.localPartition(partId).state() == MOVING)
                         moving++;
                 }
 
-                if (moving != curFull.size()) {
+                if (moving != curFullSet.size()) {
                     newFullSet = U.newHashSet(moving);
 
-                    for (Integer partId : curFull) {
+                    for (Integer partId : curFullSet) {
                         if (top.localPartition(partId).state() == MOVING)
                             newFullSet.add(partId);
                     }
@@ -177,7 +175,7 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
                     newHistMap = curHistMap;
 
                 if (newFullSet == null)
-                    newFullSet = new HashSet<>(curFull);
+                    newFullSet = curFullSet;
 
                 IgniteDhtDemandedPartitionsMap newMap = new IgniteDhtDemandedPartitionsMap(newHistMap, newFullSet);
 

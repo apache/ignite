@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.query.calcite.rule;
 
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.PhysicalNode;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.convert.ConverterRule;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.ignite.internal.processors.query.calcite.hint.HintUtils;
@@ -31,16 +31,17 @@ import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocat
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceHashAggregate;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
 public class HashAggregateConverterRule {
     /** */
-    public static final RelOptRule COLOCATED = new ColocatedHashAggregateConverterRule();
+    public static final ConverterRule COLOCATED = new ColocatedHashAggregateConverterRule();
 
     /** */
-    public static final RelOptRule MAP_REDUCE = new MapReduceHashAggregateConverterRule();
+    public static final ConverterRule MAP_REDUCE = new MapReduceHashAggregateConverterRule();
 
     /** */
     private HashAggregateConverterRule() {
@@ -55,8 +56,11 @@ public class HashAggregateConverterRule {
         }
 
         /** {@inheritDoc} */
-        @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
-            LogicalAggregate agg) {
+        @Override protected @Nullable PhysicalNode convert(
+            RelOptPlanner planner,
+            RelMetadataQuery mq,
+            LogicalAggregate agg
+        ) {
             if (HintUtils.isExpandDistinctAggregate(agg))
                 return null;
 
@@ -84,8 +88,11 @@ public class HashAggregateConverterRule {
         }
 
         /** {@inheritDoc} */
-        @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq,
-            LogicalAggregate agg) {
+        @Override protected @Nullable PhysicalNode convert(
+            RelOptPlanner planner,
+            RelMetadataQuery mq,
+            LogicalAggregate agg
+        ) {
             if (HintUtils.isExpandDistinctAggregate(agg))
                 return null;
 
