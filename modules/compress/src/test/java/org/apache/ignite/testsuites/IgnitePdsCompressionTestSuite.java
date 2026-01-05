@@ -36,14 +36,14 @@ import org.apache.ignite.internal.processors.compress.DiskPageCompressionIntegra
 import org.apache.ignite.internal.processors.compress.FileSystemUtilsTest;
 import org.apache.ignite.internal.processors.compress.WalPageCompressionIntegrationTest;
 import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DATA_STORAGE_PAGE_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
 import static org.apache.ignite.configuration.DiskPageCompression.ZSTD;
 
 /** */
-@RunWith(DynamicSuite.class)
+@ExtendWith(DynamicSuite.class)
 public class IgnitePdsCompressionTestSuite {
     /**
      * @return Suite.

@@ -56,10 +56,10 @@ import org.apache.ignite.internal.processors.localtask.DurableBackgroundTasksPro
 import org.apache.ignite.internal.processors.metastorage.DistributedMetaStoragePersistentTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /** */
-@RunWith(DynamicSuite.class)
+@ExtendWith(DynamicSuite.class)
 public class IgnitePdsTestSuite {
     /**
      * @return IgniteCache test suite.

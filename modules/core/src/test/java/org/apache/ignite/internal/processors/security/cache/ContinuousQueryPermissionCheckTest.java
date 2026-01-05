@@ -29,8 +29,6 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -38,7 +36,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 /**
  * Tests check a cache permission for continuous queries.
  */
-@RunWith(JUnit4.class)
 public class ContinuousQueryPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
     /** Test server node name. */
     private static final String SRV = "srv_test_node";

@@ -28,10 +28,10 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.Ign
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.IgniteConcurrentCacheDumpTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /** */
-@RunWith(DynamicSuite.class)
+@ExtendWith(DynamicSuite.class)
 public class IgniteSnapshotTestSuite3 {
     /** */
     public static List<Class<?>> suite() {

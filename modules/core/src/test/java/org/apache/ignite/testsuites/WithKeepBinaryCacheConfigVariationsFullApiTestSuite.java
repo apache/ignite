@@ -23,12 +23,12 @@ import java.util.stream.Stream;
 import org.apache.ignite.internal.processors.cache.WithKeepBinaryCacheFullApiTest;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Test suite for cache API.
  */
-@RunWith(DynamicSuite.class)
+@ExtendWith(DynamicSuite.class)
 public class WithKeepBinaryCacheConfigVariationsFullApiTestSuite {
     /** */
     @SuppressWarnings("serial")

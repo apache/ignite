@@ -55,10 +55,10 @@ import org.apache.ignite.internal.processors.cache.warmup.LoadAllWarmUpStrategyS
 import org.apache.ignite.internal.processors.cache.warmup.WarmUpSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /** */
-@RunWith(DynamicSuite.class)
+@ExtendWith(DynamicSuite.class)
 public class IgnitePdsTestSuite8 {
     /**
      * @return Suite.

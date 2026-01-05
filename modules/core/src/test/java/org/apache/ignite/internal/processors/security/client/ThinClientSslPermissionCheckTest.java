@@ -44,8 +44,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckTest.assertAuthorizationFailed;
@@ -60,7 +58,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 /**
  * Security tests for thin client.
  */
-@RunWith(JUnit4.class)
 public class ThinClientSslPermissionCheckTest extends AbstractSecurityTest {
     /** Client. */
     private static final String CLIENT = "node01";

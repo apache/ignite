@@ -41,8 +41,6 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.lang.String.format;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_STATE;
@@ -54,7 +52,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 /**
  * Snapshot execute permission tests.
  */
-@RunWith(JUnit4.class)
 public class SnapshotPermissionCheckTest extends AbstractSecurityTest {
     /** Test snapshot name. */
     private static final String SNAPSHOT_NAME = "security_snapshot_%s";

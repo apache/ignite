@@ -35,12 +35,12 @@ import org.apache.ignite.internal.processors.cache.distributed.rebalancing.Multi
 import org.apache.ignite.internal.processors.cache.persistence.CleanupRestoredCachesSlowTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Test suite.
  */
-@RunWith(DynamicSuite.class)
+@ExtendWith(DynamicSuite.class)
 public class IgniteCacheTestSuite8 {
     /**
      * @return IgniteCache test suite.

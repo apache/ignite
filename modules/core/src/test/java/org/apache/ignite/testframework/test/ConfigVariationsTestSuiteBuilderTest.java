@@ -449,7 +449,7 @@ public class ConfigVariationsTestSuiteBuilderTest {
 //    }
 //
 //    /** */
-//    @RunWith(DynamicSuite.class)
+//    @ExtendWith(DynamicSuite.class)
 //    public static class LegacyLifecycleTestSuite {
 //        /** */
 //        public static List<Class<?>> suite() {

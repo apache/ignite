@@ -27,21 +27,18 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configurator;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Checks that assertion error will be thrown, if logging for the level disabled and log message on this level was invoked.
  */
-@RunWith(JUnit4.class)
 public class GridTestLog4jLoggerSelfTest {
     /** Path to test configuration. */
     private static final String LOG_PATH_TEST = "modules/log4j2/src/test/config/log4j2-test.xml";
@@ -56,14 +53,14 @@ public class GridTestLog4jLoggerSelfTest {
     private static final Level defaultRootLevel = LogManager.getRootLogger().getLevel();
 
     /** */
-    @Before
+    @BeforeEach
     public void beforeTest() {
         GridTestUtils.setFieldValue(GridTestLog4jLogger.class, GridTestLog4jLogger.class, "inited", false);
         Configurator.setRootLevel(Level.WARN);
     }
 
     /** */
-    @After
+    @AfterEach
     public void afterTest() {
         Configurator.setRootLevel(defaultRootLevel);
 

@@ -25,8 +25,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.Ignition.localIgnite;
 
@@ -37,7 +35,6 @@ import static org.apache.ignite.Ignition.localIgnite;
  * executed on 'check' node and broadcasts a task to 'endpoint' nodes. On every step, it is performed
  * verification that operation security context is the initiator context.
  */
-@RunWith(JUnit4.class)
 public class CacheLoadRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
     /** Transition load cache. */
     private static final String TRANSITION_LOAD_CACHE = "TRANSITION_LOAD_CACHE";

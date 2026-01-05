@@ -26,8 +26,6 @@ import org.apache.ignite.internal.processors.security.AbstractRemoteSecurityCont
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.G;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Testing operation security context when the service task is executed on remote nodes.
@@ -36,7 +34,6 @@ import org.junit.runners.JUnit4;
  * on 'check' nodes and broadcasts a task to 'endpoint' nodes. On every step, it is performed verification that
  * operation security context is the initiator context.
  */
-@RunWith(JUnit4.class)
 public class ExecutorServiceRemoteSecurityContextCheckTest extends AbstractRemoteSecurityContextCheckTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

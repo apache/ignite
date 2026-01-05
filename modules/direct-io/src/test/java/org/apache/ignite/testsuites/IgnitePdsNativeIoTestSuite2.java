@@ -23,12 +23,12 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoLoc
 import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoPdsRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteNativeIoWalFlushFsyncSelfTest;
 import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Same as {@link IgnitePdsTestSuite2} but is started with direct-oi jar in classpath.
  */
-@RunWith(DynamicSuite.class)
+@ExtendWith(DynamicSuite.class)
 public class IgnitePdsNativeIoTestSuite2 {
     /**
      * @return Suite.

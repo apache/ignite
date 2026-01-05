@@ -25,15 +25,12 @@ import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 
 /**
  * Security tests for thin client.
  */
-@RunWith(JUnit4.class)
 public class AdditionalSecurityCheckTest extends CommonSecurityCheckTest {
     /**
      *

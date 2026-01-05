@@ -21,12 +21,12 @@ import java.util.List;
 import org.apache.ignite.internal.processors.cache.persistence.file.IgniteFileIOTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.IgniteNativeIoWithNoPersistenceTest;
 import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Subset of {@link IgnitePdsTestSuite} suite test, started with direct-oi jar in classpath.
  */
-@RunWith(DynamicSuite.class)
+@ExtendWith(DynamicSuite.class)
 public class IgnitePdsNativeIoTestSuite {
     /**
      * @return Suite.

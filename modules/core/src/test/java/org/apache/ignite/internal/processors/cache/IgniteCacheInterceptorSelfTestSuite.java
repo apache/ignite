@@ -22,12 +22,12 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Cache interceptor suite.
  */
-@RunWith(DynamicSuite.class)
+@ExtendWith(DynamicSuite.class)
 public class IgniteCacheInterceptorSelfTestSuite {
     /**
      * @return Cache API test suite.

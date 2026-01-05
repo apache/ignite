@@ -62,8 +62,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.ignite.configuration.DataPageEvictionMode.RANDOM_LRU;
@@ -86,7 +84,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 /**
  * Security tests for thin client.
  */
-@RunWith(JUnit4.class)
 public class ThinClientPermissionCheckTest extends AbstractSecurityTest {
     /** Client. */
     private static final String CLIENT = "client";

@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.query.calcite.logical.ScriptRunnerTestsEnvironment;
 import org.apache.ignite.internal.processors.query.calcite.logical.ScriptTestRunner;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
 
 /**
@@ -71,7 +72,7 @@ import org.junit.runner.RunWith;
  * @see <a href="https://www.sqlite.org/sqllogictest/doc/trunk/about.wiki">Extended format documentation.</a></a>
  *
  */
-@RunWith(ScriptTestRunner.class)
+@ExtendWith(ScriptTestRunner.class)
 @ScriptRunnerTestsEnvironment(scriptsRoot = "modules/calcite/src/test/sql", timeout = 180000)
 public class ScriptTestSuite {
 }

@@ -22,15 +22,11 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlKillQueryCommand;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Tests for processing of KILL QUERY syntax.
  */
-@RunWith(JUnit4.class)
 public class SqlParserKillQuerySelfTest extends SqlParserAbstractSelfTest {
     /** */
     private static final long TEST_QRY_ID = 341;
@@ -123,15 +119,15 @@ public class SqlParserKillQuerySelfTest extends SqlParserAbstractSelfTest {
     private static void assertKillQuery(String sql, UUID nodeIdExp, long qryIdExp, boolean async) {
         SqlCommand cmd = parse(sql);
 
-        Assert.assertTrue(cmd instanceof SqlKillQueryCommand);
+        assertTrue(cmd instanceof SqlKillQueryCommand);
 
         SqlKillQueryCommand killQryCmd = (SqlKillQueryCommand)cmd;
 
-        Assert.assertEquals(nodeIdExp, killQryCmd.nodeId());
+        assertEquals(nodeIdExp, killQryCmd.nodeId());
 
-        Assert.assertEquals(qryIdExp, killQryCmd.nodeQueryId());
+        assertEquals(qryIdExp, killQryCmd.nodeQueryId());
 
-        Assert.assertEquals(async, killQryCmd.async());
+        assertEquals(async, killQryCmd.async());
     }
 
     /**

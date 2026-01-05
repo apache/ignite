@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.processors.security.client;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-
 /**
  * Security tests for thin client.
  */
-@RunWith(JUnit4.class)
 public class AdditionalSecurityCheckWithGlobalAuthTest extends AdditionalSecurityCheckTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

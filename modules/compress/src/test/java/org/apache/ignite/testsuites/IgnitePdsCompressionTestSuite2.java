@@ -20,12 +20,12 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.apache.ignite.testsuites.IgnitePdsCompressionTestSuite.enableCompressionByDefault;
 
 /** */
-@RunWith(DynamicSuite.class)
+@ExtendWith(DynamicSuite.class)
 public class IgnitePdsCompressionTestSuite2 {
     /**
      * @return Suite.

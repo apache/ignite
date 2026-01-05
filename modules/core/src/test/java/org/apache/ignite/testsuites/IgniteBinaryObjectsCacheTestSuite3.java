@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryTransac
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  *  IgniteBinaryObjectsCacheTestSuite3 is kept together with {@link IgniteCacheTestSuite3}
@@ -45,7 +45,7 @@ import org.junit.runner.RunWith;
  *  In future this suite may be merged with {@link IgniteCacheTestSuite3}
  *
  */
-@RunWith(DynamicSuite.class)
+@ExtendWith(DynamicSuite.class)
 public class IgniteBinaryObjectsCacheTestSuite3 {
     /**
      * @return Test suite.

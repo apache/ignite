@@ -91,10 +91,10 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalSc
 import org.apache.ignite.internal.util.io.GridFileUtilsTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /** */
-@RunWith(DynamicSuite.class)
+@ExtendWith(DynamicSuite.class)
 public class IgnitePdsTestSuite2 {
     /**
      * @return Suite.

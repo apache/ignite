@@ -24,12 +24,12 @@ import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnGetAl
 import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnScanTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnSingleGetTest;
 import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Test suite.
  */
-@RunWith(DynamicSuite.class)
+@ExtendWith(DynamicSuite.class)
 public class IgniteCacheBlockExchangeOnReadOperationsTestSuite {
     /**
      * @return IgniteCache test suite.

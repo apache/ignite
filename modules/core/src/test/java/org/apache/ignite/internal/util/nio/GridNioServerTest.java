@@ -26,9 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -38,7 +36,6 @@ import static org.hamcrest.Matchers.not;
 /**
  * Unit tests for {@link GridNioServer}.
  */
-@RunWith(MockitoJUnitRunner.class)
 public class GridNioServerTest {
     /***/
     private final List<String> logMessages = new CopyOnWriteArrayList<>();

@@ -41,6 +41,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.ignite.thread.IgniteThread;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.runner.Description;
 import org.junit.runner.Runner;
 import org.junit.runner.notification.Failure;
@@ -49,7 +51,7 @@ import org.junit.runner.notification.RunNotifier;
 /**
  *
  */
-public class ScriptTestRunner extends Runner {
+public class ScriptTestRunner implements BeforeEachCallback {
     /** Filesystem. */
     private static final FileSystem FS = FileSystems.getDefault();
 
@@ -241,7 +243,7 @@ public class ScriptTestRunner extends Runner {
             for (Ignite node : nodes)
                 ((IgniteKernal)node).dumpDebugInfo();
 
-            // We dump threads to stdout, because we can loose logs in case
+            // We dump threads to stdout, because we can lose logs in case
             // the build is cancelled on TeamCity.
             U.dumpThreads(null);
 
@@ -267,5 +269,10 @@ public class ScriptTestRunner extends Runner {
 
         if (t != null)
             throw t;
+    }
+
+    @Override
+    public void beforeEach(ExtensionContext context) throws Exception {
+
     }
 }

@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerSelfTest;
 import org.junit.Ignore;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.model.InitializationError;
@@ -36,7 +37,7 @@ import org.junit.runners.model.InitializationError;
  *
  * This suite is not included into main build.
  */
-@RunWith(IgniteReproducingSuite.DynamicReproducingSuite.class)
+@ExtendWith(IgniteReproducingSuite.DynamicReproducingSuite.class)
 public class IgniteReproducingSuite {
     /** */
     public static class DynamicReproducingSuite extends Suite {

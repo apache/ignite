@@ -74,12 +74,12 @@ import org.apache.ignite.internal.processors.cache.transactions.TxStateChangeEve
 import org.apache.ignite.internal.processors.cache.transactions.TxTimeoutOnInitializationTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Test suite.
  */
-@RunWith(DynamicSuite.class)
+@ExtendWith(DynamicSuite.class)
 public class IgniteCacheTestSuite6 {
     /**
      * @return IgniteCache test suite.

@@ -21,12 +21,12 @@ import java.util.List;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigVariationsQueryTest;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.junits.DynamicSuite;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Test suite for cache queries.
  */
-@RunWith(DynamicSuite.class)
+@ExtendWith(DynamicSuite.class)
 public class IgniteCacheConfigVariationQueryTestSuite {
     /** */
     public static List<Class<?>> suite() {

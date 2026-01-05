@@ -29,20 +29,17 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singleton;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_PUT;
 import static org.apache.ignite.plugin.security.SecurityPermission.CACHE_READ;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 
 /**
  * Test cache permission for Entry processor.
  */
-@RunWith(JUnit4.class)
 public class EntryProcessorPermissionCheckTest extends AbstractCacheOperationPermissionCheckTest {
     /** */
     @Test

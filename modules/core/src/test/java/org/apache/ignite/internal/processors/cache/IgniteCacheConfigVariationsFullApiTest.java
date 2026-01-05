@@ -89,7 +89,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -1318,7 +1318,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11885")
     @Test
     public void testInvokeSequentialOptimisticNoStart() throws Exception {
         runInAllDataModes(new TestRunnable() {
@@ -1331,7 +1331,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11885")
     @Test
     public void testInvokeSequentialPessimisticNoStart() throws Exception {
         runInAllDataModes(new TestRunnable() {
@@ -1344,7 +1344,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11885")
     @Test
     public void testInvokeSequentialOptimisticWithStart() throws Exception {
         runInAllDataModes(new TestRunnable() {
@@ -1357,7 +1357,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11885")
     @Test
     public void testInvokeSequentialPessimisticWithStart() throws Exception {
         runInAllDataModes(new TestRunnable() {
@@ -1971,7 +1971,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11885")
     @Test
     public void testNullInTx() throws Exception {
         if (!txShouldBeUsed())
@@ -3222,7 +3222,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("serial")
     @Test
     public void testGetAndRemoveObject() throws Exception {
         runInAllDataModes(new TestRunnable() {
@@ -3707,7 +3706,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11885")
     @Test
     public void testLoadAll() throws Exception {
         if (!storeEnabled())
@@ -3796,7 +3795,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11885")
     @Test
     public void testClear() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
@@ -4000,7 +3999,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
-    @SuppressWarnings("BusyWait")
     @Test
     public void testLockUnlock() throws Exception {
         if (lockingEnabled()) {
@@ -4060,7 +4058,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
-    @SuppressWarnings("BusyWait")
     @Test
     public void testLockUnlockAll() throws Exception {
         if (lockingEnabled()) {
@@ -4243,7 +4240,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11885")
     @Test
     public void testPeekExpired() throws Exception {
         final IgniteCache<String, Integer> c = jcache();
@@ -4583,7 +4580,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception In case of error.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11885")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11885")
     @Test
     public void testLocalEvict() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
@@ -6007,7 +6004,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11850")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11850")
     @Test
     public void testGetOutTx() throws Exception {
         checkGetOutTx(false, false);
@@ -6016,7 +6013,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11850")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11850")
     @Test
     public void testGetOutTxAsyncOld() throws Exception {
         checkGetOutTx(true, true);
@@ -6025,7 +6022,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11850")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11850")
     @Test
     public void testGetOutTxAsync() throws Exception {
         checkGetOutTx(true, false);

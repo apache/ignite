@@ -26,8 +26,6 @@ import org.apache.ignite.internal.processors.security.AbstractCacheOperationRemo
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.stream.StreamVisitor;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 /**
  * Testing operation security context when the closure of DataStreamer is executed on remote node.
@@ -36,7 +34,6 @@ import org.junit.runners.JUnit4;
  * 'check' node and broadcasts a task to 'endpoint' nodes. On every step, it is performed verification that operation
  * security context is the initiator context.
  */
-@RunWith(JUnit4.class)
 public class DataStreamerRemoteSecurityContextCheckTest extends AbstractCacheOperationRemoteSecurityContextCheckTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

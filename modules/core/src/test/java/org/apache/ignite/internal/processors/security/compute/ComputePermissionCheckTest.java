@@ -49,8 +49,6 @@ import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
@@ -61,7 +59,6 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCaus
 /**
  * Task execute permission tests.
  */
-@RunWith(JUnit4.class)
 public class ComputePermissionCheckTest extends AbstractSecurityTest {
     /** Flag that shows task was executed. */
     private static final AtomicBoolean IS_EXECUTED = new AtomicBoolean(false);

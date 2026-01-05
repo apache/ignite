@@ -36,8 +36,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.jetbrains.annotations.NotNull;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.internal.processors.security.impl.TestAdditionalSecurityProcessor.CLIENT;
 import static org.apache.ignite.plugin.security.SecurityPermission.ADMIN_CLUSTER_STATE;
@@ -48,7 +46,6 @@ import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL
 /**
  * Common parent for security tests for thin client.
  */
-@RunWith(JUnit4.class)
 public abstract class CommonSecurityCheckTest extends AbstractSecurityTest {
     /** */
     protected final ListeningTestLogger listeningLog = new ListeningTestLogger(log);

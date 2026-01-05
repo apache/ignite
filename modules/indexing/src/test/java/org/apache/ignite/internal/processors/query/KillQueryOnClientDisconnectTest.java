@@ -23,7 +23,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -45,10 +44,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -56,7 +53,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test KILL QUERY requested from client which disconnected from cluster during cancellation in progress.
  */
-@RunWith(JUnit4.class)
 public class KillQueryOnClientDisconnectTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -83,7 +79,7 @@ public class KillQueryOnClientDisconnectTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         TestSQLFunctions.init();
 
@@ -208,7 +204,7 @@ public class KillQueryOnClientDisconnectTest extends GridCommonAbstractTest {
             catch (Exception e) {
                 log.error("Unexpected exception.", e);
 
-                Assert.fail("Unexpected exception");
+                fail("Unexpected exception");
             }
         });
     }
