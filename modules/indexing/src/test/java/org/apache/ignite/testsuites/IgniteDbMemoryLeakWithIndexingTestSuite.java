@@ -19,14 +19,14 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakIndexedTest;
 import org.apache.ignite.internal.processors.database.IgniteDbMemoryLeakSqlQueryTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Page memory leaks tests using indexing.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     IgniteDbMemoryLeakSqlQueryTest.class,
     IgniteDbMemoryLeakIndexedTest.class
 })

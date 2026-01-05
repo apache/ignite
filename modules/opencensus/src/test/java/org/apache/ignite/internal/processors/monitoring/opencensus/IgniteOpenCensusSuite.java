@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.processors.monitoring.opencensus;
 
 import org.apache.ignite.TracingConfigurationValidationTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Suite to test OpenCensus integration.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     OpenCensusMetricExporterSpiTest.class,
     OpenCensusTracingSpiTest.class,
     OpenCensusTxTracingTest.class,

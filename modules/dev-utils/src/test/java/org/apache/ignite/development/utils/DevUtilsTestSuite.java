@@ -17,18 +17,18 @@
 
 package org.apache.ignite.development.utils;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Test suite for dev utils.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     IgniteWalConverterTest.class,
     IgniteEncryptedWalConverterTest.class,
     IgniteWalConverterArgumentsTest.class,
     IgniteWalConverterSensitiveDataTest.class
 })
-public class DevUtilsTestSuite {
+class DevUtilsTestSuite {
 }

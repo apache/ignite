@@ -34,14 +34,14 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortedIndexS
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.TimeCalculationExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UncollectExecutionTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Calcite tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     ExecutionTest.class,
     ContinuousExecutionTest.class,
     MergeJoinExecutionTest.class,

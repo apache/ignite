@@ -90,14 +90,14 @@ import org.apache.ignite.internal.processors.query.calcite.rules.JoinOrderOptimi
 import org.apache.ignite.internal.processors.query.calcite.rules.OrToUnionRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.rules.ProjectScanMergeRuleTest;
 import org.apache.ignite.internal.processors.query.calcite.thin.MultiLineQueryTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Calcite tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     OrToUnionRuleTest.class,
     ProjectScanMergeRuleTest.class,
     CalciteQueryProcessorTest.class,

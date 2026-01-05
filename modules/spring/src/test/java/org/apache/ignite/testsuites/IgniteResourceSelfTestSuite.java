@@ -22,14 +22,14 @@ import org.apache.ignite.internal.processors.resource.GridResourceProcessorSelfT
 import org.apache.ignite.internal.processors.resource.GridServiceContextInjectionSelfTest;
 import org.apache.ignite.internal.processors.resource.GridServiceInjectionSelfTest;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceInjectionSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Ignite resource injection test Suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     GridResourceProcessorSelfTest.class,
     GridLoggerInjectionSelfTest.class,
     GridServiceInjectionSelfTest.class,

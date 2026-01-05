@@ -52,14 +52,14 @@ import org.apache.ignite.internal.sql.SqlParserDropStatisticsSelfTest;
 import org.apache.ignite.internal.sql.SqlParserRefreshStatisticsSelfTest;
 import org.apache.ignite.internal.systemview.JmxExporterSpiTest;
 import org.apache.ignite.internal.systemview.SystemViewSecurityTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Tests for statistics.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     // Table statistics collection.
     HasherSelfTest.class,
     ColumnStatisticsCollectorAggregationTest.class,

@@ -39,14 +39,14 @@ import org.apache.ignite.util.MetricCommandTest;
 import org.apache.ignite.util.PerformanceStatisticsCommandTest;
 import org.apache.ignite.util.RollingUpgradeCommandTest;
 import org.apache.ignite.util.SystemViewCommandTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Test suite for control utility.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     GridCommandHandlerIndexForceRebuildTest.class,
     GridCommandHandlerIndexListTest.class,
     GridCommandHandlerIndexRebuildStatusTest.class,

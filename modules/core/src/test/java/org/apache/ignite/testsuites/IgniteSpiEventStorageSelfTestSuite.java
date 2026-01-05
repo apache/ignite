@@ -21,14 +21,14 @@ import org.apache.ignite.spi.eventstorage.memory.GridMemoryEventStorageMultiThre
 import org.apache.ignite.spi.eventstorage.memory.GridMemoryEventStorageSpiConfigSelfTest;
 import org.apache.ignite.spi.eventstorage.memory.GridMemoryEventStorageSpiSelfTest;
 import org.apache.ignite.spi.eventstorage.memory.GridMemoryEventStorageSpiStartStopSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Event storage test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     GridMemoryEventStorageSpiSelfTest.class,
     GridMemoryEventStorageSpiStartStopSelfTest.class,
     GridMemoryEventStorageMultiThreadedSelfTest.class,

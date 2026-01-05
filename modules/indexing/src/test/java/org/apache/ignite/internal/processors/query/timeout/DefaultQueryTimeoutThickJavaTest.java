@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.timeout;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -25,30 +26,32 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  *
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "lazy={0}, update={1}, local={2}")
+@MethodSource("allTypesArgs")
 public class DefaultQueryTimeoutThickJavaTest extends AbstractDefaultQueryTimeoutTest {
     /** Lazy mode. */
-    @Parameterized.Parameter(value = 0)
+    @Parameter(value = 0)
     public boolean lazy;
 
     /** Execute update queries. */
-    @Parameterized.Parameter(value = 1)
+    @Parameter(value = 1)
     public boolean update;
 
     /** Execute local queries. */
-    @Parameterized.Parameter(value = 2)
+    @Parameter(value = 2)
     public boolean local;
 
     /** */
-    @Parameterized.Parameters(name = "lazy={0}, update={1}, local={2}")
-    public static List<Object[]> parameters() {
-        ArrayList<Object[]> params = new ArrayList<>();
+    private static Collection<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         boolean[] arrBool = new boolean[] {true, false};
 
@@ -58,7 +61,7 @@ public class DefaultQueryTimeoutThickJavaTest extends AbstractDefaultQueryTimeou
                     if (local0 && update0)
                         continue;
 
-                    params.add(new Object[] {lazy0, update0, local0});
+                    params.add(Arguments.of(lazy0, update0, local0));
                 }
             }
         }

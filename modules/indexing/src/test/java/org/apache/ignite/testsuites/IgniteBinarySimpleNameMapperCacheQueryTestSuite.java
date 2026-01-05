@@ -18,15 +18,15 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.testframework.config.GridTestProperties;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Cache query suite with binary marshaller.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({IgniteBinaryCacheQueryTestSuite.class})
+@Suite
+@SelectClasses({IgniteBinaryCacheQueryTestSuite.class})
 public class IgniteBinarySimpleNameMapperCacheQueryTestSuite {
     /** */
     @BeforeAll

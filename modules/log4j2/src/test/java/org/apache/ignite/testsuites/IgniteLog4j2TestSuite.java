@@ -21,14 +21,14 @@ import org.apache.ignite.logger.log4j2.Log4j2ConfigUpdateTest;
 import org.apache.ignite.logger.log4j2.Log4j2LoggerMarkerTest;
 import org.apache.ignite.logger.log4j2.Log4j2LoggerSelfTest;
 import org.apache.ignite.logger.log4j2.Log4j2LoggerVerboseModeSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Log4j2 logging tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     Log4j2LoggerSelfTest.class,
     Log4j2LoggerVerboseModeSelfTest.class,
     Log4j2LoggerMarkerTest.class,

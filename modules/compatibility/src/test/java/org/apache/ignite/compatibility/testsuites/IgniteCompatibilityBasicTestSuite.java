@@ -31,14 +31,14 @@ import org.apache.ignite.compatibility.persistence.MoveBinaryMetadataCompatibili
 import org.apache.ignite.compatibility.persistence.PersistenceBasicCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.SnapshotCompatibilityTest;
 import org.apache.ignite.compatibility.testframework.util.MavenUtilsTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Compatibility tests basic test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     MavenUtilsTest.class,
     PersistenceBasicCompatibilityTest.class,
     InlineJavaObjectCompatibilityTest.class,

@@ -18,14 +18,14 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.tools.GridToolsSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Tools self-test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     GridToolsSelfTest.class
 })
 public class IgniteToolsSelfTestSuite {

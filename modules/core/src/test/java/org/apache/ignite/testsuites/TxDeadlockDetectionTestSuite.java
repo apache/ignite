@@ -28,14 +28,14 @@ import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticDead
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionCrossCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Deadlock detection related tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     DepthFirstSearchTest.class,
     TxOptimisticDeadlockDetectionTest.class,
     TxOptimisticDeadlockDetectionCrossCacheTest.class,

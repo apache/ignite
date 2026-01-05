@@ -55,8 +55,8 @@ import org.junit.runners.Suite;
  * <p>
  * Contains all Ignite examples tests.</p>
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     CacheExamplesSelfTest.class,
     SqlExamplesSelfTest.class,
     BasicExamplesSelfTest.class,

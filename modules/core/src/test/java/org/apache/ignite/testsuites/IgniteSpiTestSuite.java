@@ -21,14 +21,14 @@ import org.apache.ignite.internal.managers.GridManagerLocalMessageListenerSelfTe
 import org.apache.ignite.internal.managers.GridNoopManagerSelfTest;
 import org.apache.ignite.spi.encryption.KeystoreEncryptionSpiSelfTest;
 import org.apache.ignite.spi.metric.jmx.JmxMetricExporterSpiTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Grid SPI test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     // Failover.
     IgniteSpiFailoverSelfTestSuite.class,
 

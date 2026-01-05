@@ -93,14 +93,14 @@ import org.apache.ignite.p2p.GridMultinodeRedeployContinuousModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployIsolatedModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployPrivateModeSelfTest;
 import org.apache.ignite.p2p.GridMultinodeRedeploySharedModeSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Compute grid test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     IgniteTaskSessionSelfTestSuite.class,
     IgniteTimeoutProcessorSelfTestSuite.class,
     IgniteJobMetricsSelfTestSuite.class,
@@ -187,5 +187,5 @@ import org.junit.runners.Suite;
     InterruptComputeJobTest.class,
     TaskOptionsPropagationTest.class
 })
-public class IgniteComputeGridTestSuite {
+class IgniteComputeGridTestSuite {
 }

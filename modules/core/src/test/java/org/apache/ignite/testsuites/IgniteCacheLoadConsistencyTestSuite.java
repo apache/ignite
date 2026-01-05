@@ -20,14 +20,14 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledAtomicInvokeRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledTransactionalInvokeRestartSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheNearDisabledTransactionalWriteReadRestartSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     CacheNearDisabledAtomicInvokeRestartSelfTest.class,
     CacheNearDisabledTransactionalInvokeRestartSelfTest.class,
     CacheNearDisabledTransactionalWriteReadRestartSelfTest.class

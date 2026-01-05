@@ -34,14 +34,14 @@ import org.apache.ignite.spi.deployment.uri.GridUriDeploymentSimpleSelfTest;
 import org.apache.ignite.spi.deployment.uri.scanners.file.GridFileDeploymentSelfTest;
 import org.apache.ignite.spi.deployment.uri.scanners.file.GridFileDeploymentUndeploySelfTest;
 import org.apache.ignite.spi.deployment.uri.scanners.http.GridHttpDeploymentSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Tests against {@link org.apache.ignite.spi.deployment.uri.UriDeploymentSpi}.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     GridUriDeploymentConfigSelfTest.class,
     GridUriDeploymentSimpleSelfTest.class,
     GridUriDeploymentClassloaderRegisterSelfTest.class,

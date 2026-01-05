@@ -22,14 +22,14 @@ import org.apache.ignite.kubernetes.configuration.KubernetesConnectionConfigurat
 import org.apache.ignite.kubernetes.discovery.TestClusterClientConnection;
 import org.apache.ignite.kubernetes.discovery.TestKubernetesIpFinderDisconnection;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.kubernetes.TcpDiscoveryKubernetesIpFinderSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Ignite Kubernetes integration test.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     KubernetesConnectionConfigurationTest.class,
     TcpDiscoveryKubernetesIpFinderSelfTest.class,
     TestClusterClientConnection.class,

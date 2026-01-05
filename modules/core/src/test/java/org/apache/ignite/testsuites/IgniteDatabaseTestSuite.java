@@ -19,16 +19,17 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodePutGetTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  *
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IgniteDbSingleNodePutGetTest.class,
-    IgniteDbMultiNodePutGetTest.class
+@Suite
+@SelectClasses({
+        IgniteDbSingleNodePutGetTest.class,
+        IgniteDbMultiNodePutGetTest.class
 })
 public class IgniteDatabaseTestSuite {
 }
+

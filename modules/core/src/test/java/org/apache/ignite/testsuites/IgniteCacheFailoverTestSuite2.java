@@ -32,12 +32,12 @@ import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteCh
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineUpCachePutAllFailoverTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteStableBaselineCachePutAllFailoverTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteStableBaselineCacheRemoveFailoverTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /** */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     CacheGetFromJobTest.class,
 
     GridCacheAtomicFailoverSelfTest.class,

@@ -20,18 +20,18 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.FullPageI
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.IgnitePageMemReplaceDelayedWriteUnitTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.IgniteThrottlingUnitTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.RobinHoodBackwardShiftHashMapTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  *
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     IgniteThrottlingUnitTest.class,
     IgnitePageMemReplaceDelayedWriteUnitTest.class,
     FullPageIdTableTest.class,
     RobinHoodBackwardShiftHashMapTest.class
 })
-public class IgnitePdsUnitTestSuite {
+class IgnitePdsUnitTestSuite {
 }

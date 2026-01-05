@@ -17,14 +17,14 @@
 
 package org.apache.ignite.dump;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Json test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     JsonDumpConsumerTest.class,
     JsonArrayTest.class
 })

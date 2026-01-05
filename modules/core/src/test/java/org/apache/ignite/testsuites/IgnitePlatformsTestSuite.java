@@ -19,14 +19,14 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.platform.PlatformDefaultJavaObjectFactorySelfTest;
 import org.apache.ignite.platform.PlatformJavaObjectFactoryProxySelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Suite for platform tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     PlatformDefaultJavaObjectFactorySelfTest.class,
     PlatformJavaObjectFactoryProxySelfTest.class,
 })

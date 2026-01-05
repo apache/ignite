@@ -31,14 +31,14 @@ import org.apache.ignite.internal.util.io.GridUnsafeDataOutputArraySizingSelfTes
 import org.apache.ignite.marshaller.MarshallerEnumDeadlockMultiJvmTest;
 import org.apache.ignite.marshaller.ObjectInputStreamFilteringTest;
 import org.apache.ignite.marshaller.jdk.GridJdkMarshallerSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Test suite for all marshallers.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     GridUnsafeDataOutputArraySizingSelfTest.class,
     GridJdkMarshallerSelfTest.class,
     OptimizedMarshallerEnumSelfTest.class,

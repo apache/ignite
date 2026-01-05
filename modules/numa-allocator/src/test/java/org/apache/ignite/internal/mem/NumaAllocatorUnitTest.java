@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.mem;
 
-import java.util.Arrays;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.mem.InterleavedNumaAllocationStrategy;
 import org.apache.ignite.mem.LocalNumaAllocationStrategy;
@@ -27,45 +28,46 @@ import org.apache.ignite.mem.NumaAllocator;
 import org.apache.ignite.mem.SimpleNumaAllocationStrategy;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
 
 /** */
-@RunWith(Enclosed.class)
 public class NumaAllocatorUnitTest {
     /** */
-    @RunWith(Parameterized.class)
-    public static class PositiveScenarioTest extends GridCommonAbstractTest {
+    @Nested
+    @ParameterizedClass(name = "allocationStrategy={0}")
+    @MethodSource("allTypesArgs")
+    class PositiveScenarioTest extends GridCommonAbstractTest {
         /** */
         private static final long BUF_SZ = 32 * 1024 * 1024;
 
         /** */
-        private static final int[] EVEN_NODES = IntStream.range(0, NumaAllocUtil.NUMA_NODES_CNT)
+        private final int[] EVEN_NODES = IntStream.range(0, NumaAllocUtil.NUMA_NODES_CNT)
             .filter(x -> x % 2 == 0).toArray();
 
         /** */
-        private static final int[] ALL_NODES = IntStream.range(0, NumaAllocUtil.NUMA_NODES_CNT).toArray();
+        private final int[] ALL_NODES = IntStream.range(0, NumaAllocUtil.NUMA_NODES_CNT).toArray();
 
-        /**
-         *
-         */
-        @Parameterized.Parameters(name = "allocationStrategy={0}")
-        public static Iterable<Object[]> data() {
-            return Arrays.asList(
-                new Object[] {new LocalNumaAllocationStrategy()},
-                new Object[] {new InterleavedNumaAllocationStrategy()},
-                new Object[] {new InterleavedNumaAllocationStrategy(new int[0])},
-                new Object[] {new InterleavedNumaAllocationStrategy(EVEN_NODES)},
-                new Object[] {new InterleavedNumaAllocationStrategy(ALL_NODES)},
-                new Object[] {new SimpleNumaAllocationStrategy()},
-                new Object[] {new SimpleNumaAllocationStrategy(NumaAllocUtil.NUMA_NODES_CNT - 1)}
+        /** */
+        private Stream<Arguments> allTypesArgs() {
+            return Stream.of(
+                Arguments.of(new LocalNumaAllocationStrategy()),
+                Arguments.of(new InterleavedNumaAllocationStrategy()),
+                Arguments.of(new InterleavedNumaAllocationStrategy(new int[0])),
+                Arguments.of(new InterleavedNumaAllocationStrategy(EVEN_NODES)),
+                Arguments.of(new InterleavedNumaAllocationStrategy(ALL_NODES)),
+                Arguments.of(new SimpleNumaAllocationStrategy()),
+                Arguments.of(new SimpleNumaAllocationStrategy(NumaAllocUtil.NUMA_NODES_CNT - 1))
             );
         }
 
         /** */
-        @Parameterized.Parameter()
+        @Parameter(0)
         public NumaAllocationStrategy strategy;
 
         /** */
@@ -92,7 +94,8 @@ public class NumaAllocatorUnitTest {
     }
 
     /** */
-    public static class ErrorScenarioTest extends GridCommonAbstractTest {
+    @Nested
+    class ErrorScenarioTest extends GridCommonAbstractTest {
         /** */
         @Test
         public void testInvalidInterleavedStrategyParams() {

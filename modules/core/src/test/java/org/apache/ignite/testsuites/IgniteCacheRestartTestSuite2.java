@@ -25,14 +25,14 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomic
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGetRestartTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheRecreateTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheAtomicReplicatedNodeRestartSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Cache stability test suite on changing topology.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     IgniteCacheAtomicNodeRestartTest.class,
     IgniteCacheAtomicReplicatedNodeRestartSelfTest.class,
 

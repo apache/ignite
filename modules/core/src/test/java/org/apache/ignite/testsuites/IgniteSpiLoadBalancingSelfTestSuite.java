@@ -32,14 +32,14 @@ import org.apache.ignite.spi.loadbalancing.weightedrandom.GridWeightedRandomLoad
 import org.apache.ignite.spi.loadbalancing.weightedrandom.GridWeightedRandomLoadBalancingSpiSelfTest;
 import org.apache.ignite.spi.loadbalancing.weightedrandom.GridWeightedRandomLoadBalancingSpiStartStopSelfTest;
 import org.apache.ignite.spi.loadbalancing.weightedrandom.GridWeightedRandomLoadBalancingSpiWeightedSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Load balancing SPI self-test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     GridWeightedRandomLoadBalancingSpiSelfTest.class,
     GridWeightedRandomLoadBalancingSpiWeightedSelfTest.class,
     GridWeightedRandomLoadBalancingSpiStartStopSelfTest.class,

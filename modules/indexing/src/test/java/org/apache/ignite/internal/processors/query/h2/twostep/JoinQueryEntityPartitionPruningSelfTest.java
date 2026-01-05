@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.Collections;
-import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
@@ -28,10 +27,8 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.junit.jupiter.api.Test;
-import org.junit.runners.Parameterized;
 
 /**
  * Tests specific cases of partition pruning for tables created with QueryEntity API.
@@ -42,12 +39,6 @@ public class JoinQueryEntityPartitionPruningSelfTest extends AbstractPartitionPr
         super.beforeTest();
 
         clearIoState();
-    }
-
-    /** */
-    @Parameterized.Parameters(name = "createWithSql = {0}")
-    public static List<?> params() {
-        return F.asList(false);
     }
 
     /**

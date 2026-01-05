@@ -21,44 +21,45 @@ import org.apache.ignite.cache.store.IgniteCacheExpiryStoreLoadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManagerNotificationTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerExpiredEventsTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpireAndUpdateConsistencyTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
+
 
 /**
  *
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IgniteCacheLargeValueExpireTest.class,
+@Suite
+@SelectClasses({
+        IgniteCacheLargeValueExpireTest.class,
 
-    IgniteCacheAtomicExpiryPolicyTest.class,
-    IgniteCacheAtomicOnheapExpiryPolicyTest.class,
-    IgniteCacheAtomicWithStoreExpiryPolicyTest.class,
-    IgniteCacheAtomicReplicatedExpiryPolicyTest.class,
+        IgniteCacheAtomicExpiryPolicyTest.class,
+        IgniteCacheAtomicOnheapExpiryPolicyTest.class,
+        IgniteCacheAtomicWithStoreExpiryPolicyTest.class,
+        IgniteCacheAtomicReplicatedExpiryPolicyTest.class,
 
-    IgniteCacheTxExpiryPolicyTest.class,
-    IgniteCacheTxWithStoreExpiryPolicyTest.class,
-    IgniteCacheTxReplicatedExpiryPolicyTest.class,
+        IgniteCacheTxExpiryPolicyTest.class,
+        IgniteCacheTxWithStoreExpiryPolicyTest.class,
+        IgniteCacheTxReplicatedExpiryPolicyTest.class,
 
-    IgniteCacheAtomicExpiryPolicyWithStoreTest.class,
-    IgniteCacheTxExpiryPolicyWithStoreTest.class,
+        IgniteCacheAtomicExpiryPolicyWithStoreTest.class,
+        IgniteCacheTxExpiryPolicyWithStoreTest.class,
 
-    IgniteCacheExpiryStoreLoadSelfTest.class,
+        IgniteCacheExpiryStoreLoadSelfTest.class,
 
-    IgniteCacheClientNearCacheExpiryTest.class,
+        IgniteCacheClientNearCacheExpiryTest.class,
 
-    IgniteCacheEntryListenerExpiredEventsTest.class,
+        IgniteCacheEntryListenerExpiredEventsTest.class,
 
-    IgniteCacheExpireAndUpdateConsistencyTest.class,
+        IgniteCacheExpireAndUpdateConsistencyTest.class,
 
-    // Eager ttl expiration tests.
-    GridCacheTtlManagerNotificationTest.class,
-    IgniteCacheOnlyOneTtlCleanupThreadExistsTest.class,
+        // Eager ttl expiration tests.
+        GridCacheTtlManagerNotificationTest.class,
+        IgniteCacheOnlyOneTtlCleanupThreadExistsTest.class,
 
-    IgniteCacheExpireWhileRebalanceTest.class,
+        IgniteCacheExpireWhileRebalanceTest.class,
 
-    ExpiryPolicyInfoLoggingTest.class,
-    PendingTreeCleaningTest.class,
+        ExpiryPolicyInfoLoggingTest.class,
+        PendingTreeCleaningTest.class,
 })
 public class IgniteCacheExpiryPolicyTestSuite {
 }

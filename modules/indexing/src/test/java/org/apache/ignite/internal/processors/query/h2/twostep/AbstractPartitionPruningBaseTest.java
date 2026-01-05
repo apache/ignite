@@ -53,15 +53,17 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 
 /**
  * Base class for partition pruning tests.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "createWithSql = {0}")
+@ValueSource(booleans = {true, false})
 public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstractTest {
     /** Number of intercepted requests. */
     private static final AtomicInteger INTERCEPTED_REQS = new AtomicInteger();
@@ -85,7 +87,7 @@ public abstract class AbstractPartitionPruningBaseTest extends GridCommonAbstrac
     private static final String CLI_NAME = "cli";
 
     /** Whether the test table is created with SQL or QueryEntity API. */
-    @Parameterized.Parameter
+    @Parameter(0)
     public boolean createTableWithSql;
 
     /** {@inheritDoc} */

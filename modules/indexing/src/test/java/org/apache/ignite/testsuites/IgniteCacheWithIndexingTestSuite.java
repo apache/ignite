@@ -56,14 +56,14 @@ import org.apache.ignite.internal.processors.cache.ttl.CacheTtlTransactionalPart
 import org.apache.ignite.internal.processors.client.IgniteDataStreamerTest;
 import org.apache.ignite.internal.processors.query.h2.database.inlinecolumn.ComputeInlineSizeTest;
 import org.apache.ignite.internal.processors.query.h2.database.inlinecolumn.InlineIndexColumnTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Cache tests using indexing.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     InlineIndexColumnTest.class,
     ComputeInlineSizeTest.class,
 

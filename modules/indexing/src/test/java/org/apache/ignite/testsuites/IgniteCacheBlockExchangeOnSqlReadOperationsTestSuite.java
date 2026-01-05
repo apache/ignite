@@ -19,14 +19,14 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnCreateDestoryIndexTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheBlockOnSqlQueryTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Test suite for cache queries.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     CacheBlockOnSqlQueryTest.class,
     CacheBlockOnCreateDestoryIndexTest.class
 })

@@ -19,16 +19,17 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessorLoadTest;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Job metrics self test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    GridJobMetricsProcessorLoadTest.class,
-    GridJobMetricsSelfTest.class,
+@Suite
+@SelectClasses({
+        GridJobMetricsProcessorLoadTest.class,
+        GridJobMetricsSelfTest.class,
 })
 public class IgniteJobMetricsSelfTestSuite {
 }
+

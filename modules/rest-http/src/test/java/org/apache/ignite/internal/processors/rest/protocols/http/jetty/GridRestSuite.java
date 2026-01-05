@@ -16,14 +16,15 @@
  */
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Integration tests for Grid REST functionality; Jetty is under the hood.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     RestProcessorAuthorizationTest.class,
     RestSetupSimpleTest.class
 })

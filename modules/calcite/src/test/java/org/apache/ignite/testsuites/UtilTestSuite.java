@@ -24,14 +24,14 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFun
 import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryBlockingTaskExecutorTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.QueryTasksQueueTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.tracker.MemoryTrackerTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Calcite utility classes tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     ClosableIteratorsHolderTest.class,
     MemoryTrackerTest.class,
     QueryCheckerTest.class,

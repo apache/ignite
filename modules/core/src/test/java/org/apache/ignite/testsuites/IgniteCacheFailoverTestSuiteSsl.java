@@ -18,13 +18,14 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.spi.communication.tcp.IgniteCacheSslStartStopSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({IgniteCacheSslStartStopSelfTest.class})
+@Suite
+@SelectClasses({IgniteCacheSslStartStopSelfTest.class})
 public class IgniteCacheFailoverTestSuiteSsl {
 }
+

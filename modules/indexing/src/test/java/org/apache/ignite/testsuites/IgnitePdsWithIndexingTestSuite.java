@@ -44,12 +44,12 @@ import org.apache.ignite.internal.processors.database.RebuildIndexWithHistorical
 import org.apache.ignite.internal.processors.database.WalDisabledDuringIndexRecreateTest;
 import org.apache.ignite.internal.processors.query.IndexWithSameNameH2Test;
 import org.apache.ignite.internal.processors.query.h2.maintenance.MaintenanceRebuildIndexUtilsSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /** */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     IgniteDbSingleNodeWithIndexingWalRestoreTest.class,
     IgniteDbSingleNodeWithIndexingPutGetTest.class,
     IgniteDbMultiNodeWithIndexingPutGetTest.class,

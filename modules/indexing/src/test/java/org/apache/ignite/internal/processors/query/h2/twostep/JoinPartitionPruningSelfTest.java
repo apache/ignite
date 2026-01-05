@@ -20,9 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.util.List;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.util.typedef.F;
 import org.junit.jupiter.api.Test;
-import org.junit.runners.Parameterized;
 
 /**
  * Tests for join partition pruning.
@@ -33,12 +31,6 @@ public class JoinPartitionPruningSelfTest extends AbstractPartitionPruningBaseTe
         super.beforeTest();
 
         clearIoState();
-    }
-
-    /** */
-    @Parameterized.Parameters(name = "createWithSql = {0}")
-    public static List<?> params() {
-        return F.asList(true, false);
     }
 
     /**

@@ -25,14 +25,14 @@ import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheMetada
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.handlers.query.GridQueryCommandHandlerTest;
 import org.apache.ignite.internal.processors.rest.handlers.top.CacheTopologyCommandHandlerTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * REST support tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     GridCacheCommandHandlerSelfTest.class,
     GridCacheAtomicCommandHandlerSelfTest.class,
     GridCacheMetadataCommandTest.class,

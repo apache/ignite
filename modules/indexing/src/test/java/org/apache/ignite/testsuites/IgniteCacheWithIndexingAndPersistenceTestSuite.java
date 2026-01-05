@@ -22,14 +22,14 @@ import org.apache.ignite.internal.metric.IndexPagesMetricsPersistentTest;
 import org.apache.ignite.internal.processors.cache.StartCachesInParallelTest;
 import org.apache.ignite.internal.processors.cache.index.IoStatisticsBasicIndexSelfTest;
 import org.apache.ignite.internal.processors.query.CleanupIndexTreeCheckpointFailoverTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Cache tests using indexing.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     StartCachesInParallelTest.class,
     IoStatisticsBasicIndexSelfTest.class,
     CleanupIndexTreeCheckpointFailoverTest.class,

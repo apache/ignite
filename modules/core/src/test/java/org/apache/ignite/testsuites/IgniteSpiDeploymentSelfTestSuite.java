@@ -19,14 +19,14 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.spi.deployment.local.GridLocalDeploymentSpiSelfTest;
 import org.apache.ignite.spi.deployment.local.GridLocalDeploymentSpiStartStopSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Test suit for deployment SPIs.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     GridLocalDeploymentSpiSelfTest.class,
     GridLocalDeploymentSpiStartStopSelfTest.class
 })

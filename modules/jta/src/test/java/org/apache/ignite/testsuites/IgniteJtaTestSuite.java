@@ -28,31 +28,32 @@ import org.apache.ignite.internal.processors.cache.jta.GridPartitionedCacheJtaLo
 import org.apache.ignite.internal.processors.cache.jta.GridReplicatedCacheJtaFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.jta.GridReplicatedCacheJtaFactoryUseSyncSelfTest;
 import org.apache.ignite.internal.processors.cache.jta.GridReplicatedCacheJtaLookupClassNameSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * JTA integration tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    GridPartitionedCacheJtaFactorySelfTest.class,
-    GridReplicatedCacheJtaFactorySelfTest.class,
+@Suite
+@SelectClasses({
+        GridPartitionedCacheJtaFactorySelfTest.class,
+        GridReplicatedCacheJtaFactorySelfTest.class,
 
-    GridPartitionedCacheJtaLookupClassNameSelfTest.class,
-    GridReplicatedCacheJtaLookupClassNameSelfTest.class,
+        GridPartitionedCacheJtaLookupClassNameSelfTest.class,
+        GridReplicatedCacheJtaLookupClassNameSelfTest.class,
 
-    GridPartitionedCacheJtaFactoryUseSyncSelfTest.class,
-    GridReplicatedCacheJtaFactoryUseSyncSelfTest.class,
+        GridPartitionedCacheJtaFactoryUseSyncSelfTest.class,
+        GridReplicatedCacheJtaFactoryUseSyncSelfTest.class,
 
-    GridJtaLifecycleAwareSelfTest.class,
-    GridCacheJtaConfigurationValidationSelfTest.class,
-    GridCacheJtaFactoryConfigValidationSelfTest.class,
+        GridJtaLifecycleAwareSelfTest.class,
+        GridCacheJtaConfigurationValidationSelfTest.class,
+        GridCacheJtaFactoryConfigValidationSelfTest.class,
 
-    GridJtaTransactionManagerSelfTest.class,
+        GridJtaTransactionManagerSelfTest.class,
 
-    // Factory
-    CacheJndiTmFactorySelfTest.class
+        // Factory
+        CacheJndiTmFactorySelfTest.class
 })
 public class IgniteJtaTestSuite {
 }
+

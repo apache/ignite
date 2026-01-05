@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.oom;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Test suite for queries produces OOME in some cases.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     //Query history.
     QueryOOMWithoutQueryParallelismTest.class,
     QueryOOMWithQueryParallelismTest.class,

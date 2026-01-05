@@ -17,38 +17,23 @@
 
 package org.apache.ignite.internal.processors.query.stat;
 
-import java.util.Arrays;
-import java.util.Collection;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheMode;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /**
  * Planner statistics usage test: ensure that proper index is chosen by H2 optimizer when value distribution statistics
  * is collected.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "cacheMode={0}")
+@EnumSource(value = CacheMode.class)
 public class PSUCompositeIndexTableStatisticsUsageTest extends StatisticsAbstractTest {
     /** */
-    @Parameterized.Parameter(0)
+    @Parameter(0)
     public CacheMode cacheMode;
-
-    /**
-     * @return Test parameters.
-     */
-    @Parameterized.Parameters(name = "cacheMode={0}")
-    public static Collection<Object[]> parameters() {
-        return Arrays.asList(new Object[][] {
-            { REPLICATED },
-            { PARTITIONED },
-        });
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

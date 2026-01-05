@@ -19,12 +19,12 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.mem.NumaAllocatorBasicTest;
 import org.apache.ignite.internal.mem.NumaAllocatorUnitTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /** */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     NumaAllocatorUnitTest.class,
     NumaAllocatorBasicTest.class
 })

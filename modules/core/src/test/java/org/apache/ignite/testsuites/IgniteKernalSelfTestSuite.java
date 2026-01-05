@@ -64,14 +64,14 @@ import org.apache.ignite.internal.util.GridMutableLongTest;
 import org.apache.ignite.internal.util.GridStartupWithUndefinedIgniteHomeSelfTest;
 import org.apache.ignite.internal.util.IgniteUtilsWorkDirectoryTest;
 import org.apache.ignite.spi.communication.GridCacheMessageSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Kernal self test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     ClusterReadOnlyModeSelfTest.class,
     ClusterReadOnlyModeNodeJoinTest.class,
     GridGetOrStartSelfTest.class,

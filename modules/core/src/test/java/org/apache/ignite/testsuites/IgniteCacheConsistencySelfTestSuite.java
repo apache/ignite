@@ -27,14 +27,14 @@ import org.apache.ignite.internal.processors.cache.consistency.inmem.SingleBacku
 import org.apache.ignite.internal.processors.cache.consistency.persistence.PdsAtomicReadRepairTest;
 import org.apache.ignite.internal.processors.cache.consistency.persistence.PdsExplicitTransactionalReadRepairTest;
 import org.apache.ignite.internal.processors.cache.consistency.persistence.PdsImplicitTransactionalReadRepairTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Test suite for cache consistency checks.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     // Inmem
     AtomicReadRepairTest.class,
     ExplicitTransactionalReadRepairTest.class,

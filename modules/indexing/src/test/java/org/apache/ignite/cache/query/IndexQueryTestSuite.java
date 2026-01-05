@@ -17,14 +17,15 @@
 
 package org.apache.ignite.cache.query;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Suite with tests for {@link IndexQuery}.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     IndexQueryAllTypesTest.class,
     IndexQueryFailoverTest.class,
     IndexQueryFilterTest.class,

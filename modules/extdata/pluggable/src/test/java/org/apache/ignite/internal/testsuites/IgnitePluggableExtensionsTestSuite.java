@@ -19,14 +19,14 @@ package org.apache.ignite.internal.testsuites;
 
 import org.apache.ignite.internal.commandline.ExtendedControlUtilityTest;
 import org.apache.ignite.internal.plugin.ExtendedLogoTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Pluggable extensions test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     ExtendedLogoTest.class,
     ExtendedControlUtilityTest.class,
 })

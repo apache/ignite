@@ -21,14 +21,14 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingEr
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingNearErrorTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingRebalanceErrorTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheP2pUnmarshallingTxErrorTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Checks behavior on exception while unmarshalling key.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     IgniteCacheP2pUnmarshallingErrorTest.class,
     IgniteCacheP2pUnmarshallingNearErrorTest.class,
     IgniteCacheP2pUnmarshallingRebalanceErrorTest.class,

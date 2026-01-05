@@ -30,14 +30,14 @@ import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiMultiT
 import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest;
 import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiSelfTest;
 import org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpiStartStopSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Grid SPI checkpoint self test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     CacheCheckpointSpiConfigSelfTest.class,
     CacheCheckpointSpiSelfTest.class,
     CacheCheckpointSpiStartStopSelfTest.class,

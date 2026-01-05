@@ -47,14 +47,14 @@ import org.apache.ignite.internal.processors.query.IgniteInsertNullableDuplicate
 import org.apache.ignite.internal.processors.query.IgniteSqlSinglePartitionMultiParallelismTest;
 import org.apache.ignite.internal.processors.query.MemLeakOnSqlWithClientReconnectTest;
 import org.apache.ignite.internal.processors.query.QueryEntityAliasesTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Test suite for cache queries.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     IgniteInsertNullableDuplicatesSqlTest.class,
     GridCacheContinuousQueryPartitionAtomicOneNodeTest.class,
     CacheContinuousWithTransformerPartitionedSelfTest.class,

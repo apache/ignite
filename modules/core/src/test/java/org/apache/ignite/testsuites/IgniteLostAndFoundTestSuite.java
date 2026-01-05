@@ -17,36 +17,27 @@
 
 package org.apache.ignite.testsuites;
 
-import org.apache.ignite.internal.GridFactoryVmShutdownTest;
 import org.apache.ignite.internal.managers.GridManagerMxBeanIllegalArgumentHandleTest;
-import org.apache.ignite.internal.processors.cache.datastructures.GridCacheMultiNodeDataStructureTest;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.GridCacheReplicatedPreloadUndeploysTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PagesWriteThrottleSandboxTest;
 import org.apache.ignite.internal.processors.compute.GridComputeJobExecutionErrorToLogManualTest;
-import org.apache.ignite.internal.util.future.GridFutureQueueTest;
 import org.apache.ignite.internal.util.nio.GridRoundTripTest;
-import org.apache.ignite.jvmtest.BlockingQueueTest;
 import org.apache.ignite.jvmtest.FileIOTest;
 import org.apache.ignite.jvmtest.FileLocksTest;
 import org.apache.ignite.jvmtest.LinkedHashMapTest;
-import org.apache.ignite.jvmtest.MultipleFileIOTest;
 import org.apache.ignite.jvmtest.NetworkFailureTest;
 import org.apache.ignite.jvmtest.QueueSizeCounterMultiThreadedTest;
 import org.apache.ignite.jvmtest.ReadWriteLockMultiThreadedTest;
 import org.apache.ignite.jvmtest.RegExpTest;
 import org.apache.ignite.jvmtest.ServerSocketMultiThreadedTest;
-import org.apache.ignite.lang.GridSystemCurrentTimeMillisTest;
-import org.apache.ignite.lang.GridThreadPriorityTest;
 import org.apache.ignite.startup.servlet.GridServletLoaderTest;
-import org.junit.Ignore;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Tests suite for orphaned tests (not in any test sute previously).
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     FileIOTest.class,
     FileLocksTest.class,
     GridComputeJobExecutionErrorToLogManualTest.class,
@@ -61,15 +52,13 @@ import org.junit.runners.Suite;
     ReadWriteLockMultiThreadedTest.class,
     RegExpTest.class,
     ServerSocketMultiThreadedTest.class,
-
-    IgniteLostAndFoundTestSuite.TentativeTests.class
 })
 public class IgniteLostAndFoundTestSuite {
     /**
      * Non-JUnit classes with Test in name, which should be either converted to JUnit or removed in the future
      * Main classes.
      */
-    @RunWith(Suite.class)
+/*    @RunWith(Suite.class)
     @Suite.SuiteClasses({
         GridCacheReplicatedPreloadUndeploysTest.class,
         GridCacheMultiNodeDataStructureTest.class,
@@ -79,8 +68,5 @@ public class IgniteLostAndFoundTestSuite {
         GridSystemCurrentTimeMillisTest.class,
         BlockingQueueTest.class,
         MultipleFileIOTest.class
-    })
-    @Ignore
-    public static class TentativeTests {
-    }
+    })*/
 }

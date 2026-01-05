@@ -19,14 +19,14 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.stream.socket.SocketStreamerSelfTest;
 import org.apache.ignite.stream.socket.SocketStreamerUnmarshalVulnerabilityTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Stream test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     SocketStreamerSelfTest.class,
     SocketStreamerUnmarshalVulnerabilityTest.class,
 })

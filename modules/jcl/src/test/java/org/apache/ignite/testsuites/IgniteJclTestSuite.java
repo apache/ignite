@@ -18,14 +18,14 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.logger.jcl.JclLoggerTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Commons logging test.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     JclLoggerTest.class
 })
 public class IgniteJclTestSuite {

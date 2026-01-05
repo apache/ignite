@@ -42,14 +42,14 @@ import org.apache.ignite.util.GridCommandHandlerWithSslFactoryTest;
 import org.apache.ignite.util.GridCommandHandlerWithSslTest;
 import org.apache.ignite.util.GridPersistenceCommandsTest;
 import org.apache.ignite.util.KillCommandsControlShTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Test suite for control utility.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     CommandHandlerParsingTest.class,
 
     GridCommandHandlerTest.class,

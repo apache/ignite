@@ -27,14 +27,14 @@ import org.apache.ignite.spi.failover.jobstealing.GridJobStealingFailoverSpiStar
 import org.apache.ignite.spi.failover.never.GridNeverFailoverSpiSelfTest;
 import org.apache.ignite.spi.failover.never.GridNeverFailoverSpiStartStopSelfTest;
 import org.apache.ignite.spi.failover.topology.validator.MultiDataCenterTopologyValidatorTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Failover SPI self-test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     GridAlwaysFailoverSpiSelfTest.class,
     GridAlwaysFailoverSpiStartStopSelfTest.class,
     GridAlwaysFailoverSpiConfigSelfTest.class,

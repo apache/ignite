@@ -21,12 +21,12 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClient
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheClientReconnectTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheManyClientsTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsOnClientTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /** */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     IgniteCacheManyClientsTest.class,
     IgniteCacheClientNodeConcurrentStart.class,
     IgniteCacheClientReconnectTest.class,

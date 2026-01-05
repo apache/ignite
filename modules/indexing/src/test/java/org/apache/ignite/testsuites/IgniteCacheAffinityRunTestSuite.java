@@ -23,15 +23,15 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAff
 import org.apache.ignite.internal.processors.cache.IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteBaselineLockPartitionOnAffinityRunAtomicCacheTest;
 import org.apache.ignite.internal.processors.database.baseline.IgniteBaselineLockPartitionOnAffinityRunTxCacheTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Compute and Cache tests for affinityRun/Call. These tests is extracted into separate suite
  * because ones take a lot of time.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     IgniteCacheLockPartitionOnAffinityRunTest.class,
     IgniteCacheLockPartitionOnAffinityRunWithCollisionSpiTest.class,
     IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest.class,

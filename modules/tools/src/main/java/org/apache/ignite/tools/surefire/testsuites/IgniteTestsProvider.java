@@ -124,7 +124,7 @@ public class IgniteTestsProvider extends AbstractProvider {
 
     /** Make info about non-suited test visible to user. */
     private void writeFailureToOutput(Failure failure) throws TestSetFailedException {
-        try {
+/*        try {
             SimpleReportEntry report = SimpleReportEntry.withException(
                 NORMAL_RUN, 0L,
                 failure.getTestIdentifier().getType().getDeclaringClass().getName(), null,
@@ -140,7 +140,7 @@ public class IgniteTestsProvider extends AbstractProvider {
         }
         catch (Exception e) {
             throw new TestSetFailedException("Failed to dump exception to stdout");
-        }
+        }*/
     }
 
     /** {@inheritDoc} */

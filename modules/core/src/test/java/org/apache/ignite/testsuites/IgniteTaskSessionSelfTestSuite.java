@@ -38,14 +38,14 @@ import org.apache.ignite.session.GridSessionTaskWaitJobAttributeSelfTest;
 import org.apache.ignite.session.GridSessionWaitAttributeSelfTest;
 import org.apache.ignite.session.IgniteWithApplicationAttributesAwareTest;
 import org.apache.ignite.session.SessionContextCacheInterceptorTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Task session test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     GridSessionCancelSiblingsFromFutureSelfTest.class,
     GridSessionCancelSiblingsFromJobSelfTest.class,
     GridSessionCancelSiblingsFromTaskSelfTest.class,

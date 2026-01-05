@@ -73,14 +73,14 @@ import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTestSelfTest;
 import org.apache.ignite.testframework.junits.multijvm.JavaVersionCommandParserTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Basic test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     IgniteMarshallerSelfTestSuite.class,
     IgniteLangSelfTestSuite.class,
     IgniteUtilSelfTestSuite.class,

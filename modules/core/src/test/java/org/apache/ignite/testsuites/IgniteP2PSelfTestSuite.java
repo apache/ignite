@@ -46,14 +46,14 @@ import org.apache.ignite.p2p.P2PScanQueryUndeployTest;
 import org.apache.ignite.p2p.P2PStreamingClassLoaderTest;
 import org.apache.ignite.p2p.P2PUnsupportedClassVersionTest;
 import org.apache.ignite.p2p.SharedDeploymentTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * P2P test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     GridP2PAffinitySelfTest.class,
     GridP2PDoubleDeploymentSelfTest.class,
     GridP2PHotRedeploymentSelfTest.class,

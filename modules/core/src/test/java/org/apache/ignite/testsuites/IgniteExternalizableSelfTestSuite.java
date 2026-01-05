@@ -18,13 +18,13 @@
 package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.GridTopicExternalizableSelfTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Externalizable self-test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({GridTopicExternalizableSelfTest.class})
+@Suite
+@SelectClasses({GridTopicExternalizableSelfTest.class})
 public class IgniteExternalizableSelfTestSuite {
 }

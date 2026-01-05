@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.timeout;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  *
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     DefaultQueryTimeoutConfigurationTest.class,
     DefaultQueryTimeoutThickJavaTest.class,
     DefaultQueryTimeoutThinJavaTest.class,

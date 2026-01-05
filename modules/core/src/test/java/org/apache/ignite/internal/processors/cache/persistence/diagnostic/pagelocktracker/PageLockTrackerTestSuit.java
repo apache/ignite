@@ -22,24 +22,25 @@ import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelo
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.log.OffHeapLockLogTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.HeapArrayLockStackTest;
 import org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.stack.OffHeapLockStackTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Test suite for all tests ralated to {@link PageLockTracker}.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    PageLockTrackerManagerTest.class,
-    SharedPageLockTrackerTest.class,
-    ToFileDumpProcessorTest.class,
-    HeapArrayLockLogTest.class,
-    OffHeapLockLogTest.class,
-    HeapArrayLockStackTest.class,
-    OffHeapLockStackTest.class,
-    PageLockTrackerMXBeanImplTest.class
+@Suite
+@SelectClasses({
+        PageLockTrackerManagerTest.class,
+        SharedPageLockTrackerTest.class,
+        ToFileDumpProcessorTest.class,
+        HeapArrayLockLogTest.class,
+        OffHeapLockLogTest.class,
+        HeapArrayLockStackTest.class,
+        OffHeapLockStackTest.class,
+        PageLockTrackerMXBeanImplTest.class
 })
 
 public class PageLockTrackerTestSuit {
 
 }
+

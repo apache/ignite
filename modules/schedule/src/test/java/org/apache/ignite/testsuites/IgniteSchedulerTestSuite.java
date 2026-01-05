@@ -24,8 +24,8 @@ import org.junit.runners.Suite;
 /**
  * Scheduler tests.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     GridScheduleSelfTest.class
 })
 public class IgniteSchedulerTestSuite {

@@ -54,14 +54,14 @@ import org.apache.ignite.internal.processors.performancestatistics.StringCacheTe
 import org.apache.ignite.internal.processors.performancestatistics.TopologyChangesTest;
 import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
 import org.apache.ignite.util.GridInternalTaskUnusedWalSegmentsTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.junit.platform.suite.api.SelectClasses;
+import org.junit.platform.suite.api.Suite;
 
 /**
  * Basic test suite.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
+@Suite
+@SelectClasses({
     IoomFailureHandlerTest.class,
     ClusterBaselineNodesMetricsSelfTest.class,
     GridMarshallerMappingConsistencyTest.class,
