@@ -78,11 +78,11 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.util.KillCommandsSQLTest.execute;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * General tests for the cancel command.
@@ -338,7 +338,7 @@ class KillCommandsTests {
                     return tasks.isEmpty();
                 }, TIMEOUT);
 
-                assertTrue(srv.configuration().getIgniteInstanceName(), res);
+                assertTrue(res, srv.configuration().getIgniteInstanceName());
             }
 
             assertThrowsWithCause(() -> fut.get(TIMEOUT), IgniteException.class);
@@ -514,7 +514,7 @@ class KillCommandsTests {
             res = waitForCondition(() -> execute(srv,
                 "SELECT ROUTINE_ID FROM SYS.CONTINUOUS_QUERIES").isEmpty(), TIMEOUT);
 
-            assertTrue(srv.configuration().getIgniteInstanceName(), res);
+            assertTrue(res, srv.configuration().getIgniteInstanceName());
         }
 
         T3<UUID, String, Long> qryInfo = scanQuery(srvs.get(0));

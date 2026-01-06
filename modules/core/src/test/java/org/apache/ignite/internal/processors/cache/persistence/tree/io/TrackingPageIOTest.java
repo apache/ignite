@@ -32,10 +32,10 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -234,10 +234,10 @@ public class TrackingPageIOTest {
         assertEquals(setIdx.size(), io.countOfChangedPage(buf, 3, PAGE_SIZE));
 
         for (long i = basePageId; i < basePageId + track; i++)
-            assertEquals("pageId = " + i, setIdx.contains(i), io.wasChanged(buf, i, 3, -1, PAGE_SIZE));
+            assertEquals(setIdx.contains(i), io.wasChanged(buf, i, 3, -1, PAGE_SIZE), "pageId = " + i);
 
         for (long i = basePageId; i < basePageId + track; i++)
-            assertEquals("pageId = " + i, setIdx2.contains(i), io.wasChanged(buf, i, 4, 3, PAGE_SIZE));
+            assertEquals(setIdx2.contains(i), io.wasChanged(buf, i, 4, 3, PAGE_SIZE), "pageId = " + i);
 
         for (long i = basePageId; i < basePageId + track; i++)
             assertFalse(io.wasChanged(buf, i, 5, 4, PAGE_SIZE));
@@ -277,7 +277,7 @@ public class TrackingPageIOTest {
         assertEquals(setIdx2.size(), io.countOfChangedPage(buf, 5, PAGE_SIZE));
 
         for (long i = basePageId; i < basePageId + track; i++)
-            assertEquals("pageId = " + i, setIdx2.contains(i), io.wasChanged(buf, i, 5, 4, PAGE_SIZE));
+            assertEquals(setIdx2.contains(i), io.wasChanged(buf, i, 5, 4, PAGE_SIZE), "pageId = " + i);
     }
 
     /**

@@ -34,9 +34,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -56,14 +55,14 @@ public class TcpDiscoveryIpFinderFailureTest extends GridCommonAbstractTest {
     private ListeningTestLogger listeningLog;
 
     /** */
-    @Before
+    @BeforeEach
     public void initDynamicIpFinder() {
         dynamicIpFinder = new TestDynamicIpFinder();
         listeningLog = new ListeningTestLogger(log);
     }
 
     /** */
-    @After
+    @AfterEach
     public void tearDown() {
         stopAllGrids();
     }
@@ -231,7 +230,7 @@ public class TcpDiscoveryIpFinderFailureTest extends GridCommonAbstractTest {
         if (!GridTestUtils.waitForCondition(done::get, 10_000)) {
             fut.cancel();
 
-            Assert.assertEquals("Node was not failed", fut.get(), true);
+            assertTrue("Node was not failed", fut.get());
         }
         else {
             String nodeState = fut.get() ? "Connected" : "Failed";
@@ -275,7 +274,7 @@ public class TcpDiscoveryIpFinderFailureTest extends GridCommonAbstractTest {
 
         if (!GridTestUtils.waitForCondition(() -> done.get(), 5_000)) fut.cancel();
 
-        Assert.assertEquals("Node should be stuck in a joining loop", fut.get(), true);
+        assertTrue("Node should be stuck in a joining loop", fut.get());
     }
 
     /**

@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.query.calcite;
 
-import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Test;
+import org.hamcrest.Matcher;
 
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsResultRowCount;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.matchesOnce;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Query checker tests. */
 public class QueryCheckerTest {

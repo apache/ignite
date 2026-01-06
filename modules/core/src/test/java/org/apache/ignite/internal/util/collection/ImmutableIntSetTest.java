@@ -19,12 +19,14 @@ package org.apache.ignite.internal.util.collection;
 
 import java.util.Arrays;
 import java.util.HashSet;
+
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test for immutable int set wrapper
@@ -75,18 +77,18 @@ public class ImmutableIntSetTest {
     }
 
     /** */
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void throwExceptionForAddOperation() {
         IntSet immutableSet = ImmutableIntSet.wrap(new BitSetIntSet(4));
 
-        immutableSet.add(1);
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> immutableSet.add(1));
     }
 
     /** */
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void throwExceptionForRemoveOperation() {
         IntSet immutableSet = ImmutableIntSet.wrap(new BitSetIntSet(2, Arrays.asList(2)));
 
-        immutableSet.remove(2);
+        Assertions.assertThrows(UnsupportedOperationException.class, () -> immutableSet.remove(2));
     }
 }

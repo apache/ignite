@@ -24,10 +24,10 @@ import org.apache.ignite.tests.p2p.NoValueClassOnServerAbstractClient;
 import org.apache.ignite.tests.p2p.cache.Person;
 import org.apache.ignite.tests.p2p.cache.PersonKey;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -42,7 +42,7 @@ public class DataStructuresNoClassOnServerTestClient extends NoValueClassOnServe
     }
 
     /** {@inheritDoc} */
-    @Override protected void runTest() throws Exception {
+    @Override protected void runTest() {
         testAtomicReference();
 
         testAtomicStamped();
@@ -164,9 +164,8 @@ public class DataStructuresNoClassOnServerTestClient extends NoValueClassOnServe
 
     /**
      * @param args Arguments.
-     * @throws Exception If failed.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         try (DataStructuresNoClassOnServerTestClient client = new DataStructuresNoClassOnServerTestClient(args)) {
             client.runTest();
         }

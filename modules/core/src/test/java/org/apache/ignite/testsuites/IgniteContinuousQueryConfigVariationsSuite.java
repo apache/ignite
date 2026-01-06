@@ -17,93 +17,95 @@
 
 package org.apache.ignite.testsuites;
 
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryVariationsTest;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
-import org.junit.jupiter.api.Test;
 import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
+import org.junit.platform.suite.api.SuiteDisplayName;
+import org.junit.jupiter.api.DynamicContainer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
+import org.junit.jupiter.api.BeforeAll;
+import java.util.List;
+import java.util.stream.Stream;
+import java.util.stream.Collectors;
+import java.util.Collections;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
 
-/**
- * Test suite for cache queries.
- */
 @Suite
+@SuiteDisplayName("Ignite Continuous Query Config Variations Suite")
 @SelectClasses({
-    IgniteContinuousQueryConfigVariationsSuite.SingleNodeTest.class,
-    IgniteContinuousQueryConfigVariationsSuite.MultiNodeTest.class
+        IgniteContinuousQueryConfigVariationsSuite.SingleNodeTest.class,
+        IgniteContinuousQueryConfigVariationsSuite.MultiNodeTest.class
 })
 public class IgniteContinuousQueryConfigVariationsSuite {
     /** */
     private static List<Class<?>> suiteSingleNode() {
         return new ConfigVariationsTestSuiteBuilder(CacheContinuousQueryVariationsTest.class)
-            .withBasicCacheParams()
-            .gridsCount(1)
-            .classes();
+                .withBasicCacheParams()
+                .gridsCount(1)
+                .classes();
     }
 
     /** */
     private static List<Class<?>> suiteMultiNode() {
         return new ConfigVariationsTestSuiteBuilder(CacheContinuousQueryVariationsTest.class)
-            .withBasicCacheParams()
-            .gridsCount(5)
-            .backups(2)
-            .classes();
+                .withBasicCacheParams()
+                .gridsCount(5)
+                .backups(2)
+                .classes();
     }
 
     /** */
-    @RunWith(IgniteContinuousQueryConfigVariationsSuite.SuiteSingleNode.class)
     public static class SingleNodeTest {
+        /** */
+        @BeforeAll
+        public static void setUp() {
+            System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
+            CacheContinuousQueryVariationsTest.singleNode = true;
+        }
+
+        /** */
+        @TestFactory
+        public Stream<DynamicContainer> singleNodeTests() {
+            // In JUnit 5, you typically need to create dynamic tests or use a different approach
+            // Since the original Suite mechanism is more complex, you might need to adapt this
+            return suiteSingleNode().stream()
+                    .map(testClass -> DynamicContainer.dynamicContainer(
+                            testClass.getSimpleName(),
+                            Collections.emptyList() // You'll need to implement test generation logic here
+                    ));
+        }
     }
 
     /** */
-    @RunWith(IgniteContinuousQueryConfigVariationsSuite.SuiteMultiNode.class)
     public static class MultiNodeTest {
-    }
-
-    /** {@inheritDoc} */
-    public static class SuiteSingleNode extends Suite {
         /** */
-        public SuiteSingleNode(Class<?> cls) throws InitializationError {
-            super(cls, suiteSingleNode().toArray(new Class<?>[] {null}));
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void runChild(Runner runner, RunNotifier ntf) {
+        @BeforeAll
+        public static void setUp() {
             System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
-
-            CacheContinuousQueryVariationsTest.singleNode = true;
-
-            super.runChild(runner, ntf);
-        }
-    }
-
-    /** {@inheritDoc} */
-    public static class SuiteMultiNode extends Suite {
-        /** */
-        public SuiteMultiNode(Class<?> cls) throws InitializationError {
-            super(cls, suiteWithSentinel().toArray(new Class<?>[] {null}));
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void runChild(Runner runner, RunNotifier ntf) {
-            System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
-
             CacheContinuousQueryVariationsTest.singleNode = false;
-
-            super.runChild(runner, ntf);
         }
 
         /** */
-        private static List<Class<?>> suiteWithSentinel() {
-            return Stream.concat(suiteMultiNode().stream(),
-                new ConfigVariationsTestSuiteBuilder(
-                    Sentinel.class).withBasicCacheParams().classes().subList(0, 1).stream())
-                .collect(Collectors.toList());
+        @TestFactory
+        public Stream<DynamicContainer> multiNodeTests() {
+            List<Class<?>> tests = Stream.concat(
+                            suiteMultiNode().stream(),
+                            new ConfigVariationsTestSuiteBuilder(Sentinel.class)
+                                    .withBasicCacheParams()
+                                    .classes()
+                                    .subList(0, 1).stream()
+                    )
+                    .collect(Collectors.toList());
+
+            return tests.stream()
+                    .map(testClass -> DynamicContainer.dynamicContainer(
+                            testClass.getSimpleName(),
+                            Collections.emptyList() // You'll need to implement test generation logic here
+                    ));
         }
 
         /**

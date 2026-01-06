@@ -44,12 +44,13 @@ import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -323,7 +324,7 @@ public class ReliableChannelTest {
     /**
      * Should fail if default channel is not initialized.
      */
-    @Test(expected = TestChannelException.class)
+    @Test
     public void testFailOnInitIfDefaultChannelFailed() {
         ClientConfiguration ccfg = new ClientConfiguration()
             .setAddresses(dfltAddrs)
@@ -331,7 +332,7 @@ public class ReliableChannelTest {
 
         ReliableChannel rc = new ReliableChannel((cfg, hnd) -> new TestFailureClientChannel(), ccfg, null);
 
-        rc.channelsInit();
+        Assertions.assertThrows(TestChannelException.class, rc::channelsInit);
     }
 
     /**

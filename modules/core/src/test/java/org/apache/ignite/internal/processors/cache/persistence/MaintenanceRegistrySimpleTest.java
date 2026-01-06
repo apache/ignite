@@ -39,15 +39,15 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Simple unit test to cover basic MaintenanceRegistry functionality like action validations,
@@ -58,13 +58,13 @@ public class MaintenanceRegistrySimpleTest {
     private final IgniteLogger log = new GridTestLog4jLogger();
 
     /** */
-    @Before
+    @BeforeEach
     public void beforeTest() throws Exception {
         cleanMaintenanceRegistryFile();
     }
 
     /** */
-    @After
+    @AfterEach
     public void afterTest() throws Exception {
         cleanMaintenanceRegistryFile();
     }

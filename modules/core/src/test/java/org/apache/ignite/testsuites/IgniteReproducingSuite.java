@@ -20,12 +20,11 @@ package org.apache.ignite.testsuites;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerSelfTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-import org.junit.runners.model.InitializationError;
+import org.junit.jupiter.api.extension.TestTemplateInvocationContextProvider;
 
 /**
  * Test suite for cycled run tests on PR code. <br>
@@ -39,33 +38,54 @@ import org.junit.runners.model.InitializationError;
  */
 @ExtendWith(IgniteReproducingSuite.DynamicReproducingSuite.class)
 public class IgniteReproducingSuite {
-    /** */
-    public static class DynamicReproducingSuite extends Suite {
+
+    public static class DynamicReproducingSuite implements TestTemplateInvocationContextProvider {
+
         /**
          * @return List of test(s) for reproduction some problem.
          */
         private static List<Class<?>> classes() {
             List<Class<?>> suite = new ArrayList<>();
 
-            suite.add(IgniteReproducingSuite.TestStub.class);
+            suite.add(TestStub.class);
 
-            //uncomment to add some test
+            // uncomment to add some test
             for (int i = 0; i < 500; i++)
                 suite.add(OptimizedMarshallerSelfTest.class);
 
             return suite;
         }
 
-        /** */
-        public DynamicReproducingSuite(Class<?> cls) throws InitializationError {
-            super(cls, classes().toArray(new Class<?>[] {null}));
+        @Override
+        public boolean supportsTestTemplate(org.junit.jupiter.api.extension.ExtensionContext context) {
+            return true;
+        }
+
+        @Override
+        public java.util.stream.Stream<org.junit.jupiter.api.extension.TestTemplateInvocationContext> provideTestTemplateInvocationContexts(
+                org.junit.jupiter.api.extension.ExtensionContext context) {
+
+            return classes().stream()
+                    .map(testClass -> new org.junit.jupiter.api.extension.TestTemplateInvocationContext() {
+                        @Override
+                        public String getDisplayName(int invocationIndex) {
+                            return testClass.getSimpleName();
+                        }
+
+                        @Override
+                        public List<org.junit.jupiter.api.extension.Extension> getAdditionalExtensions() {
+                            return java.util.Collections.emptyList();
+                        }
+                    });
         }
     }
 
-    /** IMPL NOTE execution of the (empty) test suite was failing with NPE without this stub. */
-    @Ignore
+    /**
+     * IMPL NOTE execution of the (empty) test suite was failing with NPE without this stub.
+     */
+    @Disabled
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     public static class TestStub {
-        /** */
         @Test
         public void dummy() {
         }

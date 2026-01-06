@@ -22,11 +22,11 @@ import java.util.List;
 import org.apache.ignite.internal.util.typedef.X;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -36,7 +36,7 @@ public class GridSuppressedExceptionSelfTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testHasCause() throws Exception {
+    public void testHasCause() {
         IgniteCheckedException me = prepareMultiException();
 
         assertFalse(me.hasCause(IOException.class));
@@ -48,7 +48,7 @@ public class GridSuppressedExceptionSelfTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testGetCause() throws Exception {
+    public void testGetCause() {
         IgniteCheckedException me = prepareMultiException();
 
         assertNull(me.getCause(IOException.class));
@@ -64,7 +64,7 @@ public class GridSuppressedExceptionSelfTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testXHasCause() throws Exception {
+    public void testXHasCause() {
         IgniteCheckedException me = prepareMultiException();
 
         try {
@@ -81,7 +81,7 @@ public class GridSuppressedExceptionSelfTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testXGetSuppressedList() throws Exception {
+    public void testXGetSuppressedList() {
         IgniteCheckedException me = prepareMultiException();
 
         assertEquals(3, X.getSuppressedList(me).size());
@@ -102,7 +102,7 @@ public class GridSuppressedExceptionSelfTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testXCause() throws Exception {
+    public void testXCause() {
         IgniteCheckedException me = prepareMultiException();
 
         try {

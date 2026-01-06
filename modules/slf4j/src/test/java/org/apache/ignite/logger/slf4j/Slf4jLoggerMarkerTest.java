@@ -19,14 +19,14 @@ package org.apache.ignite.logger.slf4j;
 
 import java.io.File;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Testing that markers are supported by log4j2 implementation.
@@ -39,13 +39,13 @@ public class Slf4jLoggerMarkerTest {
     private static final String LOG_FILTERED = "work/log/filtered.log";
 
     /** */
-    @Before
+    @BeforeEach
     public void setUp() {
         deleteLogs();
     }
 
     /** */
-    @After
+    @AfterEach
     public void tearDown() {
         deleteLogs();
     }

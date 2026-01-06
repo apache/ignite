@@ -140,9 +140,9 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Utility class for tests.
@@ -2001,7 +2001,7 @@ public final class GridTestUtils {
      */
     public static byte[] readResource(ClassLoader classLoader, String resourceName) throws IOException {
         try (InputStream is = classLoader.getResourceAsStream(resourceName)) {
-            assertNotNull("Resource is missing: " + resourceName, is);
+            assertNotNull(is, "Resource is missing: " + resourceName);
 
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                 U.copy(is, baos);
@@ -2459,7 +2459,7 @@ public final class GridTestUtils {
      * @see ClusterState#active()
      */
     public static void assertActive(ClusterState state) {
-        assertTrue(state + " isn't active state", state.active());
+        assertTrue(state.active(), state + " isn't active state");
     }
 
     /**
@@ -2469,7 +2469,7 @@ public final class GridTestUtils {
      * @see ClusterState#active()
      */
     public static void assertInactive(ClusterState state) {
-        assertFalse(state + " isn't inactive state", state.active());
+        assertFalse(state.active(), state + " isn't inactive state");
     }
 
     /** @return Cartesian product of collections. See {@link Lists#cartesianProduct(List)}. */

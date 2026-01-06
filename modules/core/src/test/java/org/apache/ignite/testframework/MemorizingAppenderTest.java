@@ -23,8 +23,8 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.Configurator;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.logging.log4j.Level.DEBUG;
@@ -48,13 +48,13 @@ public class MemorizingAppenderTest {
     }
 
     /***/
-    @Before
+    @BeforeEach
     public void installAppender() {
         appender.installSelfOn(MemorizingAppenderTest.class);
     }
 
     /***/
-    @After
+    @AfterEach
     public void removeAppender() {
         appender.removeSelfFrom(MemorizingAppenderTest.class);
     }

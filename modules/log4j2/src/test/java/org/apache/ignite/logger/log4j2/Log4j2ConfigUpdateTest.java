@@ -24,8 +24,8 @@ import java.util.Date;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Checking that Log4j2 configuration is updated when its source file is changed.

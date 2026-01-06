@@ -91,13 +91,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.SystemPropertiesRule;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.Nullable;
-import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.TestRule;
 
 import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
@@ -114,14 +110,14 @@ import static org.apache.ignite.internal.management.api.CommandUtils.visitComman
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.util.GridCommandHandlerIndexingCheckSizeTest.CACHE;
 import static org.apache.ignite.util.SystemViewCommandTest.NODE_ID;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests Command Handler parsing arguments.
@@ -129,7 +125,7 @@ import static org.junit.Assert.fail;
 @WithSystemProperty(key = IGNITE_ENABLE_EXPERIMENTAL_COMMAND, value = "true")
 public class CommandHandlerParsingTest {
     /** */
-    @ClassRule public static final TestRule classRule = new SystemPropertiesRule();
+    //@ClassRule public static final TestRule classRule = new SystemPropertiesRule();
 
     /** */
     private static final String INVALID_REGEX = "[]";
@@ -156,7 +152,7 @@ public class CommandHandlerParsingTest {
     public static final String SHUTDOWN_POLICY = "--shutdown-policy";
 
     /** */
-    @Rule public final TestRule methodRule = new SystemPropertiesRule();
+    //@Rule public final TestRule methodRule = new SystemPropertiesRule();
 
     /**
      * validate_indexes command arguments parsing and validation
@@ -182,9 +178,9 @@ public class CommandHandlerParsingTest {
 
             CacheValidateIndexesCommandArg arg = (CacheValidateIndexesCommandArg)args.commandArg();
 
-            assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeIds()[0]);
-            assertEquals("checkFirst parameter unexpected value", expectedCheckFirst, arg.checkFirst());
-            assertEquals("checkThrough parameter unexpected value", expectedCheckThrough, arg.checkThrough());
+            assertEquals(nodeId, arg.nodeIds()[0], "nodeId parameter unexpected value");
+            assertEquals(expectedCheckFirst, arg.checkFirst(), "checkFirst parameter unexpected value");
+            assertEquals(expectedCheckThrough, arg.checkThrough(), "checkThrough parameter unexpected value");
         }
         catch (IllegalArgumentException e) {
             fail("Unexpected exception: " + e);
@@ -204,10 +200,10 @@ public class CommandHandlerParsingTest {
 
             CacheValidateIndexesCommandArg arg = (CacheValidateIndexesCommandArg)args.commandArg();
 
-            assertNull("caches weren't specified, null value expected", arg.caches());
-            assertEquals("nodeId parameter unexpected value", nodeId, arg.nodeIds()[0]);
-            assertEquals("checkFirst parameter unexpected value", -1, arg.checkFirst());
-            assertEquals("checkThrough parameter unexpected value", expectedParam, arg.checkThrough());
+            assertNull(arg.caches(), "caches weren't specified, null value expected");
+            assertEquals(nodeId, arg.nodeIds()[0], "nodeId parameter unexpected value");
+            assertEquals(-1, arg.checkFirst(), "checkFirst parameter unexpected value");
+            assertEquals(expectedParam, arg.checkThrough(), "checkThrough parameter unexpected value");
         }
         catch (IllegalArgumentException e) {
             e.printStackTrace();
@@ -896,8 +892,8 @@ public class CommandHandlerParsingTest {
             if (requireArgs(cmd.getClass()))
                 return;
 
-            assertFalse(cmd.toString(), parseArgs(singletonList(cmdText(cmd))).verbose());
-            assertTrue(cmd.toString(), parseArgs(asList(cmdText(cmd), CMD_VERBOSE)).verbose());
+            assertFalse(parseArgs(singletonList(cmdText(cmd))).verbose(), cmd.toString());
+            assertTrue(parseArgs(asList(cmdText(cmd), CMD_VERBOSE)).verbose(), cmd.toString());
         });
     }
 
@@ -1308,30 +1304,30 @@ public class CommandHandlerParsingTest {
 
             EnumDescription descAnn = fld.getAnnotation(EnumDescription.class);
 
-            assertNotNull("Please, specify a description to the enum parameter using " +
+            assertNotNull(descAnn,
+                    "Please, specify a description to the enum parameter using " +
                 "@" + EnumDescription.class.getSimpleName() + " annotation. " +
-                "Parameter: " + cmd.argClass().getSimpleName() + "#" + fld.getName(),
-                descAnn);
+                "Parameter: " + cmd.argClass().getSimpleName() + "#" + fld.getName());
 
-            assertEquals("Please, specify a description to enum constants: " +
+            assertEquals(fld.getType().getEnumConstants().length, descAnn.names().length,
+                    "Please, specify a description to enum constants: " +
                     stream(fld.getType().getEnumConstants())
                         .filter(e -> stream(descAnn.names()).noneMatch(n -> n.equals(((Enum<?>)e).name())))
                         .collect(Collectors.toSet()) +
-                    ". Parameter: " + cmd.argClass().getSimpleName() + "#" + fld.getName(),
-                fld.getType().getEnumConstants().length, descAnn.names().length);
+                    ". Parameter: " + cmd.argClass().getSimpleName() + "#" + fld.getName());
 
             Argument argAnn = fld.getAnnotation(Argument.class);
             Positional posAnn = fld.getAnnotation(Positional.class);
 
             if (posAnn == null) {
-                assertFalse("Please, set a description for the argument: " +
-                        cmd.argClass().getSimpleName() + "#" + fld.getName(),
-                    argAnn.description().isEmpty());
+                assertFalse(argAnn.description().isEmpty(),
+                        "Please, set a description for the argument: " +
+                        cmd.argClass().getSimpleName() + "#" + fld.getName());
             }
             else {
-                assertTrue("Please, remove a description for the positional argument: " +
-                        cmd.argClass().getSimpleName() + "#" + fld.getName(),
-                    argAnn.description().isEmpty());
+                assertTrue(argAnn.description().isEmpty(),
+                        "Please, remove a description for the positional argument: " +
+                        cmd.argClass().getSimpleName() + "#" + fld.getName());
             }
         };
 

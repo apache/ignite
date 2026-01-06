@@ -21,13 +21,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Common map tests.
@@ -235,7 +234,7 @@ public abstract class AbstractBaseIntMapTest {
                 assertEquals(originMap.containsKey(nextKey), testable.containsKey(nextKey));
             }
 
-            Assert.assertEquals(originMap.size(), testable.size());
+            assertEquals(originMap.size(), testable.size());
         }
     }
 

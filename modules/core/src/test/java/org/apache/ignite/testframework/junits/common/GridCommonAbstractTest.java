@@ -48,7 +48,6 @@ import javax.management.ObjectInstance;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSession;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -613,7 +612,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param printPartState If {@code true} will print partition state if evictions not happened.
      * @throws InterruptedException If interrupted.
      */
-    @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange(
         boolean waitEvicts,
         boolean waitNode2PartUpdate,
@@ -2460,7 +2458,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param res Response.
      */
-    protected static void assertPartitionsSame(IdleVerifyResult res) throws AssertionFailedError {
+    protected static void assertPartitionsSame(IdleVerifyResult res) {
         if (res.hasConflicts()) {
             StringBuilder b = new StringBuilder();
 
@@ -2476,7 +2474,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cacheName Cache name.
      * PME invoking with {@code true} makes sense only after PME was finished.
      */
-    protected void assertCountersSame(int partId, boolean withReserveCntr, String cacheName) throws AssertionFailedError {
+    protected void assertCountersSame(int partId, boolean withReserveCntr, String cacheName) {
         PartitionUpdateCounter cntr0 = null;
 
         List<T3<String, @Nullable PartitionUpdateCounter, Boolean>> cntrMap = G.allGrids().stream().filter(ignite ->
@@ -2511,7 +2509,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * PME invoking with {@code true} makes sense only after PME was finished.
      */
     protected void assertCountersAsExpected(int partId, boolean withReserveCntr, String cacheName, long cnt,
-        long reserved) throws AssertionFailedError {
+        long reserved) {
         List<T3<String, @Nullable PartitionUpdateCounter, Boolean>> cntrMap = G.allGrids().stream().filter(ignite ->
             !ignite.configuration().isClientMode()).map(ignite ->
             new T3<>(ignite.name(), counter(partId, cacheName, ignite.name()),
