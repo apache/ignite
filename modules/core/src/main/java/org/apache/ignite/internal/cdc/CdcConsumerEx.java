@@ -18,12 +18,13 @@
 package org.apache.ignite.internal.cdc;
 
 import java.nio.file.Path;
+import java.util.List;
 
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.metric.MetricRegistry;
 
 /**
- * Extended CdcConsumer interface which provides overloaded {@link CdcConsumerEx#start(MetricRegistry, Path)} method
+ * Extended CdcConsumer interface which provides overloaded {@link CdcConsumerEx#start(MetricRegistry, Path, List)} method
  * required for CDC regex filters.
  */
 public interface CdcConsumerEx extends CdcConsumer {
@@ -31,6 +32,7 @@ public interface CdcConsumerEx extends CdcConsumer {
      * Starts the consumer.
      * @param mreg Metric registry for consumer specific metrics.
      * @param cdcDir Path to Change Data Capture Directory.
+     * @param cacheNames List of cache names.
      */
-    void start(MetricRegistry mreg, Path cdcDir);
+    void start(MetricRegistry mreg, Path cdcDir, List<String> cacheNames);
 }
