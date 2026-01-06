@@ -26,11 +26,13 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -41,6 +43,7 @@ import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.TypeMapping;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -339,7 +342,17 @@ public class CdcMain implements Runnable {
                     committedSegmentOffset.value(walState.get1().fileOffset());
                 }
 
-                consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")), ft.walCdc().toPath());
+                List<String> cacheNames = GridLocalConfigManager
+                    .readCachesData(
+                        ft,
+                        kctx.marshallerContext().jdkMarshaller(),
+                        igniteCfg)
+                    .values().stream()
+                    .map(data -> data.configuration().getName())
+                    .collect(Collectors.toList());
+
+                consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")), ft.walCdc().toPath(),
+                    cacheNames);
 
                 started = true;
 
