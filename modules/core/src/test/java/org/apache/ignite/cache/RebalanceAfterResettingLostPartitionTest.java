@@ -26,7 +26,6 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
@@ -35,8 +34,8 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Objects.requireNonNull;
@@ -52,7 +51,7 @@ public class RebalanceAfterResettingLostPartitionTest extends GridCommonAbstract
     public static final int CACHE_SIZE = 10_000;
 
     /** Stop all grids and cleanup persistence directory. */
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         stopAllGrids();
 
@@ -60,7 +59,7 @@ public class RebalanceAfterResettingLostPartitionTest extends GridCommonAbstract
     }
 
     /** Stop all grids and cleanup persistence directory. */
-    @After
+    @AfterEach
     public void after() throws Exception {
         stopAllGrids();
 
@@ -98,9 +97,8 @@ public class RebalanceAfterResettingLostPartitionTest extends GridCommonAbstract
     /**
      * Test to restore lost partitions and rebalance data on working grid with two nodes.
      *
-     * @throws Exception if fail.
+     * @throws Exception if failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testRebalanceAfterPartitionsWereLost() throws Exception {
         startGrids(2);
@@ -142,9 +140,6 @@ public class RebalanceAfterResettingLostPartitionTest extends GridCommonAbstract
 
         // Killing the first node at the moment of rebalancing.
         stopGrid(0);
-
-        // Returning first node to the cluster.
-        IgniteEx g0 = startGrid(0);
 
         assertTrue(requireNonNull(grid(0).cachex(CACHE_NAME)).context().topology().localPartitions().stream().allMatch(
             p -> p.state() == GridDhtPartitionState.LOST));

@@ -30,12 +30,12 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.io.SimpleFileInput;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -48,7 +48,7 @@ public class IgniteDataIntegrityTests {
     private ByteBufferExpander expBuf;
 
     /** */
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         File file = File.createTempFile("integrity", "dat");
         file.deleteOnExit();
@@ -81,7 +81,7 @@ public class IgniteDataIntegrityTests {
     }
 
     /** */
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         fileInput.io().close();
         expBuf.close();

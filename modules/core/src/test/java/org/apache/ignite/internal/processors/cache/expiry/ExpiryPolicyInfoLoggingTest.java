@@ -30,8 +30,8 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheProcessor.EXPRITY_POLICY_MSG;
@@ -136,7 +136,7 @@ public class ExpiryPolicyInfoLoggingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Before
+    @BeforeEach
     @Override public void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -144,7 +144,7 @@ public class ExpiryPolicyInfoLoggingTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @After
+    @AfterEach
     @Override public void afterTest() throws Exception {
         super.afterTest();
 

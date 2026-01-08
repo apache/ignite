@@ -37,7 +37,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessag
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -141,7 +141,7 @@ public class ClientFastReplyCoordinatorFailureTest extends GridCommonAbstractTes
     /**
      * Cleanup after test.
      */
-    @After
+    @AfterEach
     public void cleanUp() {
         stopAllGrids();
     }

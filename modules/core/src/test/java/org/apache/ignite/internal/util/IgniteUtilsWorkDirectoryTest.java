@@ -24,8 +24,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.lang.String.join;
@@ -36,9 +36,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.workDirectory;
 import static org.apache.ignite.internal.util.typedef.internal.U.getIgniteHome;
 import static org.apache.ignite.internal.util.typedef.internal.U.nullifyHomeDirectory;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /** */
 public class IgniteUtilsWorkDirectoryTest {
@@ -61,7 +61,7 @@ public class IgniteUtilsWorkDirectoryTest {
     private static String dfltUserDir;
 
     /** */
-    @Before
+    @BeforeEach
     public void setup() {
         dfltIgniteHome = getProperty(IgniteSystemProperties.IGNITE_HOME);
         dfltUserDir = getProperty("user.dir");
@@ -70,7 +70,7 @@ public class IgniteUtilsWorkDirectoryTest {
     }
 
     /** */
-    @After
+    @AfterEach
     public void tearDown() {
         if (dfltIgniteHome != null)
             setProperty(IgniteSystemProperties.IGNITE_HOME, dfltIgniteHome);
@@ -172,7 +172,7 @@ public class IgniteUtilsWorkDirectoryTest {
         if (dir.exists()) {
             resetPermission(strDir);
             boolean deleted = U.delete(dir);
-            assertTrue("cannot delete file", deleted);
+            assertTrue(deleted, "cannot delete file");
         }
 
         dir.mkdirs();
@@ -199,7 +199,7 @@ public class IgniteUtilsWorkDirectoryTest {
         if (dirParent.exists()) {
             resetPermission(strDirParent);
             boolean deleted = U.delete(dirParent);
-            assertTrue("cannot delete file", deleted);
+            assertTrue(deleted, "cannot delete file");
         }
         dirParent.mkdirs();
 
@@ -247,6 +247,7 @@ public class IgniteUtilsWorkDirectoryTest {
     }
 
     /** */
+    @SuppressWarnings("ThrowableNotThrown")
     private void genericPathExceptionTest(String userWorkDir, String expMsg) {
         assertThrows(null,
             () -> workDirectory(userWorkDir, null),

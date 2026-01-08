@@ -34,7 +34,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
@@ -80,7 +80,7 @@ public class GridCacheRebalanceOrderTest extends GridCommonAbstractTest {
     /**
      * Stops all nodes after test.
      */
-    @After
+    @AfterEach
     public void testCleanup() {
         stopAllGrids();
     }

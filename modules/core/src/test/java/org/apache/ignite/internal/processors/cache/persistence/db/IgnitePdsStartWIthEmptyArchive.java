@@ -40,10 +40,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
@@ -51,7 +50,7 @@ import static org.apache.ignite.events.EventType.EVT_WAL_SEGMENT_ARCHIVED;
 /**
  *
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-11908")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-11908")
 public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
     /** Mapping of WAL segment idx to WalSegmentArchivedEvent. */
     private final Map<Long, WalSegmentArchivedEvent> evts = new ConcurrentHashMap<>();
@@ -97,7 +96,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
      * Executes initial steps before test execution.
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         stopAllGrids();
 
@@ -107,7 +106,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
     /**
      * Stops all nodes and cleans work dir after a test.
      */
-    @After
+    @AfterEach
     public void cleanup() throws Exception {
         stopAllGrids();
 
@@ -155,7 +154,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
                 log.info("File " + f.getAbsolutePath() + " deleted");
         }
 
-        Assert.assertEquals(0, ft.walArchive().listFiles().length);
+        assertEquals(0, ft.walArchive().listFiles().length);
 
         evts.clear();
 
@@ -170,7 +169,7 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
 
         int segments = ig.configuration().getDataStorageConfiguration().getWalSegments();
 
-        Assert.assertTrue(
+        assertTrue(
             "lastArchivedBeforeIdx=" + beforeLastArchivedAbsoluteIdx +
                 ", lastArchivedAfterIdx=" + afterLastArchivedAbsoluteIdx + ",  segments=" + segments,
             afterLastArchivedAbsoluteIdx >=
@@ -180,12 +179,12 @@ public class IgnitePdsStartWIthEmptyArchive extends GridCommonAbstractTest {
 
         FileWriteHandle fhAfter = U.field(walMgr, "currHnd");
 
-        Assert.assertNotNull(fhAfter);
+        assertNotNull(fhAfter);
 
         long idxAfter = fhAfter.getSegmentId();
 
-        Assert.assertEquals(idxBefore, idxAfter);
-        Assert.assertTrue(idxAfter >= beforeLastArchivedAbsoluteIdx);
+        assertEquals(idxBefore, idxAfter);
+        assertTrue(idxAfter >= beforeLastArchivedAbsoluteIdx);
 
         log.info("currentIdx=" + idxAfter + ", lastArchivedBeforeIdx=" + beforeLastArchivedAbsoluteIdx +
             ", lastArchivedAfteridx=" + afterLastArchivedAbsoluteIdx + ",  segments=" + segments);

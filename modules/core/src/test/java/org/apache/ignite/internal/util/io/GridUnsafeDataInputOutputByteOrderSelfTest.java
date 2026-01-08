@@ -19,8 +19,9 @@ package org.apache.ignite.internal.util.io;
 
 import java.io.ByteArrayInputStream;
 import java.util.Random;
-import org.junit.After;
-import org.junit.Before;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.GridTestIoUtils.getCharByByteLE;
@@ -29,8 +30,8 @@ import static org.apache.ignite.GridTestIoUtils.getFloatByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getIntByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getLongByByteLE;
 import static org.apache.ignite.GridTestIoUtils.getShortByByteLE;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Grid unsafe data input/output byte order sanity tests.
@@ -52,7 +53,7 @@ public class GridUnsafeDataInputOutputByteOrderSelfTest {
     private GridUnsafeDataInput in;
 
     /** */
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         out = new GridUnsafeDataOutput(16 * 8 + LEN_BYTES);
         in = new GridUnsafeDataInput();
@@ -60,7 +61,7 @@ public class GridUnsafeDataInputOutputByteOrderSelfTest {
     }
 
     /** */
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         in.close();
         out.close();

@@ -39,8 +39,8 @@ import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.apache.ignite.spi.deployment.local.LocalDeploymentSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -66,13 +66,13 @@ public class ServiceHotRedeploymentViaDeploymentSpiTest extends GridCommonAbstra
     }
 
     /** */
-    @Before
+    @BeforeEach
     public void prepare() throws IOException {
         srcTmpDir = Files.createTempDirectory(getClass().getSimpleName());
     }
 
     /** */
-    @After
+    @AfterEach
     public void cleanup() {
         U.delete(srcTmpDir);
     }

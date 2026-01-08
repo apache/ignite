@@ -47,8 +47,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
@@ -113,7 +113,7 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
     /**
      * Prepares test for execution.
      */
-    @Before
+    @BeforeEach
     public void startup() {
         shutdown();
     }
@@ -121,7 +121,7 @@ public class IgniteExchangeLatchManagerDiscoHistoryTest extends GridCommonAbstra
     /**
      * Cleans after the test.
      */
-    @After
+    @AfterEach
     public void shutdown() {
         lifecycleBean = null;
 

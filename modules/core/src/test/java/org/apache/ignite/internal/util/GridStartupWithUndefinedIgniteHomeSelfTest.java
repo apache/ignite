@@ -29,13 +29,13 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
 import static org.apache.ignite.internal.util.IgniteUtils.nullifyHomeDirectory;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Checks that node can be started without operations with undefined IGNITE_HOME.
@@ -50,7 +50,7 @@ public class GridStartupWithUndefinedIgniteHomeSelfTest {
     private static final int GRID_COUNT = 2;
 
     /** */
-    @After
+    @AfterEach
     public void tearDown() {
         // Next grid in the same VM shouldn't use cached values produced by these tests.
         nullifyHomeDirectory();

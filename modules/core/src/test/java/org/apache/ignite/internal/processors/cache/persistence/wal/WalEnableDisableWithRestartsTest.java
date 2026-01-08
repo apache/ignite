@@ -36,7 +36,7 @@ import org.apache.ignite.maintenance.MaintenanceAction;
 import org.apache.ignite.maintenance.MaintenanceRegistry;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
@@ -77,6 +77,7 @@ public class WalEnableDisableWithRestartsTest extends GridCommonAbstractTest {
         Ignite client = Ignition.start(igniteCfg(true, "client"));
 
         new Thread(new Runnable() {
+            @Override
             public void run() {
                 try {
                     for (int i = 0; i < CYCLES; i++) {
@@ -128,7 +129,7 @@ public class WalEnableDisableWithRestartsTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @After
+    @AfterEach
     public void cleanup() throws Exception {
         stopAllGrids();
 

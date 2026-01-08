@@ -50,8 +50,8 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -59,9 +59,10 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  *
@@ -80,7 +81,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         stopAllGrids();
 
@@ -92,7 +93,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    @After
+    @AfterEach
     public void after() throws Exception {
         stopAllGrids();
 
@@ -430,7 +431,7 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    @Test(expected = BaselineAdjustForbiddenException.class)
+    @Test
     public void testBaselineAutoAdjustThrowExceptionWhenBaselineChangedManually() throws Exception {
         IgniteEx ignite0 = startGrids(2);
 
@@ -446,7 +447,8 @@ public class BaselineAutoAdjustTest extends GridCommonAbstractTest {
 
         stopGrid(1);
 
-        ignite0.cluster().setBaselineTopology(Collections.singletonList(ignite0.localNode()));
+        assertThrows(BaselineAdjustForbiddenException.class,
+                () -> ignite0.cluster().setBaselineTopology(Collections.singletonList(ignite0.localNode())));
     }
 
     /**

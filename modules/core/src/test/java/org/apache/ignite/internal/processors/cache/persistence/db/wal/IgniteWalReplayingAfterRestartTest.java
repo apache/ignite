@@ -42,8 +42,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Ignite
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_PATH;
@@ -70,13 +70,13 @@ public class IgniteWalReplayingAfterRestartTest extends GridCommonAbstractTest {
     private WALMode logMode = WALMode.LOG_ONLY;
 
     /** */
-    @Before
+    @BeforeEach
     public void beforeIgniteWalReplayingAfterRestartTest() throws Exception {
         U.delete(Paths.get(U.defaultWorkDirectory()));
     }
 
     /** */
-    @After
+    @AfterEach
     public void afterIgniteWalReplayingAfterRestartTest() throws Exception {
         stopAllGrids();
 

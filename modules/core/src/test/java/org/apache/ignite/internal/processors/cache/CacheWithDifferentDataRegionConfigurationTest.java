@@ -33,8 +33,8 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
@@ -79,7 +79,7 @@ public class CacheWithDifferentDataRegionConfigurationTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         stopAllGrids();
         cleanPersistenceDir();
@@ -88,7 +88,7 @@ public class CacheWithDifferentDataRegionConfigurationTest extends GridCommonAbs
     /**
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         cleanPersistenceDir();
     }

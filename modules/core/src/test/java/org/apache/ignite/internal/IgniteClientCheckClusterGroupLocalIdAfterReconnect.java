@@ -34,7 +34,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -67,7 +67,7 @@ public class IgniteClientCheckClusterGroupLocalIdAfterReconnect extends GridComm
     }
 
     /** Stop all nodes after test */
-    @After
+    @AfterEach
     public void tearDown() {
         stopAllGrids();
     }

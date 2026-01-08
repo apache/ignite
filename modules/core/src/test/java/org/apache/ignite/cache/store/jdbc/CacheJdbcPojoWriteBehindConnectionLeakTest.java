@@ -31,8 +31,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.h2.jdbcx.JdbcConnectionPool;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -81,13 +81,13 @@ public class CacheJdbcPojoWriteBehindConnectionLeakTest extends GridCommonAbstra
     }
 
     /** */
-    @Before
+    @BeforeEach
     public void setUp() throws SQLException {
         execStandaloneQuery("CREATE TABLE IF NOT EXISTS " + TABLE_NAME + "(ID INT UNSIGNED PRIMARY KEY, NAME VARCHAR(20))");
     }
 
     /** */
-    @After
+    @AfterEach
     public void tearDown() throws SQLException {
         execStandaloneQuery("DROP TABLE " + TABLE_NAME);
     }

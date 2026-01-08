@@ -35,8 +35,8 @@ import org.apache.ignite.internal.binary.BinaryTypeImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree.MARSHALLER_DIR;
@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.S
  */
 public class BinaryMetadataMoveLegacyFolderTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Before
+    @BeforeEach
     @Override public void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -56,7 +56,7 @@ public class BinaryMetadataMoveLegacyFolderTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @After
+    @AfterEach
     @Override public void afterTest() throws Exception {
         super.afterTest();
 

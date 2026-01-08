@@ -56,9 +56,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
@@ -128,7 +128,7 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
     }
 
     /** @throws Exception If fails. */
-    @Before
+    @BeforeEach
     public void prepareDedicatedSnapshot() throws Exception {
         if (!inited) {
             cleanupDedicatedPersistenceDirs(FIRST_CLUSTER_PREFIX);
@@ -162,14 +162,14 @@ public class IgniteSnapshotRestoreFromRemoteTest extends IgniteClusterSnapshotRe
     }
 
     /** @throws Exception If fails. */
-    @After
+    @AfterEach
     public void afterSwitchSnapshot() throws Exception {
         afterTestSnapshot();
         cleanupDedicatedPersistenceDirs(SECOND_CLUSTER_PREFIX);
     }
 
     /** */
-    @AfterClass
+    @AfterAll
     public static void cleanupSnapshot() {
         snpParts.forEach(U::delete);
         cleanupDedicatedPersistenceDirs(FIRST_CLUSTER_PREFIX);
