@@ -2527,7 +2527,7 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
             else {
                 if (!F.isEmpty(msg.serversFullMetricsMessages()))
-                    processCacheMetrics(msg, System.nanoTime());
+                    processCacheMetricsMessage(msg, System.nanoTime());
             }
         }
 

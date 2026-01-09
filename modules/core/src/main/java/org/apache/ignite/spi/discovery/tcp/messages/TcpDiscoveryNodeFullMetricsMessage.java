@@ -17,12 +17,8 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import org.apache.ignite.cache.CacheMetrics;
-import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
-import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeFullMetricsMessage;
-import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -34,16 +30,6 @@ public class TcpDiscoveryNodeFullMetricsMessage extends NodeFullMetricsMessage {
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryNodeFullMetricsMessage() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected NodeMetricsMessage createNodeMetricsMessage(ClusterMetrics nodeMetrics) {
-        return new TcpDiscoveryNodeMetricsMessage(nodeMetrics);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMetricsMessage createCacheMetricsMessage(CacheMetrics cacheMetrics) {
-        return new TcpDiscoveryCacheMetricsMessage(cacheMetrics);
     }
 
     /** {@inheritDoc} */

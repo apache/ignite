@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Node compound metrics message. */
@@ -41,26 +41,16 @@ public class NodeFullMetricsMessage implements Message {
 
     /** Empty constructor for {@link GridIoMessageFactory}. */
     public NodeFullMetricsMessage() {
-
+        // No-op.
     }
 
     /** */
     public NodeFullMetricsMessage(ClusterMetrics nodeMetrics, Map<Integer, CacheMetrics> cacheMetrics) {
-        nodeMetricsMsg = createNodeMetricsMessage(nodeMetrics);
+        nodeMetricsMsg = new NodeMetricsMessage(nodeMetrics);
 
-        cachesMetricsMsgs = new HashMap<>(cacheMetrics.size(), 1.0f);
+        cachesMetricsMsgs = U.newHashMap(cacheMetrics.size());
 
-        cacheMetrics.forEach((key, value) -> cachesMetricsMsgs.put(key, createCacheMetricsMessage(value)));
-    }
-
-    /** */
-    protected NodeMetricsMessage createNodeMetricsMessage(ClusterMetrics nodeMetrics) {
-        return new NodeMetricsMessage(nodeMetrics);
-    }
-
-    /** */
-    protected CacheMetricsMessage createCacheMetricsMessage(CacheMetrics cacheMetrics) {
-        return new CacheMetricsMessage(cacheMetrics);
+        cacheMetrics.forEach((key, value) -> cachesMetricsMsgs.put(key, new CacheMetricsMessage(value)));
     }
 
     /** */

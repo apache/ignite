@@ -421,7 +421,7 @@ abstract class TcpDiscoveryImpl {
     }
 
     /** */
-    public void processCacheMetrics(TcpDiscoveryMetricsUpdateMessage msg, long tsNanos) {
+    public void processCacheMetricsMessage(TcpDiscoveryMetricsUpdateMessage msg, long tsNanos) {
         for (Map.Entry<UUID, TcpDiscoveryNodeFullMetricsMessage> e : msg.serversFullMetricsMessages().entrySet()) {
             UUID srvrId = e.getKey();
             Map<Integer, CacheMetricsMessage> cacheMetricsMsgs = e.getValue().cachesMetricsMessages();

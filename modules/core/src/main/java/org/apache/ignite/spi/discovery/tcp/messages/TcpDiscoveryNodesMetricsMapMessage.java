@@ -24,9 +24,9 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** Several nodes metrics message. */
+/** Holds map of nodes metrics messages per node id. */
 public class TcpDiscoveryNodesMetricsMapMessage implements Message {
-    /** */
+    /** Map of nodes metrics messages per node id. */
     @Order(value = 0, method = "nodesMetricsMessages")
     private Map<UUID, TcpDiscoveryNodeMetricsMessage> nodesMetricsMsgs;
 
@@ -35,12 +35,12 @@ public class TcpDiscoveryNodesMetricsMapMessage implements Message {
         // No-op.
     }
 
-    /** @return Map of nodes metrics. */
+    /** @return Map of nodes metrics messages per node id. */
     public Map<UUID, TcpDiscoveryNodeMetricsMessage> nodesMetricsMessages() {
         return nodesMetricsMsgs;
     }
 
-    /** @param nodesMetricsMsgs Map of nodes metrics. */
+    /** @param nodesMetricsMsgs Map of nodes metrics messages per node id. */
     public void nodesMetricsMessages(Map<UUID, TcpDiscoveryNodeMetricsMessage> nodesMetricsMsgs) {
         this.nodesMetricsMsgs = nodesMetricsMsgs;
     }

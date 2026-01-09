@@ -25,10 +25,10 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
-import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -46,18 +46,18 @@ import org.jetbrains.annotations.Nullable;
  * second pass).
  */
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Connected clients metrics: server id -> map of clients metrics. */
+    /** Connected clients metrics: server id -> client id -> clients metrics. */
     @GridToStringExclude
     @Order(value = 5, method = "connectedClientsMetricsMessages")
     private Map<UUID, TcpDiscoveryNodesMetricsMapMessage> connectedClientsMetricsMsgs;
 
-    /** Servers full metrics: server id -> node metrics + node's caches metrics. */
+    /** Servers full metrics: server id -> server metrics + metrics of server's caches. */
     @GridToStringExclude
-    @Order(value = 7, method = "serversFullMetricsMessages")
+    @Order(value = 6, method = "serversFullMetricsMessages")
     private @Nullable Map<UUID, TcpDiscoveryNodeFullMetricsMessage> serversFullMetricsMsgs;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
@@ -75,7 +75,7 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
     }
 
     /**
-     * Sets metrics for particular node. Supposed to be called before {@link #addServerCacheMetrics(UUID, Map)}.
+     * Sets metrics for particular node.
      *
      * @param srvrId Server ID.
      * @param newMetrics New server metrics to add.
@@ -93,14 +93,14 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
             if (srvrFullMetrics == null)
                 srvrFullMetrics = new TcpDiscoveryNodeFullMetricsMessage();
 
-            srvrFullMetrics.nodeMetricsMessage(new NodeMetricsMessage(newMetrics));
+            srvrFullMetrics.nodeMetricsMessage(new TcpDiscoveryNodeMetricsMessage(newMetrics));
 
             return srvrFullMetrics;
         });
     }
 
     /**
-     * Sets cache metrics for particular node. Supposed to be called after {@link #addServerCacheMetrics(UUID, Map)}.
+     * Sets cache metrics for particular node.
      *
      * @param srvrId Server ID.
      * @param newCachesMetrics News server's caches metrics to add.
@@ -121,7 +121,7 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
             Map<Integer, CacheMetricsMessage> newCachesMsgsMap = U.newHashMap(newCachesMetrics.size());
 
             newCachesMetrics.forEach((cacheId, cacheMetrics) ->
-                newCachesMsgsMap.put(cacheId, new CacheMetricsMessage(cacheMetrics)));
+                newCachesMsgsMap.put(cacheId, new TcpDiscoveryCacheMetricsMessage(cacheMetrics)));
 
             srvrFullMetrics.cachesMetricsMessages(newCachesMsgsMap);
 
@@ -141,7 +141,8 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
         assert clientNodeId != null;
         assert clientMetrics != null;
 
-        assert serversFullMetricsMsgs.containsKey(srvrId);
+        if (connectedClientsMetricsMsgs == null)
+            connectedClientsMetricsMsgs = new HashMap<>();
 
         assert !connectedClientsMetricsMsgs.containsKey(srvrId)
             || connectedClientsMetricsMsgs.get(srvrId).nodesMetricsMessages().get(clientNodeId) == null;
@@ -193,6 +194,11 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
     /** {@inheritDoc} */
     @Override public boolean traceLogLevel() {
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 13;
     }
 
     /** {@inheritDoc} */

@@ -3378,10 +3378,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
                     if (msgBytes == null) {
                         try {
-                            msgBytes = U.marshal(spi.marshaller(), msg);
+                            msgBytes = clientMsgWorker.ses.serializeMessage(msg);
                         }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to marshal message: " + msg, e);
+                        catch (IgniteCheckedException | IOException e) {
+                            U.error(log, "Failed to serialize message to a client: " + msg + ", client id: "
+                                + clientMsgWorker.clientNodeId, e);
 
                             break;
                         }
@@ -6032,7 +6033,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             long tsNanos = System.nanoTime();
 
             if (spiStateCopy() == CONNECTED && !F.isEmpty(msg.serversFullMetricsMessages()))
-                processCacheMetrics(msg, tsNanos);
+                processCacheMetricsMessage(msg, tsNanos);
 
             if (sendMessageToRemotes(msg)) {
                 if (laps == 0 && spiStateCopy() == CONNECTED) {
