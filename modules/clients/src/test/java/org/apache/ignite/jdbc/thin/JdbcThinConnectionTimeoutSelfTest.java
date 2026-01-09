@@ -31,8 +31,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;

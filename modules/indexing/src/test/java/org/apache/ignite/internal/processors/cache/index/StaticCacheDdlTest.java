@@ -36,9 +36,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -63,7 +62,7 @@ public class StaticCacheDdlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     public void clearPersistence() throws Exception {
         cleanPersistenceDir();
     }
@@ -71,7 +70,7 @@ public class StaticCacheDdlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    @After
+    @AfterEach
     public void cleanup() throws Exception {
         cleanPersistenceDir();
     }
@@ -208,7 +207,7 @@ public class StaticCacheDdlTest extends GridCommonAbstractTest {
             }
         }
 
-        Assert.assertEquals("Check index (" + idxName + ") exists", shouldExist, exists);
+        assertEquals("Check index (" + idxName + ") exists", shouldExist, exists);
     }
 
     /**
@@ -234,7 +233,7 @@ public class StaticCacheDdlTest extends GridCommonAbstractTest {
             }
         }
 
-        Assert.assertEquals("Check field (" + fieldName + ") exists", shouldExist, exists);
+        assertEquals("Check field (" + fieldName + ") exists", shouldExist, exists);
     }
 
     /**
@@ -251,7 +250,7 @@ public class StaticCacheDdlTest extends GridCommonAbstractTest {
             for (List<?> ignore : cursor)
                 actualSize++;
 
-            Assert.assertEquals("Check result set size", expSize, actualSize);
+            assertEquals("Check result set size", expSize, actualSize);
         }
     }
 

@@ -53,6 +53,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
 @SuppressWarnings("ThrowableNotThrown")
@@ -142,7 +144,7 @@ public class P2PClassLoadingFailureHandlingTest extends GridCommonAbstractTest {
             failure.get().printStackTrace(new PrintWriter(strWriter));
         }
 
-        assertNull("Failure handler should not be called, but it was with " + strWriter, failure.get());
+        assertNull(failure.get(), "Failure handler should not be called, but it was with " + strWriter);
     }
 
     /***/

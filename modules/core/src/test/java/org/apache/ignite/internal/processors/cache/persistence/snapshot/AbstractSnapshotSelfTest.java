@@ -190,8 +190,6 @@ public abstract class AbstractSnapshotSelfTest extends GridCommonAbstractTest {
             ? new boolean[] {false}
             : new boolean[] {false, true};
 
-        List<Object[]> res = new ArrayList<>();
-
         for (boolean enc: encVals)
             for (boolean onlyPrimary: new boolean[] {true, false})
                 params.add(Arguments.of(enc, onlyPrimary));

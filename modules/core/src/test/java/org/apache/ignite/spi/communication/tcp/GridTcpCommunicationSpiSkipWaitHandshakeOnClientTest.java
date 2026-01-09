@@ -26,7 +26,6 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.NODE_ID_MSG_TYPE;
@@ -83,7 +82,7 @@ public class GridTcpCommunicationSpiSkipWaitHandshakeOnClientTest extends GridCo
                 short respMsgType = makeMessageType(b[0], b[1]);
 
                 // Client can't give HANDSHAKE_WAIT_MSG_TYPE.
-                Assert.assertEquals(NODE_ID_MSG_TYPE, respMsgType);
+                assertEquals(NODE_ID_MSG_TYPE, respMsgType);
             }
         }
 

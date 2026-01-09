@@ -47,7 +47,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.exec.LogicalRelImplementor.CNLJ_NOT_SUPPORTED_JOIN_ASSERTION_MSG;
@@ -56,7 +56,7 @@ import static org.apache.ignite.internal.processors.query.calcite.exec.LogicalRe
 @WithSystemProperty(key = "calcite.debug", value = "false")
 public class CalciteErrorHandlilngIntegrationTest extends GridCommonAbstractTest {
     /** */
-    @After
+    @AfterEach
     public void cleanUp() {
         stopAllGrids();
     }

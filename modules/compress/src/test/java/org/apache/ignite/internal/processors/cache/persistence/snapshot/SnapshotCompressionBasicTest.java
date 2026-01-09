@@ -58,10 +58,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 import static org.apache.ignite.events.EventType.EVTS_CLUSTER_SNAPSHOT;
@@ -69,6 +69,7 @@ import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_FI
 import static org.apache.ignite.events.EventType.EVT_CLUSTER_SNAPSHOT_RESTORE_STARTED;
 
 /** */
+@MethodSource("allTypesArgs")
 public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     /** */
     protected static final DiskPageCompression DISK_PAGE_COMPRESSION = DiskPageCompression.SNAPPY;
@@ -108,7 +109,6 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     }
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}")
     public static Collection<Object[]> params() {
         List<Object[]> res = new ArrayList<>();
 
@@ -137,8 +137,8 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Before
-    @Override public void beforeTestSnapshot() throws Exception {
+    @BeforeEach
+    @Override public void beforeTestSnapshot() {
         assertTrue(G.allGrids().isEmpty());
 
         locEvts.clear();
@@ -147,8 +147,8 @@ public class SnapshotCompressionBasicTest extends AbstractSnapshotSelfTest {
     }
 
     /** {@inheritDoc} */
-    @After
-    @Override public void afterTestSnapshot() throws Exception {
+    @AfterEach
+    @Override public void afterTestSnapshot() {
         if (G.allGrids().isEmpty())
             return;
 

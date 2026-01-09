@@ -26,8 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -44,7 +44,7 @@ public class ClosableIteratorsHolderTest extends GridCommonAbstractTest {
     private ClosableIteratorsHolder holder;
 
     /** */
-    @Before
+    @BeforeEach
     public void setup() throws Exception {
         iterators = Collections.newSetFromMap(new ConcurrentHashMap<>());
         holder = new ClosableIteratorsHolder(log());
@@ -52,8 +52,8 @@ public class ClosableIteratorsHolderTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    public void tearDown() {
         holder.tearDown();
 
         holder = null;
@@ -101,7 +101,7 @@ public class ClosableIteratorsHolderTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws Exception {
+        @Override public void close() {
             Optional.ofNullable(iterators)
                 .ifPresent(set -> set.remove(this));
         }

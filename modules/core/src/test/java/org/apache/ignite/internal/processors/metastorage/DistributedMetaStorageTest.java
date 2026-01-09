@@ -46,8 +46,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
@@ -110,13 +110,13 @@ public class DistributedMetaStorageTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         stopAllGrids();
     }
 
     /** */
-    @After
+    @AfterEach
     public void after() throws Exception {
         stopAllGrids(true, false);
     }

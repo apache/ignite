@@ -55,8 +55,8 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
@@ -105,7 +105,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
     }
 
     /** {@inheritDoc} */
-    @Before
+    @BeforeEach
     @Override public void beforeTestSnapshot() throws Exception {
         super.beforeTestSnapshot();
 
@@ -113,7 +113,7 @@ public class IgniteClusterSnapshotMetricsTest extends IgniteClusterSnapshotResto
     }
 
     /** {@inheritDoc} */
-    @After
+    @AfterEach
     @Override public void afterTestSnapshot() throws Exception {
         super.afterTestSnapshot();
 

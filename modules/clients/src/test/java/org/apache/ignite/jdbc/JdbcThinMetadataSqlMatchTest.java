@@ -22,14 +22,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Arrays.asList;
@@ -81,7 +80,7 @@ public class JdbcThinMetadataSqlMatchTest extends GridCommonAbstractTest {
     }
 
     /** Create tables. */
-    @Before
+    @BeforeEach
     public void createTables() throws Exception {
         executeDDl("CREATE TABLE MY_FAV_TABLE (id INT PRIMARY KEY, val VARCHAR)");
         executeDDl("CREATE TABLE MY0FAV0TABLE (id INT PRIMARY KEY, val VARCHAR)");
@@ -90,7 +89,7 @@ public class JdbcThinMetadataSqlMatchTest extends GridCommonAbstractTest {
     }
 
     /** Drop tables. */
-    @After
+    @AfterEach
     public void dropTables() throws Exception {
         // tables that matched by "TABLE MY_FAV_TABLE" sql pattern:
         executeDDl("DROP TABLE MY_FAV_TABLE");
@@ -123,23 +122,6 @@ public class JdbcThinMetadataSqlMatchTest extends GridCommonAbstractTest {
     public void testTablesWithBackslashInTheNameMatch() throws SQLException {
         assertEqualsCollections(asList("MY0FAV0TABLE", "MY\\FAV\\TABLE", "MY_FAV_TABLE"), getTableNames("MY_FAV_TABLE"));
         assertEqualsCollections(singletonList("MY\\FAV\\TABLE"), getTableNames("MY\\FAV\\TABLE"));
-    }
-
-    /**
-     * Assert that collections contains the same elements regardless their order. Each element from the second
-     * collection should be met in the first one exact the same times. This method is required in this test because
-     *
-     * @param exp Expected.
-     * @param actual Actual.
-     */
-    private void assertEqNoOrder(Collection<String> exp, Collection<String> actual) {
-        ArrayList<String> expSorted = new ArrayList<>(exp);
-        ArrayList<String> actSorted = new ArrayList<>(exp);
-
-        Collections.sort(expSorted);
-        Collections.sort(actSorted);
-
-        assertEqualsCollections(expSorted, actSorted);
     }
 
     /** {@inheritDoc} */

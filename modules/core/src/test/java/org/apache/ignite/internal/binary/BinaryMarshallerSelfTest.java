@@ -106,12 +106,11 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 /**
  * Binary marshaller tests.
@@ -511,7 +510,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         Object[] arr2 = marshalUnmarshal(arr1);
 
-        Assert.assertSame("Same array should be returned because of HANDLE usage", arr2[0], arr2[1]);
+        assertSame(arr2[0], arr2[1], "Same array should be returned because of HANDLE usage");
 
         assertArrayEquals(arr1, arr2);
 
@@ -522,7 +521,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         ArrayFieldClass o2 = marshalUnmarshal(o1);
 
-        Assert.assertSame("Same array should be returned because of HANDLE usage", o2.arr1, o2.arr2);
+        assertSame("Same array should be returned because of HANDLE usage", o2.arr1, o2.arr2);
 
         assertArrayEquals(o1.arr1, o2.arr1);
     }
@@ -3103,7 +3102,7 @@ public class BinaryMarshallerSelfTest extends AbstractBinaryArraysTest {
 
         Class unmarshalledCls = marshalUnmarshal(cls, marsh);
 
-        Assert.assertEquals(cls, unmarshalledCls);
+        assertEquals(cls, unmarshalledCls);
     }
 
     /**

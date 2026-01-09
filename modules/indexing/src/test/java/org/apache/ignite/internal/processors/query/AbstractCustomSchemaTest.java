@@ -26,8 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.After;
-import org.junit.Assert;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /** Abstract test to verify custom sql schema. */
@@ -81,7 +80,7 @@ public abstract class AbstractCustomSchemaTest extends AbstractIndexingCommonTes
     }
 
     /** */
-    @After
+    @AfterEach
     public void clear() {
         execSql("DROP TABLE IF EXISTS " + t(SCHEMA_NAME_1, TBL_NAME));
         execSql("DROP TABLE IF EXISTS " + t(SCHEMA_NAME_2, TBL_NAME));
@@ -145,7 +144,7 @@ public abstract class AbstractCustomSchemaTest extends AbstractIndexingCommonTes
         List<List<?>> res = execSql("SELECT SQL_SCHEMA FROM " + t(QueryUtils.SCHEMA_SYS, "CACHES")
             + " WHERE CACHE_NAME = '" + CACHE_NAME + "_new'");
 
-        Assert.assertEquals(
+        assertEquals(
             Collections.singletonList(Collections.singletonList(SCHEMA_NAME_4)),
             res
         );
@@ -195,6 +194,6 @@ public abstract class AbstractCustomSchemaTest extends AbstractIndexingCommonTes
             Arrays.asList(SCHEMA_NAME_3, "S3_KEY")
         );
 
-        Assert.assertEquals(exp, res);
+        assertEquals(exp, res);
     }
 }

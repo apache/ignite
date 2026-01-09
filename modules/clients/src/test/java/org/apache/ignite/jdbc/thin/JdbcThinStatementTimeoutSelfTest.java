@@ -32,8 +32,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -103,7 +103,7 @@ public class JdbcThinStatementTimeoutSelfTest extends JdbcThinAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         conn = DriverManager.getConnection(URL);
 
@@ -120,7 +120,7 @@ public class JdbcThinStatementTimeoutSelfTest extends JdbcThinAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
-    @After
+    @AfterEach
     public void after() throws Exception {
         if (stmt != null && !stmt.isClosed()) {
             stmt.close();
@@ -236,7 +236,6 @@ public class JdbcThinStatementTimeoutSelfTest extends JdbcThinAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testQueryTimeoutRepeatable() throws Exception {
         stmt.setQueryTimeout(2);
@@ -262,7 +261,6 @@ public class JdbcThinStatementTimeoutSelfTest extends JdbcThinAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testFileUploadingTimeout() throws Exception {
 

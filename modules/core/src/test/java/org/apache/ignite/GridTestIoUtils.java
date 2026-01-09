@@ -27,14 +27,13 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamClass;
 import java.io.Serializable;
-import java.util.Arrays;
 import org.apache.commons.io.IOUtils;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * IO test utilities.
@@ -173,8 +172,7 @@ public final class GridTestIoUtils {
 
             // i1 == bufSize => compare buffers.
             // i1 <  bufSize => Compare part of buffers, rest of buffers are equal from previous iteration.
-            assertTrue("Expects the same data [pos=" + pos + ", i1=" + i1 + ", i2=" + i2 + ']',
-                Arrays.equals(buf1, buf2));
+            assertArrayEquals(buf1, buf2, "Expects the same data [pos=" + pos + ", i1=" + i1 + ", i2=" + i2 + ']');
 
             pos += i1;
         }

@@ -45,13 +45,14 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test for getting values on unstable topology with read from backup enabled.
@@ -244,7 +245,7 @@ public class CacheGetReadFromBackupFailoverTest extends GridCommonAbstractTest {
             }
         }
 
-        Assert.assertTrue(String.valueOf(successGet.get()), successGet.get() > 50);
+        assertTrue(successGet.get() > 50, String.valueOf(successGet.get()));
 
         Throwable e = err.get();
 

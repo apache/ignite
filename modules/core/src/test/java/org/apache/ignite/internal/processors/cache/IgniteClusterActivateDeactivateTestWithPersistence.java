@@ -46,7 +46,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -57,6 +56,11 @@ import static org.apache.ignite.testframework.GridTestUtils.assertActive;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -131,8 +135,8 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
             .getDefaultDataRegionConfiguration();
 
         assertTrue(
-            "It is assumed that the default data storage region is persistent.",
-            dfltDataRegion.isPersistenceEnabled());
+                dfltDataRegion.isPersistenceEnabled(),
+                "It is assumed that the default data storage region is persistent.");
 
         // Create new caches that are placed into the default pesristent data region.
         clientNode.getOrCreateCache(new CacheConfiguration<>("test-client-cache-default-region-implicit"));
@@ -162,10 +166,9 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
             ClusterState state = n.context().state().clusterState().state();
 
-            assertTrue(
+            assertTrue(INACTIVE == state,
                 "Node must be in inactive state. " +
-                    "[node=" + n.configuration().getIgniteInstanceName() + ", actual=" + state + ']',
-                INACTIVE == state
+                    "[node=" + n.configuration().getIgniteInstanceName() + ", actual=" + state + ']'
             );
         }
     }
@@ -193,9 +196,8 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
             .findFirst()
             .orElse(null);
 
-        assertTrue(
-            "It is assumed that the '" + NO_PERSISTENCE_REGION + "' data storage region exists and non-persistent.",
-            nonPersistentRegion != null && !nonPersistentRegion.isPersistenceEnabled());
+        assertTrue(nonPersistentRegion != null && !nonPersistentRegion.isPersistenceEnabled(),
+            "It is assumed that the '" + NO_PERSISTENCE_REGION + "' data storage region exists and non-persistent.");
 
         // Create a new cache that is placed into non persistent data region.
         clientNode.getOrCreateCache(new CacheConfiguration<>("test-client-cache")
@@ -221,10 +223,9 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
             ClusterState state = n.context().state().clusterState().state();
 
-            assertTrue(
+            assertTrue(ACTIVE == state,
                 "Node must be in active state. " +
-                    "[node=" + n.configuration().getIgniteInstanceName() + ", actual=" + state + ']',
-                ACTIVE == state
+                    "[node=" + n.configuration().getIgniteInstanceName() + ", actual=" + state + ']'
             );
         }
     }
@@ -256,9 +257,8 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
             .findFirst()
             .orElse(null);
 
-        assertTrue(
-            "It is assumed that the '" + ADDITIONAL_PERSISTENT_DATA_REGION + "' data storage region exists and persistent.",
-            persistentRegion != null && persistentRegion.isPersistenceEnabled());
+        assertTrue(persistentRegion != null && persistentRegion.isPersistenceEnabled(),
+            "It is assumed that the '" + ADDITIONAL_PERSISTENT_DATA_REGION + "' data storage region exists and persistent.");
 
         final UUID srv1NodeId = srv1.localNode().id();
 
@@ -292,11 +292,8 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
             ClusterState state = n.context().state().clusterState().state();
 
-            assertTrue(
-                "Node must be in inactive state. " +
-                    "[node=" + n.configuration().getIgniteInstanceName() + ", actual=" + state + ']',
-                INACTIVE == state
-            );
+            assertSame(INACTIVE, state, "Node must be in inactive state. " +
+                    "[node=" + n.configuration().getIgniteInstanceName() + ", actual=" + state + ']');
         }
     }
 
@@ -735,17 +732,17 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
             for (int k = 1; k <= keysCnt; k++) {
                 Object val = cache1.get(k);
 
-                Assert.assertNotNull("node=" + ignite.name() + ", key=" + k, val);
+                assertNotNull(val, "node=" + ignite.name() + ", key=" + k);
 
-                Assert.assertTrue("node=" + ignite.name() + ", key=" + k + ", val=" + val, (int)val == k);
+                assertEquals((int) val, k, "node=" + ignite.name() + ", key=" + k + ", val=" + val);
             }
 
             for (int k : addedKeys) {
                 Object val = cache1.get(k);
 
-                Assert.assertNotNull("node=" + ignite.name() + ", key=" + k, val);
+                assertNotNull(val, "node=" + ignite.name() + ", key=" + k);
 
-                Assert.assertTrue("node=" + ignite.name() + ", key=" + k + ", val=" + val, (int)val == k);
+                assertEquals((int) val, k, "node=" + ignite.name() + ", key=" + k + ", val=" + val);
             }
         }
     }

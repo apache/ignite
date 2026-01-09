@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 
 /** */
 public class AbstractDdlIntegrationTest extends AbstractBasicIntegrationTest {
@@ -68,7 +68,7 @@ public class AbstractDdlIntegrationTest extends AbstractBasicIntegrationTest {
     }
 
     /** */
-    @After
+    @AfterEach
     public void cleanUp() {
         client.destroyCaches(client.cacheNames());
     }

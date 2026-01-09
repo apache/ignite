@@ -27,9 +27,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageUtil.COMMON_KEY_PREFIX;
@@ -58,7 +57,7 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
     private final AtomicReference<Throwable> errHnd = new AtomicReference<>();
 
     /** */
-    @Before
+    @BeforeEach
     public void before() {
         testThread = Thread.currentThread();
 
@@ -77,7 +76,7 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @After
+    @AfterEach
     public void after() throws InterruptedException {
         worker.cancel(true);
     }
@@ -390,7 +389,7 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
     private class MyReadWriteMetaStorageMock extends ReadWriteMetaStorageMock {
         /** {@inheritDoc} */
         @Override protected void assertLockIsHeldByWorkerThread() {
-            Assert.assertTrue(Thread.currentThread() == testThread || lock.lockCnt.get() > 0);
+            assertTrue(Thread.currentThread() == testThread || lock.lockCnt.get() > 0);
         }
     }
 }

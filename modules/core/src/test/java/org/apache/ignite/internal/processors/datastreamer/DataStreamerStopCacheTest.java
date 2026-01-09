@@ -41,8 +41,8 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -80,7 +80,7 @@ public class DataStreamerStopCacheTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         stopAllGrids();
     }
@@ -88,7 +88,7 @@ public class DataStreamerStopCacheTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @After
+    @AfterEach
     public void after() throws Exception {
         stopAllGrids();
     }

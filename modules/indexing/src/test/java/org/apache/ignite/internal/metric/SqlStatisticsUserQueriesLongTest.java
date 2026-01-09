@@ -22,8 +22,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.processors.query.running.RunningQueryManager;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.After;
-import org.junit.Assert;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -35,7 +34,7 @@ public class SqlStatisticsUserQueriesLongTest extends UserQueriesTestBase {
     /**
      * Teardown.
      */
-    @After
+    @AfterEach
     public void stopAll() {
         stopAllGrids();
     }
@@ -51,13 +50,13 @@ public class SqlStatisticsUserQueriesLongTest extends UserQueriesTestBase {
 
         createCacheFrom(grid(REDUCER_IDX));
 
-        Assert.assertEquals(0, longMetricValue(REDUCER_IDX, "success"));
-        Assert.assertEquals(0, longMetricValue(REDUCER_IDX, "failed"));
-        Assert.assertEquals(0, longMetricValue(REDUCER_IDX, "canceled"));
+        assertEquals(0, longMetricValue(REDUCER_IDX, "success"));
+        assertEquals(0, longMetricValue(REDUCER_IDX, "failed"));
+        assertEquals(0, longMetricValue(REDUCER_IDX, "canceled"));
 
-        Assert.assertEquals(0, longMetricValue(MAPPER_IDX, "success"));
-        Assert.assertEquals(0, longMetricValue(MAPPER_IDX, "failed"));
-        Assert.assertEquals(0, longMetricValue(MAPPER_IDX, "canceled"));
+        assertEquals(0, longMetricValue(MAPPER_IDX, "success"));
+        assertEquals(0, longMetricValue(MAPPER_IDX, "failed"));
+        assertEquals(0, longMetricValue(MAPPER_IDX, "canceled"));
     }
 
     /**

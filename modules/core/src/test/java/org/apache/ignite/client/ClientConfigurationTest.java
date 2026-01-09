@@ -37,23 +37,17 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.Timeout;
 
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * {@link ClientConfiguration} unit tests.
  */
 public class ClientConfigurationTest {
-    /** Per test timeout */
-    @Rule
-    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
-
     /** Serialization/deserialization. */
     @Test
     public void testSerialization() throws IOException, ClassNotFoundException {
@@ -116,8 +110,8 @@ public class ClientConfigurationTest {
             String log = gridStrLog.toString();
             boolean containsMsg = log.contains("Setting the rebalance pool size has no effect on the client mode");
 
-            Assert.assertTrue(containsMsg);
-            Assert.assertEquals(1, collect.size());
+            assertTrue(containsMsg);
+            assertEquals(1, collect.size());
         }
     }
 

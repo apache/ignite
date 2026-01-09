@@ -21,11 +21,12 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -166,9 +167,9 @@ public class GridLongListSelfTest {
         int sz = initSz * 8 + 1;
 
         {
-            Assert.assertTrue(writer.writeGridLongList(ll));
+            assertTrue(writer.writeGridLongList(ll));
 
-            Assert.assertEquals(sz /* array */, buf.position());
+            assertEquals(sz /* array */, buf.position());
         }
 
         {
@@ -178,9 +179,9 @@ public class GridLongListSelfTest {
             ll.add(2L);
             ll.add(4L);
 
-            Assert.assertTrue(writer.writeGridLongList(ll));
+            assertTrue(writer.writeGridLongList(ll));
 
-            Assert.assertEquals(sz += 16 /* array */, buf.position());
+            assertEquals(sz += 16 /* array */, buf.position());
         }
 
         {
@@ -189,9 +190,9 @@ public class GridLongListSelfTest {
 
             ll.remove();
 
-            Assert.assertTrue(writer.writeGridLongList(ll));
+            assertTrue(writer.writeGridLongList(ll));
 
-            Assert.assertEquals(sz -= 8 /* array */, buf.position());
+            assertEquals(sz -= 8 /* array */, buf.position());
         }
 
         {
@@ -200,9 +201,9 @@ public class GridLongListSelfTest {
 
             ll.remove();
 
-            Assert.assertTrue(writer.writeGridLongList(ll));
+            assertTrue(writer.writeGridLongList(ll));
 
-            Assert.assertEquals(sz -= 8 /* array */, buf.position());
+            assertEquals(sz -= 8 /* array */, buf.position());
         }
 
         {
@@ -212,13 +213,13 @@ public class GridLongListSelfTest {
             for (int i = 0; i < 300; i++)
                 ll.add(i);
 
-            Assert.assertTrue(writer.writeGridLongList(ll));
+            assertTrue(writer.writeGridLongList(ll));
 
-            Assert.assertEquals(300 + initSz, ll.size());
+            assertEquals(300 + initSz, ll.size());
 
             sz += 8 * 300 + 1;
 
-            Assert.assertEquals(sz /* array */, buf.position());
+            assertEquals(sz /* array */, buf.position());
         }
 
         {
@@ -227,9 +228,9 @@ public class GridLongListSelfTest {
 
             ll.clear();
 
-            Assert.assertTrue(writer.writeGridLongList(ll));
+            assertTrue(writer.writeGridLongList(ll));
 
-            Assert.assertEquals(1 /* array */, buf.position());
+            assertEquals(1 /* array */, buf.position());
         }
     }
 
@@ -244,9 +245,9 @@ public class GridLongListSelfTest {
 
         GridLongList ll = asList(1L, 2L, 3L);
 
-        Assert.assertFalse(writer.writeGridLongList(ll));
+        assertFalse(writer.writeGridLongList(ll));
 
-        Assert.assertEquals(10, buf.position());
+        assertEquals(10, buf.position());
     }
 
     /** */
@@ -258,9 +259,9 @@ public class GridLongListSelfTest {
 
         writer.setBuffer(buf);
 
-        Assert.assertTrue(writer.writeGridLongList(null));
+        assertTrue(writer.writeGridLongList(null));
 
-        Assert.assertEquals(1, buf.position());
+        assertEquals(1, buf.position());
     }
 
     /**

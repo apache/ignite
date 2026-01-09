@@ -41,12 +41,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test to check passing transaction's label for EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_PUT,
@@ -149,9 +149,8 @@ public class CacheEventWithTxLabelTest extends GridCommonAbstractTest {
 
         String listOfFailedTests = String.join(",\n", errors);
 
-        Assert.assertTrue("Have been received " + prevErrCnt + " cache events with incorrect txlabel.\n" +
-                "Failed tests:" + listOfFailedTests,
-            errors.isEmpty());
+        assertTrue(errors.isEmpty(), "Have been received " + prevErrCnt + " cache events with incorrect txlabel.\n" +
+                "Failed tests:" + listOfFailedTests);
     }
 
     /**

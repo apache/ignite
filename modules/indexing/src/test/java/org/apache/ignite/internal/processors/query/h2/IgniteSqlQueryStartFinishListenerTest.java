@@ -44,14 +44,14 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
-import org.junit.After;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsNull.notNullValue;
-import static org.junit.Assert.assertThat;
 
 /** Test for SQL query listeners. */
 public class IgniteSqlQueryStartFinishListenerTest extends AbstractIndexingCommonTest {
@@ -80,7 +80,7 @@ public class IgniteSqlQueryStartFinishListenerTest extends AbstractIndexingCommo
     }
 
     /** */
-    @After
+    @AfterEach
     public void unregisterListeners() {
         lsnrs.forEach(indexing()::unregisterQueryFinishedListener);
         lsnrs.forEach(indexing()::unregisterQueryStartedListener);

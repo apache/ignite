@@ -24,8 +24,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.junit.After;
-import org.junit.Assert;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /** Verifies custom sql schema within different configurations. */
@@ -48,7 +47,7 @@ public class IgniteSqlSchemasDiffConfigurationsTest extends AbstractIndexingComm
     }
 
     /** */
-    @After
+    @AfterEach
     public void tearDown() {
         stopAllGrids();
     }
@@ -79,7 +78,7 @@ public class IgniteSqlSchemasDiffConfigurationsTest extends AbstractIndexingComm
         List<List<?>> res = execSql("ign1", "SELECT SQL_SCHEMA, CACHE_NAME FROM "
             + t(QueryUtils.SCHEMA_SYS, "CACHES") + " WHERE CACHE_NAME LIKE 'cache%' ORDER BY SQL_SCHEMA");
 
-        Assert.assertEquals(exp, res);
+        assertEquals(exp, res);
     }
 
     /** */

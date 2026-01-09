@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
@@ -901,7 +900,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractBinaryArr
         assertEquals("bbb", builder.getField("str"));
 
         assertNull(builder.getField("i_"));
-        Assert.assertEquals("bbb", builder.build().<GridBinaryTestClasses.TestObjectAllTypes>deserialize().str);
+        assertEquals("bbb", builder.build().<GridBinaryTestClasses.TestObjectAllTypes>deserialize().str);
     }
 
     /**
@@ -976,7 +975,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractBinaryArr
 
         builder.removeField("str");
 
-        Assert.assertNull(builder.build().<GridBinaryTestClasses.TestObjectAllTypes>deserialize().str);
+        assertNull(builder.build().<GridBinaryTestClasses.TestObjectAllTypes>deserialize().str);
     }
 
     /**
@@ -1014,7 +1013,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends AbstractBinaryArr
 
         builder.removeField("str");
 
-        Assert.assertNull(builder.build().<GridBinaryTestClasses.TestObjectAllTypes>deserialize().str);
+        assertNull(builder.build().<GridBinaryTestClasses.TestObjectAllTypes>deserialize().str);
     }
 
     /**

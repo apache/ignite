@@ -30,8 +30,8 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -47,7 +47,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
     /**
      * Start thread pool.
      */
-    @Before
+    @BeforeEach
     public void createPool() {
         pool = new IgniteThreadPoolExecutor("BusyExecutorPrefix",
             "BusyExecutorTest",
@@ -66,7 +66,7 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
     /**
      * Stop and check there are no unfinished task.
      */
-    @After
+    @AfterEach
     public void stopPool() {
         if (pool != null) {
             List<Runnable> unfinishedTasks = pool.shutdownNow();
@@ -125,7 +125,6 @@ public class BusyExecutorTest extends GridCommonAbstractTest {
         be.activate();
 
         be.execute(taskExec);
-        CompletableFuture<Boolean> submitFut = be.submit(taskSubmit);
         be.execute(cancellableTask);
 
         Thread.sleep(TIME_TO_START_THREAD);

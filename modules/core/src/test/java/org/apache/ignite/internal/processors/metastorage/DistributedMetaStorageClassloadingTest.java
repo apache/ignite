@@ -27,8 +27,8 @@ import org.apache.ignite.internal.processors.metastorage.persistence.Distributed
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_OBJECT_INPUT_FILTER_AUTOCONFIGURATION;
@@ -57,10 +57,16 @@ public class DistributedMetaStorageClassloadingTest extends GridCommonAbstractTe
     }
 
     /** */
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         stopAllGrids();
         failureHandler = new CountingFailureHandler();
+    }
+
+    /** */
+    @AfterEach
+    public void after() throws Exception {
+        stopAllGrids();
     }
 
     /**
@@ -161,12 +167,6 @@ public class DistributedMetaStorageClassloadingTest extends GridCommonAbstractTe
         }
 
         assertEquals(1, failureHandler.getCount());
-    }
-
-    /** */
-    @After
-    public void after() throws Exception {
-        stopAllGrids();
     }
 
     /**

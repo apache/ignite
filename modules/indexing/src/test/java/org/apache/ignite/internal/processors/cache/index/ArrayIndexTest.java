@@ -38,8 +38,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_ARRAYS;
@@ -52,7 +52,7 @@ public class ArrayIndexTest extends AbstractIndexingCommonTest {
     /**
      * @throws Exception if fails.
      */
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         stopAllGrids();
 
@@ -62,7 +62,7 @@ public class ArrayIndexTest extends AbstractIndexingCommonTest {
     /**
      * @throws Exception if fails.
      */
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         cleanPersistenceDir();
     }

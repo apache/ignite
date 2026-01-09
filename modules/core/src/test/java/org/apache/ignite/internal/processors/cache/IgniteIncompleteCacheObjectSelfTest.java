@@ -22,8 +22,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Simple test for arbitrary CacheObject reading/writing.
@@ -80,7 +82,7 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
 
         // Check that cache object data assembled correctly.
         assertEquals(obj.cacheObjectType(), incompleteObj.type());
-        Assert.assertArrayEquals(data, incompleteObj.data());
+        assertArrayEquals(data, incompleteObj.data());
     }
 
     /**
@@ -108,28 +110,27 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public byte[] valueBytes(final CacheObjectValueContext ctx) throws IgniteCheckedException {
+        @Override public byte[] valueBytes(final CacheObjectValueContext ctx) {
             return new byte[0];
         }
 
         /** {@inheritDoc} */
-        @Override public int valueBytesLength(final CacheObjectValueContext ctx) throws IgniteCheckedException {
+        @Override public int valueBytesLength(final CacheObjectValueContext ctx) {
             return 0;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean putValue(final ByteBuffer buf) throws IgniteCheckedException {
+        @Override public boolean putValue(final ByteBuffer buf) {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override public int putValue(long addr) throws IgniteCheckedException {
+        @Override public int putValue(long addr) {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public boolean putValue(final ByteBuffer buf, final int off, final int len)
-            throws IgniteCheckedException {
+        @Override public boolean putValue(final ByteBuffer buf, final int off, final int len) {
             return false;
         }
 
@@ -149,13 +150,12 @@ public class IgniteIncompleteCacheObjectSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public void finishUnmarshal(final CacheObjectValueContext ctx, final ClassLoader ldr)
-            throws IgniteCheckedException {
+        @Override public void finishUnmarshal(final CacheObjectValueContext ctx, final ClassLoader ldr) {
             // No-op
         }
 
         /** {@inheritDoc} */
-        @Override public void prepareMarshal(final CacheObjectValueContext ctx) throws IgniteCheckedException {
+        @Override public void prepareMarshal(final CacheObjectValueContext ctx) {
             // No-op
         }
     }

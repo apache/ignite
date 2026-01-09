@@ -30,9 +30,8 @@ import org.apache.ignite.internal.processors.configuration.distributed.SimpleDis
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.Ignition.startClient;
@@ -46,19 +45,20 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_TRANSFER_RATE_DMS_KEY;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Checks command line property commands.
  */
 public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterByClassAbstractTest {
     /** */
-    @Before
+    @BeforeEach
     public void init() {
         injectTestSystemOut();
     }
 
     /** */
-    @After
+    @AfterEach
     public void clear() {
     }
 
@@ -68,7 +68,7 @@ public class GridCommandHandlerPropertiesTest extends GridCommandHandlerClusterB
      */
     @Test
     public void testHelp() {
-        Assume.assumeTrue(cliCommandHandler());
+        assumeTrue(cliCommandHandler());
 
         assertEquals(EXIT_CODE_OK, execute("--property", "help"));
 

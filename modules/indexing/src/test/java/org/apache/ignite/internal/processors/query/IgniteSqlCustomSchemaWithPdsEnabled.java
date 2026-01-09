@@ -28,8 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.junit.After;
-import org.junit.Assert;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 /** Test verifies custom sql schema behavior when PDS is enabled. */
@@ -78,7 +77,7 @@ public class IgniteSqlCustomSchemaWithPdsEnabled extends AbstractIndexingCommonT
     }
 
     /** */
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         stopAllGrids();
 
@@ -105,7 +104,7 @@ public class IgniteSqlCustomSchemaWithPdsEnabled extends AbstractIndexingCommonT
             List<List<?>> act = execSql("SELECT COUNT(*) FROM " + t(q(schemaName), TABLE_NAME)
                 + " WHERE val = '" + schemaName + "'");
 
-            Assert.assertEquals(10L, act.get(0).get(0));
+            assertEquals(10L, act.get(0).get(0));
         }
     }
 
@@ -131,7 +130,7 @@ public class IgniteSqlCustomSchemaWithPdsEnabled extends AbstractIndexingCommonT
         Object actSchema = execSql("SELECT SQL_SCHEMA FROM " + t(QueryUtils.SCHEMA_SYS, "CACHES")
             + " WHERE CACHE_NAME = '" + cacheName + "'").get(0).get(0);
 
-        Assert.assertEquals(expSchema, actSchema);
+        assertEquals(expSchema, actSchema);
     }
 
     /** */

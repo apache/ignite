@@ -86,7 +86,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Arrays.asList;
@@ -104,7 +103,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.longToBytes;
 import static org.apache.ignite.internal.util.IgniteUtils.shortToBytes;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.readResource;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Grid utils tests.
@@ -1007,10 +1007,10 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
                 }
             });
 
-        Assert.assertEquals(curThreadCnt.get() + poolThreadCnt.get(), data.size());
-        Assert.assertEquals(5, curThreadCnt.get());
-        Assert.assertEquals(5, poolThreadCnt.get());
-        Assert.assertEquals(asList(0, -1, -2, -3, -4, -5, -6, -7, -8, -9), res);
+        assertEquals(curThreadCnt.get() + poolThreadCnt.get(), data.size());
+        assertEquals(5, curThreadCnt.get());
+        assertEquals(5, poolThreadCnt.get());
+        assertEquals(asList(0, -1, -2, -3, -4, -5, -6, -7, -8, -9), res);
     }
 
     /**
@@ -1078,8 +1078,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             throw new IgniteException(e);
         }
 
-        Assert.assertTrue(curThreadCnt.get() > 0);
-        Assert.assertEquals(asList(0, -1, -2, -3, -4, -5, -6, -7, -8, -9), res);
+        assertTrue(curThreadCnt.get() > 0);
+        assertEquals(asList(0, -1, -2, -3, -4, -5, -6, -7, -8, -9), res);
     }
 
     /**
@@ -1317,7 +1317,8 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         };
 
         Runnable capturingOuterClsLambda = () -> {
-            System.out.println(repeatRule);
+            //System.out.println(repeatRule);
+            fail(); /// hui znaet, pochinit` !!!`
         };
 
         Runnable methodRef = this::testIsLambdaOnLambdas;
@@ -1475,9 +1476,9 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /** Test {@link U#staticField(Class, String)} throws on unknown field. */
-    @Test(expected = IgniteCheckedException.class)
+    @Test
     public void testReadUnknownStaticFieldFailed() throws Exception {
-        U.staticField(String.class, "unknown_field");
+        assertThrows(IgniteCheckedException.class, () -> U.staticField(String.class, "unknown_field"));
     }
 
     /**
@@ -1549,13 +1550,13 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         for (Map.Entry<String, Short> entry : map.entrySet()) {
             byte[] b = asByteArray(entry.getKey());
 
-            Assert.assertArrayEquals(b, shortToBytes(entry.getValue()));
-            Assert.assertEquals((short)entry.getValue(), bytesToShort(b, 0));
+            assertArrayEquals(b, shortToBytes(entry.getValue()));
+            assertEquals((short)entry.getValue(), bytesToShort(b, 0));
 
             byte[] tmp = new byte[2];
 
             shortToBytes(entry.getValue(), tmp, 0);
-            Assert.assertArrayEquals(b, tmp);
+            assertArrayEquals(b, tmp);
         }
     }
 
@@ -1575,13 +1576,13 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         for (Map.Entry<String, Integer> entry : map.entrySet()) {
             byte[] b = asByteArray(entry.getKey());
 
-            Assert.assertArrayEquals(b, intToBytes(entry.getValue()));
-            Assert.assertEquals((int)entry.getValue(), bytesToInt(b, 0));
+            assertArrayEquals(b, intToBytes(entry.getValue()));
+            assertEquals((int)entry.getValue(), bytesToInt(b, 0));
 
             byte[] tmp = new byte[4];
 
             intToBytes(entry.getValue(), tmp, 0);
-            Assert.assertArrayEquals(b, tmp);
+            assertArrayEquals(b, tmp);
         }
     }
 
@@ -1605,13 +1606,13 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         for (Map.Entry<String, Long> entry : map.entrySet()) {
             byte[] b = asByteArray(entry.getKey());
 
-            Assert.assertArrayEquals(b, longToBytes(entry.getValue()));
-            Assert.assertEquals((long)entry.getValue(), bytesToLong(b, 0));
+            assertArrayEquals(b, longToBytes(entry.getValue()));
+            assertEquals((long)entry.getValue(), bytesToLong(b, 0));
 
             byte[] tmp = new byte[8];
 
             longToBytes(entry.getValue(), tmp, 0);
-            Assert.assertArrayEquals(b, tmp);
+            assertArrayEquals(b, tmp);
         }
     }
 

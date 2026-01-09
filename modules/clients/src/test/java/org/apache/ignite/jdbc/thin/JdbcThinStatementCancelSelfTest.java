@@ -39,8 +39,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -129,7 +129,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     public void before() throws Exception {
         TestSQLFunctions.init();
 
@@ -148,7 +148,7 @@ public class JdbcThinStatementCancelSelfTest extends JdbcThinAbstractSelfTest {
      *
      * @throws Exception If failed.
      */
-    @After
+    @AfterEach
     public void after() throws Exception {
         if (stmt != null && !stmt.isClosed()) {
             stmt.close();

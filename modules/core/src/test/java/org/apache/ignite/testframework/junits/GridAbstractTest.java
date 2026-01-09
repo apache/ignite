@@ -138,18 +138,6 @@ import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.AssumptionViolatedException;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestName;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
@@ -222,48 +210,45 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     protected static final String DEFAULT_CACHE_NAME = "default";
 
     /** Sustains {@link #beforeTestsStarted()} and {@link #afterTestsStopped()} methods execution.*/
-    @ClassRule public static final TestRule firstLastTestRule = RuleChain
-        .outerRule(new SystemPropertiesRule())
-        .around(new BeforeFirstAndAfterLastTestRule());
-
-    /** Manages test execution and reporting. */
-    private transient TestRule runRule = (base, desc) -> new Statement() {
-        @Override public void evaluate() throws Throwable {
-            assert getName() != null : "getName returned null";
-
-            runTest(base);
-        }
-    };
+//    @ClassRule public static final TestRule firstLastTestRule = RuleChain
+//        .outerRule(new SystemPropertiesRule())
+//        .around(new BeforeFirstAndAfterLastTestRule());
+//
+//    /** Manages test execution and reporting. */
+//    private transient TestRule runRule = (base, desc) -> new Statement() {
+//        @Override public void evaluate() throws Throwable {
+//            assert getName() != null : "getName returned null";
+//
+//            runTest(base);
+//        }
+//    };
 
     /** Classes for which you want to clear the static log. */
     private static final Collection<Class<?>> clearStaticLogClasses = newSetFromMap(new ConcurrentHashMap<>());
-
-    /** Allows easy repeating for test. */
-    @Rule public transient RepeatRule repeatRule = new RepeatRule();
 
     /**
      * Supports obtaining test name for JUnit4 framework in a way that makes it available for methods invoked
      * from {@code runTest(Statement)}.
      */
-    private transient TestName nameRule = new TestName();
+    //private transient TestName nameRule = new TestName();
 
     /**
      * Gets the name of the currently executed test case.
      *
      * @return Name of the currently executed test case.
      */
-    public String getName() {
-        return nameRule.getMethodName();
-    }
+//    public String getName() {
+//        return nameRule.getMethodName();
+//    }
 
     /**
      * Provides the order of JUnit TestRules. Because of JUnit framework specifics {@link #nameRule} must be invoked
      * first.
      */
-    @Rule public transient RuleChain nameAndRunRulesChain = RuleChain
-        .outerRule(new SystemPropertiesRule())
-        .around(nameRule)
-        .around(runRule);
+//    @Rule public transient RuleChain nameAndRunRulesChain = RuleChain
+//        .outerRule(new SystemPropertiesRule())
+//        .around(nameRule)
+//        .around(runRule);
 
     /** */
     private static boolean startGrid;
@@ -334,7 +319,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /**
      * Called before execution of every test method in class.
      * <p>
-     * Do not annotate with {@link Before} in overriding methods.</p>
+     * Do not annotate with {@link BeforeEach} in overriding methods.</p>
      *
      * @throws Exception If failed. {@link #afterTest()} will be called anyway.
      */
@@ -346,7 +331,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Called after execution of every test method in class or if {@link #beforeTest()} failed without test method
      * execution.
      * <p>
-     * Do not annotate with {@link After} in overriding methods.</p>
+     * Do not annotate with {@link AfterEach} in overriding methods.</p>
      *
      * @throws Exception If failed.
      */
@@ -362,7 +347,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /**
      * Called before execution of all test methods in class.
      * <p>
-     * Do not annotate with {@link BeforeClass} in overriding methods.</p>
+     * Do not annotate with {@link BeforeAll} in overriding methods.</p>
      *
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
      */
@@ -375,7 +360,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Called after execution of all test methods in class or if {@link #beforeTestsStarted()} failed without
      * execution of any test methods.
      * <p>
-     * Do not annotate with {@link AfterClass} in overriding methods.</p>
+     * Do not annotate with {@link AfterAll} in overriding methods.</p>
      *
      * @throws Exception If failed.
      */
@@ -2932,21 +2917,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /** */
-    public abstract static class TestIgniteRunnable implements TestIgniteCallable<Object> {
-        /** {@inheritDoc} */
-        @Override public Object call(Ignite ignite) throws Exception {
-            run(ignite);
-
-            return null;
-        }
-
-        /**
-         * @param ignite Ignite.
-         */
-        public abstract void run(Ignite ignite) throws Exception;
-    }
-
-    /** */
     public abstract static class TestIgniteIdxCallable<R> implements Serializable {
         /** */
         @IgniteInstanceResource
@@ -3099,7 +3069,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param grp Name of the group.
      * @param metrics Metrics.
      * @return MX bean.
-     * @throws Exception If failed.
      */
     public DynamicMBean metricRegistry(
         String igniteInstanceName,
@@ -3116,7 +3085,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param impl Implementation class.
      * @param clazz Class of the mbean.
      * @return MX bean.
-     * @throws Exception If failed.
      */
     public static <T, I> T getMxBean(String igniteInstanceName, String grp, Class<I> impl, Class<T> clazz) {
         return getMxBean(igniteInstanceName, grp, impl.getSimpleName(), clazz);
@@ -3130,7 +3098,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param name Name of the bean.
      * @param clazz Class of the mbean.
      * @return MX bean.
-     * @throws Exception If failed.
      */
     public static <T> T getMxBean(String igniteInstanceName, String grp, String name, Class<T> clazz) {
         return getMxBean(igniteInstanceName, grp, Collections.emptyList(), name, clazz);
@@ -3145,7 +3112,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @param name Name of the bean.
      * @param clazz Class of the mbean.
      * @return MX bean.
-     * @throws Exception If failed.
      */
     public static <T> T getMxBean(String igniteInstanceName, String grp, List<String> grps, String name, Class<T> clazz) {
         ObjectName mbeanName = null;

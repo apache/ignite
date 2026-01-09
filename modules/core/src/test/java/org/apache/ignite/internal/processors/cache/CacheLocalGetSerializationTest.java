@@ -21,8 +21,10 @@ import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  *
@@ -59,7 +61,7 @@ public class CacheLocalGetSerializationTest extends GridCommonAbstractTest {
 
         Long val = cache.get(key);
 
-        Assert.assertNotNull(val);
-        Assert.assertEquals(Long.MAX_VALUE, (long)val);
+        assertNotNull(val);
+        assertEquals(Long.MAX_VALUE, (long)val);
     }
 }
