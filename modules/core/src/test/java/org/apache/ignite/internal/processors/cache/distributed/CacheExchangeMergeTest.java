@@ -82,8 +82,7 @@ import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Assert;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Objects.nonNull;
@@ -97,6 +96,10 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
 import static org.apache.ignite.testframework.GridTestUtils.mergeExchangeWaitVersion;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.LogListener.matches;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -478,7 +481,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10186")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-10186")
     @Test
     public void testMergeServerAndClientJoin1() throws Exception {
         final IgniteEx srv0 = startGrid(0);
@@ -627,7 +630,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
             List<GridDhtPartitionsExchangeFuture> exchFuts =
                 ((IgniteEx)node).context().cache().context().exchange().exchangeFutures();
 
-            assertTrue("Unexpected size: " + exchFuts.size(), !exchFuts.isEmpty() && exchFuts.size() <= histSize);
+            assertTrue(!exchFuts.isEmpty() && exchFuts.size() <= histSize, "Unexpected size: " + exchFuts.size());
         }
     }
 
@@ -904,17 +907,16 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
         checkCaches0();
 
-        assertTrue("Unexpected number of merged disco events: " + mergedEvts.size(),
-            mergedEvts.size() == mergeTopVer - 6);
+        assertEquals(mergedEvts.size(), mergeTopVer - 6,
+                "Unexpected number of merged disco events: " + mergedEvts.size());
 
         for (DiscoveryEvent discoEvt : mergedEvts) {
             ClusterNode evtNode = discoEvt.eventNode();
 
-            assertTrue("eventNode is null for DiscoEvent " + discoEvt, evtNode != null);
+            assertNotNull(evtNode, "eventNode is null for DiscoEvent " + discoEvt);
 
-            assertTrue("Unexpected eventNode ID: "
-                    + evtNode.id() + " while expecting " + grid2Id + " or " + grid3Id,
-                evtNode.id().equals(grid2Id) || evtNode.id().equals(grid3Id));
+            assertTrue(evtNode.id().equals(grid2Id) || evtNode.id().equals(grid3Id), "Unexpected eventNode ID: "
+                    + evtNode.id() + " while expecting " + grid2Id + " or " + grid3Id);
         }
     }
 
@@ -984,7 +986,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore
+    @Disabled
     public void testJoinExchangeCoordinatorChange_NoMerge_2() throws Exception {
         for (CoordinatorChangeMode mode : CoordinatorChangeMode.values()) {
             exchangeCoordinatorChangeNoMerge(8, true, mode);
@@ -1437,7 +1439,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
                 Object val = cache.get(key);
 
-                assertEquals(err, i, val);
+                assertEquals(i, val, err);
             }
         }
     }
@@ -1464,10 +1466,10 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
                         cCfg.getAtomicityMode() == TRANSACTIONAL &&
                         cCfg.getBackups() == 0;
 
-                    assertNotNull("No cache [node=" + node.name() +
+                    assertNotNull(cache, "No cache [node=" + node.name() +
                         ", client=" + node.configuration().isClientMode() +
                         ", order=" + node.cluster().localNode().order() +
-                        ", cache=" + cacheName + ']', cache);
+                        ", cache=" + cacheName + ']');
 
                     String err = "Invalid value [node=" + node.name() +
                         ", client=" + node.configuration().isClientMode() +
@@ -1482,9 +1484,9 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
                         Object val = cache.get(key);
 
                         if (isTxCacheWithouBackups)
-                            assertTrue(err, val == null || val.equals(i));
+                            assertTrue(val == null || val.equals(i), err);
                         else
-                            assertEquals(err, i, val);
+                            assertEquals(i, val, err);
                     }
 
                     for (int i = 0; i < 5; i++) {
@@ -1502,9 +1504,9 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
                         for (Map.Entry<Integer, Integer> e : map.entrySet()) {
                             if (isTxCacheWithouBackups)
-                                assertTrue(err, res.get(e.getKey()) == null || e.getValue().equals(res.get(e.getKey())));
+                                assertTrue(res.get(e.getKey()) == null || e.getValue().equals(res.get(e.getKey())), err);
                             else
-                                assertEquals(err, e.getValue(), res.get(e.getKey()));
+                                assertEquals(e.getValue(), res.get(e.getKey()), err);
                         }
                     }
 
@@ -1563,7 +1565,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
         }
 
         for (Map.Entry<Object, Object> e : map.entrySet())
-            assertEquals(err, e.getValue(), cache.get(e.getKey()));
+            assertEquals(e.getValue(), cache.get(e.getKey()), err);
     }
 
     /**
@@ -1589,7 +1591,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
             if (!fut.isMerged() && fut.exchangeDone() && fut.firstEvent().type() != EVT_DISCOVERY_CUSTOM_EVT) {
                 AffinityTopologyVersion resVer = fut.topologyVersion();
 
-                Assert.assertNotNull(resVer);
+                assertNotNull(resVer);
 
                 doneVers.add(resVer);
             }
@@ -1602,8 +1604,7 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
                 if (ver.minorTopologyVersion() > 0)
                     continue;
 
-                assertTrue("Unexpected version [ver=" + ver + ", exp=" + expVers + ']',
-                    expVers.contains(ver));
+                assertTrue(expVers.contains(ver), "Unexpected version [ver=" + ver + ", exp=" + expVers + ']');
             }
         }
     }

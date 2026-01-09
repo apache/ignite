@@ -97,7 +97,6 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -105,6 +104,10 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Historical WAL rebalance base test.
@@ -341,7 +344,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         Set<Long> topVers = ((WalRebalanceCheckingCommunicationSpi)ignite.configuration().getCommunicationSpi())
             .walRebalanceVersions(grpId);
 
-        Assert.assertTrue(topVers.contains(ignite.cluster().topologyVersion()));
+        assertTrue(topVers.contains(ignite.cluster().topologyVersion()));
 
         // Rewrite some data.
         for (int k = 0; k < entryCnt; k++) {
@@ -367,7 +370,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         topVers = ((WalRebalanceCheckingCommunicationSpi)ignite.configuration().getCommunicationSpi())
             .walRebalanceVersions(grpId);
 
-        Assert.assertFalse(topVers.contains(ignite.cluster().topologyVersion()));
+        assertFalse(topVers.contains(ignite.cluster().topologyVersion()));
 
         // Check data consistency.
         for (Ignite ig : G.allGrids()) {
@@ -441,7 +444,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         Set<Long> topVers = ((WalRebalanceCheckingCommunicationSpi)ignite.configuration().getCommunicationSpi())
             .walRebalanceVersions(grpId);
 
-        Assert.assertFalse(topVers.contains(ignite.cluster().topologyVersion()));
+        assertFalse(topVers.contains(ignite.cluster().topologyVersion()));
 
         stopGrid(2);
 
@@ -459,7 +462,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         topVers = ((WalRebalanceCheckingCommunicationSpi)ignite.configuration().getCommunicationSpi())
             .walRebalanceVersions(grpId);
 
-        Assert.assertTrue(topVers.contains(ignite.cluster().topologyVersion()));
+        assertTrue(topVers.contains(ignite.cluster().topologyVersion()));
 
         // Check data consistency.
         for (Ignite ig : G.allGrids()) {
@@ -543,7 +546,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         // Wait till rebalance will be failed and cancelled.
         Boolean res = preloader.rebalanceFuture().get();
 
-        Assert.assertEquals("Rebalance should be cancelled on demander node: " + preloader.rebalanceFuture(), false, res);
+        assertEquals(false, res, "Rebalance should be cancelled on demander node: " + preloader.rebalanceFuture());
 
         // Stop blocking messages and fail WAL during read.
         blockMsgPred = null;
@@ -677,14 +680,12 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         demanderSpi.stopBlock();
 
         // Wait until rebalancing will be cancelled for both suppliers.
-        assertTrue(
-            "Rebalance future was not cancelled [fut=" + preloadFut + ']',
-            GridTestUtils.waitForCondition(preloadFut::isDone, getTestTimeout()));
+        assertTrue(GridTestUtils.waitForCondition(preloadFut::isDone, getTestTimeout()),
+            "Rebalance future was not cancelled [fut=" + preloadFut + ']');
 
-        Assert.assertEquals(
-            "Rebalance should be cancelled on demander node: " + preloadFut,
-            false,
-            preloadFut.get());
+        assertEquals(false,
+            preloadFut.get(),
+            "Rebalance should be cancelled on demander node: " + preloadFut);
 
         awaitPartitionMapExchange(true, true, null);
 
@@ -710,16 +711,15 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                 .filter(msg -> msg.hasFull() || msg.hasHistorical())
                 .collect(toList());
 
-            assertEquals("There should only two demand messages [supplierId=" + supplierId + ']',
+            assertEquals(
                 2,
-                demandMsgsForSupplier.size());
-            assertTrue(
+                demandMsgsForSupplier.size(),
+                "There should only two demand messages [supplierId=" + supplierId + ']');
+            assertTrue((mixed ? mixedPred.apply(demandMsgsForSupplier.get(0)) : histPred.apply(demandMsgsForSupplier.get(0))),
                 "The first message should require " + (mixed ? "mixed" : "historical") + " rebalance [msg=" +
-                    demandMsgsForSupplier.get(0) + ']',
-                (mixed ? mixedPred.apply(demandMsgsForSupplier.get(0)) : histPred.apply(demandMsgsForSupplier.get(0))));
-            assertTrue(
-                "The second message should require full rebalance [msg=" + demandMsgsForSupplier.get(0) + ']',
-                fullPred.apply(demandMsgsForSupplier.get(1)));
+                    demandMsgsForSupplier.get(0) + ']');
+            assertTrue(fullPred.apply(demandMsgsForSupplier.get(1)),
+                "The second message should require full rebalance [msg=" + demandMsgsForSupplier.get(0) + ']');
         };
 
         supplierChecker.apply(grid(0).cluster().localNode().id(), true);
@@ -734,10 +734,9 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             .filter(msg -> msg.hasFull() || msg.hasHistorical())
             .collect(toList());
 
-        assertEquals("There should only one demand message.", 1, demandMsgsForSupplier.size());
-        assertTrue(
-            "The first message should require historical rebalance [msg=" + demandMsgsForSupplier.get(0) + ']',
-            histPred.apply(demandMsgsForSupplier.get(0)));
+        assertEquals(1, demandMsgsForSupplier.size(), "There should only one demand message.");
+        assertTrue(histPred.apply(demandMsgsForSupplier.get(0)),
+            "The first message should require historical rebalance [msg=" + demandMsgsForSupplier.get(0) + ']');
     }
 
 
@@ -1054,14 +1053,14 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             () -> preloadFut1.isDone() && (!rebalanceReassigned || (rebalanceReassigned && preloadFut2.isDone())),
             getTestTimeout());
 
-        Assert.assertEquals(
-            "Rebalance should be cancelled on demander node: " + preloadFut1,
+        assertEquals(
             false,
-            preloadFut1.get());
-        Assert.assertEquals(
-            "Rebalance should be cancelled on demander node: " + preloadFut2,
+            preloadFut1.get(),
+            "Rebalance should be cancelled on demander node: " + preloadFut1);
+        assertEquals(
             false,
-            rebalanceReassigned && preloadFut2.get());
+            rebalanceReassigned && preloadFut2.get(),
+            "Rebalance should be cancelled on demander node: " + preloadFut2);
 
         // Unblock supply messages from supplier2
         supplierSpi2.stopBlock();
@@ -1086,13 +1085,11 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             .filter(msg -> msg.hasFull() || msg.hasHistorical())
             .collect(toList());
 
-        assertEquals("There should only two demand messages.", 2, demandMsgsForSupplier1.size());
-        assertTrue(
-            "The first message should require historical rebalance [msg=" + demandMsgsForSupplier1.get(0) + ']',
-            histPred.apply(demandMsgsForSupplier1.get(0)));
-        assertTrue(
-            "The second message should require full rebalance [msg=" + demandMsgsForSupplier1.get(0) + ']',
-            fullPred.apply(demandMsgsForSupplier1.get(1)));
+        assertEquals(2, demandMsgsForSupplier1.size(), "There should only two demand messages.");
+        assertTrue(histPred.apply(demandMsgsForSupplier1.get(0)),
+            "The first message should require historical rebalance [msg=" + demandMsgsForSupplier1.get(0) + ']');
+        assertTrue(fullPred.apply(demandMsgsForSupplier1.get(1)),
+            "The second message should require full rebalance [msg=" + demandMsgsForSupplier1.get(0) + ']');
 
         // Supplier2
         List<RecordedDemandMessage> demandMsgsForSupplier2 = recorderedMsgs.stream()
@@ -1104,18 +1101,16 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         if (rebalanceReassigned) {
             assertEquals(
-                "There should be only two demand messages.", 2, demandMsgsForSupplier2.size());
-            assertTrue(
+                2, demandMsgsForSupplier2.size(), "There should be only two demand messages.");
+            assertTrue(histPred.apply(demandMsgsForSupplier2.get(0)) && histPred.apply(demandMsgsForSupplier2.get(1)),
                 "Both messages should require historical rebalance [" +
-                    "msg=" + demandMsgsForSupplier2.get(0) + ", msg=" + demandMsgsForSupplier2.get(1) + ']',
-                histPred.apply(demandMsgsForSupplier2.get(0)) && histPred.apply(demandMsgsForSupplier2.get(1)));
+                    "msg=" + demandMsgsForSupplier2.get(0) + ", msg=" + demandMsgsForSupplier2.get(1) + ']');
         }
         else {
             assertEquals(
-                "There should be only one demand message.", 1, demandMsgsForSupplier2.size());
-            assertTrue(
-                "Message should require historical rebalance [" + "msg=" + demandMsgsForSupplier2.get(0) + ']',
-                histPred.apply(demandMsgsForSupplier2.get(0)));
+                1, demandMsgsForSupplier2.size(), "There should be only one demand message.");
+            assertTrue(histPred.apply(demandMsgsForSupplier2.get(0)),
+                "Message should require historical rebalance [" + "msg=" + demandMsgsForSupplier2.get(0) + ']');
         }
     }
 
@@ -1259,7 +1254,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         demanderSpi.stopBlock();
 
         // Wait for start of the checkpoint after rebalancing cacheName2.
-        assertTrue("Failed to wait for checkpoint.", blockCheckpoint.await(getTestTimeout(), MILLISECONDS));
+        assertTrue(blockCheckpoint.await(getTestTimeout(), MILLISECONDS), "Failed to wait for checkpoint.");
 
         // Block the second rebalancing.
         demanderSpi.blockMessages((node, msg) -> {
@@ -1294,8 +1289,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         unblockCheckpoint.countDown();
 
         assertTrue(
-            "Failed to wait for a checkpoint.",
-            GridTestUtils.waitForCondition(() -> checkpointFut.isDone(), getTestTimeout()));
+            GridTestUtils.waitForCondition(() -> checkpointFut.isDone(), getTestTimeout()),
+            "Failed to wait for a checkpoint.");
 
         // Well, there is a race between we unblock rebalance and the current checkpoint executes all its listeners.
         demanderSpi.stopBlock();

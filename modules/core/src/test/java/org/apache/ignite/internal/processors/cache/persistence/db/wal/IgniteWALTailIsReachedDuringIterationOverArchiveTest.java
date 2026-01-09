@@ -44,12 +44,13 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.reader.Ignite
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.concurrent.ThreadLocalRandom.current;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -178,7 +179,7 @@ public class IgniteWALTailIsReachedDuringIterationOverArchiveTest extends GridCo
                 ex = true;
         }
 
-        Assert.assertNotNull(lastReadPtr);
+        assertNotNull(lastReadPtr);
 
         if (!ex) {
             fail("Last read ptr=" + lastReadPtr + ", corruptedPtr=" + corruptedPtr);

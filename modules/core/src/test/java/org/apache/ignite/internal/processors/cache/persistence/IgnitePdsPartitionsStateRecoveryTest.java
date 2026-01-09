@@ -31,8 +31,9 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  *
@@ -117,7 +118,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
 
         GridDhtPartitionTopology top = ignite.cachex(DEFAULT_CACHE_NAME).context().topology();
 
-        Assert.assertFalse(top.hasMovingPartitions());
+        assertFalse(top.hasMovingPartitions());
 
         log.info("Stopping grid...");
 
@@ -129,7 +130,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
 
         top = ignite.cachex(DEFAULT_CACHE_NAME).context().topology();
 
-        Assert.assertFalse("Node restored moving partitions after join to topology.", top.hasMovingPartitions());
+        assertFalse(top.hasMovingPartitions(), "Node restored moving partitions after join to topology.");
     }
 
     /**
@@ -156,7 +157,7 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
 
         GridDhtPartitionTopology top = ignite.cachex(DEFAULT_CACHE_NAME).context().topology();
 
-        Assert.assertFalse(top.hasMovingPartitions());
+        assertFalse(top.hasMovingPartitions());
 
         log.info("Stopping grid...");
 
@@ -168,6 +169,6 @@ public class IgnitePdsPartitionsStateRecoveryTest extends GridCommonAbstractTest
 
         top = ignite.cachex(DEFAULT_CACHE_NAME).context().topology();
 
-        Assert.assertFalse("Node restored moving partitions after join to topology.", top.hasMovingPartitions());
+        assertFalse(top.hasMovingPartitions(), "Node restored moving partitions after join to topology.");
     }
 }

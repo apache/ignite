@@ -43,8 +43,12 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test class to check that partition files after eviction are destroyed correctly on next checkpoint or crash
@@ -133,7 +137,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         for (int k = 0; k < keysCnt; k++)
-            Assert.assertEquals("node = " + ignite.name() + ", key = " + k, (Integer)(k * multiplier), cache.get(k));
+            assertEquals((Integer)(k * multiplier), cache.get(k), "node = " + ignite.name() + ", key = " + k);
     }
 
     /**
@@ -143,7 +147,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
      */
     @Test
     public void testPartitionFileDestroyAfterCheckpoint() throws Exception {
-        IgniteEx crd = (IgniteEx)startGrids(2);
+        IgniteEx crd = startGrids(2);
 
         crd.cluster().baselineAutoAdjustEnabled(false);
         crd.cluster().state(ClusterState.ACTIVE);
@@ -255,7 +259,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         try {
             forceCheckpoint(problemNode);
 
-            Assert.assertTrue("Checkpoint must be failed", false);
+            fail("Checkpoint must be failed");
         }
         catch (Exception expected) {
             expected.printStackTrace();
@@ -324,7 +328,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         try {
             forceCheckpoint(problemNode);
 
-            Assert.assertTrue("Checkpoint must be failed", false);
+            fail("Checkpoint must be failed");
         }
         catch (Exception expected) {
             expected.printStackTrace();
@@ -398,18 +402,18 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
 
             if (exists) {
                 if (part != null && part.state() == GridDhtPartitionState.EVICTED)
-                    Assert.assertTrue("Partition file has deleted ahead of time: " + partFile, partFile.exists());
+                    assertTrue(partFile.exists(), "Partition file has deleted ahead of time: " + partFile);
 
                 evicted++;
             }
             else {
                 if (part == null || part.state() == GridDhtPartitionState.EVICTED)
-                    Assert.assertTrue("Partition file has not deleted: " + partFile, !partFile.exists());
+                    assertFalse(partFile.exists(), "Partition file has not deleted: " + partFile);
             }
         }
 
         if (exists)
-            Assert.assertTrue("There should be at least 1 eviction", evicted > 0);
+            assertTrue(evicted > 0, "There should be at least 1 eviction");
     }
 
     /**

@@ -66,13 +66,16 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CORRUPTED_DATA_FILES_MNTC_TASK_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -312,7 +315,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         long rebalanceFinishedTimestamp = System.currentTimeMillis();
 
         for (Integer k = 0; k < keysCnt; k++)
-            assertEquals("k=" + k, k, cache.get(k));
+            assertEquals(k, cache.get(k), "k=" + k);
 
         int checkpointsBeforeNodeStarted = 0;
         int checkpointsBeforeRebalance = 0;
@@ -488,7 +491,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
             IgniteCache<Integer, Integer> cache0 = grid(nodeIdx).cache(REPL_CACHE);
 
             for (int k = 0; k < keyCnt; k++)
-                Assert.assertEquals("nodeIdx=" + nodeIdx + ", key=" + k, (Integer)(2 * k), cache0.get(k));
+                assertEquals((Integer)(2 * k), cache0.get(k), "nodeIdx=" + nodeIdx + ", key=" + k);
         }
     }
 
@@ -747,7 +750,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
             }
         });
 
-        assertFalse("Action to clear corrupted PDS is not found", actionNotFound.get());
+        assertFalse(actionNotFound.get(), "Action to clear corrupted PDS is not found");
 
         stopAllGrids();
 

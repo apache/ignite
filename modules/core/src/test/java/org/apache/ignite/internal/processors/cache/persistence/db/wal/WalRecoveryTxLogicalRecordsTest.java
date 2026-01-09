@@ -76,10 +76,15 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.getFieldValue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -371,10 +376,10 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
             try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                 assertNotNull(it);
 
-                assertTrue("Not historical for iteration: " + i, it.historical(0));
+                assertTrue(it.historical(0), "Not historical for iteration: " + i);
 
                 for (int j = i; j < entries; j++) {
-                    assertTrue("i=" + i + ", j=" + j, it.hasNextX());
+                    assertTrue(it.hasNextX(), "i=" + i + ", j=" + j);
 
                     CacheDataRow row = it.next();
 
@@ -396,7 +401,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
             try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                 assertNotNull(it);
 
-                assertTrue("Not historical for iteration: " + i, it.historical(1));
+                assertTrue(it.historical(1), "Not historical for iteration: " + i);
 
                 for (int j = i; j < entries; j++) {
                     assertTrue(it.hasNextX());
@@ -438,14 +443,14 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
                 info("Time to get iterator: " + (end - start));
 
-                assertTrue("Not historical for iteration: " + i, it.historical(0));
+                assertTrue(it.historical(0), "Not historical for iteration: " + i);
 
                 assertNotNull(it);
 
                 start = System.currentTimeMillis();
 
                 for (int j = i; j < entries; j++) {
-                    assertTrue("i=" + i + ", j=" + j, it.hasNextX());
+                    assertTrue(it.hasNextX(), "i=" + i + ", j=" + j);
 
                     CacheDataRow row = it.next();
 
@@ -471,7 +476,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
             try (IgniteRebalanceIterator it = offh.rebalanceIterator(map, topVer)) {
                 assertNotNull(it);
 
-                assertTrue("Not historical for iteration: " + i, it.historical(1));
+                assertTrue(it.historical(1), "Not historical for iteration: " + i);
 
                 for (int j = i; j < entries; j++) {
                     assertTrue(it.hasNextX());
@@ -655,7 +660,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
             if (pages != null) {
                 List<Integer> curPags = allocatedPages(ignite, CACHE2_NAME);
 
-                assertEquals("Iter = " + iter, pages, curPags);
+                assertEquals(pages, curPags, "Iter = " + iter);
             }
 
             final IgniteCache<Integer, Object> cache = ignite.cache(CACHE2_NAME);
@@ -1018,7 +1023,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
      * @param rl2 Data 2 (after restore).
      */
     private void checkEquals(T2<long[], Integer> rl1, T2<long[], Integer> rl2) {
-        Assert.assertArrayEquals(rl1.get1(), rl2.get1());
+        assertArrayEquals(rl1.get1(), rl2.get1());
         assertEquals(rl1.get2(), rl2.get2());
     }
 
@@ -1043,10 +1048,10 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
                 long tails1[] = m1.get(bucket);
                 long tails2[] = m2.get(bucket);
 
-                Assert.assertArrayEquals(tails1, tails2);
+                assertArrayEquals(tails1, tails2);
             }
 
-            Assert.assertArrayEquals("Wrong counts [part=" + part + ']', t1.get2(), t2.get2());
+            assertArrayEquals(t1.get2(), t2.get2(), "Wrong counts [part=" + part + ']');
         }
     }
 

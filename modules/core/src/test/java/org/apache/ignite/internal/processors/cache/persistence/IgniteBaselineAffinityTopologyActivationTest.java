@@ -54,10 +54,15 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -269,13 +274,13 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
                 Throwable rootCause = e.getCause().getCause();
 
                 if (!(rootCause instanceof IgniteSpiException) || !rootCause.getMessage().contains("not compatible"))
-                    Assert.fail("Unexpected ignite exception was thrown: " + e);
+                    fail("Unexpected ignite exception was thrown: " + e);
             }
             else
                 throw e;
         }
 
-        assertTrue("Expected exception wasn't thrown.", expectedExThrown);
+        assertTrue(expectedExThrown, "Expected exception wasn't thrown.");
     }
 
     /**
@@ -314,13 +319,13 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
                 Throwable rootCause = e.getCause().getCause();
 
                 if (!(rootCause instanceof IgniteSpiException) || !rootCause.getMessage().contains("not compatible"))
-                    Assert.fail("Unexpected ignite exception was thrown: " + e);
+                    fail("Unexpected ignite exception was thrown: " + e);
             }
             else
                 throw e;
         }
 
-        assertTrue("Expected exception wasn't thrown.", expectedExThrown);
+        assertTrue(expectedExThrown, "Expected exception wasn't thrown.");
     }
 
     /**
@@ -1022,13 +1027,13 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
                 Throwable rootCause = e.getCause().getCause();
 
                 if (!(rootCause instanceof IgniteSpiException) || !rootCause.getMessage().contains("Node with set up BaselineTopology"))
-                    Assert.fail("Unexpected ignite exception was thrown: " + e);
+                    fail("Unexpected ignite exception was thrown: " + e);
             }
             else
                 throw e;
         }
 
-        assertTrue("Expected exception wasn't thrown.", expectedExThrown);
+        assertTrue(expectedExThrown, "Expected exception wasn't thrown.");
     }
 
     /**

@@ -49,7 +49,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.file.Files.newDirectoryStream;
@@ -61,6 +60,8 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.N
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_NAME;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -266,8 +267,8 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         DataRegionMetricsImpl regionMetrics = ig.cachex(DEFAULT_CACHE_NAME)
             .context().group().dataRegion().metrics();
 
-        Assert.assertTrue(regionMetrics.getCheckpointBufferSize() != 0);
-        Assert.assertTrue(regionMetrics.getCheckpointBufferSize() <= MAX_REGION_SIZE);
+        assertTrue(regionMetrics.getCheckpointBufferSize() != 0);
+        assertTrue(regionMetrics.getCheckpointBufferSize() <= MAX_REGION_SIZE);
     }
 
     /**
@@ -284,8 +285,8 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         final DataRegionMetricsImpl regionMetrics = ig.cachex(DEFAULT_CACHE_NAME)
             .context().group().dataRegion().metrics();
 
-        Assert.assertEquals(0, regionMetrics.getUsedCheckpointBufferPages());
-        Assert.assertEquals(0, regionMetrics.getUsedCheckpointBufferSize());
+        assertEquals(0, regionMetrics.getUsedCheckpointBufferPages());
+        assertEquals(0, regionMetrics.getUsedCheckpointBufferSize());
 
         load(ig);
 
@@ -306,8 +307,8 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         metricsResult.get();
 
-        Assert.assertTrue(metricsResult.get().get1() > 0);
-        Assert.assertTrue(metricsResult.get().get2() > 0);
+        assertTrue(metricsResult.get().get1() > 0);
+        assertTrue(metricsResult.get().get2() > 0);
     }
 
     /**
@@ -437,7 +438,8 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         long totalAllocatedPagesFromMetrics = cctx.database().memoryMetrics(regionName).getTotalAllocatedPages();
 
-        assertEquals("Number of allocated pages is different than in metrics for [node=" + node.name() + ", cache=" + cacheName + "]",
-            totalPersistenceSize / pageStoreMgr.pageSize(), totalAllocatedPagesFromMetrics);
+        assertEquals(
+            totalPersistenceSize / pageStoreMgr.pageSize(), totalAllocatedPagesFromMetrics,
+            "Number of allocated pages is different than in metrics for [node=" + node.name() + ", cache=" + cacheName + "]");
     }
 }

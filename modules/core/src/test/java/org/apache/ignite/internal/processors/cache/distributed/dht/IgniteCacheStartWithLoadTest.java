@@ -37,11 +37,11 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  *
@@ -159,7 +159,7 @@ public class IgniteCacheStartWithLoadTest extends GridCommonAbstractTest {
         cacheRestartFut.get();
         txLoadFut.get();
 
-        Assert.assertFalse(hasRebalance.get());
+        assertFalse(hasRebalance.get());
     }
 
     /** {@inheritDoc} */

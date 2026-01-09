@@ -47,10 +47,10 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
@@ -170,14 +170,14 @@ public class IgniteRebalanceScheduleResendPartitionsTest extends GridCommonAbstr
         awaitPartitionMapExchange();
 
         // We should not send equals single map on schedule partition state.
-        Assert.assertEquals(0, cnt.get());
+        assertEquals(0, cnt.get());
 
         IgniteCache<Integer, Integer> cache = ig3.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < entries; i++) {
             Integer val = cache.get(i);
 
-            Assert.assertEquals(-i, (int)val);
+            assertEquals(-i, (int)val);
         }
     }
 

@@ -33,11 +33,16 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Load cache test.
@@ -127,12 +132,12 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
         for (int i = 0; i < gridCount(); i++) {
             Object[] args = map.get(getTestIgniteInstanceName(i));
 
-            Assert.assertArrayEquals(expArgs, args);
+            assertArrayEquals(expArgs, args);
         }
 
-        assertEquals(cache.get(1), (Integer)1);
-        assertEquals(cache.get(2), (Integer)2);
-        assertEquals(cache.get(3), (Integer)3);
+        assertEquals((Integer)1, cache.get(1));
+        assertEquals((Integer)2, cache.get(2));
+        assertEquals((Integer)3, cache.get(3));
 
         map = new ConcurrentHashMap<>();
 
@@ -166,14 +171,14 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
         for (int i = 0; i < gridCount(); i++) {
             Object[] args = map.get(getTestIgniteInstanceName(i));
 
-            Assert.assertArrayEquals(expArgs, args);
+            assertArrayEquals(expArgs, args);
         }
 
-        assertEquals(cache.get(1), (Integer)1);
-        assertEquals(cache.get(2), (Integer)2);
-        assertEquals(cache.get(3), (Integer)3);
-        assertEquals(cache.get(4), (Integer)4);
-        assertEquals(cache.get(6), (Integer)6);
+        assertEquals((Integer)1, cache.get(1));
+        assertEquals((Integer)2, cache.get(2));
+        assertEquals((Integer)3, cache.get(3));
+        assertEquals((Integer)4, cache.get(4));
+        assertEquals((Integer)6, cache.get(6));
         assertNull(cache.get(5));
     }
 

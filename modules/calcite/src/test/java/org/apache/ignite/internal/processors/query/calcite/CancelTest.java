@@ -36,12 +36,13 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.cache.query.QueryCancelledException.ERR_MSG;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.awaitReservationsRelease;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Cancel query test.
@@ -148,7 +149,7 @@ public class CancelTest extends GridCommonAbstractTest {
             fail("Unexpected exception: " + ex);
         }
 
-        Assert.assertTrue(GridTestUtils.waitForCondition(
+        assertTrue(GridTestUtils.waitForCondition(
             () -> engine.runningQueries().isEmpty(), 10_000));
 
         awaitReservationsRelease(grid(0), "TEST");
@@ -175,7 +176,7 @@ public class CancelTest extends GridCommonAbstractTest {
         CalciteQueryProcessor engine1 = (CalciteQueryProcessor)Commons.lookupComponent(
             grid(1).context(), QueryEngine.class);
 
-        Assert.assertTrue(GridTestUtils.waitForCondition(
+        assertTrue(GridTestUtils.waitForCondition(
             () -> engine1.runningQueries().isEmpty(), 10_000));
 
         awaitReservationsRelease(grid(1), "TEST");
