@@ -49,8 +49,13 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Full API compute test.
@@ -111,7 +116,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 ++cnt;
         }
 
-        assertEquals("Count of the result objects' type mismatch (null values are filtered)", expCnt, cnt);
+        assertEquals(expCnt, cnt, "Count of the result objects' type mismatch (null values are filtered)");
     }
 
     /**
@@ -132,14 +137,14 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
      * @param act Action.
      */
     private <E> void assertCollectionsEquals(String msg, Collection<E> exp, Collection<E> act) {
-        assertEquals(msg + "; Size are different", exp.size(), act.size());
+        assertEquals(exp.size(), act.size(), msg + "; Size are different");
 
         for (Object o : exp) {
             if (!act.contains(o)) {
                 error("Expected: " + exp.toString());
                 error("Actual: " + act.toString());
 
-                assertTrue(msg + String.format("; actual collection doesn't contain the object [%s]", o), false);
+                fail(msg + String.format("; actual collection doesn't contain the object [%s]", o));
             }
         }
     }
@@ -283,11 +288,11 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 final Collection<Object> resultsAllNull = ignite.compute()
                     .broadcast((IgniteClosure<Object, Object>)factory.create(), null);
 
-                assertEquals("Result's size mismatch: job must be run on all server nodes",
-                    gridCount() - clientsCount(), resultsAllNull.size());
+                assertEquals(gridCount() - clientsCount(), resultsAllNull.size(),
+                    "Result's size mismatch: job must be run on all server nodes");
 
                 for (Object o : resultsAllNull)
-                    assertNull("All results must be null", o);
+                    assertNull(o, "All results must be null");
 
                 Collection<Object> resultsNotNull = ignite.compute()
                     .broadcast((IgniteClosure<Object, Object>)factory.create(), value(0));
@@ -307,11 +312,11 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 final Collection<Object> resultsAllNull = ignite.compute()
                     .broadcast((IgniteClosure<Object, Object>)factory.create(), null);
 
-                assertEquals("Result's size mismatch: job must be run on all server nodes",
-                    gridCount() - clientsCount(), resultsAllNull.size());
+                assertEquals(gridCount() - clientsCount(), resultsAllNull.size(),
+                    "Result's size mismatch: job must be run on all server nodes");
 
                 for (Object o : resultsAllNull)
-                    assertNull("All results must be null", o);
+                    assertNull(o, "All results must be null");
 
                 IgniteFuture<Collection<Object>> fut = ignite.compute()
                     .broadcastAsync((IgniteClosure<Object, Object>)factory.create(), value(0));
@@ -334,11 +339,11 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 final Collection<Object> resultsAllNull = ignite.compute()
                     .broadcast(job);
 
-                assertEquals("Result's size mismatch: job must be run on all server nodes",
-                    gridCount() - clientsCount(), resultsAllNull.size());
+                assertEquals(gridCount() - clientsCount(), resultsAllNull.size(),
+                    "Result's size mismatch: job must be run on all server nodes");
 
                 for (Object o : resultsAllNull)
-                    assertNull("All results must be null", o);
+                    assertNull(o, "All results must be null");
 
                 job.setArg(value(0));
                 Collection<Object> resultsNotNull = ignite.compute()
@@ -346,7 +351,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
 
                 checkResultsClassCount(gridCount() - clientsCount(), resultsNotNull, value(0).getClass());
                 for (Object o : resultsNotNull)
-                    assertEquals("Invalid broadcast results", value(0), o);
+                    assertEquals(value(0), o, "Invalid broadcast results");
             }
         });
     }
@@ -364,11 +369,11 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
                 final IgniteFuture<Collection<Object>> futAllNull = ignite.compute()
                     .broadcastAsync(job);
 
-                assertEquals("Result's size mismatch: job must be run on all server nodes",
-                    gridCount() - clientsCount(), futAllNull.get().size());
+                assertEquals(gridCount() - clientsCount(), futAllNull.get().size(),
+                    "Result's size mismatch: job must be run on all server nodes");
 
                 for (Object o : futAllNull.get())
-                    assertNull("All results must be null", o);
+                    assertNull(o, "All results must be null");
 
                 job.setArg(value(0));
                 IgniteFuture<Collection<Object>> futNotNull = ignite.compute()
@@ -376,7 +381,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
 
                 checkResultsClassCount(gridCount() - clientsCount(), futNotNull.get(), value(0).getClass());
                 for (Object o : futNotNull.get())
-                    assertEquals("Invalid broadcast results", value(0), o);
+                    assertEquals(value(0), o, "Invalid broadcast results");
             }
         });
     }
@@ -1165,8 +1170,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
          * @param ignite Ignite instance to use.
          * @throws Exception If failed.
          */
-        @Test
-    public void test(Factory factory, Ignite ignite) throws Exception;
+        public void test(Factory factory, Ignite ignite) throws Exception;
     }
 
     /**
@@ -2442,7 +2446,7 @@ public class IgniteComputeConfigVariationsFullApiTest extends IgniteConfigVariat
             assertEquals(Float.MAX_VALUE, fltVal);
             assertEquals(Double.MAX_VALUE, dblVal);
             assertEquals(STR_VAL, strVal);
-            Assert.assertArrayEquals(ARRAY_VAL, arrVal);
+            assertArrayEquals(ARRAY_VAL, arrVal);
             assertEquals(TestJobEnum.VALUE_2, eVal);
         }
 

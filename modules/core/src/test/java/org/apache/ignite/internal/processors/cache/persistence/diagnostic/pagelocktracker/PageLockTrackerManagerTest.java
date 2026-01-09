@@ -24,13 +24,17 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLoc
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_LOG;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.HEAP_STACK;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.OFF_HEAP_LOG;
 import static org.apache.ignite.internal.processors.cache.persistence.diagnostic.pagelocktracker.PageLockTrackerFactory.OFF_HEAP_STACK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -54,8 +58,8 @@ public class PageLockTrackerManagerTest extends GridCommonAbstractTest {
 
             PageLockListener pll = mgr.createPageLockTracker("test");
 
-            Assert.assertNotNull(pll);
-            Assert.assertSame(PageLockTrackerManager.NOOP_LSNR, pll);
+            assertNotNull(pll);
+            assertSame(PageLockTrackerManager.NOOP_LSNR, pll);
 
         }
         finally {
@@ -69,8 +73,8 @@ public class PageLockTrackerManagerTest extends GridCommonAbstractTest {
 
             PageLockListener pll = mgr.createPageLockTracker("test");
 
-            Assert.assertNotNull(pll);
-            Assert.assertNotSame(PageLockTrackerManager.NOOP_LSNR, pll);
+            assertNotNull(pll);
+            assertNotSame(PageLockTrackerManager.NOOP_LSNR, pll);
 
         }
         finally {
@@ -111,9 +115,9 @@ public class PageLockTrackerManagerTest extends GridCommonAbstractTest {
             long offHeapOverhead0 = mgr.getOffHeapOverhead();
             long totalOverhead0 = mgr.getTotalOverhead();
 
-            Assert.assertTrue(heapOverhead0 > 0);
-            Assert.assertTrue(offHeapOverhead0 >= 0);
-            Assert.assertEquals(heapOverhead0 + offHeapOverhead0, totalOverhead0);
+            assertTrue(heapOverhead0 > 0);
+            assertTrue(offHeapOverhead0 >= 0);
+            assertEquals(heapOverhead0 + offHeapOverhead0, totalOverhead0);
 
             PageLockListener pls = mgr.createPageLockTracker("test");
 
@@ -123,11 +127,11 @@ public class PageLockTrackerManagerTest extends GridCommonAbstractTest {
             long offHeapOverhead1 = mgr.getOffHeapOverhead();
             long totalOverhead1 = mgr.getTotalOverhead();
 
-            Assert.assertTrue(heapOverhead1 > 0);
-            Assert.assertTrue(offHeapOverhead1 >= 0);
-            Assert.assertTrue(heapOverhead1 > heapOverhead0);
-            Assert.assertTrue(offHeapOverhead1 >= offHeapOverhead0);
-            Assert.assertEquals(heapOverhead1 + offHeapOverhead1, totalOverhead1);
+            assertTrue(heapOverhead1 > 0);
+            assertTrue(offHeapOverhead1 >= 0);
+            assertTrue(heapOverhead1 > heapOverhead0);
+            assertTrue(offHeapOverhead1 >= offHeapOverhead0);
+            assertEquals(heapOverhead1 + offHeapOverhead1, totalOverhead1);
 
             int threads = 2_000;
 
@@ -178,9 +182,9 @@ public class PageLockTrackerManagerTest extends GridCommonAbstractTest {
             long offHeapOverhead2 = mgr.getOffHeapOverhead();
             long totalOverhead2 = mgr.getTotalOverhead();
 
-            Assert.assertTrue(heapOverhead2 > heapOverhead1);
-            Assert.assertTrue(offHeapOverhead2 >= offHeapOverhead1);
-            Assert.assertEquals(heapOverhead2 + offHeapOverhead2, totalOverhead2);
+            assertTrue(heapOverhead2 > heapOverhead1);
+            assertTrue(offHeapOverhead2 >= offHeapOverhead1);
+            assertEquals(heapOverhead2 + offHeapOverhead2, totalOverhead2);
 
             finishThreadsLatch.countDown();
 
@@ -204,11 +208,11 @@ public class PageLockTrackerManagerTest extends GridCommonAbstractTest {
             long offHeapOverhead3 = mgr.getOffHeapOverhead();
             long totalOverhead3 = mgr.getTotalOverhead();
 
-            Assert.assertTrue(heapOverhead3 > 0);
-            Assert.assertTrue(offHeapOverhead3 >= 0);
-            Assert.assertTrue(heapOverhead3 < heapOverhead2);
-            Assert.assertTrue(offHeapOverhead3 <= offHeapOverhead2);
-            Assert.assertEquals(heapOverhead3 + offHeapOverhead3, totalOverhead3);
+            assertTrue(heapOverhead3 > 0);
+            assertTrue(offHeapOverhead3 >= 0);
+            assertTrue(heapOverhead3 < heapOverhead2);
+            assertTrue(offHeapOverhead3 <= offHeapOverhead2);
+            assertEquals(heapOverhead3 + offHeapOverhead3, totalOverhead3);
 
             mgr.stop();
         }

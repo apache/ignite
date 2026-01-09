@@ -44,12 +44,15 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  *
@@ -139,7 +142,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         stopGrid(initGridCnt);
 
-        Assert.assertEquals(5, ig0.context().state().clusterState().baselineTopology().consistentIds().size());
+        assertEquals(5, ig0.context().state().clusterState().baselineTopology().consistentIds().size());
 
         long start = U.currentTimeMillis();
 
@@ -312,12 +315,12 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         for (Integer k = 0; k < entryCnt; k++) {
             if (k % 2 == 0) {
-                assertTrue("k=" + k, !cache.containsKey(k));
-                assertTrue("k=" + k, !cache1.containsKey(k));
+                assertFalse(cache.containsKey(k), "k=" + k);
+                assertFalse(cache1.containsKey(k), "k=" + k);
             }
             else {
-                assertEquals("k=" + k, k, cache.get(k));
-                assertEquals("k=" + k, k, cache1.get(k));
+                assertEquals(k, cache.get(k), "k=" + k);
+                assertEquals(k, cache1.get(k), "k=" + k);
             }
         }
 
@@ -357,9 +360,9 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         for (Integer k = 0; k < entryCnt; k++) {
             if (k % 2 == 0)
-                assertTrue("k=" + k, !cache.containsKey(k));
+                assertFalse(cache.containsKey(k), "k=" + k);
             else
-                assertEquals("k=" + k, k, cache.get(k));
+                assertEquals(k, cache.get(k), "k=" + k);
         }
 
         IgniteEx ig1 = startGrid(1);
@@ -373,12 +376,12 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         for (Integer k = 0; k < entryCnt; k++) {
             if (k % 2 == 0) {
-                assertTrue("k=" + k, !cache.containsKey(k));
-                assertTrue("k=" + k, !cache1.containsKey(k));
+                assertFalse(cache.containsKey(k), "k=" + k);
+                assertFalse(cache1.containsKey(k), "k=" + k);
             }
             else {
-                assertEquals("k=" + k, k, cache.get(k));
-                assertEquals("k=" + k, k, cache1.get(k));
+                assertEquals(k, cache.get(k), "k=" + k);
+                assertEquals(k, cache1.get(k), "k=" + k);
             }
         }
 
@@ -396,9 +399,9 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      */
     @Test
     public void testWalHistoryPartiallyRemoved() throws Exception {
-        Assume.assumeTrue(
-            "https://issues.apache.org/jira/browse/IGNITE-16891",
-            IgniteSystemProperties.getString(IGNITE_DEFAULT_DISK_PAGE_COMPRESSION) == null
+        assumeTrue(
+            IgniteSystemProperties.getString(IGNITE_DEFAULT_DISK_PAGE_COMPRESSION) == null,
+                "https://issues.apache.org/jira/browse/IGNITE-16891"
         );
 
         int entryCnt = 9_500;

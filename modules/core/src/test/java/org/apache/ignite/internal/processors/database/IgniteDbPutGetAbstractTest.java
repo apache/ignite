@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_SEGMENT_SIZE;
@@ -59,6 +58,11 @@ import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -278,7 +282,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
 
         cache.put(0, val);
 
-        Assert.assertArrayEquals(val, cache.get(0));
+        assertArrayEquals(val, cache.get(0));
 
         final IgniteCache<Integer, LargeDbValue> cache1 = cache("large");
 
@@ -314,10 +318,9 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testPutLargeEntry() throws Exception {
-        assertTrue(
-            "Primary key should correspond to the node with small wal buffer size.",
-            smallWalBufSizeNodeIdx == 0);
+    public void testPutLargeEntry() {
+        assertTrue(smallWalBufSizeNodeIdx == 0,
+            "Primary key should correspond to the node with small wal buffer size.");
 
         IgniteCache<Integer, byte[]> atomicCache = grid(0).cache("atomic");
         Integer atomicPrimaryKey = primaryKey(atomicCache);
@@ -330,8 +333,8 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
             () -> atomicCache.put(atomicPrimaryKey, newVal),
             IgniteException.class,
             null);
-        assertNull("Unexpected non-null value.", atomicCache.get(atomicPrimaryKey));
-        assertTrue("Unexpected system critical error.", failedNodes.isEmpty());
+        assertNull(atomicCache.get(atomicPrimaryKey), "Unexpected non-null value.");
+        assertTrue(failedNodes.isEmpty(), "Unexpected system critical error.");
 
         // Check backup scenario.
         if (gridCount() > 1) {
@@ -356,7 +359,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
                 failedNodes,
                 hasItem(grid(0).name()));
 
-            assertFalse("Unexpected system critical error(s).", failedNodes.size() > 1);
+            assertFalse(failedNodes.size() > 1, "Unexpected system critical error(s).");
         }
     }
 
@@ -364,7 +367,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testPutGetLargeKeys() throws Exception {
+    public void testPutGetLargeKeys() {
         IgniteCache<LargeDbKey, Integer> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -543,7 +546,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
             String plan = cache.query(new SqlFieldsQuery(
                 "explain select lval from dbvalue where ival >= 5000 and ival < 7000")).getAll().get(0).get(0).toString();
 
-            assertTrue(plan, plan.contains("IVAL_IDX"));
+            assertTrue(plan.contains("IVAL_IDX"), plan);
         }
 
         assertTrue(cache.localSize(CachePeekMode.BACKUP) >= 0);
@@ -706,7 +709,7 @@ public abstract class IgniteDbPutGetAbstractTest extends IgniteDbAbstractTest {
             String plan = cache.query(new SqlFieldsQuery(
                 "explain select lval from dbvalue where ival >= 5000 and ival < 7000")).getAll().get(0).get(0).toString();
 
-            assertTrue(plan, plan.contains("IVAL_IDX"));
+            assertTrue(plan.contains("IVAL_IDX"), plan);
         }
     }
 

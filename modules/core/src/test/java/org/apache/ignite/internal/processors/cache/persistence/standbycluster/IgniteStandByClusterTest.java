@@ -40,8 +40,13 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.AbstractTestPluginProvider;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -81,9 +86,9 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         IgniteEx ig2 = startGrid(cfg2);
         IgniteEx ig3 = startClientGrid(cfg3);
 
-        assertTrue(!ig1.cluster().state().active());
-        assertTrue(!ig2.cluster().state().active());
-        assertTrue(!ig3.cluster().state().active());
+        assertFalse(ig1.cluster().state().active());
+        assertFalse(ig2.cluster().state().active());
+        assertFalse(ig3.cluster().state().active());
 
         ig3.cluster().state(ClusterState.ACTIVE);
 
@@ -103,9 +108,9 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
 
         ig3.cluster().state(ClusterState.INACTIVE);
 
-        assertTrue(!ig1.cluster().state().active());
-        assertTrue(!ig2.cluster().state().active());
-        assertTrue(!ig3.cluster().state().active());
+        assertFalse(ig1.cluster().state().active());
+        assertFalse(ig2.cluster().state().active());
+        assertFalse(ig3.cluster().state().active());
 
         ig3.cluster().state(ClusterState.ACTIVE);
 
@@ -119,7 +124,7 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         Map<String, GridCacheAdapter<?, ?>> caches = U.field(ig3.context().cache(), "caches");
 
         // Only system cache and cache0
-        assertEquals("Unexpected caches: " + caches.keySet(), 3, caches.size());
+        assertEquals(3, caches.size(), "Unexpected caches: " + caches.keySet());
         assertTrue(caches.containsKey(CU.UTILITY_CACHE_NAME));
         assertTrue(caches.containsKey(cacheName0));
         assertTrue(caches.containsKey(cacheName));
@@ -178,25 +183,25 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
 
         Map<String, GridCacheAdapter<?, ?>> caches1 = U.field(ig1.context().cache(), "caches");
 
-        Assert.assertNotNull(caches1.get(cache1));
-        Assert.assertNotNull(caches1.get(cache2));
-        Assert.assertNull(caches1.get(cache3));
+        assertNotNull(caches1.get(cache1));
+        assertNotNull(caches1.get(cache2));
+        assertNull(caches1.get(cache3));
 
         Map<String, GridCacheAdapter<?, ?>> caches2 = U.field(ig2.context().cache(), "caches");
 
-        Assert.assertNull(caches2.get(cache1));
-        Assert.assertNotNull(caches2.get(cache2));
-        Assert.assertNotNull(caches2.get(cache3));
+        assertNull(caches2.get(cache1));
+        assertNotNull(caches2.get(cache2));
+        assertNotNull(caches2.get(cache3));
 
         Map<String, GridCacheAdapter<?, ?>> caches3 = U.field(ig3.context().cache(), "caches");
 
-        Assert.assertNotNull(caches3.get(cache1));
-        Assert.assertNull(caches3.get(cache2));
-        Assert.assertNotNull(caches3.get(cache3));
+        assertNotNull(caches3.get(cache1));
+        assertNull(caches3.get(cache2));
+        assertNotNull(caches3.get(cache3));
     }
 
     /**
-     * @throws Exception if fail.
+     * @throws Exception if failed.
      */
     @Test
     public void testSimple() throws Exception {
@@ -230,9 +235,9 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         IgniteEx ig2 = startGrid(getConfiguration("node2"));
         IgniteEx ig3 = startGrid(getConfiguration("node3"));
 
-        assertTrue(!ig1.cluster().state().active());
-        assertTrue(!ig2.cluster().state().active());
-        assertTrue(!ig3.cluster().state().active());
+        assertFalse(ig1.cluster().state().active());
+        assertFalse(ig2.cluster().state().active());
+        assertFalse(ig3.cluster().state().active());
 
         ig2.cluster().state(ClusterState.ACTIVE);
 
@@ -266,9 +271,9 @@ public class IgniteStandByClusterTest extends GridCommonAbstractTest {
         IgniteEx ig2 = startGrid(getConfiguration("node2"));
         IgniteEx ig3 = startGrid(getConfiguration("node3"));
 
-        assertTrue(!ig1.cluster().state().active());
-        assertTrue(!ig2.cluster().state().active());
-        assertTrue(!ig3.cluster().state().active());
+        assertFalse(ig1.cluster().state().active());
+        assertFalse(ig2.cluster().state().active());
+        assertFalse(ig3.cluster().state().active());
 
         ig1.cluster().state(ClusterState.ACTIVE);
 

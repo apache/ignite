@@ -57,16 +57,19 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Sandbox test to measure progress of grid write operations. If no progress occur during period of time, then thread
  * dumps are generated.
  */
 // Benchmark.
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-13728")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-13728")
 public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     /** Cache name. Random to cover external stores possible problems. */
     public static final String CACHE_NAME = "partitioned" + new Random().nextInt(10000000);
@@ -428,7 +431,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                     for (int i = finalJ * recsPerThread; i < ((finalJ + 1) * recsPerThread); i++) {
                         HugeIndexedObject obj = restartedCache.get(i);
                         int actVal = obj.iVal;
-                        Assert.assertEquals(i, actVal);
+                        assertEquals(i, actVal);
                         watchdog2.reportProgress(1);
                     }
                     return null;
@@ -465,7 +468,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
 
                 int actVal = values.get(next.getKey()).iVal;
                 int i = key;
-                Assert.assertEquals(i, actVal);
+                assertEquals(i, actVal);
 
                 if (i % 1000 == 0)
                     X.println(" >> Verified: " + i);
@@ -550,8 +553,8 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
                 if (keepInDb(i)) {
                     final HugeIndexedObject obj = restartedCache.get(i);
 
-                    Assert.assertNotNull(obj);
-                    Assert.assertEquals(i, obj.iVal);
+                    assertNotNull(obj);
+                    assertEquals(i, obj.iVal);
                 }
 
                 if (i % 1000 == 0)

@@ -52,12 +52,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jsr166.ConcurrentLinkedHashMap;
-import org.junit.Assert;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test transfer amount between accounts with enabled {@link StopNodeFailureHandler}.
@@ -275,9 +276,8 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
                     for (int i = 0; i < accountsCount(); i++) {
                         AccountState state = cache.get(i);
 
-                        Assert.assertNotNull(
-                            "Account state has lost [node=" + node.name() + ", cache=" + cacheName + ", accNo=" + i + "]",
-                            state
+                        assertNotNull(state,
+                            "Account state has lost [node=" + node.name() + ", cache=" + cacheName + ", accNo=" + i + "]"
                         );
 
                         totalCoins.addAll(state.coins);
@@ -317,7 +317,7 @@ public class AbstractTransactionIntergrityTest extends GridCommonAbstractTest {
                     for (int i = 0; i < accountsCount(); i++)
                         log.error("Account state " + i + " = " + accStates[i]);
 
-                    assertFalse("Test failed. See messages above", true);
+                    fail("Test failed. See messages above");
                 }
             }
         }

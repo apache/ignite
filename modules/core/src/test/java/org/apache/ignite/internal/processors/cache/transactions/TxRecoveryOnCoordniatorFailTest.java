@@ -26,8 +26,9 @@ import org.apache.ignite.failure.AbstractFailureHandler;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests failure handler is not triggered after client node and coordinator left cluster.
@@ -111,6 +112,6 @@ public class TxRecoveryOnCoordniatorFailTest extends GridCommonAbstractTest {
         Throwable error = err.get();
 
         if (error != null)
-            Assert.fail("Critical failure occurred '" + error + "'");
+            fail("Critical failure occurred '" + error + "'");
     }
 }

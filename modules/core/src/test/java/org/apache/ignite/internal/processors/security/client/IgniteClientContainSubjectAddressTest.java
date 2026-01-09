@@ -32,18 +32,18 @@ import org.apache.ignite.internal.processors.security.impl.TestSecurityData;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test AuthenticationContext contain subject address when subject is IgniteClient.
  */
 public class IgniteClientContainSubjectAddressTest extends CommonSecurityCheckTest {
     /** */
-    private boolean containsAddr = false;
+    private boolean containsAddr;
 
     /** */
     @Test
@@ -54,7 +54,7 @@ public class IgniteClientContainSubjectAddressTest extends CommonSecurityCheckTe
             client.cluster().state(ACTIVE);
         }
 
-        Assert.assertTrue(containsAddr);
+        assertTrue(containsAddr);
     }
 
     /** {@inheritDoc} */

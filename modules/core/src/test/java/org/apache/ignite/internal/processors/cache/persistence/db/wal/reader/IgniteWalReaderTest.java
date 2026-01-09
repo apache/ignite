@@ -88,7 +88,6 @@ import org.apache.ignite.testframework.wal.record.RecordUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Arrays.fill;
@@ -99,6 +98,11 @@ import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderResolver.genNewStyleSubfolderName;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test suite for WAL segments reader and event generator.
@@ -256,7 +260,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         );
 
         for (int i = 0; i < cacheObjectsToWrite; i++)
-            assertTrue("Iterator didn't find key=" + i, checkKeyIterArr[i] > 0);
+            assertTrue(checkKeyIterArr[i] > 0, "Iterator didn't find key=" + i);
     }
 
     /**
@@ -523,8 +527,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
             totalEntries += write;
 
-            Assert.assertTrue("Too much entries generated, but segments was not become available",
-                totalEntries < 10000);
+            assertTrue(totalEntries < 10000, "Too much entries generated, but segments was not become available");
         }
 
         String subfolderName = genDbSubfolderName(ignite, 0);
@@ -618,7 +621,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         scanIterateAndCount(factory, params, cntEntries, txCnt, objConsumer, null);
 
-        assertTrue(" Control Map is not empty after reading entries " + ctrlMap, ctrlMap.isEmpty());
+        assertTrue(ctrlMap.isEmpty(), " Control Map is not empty after reading entries " + ctrlMap);
     }
 
     /**
@@ -663,11 +666,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         log.info("Total tx found loaded using archive directory (file-by-file): " + txCntObservedArch);
 
-        assertTrue("txCntObservedArch=" + txCntObservedArch + " >= minTxCnt=" + minTxCnt,
-            txCntObservedArch >= minTxCnt);
+        assertTrue(txCntObservedArch >= minTxCnt, "txCntObservedArch=" + txCntObservedArch + " >= minTxCnt=" + minTxCnt);
 
-        assertTrue("entries=" + entries + " >= minCntEntries=" + minCntEntries,
-            entries >= minCntEntries);
+        assertTrue(entries >= minCntEntries, "entries=" + entries + " >= minCntEntries=" + minCntEntries);
     }
 
     /**
@@ -782,9 +783,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         scanIterateAndCount(factory, params0, cntEntries, 0, objConsumer, toStrChecker);
 
-        assertTrue(" Control Map is not empty after reading entries: " + ctrlMap, ctrlMap.isEmpty());
-        assertTrue(" Control Map for strings in entries is not empty after" +
-            " reading records: " + ctrlStringsToSearch, ctrlStringsToSearch.isEmpty());
+        assertTrue(ctrlMap.isEmpty(), " Control Map is not empty after reading entries: " + ctrlMap);
+        assertTrue(ctrlStringsToSearch.isEmpty(), " Control Map for strings in entries is not empty after" +
+            " reading records: " + ctrlStringsToSearch);
 
         IgniteBiInClosure<Object, Object> binObjConsumer = (key13, val12) -> {
             log.info("K(KeepBinary): [" + key13 + ", " +
@@ -861,11 +862,11 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         scanIterateAndCount(keepBinFactory, params1, cntEntries, 0, binObjConsumer, binObjToStrChecker);
 
-        assertTrue(" Control Map is not empty after reading entries: " +
-            ctrlMapForBinaryObjects, ctrlMapForBinaryObjects.isEmpty());
+        assertTrue(ctrlMapForBinaryObjects.isEmpty(), " Control Map is not empty after reading entries: " +
+            ctrlMapForBinaryObjects);
 
-        assertTrue(" Control Map for strings in entries is not empty after" +
-            " reading records: " + ctrlStringsForBinaryObjSearch, ctrlStringsForBinaryObjSearch.isEmpty());
+        assertTrue(ctrlStringsForBinaryObjSearch.isEmpty(), " Control Map for strings in entries is not empty after" +
+            " reading records: " + ctrlStringsForBinaryObjSearch);
     }
 
     /**
@@ -1090,8 +1091,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         if (log.isInfoEnabled())
             log.info(sb.toString());
 
-        assertTrue("Delete operations should be found in log: " + operationsFound,
-            deletesFound != null && deletesFound > 0);
+        assertTrue(deletesFound != null && deletesFound > 0, "Delete operations should be found in log: " + operationsFound);
     }
 
     /**
@@ -1336,11 +1336,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         if (log.isInfoEnabled())
             log.info(sb.toString());
 
-        assertTrue("Create operations should be found in log: " + operationsFound,
-            createsFound != null && createsFound > 0);
+        assertTrue(createsFound != null && createsFound > 0, "Create operations should be found in log: " + operationsFound);
 
-        assertTrue("Create operations count should be at least " + cntEntries + " in log: " + operationsFound,
-            createsFound >= cntEntries);
+        assertTrue(createsFound >= cntEntries, "Create operations count should be at least " + cntEntries + " in log: " + operationsFound);
     }
 
     /**
@@ -1447,13 +1445,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             "expLast=" + exp0Last + " actlLast=" + actl0Last);
 
         // +1 because bound include.
-        Assert.assertEquals(to0 - from0 + 1, records0);
+        assertEquals(to0 - from0 + 1, records0);
 
-        Assert.assertNotNull(actl0First);
-        Assert.assertNotNull(actl0Last);
+        assertNotNull(actl0First);
+        assertNotNull(actl0Last);
 
-        Assert.assertEquals(exp0First, actl0First.get1());
-        Assert.assertEquals(exp0Last, actl0Last.get1());
+        assertEquals(exp0First, actl0First.get1());
+        assertEquals(exp0Last, actl0Last.get1());
 
         int from1 = 0;
         int to1 = rnd.nextInt(wal.size() - 3) + 1;
@@ -1489,13 +1487,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             "expLast=" + exp1Last + " actlLast=" + actl1Last);
 
         // +1 because bound include.
-        Assert.assertEquals(to1 - from1 + 1, records1);
+        assertEquals(to1 - from1 + 1, records1);
 
-        Assert.assertNotNull(actl1First);
-        Assert.assertNotNull(actl1Last);
+        assertNotNull(actl1First);
+        assertNotNull(actl1Last);
 
-        Assert.assertEquals(exp1First, actl1First.get1());
-        Assert.assertEquals(exp1Last, actl1Last.get1());
+        assertEquals(exp1First, actl1First.get1());
+        assertEquals(exp1Last, actl1Last.get1());
 
         int from2 = rnd.nextInt(wal.size() - 2);
         int to2 = rnd.nextInt((wal.size() - 1) - from2) + from2;
@@ -1531,13 +1529,13 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             "expLast=" + exp2Last + " actlLast=" + actl2Last);
 
         // +1 because bound include.
-        Assert.assertEquals(to2 - from2 + 1, records2);
+        assertEquals(to2 - from2 + 1, records2);
 
-        Assert.assertNotNull(actl2First);
-        Assert.assertNotNull(actl2Last);
+        assertNotNull(actl2First);
+        assertNotNull(actl2Last);
 
-        Assert.assertEquals(exp2First, actl2First.get1());
-        Assert.assertEquals(exp2Last, actl2Last.get1());
+        assertEquals(exp2First, actl2First.get1());
+        assertEquals(exp2Last, actl2Last.get1());
     }
 
     /**

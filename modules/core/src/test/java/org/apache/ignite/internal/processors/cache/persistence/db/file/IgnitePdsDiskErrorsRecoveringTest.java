@@ -51,11 +51,12 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAhea
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree.WAL_SEGMENT_FILE_EXT;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests node recovering after disk errors during interaction with persistent storage.
@@ -150,12 +151,12 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             startGridFut.get();
         }
         catch (Exception e) {
-            Assert.assertTrue(e.getMessage().contains("Failed to start node."));
+            assertTrue(e.getMessage().contains("Failed to start node."));
 
             failed = true;
         }
 
-        Assert.assertTrue("Cache initialization must failed", failed);
+        assertTrue(failed, "Cache initialization must failed");
 
         // Grid should be successfully recovered after stopping.
         ioFactory = null;
@@ -200,7 +201,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
                 checkpointFailed = true;
         }
 
-        Assert.assertTrue("Checkpoint must be failed by IgniteCheckedException: " + errMsg, checkpointFailed);
+        assertTrue(checkpointFailed, "Checkpoint must be failed by IgniteCheckedException: " + errMsg);
 
         // Grid should be automatically stopped after checkpoint fail.
         awaitStop(grid);
@@ -217,7 +218,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             Arrays.fill(data, payload);
 
             byte[] actualData = (byte[])recoveredGrid.cache(CACHE_NAME).get(i);
-            Assert.assertArrayEquals(data, actualData);
+            assertArrayEquals(data, actualData);
         }
     }
 
@@ -250,7 +251,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
                     checkpointFailed = true;
         }
 
-        Assert.assertTrue("Checkpoint must be failed by IOException (Not enough space!)", checkpointFailed);
+        assertTrue(checkpointFailed, "Checkpoint must be failed by IOException (Not enough space!)");
 
         // Grid should be automatically stopped after checkpoint fail.
         awaitStop(grid);
@@ -267,7 +268,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             Arrays.fill(data, payload);
 
             byte[] actualData = (byte[])recoveredGrid.cache(CACHE_NAME).get(i);
-            Assert.assertArrayEquals(data, actualData);
+            assertArrayEquals(data, actualData);
         }
     }
 
@@ -337,7 +338,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         }
 
         // We must be able to put something into cache before fail.
-        Assert.assertTrue("One of the cache puts must be failed", failedPosition > 0);
+        assertTrue(failedPosition > 0, "One of the cache puts must be failed");
 
         // Grid should be automatically stopped after WAL fail.
         awaitStop(grid);
@@ -355,7 +356,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             Arrays.fill(data, payload);
 
             byte[] actualData = (byte[])grid.cache(CACHE_NAME).get(i);
-            Assert.assertArrayEquals(data, actualData);
+            assertArrayEquals(data, actualData);
         }
     }
 

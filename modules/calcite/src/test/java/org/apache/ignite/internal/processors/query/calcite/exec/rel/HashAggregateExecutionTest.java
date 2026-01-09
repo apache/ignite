@@ -37,12 +37,14 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.MAP;
 import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.REDUCE;
 import static org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.AggregateType.SINGLE;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -200,7 +202,7 @@ public class HashAggregateExecutionTest extends BaseAggregateTest {
             root.register(aggChain);
 
             assertTrue(root.hasNext());
-            Assert.assertArrayEquals(row(0), root.next());
+            assertArrayEquals(row(0), root.next());
             assertFalse(root.hasNext());
 
             aggChain.rewind();

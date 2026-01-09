@@ -25,8 +25,10 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Single node services test.
@@ -62,16 +64,16 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         latch.await();
 
-        Assert.assertEquals(name, 1, DummyService.started(name));
-        Assert.assertEquals(name, 0, DummyService.cancelled(name));
+        assertEquals(1, DummyService.started(name), name);
+        assertEquals(0, DummyService.cancelled(name), name);
 
         int nodeCnt = 2;
 
         startExtraNodes(nodeCnt);
 
         try {
-            Assert.assertEquals(name, 1, DummyService.started(name));
-            Assert.assertEquals(name, 0, DummyService.cancelled(name));
+            assertEquals(1, DummyService.started(name), name);
+            assertEquals(0, DummyService.cancelled(name), name);
 
             info(">>> Passed checks.");
 
@@ -153,8 +155,8 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
             // Ensure service is deployed
             assertNotNull(client.services().serviceProxy(name, Service.class, false, 2000));
 
-            assertEquals(name, nodeCount(), DummyService.started(name));
-            assertEquals(name, 0, DummyService.cancelled(name));
+            assertEquals(nodeCount(), DummyService.started(name), name);
+            assertEquals(0, DummyService.cancelled(name), name);
 
             int servers = 2;
 
@@ -174,7 +176,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
                 // Since we start extra nodes, there may be extra start and cancel events,
                 // so we check only the difference between start and cancel and
                 // not start and cancel events individually.
-                assertEquals(name, nodeCount() + servers, DummyService.started(name) - DummyService.cancelled(name));
+                assertEquals(nodeCount() + servers, DummyService.started(name) - DummyService.cancelled(name), name);
 
                 checkCount(name, g, nodeCount() + servers);
             }
@@ -221,8 +223,8 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
             // Ensure service is deployed
             assertNotNull(client.services().serviceProxy(name, Service.class, false, 2000));
 
-            assertEquals(name, prestartedSrvcs, DummyService.started(name));
-            assertEquals(name, 0, DummyService.cancelled(name));
+            assertEquals(prestartedSrvcs, DummyService.started(name), name);
+            assertEquals(0, DummyService.cancelled(name), name);
 
             int servers = 2;
 
@@ -242,7 +244,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
                 // Since we start extra nodes, there may be extra start and cancel events,
                 // so we check only the difference between start and cancel and
                 // not start and cancel events individually.
-                assertEquals(name, clients + prestartedSrvcs, DummyService.started(name) - DummyService.cancelled(name));
+                assertEquals(clients + prestartedSrvcs, DummyService.started(name) - DummyService.cancelled(name), name);
 
                 checkCount(name, g, clients + prestartedSrvcs);
             }
@@ -296,8 +298,8 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
             // Ensure service is deployed
             assertNotNull(client.services().serviceProxy(name, Service.class, false, 2000));
 
-            assertEquals(name, prestartedNodes, DummyService.started(name));
-            assertEquals(name, 0, DummyService.cancelled(name));
+            assertEquals(prestartedNodes, DummyService.started(name), name);
+            assertEquals(0, DummyService.cancelled(name), name);
 
             int servers = 2;
             int clients = 2;
@@ -318,8 +320,8 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
                 // Since we start extra nodes, there may be extra start and cancel events,
                 // so we check only the difference between start and cancel and
                 // not start and cancel events individually.
-                assertEquals(name, prestartedNodes + extraNodes,
-                    DummyService.started(name) - DummyService.cancelled(name));
+                assertEquals(prestartedNodes + extraNodes,
+                    DummyService.started(name) - DummyService.cancelled(name), name);
 
                 checkCount(name, g, prestartedNodes + extraNodes);
             }
@@ -369,8 +371,8 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         latch.await();
 
-        assertEquals(name, nodeCount(), DummyService.started(name));
-        assertEquals(name, 0, DummyService.cancelled(name));
+        assertEquals(nodeCount(), DummyService.started(name), name);
+        assertEquals(0, DummyService.cancelled(name), name);
 
         checkCount(name, g.services().serviceDescriptors(), nodeCount());
 
@@ -390,7 +392,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
             // Since we start extra nodes, there may be extra start and cancel events,
             // so we check only the difference between start and cancel and
             // not start and cancel events individually.
-            assertEquals(name, totalInstances, DummyService.started(name) - DummyService.cancelled(name));
+            assertEquals(totalInstances, DummyService.started(name) - DummyService.cancelled(name), name);
 
             checkCount(name, g, totalInstances);
         }

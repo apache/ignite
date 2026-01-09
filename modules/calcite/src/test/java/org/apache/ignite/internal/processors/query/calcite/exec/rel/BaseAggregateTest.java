@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -26,7 +25,6 @@ import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.core.AggregateCall;
@@ -46,50 +44,46 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Assert;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.CsvSource;
+
+import static org.apache.ignite.internal.processors.query.calcite.exec.rel.BaseAggregateTest.TEST_AGG_PARAM_NUM;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
  */
 @SuppressWarnings("TypeMayBeWeakened")
 @WithSystemProperty(key = "calcite.debug", value = "true")
+@ParameterizedClass(name = "Task executor = {0}, Execution strategy = {1}, type={" + TEST_AGG_PARAM_NUM + "}")
+@CsvSource({
+        "STRIPED, FIFO, SINGLE",
+        "STRIPED, FIFO, MAP_REDUCE",
+        "STRIPED, LIFO, SINGLE",
+        "STRIPED, LIFO, MAP_REDUCE",
+        "STRIPED, RANDOM, SINGLE",
+        "STRIPED, RANDOM, MAP_REDUCE",
+        "QUERY_BLOCKING, FIFO, SINGLE",
+        "QUERY_BLOCKING, FIFO, MAP_REDUCE",
+})
 public abstract class BaseAggregateTest extends AbstractExecutionTest {
     /** Last parameter number. */
     protected static final int TEST_AGG_PARAM_NUM = LAST_PARAM_NUM + 1;
 
     /** */
-    @Parameterized.Parameter(TEST_AGG_PARAM_NUM)
-    public TestAggregateType testAgg;
-
-    /** */
-    @Parameterized.Parameters(name = PARAMS_STRING + ", type={" + TEST_AGG_PARAM_NUM + "}")
-    public static List<Object[]> data() {
-        List<Object[]> extraParams = new ArrayList<>();
-
-        ImmutableList<Object[]> newParams = ImmutableList.of(
-            new Object[] {TestAggregateType.SINGLE},
-            new Object[] {TestAggregateType.MAP_REDUCE}
-        );
-
-        for (Object[] newParam : newParams) {
-            for (Object[] inheritedParam : AbstractExecutionTest.parameters()) {
-                Object[] both = Stream.concat(Arrays.stream(inheritedParam), Arrays.stream(newParam))
-                    .toArray(Object[]::new);
-
-                extraParams.add(both);
-            }
-        }
-
-        return extraParams;
-    }
+    @Parameter(TEST_AGG_PARAM_NUM)
+    TestAggregateType testAgg;
 
     /**
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     @Override public void setup() throws Exception {
         nodesCnt = 1;
         super.setup();
@@ -138,8 +132,8 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
 
         assertTrue(root.hasNext());
 
-        Assert.assertArrayEquals(row(0, 2), root.next());
-        Assert.assertArrayEquals(row(1, 2), root.next());
+        assertArrayEquals(row(0, 2), root.next());
+        assertArrayEquals(row(1, 2), root.next());
 
         assertFalse(root.hasNext());
     }
@@ -187,8 +181,8 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
 
         assertTrue(root.hasNext());
 
-        Assert.assertArrayEquals(row(0, 200), root.next());
-        Assert.assertArrayEquals(row(1, 300), root.next());
+        assertArrayEquals(row(0, 200), root.next());
+        assertArrayEquals(row(1, 300), root.next());
 
         assertFalse(root.hasNext());
     }
@@ -236,8 +230,8 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
 
         assertTrue(root.hasNext());
 
-        Assert.assertArrayEquals(row(0, 1000), root.next());
-        Assert.assertArrayEquals(row(1, 1400), root.next());
+        assertArrayEquals(row(0, 1000), root.next());
+        assertArrayEquals(row(1, 1400), root.next());
 
         assertFalse(root.hasNext());
     }
@@ -285,8 +279,8 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
 
         assertTrue(root.hasNext());
 
-        Assert.assertArrayEquals(row(0, 600), root.next());
-        Assert.assertArrayEquals(row(1, 800), root.next());
+        assertArrayEquals(row(0, 600), root.next());
+        assertArrayEquals(row(1, 800), root.next());
 
         assertFalse(root.hasNext());
     }
@@ -375,8 +369,8 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
         Runnable r = () -> {
             assertTrue(root.hasNext());
 
-            Assert.assertArrayEquals(row(0, output[0]), root.next());
-            Assert.assertArrayEquals(row(1, output[1]), root.next());
+            assertArrayEquals(row(0, output[0]), root.next());
+            assertArrayEquals(row(1, output[1]), root.next());
 
             assertFalse(root.hasNext());
         };
@@ -435,8 +429,8 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
 
         assertTrue(root.hasNext());
 
-        Assert.assertArrayEquals(row(0, 1200), root.next());
-        Assert.assertArrayEquals(row(1, 500), root.next());
+        assertArrayEquals(row(0, 1200), root.next());
+        assertArrayEquals(row(1, 500), root.next());
 
         assertFalse(root.hasNext());
     }
@@ -550,7 +544,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
 
         assertTrue(root.hasNext());
 
-        Assert.assertArrayEquals(row(0, (long)Integer.MAX_VALUE / 2 + (long)Integer.MAX_VALUE / 2 + 11L), root.next());
+        assertArrayEquals(row(0, (long)Integer.MAX_VALUE / 2 + (long)Integer.MAX_VALUE / 2 + 11L), root.next());
 
         assertFalse(root.hasNext());
     }
@@ -596,7 +590,7 @@ public abstract class BaseAggregateTest extends AbstractExecutionTest {
 
         assertTrue(root.hasNext());
 
-        Assert.assertArrayEquals(row(0, new BigDecimal(Long.MAX_VALUE).add(new BigDecimal(10))), root.next());
+        assertArrayEquals(row(0, new BigDecimal(Long.MAX_VALUE).add(new BigDecimal(10))), root.next());
 
         assertFalse(root.hasNext());
     }

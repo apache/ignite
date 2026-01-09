@@ -36,10 +36,12 @@ import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Assert;
 
 import static org.apache.ignite.events.EventType.EVT_SQL_QUERY_EXECUTION;
 import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_USER_QUERIES_REG_NAME;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test base for the tests for user metrics. Contains methods that are common for the scenarios that require and don't
@@ -156,17 +158,17 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
         expMetricsReducer.forEach((mName, expVal) -> {
             long actVal = longMetricValue(REDUCER_IDX, mName);
 
-            Assert.assertEquals("Unexpected value for metric " + mName, (long)expVal, actVal);
+            assertEquals((long)expVal, actVal, "Unexpected value for metric " + mName);
         });
 
         expMetricsMapper.forEach((mName, expVal) -> {
             long actVal = longMetricValue(MAPPER_IDX, mName);
 
-            Assert.assertEquals("Unexpected value for metric " + mName, (long)expVal, actVal);
+            assertEquals((long)expVal, actVal, "Unexpected value for metric " + mName);
         });
 
-        Assert.assertEquals("Unexpected records for SqlQueryExecutionEvent.",
-            qryEvtCnt, SQL_QRY_EXEC_EVT_CNTR.get());
+        assertEquals(qryEvtCnt, SQL_QRY_EXEC_EVT_CNTR.get(),
+            "Unexpected records for SqlQueryExecutionEvent.");
     }
 
     /**
@@ -180,9 +182,9 @@ public class UserQueriesTestBase extends SqlStatisticsAbstractTest {
 
         Metric metric = sqlMemReg.findMetric(metricName);
 
-        Assert.assertNotNull("Didn't find metric " + metricName, metric);
+        assertNotNull(metric, "Didn't find metric " + metricName);
 
-        Assert.assertTrue("Expected long metric, but got " + metric.getClass(), metric instanceof LongMetric);
+        assertInstanceOf(LongMetric.class, metric, "Expected long metric, but got " + metric.getClass());
 
         return ((LongMetric)metric).value();
     }

@@ -41,10 +41,11 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture.EXCHANGE_LATCH_ID;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for {@link ExchangeLatchManager} functionality when latch coordinator is failed.
@@ -310,7 +311,7 @@ public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbs
         // Wait for distributed latch completion.
         finishAllLatches.get(5000);
 
-        Assert.assertFalse("All nodes should complete latches without errors", hasErrors.get());
+        assertFalse(hasErrors.get(), "All nodes should complete latches without errors");
     }
 
     /**

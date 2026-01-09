@@ -22,7 +22,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
-import org.junit.Assert;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Top-level closure class.
@@ -38,8 +39,8 @@ public class TestClosure implements IgniteClosure<Object, Object> {
 
     /** {@inheritDoc} */
     @Override public Object apply(Object o) {
-        Assert.assertNotNull(ignite);
-        Assert.assertNotNull(log);
+        assertNotNull(ignite);
+        assertNotNull(log);
 
         log.info("Closure is running with grid: " + ignite);
 

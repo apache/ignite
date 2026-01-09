@@ -35,8 +35,11 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -117,9 +120,9 @@ public class IgniteWalIteratorExceptionDuringReadTest extends GridCommonAbstract
                 }
             }
             catch (IgniteException e) {
-                Assert.assertNotNull(ptr);
-                Assert.assertEquals(failOnPtr.index(), ptr.index());
-                Assert.assertTrue(ptr.compareTo(failOnPtr) < 0);
+                assertNotNull(ptr);
+                assertEquals(failOnPtr.index(), ptr.index());
+                assertTrue(ptr.compareTo(failOnPtr) < 0);
 
                 failed = X.hasCause(e, TestRuntimeException.class);
             }

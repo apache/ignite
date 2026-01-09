@@ -52,10 +52,14 @@ import org.apache.ignite.spi.discovery.tcp.IgniteDiscoverySpiInternalListenerSup
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Various tests for Messaging public API.
@@ -1066,15 +1070,15 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
             }
         });
 
-        Assert.assertNull(id);
+        assertNull(id);
 
         IgniteFuture<UUID> starFut = msg.future();
 
-        Assert.assertNotNull(starFut);
+        assertNotNull(starFut);
 
         U.sleep(500);
 
-        Assert.assertFalse(starFut.isDone());
+        assertFalse(starFut.isDone());
 
         lsnr.stopBlockCustomEvents();
 
@@ -1088,9 +1092,9 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         id = starFut.get();
 
-        Assert.assertNotNull(id);
+        assertNotNull(id);
 
-        Assert.assertTrue(starFut.isDone());
+        assertTrue(starFut.isDone());
 
         lsnr.blockCustomEvent(StopRoutineDiscoveryMessage.class);
 
@@ -1108,7 +1112,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         IgniteFuture<?> stopFut = msg.future();
 
-        Assert.assertNotNull(stopFut);
+        assertNotNull(stopFut);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -1120,13 +1124,13 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         U.sleep(500);
 
-        Assert.assertFalse(stopFut.isDone());
+        assertFalse(stopFut.isDone());
 
         lsnr.stopBlockCustomEvents();
 
         stopFut.get();
 
-        Assert.assertTrue(stopFut.isDone());
+        assertTrue(stopFut.isDone());
 
         message(ignite1.cluster().forRemotes()).send(topic, "msg2");
 
@@ -1164,19 +1168,19 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
             }
         });
 
-        Assert.assertNotNull(starFut);
+        assertNotNull(starFut);
 
         U.sleep(500);
 
-        Assert.assertFalse(starFut.isDone());
+        assertFalse(starFut.isDone());
 
         lsnr.stopBlockCustomEvents();
 
         UUID id = starFut.get();
 
-        Assert.assertNotNull(id);
+        assertNotNull(id);
 
-        Assert.assertTrue(starFut.isDone());
+        assertTrue(starFut.isDone());
 
         lsnr.blockCustomEvent(StopRoutineDiscoveryMessage.class);
 
@@ -1192,17 +1196,17 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         IgniteFuture<?> stopFut = ignite2.message().stopRemoteListenAsync(id);
 
-        Assert.assertNotNull(stopFut);
+        assertNotNull(stopFut);
 
         U.sleep(500);
 
-        Assert.assertFalse(stopFut.isDone());
+        assertFalse(stopFut.isDone());
 
         lsnr.stopBlockCustomEvents();
 
         stopFut.get();
 
-        Assert.assertTrue(stopFut.isDone());
+        assertTrue(stopFut.isDone());
 
         message(ignite1.cluster().forRemotes()).send(topic, "msg2");
 

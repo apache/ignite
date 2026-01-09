@@ -40,9 +40,12 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -187,13 +190,13 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
     protected void checkDescriptors(IgniteEx ig, Set<String> cacheNames) {
         Collection<DynamicCacheDescriptor> descs = ig.context().cache().cacheDescriptors().values();
 
-        assertEquals("Node name: " + ig.name(), cacheNames.size() + 1, descs.size());
+        assertEquals(cacheNames.size() + 1, descs.size(), "Node name: " + ig.name());
 
         int sysCnt = 0;
 
         for (DynamicCacheDescriptor desc : descs)
             if (!CU.isSystemCache(desc.cacheName()))
-                assertTrue(desc.cacheName(), cacheNames.contains(desc.cacheName()));
+                assertTrue(cacheNames.contains(desc.cacheName()), desc.cacheName());
             else
                 sysCnt++;
 
@@ -233,26 +236,26 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
         IgniteEx ig2 = grid(node2);
         IgniteEx client = grid(nodeClient);
 
-        Assert.assertNotNull(ig1.cache(ccfg1staticName));
-        Assert.assertNotNull(ig1.cache(ccfg2staticName));
-        Assert.assertNotNull(ig1.cache(ccfg3staticName));
+        assertNotNull(ig1.cache(ccfg1staticName));
+        assertNotNull(ig1.cache(ccfg2staticName));
+        assertNotNull(ig1.cache(ccfg3staticName));
 
-        Assert.assertNotNull(ig1.cache(ccfg1staticWithFilterName));
-        Assert.assertNotNull(ig1.cache(ccfg2staticWithFilterName));
+        assertNotNull(ig1.cache(ccfg1staticWithFilterName));
+        assertNotNull(ig1.cache(ccfg2staticWithFilterName));
 
-        Assert.assertNotNull(ig2.cache(ccfg1staticName));
-        Assert.assertNotNull(ig2.cache(ccfg2staticName));
-        Assert.assertNotNull(ig2.cache(ccfg3staticName));
+        assertNotNull(ig2.cache(ccfg1staticName));
+        assertNotNull(ig2.cache(ccfg2staticName));
+        assertNotNull(ig2.cache(ccfg3staticName));
 
-        Assert.assertNotNull(ig2.cache(ccfg3staticWithFilterName));
-        Assert.assertNotNull(ig2.cache(ccfg2staticWithFilterName));
+        assertNotNull(ig2.cache(ccfg3staticWithFilterName));
+        assertNotNull(ig2.cache(ccfg2staticWithFilterName));
 
-        Assert.assertNotNull(client.cache(ccfg1staticName));
-        Assert.assertNotNull(client.cache(ccfg2staticName));
-        Assert.assertNotNull(client.cache(ccfg3staticName));
+        assertNotNull(client.cache(ccfg1staticName));
+        assertNotNull(client.cache(ccfg2staticName));
+        assertNotNull(client.cache(ccfg3staticName));
 
-        Assert.assertNotNull(client.cache(ccfg3staticWithFilterName));
-        Assert.assertNotNull(client.cache(ccfg1staticWithFilterName));
+        assertNotNull(client.cache(ccfg3staticWithFilterName));
+        assertNotNull(client.cache(ccfg1staticWithFilterName));
     }
 
     /**
@@ -265,13 +268,13 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
 
         checkStaticCaches();
 
-        Assert.assertNotNull(ig1.cache(ccfgDynamicName));
-        Assert.assertNotNull(ig1.cache(ccfgDynamicWithFilterName));
+        assertNotNull(ig1.cache(ccfgDynamicName));
+        assertNotNull(ig1.cache(ccfgDynamicWithFilterName));
 
-        Assert.assertNotNull(ig2.cache(ccfgDynamicName));
+        assertNotNull(ig2.cache(ccfgDynamicName));
 
-        Assert.assertNotNull(client.cache(ccfgDynamicName));
-        Assert.assertNotNull(client.cache(ccfgDynamicWithFilterName));
+        assertNotNull(client.cache(ccfgDynamicName));
+        assertNotNull(client.cache(ccfgDynamicWithFilterName));
     }
 
     /**
@@ -282,30 +285,30 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
         IgniteEx ig2 = grid(node2);
         IgniteEx client = grid(nodeClient);
 
-        Assert.assertNull(ig1.cache(ccfg1staticName));
-        Assert.assertNull(ig1.cache(ccfg2staticName));
+        assertNull(ig1.cache(ccfg1staticName));
+        assertNull(ig1.cache(ccfg2staticName));
 
-        Assert.assertNull(ig1.cache(ccfg1staticWithFilterName));
-        Assert.assertNull(ig1.cache(ccfg2staticWithFilterName));
+        assertNull(ig1.cache(ccfg1staticWithFilterName));
+        assertNull(ig1.cache(ccfg2staticWithFilterName));
 
-        Assert.assertNull(ig2.cache(ccfg1staticName));
-        Assert.assertNull(ig2.cache(ccfg2staticName));
+        assertNull(ig2.cache(ccfg1staticName));
+        assertNull(ig2.cache(ccfg2staticName));
 
-        Assert.assertNull(ig2.cache(ccfg2staticWithFilterName));
+        assertNull(ig2.cache(ccfg2staticWithFilterName));
 
-        Assert.assertNull(client.cache(ccfg1staticName));
-        Assert.assertNull(client.cache(ccfg2staticName));
+        assertNull(client.cache(ccfg1staticName));
+        assertNull(client.cache(ccfg2staticName));
 
-        Assert.assertNull(client.cache(ccfg1staticWithFilterName));
+        assertNull(client.cache(ccfg1staticWithFilterName));
 
         if (checkClientCaches) {
-            Assert.assertNull(ig1.cache(ccfg3staticName));
+            assertNull(ig1.cache(ccfg3staticName));
 
-            Assert.assertNull(ig2.cache(ccfg3staticName));
-            Assert.assertNull(ig2.cache(ccfg3staticWithFilterName));
+            assertNull(ig2.cache(ccfg3staticName));
+            assertNull(ig2.cache(ccfg3staticWithFilterName));
 
-            Assert.assertNull(client.cache(ccfg3staticName));
-            Assert.assertNull(client.cache(ccfg3staticWithFilterName));
+            assertNull(client.cache(ccfg3staticName));
+            assertNull(client.cache(ccfg3staticWithFilterName));
         }
 
         Set cachesToCheck = checkClientCaches ? Collections.emptySet()
