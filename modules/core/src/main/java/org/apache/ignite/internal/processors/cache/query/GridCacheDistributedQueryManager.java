@@ -181,10 +181,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         if (req.cancel()) {
             cancelIds.add(new CancelMessageId(req.id(), sndId));
 
-            if (req.fields())
-                removeFieldsQueryResult(sndId, req.id());
-            else
-                removeQueryResult(sndId, req.id());
+            removeQueryResult(sndId, req.id());
         }
         else {
             if (!cancelIds.contains(new CancelMessageId(req.id(), sndId))) {
@@ -207,10 +204,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                         if (info == null)
                             return;
 
-                        if (req.fields())
-                            runFieldsQuery(info);
-                        else
-                            runQuery(info);
+                        runQuery(info);
                     }
                     catch (Throwable e) {
                         U.error(log(), "Failed to run query.", e);
