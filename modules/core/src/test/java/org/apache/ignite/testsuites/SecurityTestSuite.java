@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessorTest;
 import org.apache.ignite.internal.processors.security.InvalidServerTest;
+import org.apache.ignite.internal.processors.security.NodeConnectionCertificateCapturingTest;
 import org.apache.ignite.internal.processors.security.NodeSecurityContextPropagationTest;
 import org.apache.ignite.internal.processors.security.SecurityContextInternalFuturePropagationTest;
 import org.apache.ignite.internal.processors.security.cache.CacheOperationPermissionCheckTest;
@@ -33,7 +34,6 @@ import org.apache.ignite.internal.processors.security.cache.closure.EntryProcess
 import org.apache.ignite.internal.processors.security.cache.closure.ScanQueryRemoteSecurityContextCheckTest;
 import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckTest;
 import org.apache.ignite.internal.processors.security.client.AdditionalSecurityCheckWithGlobalAuthTest;
-import org.apache.ignite.internal.processors.security.client.AttributeSecurityCheckTest;
 import org.apache.ignite.internal.processors.security.client.ClientReconnectTest;
 import org.apache.ignite.internal.processors.security.client.IgniteClientContainSubjectAddressTest;
 import org.apache.ignite.internal.processors.security.client.ThinClientPermissionCheckSecurityTest;
@@ -116,7 +116,6 @@ import org.junit.runners.Suite;
 
     InvalidServerTest.class,
     AdditionalSecurityCheckTest.class,
-    AttributeSecurityCheckTest.class,
     AdditionalSecurityCheckWithGlobalAuthTest.class,
 
     CacheSandboxTest.class,
@@ -145,6 +144,7 @@ import org.junit.runners.Suite;
     NodeJoinPermissionsTest.class,
     ActivationOnJoinWithoutPermissionsWithPersistenceTest.class,
     SecurityContextInternalFuturePropagationTest.class,
+    NodeConnectionCertificateCapturingTest.class,
 })
 public class SecurityTestSuite {
     /** */

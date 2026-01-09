@@ -25,6 +25,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Consumer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -46,7 +47,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.thread.IgniteThread;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -61,9 +61,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.filename.N
 class BinaryMetadataFileStore {
     /** Link to resolved binary metadata directory. Null for non persistent mode */
     private File metadataDir;
-
-    /** */
-    private final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache;
 
     /** */
     private final GridKernalContext ctx;
@@ -81,7 +78,6 @@ class BinaryMetadataFileStore {
     private BinaryMetadataAsyncWriter writer;
 
     /**
-     * @param metadataLocCache Metadata locale cache.
      * @param ctx Context.
      * @param log Logger.
      * @param metadataDir Path to binary metadata store configured by user, should include binary_meta
@@ -89,13 +85,11 @@ class BinaryMetadataFileStore {
      * @param forceEnabled If {@code true} then will write files even if persistence and CDC disabled.
      */
     BinaryMetadataFileStore(
-        final ConcurrentMap<Integer, BinaryMetadataHolder> metadataLocCache,
         final GridKernalContext ctx,
         final IgniteLogger log,
         final File metadataDir,
         final boolean forceEnabled
     ) throws IgniteCheckedException {
-        this.metadataLocCache = metadataLocCache;
         this.ctx = ctx;
 
         enabled = forceEnabled || enabled(ctx.config());
@@ -125,7 +119,7 @@ class BinaryMetadataFileStore {
 
         writer = new BinaryMetadataAsyncWriter();
 
-        new IgniteThread(writer).start();
+        U.newThread(writer).start();
     }
 
     /**
@@ -143,7 +137,7 @@ class BinaryMetadataFileStore {
             return;
 
         try {
-            File file = new File(metadataDir, BinaryUtils.binaryMetaFileName(binMeta.typeId()));
+            File file = new File(metadataDir, NodeFileTree.binaryMetaFileName(binMeta.typeId()));
             File tmpFile = new File(file.getAbsolutePath() + TMP_SUFFIX);
 
             // TODO: delete it on Ignite start. https://issues.apache.org/jira/browse/IGNITE-20897
@@ -187,7 +181,7 @@ class BinaryMetadataFileStore {
 
         ctx.marshallerContext().unregisterClassNameLocally(typeId);
 
-        File file = new File(metadataDir, BinaryUtils.binaryMetaFileName(typeId));
+        File file = new File(metadataDir, NodeFileTree.binaryMetaFileName(typeId));
 
         if (!file.delete()) {
             final String msg = "Failed to remove metadata for typeId: " + typeId;
@@ -206,30 +200,33 @@ class BinaryMetadataFileStore {
 
     /**
      * Restores metadata on startup of {@link CacheObjectBinaryProcessorImpl} but before starting discovery.
+     *
+     * @param consumer Callback invoked on restored binary metadata.
      */
-    void restoreMetadata() {
+    void restoreMetadata(Consumer<BinaryMetadata> consumer) {
         if (!enabled)
             return;
 
         for (File file : metadataDir.listFiles(NodeFileTree::notTmpFile))
-            restoreMetadata(file);
+            restoreMetadata(file, consumer);
     }
 
     /**
      * Restores single type metadata.
      *
      * @param typeId Type identifier.
+     * @param consumer Callback invoked on restored binary metadata.
      */
-    void restoreMetadata(int typeId) {
-        restoreMetadata(new File(metadataDir, BinaryUtils.binaryMetaFileName(typeId)));
+    void restoreMetadata(int typeId, Consumer<BinaryMetadata> consumer) {
+        restoreMetadata(new File(metadataDir, NodeFileTree.binaryMetaFileName(typeId)), consumer);
     }
 
     /** */
-    private void restoreMetadata(File file) {
+    private void restoreMetadata(File file, Consumer<BinaryMetadata> consumer) {
         try (FileInputStream in = new FileInputStream(file)) {
-            BinaryMetadata meta = U.unmarshal(ctx.config().getMarshaller(), in, U.resolveClassLoader(ctx.config()));
+            BinaryMetadata meta = U.unmarshal(ctx.marshaller(), in, U.resolveClassLoader(ctx.config()));
 
-            metadataLocCache.put(meta.typeId(), new BinaryMetadataHolder(meta, 0, 0));
+            consumer.accept(meta);
         }
         catch (Exception e) {
             U.warn(log, "Failed to restore metadata from file: " + file.getName() +
@@ -261,13 +258,13 @@ class BinaryMetadataFileStore {
      * @param typeId typeId of BinaryMetadata to be read.
      */
     private BinaryMetadata readMetadata(int typeId) {
-        File file = new File(metadataDir, BinaryUtils.binaryMetaFileName(typeId));
+        File file = new File(metadataDir, NodeFileTree.binaryMetaFileName(typeId));
 
         if (!file.exists())
             return null;
 
         try (FileInputStream in = new FileInputStream(file)) {
-            return U.unmarshal(ctx.config().getMarshaller(), in, U.resolveClassLoader(ctx.config()));
+            return U.unmarshal(ctx.marshaller(), in, U.resolveClassLoader(ctx.config()));
         }
         catch (Exception e) {
             U.warn(log, "Failed to restore metadata from file: " + file.getName() +

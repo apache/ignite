@@ -51,6 +51,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
+
 /**
  * Tests waiting for unfinished tasks while stopping the grid.
  */
@@ -199,7 +201,8 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
         @NotNull @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
             ses.setAttribute("fail", true);
 
-            ClusterNode node = F.view(subgrid, F.remoteNodes(ignite.configuration().getNodeId())).iterator().next();
+            ClusterNode node = F.view(subgrid, remoteNodes(ignite.configuration().getNodeId()))
+                .iterator().next();
 
             nodeRef.set(node);
 

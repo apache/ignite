@@ -74,11 +74,8 @@ public class IgniteEncryptedWalConverterTest extends GridCommonAbstractTest {
         PrintStream out = new PrintStream(outByte);
 
         IgniteWalConverterArguments arg = new IgniteWalConverterArguments(
-            ft.wal(),
-            ft.walArchive(),
+            ft,
             DataStorageConfiguration.DFLT_PAGE_SIZE,
-            ft.binaryMeta(),
-            ft.marshaller(),
             false,
             null,
             null,

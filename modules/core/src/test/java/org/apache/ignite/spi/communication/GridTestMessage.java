@@ -18,8 +18,8 @@
 package org.apache.ignite.spi.communication;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.UUID;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -95,16 +95,11 @@ public class GridTestMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -112,25 +107,25 @@ public class GridTestMessage implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeUuid(null, srcNodeId))
+                if (!writer.writeUuid(srcNodeId))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeLong(null, msgId))
+                if (!writer.writeLong(msgId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeLong(null, resId))
+                if (!writer.writeLong(resId))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByteArray(null, payload))
+                if (!writer.writeByteArray(payload))
                     return false;
 
                 writer.incrementState();
@@ -145,7 +140,7 @@ public class GridTestMessage implements Message {
 
         switch (reader.state()) {
             case 0:
-                srcNodeId = reader.readUuid(null);
+                srcNodeId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -153,7 +148,7 @@ public class GridTestMessage implements Message {
                 reader.incrementState();
 
             case 1:
-                msgId = reader.readLong(null);
+                msgId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -161,7 +156,7 @@ public class GridTestMessage implements Message {
                 reader.incrementState();
 
             case 2:
-                resId = reader.readLong(null);
+                resId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -169,7 +164,7 @@ public class GridTestMessage implements Message {
                 reader.incrementState();
 
             case 3:
-                payload = reader.readByteArray(null);
+                payload = reader.readByteArray();
 
                 if (!reader.isLastRead())
                     return false;
@@ -186,11 +181,6 @@ public class GridTestMessage implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -200,7 +190,7 @@ public class GridTestMessage implements Message {
 
         GridTestMessage m = (GridTestMessage)o;
 
-        return F.eq(srcNodeId, m.srcNodeId) && F.eq(msgId, m.msgId) && F.eq(resId, m.resId);
+        return Objects.equals(srcNodeId, m.srcNodeId) && Objects.equals(msgId, m.msgId) && Objects.equals(resId, m.resId);
     }
 
     /** {@inheritDoc} */

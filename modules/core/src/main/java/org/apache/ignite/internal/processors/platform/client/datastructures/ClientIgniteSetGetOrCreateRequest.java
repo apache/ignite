@@ -21,7 +21,7 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CollectionConfiguration;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
@@ -96,7 +96,7 @@ public class ClientIgniteSetGetOrCreateRequest extends ClientRequest {
         }
 
         /** {@inheritDoc} */
-        @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+        @Override public void encode(ClientConnectionContext ctx, BinaryWriterEx writer) {
             super.encode(ctx, writer);
 
             if (cacheId != null) {

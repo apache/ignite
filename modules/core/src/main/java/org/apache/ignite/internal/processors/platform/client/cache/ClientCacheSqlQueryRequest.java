@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -40,7 +40,7 @@ public class ClientCacheSqlQueryRequest extends ClientCacheQueryRequest implemen
      *
      * @param reader Reader.
      */
-    public ClientCacheSqlQueryRequest(BinaryRawReaderEx reader) {
+    public ClientCacheSqlQueryRequest(BinaryReaderEx reader) {
         super(reader);
 
         qry = new SqlQuery(reader.readString(), reader.readString())

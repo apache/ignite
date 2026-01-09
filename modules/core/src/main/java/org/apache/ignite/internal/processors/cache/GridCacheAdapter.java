@@ -110,6 +110,8 @@ import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.dr.IgniteDrDataStreamerCacheUpdater;
 import org.apache.ignite.internal.processors.performancestatistics.OperationType;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
+import org.apache.ignite.internal.processors.platform.client.cache.ImmutableArrayMap;
+import org.apache.ignite.internal.processors.platform.client.cache.ImmutableArraySet;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
@@ -125,7 +127,6 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.CIX2;
@@ -470,6 +471,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         CacheOperationContext opCtx = new CacheOperationContext(
             true,
             false,
+            false,
             null,
             false,
             null,
@@ -481,8 +483,31 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteInternalCache<K, V> withSkipReadThrough() {
+        CacheOperationContext opCtx = this.ctx.operationContextPerCall();
+
+        if (opCtx == null) {
+            opCtx = new CacheOperationContext(
+                false,
+                true,
+                false,
+                null,
+                false,
+                null,
+                false,
+                null,
+                null);
+        }
+        else
+            opCtx = opCtx.withSkipReadThrough();
+
+        return new GridCacheProxyImpl<>(this.ctx, this, opCtx);
+    }
+
+    /** {@inheritDoc} */
     @Override public final <K1, V1> GridCacheProxyImpl<K1, V1> keepBinary() {
         CacheOperationContext opCtx = new CacheOperationContext(
+            false,
             false,
             true,
             null,
@@ -507,6 +532,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         CacheOperationContext opCtx = new CacheOperationContext(
             false,
             false,
+            false,
             plc,
             false,
             null,
@@ -520,6 +546,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** {@inheritDoc} */
     @Override public final IgniteInternalCache<K, V> withNoRetries() {
         CacheOperationContext opCtx = new CacheOperationContext(
+            false,
             false,
             false,
             null,
@@ -2111,14 +2138,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return syncOp(new SyncOp<Map<K, EntryProcessorResult<T>>>(keys.size() == 1) {
             @Override public Map<K, EntryProcessorResult<T>> op(GridNearTxLocal tx)
                 throws IgniteCheckedException {
-                Map<? extends K, EntryProcessor<K, V, Object>> invokeMap = F.viewAsMap(keys,
-                    new C1<K, EntryProcessor<K, V, Object>>() {
-                        @Override public EntryProcessor apply(K k) {
-                            return entryProcessor;
-                        }
-                    });
+                Collection<EntryProcessor<K, V, Object>> invokeVals =
+                    Collections.nCopies(keys.size(), (EntryProcessor<K, V, Object>)entryProcessor);
 
-                IgniteInternalFuture<GridCacheReturn> fut = tx.invokeAsync(ctx, null, invokeMap, args);
+                IgniteInternalFuture<GridCacheReturn> fut =
+                    tx.invokeAsync(ctx, null, keys, invokeVals, args);
 
                 Map<K, EntryProcessorResult<T>> res = fut.get().value();
 
@@ -2148,10 +2172,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         IgniteInternalFuture<?> fut = asyncOp(new AsyncOp() {
             @Override public IgniteInternalFuture op(GridNearTxLocal tx, AffinityTopologyVersion readyTopVer) {
-                Map<? extends K, EntryProcessor<K, V, Object>> invokeMap =
-                    Collections.singletonMap(key, (EntryProcessor<K, V, Object>)entryProcessor);
-
-                return tx.invokeAsync(ctx, readyTopVer, invokeMap, args);
+                return tx.invokeAsync(ctx, readyTopVer, Set.of(key), List.of((EntryProcessor<K, V, Object>)entryProcessor), args);
             }
 
             @Override public String toString() {
@@ -2204,13 +2225,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         IgniteInternalFuture<?> fut = asyncOp(new AsyncOp(keys) {
             @Override public IgniteInternalFuture<GridCacheReturn> op(GridNearTxLocal tx,
                 AffinityTopologyVersion readyTopVer) {
-                Map<? extends K, EntryProcessor<K, V, Object>> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor<K, V, Object>>() {
-                    @Override public EntryProcessor apply(K k) {
-                        return entryProcessor;
-                    }
-                });
+                Collection<EntryProcessor<K, V, Object>> invokeVals =
+                    Collections.nCopies(keys.size(), (EntryProcessor<K, V, Object>)entryProcessor);
 
-                return tx.invokeAsync(ctx, readyTopVer, invokeMap, args);
+                return tx.invokeAsync(ctx, readyTopVer, keys, invokeVals, args);
             }
 
             @Override public String toString() {
@@ -2257,10 +2275,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         IgniteInternalFuture<?> fut = asyncOp(new AsyncOp(map.keySet()) {
             @Override public IgniteInternalFuture<GridCacheReturn> op(GridNearTxLocal tx,
                 AffinityTopologyVersion readyTopVer) {
-                return tx.invokeAsync(ctx,
+                return tx.invokeAsync(
+                    ctx,
                     readyTopVer,
-                    (Map<? extends K, ? extends EntryProcessor<K, V, Object>>)map,
-                    args);
+                    map.keySet(),
+                    (Collection<? extends EntryProcessor<K, V, Object>>)map.values(),
+                    args
+                );
             }
 
             @Override public String toString() {
@@ -2308,7 +2329,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             @Nullable @Override public Map<K, EntryProcessorResult<T>> op(GridNearTxLocal tx)
                 throws IgniteCheckedException {
                 IgniteInternalFuture<GridCacheReturn> fut =
-                    tx.invokeAsync(ctx, null, (Map<? extends K, ? extends EntryProcessor<K, V, Object>>)map, args);
+                    tx.invokeAsync(
+                        ctx,
+                        null,
+                        map.keySet(),
+                        (Collection<? extends EntryProcessor<K, V, Object>>)map.values(),
+                        args
+                    );
 
                 Map<K, EntryProcessorResult<T>> val = fut.get().value();
 
@@ -4529,7 +4556,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (m == null || m.size() <= 1)
             return;
 
-        if (m instanceof SortedMap || m instanceof GridSerializableMap)
+        if (m instanceof SortedMap || m instanceof GridSerializableMap || m instanceof ImmutableArrayMap)
             return;
 
         Transaction tx = ctx.kernalContext().cache().transactions().tx();
@@ -4556,7 +4583,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (coll == null || coll.size() <= 1)
             return;
 
-        if (coll instanceof SortedSet || coll instanceof GridCacheAdapter.KeySet)
+        if (coll instanceof SortedSet || coll instanceof GridCacheAdapter.KeySet || coll instanceof ImmutableArraySet)
             return;
 
         // To avoid false positives, once removeAll() is called, cache will never issue Remove All warnings.

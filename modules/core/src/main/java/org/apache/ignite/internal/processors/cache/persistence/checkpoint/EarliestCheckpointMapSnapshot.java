@@ -103,7 +103,7 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         data = U.readMap(in);
         checkpointIds = U.readSet(in);
     }
@@ -168,7 +168,7 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
         }
 
         /** {@inheritDoc} */
-        @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
             parts = U.readIntArray(in);
             cnts = U.readLongArray(in);
             size = in.readInt();

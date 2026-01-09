@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
@@ -58,7 +58,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
     }
 
     /** {@inheritDoc} */
-    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+    @Override public void encode(ClientConnectionContext ctx, BinaryWriterEx writer) {
         super.encode(ctx, writer);
 
         IgniteClusterEx cluster = ctx.kernalContext().grid().cluster();
@@ -118,7 +118,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
      * @param writer Writer.
      * @param node Node.
      */
-    private static boolean writeNode(BinaryRawWriterEx writer, ClusterNode node) {
+    private static boolean writeNode(BinaryWriterEx writer, ClusterNode node) {
         if (node.isClient())
             return false;
 
@@ -150,7 +150,7 @@ public class ClientClusterGroupGetNodesEndpointsResponse extends ClientResponse 
      * @param writer Writer.
      * @param id id.
      */
-    private static void writeUuid(BinaryRawWriterEx writer, UUID id) {
+    private static void writeUuid(BinaryWriterEx writer, UUID id) {
         writer.writeLong(id.getMostSignificantBits());
         writer.writeLong(id.getLeastSignificantBits());
     }

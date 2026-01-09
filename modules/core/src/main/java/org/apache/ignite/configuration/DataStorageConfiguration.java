@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.mem.MemoryAllocator;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.jetbrains.annotations.Nullable;
@@ -212,6 +213,28 @@ public class DataStorageConfiguration implements Serializable {
 
     /** Directory where index and partition files are stored. */
     private String storagePath;
+
+    /** 
+     * Additional directories where index and partition files are stored.
+     * User may want to use dedicated storage for cache if server has several physical disks.
+     * Spreading load across several disks can improve performance.
+     *
+     * @see #getStoragePath()
+     * @see CacheConfiguration#setStoragePaths(String...)
+     */
+    @IgniteExperimental
+    private String[] extraStoragePaths;
+
+    /**
+     * Additional directories where snapshot files are stored.
+     * User may want to use dedicated storage for cache if server has several physical disks.
+     * Spreading snapshot across several disks can improve performance.
+     *
+     * @see IgniteConfiguration#getSnapshotPath()
+     * @see CacheConfiguration#setStoragePaths(String...)
+     */
+    @IgniteExperimental
+    private String[] extraSnapshotPaths;
 
     /** Checkpoint frequency. */
     private long checkpointFreq = DFLT_CHECKPOINT_FREQ;
@@ -556,14 +579,58 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
+     * @return Additional directories where index and partition files are stored.
+     */
+    @IgniteExperimental
+    public String[] getExtraStoragePaths() {
+        return extraStoragePaths;
+    }
+
+    /**
+     * @return Additional directories for snapshots.
+     */
+    @IgniteExperimental
+    public String[] getExtraSnapshotPaths() {
+        return extraSnapshotPaths;
+    }
+
+    /**
      * Sets a path to the root directory where the Persistent Store will persist data and indexes.
-     * By default the Persistent Store's files are located under Ignite work directory.
+     * By default, the Persistent Store's files are located under Ignite work directory.
      *
      * @param persistenceStorePath Persistence store path.
      * @return {@code this} for chaining.
      */
+    @IgniteExperimental
     public DataStorageConfiguration setStoragePath(String persistenceStorePath) {
         this.storagePath = persistenceStorePath;
+
+        return this;
+    }
+
+    /**
+     * Sets a paths to the root directories where the Persistent Store can persist data and indexes.
+     * By default, {@link #getStoragePath()} used.
+     *
+     * @param extraStoragePaths Extra storage paths where persistent data can be stored.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setExtraStoragePaths(String... extraStoragePaths) {
+        this.extraStoragePaths = extraStoragePaths;
+
+        return this;
+    }
+
+    /**
+     * Sets a paths to the root directories where the snapshot files stored.
+     * By default, {@link IgniteConfiguration#getSnapshotPath()} used.
+     * Length of {@code extraSnapshotPaths} must be equal to the length of {@link #getExtraStoragePaths()}.
+     *
+     * @param extraSnapshotPaths Extra snapshot paths where snapshot files can be stored.
+     * @return {@code this} for chaining.
+     */
+    public DataStorageConfiguration setExtraSnapshotPaths(String... extraSnapshotPaths) {
+        this.extraSnapshotPaths = extraSnapshotPaths;
 
         return this;
     }

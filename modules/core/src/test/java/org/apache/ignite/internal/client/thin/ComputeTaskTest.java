@@ -49,7 +49,7 @@ import org.apache.ignite.compute.ComputeTaskName;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
@@ -122,7 +122,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
             T2<UUID, Set<UUID>> val = client.compute().execute(TestTask.class.getName(), null);
 
             assertEquals(nodeId(0), val.get1());
-            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
+            assertEquals(new HashSet<>(ClusterNodeFunc.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
         }
     }
 
@@ -161,7 +161,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
             T2<UUID, Set<UUID>> val = client.compute().execute(TEST_TASK_NAME, null);
 
             assertEquals(nodeId(0), val.get1());
-            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
+            assertEquals(new HashSet<>(ClusterNodeFunc.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
         }
     }
 
@@ -190,7 +190,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
 
             assertTrue(fut.isDone());
             assertEquals(nodeId(0), val.get1());
-            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
+            assertEquals(new HashSet<>(ClusterNodeFunc.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
         }
     }
 
@@ -220,7 +220,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
 
             assertTrue(fut.isDone());
             assertEquals(nodeId(0), val.get1());
-            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
+            assertEquals(new HashSet<>(ClusterNodeFunc.nodeIds(grid(0).cluster().forServers().nodes())), val.get2());
         }
     }
 
@@ -390,7 +390,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
             val = client.compute(grp).execute(TestTask.class.getName(), null);
 
             assertEquals(nodeId(0), val.get1());
-            assertEquals(new HashSet<>(F.nodeIds(grid(0).cluster().nodes())), val.get2());
+            assertEquals(new HashSet<>(ClusterNodeFunc.nodeIds(grid(0).cluster().nodes())), val.get2());
         }
     }
 

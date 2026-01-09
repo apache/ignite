@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -86,6 +85,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
+import static org.apache.ignite.testframework.GridTestUtils.noop;
 
 /**
  * Client-based discovery tests.
@@ -1168,7 +1168,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         assertTrue(checkMetrics(3, 3, 0));
 
-        G.ignite("client-0").compute().broadcast(F.noop());
+        G.ignite("client-0").compute().broadcast(noop());
 
         assertTrue(GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
@@ -1178,7 +1178,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         checkMetrics(3, 3, 1);
 
-        G.ignite("server-0").compute().broadcast(F.noop());
+        G.ignite("server-0").compute().broadcast(noop());
 
         assertTrue(GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
@@ -2572,19 +2572,18 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock,
-            OutputStream out,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses,
             TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             waitFor(writeLock);
 
-            if (!onMessage(sock, msg))
+            if (!onMessage(ses.socket(), msg))
                 return;
 
-            super.writeToSocket(sock, out, msg, timeout);
+            super.writeMessage(ses, msg, timeout);
 
             if (afterWrite != null)
-                afterWrite.apply(msg, sock);
+                afterWrite.apply(msg, ses.socket());
         }
 
         /** {@inheritDoc} */

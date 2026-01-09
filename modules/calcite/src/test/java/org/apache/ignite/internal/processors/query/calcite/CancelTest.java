@@ -28,7 +28,6 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEngine;
@@ -141,9 +140,9 @@ public class CancelTest extends GridCommonAbstractTest {
 
         // Sometimes remote node during stopping can send error to originator node and this error processed before
         // node left event, in this case exception stack will looks like:
-        // IgniteSQLException -> RemoteException -> IgniteInterruptedCheckedException
-        if (!X.hasCause(ex, "node left", ClusterTopologyCheckedException.class) && !(X.hasCause(ex,
-            RemoteException.class) && X.hasCause(ex, IgniteInterruptedCheckedException.class))) {
+        // IgniteSQLException -> RemoteException -> exception on remote node during node stop.
+        if (!X.hasCause(ex, "node left", ClusterTopologyCheckedException.class) &&
+            !X.hasCause(ex, RemoteException.class)) {
             log.error("Unexpected exception", ex);
 
             fail("Unexpected exception: " + ex);
@@ -245,15 +244,6 @@ public class CancelTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < rows; ++i)
             c.put(i, "val_" + i);
-
-        awaitPartitionMapExchange();
-    }
-
-    /**
-     *
-     */
-    private void startNewNode() throws Exception {
-        startGrid(2);
 
         awaitPartitionMapExchange();
     }

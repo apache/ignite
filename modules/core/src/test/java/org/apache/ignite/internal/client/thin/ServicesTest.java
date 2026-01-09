@@ -32,7 +32,7 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientServiceDescriptor;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.client.Person;
-import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.platform.PlatformType;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -71,7 +71,7 @@ public class ServicesTest extends AbstractThinClientTest {
         super.beforeTestsStarted();
 
         System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(useBinaryArrays));
-        BinaryArray.initUseBinaryArrays();
+        BinaryUtils.initUseBinaryArrays();
 
         startGrids(3);
 
@@ -103,7 +103,7 @@ public class ServicesTest extends AbstractThinClientTest {
         super.afterTestsStopped();
 
         System.clearProperty(IGNITE_USE_BINARY_ARRAYS);
-        BinaryArray.initUseBinaryArrays();
+        BinaryUtils.initUseBinaryArrays();
     }
 
     /**

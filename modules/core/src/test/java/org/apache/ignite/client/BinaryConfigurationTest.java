@@ -23,7 +23,7 @@ import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.client.thin.AbstractThinClientTest;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -51,7 +51,7 @@ public class BinaryConfigurationTest extends AbstractThinClientTest {
         Ignite server = startGrid(0);
 
         try (IgniteClient client = startClient(0)) {
-            BinaryObjectImpl res = getClientBinaryObjectFromServer(server, client);
+            BinaryObjectEx res = getClientBinaryObjectFromServer(server, client);
 
             // Server-side defaults are compact footers and full name mapper.
             assertTrue(res.isFlagSet(FLAG_COMPACT_FOOTER));
@@ -79,7 +79,7 @@ public class BinaryConfigurationTest extends AbstractThinClientTest {
                 .setLogger(new ListeningTestLogger(baseCfg.getLogger(), listener));
 
         try (IgniteClient client = Ignition.startClient(clientCfg)) {
-            BinaryObjectImpl res = getClientBinaryObjectFromServer(server, client);
+            BinaryObjectEx res = getClientBinaryObjectFromServer(server, client);
 
             // Server-side defaults are compact footers and full name mapper.
             assertTrue(res.isFlagSet(FLAG_COMPACT_FOOTER));
@@ -105,7 +105,7 @@ public class BinaryConfigurationTest extends AbstractThinClientTest {
                 .setBinaryConfiguration(binaryCfg);
 
         try (IgniteClient client = Ignition.startClient(clientCfg)) {
-            BinaryObjectImpl res = getClientBinaryObjectFromServer(server, client);
+            BinaryObjectEx res = getClientBinaryObjectFromServer(server, client);
 
             assertFalse(res.isFlagSet(FLAG_COMPACT_FOOTER));
             assertEquals("Person", res.type().typeName());
@@ -153,7 +153,7 @@ public class BinaryConfigurationTest extends AbstractThinClientTest {
                 .setLogger(new ListeningTestLogger(baseCfg.getLogger(), listener));
 
         try (IgniteClient client = Ignition.startClient(clientCfg)) {
-            BinaryObjectImpl res = getClientBinaryObjectFromServer(server, client);
+            BinaryObjectEx res = getClientBinaryObjectFromServer(server, client);
 
             assertTrue(res.isFlagSet(FLAG_COMPACT_FOOTER));
             assertEquals("org.apache.ignite.client.Person_", res.type().typeName());
@@ -168,10 +168,10 @@ public class BinaryConfigurationTest extends AbstractThinClientTest {
      * @param client Client.
      * @return Binary object.
      */
-    private BinaryObjectImpl getClientBinaryObjectFromServer(Ignite server, IgniteClient client) {
+    private BinaryObjectEx getClientBinaryObjectFromServer(Ignite server, IgniteClient client) {
         client.getOrCreateCache("c").put(1, new Person(1, "1"));
 
-        return server.cache("c").<Integer, BinaryObjectImpl>withKeepBinary().get(1);
+        return server.cache("c").<Integer, BinaryObjectEx>withKeepBinary().get(1);
     }
 
     /**

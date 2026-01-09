@@ -85,7 +85,7 @@ public abstract class IgniteColocatedAggregateBase extends IgniteAggregate imple
         IgniteDistribution inDistribution = TraitUtils.distribution(inputTraits.get(0));
 
         if (inDistribution.satisfies(IgniteDistributions.single()))
-            return ImmutableList.of(Pair.of(nodeTraits.replace(IgniteDistributions.single()), inputTraits));
+            return ImmutableList.of(Pair.of(nodeTraits.replace(inDistribution), inputTraits));
 
         if (inDistribution.getType() == RelDistribution.Type.HASH_DISTRIBUTED) {
             for (Integer key : inDistribution.getKeys()) {

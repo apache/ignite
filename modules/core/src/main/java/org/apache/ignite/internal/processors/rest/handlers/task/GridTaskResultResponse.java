@@ -17,34 +17,34 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.task;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Task result response.
  */
 public class GridTaskResultResponse implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Result. */
-    @GridDirectTransient
-    private Object res;
+    private @Nullable Object res;
 
     /** Serialized result. */
+    @Order(value = 0, method = "resultBytes")
     private byte[] resBytes;
 
     /** Finished flag. */
+    @Order(1)
     private boolean finished;
 
     /** Flag indicating that task has ever been launched on node. */
+    @Order(2)
     private boolean found;
 
     /** Error. */
+    @Order(value = 3, method = "error")
     private String err;
 
     /**
@@ -52,13 +52,6 @@ public class GridTaskResultResponse implements Message {
      */
     @Nullable public Object result() {
         return res;
-    }
-
-    /**
-     * @param res Task result.
-     */
-    public void result(@Nullable Object res) {
-        this.res = res;
     }
 
     /**
@@ -118,103 +111,31 @@ public class GridTaskResultResponse implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeString("err", err))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeBoolean("finished", finished))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeBoolean("found", found))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeByteArray("resBytes", resBytes))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                err = reader.readString("err");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                finished = reader.readBoolean("finished");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                found = reader.readBoolean("found");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                resBytes = reader.readByteArray("resBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(GridTaskResultResponse.class);
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 77;
     }
 
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
+    /**
+     * Marshals task result to byte array.
+     *
+     * @param ctx Context.
+     * @param res Task result.
+     */
+    public void marshalResult(GridKernalContext ctx, @Nullable Object res) throws IgniteCheckedException {
+        resBytes = U.marshal(ctx, res);
+    }
+
+    /**
+     * Unmarshals task result from byte array.
+     *
+     * @param ctx Context.
+     */
+    public void unmarshalResult(GridKernalContext ctx) throws IgniteCheckedException {
+        if (resBytes != null) {
+            res = U.unmarshal(ctx, resBytes, U.resolveClassLoader(ctx.config()));
+
+            // It is not required anymore.
+            resBytes = null;
+        }
     }
 }

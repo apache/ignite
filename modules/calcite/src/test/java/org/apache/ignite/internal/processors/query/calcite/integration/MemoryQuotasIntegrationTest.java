@@ -138,7 +138,7 @@ public class MemoryQuotasIntegrationTest extends AbstractBasicIntegrationTest {
             .resultSize(800)
             .check();
 
-        assertThrows("SELECT id, b FROM tbl INTERSECT (SELECT 0, x'00')",
+        assertThrows("SELECT /*+ DISABLE_RULE('IntersectReorderRule') */ id, b FROM tbl INTERSECT (SELECT 0, x'00')",
             IgniteException.class, "Query quota exceeded");
 
         sql("CREATE TABLE tbl2 (id INT, b VARBINARY) WITH TEMPLATE=PARTITIONED");

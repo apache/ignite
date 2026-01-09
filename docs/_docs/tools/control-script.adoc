@@ -47,16 +47,16 @@ If you want to connect to a node that is running on a remove machine, specify th
 | --host HOST_OR_IP | The host name or IP address of the node. | `localhost`
 | --port PORT | The port to connect to. | `10800`
 | --user USER | The user name. |
-| --password PASSWORD |The user password. |
+| --password | Force `control.sh` to prompt for a user password before connecting to a cluster. Although you can explicitly specify a value for this option like `--password PASSWORD`, doing so is strongly discouraged due to security concerns. If this option is omitted, `control.sh` will automatically prompt for a user password if the server requires password authentication. However, `control.sh` will waste a connection attempt while determining whether the server needs a password. |
 | --ssl-protocol PROTOCOL1, PROTOCOL2... | A list of SSL protocols to try when connecting to the cluster. link:https://docs.oracle.com/en/java/javase/11/security/java-security-overview1.html#GUID-FCF419A7-B856-46DD-A36F-C6F88F9AF37F[Supported protocols,window=_blank]. | `TLS`
 | --ssl-cipher-suites CIPHER1,CIPHER2...  | A list of SSL ciphers. link:https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#jsse-cipher-suite-names[Supported ciphers,window=_blank]. |
 | --ssl-key-algorithm ALG | The SSL key algorithm. | `SunX509`
 | --keystore-type KEYSTORE_TYPE | The keystore type. | `JKS`
 | --keystore KEYSTORE_PATH | The path to the keystore. Specify a keystore to enable SSL for the control script.|
-| --keystore-password KEYSTORE_PWD | The password to the keystore.  |
+| --keystore-password | Force `control.sh` to prompt for a keystore password before connecting to a cluster. Although you can explicitly specify a value for this option like `--keystore-password KEYSTORE_PWD`, doing so is strongly discouraged due to security concerns. If this option is omitted, `control.sh` will automatically prompt for a keystore password before connecting to the cluster if `--keystore KEYSTORE_PATH` argument is specified. |
 | --truststore-type TRUSTSTORE_TYPE | The type of the truststore. | `JKS`
 | --truststore TRUSTSTORE_PATH | The path to the truststore. |
-| --truststore-password TRUSTSTORE_PWD | The password to the truststore. |
+| --truststore-password | Force `control.sh` to prompt for a truststore password before connecting to a cluster. Although you can explicitly specify a value for this option like `--truststore-password TRUSTSTORE_PWD`, doing so is strongly discouraged due to security concerns. If this option is omitted, `control.sh` will automatically prompt for a truststore password before connecting to the cluster if `--truststore TRUSTSTORE_PATH` argument is specified. |
 | --ssl-factory SSL_FACTORY_PATH | Custom SSL factory Spring xml file path. |
 |===
 
@@ -1294,7 +1294,7 @@ Parameters:
 
 == Working with Cluster Properties
 
-The `control.sh|bat` script provides an ability to work with link:SQL/sql-statistics[SQL statistics,window=_blank] functionality.
+The `control.sh|bat` script allows administrators to view and modify cluster-wide properties.
 
 To get the full list of available properties, use the `--property list` command. This command returns the list of all available properties to work with:
 
@@ -1308,7 +1308,7 @@ control.sh --property list
 tab:Windows[]
 [source,shell]
 ----
-control.bat  --property list
+control.bat --property list
 ----
 --
 
@@ -1324,7 +1324,7 @@ control.sh --property set --name 'statistics.usage.state' --val 'ON'
 tab:Windows[]
 [source,shell]
 ----
-control.bat  --property set --name 'statistics.usage.state' --val 'ON'
+control.bat --property set --name 'statistics.usage.state' --val 'ON'
 ----
 --
 
@@ -1341,6 +1341,44 @@ tab:Windows[]
 [source,shell]
 ----
 control.bat --property get --name 'statistics.usage.state'
+----
+--
+
+NOTE: Available values depend on the property.
+For example, link:SQL/sql-statistics[SQL statistics,window=_blank] use `ON|OFF|NO_UPDATE`, while link:#managing_cluster_connection_properties[Cluster Connection Properties,window=_blank]
+use `true|false`.
+
+=== Managing Cluster Connection Properties
+
+You can control whether new client or server connections are accepted by the cluster setting the cluster-wide properties.
+
+The following properties are available:
+
+[cols="3,5,2,2", opts="header"]
+|===
+|Property | Description | Available values | Default value
+|newClientNodeConnectionsEnabled | If true then new client node connections allowed. | true / false | true
+|newServerNodeConnectionsEnabled | If true then new server node connections allowed. | true / false | true
+|newThinConnectionsEnabled | If true then new thin client connections allowed. | true / false | true
+|newJdbcConnectionsEnabled | If true then new JDBC connections allowed. | true / false | true
+|newOdbcConnectionsEnabled | If true then new ODBC connections allowed. | true / false | true
+|===
+
+NOTE: Setting a property to `false` affects only new connections. Existing connections remain active.
+
+For example, the following command disables new thin client connections:
+
+[tabs]
+--
+tab:Unix[]
+[source,shell]
+----
+control.sh --property set --name newThinConnectionsEnabled --val false
+----
+tab:Windows[]
+[source,shell]
+----
+control.bat --property set --name newThinConnectionsEnabled --val false
 ----
 --
 

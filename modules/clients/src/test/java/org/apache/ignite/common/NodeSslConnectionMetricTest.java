@@ -20,7 +20,6 @@ package org.apache.ignite.common;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.client.ClientConnectionException;
@@ -32,9 +31,6 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientFactory;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.metric.BooleanMetric;
@@ -48,7 +44,6 @@ import org.junit.Test;
 
 import static java.sql.DriverManager.getConnection;
 import static org.apache.ignite.Ignition.startClient;
-import static org.apache.ignite.internal.client.GridClientFactory.start;
 import static org.apache.ignite.internal.managers.discovery.GridDiscoveryManager.DISCO_METRICS;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.CLIENT_CONNECTOR_METRICS;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridTcpRestProtocol.REST_CONNECTOR_METRIC_REGISTRY_NAME;
@@ -83,8 +78,6 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
-
-        GridClientFactory.stopAll(false);
     }
 
     /** {@inheritDoc} */
@@ -171,50 +164,6 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
             SQLException.class);
 
         checkSslCommunicationMetrics(reg, 4, 0, 3);
-    }
-
-    /** Tests SSL metrics produced by REST TCP client connection. */
-    @Test
-    public void testRestClientConnector() throws Exception {
-        MetricRegistry reg = mreg(startClusterNode(0), REST_CONNECTOR_METRIC_REGISTRY_NAME);
-
-        assertEquals(0, reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value());
-        assertEquals(0, reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value());
-
-        try (
-            GridClient ignored = start(gridClientConfiguration("connectorClient", "trustthree", CIPHER_SUITE, "TLSv1.2"))
-        ) {
-            checkSslCommunicationMetrics(reg, 1, 1, 0);
-        }
-
-        assertTrue(reg.<LongMetric>findMetric(SENT_BYTES_METRIC_NAME).value() > 0);
-        assertTrue(reg.<LongMetric>findMetric(RECEIVED_BYTES_METRIC_NAME).value() > 0);
-
-        checkSslCommunicationMetrics(reg, 1, 0, 0);
-
-        // Tests untrusted certificate.
-        try (GridClient ignored = start(gridClientConfiguration("client", "trustthree", CIPHER_SUITE, "TLSv1.2"))) {
-            // GridClient makes 2 additional silent connection attempts if an SSL error occurs.
-        }
-
-        checkSslCommunicationMetrics(reg, 4, 0, 3);
-
-        // Tests unsupported cipher suite.
-        try (
-            GridClient ignored = start(gridClientConfiguration("connectorClient", "trustthree",
-                UNSUPPORTED_CIPHER_SUITE, "TLSv1.2"))
-        ) {
-            // GridClient makes 2 additional silent connection attempts if an SSL error occurs.
-        }
-
-        checkSslCommunicationMetrics(reg, 7, 0, 6);
-
-        // Tests mismatched protocol versions.
-        try (GridClient ignored = start(gridClientConfiguration("connectorClient", "trustthree", null, "TLSv1.1"))) {
-            // GridClient makes 2 additional  silent connection attempts if an SSL error occurs.
-        }
-
-        checkSslCommunicationMetrics(reg, 10, 0, 9);
     }
 
     /** Tests SSL discovery metrics produced by node connection. */
@@ -375,20 +324,6 @@ public class NodeSslConnectionMetricTest extends GridCommonAbstractTest {
         return getConfiguration(getTestIgniteInstanceName(idx))
             .setSslContextFactory(sslContextFactory(keyStore, trustStore, cipherSuite, protocol))
             .setClientMode(client);
-    }
-
-    /** @return Grid client connection configuration with specified SSL options. */
-    private GridClientConfiguration gridClientConfiguration(
-        String keyStore,
-        String trustStore,
-        String cipherSuite,
-        String protocol
-    ) {
-        SslContextFactory sslCtxFactory = sslContextFactory(keyStore, trustStore, cipherSuite, protocol);
-
-        return new GridClientConfiguration()
-            .setServers(Collections.singleton("127.0.0.1:11211"))
-            .setSslContextFactory(sslCtxFactory::create);
     }
 
     /** @return Thin client connection configuration with specified SSL options. */

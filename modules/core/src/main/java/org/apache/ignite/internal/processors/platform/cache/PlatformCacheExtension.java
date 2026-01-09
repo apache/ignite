@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.cache;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 
 /**
@@ -42,6 +42,6 @@ public interface PlatformCacheExtension {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    long processInOutStreamLong(PlatformCache target, int type, BinaryRawReaderEx reader, PlatformMemory mem)
+    long processInOutStreamLong(PlatformCache target, int type, BinaryReaderEx reader, PlatformMemory mem)
         throws IgniteCheckedException;
 }

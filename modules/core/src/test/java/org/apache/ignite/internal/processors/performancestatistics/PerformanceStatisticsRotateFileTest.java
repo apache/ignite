@@ -93,12 +93,16 @@ public class PerformanceStatisticsRotateFileTest extends AbstractPerformanceStat
 
             assertTrue(waitForCondition(lsnr::check, TIMEOUT));
 
-            checkFiles(files, NODES_CNT, NODES_CNT);
+            checkFiles(performanceStatisticsFiles(files), NODES_CNT, NODES_CNT);
+
+            if (i == 0)
+                checkFiles(systemViewStatisticsFiles(files), NODES_CNT, 0);
         }
 
         stopCollectStatistics();
 
-        checkFiles(statisticsFiles(), NODES_CNT * (cnt + 1), NODES_CNT * cnt);
+        checkFiles(performanceStatisticsFiles(statisticsFiles()), NODES_CNT * (cnt + 1), NODES_CNT * cnt);
+        checkFiles(systemViewStatisticsFiles(statisticsFiles()), NODES_CNT, 0);
     }
 
     /** Checks files and operations count. */

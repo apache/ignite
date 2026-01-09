@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.managers.communication;
 
+import java.util.UUID;
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
@@ -28,7 +27,7 @@ import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import static org.apache.ignite.internal.util.IgniteUtils.toBytes;
 
 /** */
-public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommunicationMessageSerializationTest {
+public class IgniteIoCommunicationMessageSerializationTest extends AbstractMessageSerializationTest {
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
         return new GridIoMessageFactory();
@@ -36,15 +35,8 @@ public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommu
 
     /** {@inheritDoc} */
     @Override protected Message initializeMessage(Message msg) throws Exception {
-        if (msg instanceof NodeIdMessage) {
-            int msgSize = U.field(NodeIdMessage.class, "MESSAGE_SIZE");
-
-            FieldUtils.writeField(msg, "nodeIdBytes", new byte[msgSize], true);
-        }
-        else if (msg instanceof GridCacheRawVersionedEntry) {
-            FieldUtils.writeField(msg, "valBytes", new byte[0], true);
-            FieldUtils.writeField(msg, "key", new KeyCacheObjectImpl(), true);
-        }
+        if (msg instanceof NodeIdMessage)
+            FieldUtils.writeField(msg, "nodeId", UUID.randomUUID(), true);
 
         return msg;
     }
@@ -60,32 +52,22 @@ public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommu
         private static final byte[] BYTE_ARR = toBytes(null);
 
         /** */
-        protected Class<? extends Message> msgCls;
-
-        /** */
         public TestIoMessageReader(int capacity) {
             super(capacity);
         }
 
         /** {@inheritDoc} */
-        @Override public void setCurrentReadClass(Class<? extends Message> msgCls) {
-            this.msgCls = msgCls;
-        }
-
-        /** {@inheritDoc} */
-        @Override public byte[] readByteArray(String name) {
-            super.readByteArray(name);
+        @Override public byte[] readByteArray() {
+            super.readByteArray();
 
             return BYTE_ARR;
         }
 
         /** {@inheritDoc} */
-        @Override public <T extends Message> T readMessage(String name) {
-            super.readMessage(name);
+        @Override public IgniteUuid readIgniteUuid() {
+            super.readIgniteUuid();
 
-            return msgCls.equals(GridCacheRawVersionedEntry.class) && "key".equals(name)
-                ? (T)new KeyCacheObjectImpl()
-                : null;
+            return IgniteUuid.randomUuid();
         }
     }
 }

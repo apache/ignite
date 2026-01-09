@@ -34,8 +34,8 @@ import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.IgniteClientFuture;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -286,7 +286,7 @@ class ClientComputeImpl implements ClientCompute {
                 "client not supported by server node (" + ch.clientChannel().serverNodeId() + ')');
         }
 
-        try (BinaryRawWriterEx w = utils.createBinaryWriter(ch.out())) {
+        try (BinaryWriterEx w = utils.createBinaryWriter(ch.out())) {
             if (nodeIds == null) // Include all nodes.
                 w.writeInt(0);
             else {
@@ -432,7 +432,7 @@ class ClientComputeImpl implements ClientCompute {
             if (err == null) {
                 try {
                     R res = payload == null ? null :
-                        utils.readObject(BinaryByteBufferInputStream.create(payload), false);
+                        utils.readObject(BinaryStreams.inputStream(payload), false);
 
                     fut.onDone(res);
                 }

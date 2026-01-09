@@ -240,8 +240,6 @@ public class DumpEntrySerializer {
         if (hasConflictVer)
             verSz *= 2 /*GridCacheVersion otherClusterVersion*/;
 
-        assert ver.fieldsCount() == (hasConflictVer ? 4 : 3);
-
         int keySz = key.valueBytesLength(coCtx);
         int valSz = val.valueBytesLength(coCtx);
 
@@ -251,10 +249,9 @@ public class DumpEntrySerializer {
 
     /**
      * @param dumpFile File to read data from.
-     * @param grp Cache group.
      * @return dump entry.
      */
-    public DumpEntry read(FileIO dumpFile, int grp, int part) throws IOException, IgniteCheckedException {
+    public DumpEntry read(FileIO dumpFile, int part) throws IOException, IgniteCheckedException {
         assert co != null : "Set kernalContext first";
 
         ByteBuffer buf = readRecord(dumpFile);

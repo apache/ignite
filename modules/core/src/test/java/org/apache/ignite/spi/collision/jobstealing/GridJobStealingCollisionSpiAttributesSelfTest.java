@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.collision.CollisionJobContext;
@@ -109,11 +110,11 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
 
         rmtNode.setAttribute(U.spiAttribute(getSpi(), WAIT_JOBS_THRESHOLD_NODE_ATTR), getWaitJobsThreshold());
 
-        ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
+        NodeMetricsMessage metrics = new NodeMetricsMessage();
 
-        metrics.setCurrentWaitingJobs(2);
+        metrics.currentWaitingJobs(2);
 
-        rmtNode.setMetrics(metrics);
+        rmtNode.setMetrics(new ClusterMetricsSnapshot(metrics));
 
         getSpiContext().addNode(rmtNode);
 
@@ -154,7 +155,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
         getSpi().setStealingAttributes(Collections.<String, Serializable>emptyMap());
 
         // Make sure that no message was sent.
-        Serializable msg = getSpiContext().removeSentMessage(rmtNode);
+        Object msg = getSpiContext().removeSentMessage(rmtNode);
 
         // Message should be sent to remote node because it has the same
         // attributes.
@@ -183,7 +184,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
         getSpi().setStealingAttributes(Collections.<String, Serializable>emptyMap());
 
         // Make sure that no message was sent.
-        Serializable msg = getSpiContext().removeSentMessage(rmtNode);
+        Object msg = getSpiContext().removeSentMessage(rmtNode);
 
         // Message should not be sent to remote node at it does not have attribute
         assert msg == null;
@@ -215,7 +216,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
         rmtNode.removeAttribute("useCollision");
 
         // Make sure that no message was sent.
-        Serializable msg = getSpiContext().removeSentMessage(rmtNode);
+        Object msg = getSpiContext().removeSentMessage(rmtNode);
 
         // Message should be sent to remote node because it has the same
         // attributes.
@@ -249,7 +250,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
         getSpi().setStealingAttributes(Collections.<String, Serializable>emptyMap());
 
         // Make sure that no message was sent.
-        Serializable msg = getSpiContext().removeSentMessage(rmtNode);
+        Object msg = getSpiContext().removeSentMessage(rmtNode);
 
         // Message should be sent to remote node because it has the same
         // attributes.
@@ -277,7 +278,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
         getSpi().onCollision(new GridCollisionTestContext(activeCtxs, waitCtxs));
 
         // Make sure that no message was sent.
-        Serializable msg = getSpiContext().removeSentMessage(rmtNode);
+        Object msg = getSpiContext().removeSentMessage(rmtNode);
 
         // Message should be sent to remote node because it has the same
         // attributes.
@@ -307,7 +308,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
         getSpi().onCollision(new GridCollisionTestContext(activeCtxs, waitCtxs));
 
         // Make sure that no message was sent.
-        Serializable msg = getSpiContext().removeSentMessage(rmtNode);
+        Object msg = getSpiContext().removeSentMessage(rmtNode);
 
         // Message should not be sent to remote node because stealing is off
         assert msg == null;
@@ -336,7 +337,7 @@ public class GridJobStealingCollisionSpiAttributesSelfTest extends GridSpiAbstra
         getSpi().onCollision(new GridCollisionTestContext(activeCtxs, waitCtxs));
 
         // Make sure that no message was sent.
-        Serializable msg = getSpiContext().removeSentMessage(rmtNode);
+        Object msg = getSpiContext().removeSentMessage(rmtNode);
 
         // Message should not be sent to remote node because stealing is on
         assert msg != null;

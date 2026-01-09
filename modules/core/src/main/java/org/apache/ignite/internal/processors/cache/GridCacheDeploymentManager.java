@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -328,7 +329,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         ClassLoader keyLdr = U.detectObjectClassLoader(key0);
         ClassLoader valLdr = U.detectObjectClassLoader(val0);
 
-        boolean res = F.eq(ldr, keyLdr) || F.eq(ldr, valLdr);
+        boolean res = Objects.equals(ldr, keyLdr) || Objects.equals(ldr, valLdr);
 
         if (log.isDebugEnabled())
             log.debug(S.toString("Finished examining entry",

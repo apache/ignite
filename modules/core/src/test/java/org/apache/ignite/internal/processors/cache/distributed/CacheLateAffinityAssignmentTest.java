@@ -61,7 +61,6 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -90,7 +89,9 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.spi.discovery.tcp.IgniteDiscoverySpiInternalListenerSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -105,6 +106,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.TestRecordingCommunicationSpi.blockSingleExhangeMessage;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -1396,7 +1398,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
 
-        ((IgniteDiscoverySpi)ignite0.configuration().getDiscoverySpi()).setInternalListener(lsnr);
+        ((IgniteDiscoverySpiInternalListenerSupport)ignite0.configuration().getDiscoverySpi()).setInternalListener(lsnr);
 
         TestRecordingCommunicationSpi commSpi0 =
             (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
@@ -1494,7 +1496,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
 
-        ((IgniteDiscoverySpi)ignite0.configuration().getDiscoverySpi()).setInternalListener(lsnr);
+        ((TestTcpDiscoverySpi)ignite0.configuration().getDiscoverySpi()).setInternalListener(lsnr);
 
         TestRecordingCommunicationSpi commSpi0 =
             (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
@@ -1547,7 +1549,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
 
-        ((IgniteDiscoverySpi)ignite0.configuration().getDiscoverySpi()).setInternalListener(lsnr);
+        ((TestTcpDiscoverySpi)ignite0.configuration().getDiscoverySpi()).setInternalListener(lsnr);
 
         TestRecordingCommunicationSpi spi =
             (TestRecordingCommunicationSpi)ignite0.configuration().getCommunicationSpi();
@@ -2665,8 +2667,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         if (!aff1.equals(aff2)) {
             for (int i = 0; i < aff1.size(); i++) {
-                Collection<UUID> n1 = new ArrayList<>(F.nodeIds(aff1.get(i)));
-                Collection<UUID> n2 = new ArrayList<>(F.nodeIds(aff2.get(i)));
+                Collection<UUID> n1 = new ArrayList<>(nodeIds(aff1.get(i)));
+                Collection<UUID> n2 = new ArrayList<>(nodeIds(aff2.get(i)));
 
                 assertEquals("Wrong affinity [node=" + node.name() +
                     ", topVer=" + topVer +
@@ -2889,8 +2891,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
                                 log.info("Primary changed [cache=" + cacheDesc.cacheConfiguration().getName() +
                                     ", part=" + p +
-                                    ", prev=" + F.nodeIds(nodes0) +
-                                    ", new=" + F.nodeIds(nodes1) + ']');
+                                    ", prev=" + nodeIds(nodes0) +
+                                    ", new=" + nodeIds(nodes1) + ']');
 
                                 break;
                             }

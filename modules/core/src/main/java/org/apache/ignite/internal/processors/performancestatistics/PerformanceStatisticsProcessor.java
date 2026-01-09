@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EventListener;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -60,6 +61,9 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
 
     /** Performance statistics writer. {@code Null} if collecting statistics disabled. */
     @Nullable private volatile FilePerformanceStatisticsWriter writer;
+
+    /** Performance statistics system view writer. {@code Null} if collecting statistics disabled. */
+    @Nullable private SystemViewFileWriter sysViewWriter;
 
     /** Metastorage with the write access. */
     @Nullable private volatile DistributedMetaStorage metastorage;
@@ -365,8 +369,10 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                     return;
 
                 writer = new FilePerformanceStatisticsWriter(ctx);
+                sysViewWriter = new SystemViewFileWriter(ctx);
 
                 writer.start();
+                U.newThread(sysViewWriter).start();
             }
 
             lsnrs.forEach(PerformanceStatisticsStateListener::onStarted);
@@ -385,10 +391,13 @@ public class PerformanceStatisticsProcessor extends GridProcessorAdapter {
                 return;
 
             FilePerformanceStatisticsWriter writer = this.writer;
+            SystemViewFileWriter sysViewWriter = this.sysViewWriter;
 
             this.writer = null;
+            this.sysViewWriter = null;
 
             writer.stop();
+            U.awaitForWorkersStop(Collections.singleton(sysViewWriter), true, log);
         }
 
         log.info("Performance statistics writer stopped.");

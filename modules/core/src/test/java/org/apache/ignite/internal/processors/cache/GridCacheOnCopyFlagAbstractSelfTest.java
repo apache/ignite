@@ -316,8 +316,6 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
 
             GridCacheContext cctx = cache0.context();
 
-            boolean binary = cctx.cacheObjects().isBinaryEnabled(null);
-
             for (Map.Entry<TestKey, TestValue> e : map.entrySet()) {
                 GridCacheEntryEx entry = cache0.peekEx(e.getKey());
 
@@ -329,10 +327,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
 
                 TestKey key1 = entry.key().value(cctx.cacheObjectContext(), true);
 
-                if (!binary)
-                    assertSame(key0, key1);
-                else
-                    assertNotSame(key0, key1);
+                assertNotSame(key0, key1);
 
                 TestValue val0 = entry.rawGet().value(cctx.cacheObjectContext(), false);
 
@@ -373,8 +368,6 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
 
             GridCacheContext cctx = cache0.context();
 
-            boolean binary = cctx.cacheObjects().isBinaryEnabled(null);
-
             for (Map.Entry<TestKey, byte[]> e : map.entrySet()) {
                 GridCacheEntryEx entry = cache0.peekEx(e.getKey());
 
@@ -386,10 +379,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
 
                 TestKey key1 = entry.key().value(cctx.cacheObjectContext(), true);
 
-                if (!binary)
-                    assertSame(key0, key1);
-                else
-                    assertNotSame(key0, key1);
+                assertNotSame(key0, key1);
 
                 byte[] val0 = entry.rawGet().value(cctx.cacheObjectContext(), false);
 

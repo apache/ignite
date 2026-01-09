@@ -19,21 +19,30 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Collection;
 import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Message telling joining node that it has loopback problem (misconfiguration).
  * This means that remote node is configured to use loopback address, but joining node is not, or vise versa.
  */
-public class TcpDiscoveryLoopbackProblemMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryLoopbackProblemMessage extends TcpDiscoveryAbstractMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Remote node addresses. */
-    private final Collection<String> addrs;
+    @Order(value = 5, method = "addresses")
+    private Collection<String> addrs;
 
     /** Remote node host names. */
-    private final Collection<String> hostNames;
+    @Order(6)
+    private Collection<String> hostNames;
+
+    /** */
+    public TcpDiscoveryLoopbackProblemMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -58,14 +67,33 @@ public class TcpDiscoveryLoopbackProblemMessage extends TcpDiscoveryAbstractMess
     }
 
     /**
+     * @param addrs Remote node addresses.
+     */
+    public void addresses(Collection<String> addrs) {
+        this.addrs = addrs;
+    }
+
+    /**
      * @return Remote node host names.
      */
     public Collection<String> hostNames() {
         return hostNames;
     }
 
+    /**
+     * @param hostNames Remote node host names.
+     */
+    public void hostNames(Collection<String> hostNames) {
+        this.hostNames = hostNames;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryLoopbackProblemMessage.class, this, "super", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 5;
     }
 }

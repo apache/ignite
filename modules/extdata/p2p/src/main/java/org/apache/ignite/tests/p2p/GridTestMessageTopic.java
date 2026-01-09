@@ -25,7 +25,7 @@ import java.io.Serializable;
 public class GridTestMessageTopic implements Serializable {
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        return this != o && getClass() == o.getClass();
+        return o != null && this != o && getClass() == o.getClass();
     }
 
     /** {@inheritDoc} */

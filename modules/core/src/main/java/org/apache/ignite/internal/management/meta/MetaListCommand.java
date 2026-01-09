@@ -48,7 +48,7 @@ public class MetaListCommand implements ComputeCommand<IgniteDataTransferObject,
             printer.accept("typeId=" + printInt(m.typeId()) +
                 ", typeName=" + m.typeName() +
                 ", fields=" + m.fields().size() +
-                ", schemas=" + m.schemas().size() +
+                ", schemas=" + m.schemaIds().size() +
                 ", isEnum=" + m.isEnum());
         }
     }

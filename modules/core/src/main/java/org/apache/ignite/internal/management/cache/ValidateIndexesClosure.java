@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -656,7 +657,7 @@ public class ValidateIndexesClosure implements IgniteCallable<ValidateIndexesJob
                 if (idx0 == null)
                     continue;
 
-                if (!F.eq(idx0.indexDefinition().idxName().tableName(), res.tableName()))
+                if (!Objects.equals(idx0.indexDefinition().idxName().tableName(), res.tableName()))
                     continue;
 
                 IndexRow idxRow = new IndexRowImpl(idx0.segment(0).rowHandler(), row);

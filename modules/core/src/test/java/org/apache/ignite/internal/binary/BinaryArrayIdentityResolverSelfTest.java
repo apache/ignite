@@ -246,7 +246,7 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
         BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
 
         if (offheap) {
-            byte[] arr = obj0.array();
+            byte[] arr = obj0.bytes();
 
             long ptr = GridUnsafe.allocateMemory(arr.length);
 
@@ -254,7 +254,7 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
 
             GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF, null, ptr, arr.length);
 
-            obj0 = new BinaryObjectOffheapImpl(obj0.context(), ptr, 0, obj0.array().length);
+            obj0 = new BinaryObjectOffheapImpl(obj0.context(), ptr, 0, obj0.bytes().length);
         }
 
         return obj0;

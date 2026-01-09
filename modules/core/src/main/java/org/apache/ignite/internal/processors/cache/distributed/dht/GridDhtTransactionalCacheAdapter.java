@@ -47,7 +47,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -69,6 +68,7 @@ import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.C2;
@@ -86,6 +86,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 
@@ -258,6 +259,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 null,
                                 req.accessTtl(),
                                 req.skipStore(),
+                                req.skipReadThrough(),
                                 req.keepBinary());
                         }
 
@@ -737,6 +739,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             createTtl,
             accessTtl,
             opCtx != null && opCtx.skipStore(),
+            opCtx != null && opCtx.skipReadThrough(),
             opCtx != null && opCtx.isKeepBinary());
     }
 
@@ -753,6 +756,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param createTtl TTL for create operation.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
+     * @param skipReadThrough Skip read-through cache store flag.
      * @return Lock future.
      */
     public GridDhtFuture<Boolean> lockAllAsyncInternal(@Nullable Collection<KeyCacheObject> keys,
@@ -765,6 +769,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         long createTtl,
         long accessTtl,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary) {
         if (keys == null || keys.isEmpty())
             return new GridDhtFinishedFuture<>(true);
@@ -787,6 +792,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             createTtl,
             accessTtl,
             skipStore,
+            skipReadThrough,
             keepBinary);
 
         if (fut.isDone()) // Possible in case of cancellation or timeout or rollback.
@@ -969,6 +975,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         req.createTtl(),
                         req.accessTtl(),
                         req.skipStore(),
+                        req.skipReadThrough(),
                         req.keepBinary());
 
                     // Add before mapping.
@@ -1041,6 +1048,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req.createTtl(),
                     req.accessTtl(),
                     req.skipStore(),
+                    req.skipReadThrough(),
                     req.keepBinary(),
                     req.nearCache());
 
@@ -1427,7 +1435,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param nodeId Node ID.
      * @param req Request.
      */
-    private void clearLocks(UUID nodeId, GridDistributedUnlockRequest req) {
+    private void clearLocks(UUID nodeId, GridNearUnlockRequest req) {
         assert nodeId != null;
 
         List<KeyCacheObject> keys = req.keys();
@@ -1523,7 +1531,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         Collection<ClusterNode> nearNodes = null;
 
         if (!F.isEmpty(readers)) {
-            nearNodes = ctx.discovery().nodes(readers, F0.not(F.idForNodeId(nodeId)));
+            nearNodes = ctx.discovery().nodes(readers, F0.not(ClusterNodeFunc.idForNodeId(nodeId)));
 
             if (log.isDebugEnabled())
                 log.debug("Mapping entry to near nodes [nodes=" + U.toShortString(nearNodes) + ", entry=" + cached +
@@ -1534,7 +1542,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 log.debug("Entry has no near readers: " + cached);
         }
 
-        map(cached, F.view(dhtNodes, F.remoteNodes(ctx.nodeId())), dhtMap); // Exclude local node.
+        map(cached, F.view(dhtNodes, remoteNodes(ctx.nodeId())), dhtMap); // Exclude local node.
         map(cached, nearNodes, nearMap);
     }
 

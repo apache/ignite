@@ -17,13 +17,14 @@
 
 package org.apache.ignite.dump;
 
-import java.io.File;
 import java.time.Duration;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.lang.IgniteExperimental;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Configuration class of {@link DumpReader}.
@@ -39,8 +40,14 @@ public class DumpReaderConfiguration {
     /** Default thread count. */
     public static final int DFLT_THREAD_CNT = 1;
 
+    /** Dump name. */
+    @Nullable private final String name;
+
     /** Root dump directory. */
-    private final File dir;
+    @Nullable private final String path;
+
+    /** Optional Ignite configuration. */
+    @Nullable private final IgniteConfiguration cfg;
 
     /** Dump consumer. */
     private final DumpConsumer cnsmr;
@@ -67,7 +74,10 @@ public class DumpReaderConfiguration {
     private final boolean keepRaw;
 
     /** Cache group names. */
-    private final String[] cacheGrpNames;
+    private final String[] grpNames;
+
+    /** Cache names. */
+    private final String[] cacheNames;
 
     /** Skip copies. */
     private final boolean skipCopies;
@@ -76,15 +86,19 @@ public class DumpReaderConfiguration {
     private final EncryptionSpi encSpi;
 
     /**
-     * @param dir Root dump directory.
+     * @param name Optional dump name.
+     * @param path Optional path to the dump directory.
+     * @param cfg Ignite configuration to resolve standart paths.
      * @param cnsmr Dump consumer.
      */
-    public DumpReaderConfiguration(File dir, DumpConsumer cnsmr) {
-        this(dir, cnsmr, DFLT_THREAD_CNT, DFLT_TIMEOUT, true, true, false, null, false, null);
+    public DumpReaderConfiguration(String name, @Nullable String path, @Nullable IgniteConfiguration cfg, DumpConsumer cnsmr) {
+        this(name, path, cfg, cnsmr, DFLT_THREAD_CNT, DFLT_TIMEOUT, true, true, false, null, null, false, null);
     }
 
     /**
-     * @param dir Root dump directory.
+     * @param name Optional dump name.
+     * @param path Optional path to the dump directory.
+     * @param cfg Ignite configuration to resolve standart paths.
      * @param cnsmr Dump consumer.
      * @param thCnt Count of threads to consume dumped partitions.
      * @param timeout Timeout of dump reader invocation.
@@ -94,37 +108,54 @@ public class DumpReaderConfiguration {
      * @param keepRaw If {@code true}, doesn't deserialize cache data and keeps {@link DumpEntry#key()} as
      *                {@link KeyCacheObject} and {@link DumpEntry#value()} as {@link CacheObject}. If {@code true},
      *                disables {@link #keepBinary}.
-     * @param cacheGrpNames Cache group names.
+     * @param grpNames Cache group names.
+     * @param cacheNames Cache names.
      * @param skipCopies Skip copies.
      * @param encSpi Encryption SPI.
      */
     public DumpReaderConfiguration(
-        File dir,
+        @Nullable String name,
+        @Nullable String path,
+        @Nullable IgniteConfiguration cfg,
         DumpConsumer cnsmr,
         int thCnt,
         Duration timeout,
         boolean failFast,
         boolean keepBinary,
         boolean keepRaw,
-        String[] cacheGrpNames,
+        String[] grpNames,
+        String[] cacheNames,
         boolean skipCopies,
         EncryptionSpi encSpi
     ) {
-        this.dir = dir;
+        this.name = name;
+        this.path = path;
+        this.cfg = cfg;
         this.cnsmr = cnsmr;
         this.thCnt = thCnt;
         this.timeout = timeout;
         this.failFast = failFast;
         this.keepBinary = keepBinary;
         this.keepRaw = keepRaw;
-        this.cacheGrpNames = cacheGrpNames;
+        this.grpNames = grpNames;
+        this.cacheNames = cacheNames;
         this.skipCopies = skipCopies;
         this.encSpi = encSpi;
     }
 
+    /** @return Root dump name. */
+    public @Nullable String dumpName() {
+        return name;
+    }
+
     /** @return Root dump directiory. */
-    public File dumpRoot() {
-        return dir;
+    public @Nullable String dumpRoot() {
+        return path;
+    }
+
+    /** @return Ignite configuration. */
+    public @Nullable IgniteConfiguration config() {
+        return cfg;
     }
 
     /** @return Dump consumer instance. */
@@ -165,8 +196,13 @@ public class DumpReaderConfiguration {
     }
 
     /** @return Cache group names. */
-    public String[] cacheGroupNames() {
-        return cacheGrpNames;
+    public String[] groupNames() {
+        return grpNames;
+    }
+
+    /** @return Cache names. */
+    public String[] cacheNames() {
+        return cacheNames;
     }
 
     /** @return Skip copies. */

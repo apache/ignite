@@ -42,7 +42,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -325,7 +325,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             assertEquals(0, enumObj.enumOrdinal());
             assertTrue(enumObj.type().isEnum());
-            assertTrue(enumObj instanceof BinaryEnumObjectImpl);
+            assertTrue(BinaryUtils.isBinaryEnumObject(enumObj));
 
             assert e2 != null;
             assert e2.toString().equals(e1.toString());

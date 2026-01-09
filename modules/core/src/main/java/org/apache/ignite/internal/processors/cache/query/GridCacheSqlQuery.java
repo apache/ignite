@@ -17,75 +17,63 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Query.
  */
 public class GridCacheSqlQuery implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     public static final Object[] EMPTY_PARAMS = {};
 
     /** */
+    @Order(value = 0, method = "query")
     @GridToStringInclude(sensitive = true)
     private String qry;
 
     /** */
+    @Order(value = 1, method = "parameterIndexes")
     @GridToStringInclude
     private int[] paramIdxs;
 
     /** */
     @GridToStringInclude
-    @GridDirectTransient
     private LinkedHashMap<String, ?> cols;
-
-    /** Field kept for backward compatibility. */
-    private String alias;
 
     /** Sort columns. */
     @GridToStringInclude
-    @GridDirectTransient
-    private transient List<?> sort;
+    private List<?> sort;
 
     /** If we have partitioned tables in this query. */
     @GridToStringInclude
-    @GridDirectTransient
-    private transient boolean partitioned;
+    private boolean partitioned;
 
     /** Single node to execute the query on. */
+    @Order(2)
     private UUID node;
 
     /** Derived partition info. */
     @GridToStringInclude
-    @GridDirectTransient
-    private transient Object derivedPartitions;
+    private Object derivedPartitions;
 
     /** Flag indicating that query contains sub-queries. */
     @GridToStringInclude
-    @GridDirectTransient
-    private transient boolean hasSubQries;
+    private boolean hasSubQries;
 
     /** Flag indicating that the query contains an OUTER JOIN from REPLICATED to PARTITIONED. */
     @GridToStringInclude
-    @GridDirectTransient
-    private transient boolean treatPartitionedAsReplicated;
+    private boolean treatPartitionedAsReplicated;
 
     /**
-     * For {@link Message}.
+     * Empty constructor.
      */
     public GridCacheSqlQuery() {
         // No-op.
@@ -126,12 +114,9 @@ public class GridCacheSqlQuery implements Message {
 
     /**
      * @param qry Query.
-     * @return {@code this}.
      */
-    public GridCacheSqlQuery query(String qry) {
+    public void query(String qry) {
         this.qry = qry;
-
-        return this;
     }
 
     /**
@@ -143,17 +128,9 @@ public class GridCacheSqlQuery implements Message {
 
     /**
      * @param paramIdxs Parameter indexes.
-     * @return {@code this}.
      */
-    public GridCacheSqlQuery parameterIndexes(int[] paramIdxs) {
+    public void parameterIndexes(int[] paramIdxs) {
         this.paramIdxs = paramIdxs;
-
-        return this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -162,99 +139,8 @@ public class GridCacheSqlQuery implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeString("alias", alias))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeUuid("node", node))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeIntArray("paramIdxs", paramIdxs))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeString("qry", qry))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                alias = reader.readString("alias");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                node = reader.readUuid("node");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                paramIdxs = reader.readIntArray("paramIdxs");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                qry = reader.readString("qry");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(GridCacheSqlQuery.class);
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 112;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
     }
 
     /**
@@ -311,12 +197,9 @@ public class GridCacheSqlQuery implements Message {
 
     /**
      * @param node Single node to execute the query on or {@code null} if need to execute on all the nodes.
-     * @return {@code this}.
      */
-    public GridCacheSqlQuery node(UUID node) {
+    public void node(UUID node) {
         this.node = node;
-
-        return this;
     }
 
     /**

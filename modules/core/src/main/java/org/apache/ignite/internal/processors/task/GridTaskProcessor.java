@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -107,6 +108,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersi
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.SYS_METRICS;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 
 /**
@@ -176,7 +178,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     public GridTaskProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
 
         discoLsnr = new TaskDiscoveryListener();
 
@@ -655,7 +657,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         if (topPred == null) {
             final Collection<ClusterNode> nodes = opts.projection();
 
-            top = nodes != null ? F.nodeIds(nodes) : null;
+            top = nodes != null ? nodeIds(nodes) : null;
         }
 
         boolean internal = false;
@@ -854,7 +856,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         if (existingName == null)
             existingName = tasksMetaCache.getAndPutIfAbsent(key, taskName);
 
-        if (existingName != null && !F.eq(existingName, taskName))
+        if (existingName != null && !Objects.equals(existingName, taskName))
             throw new IgniteCheckedException("Task name hash collision for security-enabled node " +
                 "[taskName=" + taskName +
                 ", existing taskName=" + existingName + ']');
@@ -992,12 +994,10 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 if (node != null) {
                     boolean loc = node.id().equals(ctx.localNodeId()) && !ctx.config().isMarshalLocalJobs();
 
-                    GridTaskSessionRequest req = new GridTaskSessionRequest(
-                        ses.getId(),
-                        s.getJobId(),
-                        loc ? null : U.marshal(marsh, attrs),
-                        attrs
-                    );
+                    GridTaskSessionRequest req = new GridTaskSessionRequest(ses.getId(), s.getJobId(), attrs);
+
+                    if (!loc)
+                        req.marshalAttributes(marsh);
 
                     // Make sure to go through IO manager always, since order
                     // should be preserved here.
@@ -1057,7 +1057,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         lock.readLock();
 
         try {
-            GridTaskWorker<?, ?> task = tasks.get(msg.getSessionId());
+            GridTaskWorker<?, ?> task = tasks.get(msg.sessionId());
 
             if (stopping && !waiting) {
                 U.warn(log, "Received job execution response while stopping grid (will ignore): " + msg
@@ -1094,7 +1094,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         lock.readLock();
 
         try {
-            GridTaskWorker<?, ?> task = tasks.get(msg.getSessionId());
+            GridTaskWorker<?, ?> task = tasks.get(msg.sessionId());
 
             if (stopping && !waiting) {
                 U.warn(log, "Received task session request while stopping grid (will ignore): " + msg
@@ -1112,13 +1112,12 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
             boolean loc = ctx.localNodeId().equals(nodeId) && !ctx.config().isMarshalLocalJobs();
 
-            Map<?, ?> attrs = loc ? msg.getAttributes() :
-                U.<Map<?, ?>>unmarshal(marsh, msg.getAttributesBytes(),
-                    U.resolveClassLoader(task.getTask().getClass().getClassLoader(), ctx.config()));
+            if (!loc)
+                msg.unmarshalAttributes(marsh, U.resolveClassLoader(task.getTask().getClass().getClassLoader(), ctx.config()));
 
             GridTaskSessionImpl ses = task.getSession();
 
-            sendSessionAttributes(attrs, ses);
+            sendSessionAttributes(msg.attributes(), ses);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to deserialize session request: " + msg, e);
@@ -1409,21 +1408,16 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
                 }
 
                 try {
-                    Object topic = req.topic();
-
-                    if (topic == null) {
-                        assert req.topicBytes() != null;
-
-                        topic = U.unmarshal(marsh, req.topicBytes(), U.resolveClassLoader(ctx.config()));
-                    }
+                    Object topic = TOPIC_JOB_SIBLINGS.topic(req.sessionId(), req.topicId());
 
                     boolean loc = ctx.localNodeId().equals(nodeId);
 
-                    ctx.io().sendToCustomTopic(nodeId, topic,
-                        new GridJobSiblingsResponse(
-                            loc ? siblings : null,
-                            loc ? null : U.marshal(marsh, siblings)),
-                        SYSTEM_POOL);
+                    GridJobSiblingsResponse resp = new GridJobSiblingsResponse(siblings);
+
+                    if (!loc)
+                        resp.marshalSiblings(marsh);
+
+                    ctx.io().sendToCustomTopic(nodeId, topic, resp, SYSTEM_POOL);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send job sibling response.", e);
@@ -1605,7 +1599,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
      * execution by its name, and  corresponding to this name task class was not found by the default classloader on
      * the local node.
      */
-    private Class<?> resolveTaskClass(@Nullable String taskName, @Nullable Class<?> taskCls, @Nullable ComputeTask<?, ?> task) {
+    public static Class<?> resolveTaskClass(@Nullable String taskName, @Nullable Class<?> taskCls, @Nullable ComputeTask<?, ?> task) {
         if (taskCls != null)
             return taskCls;
 

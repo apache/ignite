@@ -24,8 +24,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.management.api.ComputeCommand;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.lang.IgniteExperimental;
 
 /** */
@@ -58,7 +58,7 @@ public class MetaRemoveCommand implements ComputeCommand<MetaRemoveCommandArg, M
 
         Path outFile = FileSystems.getDefault().getPath(arg.out() != null
             ? arg.out()
-            : BinaryUtils.binaryMetaFileName(m.typeId())
+            : NodeFileTree.binaryMetaFileName(m.typeId())
         );
 
         try (OutputStream os = Files.newOutputStream(outFile)) {

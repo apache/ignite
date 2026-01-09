@@ -44,13 +44,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
 import org.apache.ignite.internal.util.lang.RunnableX;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.GridStringLogger;
@@ -2234,10 +2232,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         marsh.setContext(getFakeMarshallerCtx());
 
-        BinaryContext ctx = new BinaryContext(BinaryNoopMetadataHandler.instance(),
-            new IgniteConfiguration(), new NullLogger());
+        BinaryContext ctx = U.binaryContext(marsh);
 
-        ctx.configure(marsh);
         ctx.registerUserTypesSchema();
 
         return ctx;

@@ -61,6 +61,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -663,7 +664,7 @@ public class CacheEntryListenersTest extends AbstractThinClientTest {
             int threadsCnt = 20;
             int iterations = 50;
 
-            Set<UUID> allNodesIds = new HashSet<>(F.nodeIds(grid(0).cluster().nodes()));
+            Set<UUID> allNodesIds = new HashSet<>(nodeIds(grid(0).cluster().nodes()));
 
             AtomicInteger threadIdxs = new AtomicInteger();
 

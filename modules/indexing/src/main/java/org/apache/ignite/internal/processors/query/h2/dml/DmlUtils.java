@@ -31,8 +31,7 @@ import java.util.Map;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
@@ -60,6 +59,7 @@ import org.h2.value.ValueTimestamp;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
+import static org.apache.ignite.internal.processors.query.QueryUtils.cacheForDML;
 import static org.apache.ignite.internal.processors.tracing.SpanTags.SQL_CACHE_UPDATES;
 import static org.apache.ignite.internal.processors.tracing.SpanType.SQL_CACHE_UPDATE;
 
@@ -110,7 +110,7 @@ public class DmlUtils {
             // We have to convert arrays of reference types manually -
             // see https://issues.apache.org/jira/browse/IGNITE-4327
             // Still, we only can convert from Object[] to something more precise.
-            if (type == Value.ARRAY && val instanceof BinaryArray)
+            if (type == Value.ARRAY && BinaryUtils.isBinaryArray(val))
                 return val;
 
             if (type == Value.ARRAY && currCls != expCls) {
@@ -206,7 +206,7 @@ public class DmlUtils {
                     .create(SQL_CACHE_UPDATE, MTC.span())
                     .addTag(SQL_CACHE_UPDATES, () -> "1"))
             ) {
-                if (cctx.cache().putIfAbsent(t.getKey(), t.getValue()))
+                if (cacheForDML(cctx.cache()).putIfAbsent(t.getKey(), t.getValue()))
                     return 1;
                 else
                     throw new IgniteSQLException(errMsg + '[' + t.getKey() + "]]", DUPLICATE_KEY);
@@ -316,7 +316,7 @@ public class DmlUtils {
                     .create(SQL_CACHE_UPDATE, MTC.span())
                     .addTag(SQL_CACHE_UPDATES, () -> "1"))
             ) {
-                cctx.cache().put(t.getKey(), t.getValue());
+                cacheForDML(cctx.cache()).put(t.getKey(), t.getValue());
             }
 
             return 1;
@@ -339,7 +339,7 @@ public class DmlUtils {
                             .create(SQL_CACHE_UPDATE, MTC.span())
                             .addTag(SQL_CACHE_UPDATES, () -> Integer.toString(rows.size())))
                     ) {
-                        cctx.cache().putAll(rows);
+                        cacheForDML(cctx.cache()).putAll(rows);
 
                         resCnt += rows.size();
 
@@ -371,10 +371,7 @@ public class DmlUtils {
 
             Object key = row.get(0);
 
-            ClusterNode node = snd.primaryNodeByKey(key);
-
-            IgniteInClosure<MutableEntry<Object, Object>> rmvC =
-                DmlStatementsProcessor.getRemoveClosure(node, key);
+            IgniteInClosure<MutableEntry<Object, Object>> rmvC = DmlStatementsProcessor.RMV;
 
             snd.add(
                 key,
@@ -554,18 +551,16 @@ public class DmlUtils {
         CacheOperationContext opCtx = cctx.operationContextPerCall();
 
         // Force keepBinary for operation context to avoid binary deserialization inside entry processor
-        if (cctx.binaryMarshaller()) {
-            CacheOperationContext newOpCtx = null;
+        CacheOperationContext newOpCtx = null;
 
-            if (opCtx == null)
-                // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
-                newOpCtx = new CacheOperationContext(false, true, null, false, null, false, null, null);
-            else if (!opCtx.isKeepBinary())
-                newOpCtx = opCtx.keepBinary();
+        if (opCtx == null)
+            // Mimics behavior of GridCacheAdapter#keepBinary and GridCacheProxyImpl#keepBinary
+            newOpCtx = new CacheOperationContext(false, false, true, null, false, null, false, null, null);
+        else if (!opCtx.isKeepBinary())
+            newOpCtx = opCtx.keepBinary();
 
-            if (newOpCtx != null)
-                cctx.operationContextPerCall(newOpCtx);
-        }
+        if (newOpCtx != null)
+            cctx.operationContextPerCall(newOpCtx);
 
         return opCtx;
     }

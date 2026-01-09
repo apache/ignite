@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.query.calcite.schema;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -67,9 +66,7 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
@@ -114,6 +111,9 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
     /** */
     private final ImmutableBitSet insertFields;
+
+    /** */
+    private RelDataType tableRowType;
 
     /** */
     public CacheTableDescriptorImpl(GridCacheContextInfo<?, ?> cacheInfo, GridQueryTypeDescriptor typeDesc,
@@ -335,13 +335,11 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         Object key = insertKey(row, ectx);
         Object val = insertVal(row, ectx);
 
-        if (cacheContext().binaryMarshaller()) {
-            if (key instanceof BinaryObjectBuilder)
-                key = ((BinaryObjectBuilder)key).build();
+        if (key instanceof BinaryObjectBuilder)
+            key = ((BinaryObjectBuilder)key).build();
 
-            if (val instanceof BinaryObjectBuilder)
-                val = ((BinaryObjectBuilder)val).build();
-        }
+        if (val instanceof BinaryObjectBuilder)
+            val = ((BinaryObjectBuilder)val).build();
 
         typeDesc.validateKeyAndValue(key, val);
 
@@ -368,7 +366,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
             if (fieldVal != null) {
                 if (key == null)
-                    key = newVal(typeDesc.keyTypeName(), typeDesc.keyClass());
+                    key = newVal(typeDesc.keyTypeName());
 
                 desc.set(key, TypeUtils.fromInternal(ectx, fieldVal, desc.storageType()));
             }
@@ -387,7 +385,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         Object val = hnd.get(valField, row);
 
         if (val == null) {
-            val = newVal(typeDesc.valueTypeName(), typeDesc.valueClass());
+            val = newVal(typeDesc.valueTypeName());
 
             // skip _key and _val
             for (int i = 2; i < descriptors.length; i++) {
@@ -406,44 +404,13 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** */
-    private Object newVal(String typeName, Class<?> typeCls) throws IgniteCheckedException {
+    private Object newVal(String typeName) throws IgniteCheckedException {
         GridCacheContext<?, ?> cctx = cacheContext();
 
-        if (cctx.binaryMarshaller()) {
-            BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
-            cctx.prepareAffinityField(builder);
+        BinaryObjectBuilder builder = cctx.grid().binary().builder(typeName);
+        U.prepareAffinityField(builder, cctx.cacheObjectContext());
 
-            return builder;
-        }
-
-        Class<?> cls = U.classForName(typeName, typeCls);
-
-        try {
-            Constructor<?> ctor = cls.getDeclaredConstructor();
-            ctor.setAccessible(true);
-
-            return ctor.newInstance();
-        }
-        catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
-            throw instantiationException(typeName, e);
-        }
-        catch (NoSuchMethodException | SecurityException e) {
-            try {
-                return GridUnsafe.allocateInstance(cls);
-            }
-            catch (InstantiationException e0) {
-                e0.addSuppressed(e);
-
-                throw instantiationException(typeName, e0);
-            }
-        }
-    }
-
-    /** */
-    private IgniteCheckedException instantiationException(String typeName, ReflectiveOperationException e) {
-        return S.includeSensitive()
-            ? new IgniteCheckedException("Failed to instantiate key [type=" + typeName + ']', e)
-            : new IgniteCheckedException("Failed to instantiate key", e);
+        return builder;
     }
 
     /** */
@@ -469,7 +436,7 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
                 val = TypeUtils.fromInternal(ectx, fieldVal, desc.storageType());
         }
 
-        if (cacheContext().binaryMarshaller() && val instanceof BinaryObjectBuilder)
+        if (val instanceof BinaryObjectBuilder)
             val = ((BinaryObjectBuilder)val).build();
 
         typeDesc.validateKeyAndValue(key, val);
@@ -503,19 +470,16 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     }
 
     /** */
-    private Object clone(Object val) throws IgniteCheckedException {
+    private Object clone(Object val) {
         if (val == null || QueryUtils.isSqlType(val.getClass()))
             return val;
 
         GridCacheContext<?, ?> cctx = cacheContext();
 
-        if (!cctx.binaryMarshaller())
-            return cctx.marshaller().unmarshal(cctx.marshaller().marshal(val), U.resolveClassLoader(cctx.gridConfig()));
-
         BinaryObjectBuilder builder = cctx.grid().binary().builder(
             cctx.grid().binary().<BinaryObject>toBinary(val));
 
-        cctx.prepareAffinityField(builder);
+        U.prepareAffinityField(builder, cctx.cacheObjectContext());
 
         return builder;
     }
@@ -529,18 +493,23 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
     /** {@inheritDoc} */
     @Override public RelDataType rowType(IgniteTypeFactory factory, ImmutableBitSet usedColumns) {
+        if (usedColumns == null && tableRowType != null)
+            return tableRowType;
+
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(factory);
 
         if (usedColumns == null) {
             for (int i = 0; i < descriptors.length; i++)
                 b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
+
+            return tableRowType = b.build();
         }
         else {
             for (int i = usedColumns.nextSetBit(0); i != -1; i = usedColumns.nextSetBit(i + 1))
                 b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
-        }
 
-        return b.build();
+            return b.build();
+        }
     }
 
     /** {@inheritDoc} */
@@ -587,7 +556,28 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
                 assignments0.add(F.isEmpty(partNodes) ? emptyList() : singletonList(F.first(partNodes).id()));
         }
 
-        return ColocationGroup.forAssignments(assignments0);
+        String dcId = cacheContext().kernalContext().discovery().localNode().dataCenterId();
+        Collection<UUID> sameDcNodeIds = dcId == null ? null : new HashSet<>(F.viewReadOnly(
+            cctx.kernalContext().discovery().aliveServerNodes(),
+            ClusterNode::id, n -> Objects.equals(n.dataCenterId(), dcId)));
+
+        if (dcId != null) {
+            List<List<UUID>> curDcAssignments = new ArrayList<>(assignments0.size());
+
+            for (List<UUID> assignment : assignments0) {
+                List<UUID> curDcAssignment = U.arrayList(assignment, sameDcNodeIds::contains);
+
+                // If any assignment become empty after filtration by DC, return original assignments.
+                if (F.isEmpty(curDcAssignment) && !F.isEmpty(assignment))
+                    return ColocationGroup.forCacheAssignments(assignments0);
+
+                curDcAssignments.add(curDcAssignment);
+            }
+
+            return ColocationGroup.forAssignments(curDcAssignments);
+        }
+
+        return ColocationGroup.forCacheAssignments(assignments0);
     }
 
     /** */
@@ -597,29 +587,32 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
         GridDhtPartitionTopology top = cctx.topology();
 
         List<ClusterNode> nodes = cctx.discovery().discoCache(topVer).cacheGroupAffinityNodes(cctx.groupId());
-        List<UUID> nodes0;
+        List<UUID> nodeIds;
 
         top.readLock();
 
         try {
-            if (!top.rebalanceFinished(topVer)) {
-                nodes0 = new ArrayList<>(nodes.size());
+            int parts = top.partitions();
 
-                int parts = top.partitions();
+            List<ClusterNode> nodes0 = top.rebalanceFinished(topVer) ? nodes :
+                U.arrayList(nodes, node -> isOwner(node.id(), top, parts));
 
-                for (ClusterNode node : nodes) {
-                    if (isOwner(node.id(), top, parts))
-                        nodes0.add(node.id());
-                }
+            String dcId = cacheContext().kernalContext().discovery().localNode().dataCenterId();
+
+            if (dcId != null) {
+                List<ClusterNode> curDcNodes = U.arrayList(nodes0, node -> dcId.equals(node.dataCenterId()));
+
+                if (!F.isEmpty(curDcNodes))
+                    nodes0 = curDcNodes;
             }
-            else
-                nodes0 = Commons.transform(nodes, ClusterNode::id);
+
+            nodeIds = Commons.transform(nodes0, ClusterNode::id);
         }
         finally {
             top.readUnlock();
         }
 
-        return ColocationGroup.forNodes(nodes0);
+        return ColocationGroup.forNodes(nodeIds);
     }
 
     /** */

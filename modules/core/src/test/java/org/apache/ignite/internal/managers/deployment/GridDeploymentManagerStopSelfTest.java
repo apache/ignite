@@ -21,7 +21,6 @@ import java.util.Map;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.deployment.DeploymentListener;
@@ -46,7 +45,6 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
 
         GridTestKernalContext ctx = newContext();
 
-        ctx.config().setMarshaller(new JdkMarshaller());
         ctx.config().setDeploymentSpi(spi);
 
         GridResourceProcessor resProc = new GridResourceProcessor(ctx);

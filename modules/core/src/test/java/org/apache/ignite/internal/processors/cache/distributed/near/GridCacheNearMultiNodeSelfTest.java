@@ -60,6 +60,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -650,7 +651,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         Collection<ClusterNode> affNodes = grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(key);
 
-        info("Affinity for key [nodeId=" + U.nodeIds(affNodes) + ", key=" + key + ']');
+        info("Affinity for key [nodeId=" + nodeIds(affNodes) + ", key=" + key + ']');
 
         assertEquals(2, affNodes.size());
 

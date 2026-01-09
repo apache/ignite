@@ -131,7 +131,7 @@ public class CacheScanQueryFailoverTest extends GridCommonAbstractTest {
             cache2.put(i, i); // Put to partition 1.
 
         Iterator iter1 = cache1.query(new ScanQuery<>().setPageSize(1)).iterator();
-        Iterator iter2 = cache1.query(new ScanQuery<>().setPageSize(1)).iterator();
+        Iterator iter2 = cache2.query(new ScanQuery<>().setPageSize(1)).iterator();
 
         // Iter 1 check case, when cursor is switched to evicted partition.
         iter1.next();

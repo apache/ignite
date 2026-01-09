@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -29,6 +30,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 public abstract class GridCacheIdMessage extends GridCacheMessage {
     /** Cache ID. */
     @GridToStringInclude
+    @Order(3)
     protected int cacheId;
 
     /**
@@ -36,11 +38,6 @@ public abstract class GridCacheIdMessage extends GridCacheMessage {
      */
     public int cacheId() {
         return cacheId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean cacheGroupMessage() {
-        return false;
     }
 
     /**
@@ -51,19 +48,15 @@ public abstract class GridCacheIdMessage extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        // TODO: Remove #writeTo() after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
         writer.setBuffer(buf);
 
         if (!super.writeTo(buf, writer))
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -71,7 +64,7 @@ public abstract class GridCacheIdMessage extends GridCacheMessage {
 
         switch (writer.state()) {
             case 3:
-                if (!writer.writeInt("cacheId", cacheId))
+                if (!writer.writeInt(cacheId))
                     return false;
 
                 writer.incrementState();
@@ -83,17 +76,15 @@ public abstract class GridCacheIdMessage extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        // TODO: Remove #readFrom() after all inheritors have migrated to the new ser/der scheme (IGNITE-25490).
         reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
 
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 3:
-                cacheId = reader.readInt("cacheId");
+                cacheId = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -102,12 +93,7 @@ public abstract class GridCacheIdMessage extends GridCacheMessage {
 
         }
 
-        return reader.afterMessageRead(GridCacheIdMessage.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int handlerId() {
-        return cacheId;
+        return true;
     }
 
     /** {@inheritDoc} */

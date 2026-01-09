@@ -26,7 +26,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.IndexQuery;
 import org.apache.ignite.cache.query.IndexQueryCriterion;
 import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.cache.query.InIndexQueryCriterion;
 import org.apache.ignite.internal.cache.query.RangeIndexQueryCriterion;
 import org.apache.ignite.internal.processors.platform.client.ClientBitmaskFeature;
@@ -52,7 +52,7 @@ public class ClientCacheIndexQueryRequest extends ClientCacheQueryRequest {
      * @param protocolCtx
      */
     public ClientCacheIndexQueryRequest(
-        BinaryRawReaderEx reader,
+        BinaryReaderEx reader,
         ClientProtocolContext protocolCtx
     ) {
         super(reader);
@@ -105,7 +105,7 @@ public class ClientCacheIndexQueryRequest extends ClientCacheQueryRequest {
     }
 
     /** */
-    private IndexQueryCriterion readCriterion(BinaryRawReaderEx reader) {
+    private IndexQueryCriterion readCriterion(BinaryReaderEx reader) {
         byte type = reader.readByte();
 
         if (type == (byte)0)
@@ -117,7 +117,7 @@ public class ClientCacheIndexQueryRequest extends ClientCacheQueryRequest {
     }
 
     /** */
-    private IndexQueryCriterion readRangeCriterion(BinaryRawReaderEx reader) {
+    private IndexQueryCriterion readRangeCriterion(BinaryReaderEx reader) {
         String field = reader.readString();
 
         boolean lowerIncl = reader.readBoolean();
@@ -138,7 +138,7 @@ public class ClientCacheIndexQueryRequest extends ClientCacheQueryRequest {
     }
 
     /** */
-    private IndexQueryCriterion readInCriterion(BinaryRawReaderEx reader) {
+    private IndexQueryCriterion readInCriterion(BinaryReaderEx reader) {
         String field = reader.readString();
 
         int valsCnt = reader.readInt();

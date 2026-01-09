@@ -34,9 +34,6 @@ import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_PO
  */
 public class QueryBlockingTaskExecutor extends AbstractQueryTaskExecutor {
     /** */
-    private final QueryTasksQueue tasksQueue = new QueryTasksQueue();
-
-    /** */
     private IgniteThreadPoolExecutor executor;
 
     /** */
@@ -57,8 +54,10 @@ public class QueryBlockingTaskExecutor extends AbstractQueryTaskExecutor {
     @Override public void onStart(GridKernalContext ctx) {
         super.onStart(ctx);
 
+        QueryTasksQueue tasksQueue = new QueryTasksQueue(ctx.config().getQueryThreadPoolSize());
+
         executor = new IgniteThreadPoolExecutor(
-            "calciteQry",
+            THREAD_PREFIX,
             ctx.igniteInstanceName(),
             ctx.config().getQueryThreadPoolSize(),
             ctx.config().getQueryThreadPoolSize(),
@@ -79,6 +78,8 @@ public class QueryBlockingTaskExecutor extends AbstractQueryTaskExecutor {
         executor.prestartAllCoreThreads();
 
         executor.registerMetrics(ctx.metric().registry(metricName(THREAD_POOLS, THREAD_POOL_NAME)));
+
+        ctx.pools().addExecutorForStarvationDetection("calcite", executor);
     }
 
     /** {@inheritDoc} */

@@ -19,7 +19,6 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.util.BitSet;
 import java.util.Collection;
@@ -94,6 +93,7 @@ import org.jetbrains.annotations.TestOnly;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.SEPARATOR;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.NOOP;
 import static org.apache.ignite.spi.communication.tcp.internal.TcpConnectionIndexAwareMessage.UNDEFINED_CONNECTION_INDEX;
 
@@ -375,10 +375,14 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     }
 
     /**
-     * @return Listener.
+     * @param metricName Metric name.
+     * @return {@code True} if the metric name is a pure TCP Communication metric. {@code False} if is other metric or
+     * metric of other TCP Communication component.
      */
-    public CommunicationListener getListener() {
-        return lsnr;
+    public static boolean isCommunicationMetrics(String metricName) {
+        return metricName.startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR)
+            && !metricName.startsWith(ConnectionClientPool.SHARED_METRICS_REGISTRY_NAME + SEPARATOR)
+            && !metricName.equals(ConnectionClientPool.SHARED_METRICS_REGISTRY_NAME);
     }
 
     /** {@inheritDoc} */
@@ -417,42 +421,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         return metricsLsnr.receivedBytesCount();
     }
 
-    /**
-     * Gets received messages counts (grouped by type).
-     *
-     * @return Map containing message types and respective counts.
-     */
-    public Map<String, Long> getReceivedMessagesByType() {
-        return metricsLsnr.receivedMessagesByType();
-    }
-
-    /**
-     * Gets received messages counts (grouped by node).
-     *
-     * @return Map containing sender nodes and respective counts.
-     */
-    public Map<UUID, Long> getReceivedMessagesByNode() {
-        return metricsLsnr.receivedMessagesByNode();
-    }
-
-    /**
-     * Gets sent messages counts (grouped by type).
-     *
-     * @return Map containing message types and respective counts.
-     */
-    public Map<String, Long> getSentMessagesByType() {
-        return metricsLsnr.sentMessagesByType();
-    }
-
-    /**
-     * Gets sent messages counts (grouped by node).
-     *
-     * @return Map containing receiver nodes and respective counts.
-     */
-    public Map<UUID, Long> getSentMessagesByNode() {
-        return metricsLsnr.sentMessagesByNode();
-    }
-
     /** {@inheritDoc} */
     @Override public int getOutboundMessagesQueueSize() {
         GridNioServer<Message> srv = nioSrvWrapper.nio();
@@ -463,17 +431,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     /** {@inheritDoc} */
     @Override public void resetMetrics() {
         metricsLsnr.resetMetrics();
-    }
-
-    /**
-     * @param consistentId Consistent id of the node.
-     * @param nodeId Left node ID.
-     */
-    void onNodeLeft(Object consistentId, UUID nodeId) {
-        assert nodeId != null;
-
-        metricsLsnr.onNodeLeft(consistentId);
-        clientPool.onNodeLeft(nodeId);
     }
 
     /**
@@ -651,7 +608,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         }
 
         if (cfg.connectionsPerNode() > 1)
-            connPlc = new RoundRobinConnectionPolicy(cfg);
+            connPlc = new RoundRobinConnectionPolicy(cfg.connectionsPerNode());
         else
             connPlc = new FirstConnectionPolicy();
 
@@ -702,7 +659,7 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             commWorker,
             ignite.configuration(),
             this.srvLsnr,
-            getName(),
+            igniteInstanceName,
             getWorkersRegistry(ignite),
             ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().metric() : null,
             this::createTcpClient,
@@ -738,7 +695,8 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
             this,
             stateProvider,
             nioSrvWrapper,
-            getName()
+            getName(),
+            ((IgniteEx)ignite).context().metric()
         ));
 
         this.srvLsnr.setClientPool(clientPool);
@@ -861,6 +819,11 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         ((CommunicationDiscoveryEventListener)discoLsnr).metricsListener(metricsLsnr);
 
         ctxInitLatch.countDown();
+    }
+
+    /** @return {@code true} if {@code IgniteSpiContext} is initialized. */
+    public boolean spiContextInitialized() {
+        return ctxInitLatch.getCount() == 0;
     }
 
     /** {@inheritDoc} */
@@ -1169,32 +1132,6 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
     }
 
     /**
-     * Process errors if TCP/IP {@link GridNioSession} creation to remote node hasn't been performed.
-     *
-     * @param node Remote node.
-     * @param addrs Remote node addresses.
-     * @param errs TCP client creation errors.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void processSessionCreationError(
-        ClusterNode node,
-        Collection<InetSocketAddress> addrs,
-        IgniteCheckedException errs
-    ) throws IgniteCheckedException {
-        nioSrvWrapper.processSessionCreationError(node, addrs, errs);
-    }
-
-    /**
-     * @param node Node.
-     * @return {@code True} if remote current node cannot receive TCP connections. Applicable for client nodes only.
-     */
-    private boolean forceClientToServerConnections(ClusterNode node) {
-        Boolean forceClientToSrvConnections = node.attribute(createSpiAttributeName(ATTR_FORCE_CLIENT_SERVER_CONNECTIONS));
-
-        return Boolean.TRUE.equals(forceClientToSrvConnections);
-    }
-
-    /**
      * @param sndId Sender ID.
      * @param msg Communication message.
      * @param msgC Closure to call when message processing finished.
@@ -1231,28 +1168,9 @@ public class TcpCommunicationSpi extends TcpCommunicationConfigInitializer {
         clientPool.forceClose();
     }
 
-    /**
-     * @param msg Error message.
-     * @param e Exception.
-     */
-    private void onException(String msg, Exception e) {
-        getExceptionRegistry().onException(msg, e);
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpCommunicationSpi.class, this);
-    }
-
-    /**
-     * Write message type to byte buffer.
-     *
-     * @param buf Byte buffer.
-     * @param type Message type.
-     */
-    public static void writeMessageType(ByteBuffer buf, short type) {
-        buf.put((byte)(type & 0xFF));
-        buf.put((byte)((type >> 8) & 0xFF));
     }
 
     /**

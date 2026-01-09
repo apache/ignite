@@ -80,7 +80,7 @@ public class ScheduleIndexRebuildJobRes extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         cacheToIndexes = U.readMap(in);
         notFoundIndexes = U.readMap(in);
         notFoundCacheNames = U.readSet(in);

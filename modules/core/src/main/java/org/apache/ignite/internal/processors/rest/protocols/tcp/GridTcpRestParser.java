@@ -34,13 +34,13 @@ import org.apache.ignite.internal.processors.rest.client.message.GridRouterRespo
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
 import org.apache.ignite.internal.util.GridByteArrayList;
-import org.apache.ignite.internal.util.GridClientByteUtils;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.nio.GridNioParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -78,7 +78,7 @@ public class GridTcpRestParser implements GridNioParser {
      * @param routerClient Router client flag.
      */
     public GridTcpRestParser(boolean routerClient) {
-        this(routerClient, new JdkMarshaller());
+        this(routerClient, Marshallers.jdk());
     }
 
     /**
@@ -533,9 +533,9 @@ public class GridTcpRestParser implements GridNioParser {
                 byte[] hdrBytes = statefulRead(buf, tmp, 40);
 
                 if (hdrBytes != null) {
-                    long reqId = GridClientByteUtils.bytesToLong(hdrBytes, 0);
-                    UUID clientId = GridClientByteUtils.bytesToUuid(hdrBytes, 8);
-                    UUID destId = GridClientByteUtils.bytesToUuid(hdrBytes, 24);
+                    long reqId = U.bytesToLong(hdrBytes, 0);
+                    UUID clientId = U.bytesToUuid(hdrBytes, 8);
+                    UUID destId = U.bytesToUuid(hdrBytes, 24);
 
                     state.header(new HeaderData(reqId, clientId, destId));
                 }
@@ -820,7 +820,7 @@ public class GridTcpRestParser implements GridNioParser {
             if (extras.length - len > 0) {
                 byte[] cacheName = new byte[extras.length - len];
 
-                U.arrayCopy(extras, len, cacheName, 0, extras.length - len);
+                GridUnsafe.arrayCopy(extras, len, cacheName, 0, extras.length - len);
 
                 req.cacheName(new String(cacheName, UTF_8));
             }

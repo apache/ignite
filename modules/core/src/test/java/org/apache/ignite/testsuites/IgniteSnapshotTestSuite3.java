@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.BufferedFileIOTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.IgniteCacheDumpDataStructuresTest;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.IgniteCacheDumpFilterTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.IgniteCacheDumpSelf2Test;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.IgniteCacheDumpSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.dump.IgniteConcurrentCacheDumpTest;
@@ -44,7 +46,9 @@ public class IgniteSnapshotTestSuite3 {
     public static void addSnapshotTests(List<Class<?>> suite, Collection<Class> ignoredTests) {
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheDumpSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteCacheDumpSelf2Test.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheDumpDataStructuresTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, IgniteConcurrentCacheDumpTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheDumpFilterTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, BufferedFileIOTest.class, ignoredTests);
     }
 }

@@ -87,6 +87,6 @@ class PerfStatTest(IgniteTest):
 
             self.logger.debug(files)
 
-            assert len(files) == 2
+            assert len(files) == 3
 
             assert all([filename.endswith(".prf") for filename in files])

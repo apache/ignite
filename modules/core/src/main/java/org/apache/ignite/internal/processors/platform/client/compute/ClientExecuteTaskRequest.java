@@ -21,7 +21,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -52,7 +52,7 @@ public class ClientExecuteTaskRequest extends ClientRequest {
      *
      * @param reader Reader.
      */
-    public ClientExecuteTaskRequest(BinaryRawReaderEx reader) {
+    public ClientExecuteTaskRequest(BinaryReaderEx reader) {
         super(reader);
 
         int cnt = reader.readInt();

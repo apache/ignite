@@ -35,6 +35,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -50,12 +51,12 @@ import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
@@ -129,9 +130,6 @@ public class QueryUtils {
     /** Discovery history size. */
     private static final int DISCO_HIST_SIZE =
         getInteger(IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE, DFLT_INDEXING_DISCOVERY_HISTORY_SIZE);
-
-    /** */
-    private static final Class<?> GEOMETRY_CLASS = U.classForName("org.locationtech.jts.geom.Geometry", null);
 
     /** */
     private static final Set<Class<?>> SQL_TYPES = createSqlTypes();
@@ -261,11 +259,12 @@ public class QueryUtils {
     /**
      * Normalize cache query entities.
      *
+     * @param recoveryMode Value of {@link GridKernalContext#recoveryMode()}.
      * @param entities Query entities.
      * @param cfg Cache config.
      * @return Normalized query entities.
      */
-    public static Collection<QueryEntity> normalizeQueryEntities(GridKernalContext ctx,
+    public static Collection<QueryEntity> normalizeQueryEntities(boolean recoveryMode,
         Collection<QueryEntity> entities, CacheConfiguration<?, ?> cfg) {
         Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
 
@@ -273,7 +272,7 @@ public class QueryUtils {
             if (!F.isEmpty(entity.getNotNullFields()))
                 checkNotNullAllowed(cfg);
 
-            normalEntities.add(normalizeQueryEntity(ctx, entity, cfg.isSqlEscapeAll()));
+            normalEntities.add(normalizeQueryEntity(recoveryMode, entity, cfg.isSqlEscapeAll()));
         }
 
         return normalEntities;
@@ -283,11 +282,12 @@ public class QueryUtils {
      * Normalize query entity. If "escape" flag is set, nothing changes. Otherwise we convert all object names to
      * upper case and replace inner class separator characters ('$' for Java and '.' for .NET) with underscore.
      *
+     * @param recoveryMode Value of {@link GridKernalContext#recoveryMode()}.
      * @param entity Query entity.
      * @param escape Escape flag taken form configuration.
      * @return Normalized query entity.
      */
-    public static QueryEntity normalizeQueryEntity(GridKernalContext ctx, QueryEntity entity, boolean escape) {
+    public static QueryEntity normalizeQueryEntity(boolean recoveryMode, QueryEntity entity, boolean escape) {
         if (escape) {
             String tblName = tableName(entity);
 
@@ -381,7 +381,7 @@ public class QueryUtils {
 
         validateQueryEntity(normalEntity);
 
-        if (!ctx.recoveryMode())
+        if (!recoveryMode)
             normalEntity.fillAbsentPKsWithDefaults(true);
         else if (entity instanceof QueryEntityEx)
             normalEntity.fillAbsentPKsWithDefaults(((QueryEntityEx)entity).fillAbsentPKsWithDefaults());
@@ -473,11 +473,14 @@ public class QueryUtils {
         throws IgniteCheckedException {
         CacheConfiguration<?, ?> ccfg = cacheInfo.config();
 
-        boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
-
         CacheObjectContext coCtx = ctx.cacheObjects().contextForCache(ccfg);
 
-        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(cacheName, coCtx);
+        QueryTypeDescriptorImpl desc = new QueryTypeDescriptorImpl(
+            cacheName,
+            coCtx,
+            ctx.cacheObjects(),
+            ctx.config().getSqlConfiguration().isValidationEnabled()
+        );
 
         desc.schemaName(schemaName);
 
@@ -508,14 +511,14 @@ public class QueryUtils {
 
         desc.tableName(qryEntity.getTableName());
 
-        if (binaryEnabled && !keyOrValMustDeserialize) {
+        if (!keyOrValMustDeserialize) {
             // Safe to check null.
-            if (SQL_TYPES.contains(valCls))
+            if (valCls != null && isSqlType(valCls))
                 desc.valueClass(valCls);
             else
                 desc.valueClass(Object.class);
 
-            if (SQL_TYPES.contains(keyCls))
+            if (isSqlType(keyCls))
                 desc.keyClass(keyCls);
             else
                 desc.keyClass(Object.class);
@@ -535,7 +538,7 @@ public class QueryUtils {
         desc.keyFieldName(qryEntity.getKeyFieldName());
         desc.valueFieldName(qryEntity.getValueFieldName());
 
-        if (binaryEnabled && keyOrValMustDeserialize) {
+        if (keyOrValMustDeserialize) {
             if (keyMustDeserialize)
                 mustDeserializeClss.add(keyCls);
 
@@ -548,7 +551,7 @@ public class QueryUtils {
 
         int valTypeId = ctx.cacheObjects().typeId(qryEntity.findValueType());
 
-        if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
+        if (valCls == null || !keyOrValMustDeserialize) {
             processBinaryMeta(ctx, qryEntity, desc);
 
             typeId = new QueryTypeIdKey(cacheName, valTypeId);
@@ -621,6 +624,8 @@ public class QueryUtils {
             desc.primaryKeyInlineSize(-1);
             desc.affinityFieldInlineSize(-1);
         }
+
+        desc.onInitialized();
 
         return new QueryTypeCandidate(typeId, altTypeId, desc);
     }
@@ -950,11 +955,13 @@ public class QueryUtils {
     public static GridQueryProperty buildProperty(Class<?> keyCls, Class<?> valCls, String keyFieldName,
         String valueFieldName, String pathStr, Class<?> resType, Map<String, String> aliases, boolean notNull,
         CacheObjectContext coCtx) throws IgniteCheckedException {
+        String alias = aliases.get(pathStr);
+
         if (pathStr.equals(keyFieldName))
-            return new KeyOrValProperty(true, pathStr, keyCls);
+            return new KeyOrValProperty(true, alias == null ? pathStr : alias, keyCls);
 
         if (pathStr.equals(valueFieldName))
-            return new KeyOrValProperty(false, pathStr, valCls);
+            return new KeyOrValProperty(false, alias == null ? pathStr : alias, valCls);
 
         return buildClassProperty(keyCls,
                 valCls,
@@ -1134,7 +1141,7 @@ public class QueryUtils {
      * @return {@code True} if will be deserialized.
      */
     private static boolean mustDeserializeBinary(GridKernalContext ctx, Class cls) {
-        if (cls != null && cls != Object.class && ctx.config().getMarshaller() instanceof BinaryMarshaller) {
+        if (cls != null && cls != Object.class) {
             CacheObjectBinaryProcessorImpl proc0 = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
 
             return proc0.binaryContext().mustDeserialize(cls);
@@ -1152,17 +1159,7 @@ public class QueryUtils {
     public static boolean isSqlType(Class<?> cls) {
         cls = U.box(cls);
 
-        return SQL_TYPES.contains(cls) || QueryUtils.isGeometryClass(cls);
-    }
-
-    /**
-     * Checks if the given class is GEOMETRY.
-     *
-     * @param cls Class.
-     * @return {@code true} If this is geometry.
-     */
-    public static boolean isGeometryClass(Class<?> cls) {
-        return GEOMETRY_CLASS != null && GEOMETRY_CLASS.isAssignableFrom(cls);
+        return SQL_TYPES.contains(cls) || U.isGeometryClass(cls);
     }
 
     /**
@@ -1290,13 +1287,13 @@ public class QueryUtils {
         Set<String> tblNames = new HashSet<>();
 
         for (DynamicCacheDescriptor desc : descs) {
-            if (F.eq(ccfg.getName(), desc.cacheName()))
+            if (Objects.equals(ccfg.getName(), desc.cacheName()))
                 continue;
 
             String descSchema = normalizeSchemaName(desc.cacheName(),
                 desc.cacheConfiguration().getSqlSchema());
 
-            if (!F.eq(schema, descSchema))
+            if (!Objects.equals(schema, descSchema))
                 continue;
 
             for (QueryEntity e : desc.schema().entities()) {
@@ -1504,11 +1501,11 @@ public class QueryUtils {
      * @return {@code null} if it's OK to remove the column and exception otherwise.
      */
     public static SchemaOperationException validateDropColumn(QueryEntity entity, String fieldName, String colName) {
-        if (F.eq(fieldName, entity.getKeyFieldName()) || KEY_FIELD_NAME.equalsIgnoreCase(fieldName))
+        if (Objects.equals(fieldName, entity.getKeyFieldName()) || KEY_FIELD_NAME.equalsIgnoreCase(fieldName))
             return new SchemaOperationException("Cannot drop column \"" + colName +
                 "\" because it represents an entire cache key");
 
-        if (F.eq(fieldName, entity.getValueFieldName()) || VAL_FIELD_NAME.equalsIgnoreCase(fieldName))
+        if (Objects.equals(fieldName, entity.getValueFieldName()) || VAL_FIELD_NAME.equalsIgnoreCase(fieldName))
             return new SchemaOperationException("Cannot drop column \"" + colName +
                 "\" because it represents an entire cache value");
 
@@ -1539,11 +1536,11 @@ public class QueryUtils {
      * @return {@code null} if it's OK to remove the column and exception otherwise.
      */
     public static SchemaOperationException validateDropColumn(GridQueryTypeDescriptor type, String colName) {
-        if (F.eq(colName, type.keyFieldName()) || KEY_FIELD_NAME.equalsIgnoreCase(colName))
+        if (Objects.equals(colName, type.keyFieldName()) || KEY_FIELD_NAME.equalsIgnoreCase(colName))
             return new SchemaOperationException("Cannot drop column \"" + colName +
                 "\" because it represents an entire cache key");
 
-        if (F.eq(colName, type.valueFieldName()) || VAL_FIELD_NAME.equalsIgnoreCase(colName))
+        if (Objects.equals(colName, type.valueFieldName()) || VAL_FIELD_NAME.equalsIgnoreCase(colName))
             return new SchemaOperationException("Cannot drop column \"" + colName +
                 "\" because it represents an entire cache value");
 
@@ -1638,7 +1635,7 @@ public class QueryUtils {
     public static String fieldNameByAlias(QueryEntity entity, String alias) {
         if (!F.isEmpty(entity.getAliases())) {
             for (Map.Entry<String, String> aliasEntry : entity.getAliases().entrySet()) {
-                if (F.eq(aliasEntry.getValue(), alias))
+                if (Objects.equals(aliasEntry.getValue(), alias))
                     return aliasEntry.getKey();
             }
         }
@@ -1703,6 +1700,11 @@ public class QueryUtils {
 
                 break;
 
+            case SchemaOperationException.CODE_INVALID_SCHEMA:
+                sqlCode = IgniteQueryErrorCode.INVALID_SCHEMA;
+
+                break;
+
             default:
                 sqlCode = IgniteQueryErrorCode.UNKNOWN;
         }
@@ -1716,7 +1718,7 @@ public class QueryUtils {
      * @param schemaName Schema name.
      */
     public static void isDdlOnSchemaSupported(String schemaName) {
-        if (F.eq(SCHEMA_SYS, schemaName))
+        if (Objects.equals(SCHEMA_SYS, schemaName))
             throw new IgniteSQLException("DDL statements are not supported on " + schemaName + " schema",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
@@ -1788,6 +1790,14 @@ public class QueryUtils {
             return val instanceof java.time.LocalDateTime || val instanceof java.util.Date;
 
         return false;
+    }
+
+    /** */
+    public static <K, V> IgniteInternalCache<K, V> cacheForDML(IgniteInternalCache<K, V> c) {
+        if (!c.configuration().isReadThrough() || c.configuration().isLoadPreviousValue())
+            return c;
+        else
+            return c.withSkipReadThrough();
     }
 
     /**

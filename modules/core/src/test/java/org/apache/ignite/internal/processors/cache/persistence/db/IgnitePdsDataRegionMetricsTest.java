@@ -407,7 +407,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         File cacheWorkDir = metaStore
             ? ft.metaStorage()
-            : ft.cacheStorage(node.cachex(cacheName).configuration());
+            : ft.defaultCacheStorage(node.cachex(cacheName).configuration());
 
         long totalPersistenceSize = 0;
 

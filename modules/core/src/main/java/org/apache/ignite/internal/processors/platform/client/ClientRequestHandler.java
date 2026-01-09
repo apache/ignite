@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientAsyncResponse;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -115,11 +115,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
             return handle0(req);
         }
         catch (SecurityException ex) {
-            throw new IgniteClientException(
-                ClientStatus.SECURITY_VIOLATION,
-                "Client is not authorized to perform this operation",
-                ex
-            );
+            throw IgniteClientException.wrapAuthorizationExeption(ex);
         }
     }
 
@@ -172,7 +168,7 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeHandshake(BinaryWriterExImpl writer) {
+    @Override public void writeHandshake(BinaryWriterEx writer) {
         writer.writeBoolean(true);
 
         if (protocolCtx.isFeatureSupported(BITMAP_FEATURES))

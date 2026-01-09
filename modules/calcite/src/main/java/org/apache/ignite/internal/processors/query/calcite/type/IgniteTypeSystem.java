@@ -111,4 +111,9 @@ public class IgniteTypeSystem extends RelDataTypeSystemImpl implements Serializa
 
         return typeFactory.createTypeWithNullability(sumType, argumentType.isNullable());
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean shouldConvertRaggedUnionTypesToVarying() {
+        return true;
+    }
 }

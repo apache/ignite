@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
@@ -300,7 +301,7 @@ public class SqlFieldTypeValidationOnKeyValueInsertTest extends AbstractIndexing
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
-            return obj instanceof Person && F.eq(((Person)obj).name, name);
+            return obj instanceof Person && Objects.equals(((Person)obj).name, name);
         }
     }
 

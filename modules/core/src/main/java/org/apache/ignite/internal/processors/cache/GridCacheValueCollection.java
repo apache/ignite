@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import javax.cache.Cache;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridSerializableCollection;
@@ -133,7 +134,7 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
         for (Iterator<Cache.Entry<K, V>> it = map.values().iterator(); it.hasNext();) {
             Cache.Entry<K, V> e = it.next();
 
-            if (F.isAll(e, filter) && F.eq(o, e.getValue())) {
+            if (F.isAll(e, filter) && Objects.equals(o, e.getValue())) {
                 it.remove();
 
                 ctx.grid().cache(ctx.name()).remove(e.getKey(), e.getValue());
@@ -155,7 +156,7 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
         A.notNull(o, "o");
 
         for (Cache.Entry<K, V> e : map.values())
-            if (F.isAll(e, filter) && F.eq(e.getValue(), o))
+            if (F.isAll(e, filter) && Objects.equals(e.getValue(), o))
                 return true;
 
         return false;

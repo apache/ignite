@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.collision.jobstealing;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,6 +25,7 @@ import java.util.UUID;
 import org.apache.ignite.GridTestTaskSession;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.collision.CollisionJobContext;
@@ -91,9 +91,11 @@ public class GridJobStealingCollisionSpiCustomTopologySelfTest extends
         addSpiDependency(rmtNode1);
         addSpiDependency(rmtNode2);
 
-        ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
+        NodeMetricsMessage metricsMsg = new NodeMetricsMessage();
 
-        metrics.setCurrentWaitingJobs(2);
+        metricsMsg.currentWaitingJobs(2);
+
+        ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot(metricsMsg);
 
         rmtNode1.setMetrics(metrics);
         rmtNode2.setMetrics(metrics);
@@ -155,15 +157,15 @@ public class GridJobStealingCollisionSpiCustomTopologySelfTest extends
         checkNoAction((GridTestCollisionJobContext)waitCtxs.get(2));
 
         // Make sure that no message was sent.
-        Serializable msg1 = getSpiContext().removeSentMessage(getSpiContext().localNode());
+        Object msg1 = getSpiContext().removeSentMessage(getSpiContext().localNode());
 
         assert msg1 == null;
 
-        Serializable mgs2 = getSpiContext().removeSentMessage(rmtNode1);
+        Object mgs2 = getSpiContext().removeSentMessage(rmtNode1);
 
         assert mgs2 == null;
 
-        Serializable msg3 = getSpiContext().removeSentMessage(rmtNode2);
+        Object msg3 = getSpiContext().removeSentMessage(rmtNode2);
 
         assert msg3 == null;
     }

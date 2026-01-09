@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -193,7 +194,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            if (F.eq(g.name(), nearOnlyIgniteInstanceName)) {
+            if (Objects.equals(g.name(), nearOnlyIgniteInstanceName)) {
                 for (int k = 0; k < 10000; k++) {
                     IgniteCache<Object, Object> cache = g.cache(DEFAULT_CACHE_NAME);
 

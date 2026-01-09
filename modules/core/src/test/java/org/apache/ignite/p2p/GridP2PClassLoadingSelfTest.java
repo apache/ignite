@@ -29,7 +29,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -37,6 +36,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
 
 /**
@@ -148,7 +148,7 @@ public class GridP2PClassLoadingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            return F.eqNodes(this, o);
+            return eqNodes(this, o);
         }
 
         /** {@inheritDoc} */

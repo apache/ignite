@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client.cache;
 
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientBooleanResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -32,7 +32,7 @@ public class ClientCachePutIfAbsentRequest extends ClientCacheKeyValueRequest {
      *
      * @param reader Reader.
      */
-    public ClientCachePutIfAbsentRequest(BinaryRawReaderEx reader) {
+    public ClientCachePutIfAbsentRequest(BinaryReaderEx reader) {
         super(reader);
     }
 

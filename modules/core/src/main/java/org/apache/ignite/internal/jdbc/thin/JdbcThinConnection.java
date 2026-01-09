@@ -77,12 +77,12 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.MarshallerPlatformIds;
-import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.jdbc2.JdbcBlob;
 import org.apache.ignite.internal.jdbc2.JdbcClob;
 import org.apache.ignite.internal.jdbc2.JdbcUtils;
@@ -121,12 +121,12 @@ import org.apache.ignite.internal.sql.optimizer.affinity.PartitionClientContext;
 import org.apache.ignite.internal.sql.optimizer.affinity.PartitionResult;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -297,7 +297,7 @@ public class JdbcThinConnection implements Connection {
         netTimeout = connProps.getConnectionTimeout();
         qryTimeout = connProps.getQueryTimeout();
         maintenanceExecutor = Executors.newScheduledThreadPool(2,
-            new IgniteThreadFactory(ctx.configuration().getIgniteInstanceName(), "jdbc-maintenance"));
+            new IgniteThreadFactory(ctx.igniteInstanceName(), "jdbc-maintenance"));
 
         schema = JdbcUtils.normalizeSchema(connProps.getSchema());
 
@@ -317,6 +317,14 @@ public class JdbcThinConnection implements Connection {
 
         holdability = isTxAwareQueriesSupported ? CLOSE_CURSORS_AT_COMMIT : HOLD_CURSORS_OVER_COMMIT;
         txIsolation = defaultTransactionIsolation();
+
+        if (connProps.isLocal()) {
+            if (connProps.getAddresses().length != 1
+                || connProps.getAddresses()[0].portFrom() != connProps.getAddresses()[0].portTo()) {
+                LOG.warning("Local flag is supposed to be used only when exactly one address is specified, " +
+                    "otherwise the local query may be executed on an unexpected node");
+            }
+        }
     }
 
     /** Create new binary context. */
@@ -324,11 +332,12 @@ public class JdbcThinConnection implements Connection {
         BinaryMarshaller marsh = new BinaryMarshaller();
         marsh.setContext(marshCtx);
 
-        BinaryConfiguration binCfg = new BinaryConfiguration().setCompactFooter(true);
-
-        BinaryContext ctx = new BinaryContext(metaHnd, new IgniteConfiguration(), new NullLogger());
-
-        ctx.configure(marsh, binCfg);
+        BinaryContext ctx = U.binaryContext(
+            metaHnd,
+            marsh,
+            new IgniteConfiguration().setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(true)),
+            NullLogger.INSTANCE
+        );
 
         ctx.registerUserTypesSchema();
 
@@ -1608,7 +1617,7 @@ public class JdbcThinConnection implements Connection {
         void addBatch(String sql, List<Object> args) throws SQLException {
             checkError();
 
-            boolean newQry = (args == null || !F.eq(lastStreamQry, sql));
+            boolean newQry = (args == null || !Objects.equals(lastStreamQry, sql));
 
             // Providing null as SQL here allows for recognizing subbatches on server and handling them more efficiently.
             JdbcQuery q = new JdbcQuery(newQry ? sql : null, args != null ? args.toArray() : null);
@@ -1976,74 +1985,78 @@ public class JdbcThinConnection implements Connection {
      */
     private IgniteProductVersion connectInBestEffortAffinityMode(
         IgniteProductVersion baseEndpointVer) throws SQLException {
-        List<Exception> exceptions = null;
+        try {
+            List<Exception> exceptions = null;
 
-        for (int i = 0; i < connProps.getAddresses().length; i++) {
-            HostAndPortRange srv = connProps.getAddresses()[i];
+            for (int i = 0; i < connProps.getAddresses().length; i++) {
+                HostAndPortRange srv = connProps.getAddresses()[i];
 
-            try {
-                InetAddress[] addrs = InetAddress.getAllByName(srv.host());
+                try {
+                    InetAddress[] addrs = InetAddress.getAllByName(srv.host());
 
-                for (InetAddress addr : addrs) {
-                    for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
-                        try {
-                            JdbcThinTcpIo cliIo =
-                                new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port), ctx, 0);
+                    for (InetAddress addr : addrs) {
+                        for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
+                            try {
+                                JdbcThinTcpIo cliIo =
+                                    new JdbcThinTcpIo(connProps, new InetSocketAddress(addr, port), ctx, 0);
 
-                            if (!cliIo.isPartitionAwarenessSupported()) {
-                                cliIo.close();
+                                if (!cliIo.isPartitionAwarenessSupported()) {
+                                    cliIo.close();
 
-                                throw new SQLException("Failed to connect to Ignite node [url=" +
-                                    connProps.getUrl() + "]. address = [" + addr + ':' + port + "]." +
-                                    "Node doesn't support partition awareness mode.",
-                                    INTERNAL_ERROR);
+                                    throw new SQLException("Failed to connect to Ignite node [url=" +
+                                        connProps.getUrl() + "]. address = [" + addr + ':' + port + "]." +
+                                        "Node doesn't support partition awareness mode.",
+                                        INTERNAL_ERROR);
+                                }
+
+                                IgniteProductVersion endpointVer = cliIo.igniteVersion();
+
+                                if (baseEndpointVer != null && baseEndpointVer.compareTo(endpointVer) > 0) {
+                                    cliIo.close();
+
+                                    throw new SQLException("Failed to connect to Ignite node [url=" +
+                                        connProps.getUrl() + "], address = [" + addr + ':' + port + "]," +
+                                        "the node version [" + endpointVer + "] " +
+                                        "is smaller than the base one [" + baseEndpointVer + "].",
+                                        INTERNAL_ERROR);
+                                }
+
+                                cliIo.timeout(netTimeout);
+
+                                JdbcThinTcpIo ioToSameNode = ios.putIfAbsent(cliIo.nodeId(), cliIo);
+
+                                // This can happen if the same node has several IPs or if connection manager background
+                                // timer task runs concurrently.
+                                if (ioToSameNode != null)
+                                    cliIo.close();
+                                else
+                                    connCnt.incrementAndGet();
+
+                                return cliIo.igniteVersion();
                             }
+                            catch (Exception exception) {
+                                if (exceptions == null)
+                                    exceptions = new ArrayList<>();
 
-                            IgniteProductVersion endpointVer = cliIo.igniteVersion();
-
-                            if (baseEndpointVer != null && baseEndpointVer.compareTo(endpointVer) > 0) {
-                                cliIo.close();
-
-                                throw new SQLException("Failed to connect to Ignite node [url=" +
-                                    connProps.getUrl() + "], address = [" + addr + ':' + port + "]," +
-                                    "the node version [" + endpointVer + "] " +
-                                    "is smaller than the base one [" + baseEndpointVer + "].",
-                                    INTERNAL_ERROR);
+                                exceptions.add(exception);
                             }
-
-                            cliIo.timeout(netTimeout);
-
-                            JdbcThinTcpIo ioToSameNode = ios.putIfAbsent(cliIo.nodeId(), cliIo);
-
-                            // This can happen if the same node has several IPs or if connection manager background
-                            // timer task runs concurrently.
-                            if (ioToSameNode != null)
-                                cliIo.close();
-                            else
-                                connCnt.incrementAndGet();
-
-                            return cliIo.igniteVersion();
-                        }
-                        catch (Exception exception) {
-                            if (exceptions == null)
-                                exceptions = new ArrayList<>();
-
-                            exceptions.add(exception);
                         }
                     }
                 }
-            }
-            catch (Exception exception) {
-                if (exceptions == null)
-                    exceptions = new ArrayList<>();
+                catch (Exception exception) {
+                    if (exceptions == null)
+                        exceptions = new ArrayList<>();
 
-                exceptions.add(exception);
+                    exceptions.add(exception);
+                }
             }
+
+            handleConnectExceptions(exceptions);
         }
-
-        handleConnectExceptions(exceptions);
-
-        isTxAwareQueriesSupported = defaultIo().isTxAwareQueriesSupported();
+        finally {
+            if (!ios.isEmpty())
+                isTxAwareQueriesSupported = defaultIo().isTxAwareQueriesSupported();
+        }
 
         return null;
     }
@@ -2465,7 +2478,7 @@ public class JdbcThinConnection implements Connection {
 
         /** {@inheritDoc} */
         @Override public JdkMarshaller jdkMarshaller() {
-            return new JdkMarshaller();
+            return Marshallers.jdk();
         }
     }
 
@@ -2474,7 +2487,7 @@ public class JdbcThinConnection implements Connection {
      */
     private class JdbcBinaryMetadataHandler extends BlockingJdbcChannel implements BinaryMetadataHandler {
         /** In-memory metadata cache. */
-        private final BinaryMetadataHandler cache = BinaryCachingMetadataHandler.create();
+        private final BinaryMetadataHandler cache = BinaryUtils.cachingMetadataHandler();
 
         /** {@inheritDoc} */
         @Override public void addMeta(int typeId, BinaryType meta, boolean failIfUnregistered)

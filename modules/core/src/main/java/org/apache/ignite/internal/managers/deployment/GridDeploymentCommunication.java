@@ -93,7 +93,7 @@ class GridDeploymentCommunication {
             }
         };
 
-        marsh = ctx.config().getMarshaller();
+        marsh = ctx.marshaller();
     }
 
     /**

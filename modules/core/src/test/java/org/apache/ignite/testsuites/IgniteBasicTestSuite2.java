@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClientRe
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheClientRequestsMappingTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheFSRestoreTest;
 import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheSeparateDirectoryTest;
+import org.apache.ignite.internal.processors.cache.MdcCacheReadRequestsRoutingTest;
 import org.apache.ignite.internal.processors.cache.RebalanceWithDifferentThreadPoolSizeTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteRejectConnectOnNodeStopTest;
 import org.apache.ignite.internal.processors.cache.persistence.defragmentation.LinkMapTest;
@@ -71,6 +72,7 @@ import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
 import org.apache.ignite.internal.processors.database.CacheFreeListSelfTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
+import org.apache.ignite.internal.processors.database.FreeListCutTailDifferentGcTest;
 import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.failure.FailureProcessorLoggingTest;
@@ -225,6 +227,9 @@ import org.junit.runners.Suite;
 
     ConcurrentMappingFileReadWriteTest.class,
     PeriodicHistogramMetricImplTest.class,
+
+    FreeListCutTailDifferentGcTest.class,
+    MdcCacheReadRequestsRoutingTest.class,
 })
 public class IgniteBasicTestSuite2 {
 }

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.spi.systemview.view.sql;
 
+import java.util.Objects;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.systemview.view.SystemView;
 
 /**
@@ -42,7 +42,7 @@ public class SqlTableView {
 
         if (affCol != null) {
             // Only explicit affinity column should be shown. Do not do this for _KEY or it's alias.
-            if (!F.eq(tbl.type().keyFieldName(), affCol) && !F.eq(tbl.type().keyFieldAlias(), affCol))
+            if (!Objects.equals(tbl.type().keyFieldName(), affCol) && !Objects.equals(tbl.type().keyFieldAlias(), affCol))
                 affColName = affCol;
         }
     }

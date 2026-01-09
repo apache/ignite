@@ -64,6 +64,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Abstra
 import static org.apache.ignite.internal.processors.performancestatistics.AbstractPerformanceStatisticsTest.ClientType.THIN_CLIENT;
 import static org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor.indexQueryText;
 import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.junit.Assume.assumeFalse;
 
 /** Tests query performance statistics. */
@@ -319,7 +320,7 @@ public class PerformanceStatisticsQueryTest extends AbstractPerformanceStatistic
         else if (clientType == THIN_CLIENT) {
             thinClient.cache(DEFAULT_CACHE_NAME).query(qry).getAll();
 
-            expNodeIds.addAll(F.nodeIds(client.cluster().forServers().nodes()));
+            expNodeIds.addAll(nodeIds(client.cluster().forServers().nodes()));
         }
 
         Set<UUID> readsNodes = new HashSet<>();

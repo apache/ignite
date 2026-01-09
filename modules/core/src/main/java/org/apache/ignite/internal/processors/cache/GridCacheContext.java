@@ -48,8 +48,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.binary.BinaryField;
-import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
@@ -62,8 +60,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.cache.context.SessionContextImpl;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
@@ -105,7 +101,6 @@ import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAddQueryEntityOperation;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.F0;
-import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -133,6 +128,8 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
 
 /**
  * Cache context.
@@ -263,6 +260,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Updates allowed flag. */
     private boolean updatesAllowed;
 
+    // TODO: IGNITE-26571, is always false.
     /** Deployment enabled flag for this specific cache */
     private boolean depEnabled;
 
@@ -385,7 +383,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.locStartTopVer = locStartTopVer;
         this.affNode = affNode;
         this.updatesAllowed = updatesAllowed;
-        this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isBinaryEnabled(cacheCfg);
+        this.depEnabled = false;
 
         /*
          * Managers in starting order!
@@ -975,7 +973,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Marshaller.
      */
     public Marshaller marshaller() {
-        return ctx.config().getMarshaller();
+        return ctx.marshaller();
     }
 
     /**
@@ -1207,8 +1205,8 @@ public class GridCacheContext<K, V> implements Externalizable {
             return false;
 
         for (CacheEntryPredicate p0 : p) {
-            if ((p0 instanceof CacheEntrySerializablePredicate) &&
-                ((CacheEntrySerializablePredicate)p0).predicate() instanceof CacheEntryPredicateNoValue)
+            if ((p0 instanceof CacheEntryPredicateAdapter) &&
+                ((CacheEntryPredicateAdapter)p0).type() == CacheEntryPredicateAdapter.PredicateType.HAS_NO_VALUE)
                 return true;
         }
 
@@ -1219,14 +1217,14 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return No value filter.
      */
     public CacheEntryPredicate noVal() {
-        return new CacheEntrySerializablePredicate(new CacheEntryPredicateNoValue());
+        return new CacheEntryPredicateAdapter(CacheEntryPredicateAdapter.PredicateType.HAS_NO_VALUE);
     }
 
     /**
      * @return Has value filter.
      */
     public CacheEntryPredicate hasVal() {
-        return new CacheEntrySerializablePredicate(new CacheEntryPredicateHasValue());
+        return new CacheEntryPredicateAdapter(CacheEntryPredicateAdapter.PredicateType.HAS_VALUE);
     }
 
     /**
@@ -1234,7 +1232,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Predicate that checks for value.
      */
     public CacheEntryPredicate equalsVal(V val) {
-        return new CacheEntryPredicateContainsValue(toCacheObject(val));
+        return new CacheEntryPredicateAdapter(toCacheObject(val));
     }
 
     /**
@@ -1378,6 +1376,16 @@ public class GridCacheContext<K, V> implements Externalizable {
         return (opCtx != null && opCtx.skipStore());
     }
 
+    /** @return {@code true} if the skip read-through cache store flag is set. */
+    public boolean skipReadThrough() {
+        if (nearContext())
+            return dht().near().context().skipReadThrough();
+
+        CacheOperationContext opCtx = opCtxPerCall.get();
+
+        return (opCtx != null && opCtx.skipReadThrough());
+    }
+
     /**
      * @return {@code True} if need check near cache context.
      */
@@ -1431,7 +1439,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if store read-through mode is enabled.
      */
     public boolean readThrough() {
-        return config().isReadThrough() && !skipStore();
+        return config().isReadThrough() && !skipStore() && !skipReadThrough();
     }
 
     /**
@@ -1506,9 +1514,9 @@ public class GridCacheContext<K, V> implements Externalizable {
         Collection<ClusterNode> dhtNodes = dht().topology().nodes(entry.partition(), topVer);
 
         if (log.isDebugEnabled())
-            log.debug("Mapping entry to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
+            log.debug("Mapping entry to DHT nodes [nodes=" + nodeIds(dhtNodes) + ", entry=" + entry + ']');
 
-        Collection<ClusterNode> dhtRemoteNodes = F.view(dhtNodes, F.remoteNodes(nodeId())); // Exclude local node.
+        Collection<ClusterNode> dhtRemoteNodes = F.view(dhtNodes, remoteNodes(nodeId())); // Exclude local node.
 
         map(entry, dhtRemoteNodes, dhtMap);
 
@@ -1523,7 +1531,7 @@ public class GridCacheContext<K, V> implements Externalizable {
                 nearNodes = discovery().nodes(readers, F0.notEqualTo(nearNodeId));
 
                 if (log.isDebugEnabled())
-                    log.debug("Mapping entry to near nodes [nodes=" + U.nodeIds(nearNodes) + ", entry=" + entry + ']');
+                    log.debug("Mapping entry to near nodes [nodes=" + nodeIds(nearNodes) + ", entry=" + entry + ']');
             }
             else if (log.isDebugEnabled())
                 log.debug("Entry has no near readers: " + entry);
@@ -1565,7 +1573,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             Collection<ClusterNode> dhtNodes = cand.mappedDhtNodes();
 
             if (log.isDebugEnabled())
-                log.debug("Mapping explicit lock to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
+                log.debug("Mapping explicit lock to DHT nodes [nodes=" + nodeIds(dhtNodes) + ", entry=" + entry + ']');
 
             Collection<ClusterNode> nearNodes = cand.mappedNearNodes();
 
@@ -1685,13 +1693,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public IgniteCacheObjectProcessor cacheObjects() {
         return kernalContext().cacheObjects();
-    }
-
-    /**
-     * @return {@code True} if {@link BinaryMarshaller is configured}.
-     */
-    public boolean binaryMarshaller() {
-        return marshaller() instanceof BinaryMarshaller;
     }
 
     /**
@@ -2225,6 +2226,10 @@ public class GridCacheContext<K, V> implements Externalizable {
             if ((canRemap || discovery().alive(node)) && !invalidNodes.contains(node)) {
                 if (locMacs.equals(node.attribute(ATTR_MACS)))
                     return node;
+                else if (localNode().dataCenterId() != null) {
+                    if (localNode().dataCenterId().equals(node.dataCenterId()))
+                        return node;
+                }
 
                 if (r >= 0 || n0 == null)
                     n0 = node;
@@ -2234,31 +2239,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
 
         return n0;
-    }
-
-    /**
-     * Prepare affinity field for builder (if possible).
-     *
-     * @param builder Builder.
-     */
-    public void prepareAffinityField(BinaryObjectBuilder builder) {
-        assert binaryMarshaller();
-        assert builder instanceof BinaryObjectBuilderImpl;
-
-        BinaryObjectBuilderImpl builder0 = (BinaryObjectBuilderImpl)builder;
-
-        if (!cacheObjCtx.customAffinityMapper()) {
-            CacheDefaultBinaryAffinityKeyMapper mapper =
-                (CacheDefaultBinaryAffinityKeyMapper)cacheObjCtx.defaultAffMapper();
-
-            BinaryField field = mapper.affinityKeyField(builder0.typeId());
-
-            if (field != null) {
-                String fieldName = field.name();
-
-                builder0.affinityFieldName(fieldName);
-            }
-        }
     }
 
     /**
@@ -2326,7 +2306,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** */
     public void dumpListener(DumpEntryChangeListener dumpEntryChangeLsnr) {
         assert this.dumpLsnr == null || dumpEntryChangeLsnr == null;
-        assert cacheType == CacheType.USER;
+        assert cacheType == CacheType.USER || cacheType == CacheType.DATA_STRUCTURES;
 
         this.dumpLsnr = dumpEntryChangeLsnr;
     }

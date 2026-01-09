@@ -79,10 +79,10 @@ public class MetaDetailsCommand implements ComputeCommand<IgniteDataTransferObje
 
         printer.accept("Schemas:");
 
-        m.schemas().forEach(s ->
+        BinaryUtils.schemasAndFieldsIds(m).forEach(s ->
             printer.accept(INDENT +
-                "schemaId=" + printInt(s.schemaId()) +
-                ", fields=" + Arrays.stream(s.fieldIds())
+                "schemaId=" + printInt(s.get1()) +
+                ", fields=" + Arrays.stream(s.get2())
                 .mapToObj(fldMap::get)
                 .collect(Collectors.toList())));
     }

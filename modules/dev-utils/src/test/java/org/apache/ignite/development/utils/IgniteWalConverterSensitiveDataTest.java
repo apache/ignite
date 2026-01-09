@@ -43,6 +43,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -67,8 +68,8 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
     /** Sensitive data prefix. */
     private static final String SENSITIVE_DATA_VALUE_PREFIX = "must_hide_it_";
 
-    /** Path to directory where WAL is stored. */
-    private static String walDirPath;
+    /** Node file tree. */
+    private static NodeFileTree ft;
 
     /** Page size. */
     private static int pageSize;
@@ -129,7 +130,7 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
 
         IgniteConfiguration cfg = crd.configuration();
 
-        walDirPath = kernalCtx.pdsFolderResolver().fileTree().wal().getAbsolutePath();
+        ft = kernalCtx.pdsFolderResolver().fileTree();
         pageSize = cfg.getDataStorageConfiguration().getPageSize();
 
         stopGrid(nodeId);
@@ -240,7 +241,8 @@ public class IgniteWalConverterSensitiveDataTest extends GridCommonAbstractTest 
 
         List<String> args = new ArrayList<>();
         args.add("pageSize=" + pageSize);
-        args.add("walDir=" + walDirPath);
+        args.add("root=" + ft.root());
+        args.add("folderName=" + ft.folderName());
         if (processSensitiveData != null)
             args.add("processSensitiveData=" + processSensitiveData.name());
 

@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
@@ -48,7 +49,6 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lifecycle.LifecycleAware;
-import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -995,7 +995,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
         /** Start flusher thread */
         protected void start() {
-            thread = new IgniteThread(this);
+            thread = U.newThread(this);
             thread.start();
         }
 
@@ -1536,15 +1536,6 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
         }
 
         /**
-         * Awaits a signal on flush condition.
-         *
-         * @throws IgniteInterruptedCheckedException If thread was interrupted.
-         */
-        private void waitForFlush() throws IgniteInterruptedCheckedException {
-            U.await(flushCond);
-        }
-
-        /**
          * Signals flush condition.
          */
         @SuppressWarnings({"SignalWithoutCorrespondingAwait"})
@@ -1562,7 +1553,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
             StatefulValue other = (StatefulValue)o;
 
-            return F.eq(val, other.val) && F.eq(valStatus, other.valStatus);
+            return Objects.equals(val, other.val) && Objects.equals(valStatus, other.valStatus);
         }
 
         /** {@inheritDoc} */

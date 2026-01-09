@@ -24,6 +24,7 @@ import org.apache.ignite.cache.store.CacheStoreListenerRWThroughDisabledAtomicCa
 import org.apache.ignite.cache.store.CacheStoreListenerRWThroughDisabledTransactionalCacheTest;
 import org.apache.ignite.cache.store.CacheStoreSessionListenerLifecycleSelfTest;
 import org.apache.ignite.cache.store.CacheStoreSessionListenerWriteBehindEnabledTest;
+import org.apache.ignite.cache.store.CacheStoreWithIgniteTxFailureTest;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListenerSelfTest;
 import org.apache.ignite.internal.processors.GridCacheTxLoadFromStoreOnLockSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheClientStoreSelfTest;
@@ -280,6 +281,7 @@ public class IgniteCacheTestSuite4 {
         GridTestUtils.addTestIfNeeded(suite, CacheStoreListenerRWThroughDisabledAtomicCacheTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheStoreListenerRWThroughDisabledTransactionalCacheTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheStoreSessionListenerWriteBehindEnabledTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, CacheStoreWithIgniteTxFailureTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, CacheClientStoreSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheStoreUsageMultinodeStaticStartAtomicTest.class, ignoredTests);

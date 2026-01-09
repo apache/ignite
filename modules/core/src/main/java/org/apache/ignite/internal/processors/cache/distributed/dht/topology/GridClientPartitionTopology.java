@@ -40,6 +40,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
+import org.apache.ignite.internal.processors.cache.CacheGroupRecoveryState;
 import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -66,6 +67,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Partition topology for node which does not have any local partitions.
@@ -106,7 +108,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     private volatile boolean stopping;
 
     /** A future that will be completed when topology with version topVer will be ready to use. */
-    private volatile GridDhtTopologyFuture topReadyFut;
+    private volatile GridDhtPartitionsExchangeFuture topReadyFut;
 
     /** */
     private final GridAtomicLong updateSeq = new GridAtomicLong(1);
@@ -220,7 +222,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public void updateTopologyVersion(
-        GridDhtTopologyFuture exchFut,
+        GridDhtPartitionsExchangeFuture exchFut,
         DiscoCache discoCache,
         long updSeq,
         boolean stopping
@@ -489,7 +491,17 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridDhtLocalPartition> currentLocalPartitions() {
+    @Override public int localPartitionsNumber() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Iterable<GridDhtLocalPartition> currentLocalPartitions() {
+        return Collections.emptyList();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Iterable<GridDhtLocalPartition> shiftedCurrentLocalPartitions() {
         return Collections.emptyList();
     }
 
@@ -578,7 +590,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
      * @return List of nodes for the partition.
      */
     private List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer, GridDhtPartitionState state, GridDhtPartitionState... states) {
-        Collection<UUID> allIds = F.nodeIds(discoCache.cacheGroupAffinityNodes(grpId));
+        Collection<UUID> allIds = nodeIds(discoCache.cacheGroupAffinityNodes(grpId));
 
         lock.readLock().lock();
 
@@ -888,6 +900,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public void applyUpdateCounters() {
         // No-op on client topology.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void applyRecoveryData(CacheGroupRecoveryState grpState) {
+        // No-op.
     }
 
     /**

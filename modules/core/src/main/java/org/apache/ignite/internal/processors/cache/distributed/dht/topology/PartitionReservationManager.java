@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -340,7 +341,7 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
     public void onCacheStop(String cacheName) {
         // Drop group reservations.
         for (PartitionReservationKey grpKey : reservations.keySet()) {
-            if (F.eq(grpKey.cacheName(), cacheName))
+            if (Objects.equals(grpKey.cacheName(), cacheName))
                 reservations.remove(grpKey);
         }
     }
@@ -370,7 +371,7 @@ public class PartitionReservationManager implements PartitionsExchangeAware {
                             .lastAffinityChangedTopologyVersion(fut.topologyVersion());
 
                         reservations.forEach((key, r) -> {
-                            if (r != REPLICATED_RESERVABLE && !F.eq(key.topologyVersion(), topVer)) {
+                            if (r != REPLICATED_RESERVABLE && !Objects.equals(key.topologyVersion(), topVer)) {
                                 assert r instanceof GridDhtPartitionsReservation;
 
                                 ((GridDhtPartitionsReservation)r).invalidate();

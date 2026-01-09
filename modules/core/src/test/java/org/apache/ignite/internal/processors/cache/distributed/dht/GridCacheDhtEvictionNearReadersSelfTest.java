@@ -42,6 +42,7 @@ import org.junit.Test;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 
 /**
  * Tests for dht cache eviction.
@@ -197,9 +198,9 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
 
         ClusterNode other = F.first(nodes);
 
-        assert !F.eqNodes(primary, backup);
-        assert !F.eqNodes(primary, other);
-        assert !F.eqNodes(backup, other);
+        assert !eqNodes(primary, backup);
+        assert !eqNodes(primary, other);
+        assert !eqNodes(backup, other);
 
         info("Primary node: " + primary.id());
         info("Backup node: " + backup.id());

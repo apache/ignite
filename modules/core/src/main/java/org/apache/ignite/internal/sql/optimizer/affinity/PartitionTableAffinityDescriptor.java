@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.sql.optimizer.affinity;
 
-import org.apache.ignite.internal.util.typedef.F;
+import java.util.Objects;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -78,7 +78,7 @@ public class PartitionTableAffinityDescriptor {
                     other.affFunc == PartitionAffinityFunctionType.RENDEZVOUS &&
                         !other.hasNodeFilter &&
                         other.parts == parts &&
-                        F.eq(other.dataRegion, dataRegion);
+                        Objects.equals(other.dataRegion, dataRegion);
             }
         }
 

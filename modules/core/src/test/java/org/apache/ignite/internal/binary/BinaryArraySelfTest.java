@@ -240,7 +240,7 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         Object[] res0;
 
         if (useBinaryArrays) {
-            assertTrue(res instanceof BinaryArray);
+            assertTrue(BinaryUtils.isBinaryArray(res));
 
             res0 = ((BinaryArray)res).deserialize();
         }
@@ -269,7 +269,7 @@ public class BinaryArraySelfTest extends AbstractBinaryArraysTest {
         Object deser;
 
         if (useBinaryArrays) {
-            assertTrue(obj instanceof BinaryArray);
+            assertTrue(BinaryUtils.isBinaryArray(obj));
 
             deser = ((BinaryArray)obj).deserialize();
         }

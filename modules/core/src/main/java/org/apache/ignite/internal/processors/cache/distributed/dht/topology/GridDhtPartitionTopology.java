@@ -27,6 +27,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheGroupRecoveryState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap;
@@ -73,7 +74,7 @@ public interface GridDhtPartitionTopology {
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     public void updateTopologyVersion(
-        GridDhtTopologyFuture exchFut,
+        GridDhtPartitionsExchangeFuture exchFut,
         DiscoCache discoCache,
         long updateSeq,
         boolean stopping
@@ -202,10 +203,19 @@ public interface GridDhtPartitionTopology {
     public List<GridDhtLocalPartition> localPartitions();
 
     /**
-     *
+     * @return Number of active local partitions.
+     */
+    public int localPartitionsNumber();
+
+    /**
      * @return All current active local partitions.
      */
     public Iterable<GridDhtLocalPartition> currentLocalPartitions();
+
+    /**
+     * @return All current active local partitions shifted by random index to reduce contention.
+     */
+    public Iterable<GridDhtLocalPartition> shiftedCurrentLocalPartitions();
 
     /**
      * @return Local IDs.
@@ -326,6 +336,9 @@ public interface GridDhtPartitionTopology {
      * Applies update counters collected during exchange on coordinator. Called on coordinator.
      */
     public void applyUpdateCounters();
+
+    /** Restores cache group data after node restart if PDS is enabled. Called on coordinator. */
+    public void applyRecoveryData(CacheGroupRecoveryState grpState);
 
     /**
      * Checks if there is at least one owner for each partition in the cache topology for a local node.

@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionHistorySuppliersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IntLongMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.PartitionsExchangeAware;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
@@ -169,6 +170,7 @@ import static org.apache.ignite.internal.processors.security.SecurityUtils.remot
 import static org.apache.ignite.internal.processors.security.SecurityUtils.withRemoteSecurityContext;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.processors.tracing.SpanType.EXCHANGE_FUTURE;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Partition exchange manager.
@@ -737,17 +739,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             reconnectExchangeFut = new GridFutureAdapter<>();
 
         if (active) {
-            DiscoveryEvent discoEvt = locJoin.event();
-            DiscoCache discoCache = locJoin.discoCache();
-
             GridDhtPartitionExchangeId exchId = initialExchangeId();
 
-            fut = exchangeFuture(
-                exchId,
-                reconnect ? null : discoEvt,
-                reconnect ? null : discoCache,
-                null,
-                null);
+            // exchId is enough to find the required exchange future.
+            fut = exchangeFuture(exchId);
         }
         else if (reconnect)
             reconnectExchangeFut.onDone();
@@ -1307,7 +1302,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         if (log.isTraceEnabled())
-            log.trace("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", cacheGroups=" + grps +
+            log.trace("Sending all partitions [nodeIds=" + nodeIds(nodes) + ", cacheGroups=" + grps +
                 ", msg=" + m + ']');
 
         time = System.currentTimeMillis();
@@ -1338,7 +1333,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             if (latency > 50 || log.isDebugEnabled()) {
                 log.info("Finished sending full message [msgTopVer=" + msgTopVer + ", groups=" + grps +
-                    (failedNodes.isEmpty() ? "" : (", skipped=" + U.nodeIds(failedNodes))) +
+                    (failedNodes.isEmpty() ? "" : (", skipped=" + nodeIds(failedNodes))) +
                     ", latency=" + latency + "ms]");
             }
         }
@@ -1446,7 +1441,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         if (!partsSizes.isEmpty())
-            m.partitionSizes(cctx, partsSizes);
+            m.partitionSizes(F.viewReadOnly(partsSizes, IntLongMap::new));
 
         return m;
     }
@@ -1582,6 +1577,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 m.addPartitionSizes(grp.groupId(), grp.topology().partitionSizes());
             }
+            else if (sndCounters && grp.persistenceEnabled() && exchActions.deactivate())
+                m.addPartitionUpdateCounters(grp.groupId(), grp.topology().localUpdateCounters(true));
         }
 
         for (GridClientPartitionTopology top : clientTops.values()) {
@@ -1671,20 +1668,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         @Nullable ExchangeActions exchActions,
         @Nullable CacheAffinityChangeMessage affChangeMsg
     ) {
-        GridDhtPartitionsExchangeFuture fut;
+        GridDhtPartitionsExchangeFuture fut = exchFuts.addx(
+            new GridDhtPartitionsExchangeFuture(cctx, busyLock, exchId, exchActions, affChangeMsg));
 
-        GridDhtPartitionsExchangeFuture old = exchFuts.addx(
-            fut = new GridDhtPartitionsExchangeFuture(cctx, busyLock, exchId, exchActions, affChangeMsg));
+        if (exchActions != null)
+            fut.exchangeActions(exchActions);
 
-        if (old != null) {
-            fut = old;
-
-            if (exchActions != null)
-                fut.exchangeActions(exchActions);
-
-            if (affChangeMsg != null)
-                fut.affinityChangeMessage(affChangeMsg);
-        }
+        if (affChangeMsg != null)
+            fut.affinityChangeMessage(affChangeMsg);
 
         if (discoEvt != null)
             fut.onEvent(exchId, discoEvt, cache);
@@ -1781,7 +1772,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 boolean updated = false;
 
-                Map<Integer, Map<Integer, Long>> partsSizes = msg.partitionSizes(cctx);
+                Map<Integer, IntLongMap> partsSizes = F.emptyIfNull(msg.partitionSizes());
 
                 for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : msg.partitions().entrySet()) {
                     Integer grpId = entry.getKey();
@@ -1791,11 +1782,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     GridDhtPartitionTopology top = grp == null ? clientTops.get(grpId) : grp.topology();
 
                     if (top != null) {
+                        IntLongMap sizesMap = partsSizes.get(grpId);
+
                         updated |= top.update(null,
                             entry.getValue(),
                             null,
                             msg.partsToReload(cctx.localNodeId(), grpId),
-                            partsSizes.getOrDefault(grpId, Collections.emptyMap()),
+                            sizesMap != null ? F.emptyIfNull(sizesMap.map()) : Collections.emptyMap(),
                             msg.topologyVersion(),
                             null,
                             null);
@@ -3485,11 +3478,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /**
+         * Either adds the given {@code fut} to the set and returns it
+         * or returns a future that is already present in this set.
+         *
          * @param fut Future to add.
-         * @return {@code True} if added.
+         * @return An instance of {@link GridDhtPartitionsExchangeFuture}.
          */
         @Override public synchronized GridDhtPartitionsExchangeFuture addx(
-            GridDhtPartitionsExchangeFuture fut) {
+            GridDhtPartitionsExchangeFuture fut
+        ) {
             GridDhtPartitionsExchangeFuture cur = super.addx(fut);
 
             while (size() > histSize) {

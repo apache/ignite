@@ -22,15 +22,11 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /** */
-@IgniteCodeGeneratingFail
 public class ClientMessage implements Message, Externalizable {
     /** */
     private static final long serialVersionUID = -4609408156037304495L;
@@ -51,7 +47,7 @@ public class ClientMessage implements Message, Externalizable {
     private byte[] data;
 
     /** */
-    private BinaryHeapOutputStream stream;
+    private BinaryOutputStream stream;
 
     /** */
     private int cnt = -4;
@@ -80,13 +76,18 @@ public class ClientMessage implements Message, Externalizable {
     }
 
     /** */
-    public ClientMessage(BinaryHeapOutputStream stream) {
+    public ClientMessage(BinaryOutputStream stream) {
         this.stream = stream;
         isFirstMessage = false;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter ignored) {
+    /**
+     * Writes this message to provided byte buffer.
+     *
+     * @param buf Byte buffer.
+     * @return Whether message was fully written.
+     */
+    public boolean writeTo(ByteBuffer buf) {
         assert stream != null || data != null;
 
         byte[] data = stream != null ? stream.array() : this.data;
@@ -130,11 +131,6 @@ public class ClientMessage implements Message, Externalizable {
         }
 
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        throw new UnsupportedOperationException();
     }
 
     /**
@@ -213,16 +209,6 @@ public class ClientMessage implements Message, Externalizable {
     /** {@inheritDoc} */
     @Override public short directType() {
         return Short.MIN_VALUE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op
     }
 
     /**

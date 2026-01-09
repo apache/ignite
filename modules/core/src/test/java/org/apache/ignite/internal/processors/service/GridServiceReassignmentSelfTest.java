@@ -31,6 +31,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.node2id;
+
 /**
  * Tests service reassignment.
  */
@@ -167,7 +169,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
 
         Map<UUID, Integer> srvcTop = grid.context().service().serviceTopology(SERVICE_NAME, SERVICE_TOP_WAIT_TIMEOUT);
 
-        Collection<UUID> nodes = F.viewReadOnly(grid.context().discovery().aliveServerNodes(), F.node2id());
+        Collection<UUID> nodes = F.viewReadOnly(grid.context().discovery().aliveServerNodes(), node2id());
 
         assertNotNull("Grid assignments object is null", srvcTop);
 

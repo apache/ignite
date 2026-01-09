@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -52,6 +51,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * DHT atomic cache backup update future.
@@ -168,9 +168,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
             dhtNodes = affNodes;
 
         if (log.isDebugEnabled())
-            log.debug("Mapping entry to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
-
-        CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
+            log.debug("Mapping entry to DHT nodes [nodes=" + nodeIds(dhtNodes) + ", entry=" + entry + ']');
 
         addDhtKey(entry.key(), dhtNodes);
 
@@ -187,7 +185,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
                         node.id(),
                         futId,
                         writeVer,
-                        syncMode,
                         topVer,
                         ttl,
                         conflictExpireTime,
@@ -244,8 +241,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         boolean readRepairRecovery) {
         assert readers != null;
 
-        CacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
-
         addNearKey(entry.key(), readers);
 
         AffinityTopologyVersion topVer = updateReq.topologyVersion();
@@ -277,7 +272,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
                     node.id(),
                     futId,
                     writeVer,
-                    syncMode,
                     topVer,
                     ttl,
                     expireTime,
@@ -349,6 +343,8 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
                 else
                     return false;
             }
+
+            req.cleanup();
 
             if (resCnt0 == mappings.size())
                 onDone();
@@ -432,7 +428,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
 
     /**
      * @param nearNode Near node.
-     * @param sndRes {@code True} if allow to send result from DHT nodes.
+     * @param sndRes {@code True} if allow sending result from DHT nodes.
      * @param ret Return value.
      */
     private void sendDhtRequests(ClusterNode nearNode, GridCacheReturn ret, boolean sndRes) {
@@ -510,7 +506,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
      * @param nodeId Node ID.
      * @param futId Future ID.
      * @param writeVer Update version.
-     * @param syncMode Write synchronization mode.
      * @param topVer Topology version.
      * @param ttl TTL.
      * @param conflictExpireTime Conflict expire time.
@@ -522,7 +517,6 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
         UUID nodeId,
         long futId,
         GridCacheVersion writeVer,
-        CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,
         long ttl,
         long conflictExpireTime,

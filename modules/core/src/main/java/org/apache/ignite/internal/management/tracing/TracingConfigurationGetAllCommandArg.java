@@ -59,8 +59,8 @@ public class TracingConfigurationGetAllCommandArg extends TracingConfigurationCo
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(protoVer, in);
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(in);
 
         scope = U.readEnum(in, Scope.class);
     }

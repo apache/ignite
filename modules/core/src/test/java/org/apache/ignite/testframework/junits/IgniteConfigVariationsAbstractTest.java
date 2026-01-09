@@ -37,7 +37,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsFactory;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
@@ -702,7 +701,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         switch (dataMode) {
             case BINARILIZABLE:
             case PLANE_OBJECT:
-                return !(getConfiguration().getMarshaller() instanceof JdkMarshaller);
+                return true;
         }
         return false;
     }

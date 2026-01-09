@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
@@ -31,7 +32,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
@@ -363,7 +363,7 @@ public class SqlSchemaSelfTest extends AbstractIndexingCommonTest {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object obj) {
-            return obj != null && obj instanceof PersonKey && (F.eq(id, ((PersonKey)obj).id));
+            return obj != null && obj instanceof PersonKey && (Objects.equals(id, ((PersonKey)obj).id));
         }
     }
 

@@ -21,16 +21,12 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
-public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersion>, Externalizable, Message {
+public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersion>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -73,7 +69,7 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     }
 
     /**
-     * @return {@code True} if this is real topology version (neither {@link #NONE} nor {@link #ZERO}.
+     * @return {@code True} if this is real topology version (neither {@link #NONE} nor {@link #ZERO}).
      */
     public boolean initialized() {
         return topVer > 0;
@@ -138,11 +134,6 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -170,74 +161,6 @@ public class AffinityTopologyVersion implements Comparable<AffinityTopologyVersi
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         topVer = in.readLong();
         minorTopVer = in.readInt();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt("minorTopVer", minorTopVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                minorTopVer = reader.readInt("minorTopVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                topVer = reader.readLong("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(AffinityTopologyVersion.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 111;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

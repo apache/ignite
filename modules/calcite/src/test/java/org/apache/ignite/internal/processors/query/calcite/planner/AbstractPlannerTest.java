@@ -24,12 +24,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.BiFunction;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
-import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.Contexts;
+import org.apache.calcite.plan.RelOptListener;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.AbstractRelNode;
@@ -37,32 +36,21 @@ import org.apache.calcite.rel.RelDistribution;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.RelVisitor;
-import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.schema.ColumnStrategy;
+import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlExplainLevel;
-import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql2rel.InitializerContext;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
-import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.task.StripedQueryTaskExecutor;
 import org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonReader;
 import org.apache.ignite.internal.processors.query.calcite.message.CalciteMessage;
@@ -80,16 +68,10 @@ import org.apache.ignite.internal.processors.query.calcite.prepare.Splitter;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
-import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableDescriptor;
-import org.apache.ignite.internal.processors.query.calcite.schema.ColumnDescriptor;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
-import org.apache.ignite.internal.processors.query.calcite.schema.ModifyTuple;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
-import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
@@ -99,7 +81,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
-import org.mockito.Mockito;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
 import static org.apache.ignite.internal.processors.query.calcite.externalize.RelJsonWriter.toJson;
@@ -111,7 +92,10 @@ import static org.apache.ignite.internal.processors.query.calcite.externalize.Re
 @SuppressWarnings({"TooBroadScope", "FieldCanBeLocal", "TypeMayBeWeakened"})
 public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     /** */
-    protected static final IgniteTypeFactory TYPE_FACTORY = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+    private static final RelDataTypeSystem TYPE_SYSTEM = CalciteQueryProcessor.FRAMEWORK_CONFIG.getTypeSystem();
+
+    /** */
+    protected static final IgniteTypeFactory TYPE_FACTORY = new IgniteTypeFactory(TYPE_SYSTEM);
 
     /** */
     protected static final int DEFAULT_TBL_SIZE = 500_000;
@@ -222,13 +206,28 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
     /** */
     protected PlanningContext plannerCtx(String sql, IgniteSchema publicSchema, String... disabledRules) {
-        return plannerCtx(sql, Collections.singleton(publicSchema), disabledRules);
+        return plannerCtx(sql, publicSchema, null, disabledRules);
     }
 
     /** */
-    protected PlanningContext plannerCtx(String sql, Collection<IgniteSchema> schemas, String... disabledRules) {
+    protected PlanningContext plannerCtx(
+        String sql,
+        IgniteSchema publicSchema,
+        @Nullable RelOptListener planLsnr,
+        String... disabledRules
+    ) {
+        return plannerCtx(sql, Collections.singleton(publicSchema), planLsnr, disabledRules);
+    }
+
+    /** */
+    protected PlanningContext plannerCtx(
+        String sql,
+        Collection<IgniteSchema> schemas,
+        @Nullable RelOptListener planLsnr,
+        String... disabledRules
+    ) {
         PlanningContext ctx = PlanningContext.builder()
-            .parentContext(baseQueryContext(schemas))
+            .parentContext(Contexts.of(baseQueryContext(schemas), planLsnr))
             .query(sql)
             .build();
 
@@ -236,19 +235,24 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
         assertNotNull(planner);
 
-        planner.setDisabledRules(ImmutableSet.copyOf(disabledRules));
+        planner.addDisabledRules(ImmutableSet.copyOf(disabledRules));
 
         return ctx;
     }
 
     /** */
     protected IgniteRel physicalPlan(String sql, IgniteSchema publicSchema, String... disabledRules) throws Exception {
-        return physicalPlan(plannerCtx(sql, publicSchema, disabledRules));
+        return physicalPlan(sql, publicSchema, null, disabledRules);
     }
 
     /** */
-    protected IgniteRel physicalPlan(String sql, Collection<IgniteSchema> schemas, String... disabledRules) throws Exception {
-        return physicalPlan(plannerCtx(sql, schemas, disabledRules));
+    protected IgniteRel physicalPlan(
+        String sql,
+        IgniteSchema publicSchema,
+        @Nullable RelOptListener planLsnr,
+        String... disabledRules
+    ) throws Exception {
+        return physicalPlan(plannerCtx(sql, publicSchema, planLsnr, disabledRules));
     }
 
     /** */
@@ -437,7 +441,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         Predicate<T> predicate,
         String... disabledRules
     ) throws Exception {
-        assertPlan(sql, Collections.singleton(schema), predicate, disabledRules);
+        assertPlan(sql, schema, null, predicate, disabledRules);
     }
 
     /** */
@@ -447,7 +451,18 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
         Predicate<T> predicate,
         String... disabledRules
     ) throws Exception {
-        IgniteRel plan = physicalPlan(sql, schemas, disabledRules);
+        assertPlan(sql, schemas, null, predicate, disabledRules);
+    }
+
+    /** */
+    protected <T extends RelNode> void assertPlan(
+        String sql,
+        Collection<IgniteSchema> schemas,
+        @Nullable RelOptListener planLsnr,
+        Predicate<T> predicate,
+        String... disabledRules
+    ) throws Exception {
+        IgniteRel plan = physicalPlan(plannerCtx(sql, schemas, planLsnr, disabledRules));
 
         checkSplitAndSerialization(plan, schemas);
 
@@ -457,6 +472,17 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
 
             fail(invalidPlanMsg);
         }
+    }
+
+    /** */
+    protected <T extends RelNode> void assertPlan(
+        String sql,
+        IgniteSchema schema,
+        @Nullable RelOptListener planLsnr,
+        Predicate<T> predicate,
+        String... disabledRules
+    ) throws Exception {
+        assertPlan(sql, Collections.singletonList(schema), planLsnr, predicate, disabledRules);
     }
 
     /**
@@ -558,6 +584,13 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Predicate builder for "Operator satisfies distribution" condition.
+     */
+    protected <T extends IgniteRel> Predicate<IgniteRel> distributionSatisfies(IgniteDistribution distribution) {
+        return node -> node.distribution().satisfies(distribution);
+    }
+
+    /**
      * Predicate builder for "Current node or any child satisfy predicate" condition.
      */
     protected Predicate<RelNode> nodeOrAnyChild(Predicate<? extends RelNode> predicate) {
@@ -648,8 +681,9 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             if (!(fields[i + 1] instanceof Class) && !(fields[i + 1] instanceof SqlTypeName))
                 throw new IllegalArgumentException("'fields[" + i + "]' should be a class or a SqlTypeName");
 
-            RelDataType type = fields[i + 1] instanceof Class ? TYPE_FACTORY.createJavaType((Class<?>)fields[i + 1]) :
-                TYPE_FACTORY.createSqlType((SqlTypeName)fields[i + 1]);
+            RelDataType type = fields[i + 1] instanceof Class
+                ? TYPE_FACTORY.createJavaType((Class<?>)fields[i + 1])
+                : TYPE_FACTORY.createTypeWithNullability(TYPE_FACTORY.createSqlType((SqlTypeName)fields[i + 1]), true);
 
             b.add((String)fields[i], type);
         }
@@ -692,165 +726,6 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
             .defaultSchema(dfltSchema)
             .logger(lsnrLog)
             .build();
-    }
-
-    /** */
-    static class TestTableDescriptor implements CacheTableDescriptor {
-        /** */
-        private final Supplier<IgniteDistribution> distributionSupp;
-
-        /** */
-        private final RelDataType rowType;
-
-        /** */
-        private final GridCacheContextInfo<?, ?> cacheInfo;
-
-        /** */
-        public TestTableDescriptor(Supplier<IgniteDistribution> distribution, RelDataType rowType) {
-            this.distributionSupp = distribution;
-            this.rowType = rowType;
-            cacheInfo = Mockito.mock(GridCacheContextInfo.class);
-
-            CacheConfiguration cfg = Mockito.mock(CacheConfiguration.class);
-            Mockito.when(cfg.isEagerTtl()).thenReturn(true);
-
-            Mockito.when(cacheInfo.cacheId()).thenReturn(CU.cacheId("TEST"));
-            Mockito.when(cacheInfo.config()).thenReturn(cfg);
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridCacheContextInfo cacheInfo() {
-            return cacheInfo;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridCacheContext cacheContext() {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteDistribution distribution() {
-            return distributionSupp.get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public ColocationGroup colocationGroup(MappingQueryContext ctx) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelDataType rowType(IgniteTypeFactory factory, ImmutableBitSet usedColumns) {
-            return rowType;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isUpdateAllowed(RelOptTable tbl, int colIdx) {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean match(CacheDataRow row) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <Row> Row toRow(ExecutionContext<Row> ectx, CacheDataRow row, RowHandler.RowFactory<Row> factory,
-            @Nullable ImmutableBitSet requiredColumns) throws IgniteCheckedException {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <Row> ModifyTuple toTuple(ExecutionContext<Row> ectx, Row row, TableModify.Operation op,
-            @Nullable Object arg) throws IgniteCheckedException {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public ColumnDescriptor columnDescriptor(String fieldName) {
-            RelDataTypeField field = rowType.getField(fieldName, false, false);
-            return new TestColumnDescriptor(field.getIndex(), fieldName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<ColumnDescriptor> columnDescriptors() {
-            return Commons.transform(rowType.getFieldList(), f -> new TestColumnDescriptor(f.getIndex(), f.getName()));
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridQueryTypeDescriptor typeDescription() {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isGeneratedAlways(RelOptTable table, int iColumn) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public ColumnStrategy generationStrategy(RelOptTable table, int iColumn) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public RexNode newColumnDefaultValue(RelOptTable table, int iColumn, InitializerContext context) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public BiFunction<InitializerContext, RelNode, RelNode> postExpressionConversionHook() {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public RexNode newAttributeInitializer(RelDataType type, SqlFunction constructor, int iAttribute,
-            List<RexNode> constructorArgs, InitializerContext context) {
-            throw new AssertionError();
-        }
-    }
-
-    /** */
-    static class TestColumnDescriptor implements ColumnDescriptor {
-        /** */
-        private final int idx;
-
-        /** */
-        private final String name;
-
-        /** */
-        public TestColumnDescriptor(int idx, String name) {
-            this.idx = idx;
-            this.name = name;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasDefaultValue() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return name;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int fieldIndex() {
-            return idx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public RelDataType logicalType(IgniteTypeFactory f) {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Class<?> storageType() {
-            throw new AssertionError();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object defaultValue() {
-            throw new AssertionError();
-        }
     }
 
     /** */

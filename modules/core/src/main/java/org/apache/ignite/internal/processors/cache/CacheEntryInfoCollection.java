@@ -17,36 +17,22 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-/**
- *
- */
+/** TODO : IGNITE-26568. Revise, remove. */
 public class CacheEntryInfoCollection implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    @GridDirectCollection(GridCacheEntryInfo.class)
-    private List<GridCacheEntryInfo> infos;
-
-    /** */
-    public CacheEntryInfoCollection() {
-        // No-op
-    }
+    @Order(0)
+    private List<GridCacheEntryInfo> infos = new ArrayList<>();
 
     /**
-     *
+     * Sets entries.
      */
-    public void init() {
-        infos = new ArrayList<>();
+    public void infos(List<GridCacheEntryInfo> infos) {
+        this.infos = infos;
     }
 
     /**
@@ -64,62 +50,8 @@ public class CacheEntryInfoCollection implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeCollection("infos", infos, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                infos = reader.readCollection("infos", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(CacheEntryInfoCollection.class);
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 92;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 1;
     }
 
     /** {@inheritDoc} */

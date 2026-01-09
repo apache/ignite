@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.running;
 
 import java.util.Objects;
-import org.apache.ignite.internal.util.typedef.F;
 
 /** Representation of an entry in SQL plan history. */
 public class SqlPlan {
@@ -103,7 +102,7 @@ public class SqlPlan {
 
         SqlPlan plan0 = (SqlPlan)o;
 
-        return F.eq(plan, plan0.plan) && F.eq(qry, plan0.qry) && F.eq(schema, plan0.schema) && F.eq(loc, plan0.loc)
-            && F.eq(engine, plan0.engine);
+        return Objects.equals(plan, plan0.plan) && Objects.equals(qry, plan0.qry) && Objects.equals(schema, plan0.schema)
+            && Objects.equals(loc, plan0.loc) && Objects.equals(engine, plan0.engine);
     }
 }

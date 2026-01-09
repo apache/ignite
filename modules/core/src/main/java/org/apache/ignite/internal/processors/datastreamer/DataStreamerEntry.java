@@ -33,9 +33,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>, Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     @GridToStringInclude
     protected KeyCacheObject key;
 
@@ -99,16 +96,11 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
     }
 
     /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -116,13 +108,13 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeKeyCacheObject(key))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("val", val))
+                if (!writer.writeCacheObject(val))
                     return false;
 
                 writer.incrementState();
@@ -136,12 +128,9 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                key = reader.readMessage("key");
+                key = reader.readKeyCacheObject();
 
                 if (!reader.isLastRead())
                     return false;
@@ -149,7 +138,7 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
                 reader.incrementState();
 
             case 1:
-                val = reader.readMessage("val");
+                val = reader.readCacheObject();
 
                 if (!reader.isLastRead())
                     return false;
@@ -158,17 +147,12 @@ public class DataStreamerEntry implements Map.Entry<KeyCacheObject, CacheObject>
 
         }
 
-        return reader.afterMessageRead(DataStreamerEntry.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 95;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
     }
 
     /** {@inheritDoc} */

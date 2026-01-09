@@ -40,6 +40,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 
 /**
  * Unit tests for dht entry.
@@ -305,7 +306,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         assert other != null;
 
-        assert !F.eqNodes(primary, other);
+        assert !eqNodes(primary, other);
 
         return F.t(primary, other);
     }

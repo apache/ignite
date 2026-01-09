@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.lang.IgniteClosure2X;
-import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.C2;
@@ -260,7 +259,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
      * @param res Response.
      * @return NIO send future.
      */
-    private GridNioFuture<?> sendResponse(GridNioSession ses, GridMemcachedMessage res) {
+    private IgniteInternalFuture<?> sendResponse(GridNioSession ses, GridMemcachedMessage res) {
         return ses.send(res);
     }
 

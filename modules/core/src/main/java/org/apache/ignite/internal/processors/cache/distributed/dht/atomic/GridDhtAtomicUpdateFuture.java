@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -75,7 +75,6 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
         UUID nodeId,
         long futId,
         GridCacheVersion writeVer,
-        CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,
         long ttl,
         long conflictExpireTime,
@@ -87,7 +86,6 @@ class GridDhtAtomicUpdateFuture extends GridDhtAtomicAbstractUpdateFuture {
             nodeId,
             futId,
             writeVer,
-            syncMode,
             topVer,
             updateReq.taskNameHash(),
             null,

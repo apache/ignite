@@ -58,7 +58,7 @@ public class IntersectNode<Row> extends AbstractSetOpNode<Row> {
         @Override protected void addOnSingle(Row row, int setIdx) {
             int[] cntrs;
 
-            GroupKey key = key(row);
+            GroupKey<Row> key = key(row);
 
             if (setIdx == 0) {
                 cntrs = groups.computeIfAbsent(key, k -> new int[inputsCnt]);

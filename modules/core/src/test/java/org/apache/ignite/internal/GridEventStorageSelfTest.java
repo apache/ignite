@@ -49,6 +49,7 @@ import static org.apache.ignite.events.EventType.EVTS_TASK_EXECUTION;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_TASK_STARTED;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.remoteNodes;
 
 /**
  * Event storage tests.
@@ -189,7 +190,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
 
         generateEvents(ignite2);
 
-        ClusterGroup prj = ignite1.cluster().forPredicate(F.remoteNodes(ignite1.cluster().localNode().id()));
+        ClusterGroup prj = ignite1.cluster().forPredicate(remoteNodes(ignite1.cluster().localNode().id()));
 
         Collection<Event> evts = events(prj).remoteQuery(filter, 0);
 
@@ -206,10 +207,11 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
 
         generateEvents(ignite1);
 
+        ClusterGroup prj = ignite1.cluster().forPredicate(remoteNodes(ignite1.cluster().localNode().id()));
+
         Collection<Event> evts = ignite1.events().remoteQuery(filter, 0);
         Collection<Event> locEvts = ignite1.events().localQuery(filter);
-        Collection<Event> remEvts =
-            events(ignite1.cluster().forPredicate(F.remoteNodes(ignite1.cluster().localNode().id()))).remoteQuery(filter, 0);
+        Collection<Event> remEvts = events(prj).remoteQuery(filter, 0);
 
         assert evts != null;
         assert locEvts != null;

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -50,6 +52,7 @@ import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
@@ -232,28 +235,16 @@ public class GridCacheUtils {
     public static final long EXPIRE_TIME_CALCULATE = -1L;
 
     /** Empty predicate array. */
-    private static final IgnitePredicate[] EMPTY = new IgnitePredicate[0];
+    private static final IgnitePredicate<?>[] EMPTY = new IgnitePredicate[0];
 
     /** Default transaction config. */
     private static final TransactionConfiguration DEFAULT_TX_CFG = new TransactionConfiguration();
 
     /** Empty predicate array. */
-    private static final IgnitePredicate[] EMPTY_FILTER = new IgnitePredicate[0];
-
-    /** Empty predicate array. */
     private static final CacheEntryPredicate[] EMPTY_FILTER0 = new CacheEntryPredicate[0];
 
     /** */
-    private static final CacheEntryPredicate ALWAYS_FALSE0 = new CacheEntrySerializablePredicate(
-        new CacheEntryPredicateAdapter() {
-            @Override public boolean apply(GridCacheEntryEx e) {
-                return false;
-            }
-        }
-    );
-
-    /** */
-    private static final CacheEntryPredicate[] ALWAYS_FALSE0_ARR = new CacheEntryPredicate[] {ALWAYS_FALSE0};
+    private static final CacheEntryPredicate[] ALWAYS_FALSE0_ARR = new CacheEntryPredicate[] {CacheEntryPredicateAdapter.ALWAYS_FALSE};
 
     /** Read filter. */
     public static final IgnitePredicate<IgniteTxEntry> READ_FILTER = new P1<IgniteTxEntry>() {
@@ -484,7 +475,7 @@ public class GridCacheUtils {
      * @return Empty filter.
      */
     public static <K, V> IgnitePredicate<Cache.Entry<K, V>>[] empty() {
-        return (IgnitePredicate<Cache.Entry<K, V>>[])EMPTY_FILTER;
+        return (IgnitePredicate<Cache.Entry<K, V>>[])EMPTY;
     }
 
     /**
@@ -938,7 +929,7 @@ public class GridCacheUtils {
         assert attrName != null;
         assert attrMsg != null;
 
-        if (!F.eq(locVal, rmtVal))
+        if (!Objects.equals(locVal, rmtVal))
             throwIgniteCheckedException(log, fail,
                 attrMsg + " mismatch [" +
                     "cacheName=" + cfgName + ", " +
@@ -965,24 +956,31 @@ public class GridCacheUtils {
         Object val1,
         Object val2,
         boolean fail) throws IgniteCheckedException {
-        if (F.eq(val1, val2))
+        if (F.isArray(val1) || F.isArray(val2)) {
+            if (F.compareArrays(val1, val2) == 0)
+                return;
+        }
+        else if (Objects.equals(val1, val2))
             return;
+
+        Object val1Str = F.isArray(val1) ? S.arrayToString(val1) : val1;
+        Object val2Str = F.isArray(val2) ? S.arrayToString(val2) : val2;
 
         if (fail) {
             throw new IgniteCheckedException(attrMsg + " mismatch for caches related to the same group " +
                 "[groupName=" + cfg1.getGroupName() +
                 ", existingCache=" + cfg1.getName() +
-                ", existing" + capitalize(attrName) + "=" + val1 +
+                ", existing" + capitalize(attrName) + "=" + val1Str +
                 ", startingCache=" + cfg2.getName() +
-                ", starting" + capitalize(attrName) + "=" + val2 + ']');
+                ", starting" + capitalize(attrName) + "=" + val2Str + ']');
         }
         else {
             U.warn(log, attrMsg + " mismatch for caches related to the same group " +
                 "[groupName=" + cfg1.getGroupName() +
                 ", existingCache=" + cfg1.getName() +
-                ", existing" + capitalize(attrName) + "=" + val1 +
+                ", existing" + capitalize(attrName) + "=" + val1Str +
                 ", startingCache=" + cfg2.getName() +
-                ", starting" + capitalize(attrName) + "=" + val2 + ']');
+                ", starting" + capitalize(attrName) + "=" + val2Str + ']');
         }
     }
 
@@ -1637,12 +1635,14 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param log Logger.
      * @param cfg Initializes cache configuration with proper defaults.
      * @param cacheObjCtx Cache object context.
+     * @param recoveryMode Value of {@link GridKernalContext#recoveryMode()}.
      * @throws IgniteCheckedException If configuration is not valid.
      */
     public static void initializeConfigDefaults(IgniteLogger log, CacheConfiguration cfg,
-        CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+        CacheObjectContext cacheObjCtx, boolean recoveryMode) throws IgniteCheckedException {
         if (cfg.getCacheMode() == null)
             cfg.setCacheMode(DFLT_CACHE_MODE);
 
@@ -1707,7 +1707,7 @@ public class GridCacheUtils {
 
         if (!F.isEmpty(entities)) {
             cfg.clearQueryEntities().setQueryEntities(
-                QueryUtils.normalizeQueryEntities(cacheObjCtx.kernalContext(), entities, cfg));
+                QueryUtils.normalizeQueryEntities(recoveryMode, entities, cfg));
         }
     }
 
@@ -2165,6 +2165,37 @@ public class GridCacheUtils {
         }
 
         return strategies;
+    }
+
+    /**
+     * @param cfg Ignite configuration.
+     * @return Type name to affinity key field name mapping.
+     */
+    public static Map<String, String> affinityFields(@Nullable IgniteConfiguration cfg) {
+        Map<String, String> affFields = new HashMap<>();
+
+        if (cfg == null || F.isEmpty(cfg.getCacheKeyConfiguration()))
+            return affFields;
+
+        for (CacheKeyConfiguration keyCfg : cfg.getCacheKeyConfiguration())
+            affFields.put(keyCfg.getTypeName(), keyCfg.getAffinityKeyFieldName());
+
+        return affFields;
+    }
+
+    /**
+     * @param cls Class to get affinity field for.
+     * @return Affinity field name or {@code null} if field name was not found.
+     */
+    public static String affinityFieldName(Class cls) {
+        for (; cls != Object.class && cls != null; cls = cls.getSuperclass()) {
+            for (Field f : cls.getDeclaredFields()) {
+                if (f.getAnnotation(AffinityKeyMapped.class) != null)
+                    return f.getName();
+            }
+        }
+
+        return null;
     }
 
     /**

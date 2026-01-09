@@ -24,7 +24,9 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.CacheWriteSynchronizationModeMessage;
+import org.apache.ignite.internal.managers.communication.GridCacheOperationMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -72,37 +74,44 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /** */
     private static final int AFFINITY_MAPPING_FLAG_MASK = 0x80;
 
+    /** */
+    private static final int SKIP_READ_THROUGH_FLAG_MASK = 0x100;
+
     /** Target node ID. */
-    @GridDirectTransient
     protected UUID nodeId;
 
     /** Future version. */
+    @Order(value = 4, method = "futureId")
     protected long futId;
 
     /** Topology version. */
+    @Order(value = 5, method = "topologyVersion")
     protected AffinityTopologyVersion topVer;
 
-    /** Write synchronization mode. */
-    protected CacheWriteSynchronizationMode syncMode;
+    /** Cache operation wrapper message. */
+    @Order(value = 6, method = "cacheOperationMessage")
+    protected GridCacheOperationMessage opMsg;
 
-    /** Update operation. */
-    protected GridCacheOperation op;
+    /** Write synchronization mode wrapper message. */
+    @Order(value = 7, method = "writeSynchronizationModeMessage")
+    protected CacheWriteSynchronizationModeMessage syncModeMsg;
 
     /** Task name hash. */
+    @Order(8)
     protected int taskNameHash;
 
     /** Compressed boolean flags. Make sure 'toString' is updated when add new flag. */
     @GridToStringExclude
-    protected byte flags;
+    @Order(9)
+    protected short flags;
 
     /** */
-    @GridDirectTransient
     private GridNearAtomicUpdateResponse res;
 
     /**
      *
      */
-    public GridNearAtomicAbstractUpdateRequest() {
+    protected GridNearAtomicAbstractUpdateRequest() {
         // No-op.
     }
 
@@ -127,15 +136,15 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         int taskNameHash,
-        byte flags,
+        short flags,
         boolean addDepInfo
     ) {
         this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futId = futId;
         this.topVer = topVer;
-        this.syncMode = syncMode;
-        this.op = op;
+        this.opMsg = new GridCacheOperationMessage(op);
+        this.syncModeMsg = new CacheWriteSynchronizationModeMessage(syncMode);
         this.taskNameHash = taskNameHash;
         this.flags = flags;
         this.addDepInfo = addDepInfo;
@@ -153,7 +162,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @param recovery Recovery mode flag.
      * @return Flags.
      */
-    static byte flags(
+    static short flags(
         boolean nearCache,
         boolean topLocked,
         boolean retval,
@@ -161,8 +170,10 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         boolean needPrimaryRes,
         boolean skipStore,
         boolean keepBinary,
-        boolean recovery) {
-        byte flags = 0;
+        boolean recovery,
+        boolean skipReadThrough
+    ) {
+        short flags = 0;
 
         if (nearCache)
             flags |= NEAR_CACHE_FLAG_MASK;
@@ -188,6 +199,9 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         if (recovery)
             flags |= RECOVERY_FLAG_MASK;
 
+        if (skipReadThrough)
+            flags |= SKIP_READ_THROUGH_FLAG_MASK;
+
         return flags;
     }
 
@@ -204,6 +218,11 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      */
     public boolean nearCache() {
         return isFlag(NEAR_CACHE_FLAG_MASK);
+    }
+
+    /** Sets new topology version. */
+    public void topologyVersion(AffinityTopologyVersion topVer) {
+        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */
@@ -251,9 +270,9 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @return {@code True} if update is processed in {@link CacheWriteSynchronizationMode#FULL_SYNC} mode.
      */
     boolean fullSync() {
-        assert syncMode != null;
+        assert syncModeMsg != null && writeSynchronizationMode() != null;
 
-        return syncMode == CacheWriteSynchronizationMode.FULL_SYNC;
+        return writeSynchronizationMode() == CacheWriteSynchronizationMode.FULL_SYNC;
     }
 
     /**
@@ -264,10 +283,36 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     }
 
     /**
+     * Sets task name hash code.
+     */
+    public void taskNameHash(int taskNameHash) {
+        this.taskNameHash = taskNameHash;
+    }
+
+    /**
+     * @return Compressed boolean flags.
+     */
+    public short flags() {
+        return flags;
+    }
+
+    /**
+     * @param flags New compressed boolean flags.
+     */
+    public void flags(short flags) {
+        this.flags = flags;
+    }
+
+    /**
      * @return Update opreation.
      */
-    public GridCacheOperation operation() {
-        return op;
+    @Nullable public GridCacheOperation operation() {
+        return opMsg.value();
+    }
+
+    /** @return Cache operatrion. */
+    @Nullable public CacheWriteSynchronizationMode writeSynchronizationMode() {
+        return syncModeMsg.value();
     }
 
     /**
@@ -285,10 +330,32 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     }
 
     /**
-     * @return Write synchronization mode.
+     * Sets near node future ID.
      */
-    public final CacheWriteSynchronizationMode writeSynchronizationMode() {
-        return syncMode;
+    public void futureId(long futId) {
+        this.futId = futId;
+    }
+
+    /** @return The cache operation wrapper message. */
+    public GridCacheOperationMessage cacheOperationMessage() {
+        return opMsg;
+    }
+
+    /** Sets the cache operation wrapper message. */
+    public void cacheOperationMessage(GridCacheOperationMessage cacheOpMsg) {
+        this.opMsg = cacheOpMsg;
+    }
+
+    /**
+     * @return The write mode synchronization wrapper message.
+     */
+    public final CacheWriteSynchronizationModeMessage writeSynchronizationModeMessage() {
+        return syncModeMsg;
+    }
+
+    /** Sets the write mode synchronization wrapper message */
+    public void writeSynchronizationModeMessage(CacheWriteSynchronizationModeMessage writeSyncModeMsg) {
+        this.syncModeMsg = writeSyncModeMsg;
     }
 
     /**
@@ -361,6 +428,11 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         return isFlag(SKIP_STORE_FLAG_MASK);
     }
 
+    /** */
+    public final boolean skipReadThrough() {
+        return isFlag(SKIP_READ_THROUGH_FLAG_MASK);
+    }
+
     /**
      * @param val Skip store flag.
      */
@@ -403,7 +475,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @param mask Mask.
      */
     private void setFlag(boolean flag, int mask) {
-        flags = flag ? (byte)(flags | mask) : (byte)(flags & ~mask);
+        flags = flag ? (short)(flags | mask) : (short)(flags & ~mask);
     }
 
     /**
@@ -513,11 +585,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      */
     public abstract KeyCacheObject key(int idx);
 
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 10;
-    }
-
+    // TODO: remove after IGNITE-26599, IGNITE-26577
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -526,7 +594,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
             return false;
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -534,37 +602,37 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
         switch (writer.state()) {
             case 4:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeShort(flags))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeLong("futId", futId))
+                if (!writer.writeLong(futId))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeByte("op", op != null ? (byte)op.ordinal() : -1))
+                if (!writer.writeMessage(opMsg))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
+                if (!writer.writeMessage(syncModeMsg))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeInt(taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
@@ -574,19 +642,17 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         return true;
     }
 
+    // TODO: remove after IGNITE-26599, IGNITE-26577
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
 
         if (!super.readFrom(buf, reader))
             return false;
 
         switch (reader.state()) {
             case 4:
-                flags = reader.readByte("flags");
+                flags = reader.readShort();
 
                 if (!reader.isLastRead())
                     return false;
@@ -594,7 +660,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                 reader.incrementState();
 
             case 5:
-                futId = reader.readLong("futId");
+                futId = reader.readLong();
 
                 if (!reader.isLastRead())
                     return false;
@@ -602,31 +668,23 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                 reader.incrementState();
 
             case 6:
-                byte opOrd;
-
-                opOrd = reader.readByte("op");
+                opMsg = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
-
-                op = GridCacheOperation.fromOrdinal(opOrd);
 
                 reader.incrementState();
 
             case 7:
-                byte syncModeOrd;
-
-                syncModeOrd = reader.readByte("syncMode");
+                syncModeMsg = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
 
-                syncMode = CacheWriteSynchronizationMode.fromOrdinal(syncModeOrd);
-
                 reader.incrementState();
 
             case 8:
-                taskNameHash = reader.readInt("taskNameHash");
+                taskNameHash = reader.readInt();
 
                 if (!reader.isLastRead())
                     return false;
@@ -634,7 +692,7 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
                 reader.incrementState();
 
             case 9:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -643,23 +701,31 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
 
         }
 
-        return reader.afterMessageRead(GridNearAtomicAbstractUpdateRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         StringBuilder flags = new StringBuilder();
 
+        if (nearCache())
+            appendFlag(flags, "nearCache");
         if (needPrimaryResponse())
             appendFlag(flags, "needRes");
         if (topologyLocked())
             appendFlag(flags, "topLock");
+        if (affinityMapping())
+            appendFlag(flags, "affMapping");
         if (skipStore())
             appendFlag(flags, "skipStore");
         if (keepBinary())
             appendFlag(flags, "keepBinary");
         if (returnValue())
             appendFlag(flags, "retVal");
+        if (recovery())
+            appendFlag(flags, "recovery");
+        if (skipReadThrough())
+            appendFlag(flags, "skipReadThrough");
 
         return S.toString(GridNearAtomicAbstractUpdateRequest.class, this,
             "flags", flags.toString());

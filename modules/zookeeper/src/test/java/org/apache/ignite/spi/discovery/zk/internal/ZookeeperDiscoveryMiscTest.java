@@ -136,8 +136,8 @@ public class ZookeeperDiscoveryMiscTest extends ZookeeperDiscoverySpiTestBase {
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @SuppressWarnings("deprecation")
             @Override public Void call() throws Exception {
-                ignite(0).configuration().getMarshaller().marshal(new C1());
-                ignite(0).configuration().getMarshaller().marshal(new C2());
+                marshaller(ignite(0)).marshal(new C1());
+                marshaller(ignite(0)).marshal(new C2());
 
                 return null;
             }

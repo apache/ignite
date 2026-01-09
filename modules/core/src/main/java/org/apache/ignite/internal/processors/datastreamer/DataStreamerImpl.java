@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -120,6 +121,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_DATASTREAM;
@@ -895,7 +897,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         if (key.partition() == -1)
                             key.partition(cctx.affinity().partition(key, false));
 
-                        if (!allowOverwrite() && remapNode != null && F.eq(topVer, remapTopVer))
+                        if (!allowOverwrite() && remapNode != null && Objects.equals(topVer, remapTopVer))
                             nodes = Collections.singletonList(remapNode);
                         else
                             nodes = nodes(key, topVer, cctx);

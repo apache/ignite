@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -92,6 +93,9 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
     /** If {@code true} then compress partition files. */
     private final boolean compress;
 
+    /** If {@code true} then only cache config and metadata included in snapshot. */
+    private final boolean configOnly;
+
     /** Dump transfer rate limiter. */
     private final BasicRateLimiter rateLimiter;
 
@@ -146,6 +150,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
      * @param parts Parts to dump.
      * @param compress If {@code true} then compress partition files.
      * @param encrypt If {@code true} then content of dump encrypted.
+     * @param configOnly If {@code true} then only cache config and metadata included in snapshot.
      */
     public CreateDumpFutureTask(
         GridCacheSharedContext<?, ?> cctx,
@@ -157,7 +162,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         SnapshotSender snpSndr,
         Map<Integer, Set<Integer>> parts,
         boolean compress,
-        boolean encrypt
+        boolean encrypt,
+        boolean configOnly
     ) {
         super(
             cctx,
@@ -171,6 +177,7 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         this.ioFactory = compress ? new WriteOnlyZipFileIOFactory(ioFactory) : new BufferedFileIOFactory(ioFactory);
 
         this.compress = compress;
+        this.configOnly = configOnly;
         this.rateLimiter = rateLimiter;
         this.encKey = encrypt ? cctx.gridConfig().getEncryptionSpi().create() : null;
         this.encThLocBufs = encrypt ? new ConcurrentHashMap<>() : null;
@@ -199,6 +206,12 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
 
     /** {@inheritDoc} */
     @Override protected void processPartitions() throws IgniteCheckedException {
+        if (configOnly) {
+            parts.keySet().forEach(grpId -> processed.put(grpId, Collections.emptySet()));
+
+            return;
+        }
+
         super.processPartitions();
 
         processed.values().forEach(parts -> parts.remove(INDEX_PARTITION));
@@ -211,10 +224,10 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         for (Map.Entry<Integer, Set<Integer>> e : processed.entrySet()) {
             int grp = e.getKey();
 
-            File grpDumpDir = sft.cacheStorage(cctx.cache().cacheGroup(grp).config());
-
-            if (!grpDumpDir.mkdirs())
-                throw new IgniteCheckedException("Dump directory can't be created: " + grpDumpDir);
+            for (File grpDumpDir : sft.cacheStorages(cctx.cache().cacheGroup(grp).config())) {
+                if (!grpDumpDir.mkdirs())
+                    throw new IgniteCheckedException("Dump directory can't be created: " + grpDumpDir);
+            }
 
             CacheGroupContext gctx = cctx.cache().cacheGroup(grp);
 
@@ -233,9 +246,8 @@ public class CreateDumpFutureTask extends AbstractCreateSnapshotFutureTask imple
         return processed.keySet().stream().map(grp -> runAsync(() -> {
             CacheGroupContext gctx = cctx.cache().cacheGroup(grp);
 
-            File grpDir = sft.cacheStorage(gctx.config());
-
-            IgniteUtils.ensureDirectory(grpDir, "dump group directory", null);
+            for (File grpDir : sft.cacheStorages(gctx.config()))
+                IgniteUtils.ensureDirectory(grpDir, "dump group directory", null);
 
             for (GridCacheContext<?, ?> cacheCtx : gctx.caches()) {
                 DynamicCacheDescriptor desc = cctx.kernalContext().cache().cacheDescriptor(cacheCtx.cacheId());

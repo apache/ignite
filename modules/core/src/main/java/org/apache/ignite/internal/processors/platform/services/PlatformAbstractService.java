@@ -24,8 +24,8 @@ import java.io.ObjectOutput;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -96,7 +96,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = platformCtx.writer(out);
+            BinaryWriterEx writer = platformCtx.writer(out);
 
             writer.writeBoolean(srvKeepBinary);
             writer.writeObject(svc);
@@ -112,7 +112,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
             in.synchronize();
 
-            BinaryRawReaderEx reader = platformCtx.reader(in);
+            BinaryReaderEx reader = platformCtx.reader(in);
 
             PlatformUtils.readInvocationResult(platformCtx, reader);
         }
@@ -129,7 +129,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = platformCtx.writer(out);
+            BinaryWriterEx writer = platformCtx.writer(out);
 
             writer.writeLong(ptr);
 
@@ -150,7 +150,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx writer = platformCtx.writer(out);
+            BinaryWriterEx writer = platformCtx.writer(out);
 
             writer.writeLong(ptr);
 
@@ -169,7 +169,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
      * @param ctx Context.
      * @param writer Writer.
      */
-    private void writeServiceContext(ServiceContext ctx, BinaryRawWriterEx writer) {
+    private void writeServiceContext(ServiceContext ctx, BinaryWriterEx writer) {
         writer.writeString(ctx.name());
         writer.writeUuid(ctx.executionId());
         writer.writeBoolean(ctx.isCancelled());
@@ -197,7 +197,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
-            BinaryRawWriterEx writer = platformCtx.writer(out);
+            BinaryWriterEx writer = platformCtx.writer(out);
 
             writer.writeLong(ptr);
             writer.writeBoolean(srvKeepBinary);
@@ -223,7 +223,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
             in.synchronize();
 
-            BinaryRawReaderEx reader = platformCtx.reader(in);
+            BinaryReaderEx reader = platformCtx.reader(in);
 
             return PlatformUtils.readInvocationResult(platformCtx, reader, deserializeResult);
         }

@@ -20,13 +20,13 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.List;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * DTO for CacheDistributionTask, contains information about group
  */
-public class CacheDistributionGroup extends VisorDataTransferObject {
+public class CacheDistributionGroup extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -93,8 +93,7 @@ public class CacheDistributionGroup extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         grpId = in.readInt();
         grpName = U.readString(in);
         partitions = U.readList(in);

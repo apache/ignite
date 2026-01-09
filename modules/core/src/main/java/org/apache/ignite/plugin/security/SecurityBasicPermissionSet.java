@@ -24,8 +24,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -151,10 +151,10 @@ public class SecurityBasicPermissionSet implements SecurityPermissionSet {
         SecurityBasicPermissionSet other = (SecurityBasicPermissionSet)o;
 
         return dfltAllowAll == other.dfltAllowAll &&
-            F.eq(cachePermissions, other.cachePermissions) &&
-            F.eq(taskPermissions, other.taskPermissions) &&
-            F.eq(servicePermissions, other.servicePermissions) &&
-            F.eq(systemPermissions, other.systemPermissions);
+            Objects.equals(cachePermissions, other.cachePermissions) &&
+            Objects.equals(taskPermissions, other.taskPermissions) &&
+            Objects.equals(servicePermissions, other.servicePermissions) &&
+            Objects.equals(systemPermissions, other.systemPermissions);
     }
 
     /** {@inheritDoc} */

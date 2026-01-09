@@ -33,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -84,7 +85,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridSetQueryPredicate;
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
-import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -124,7 +124,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
-import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -138,7 +137,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SPI;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.TEXT;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
@@ -654,12 +652,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private FieldsResult executeFieldsQuery(CacheQuery<?> qry, @Nullable Object[] args,
         boolean loc, @Nullable String taskName, Object rcpt) throws IgniteCheckedException {
         assert qry != null;
+        assert qry.type() == SQL_FIELDS : "Unexpected query type: " + qry.type();
 
-        FieldsResult res;
-
-        T2<String, List<Object>> resKey = null;
-
-        if (qry.clause() == null && qry.type() != SPI) {
+        if (qry.clause() == null) {
             assert !loc;
 
             throw new IgniteCheckedException("Received next page request after iterator was removed. " +
@@ -667,9 +662,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 "CacheConfiguration.getMaxQueryIteratorsCount() configuration property).");
         }
 
-        if (qry.type() == SQL_FIELDS) {
-            if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
+        if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+            cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                     cctx.localNode(),
                     "SQL fields query executed.",
                     EVT_CACHE_QUERY_EXECUTED,
@@ -682,63 +676,23 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     args,
                     securitySubjectId(cctx),
                     taskName));
-            }
-
-            // Attempt to get result from cache.
-            resKey = new T2<>(qry.clause(), F.asList(args));
-
-            res = (FieldsResult)qryResCache.get(resKey);
-
-            if (res != null && res.addRecipient(rcpt))
-                return res; // Cached result found.
-
-            res = new FieldsResult(rcpt);
-
-            if (qryResCache.putIfAbsent(resKey, res) != null)
-                resKey = null; // Failed to cache result.
-        }
-        else {
-            assert qry.type() == SPI : "Unexpected query type: " + qry.type();
-
-            if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
-                    cctx.localNode(),
-                    "SPI query executed.",
-                    EVT_CACHE_QUERY_EXECUTED,
-                    CacheQueryType.SPI.name(),
-                    cctx.name(),
-                    null,
-                    null,
-                    null,
-                    null,
-                    args,
-                    securitySubjectId(cctx),
-                    taskName));
-            }
-
-            res = new FieldsResult(rcpt);
         }
 
-        try {
-            if (qry.type() == SPI) {
-                IgniteSpiCloseableIterator<?> iter = cctx.kernalContext().indexing().query(cacheName, F.asList(args),
-                    filter(qry));
+        // Attempt to get result from cache.
+        T2<String, List<Object>> resKey = new T2<>(qry.clause(), F.asList(args));
 
-                res.onDone(iter);
-            }
-            else {
-                assert qry.type() == SQL_FIELDS;
+        FieldsResult res = (FieldsResult)qryResCache.get(resKey);
 
-                throw new IllegalStateException("Should never be called.");
-            }
-        }
-        catch (Exception e) {
-            res.onDone(e);
-        }
-        finally {
-            if (resKey != null)
-                qryResCache.remove(resKey, res);
-        }
+        if (res != null && res.addRecipient(rcpt))
+            return res; // Cached result found.
+
+        res = new FieldsResult(rcpt);
+
+        if (qryResCache.putIfAbsent(resKey, res) != null)
+            resKey = null; // Failed to cache result.
+
+        if (resKey != null)
+            qryResCache.remove(resKey, res);
 
         return res;
     }
@@ -942,14 +896,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         recipient(qryInfo.senderId(), qryInfo.requestId())) :
                     fieldsQueryResult(qryInfo, taskName);
 
-                // If metadata needs to be returned to user and cleaned from internal fields - copy it.
-                List<GridQueryFieldMetadata> meta = qryInfo.includeMetaData() ?
-                    (res.metaData() != null ? new ArrayList<>(res.metaData()) : null) :
-                    res.metaData();
-
-                if (!qryInfo.includeMetaData())
-                    meta = null;
-
                 GridCloseableIterator<?> it = new GridSpiCloseableIteratorWrapper<Object>(
                     res.iterator(recipient(qryInfo.senderId(), qryInfo.requestId())));
 
@@ -960,13 +906,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     if (rdc != null)
                         data = Collections.singletonList(rdc.reduce());
 
-                    onFieldsPageReady(qryInfo.local(), qryInfo, meta, entities, data, true, null);
+                    onFieldsPageReady(qryInfo.local(), qryInfo, entities, data, true, null);
 
                     return;
                 }
 
                 int cnt = 0;
-                boolean metaSent = false;
 
                 while (!Thread.currentThread().isInterrupted() && it.hasNext()) {
                     long start = statsEnabled ? System.nanoTime() : 0L;
@@ -1021,8 +966,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         entities.add(row);
 
                     if (rdc == null && ((!qryInfo.allPages() && ++cnt == pageSize) || !it.hasNext())) {
-                        onFieldsPageReady(qryInfo.local(), qryInfo, !metaSent ? meta : null,
-                            entities, data, !it.hasNext(), null);
+                        onFieldsPageReady(qryInfo.local(), qryInfo, entities, data, !it.hasNext(), null);
 
                         if (it.hasNext())
                             rmvRes = false;
@@ -1032,10 +976,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     }
                 }
 
-                if (rdc != null) {
-                    onFieldsPageReady(qryInfo.local(), qryInfo, meta, null,
-                        Collections.singletonList(rdc.reduce()), true, null);
-                }
+                if (rdc != null)
+                    onFieldsPageReady(qryInfo.local(), qryInfo, null, Collections.singletonList(rdc.reduce()), true, null);
             }
             catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled() || !e.hasCause(SQLException.class))
@@ -1049,12 +991,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             ", msg=" + e.getMessage() + ']');
                 }
 
-                onFieldsPageReady(qryInfo.local(), qryInfo, null, null, null, true, e);
+                onFieldsPageReady(qryInfo.local(), qryInfo, null, null, true, e);
             }
             catch (Throwable e) {
                 U.error(log, "Failed to run fields query [qry=" + qryInfo + ", node=" + cctx.nodeId() + "]", e);
 
-                onFieldsPageReady(qryInfo.local(), qryInfo, null, null, null, true, e);
+                onFieldsPageReady(qryInfo.local(), qryInfo, null, null, true, e);
 
                 if (e instanceof Error)
                     throw (Error)e;
@@ -1290,7 +1232,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             }
             catch (Throwable e) {
-                if (X.hasCause(e, ClassNotFoundException.class) && !qry.keepBinary() && cctx.binaryMarshaller() &&
+                if (X.hasCause(e, ClassNotFoundException.class) && !qry.keepBinary() &&
                     !cctx.localNode().isClient() && !log.isQuiet()) {
                     LT.warn(log, "Suggestion for the cause of ClassNotFoundException");
                     LT.warn(log, "To disable, set -D" + IGNITE_QUIET + "=true");
@@ -1734,18 +1676,19 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * @param loc Local query or not.
      * @param qryInfo Query info.
-     * @param metaData Meta data.
      * @param entities Indexing entities.
      * @param data Data.
      * @param finished Last page or not.
      * @param e Exception in case of error.
      * @return {@code true} if page was processed right.
      */
-    protected abstract boolean onFieldsPageReady(boolean loc, GridCacheQueryInfo qryInfo,
-        @Nullable List<GridQueryFieldMetadata> metaData,
+    protected abstract boolean onFieldsPageReady(
+        boolean loc,
+        GridCacheQueryInfo qryInfo,
         @Nullable Collection<?> entities,
         @Nullable Collection<?> data,
-        boolean finished, @Nullable Throwable e);
+        boolean finished, @Nullable Throwable e
+    );
 
     /**
      * Gets cache queries metrics.
@@ -2234,7 +2177,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 if (cacheName == null)
                     cacheName = meta.cacheName;
                 else
-                    assert F.eq(cacheName, meta.cacheName);
+                    assert Objects.equals(cacheName, meta.cacheName);
 
                 types.addAll(meta.types);
                 keyClasses.putAll(meta.keyClasses);
@@ -2481,34 +2424,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     *
+     * TODO: IGNITE-27326, remove
      */
     private static class FieldsResult<Q> extends CachedResult<Q> {
-        /** */
-        private List<GridQueryFieldMetadata> meta;
-
         /**
          * @param rcpt ID of the recipient.
          */
         FieldsResult(Object rcpt) {
             super(rcpt);
-        }
-
-        /**
-         * @return Metadata.
-         * @throws IgniteCheckedException On error.
-         */
-        public List<GridQueryFieldMetadata> metaData() throws IgniteCheckedException {
-            get(); // Ensure that result is ready.
-
-            return meta;
-        }
-
-        /**
-         * @param meta Metadata.
-         */
-        public void metaData(List<GridQueryFieldMetadata> meta) {
-            this.meta = meta;
         }
     }
 
@@ -2824,24 +2747,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         public int size() {
             return size;
         }
-    }
-
-    /**
-     * Query for {@link IndexingSpi}.
-     *
-     * @param keepBinary Keep binary flag.
-     * @return Query.
-     */
-    public <R> CacheQuery<R> createSpiQuery(boolean keepBinary) {
-        return new CacheQuery<>(cctx,
-            SPI,
-            null,
-            null,
-            null,
-            keepBinary,
-            false,
-            null,
-            null);
     }
 
     /**

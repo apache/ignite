@@ -22,7 +22,6 @@ import org.apache.ignite.internal.binary.BinaryArraySelfTest;
 import org.apache.ignite.internal.binary.BinaryBasicIdMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryBasicNameMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryConfigurationConsistencySelfTest;
-import org.apache.ignite.internal.binary.BinaryConfigurationCustomSerializerSelfTest;
 import org.apache.ignite.internal.binary.BinaryContextPredefinedTypesTest;
 import org.apache.ignite.internal.binary.BinaryEnumsSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldExtractionSelfTest;
@@ -31,7 +30,6 @@ import org.apache.ignite.internal.binary.BinaryFieldsOffheapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsHeapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsOffheapSelfTest;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest;
-import org.apache.ignite.internal.binary.BinaryObjectBuilderAdditionalSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderDefaultMappersSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectExceptionSelfTest;
@@ -48,6 +46,7 @@ import org.apache.ignite.internal.binary.GridBinaryWildcardsSelfTest;
 import org.apache.ignite.internal.binary.GridDefaultBinaryMappersBinaryMetaDataSelfTest;
 import org.apache.ignite.internal.binary.GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest;
 import org.apache.ignite.internal.binary.RawBinaryObjectExtractorTest;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderAdditionalSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFieldsHeapNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFieldsOffheapNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFooterOffsetsHeapNonCompactSelfTest;
@@ -113,7 +112,6 @@ import org.junit.runners.Suite;
     BinaryArrayIdentityResolverSelfTest.class,
 
     BinaryConfigurationConsistencySelfTest.class,
-    BinaryConfigurationCustomSerializerSelfTest.class,
     GridBinaryMarshallerCtxDisabledSelfTest.class,
     BinaryObjectBuilderDefaultMappersSelfTest.class,
     BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest.class,

@@ -20,10 +20,10 @@ package org.apache.ignite.internal.management.baseline;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /** */
-public class BaselineAutoAdjustSettings extends VisorDataTransferObject {
+public class BaselineAutoAdjustSettings extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -71,7 +71,7 @@ public class BaselineAutoAdjustSettings extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in)
+    @Override protected void readExternalData(ObjectInput in)
         throws IOException, ClassNotFoundException {
         if (in.readBoolean())
             enabled = in.readBoolean();

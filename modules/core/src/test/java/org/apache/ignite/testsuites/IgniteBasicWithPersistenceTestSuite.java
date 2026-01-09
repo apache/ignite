@@ -42,11 +42,13 @@ import org.apache.ignite.internal.processors.cache.persistence.CommonPoolStarvat
 import org.apache.ignite.internal.processors.cache.persistence.SingleNodePersistenceSslTest;
 import org.apache.ignite.internal.processors.performancestatistics.CacheStartTest;
 import org.apache.ignite.internal.processors.performancestatistics.CheckpointTest;
+import org.apache.ignite.internal.processors.performancestatistics.ForwardReadQueryPropertyTest;
 import org.apache.ignite.internal.processors.performancestatistics.ForwardReadTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsMultipleStartTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsPropertiesTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsRotateFileTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsSelfTest;
+import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsSystemViewTest;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsThinClientTest;
 import org.apache.ignite.internal.processors.performancestatistics.StringCacheTest;
 import org.apache.ignite.internal.processors.performancestatistics.TopologyChangesTest;
@@ -97,12 +99,14 @@ import org.junit.runners.Suite;
     PerformanceStatisticsSelfTest.class,
     PerformanceStatisticsThinClientTest.class,
     PerformanceStatisticsRotateFileTest.class,
+    PerformanceStatisticsSystemViewTest.class,
     TopologyChangesTest.class,
     IgniteClusterIdTagTest.class,
     StringCacheTest.class,
     PerformanceStatisticsPropertiesTest.class,
     PerformanceStatisticsMultipleStartTest.class,
     ForwardReadTest.class,
+    ForwardReadQueryPropertyTest.class,
     CacheStartTest.class,
     CheckpointTest.class
 })

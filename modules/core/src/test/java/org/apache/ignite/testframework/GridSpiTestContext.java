@@ -17,13 +17,13 @@
 
 package org.apache.ignite.testframework;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -46,6 +46,7 @@ import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.communication.IgniteMessageFactoryImpl;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
@@ -92,7 +93,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     private final Collection<GridMessageListener> msgLsnrs = new ArrayList<>();
 
     /** */
-    private final Map<ClusterNode, Serializable> sentMsgs = new HashMap<>();
+    private final Map<ClusterNode, Object> sentMsgs = new HashMap<>();
 
     /** */
     private final ConcurrentMap<String, Map<?, ?>> cache = new ConcurrentHashMap<>();
@@ -190,12 +191,12 @@ public class GridSpiTestContext implements IgniteSpiContext {
      * @return Metrics adapter.
      */
     private ClusterMetricsSnapshot createMetrics(int waitingJobs, int activeJobs) {
-        ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
+        NodeMetricsMessage metrics = new NodeMetricsMessage();
 
-        metrics.setCurrentWaitingJobs(waitingJobs);
-        metrics.setCurrentActiveJobs(activeJobs);
+        metrics.currentWaitingJobs(waitingJobs);
+        metrics.currentActiveJobs(activeJobs);
 
-        return metrics;
+        return new ClusterMetricsSnapshot(metrics);
     }
 
     /**
@@ -279,14 +280,6 @@ public class GridSpiTestContext implements IgniteSpiContext {
             notifyListener(new DiscoveryEvent(locNode, "Metrics updated.", EVT_NODE_METRICS_UPDATED, node));
     }
 
-    /** */
-    public void updateAllMetrics() {
-        notifyListener(new DiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, locNode));
-
-        for (ClusterNode node : rmtNodes)
-            notifyListener(new DiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, node));
-    }
-
     /**
      * @param evt Event node.
      */
@@ -305,7 +298,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void send(ClusterNode node, Serializable msg, String topic)
+    @Override public void send(ClusterNode node, Object msg, String topic)
         throws IgniteSpiException {
         sentMsgs.put(node, msg);
     }
@@ -314,7 +307,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
      * @param node Node message was sent to.
      * @return Sent message.
      */
-    public Serializable getSentMessage(ClusterNode node) {
+    public Object getSentMessage(ClusterNode node) {
         return sentMsgs.get(node);
     }
 
@@ -322,7 +315,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
      * @param node Node message was sent to.
      * @return Sent message.
      */
-    public Serializable removeSentMessage(ClusterNode node) {
+    public Object removeSentMessage(ClusterNode node) {
         return sentMsgs.remove(node);
     }
 
@@ -543,12 +536,12 @@ public class GridSpiTestContext implements IgniteSpiContext {
     @Override public MessageFormatter messageFormatter() {
         if (formatter == null) {
             formatter = new MessageFormatter() {
-                @Override public MessageWriter writer(UUID rmtNodeId) {
-                    return new DirectMessageWriter();
+                @Override public MessageWriter writer(MessageFactory msgFactory) {
+                    return new DirectMessageWriter(msgFactory);
                 }
 
-                @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory) {
-                    return new DirectMessageReader(msgFactory);
+                @Override public MessageReader reader(MessageFactory msgFactory) {
+                    return new DirectMessageReader(msgFactory, null);
                 }
             };
         }
@@ -620,7 +613,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
         if (metricsRegistryProducer != null)
             return metricsRegistryProducer.apply(name);
 
-        return new MetricRegistryImpl(name, null, null, new NullLogger());
+        return new MetricRegistryImpl(name, null, null, null, new NullLogger());
     }
 
     /** {@inheritDoc} */
@@ -711,7 +704,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
             GridLocalMessageListener l = (GridLocalMessageListener)o;
 
-            return F.eq(predLsnr, l.predLsnr) && F.eq(topic, l.topic);
+            return Objects.equals(predLsnr, l.predLsnr) && Objects.equals(topic, l.topic);
         }
 
         /** {@inheritDoc} */

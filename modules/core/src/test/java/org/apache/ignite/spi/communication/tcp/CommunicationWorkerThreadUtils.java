@@ -18,10 +18,12 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.internal.CommunicationWorker;
+import org.apache.ignite.spi.communication.tcp.internal.ConnectionClientPool;
 
 /**
  * Utils to work with communication worker threads.
@@ -45,5 +47,18 @@ class CommunicationWorkerThreadUtils {
 
             U.join(tcpCommWorkerThread, log);
         }
+    }
+
+    /**
+     * Notifies the {@link TcpCommunicationSpi} components about a node leaving the cluster.
+     *
+     * @param consistentId Consistent id of the node.
+     * @param nodeId Left node ID.
+     */
+    static void onNodeLeft(TcpCommunicationSpi spi, Object consistentId, UUID nodeId) {
+        assert nodeId != null;
+
+        ((TcpCommunicationMetricsListener)U.field(spi, "metricsLsnr")).onNodeLeft(consistentId);
+        ((ConnectionClientPool)U.field(spi, "clientPool")).onNodeLeft(nodeId);
     }
 }

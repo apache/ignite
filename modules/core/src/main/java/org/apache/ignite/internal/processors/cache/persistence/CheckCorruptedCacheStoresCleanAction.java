@@ -29,22 +29,16 @@ public class CheckCorruptedCacheStoresCleanAction implements MaintenanceAction<B
     public static final String ACTION_NAME = "check_cache_files_cleaned";
 
     /** */
-    private final File rootStoreDir;
+    private final File[] cacheStoreDirs;
 
     /** */
-    private final String[] cacheStoreDirs;
-
-    /** */
-    public CheckCorruptedCacheStoresCleanAction(File rootStoreDir, String[] cacheStoreDirs) {
-        this.rootStoreDir = rootStoreDir;
+    public CheckCorruptedCacheStoresCleanAction(File[] cacheStoreDirs) {
         this.cacheStoreDirs = cacheStoreDirs;
     }
 
     /** {@inheritDoc} */
     @Override public Boolean execute() {
-        for (String cacheStoreDirName : cacheStoreDirs) {
-            File cacheStoreDir = new File(rootStoreDir, cacheStoreDirName);
-
+        for (File cacheStoreDir : cacheStoreDirs) {
             if (cacheStoreDir.exists() && cacheStoreDir.isDirectory()) {
                 for (File f : cacheStoreDir.listFiles()) {
                     if (!NodeFileTree.cacheConfigFile(f))

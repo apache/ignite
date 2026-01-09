@@ -22,6 +22,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
@@ -67,7 +68,7 @@ public abstract class NoValueClassOnServerAbstractClient implements AutoCloseabl
         log = ignite.log().getLogger(getClass());
 
         log.info("Started node [id=" + ignite.cluster().localNode().id() +
-            ", marsh=" + ignite.configuration().getMarshaller().getClass().getSimpleName() + ']');
+            ", marsh=" + ((IgniteEx)ignite).context().marshaller().getClass().getSimpleName() + ']');
     }
 
     /**

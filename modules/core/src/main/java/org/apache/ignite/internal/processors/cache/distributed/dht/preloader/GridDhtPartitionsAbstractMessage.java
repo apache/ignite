@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -37,20 +34,20 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     /** */
     private static final byte RESTORE_STATE_FLAG_MASK = 0x02;
 
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Exchange ID. */
+    @Order(value = 3, method = "exchangeId")
     private GridDhtPartitionExchangeId exchId;
 
     /** Last used cache version. */
+    @Order(value = 4, method = "lastVersion")
     private GridCacheVersion lastVer;
 
     /** */
+    @Order(5)
     protected byte flags;
 
     /**
-     * Required by {@link Externalizable}.
+     * Empty constructor.
      */
     protected GridDhtPartitionsAbstractMessage() {
         // No-op.
@@ -72,11 +69,6 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
         msg.exchId = exchId;
         msg.lastVer = lastVer;
         msg.flags = flags;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean cacheGroupMessage() {
-        return false;
     }
 
     /** {@inheritDoc} */
@@ -116,6 +108,27 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
     }
 
     /**
+     * @param lastVer Last used version among all nodes.
+     */
+    public void lastVersion(GridCacheVersion lastVer) {
+        this.lastVer = lastVer;
+    }
+
+    /**
+     * @return Flags.
+     */
+    public byte flags() {
+        return flags;
+    }
+
+    /**
+     * @param flags Flags.
+     */
+    public void flags(byte flags) {
+        this.flags = flags;
+    }
+
+    /**
      * @return {@code True} if message data is compressed.
      */
     public final boolean compressed() {
@@ -141,89 +154,6 @@ public abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage 
      */
     public boolean restoreState() {
         return (flags & RESTORE_STATE_FLAG_MASK) != 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 6;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 3:
-                if (!writer.writeMessage("exchId", exchId))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeByte("flags", flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeMessage("lastVer", lastVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 3:
-                exchId = reader.readMessage("exchId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                flags = reader.readByte("flags");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                lastVer = reader.readMessage("lastVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(GridDhtPartitionsAbstractMessage.class);
     }
 
     /** {@inheritDoc} */

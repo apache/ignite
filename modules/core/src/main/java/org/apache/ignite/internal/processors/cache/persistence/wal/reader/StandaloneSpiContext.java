@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -154,7 +153,7 @@ public class StandaloneSpiContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void send(ClusterNode node, Serializable msg, String topic) {
+    @Override public void send(ClusterNode node, Object msg, String topic) {
         /* No-op. */
     }
 

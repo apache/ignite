@@ -43,7 +43,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentMetadata;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentStore;
 import org.apache.ignite.internal.managers.deployment.GridTestDeployment;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.util.typedef.X;
@@ -97,8 +96,7 @@ public class ClassLoadingProblemExceptionTest extends GridCommonAbstractTest imp
             .setClientMode(igniteInstanceName.startsWith(CLIENT_PREFIX))
             .setPeerClassLoadingEnabled(true)
             .setDeploymentMode(SHARED)
-            .setCommunicationSpi(new TestCommunicationSpi())
-            .setMarshaller(new OptimizedMarshaller());
+            .setCommunicationSpi(new TestCommunicationSpi());
 
         return cfg;
     }

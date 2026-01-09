@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform;
 
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 
 /**
  * Denotes an exception which has some data to be written in a special manner.
@@ -53,5 +53,5 @@ public abstract class PlatformExtendedException extends PlatformException {
      *
      * @param writer Writer.
      */
-    public abstract void writeData(BinaryRawWriterEx writer);
+    public abstract void writeData(BinaryWriterEx writer);
 }

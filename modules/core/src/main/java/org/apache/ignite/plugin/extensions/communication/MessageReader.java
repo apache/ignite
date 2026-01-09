@@ -22,8 +22,12 @@ import java.util.BitSet;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -37,248 +41,226 @@ public interface MessageReader {
      *
      * @param buf Byte buffer.
      */
-    public void setBuffer(ByteBuffer buf);
-
-    /**
-     * Sets type of message currently read.
-     *
-     * @param msgCls Message type.
-     */
-    public void setCurrentReadClass(Class<? extends Message> msgCls);
-
-    /**
-     * Callback that must be invoked by a message implementation before message body started decoding.
-     *
-     * @return {@code True} if reading can proceed, {@code false} otherwise.
-     */
-    public boolean beforeMessageRead();
-
-    /**
-     * Callback that must be invoked by a message implementation after message body finished decoding.
-     *
-     * @param msgCls Message class finishing read stage.
-     * @return {@code True} if reading can proceed, {@code false} otherwise.
-     */
-    public boolean afterMessageRead(Class<? extends Message> msgCls);
+    @Deprecated
+    public default void setBuffer(ByteBuffer buf) {
+        // No-op.
+    }
 
     /**
      * Reads {@code byte} value.
      *
-     * @param name Field name.
      * @return {@code byte} value.
      */
-    public byte readByte(String name);
+    public byte readByte();
 
     /**
      * Reads {@code short} value.
      *
-     * @param name Field name.
      * @return {@code short} value.
      */
-    public short readShort(String name);
+    public short readShort();
 
     /**
      * Reads {@code int} value.
      *
-     * @param name Field name.
      * @return {@code int} value.
      */
-    public int readInt(String name);
-
-    /**
-     * Reads {@code int} value.
-     *
-     * @param name Field name.
-     * @param dflt Default value if field not found.
-     * @return {@code int} value.
-     */
-    public int readInt(String name, int dflt);
+    public int readInt();
 
     /**
      * Reads {@code long} value.
      *
-     * @param name Field name.
      * @return {@code long} value.
      */
-    public long readLong(String name);
+    public long readLong();
 
     /**
      * Reads {@code float} value.
      *
-     * @param name Field name.
      * @return {@code float} value.
      */
-    public float readFloat(String name);
+    public float readFloat();
 
     /**
      * Reads {@code double} value.
      *
-     * @param name Field name.
      * @return {@code double} value.
      */
-    public double readDouble(String name);
+    public double readDouble();
 
     /**
      * Reads {@code char} value.
      *
-     * @param name Field name.
      * @return {@code char} value.
      */
-    public char readChar(String name);
+    public char readChar();
 
     /**
      * Reads {@code boolean} value.
      *
-     * @param name Field name.
      * @return {@code boolean} value.
      */
-    public boolean readBoolean(String name);
+    public boolean readBoolean();
 
     /**
      * Reads {@code byte} array.
      *
-     * @param name Field name.
      * @return {@code byte} array.
      */
-    public byte[] readByteArray(String name);
+    public byte[] readByteArray();
 
     /**
      * Reads {@code short} array.
      *
-     * @param name Field name.
      * @return {@code short} array.
      */
-    public short[] readShortArray(String name);
+    public short[] readShortArray();
 
     /**
      * Reads {@code int} array.
      *
-     * @param name Field name.
      * @return {@code int} array.
      */
-    public int[] readIntArray(String name);
+    public int[] readIntArray();
 
     /**
      * Reads {@code long} array.
      *
-     * @param name Field name.
      * @return {@code long} array.
      */
-    public long[] readLongArray(String name);
+    public long[] readLongArray();
 
     /**
      * Reads {@code float} array.
      *
-     * @param name Field name.
      * @return {@code float} array.
      */
-    public float[] readFloatArray(String name);
+    public float[] readFloatArray();
 
     /**
      * Reads {@code double} array.
      *
-     * @param name Field name.
      * @return {@code double} array.
      */
-    public double[] readDoubleArray(String name);
+    public double[] readDoubleArray();
 
     /**
      * Reads {@code char} array.
      *
-     * @param name Field name.
      * @return {@code char} array.
      */
-    public char[] readCharArray(String name);
+    public char[] readCharArray();
 
     /**
      * Reads {@code boolean} array.
      *
-     * @param name Field name.
      * @return {@code boolean} array.
      */
-    public boolean[] readBooleanArray(String name);
+    public boolean[] readBooleanArray();
 
     /**
      * Reads {@link String}.
      *
-     * @param name Field name.
      * @return {@link String}.
      */
-    public String readString(String name);
+    public String readString();
 
     /**
      * Reads {@link BitSet}.
      *
-     * @param name Field name.
      * @return {@link BitSet}.
      */
-    public BitSet readBitSet(String name);
+    public BitSet readBitSet();
 
     /**
      * Reads {@link UUID}.
      *
-     * @param name Field name.
      * @return {@link UUID}.
      */
-    public UUID readUuid(String name);
+    public UUID readUuid();
 
     /**
      * Reads {@link IgniteUuid}.
      *
-     * @param name Field name.
      * @return {@link IgniteUuid}.
      */
-    public IgniteUuid readIgniteUuid(String name);
+    public IgniteUuid readIgniteUuid();
 
     /**
      * Reads {@link AffinityTopologyVersion}.
      *
-     * @param name Field name.
      * @return {@link AffinityTopologyVersion}.
      */
-    public AffinityTopologyVersion readAffinityTopologyVersion(String name);
+    public AffinityTopologyVersion readAffinityTopologyVersion();
 
     /**
      * Reads nested message.
      *
-     * @param name Field name.
      * @param <T> Type of the message.
      * @return Message.
      */
-    public <T extends Message> T readMessage(String name);
+    public <T extends Message> T readMessage();
+
+    /**
+     * Reads {@link CacheObject}.
+     *
+     * @return Cache object.
+     */
+    public CacheObject readCacheObject();
+
+    /**
+     * Reads {@link KeyCacheObject}.
+     *
+     * @return Key cache object.
+     */
+    public KeyCacheObject readKeyCacheObject();
+
+    /**
+     * Reads {@link GridLongList}.
+     *
+     * @return Grid long list.
+     */
+    public GridLongList readGridLongList();
 
     /**
      * Reads array of objects.
      *
-     * @param name Field name.
      * @param itemType Array component type.
      * @param itemCls Array component class.
-     * @param <T> Type of the red object .
+     * @param <T> Type of the read object.
      * @return Array of objects.
      */
-    public <T> T[] readObjectArray(String name, MessageCollectionItemType itemType, Class<T> itemCls);
+    public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls);
 
     /**
-     * Reads collection.
+     * Reads any collection.
      *
-     * @param name Field name.
      * @param itemType Collection item type.
-     * @param <C> Type of the red collection.
+     * @param <C> Type of the read collection.
      * @return Collection.
      */
-    public <C extends Collection<?>> C readCollection(String name, MessageCollectionItemType itemType);
+    public <C extends Collection<?>> C readCollection(MessageCollectionItemType itemType);
+
+    /**
+     * Reads any collection and provides it as a set.
+     *
+     * @param itemType Set item type.
+     * @param <S> Type of the read set.
+     * @return Set.
+     */
+    public <S extends Set<?>> S readSet(MessageCollectionItemType itemType);
 
     /**
      * Reads map.
      *
-     * @param name Field name.
      * @param keyType Map key type.
      * @param valType Map value type.
      * @param linked Whether {@link LinkedHashMap} should be created.
-     * @param <M> Type of the red map.
+     * @param <M> Type of the read map.
      * @return Map.
      */
-    public <M extends Map<?, ?>> M readMap(String name, MessageCollectionItemType keyType,
+    // TODO: IGNITE-26329 — switch to the new readMap method without the flag parameter
+    public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
         MessageCollectionItemType valType, boolean linked);
 
     /**

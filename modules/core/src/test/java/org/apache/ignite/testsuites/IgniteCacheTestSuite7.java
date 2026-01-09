@@ -38,7 +38,8 @@ import org.apache.ignite.internal.processors.cache.distributed.CacheRentingState
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheStartWithLoadTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingWithAsyncClearingTest;
-import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruPageEvictionMultinodeMixedRegionsTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageEvictionMultinodeMixedRegionsTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheAssignmentNodeRestartsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.CheckpointBufferDeadlockTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncWithPersistenceTest;
@@ -91,7 +92,8 @@ public class IgniteCacheTestSuite7 {
 
         GridTestUtils.addTestIfNeeded(suite, CacheGroupMetricsTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, CacheMetricsManageTest.class, ignoredTests);
-        GridTestUtils.addTestIfNeeded(suite, PageEvictionMultinodeMixedRegionsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, Random2LruPageEvictionMultinodeMixedRegionsTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, RandomLruPageEvictionMultinodeMixedRegionsTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, IgniteDynamicCacheStartFailWithPersistenceTest.class, ignoredTests);
 

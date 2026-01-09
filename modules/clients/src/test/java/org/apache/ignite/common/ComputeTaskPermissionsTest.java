@@ -40,19 +40,20 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeJobResultPolicy;
+import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskAdapter;
+import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.ThinClientConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.client.GridClient;
-import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.client.GridClientFactory;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadataVerificationTask;
+import org.apache.ignite.internal.management.cache.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.processors.security.AbstractSecurityTest;
+import org.apache.ignite.internal.processors.security.AbstractTestSecurityPluginProvider;
 import org.apache.ignite.internal.processors.security.OperationSecurityContext;
 import org.apache.ignite.internal.processors.security.PublicAccessJob;
 import org.apache.ignite.internal.processors.security.SecurityContext;
@@ -71,10 +72,11 @@ import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.plugin.security.AuthenticationContext;
 import org.apache.ignite.plugin.security.SecurityCredentials;
-import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.plugin.security.SecurityPermissionSetBuilder;
+import org.apache.ignite.testframework.ListeningTestLogger;
+import org.apache.ignite.testframework.LogListener;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
@@ -96,6 +98,7 @@ import static org.apache.ignite.plugin.security.SecurityPermission.TASK_EXECUTE;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.NO_PERMISSIONS;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.create;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
@@ -112,13 +115,13 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     private static final IgniteClosure SYSTEM_CLOSURE = new ToStringClosure<>();
 
     /** */
-    private static final ComputeTask SYSTEM_TASK = new SnapshotMetadataVerificationTask();
+    private static final ComputeTask SYSTEM_TASK = new VerifyBackupPartitionsTask();
 
     /** */
-    private static final AtomicInteger EXECUTED_TASK_CNTR = new AtomicInteger();
+    private static final AtomicInteger EXECUTED_JOB_CNT = new AtomicInteger();
 
     /** */
-    private static final AtomicInteger CANCELLED_TASK_CNTR = new AtomicInteger();
+    private static final AtomicInteger CANCELLED_JOB_CNT = new AtomicInteger();
 
     /** */
     private static final String CACHE = DEFAULT_CACHE_NAME;
@@ -132,6 +135,9 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     /** */
     public static CountDownLatch taskUnblockedLatch;
 
+    /** */
+    private static ListeningTestLogger listeningLog;
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -141,6 +147,8 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
             PublicAccessSystemTask.class,
             PublicAccessSystemJob.class
         );
+
+        listeningLog = new ListeningTestLogger(log);
 
         for (int idx = 0; idx < SRV_NODES_CNT; idx++)
             startGrid(idx, false);
@@ -153,6 +161,15 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
             .propagate(0L);
 
         grid(0).createCache(CACHE);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(
+        String instanceName,
+        AbstractTestSecurityPluginProvider pluginProv
+    ) throws Exception {
+        return super.getConfiguration(instanceName, pluginProv)
+            .setGridLogger(listeningLog);
     }
 
     /** */
@@ -283,21 +300,6 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
 
     /** */
     @Test
-    public void testGridClient() throws Exception {
-        GridClientConfiguration cfg = new GridClientConfiguration()
-            .setServers(singletonList("127.0.0.1:11211"))
-            .setSecurityCredentialsProvider(new SecurityCredentialsBasicProvider(new SecurityCredentials("grid-client", "")));
-
-        try (GridClient cli = GridClientFactory.start(cfg)) {
-            checkTask(String.class, (t, a) -> cli.compute().execute(t, a));
-            checkTask(String.class, (t, a) -> cli.compute().executeAsync(t, a).get());
-            checkTask(String.class, (t, a) -> cli.compute().affinityExecute(t, CACHE, "key", a));
-            checkTask(String.class, (t, a) -> cli.compute().affinityExecuteAsync(t, CACHE, "key", a).get());
-        }
-    }
-
-    /** */
-    @Test
     public void testRestClient() {
         for (Ignite reqRecipient : Ignition.allGrids()) {
             checkTask(String.class, (t, a) -> {
@@ -394,6 +396,82 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
 
     /** */
     @Test
+    public void testJobCancelAuthorizationSucceeded() throws Exception {
+        taskStartedLatch = new CountDownLatch(SRV_NODES_CNT);
+        taskUnblockedLatch = new CountDownLatch(1);
+
+        CANCELLED_JOB_CNT.set(0);
+        EXECUTED_JOB_CNT.set(0);
+
+        ComputeTaskFuture<Object> fut = grid(0).compute().executeAsync(CancelAllowedTask.class, null);
+
+        taskStartedLatch.await(getTestTimeout(), MILLISECONDS);
+
+        for (ComputeJobSibling sibling : fut.getTaskSession().getJobSiblings())
+            sibling.cancel();
+
+        fut.get(getTestTimeout());
+
+        assertTrue(waitForCondition(() -> SRV_NODES_CNT == CANCELLED_JOB_CNT.get(), getTestTimeout()));
+        assertEquals(0, EXECUTED_JOB_CNT.get());
+    }
+
+    /** */
+    @Test
+    public void testJobCancelAuthorizationFailed() throws Exception {
+        taskStartedLatch = new CountDownLatch(SRV_NODES_CNT);
+        taskUnblockedLatch = new CountDownLatch(1);
+
+        CANCELLED_JOB_CNT.set(0);
+        EXECUTED_JOB_CNT.set(0);
+
+        ComputeTaskFuture<Object> fut = grid(0).compute().executeAsync(CancelForbiddenTask.class, null);
+
+        taskStartedLatch.await(getTestTimeout(), MILLISECONDS);
+
+        for (ComputeJobSibling sibling : fut.getTaskSession().getJobSiblings()) {
+            LogListener logLsnr = LogListener.matches("Failed to cancel Ignite Compute Task Job" +
+                " [sesId=" + fut.getTaskSession().getId() +
+                ", jobId=" + sibling.getJobId() + ']'
+            ).build();
+
+            listeningLog.registerListener(logLsnr);
+
+            // TODO https://issues.apache.org/jira/browse/IGNITE-27195 Authorization errors during Compute Job
+            //  cancellation do not propagate from remote nodes back to the one that initiated cancellation.
+            if (grid(0).context().job().activeJob(sibling.getJobId()) != null) {
+                assertThrowsAnyCause(
+                    log,
+                    () -> {
+                        sibling.cancel();
+
+                        return null;
+                    },
+                    SecurityException.class,
+                    "Authorization failed"
+                );
+            }
+            else
+                sibling.cancel();
+
+            logLsnr.check(getTestTimeout());
+        }
+
+        assertEquals(0, EXECUTED_JOB_CNT.get());
+        assertEquals(0, CANCELLED_JOB_CNT.get());
+
+        assertFalse(fut.isDone());
+
+        taskUnblockedLatch.countDown();
+
+        fut.get(getTestTimeout());
+
+        assertTrue(waitForCondition(() -> SRV_NODES_CNT == EXECUTED_JOB_CNT.get(), getTestTimeout()));
+        assertEquals(0, CANCELLED_JOB_CNT.get());
+    }
+
+    /** */
+    @Test
     public void testSystemTaskCancel() throws Exception {
         SecurityContext initiatorSecCtx = securityContext("no-permissions-login-0");
 
@@ -439,41 +517,36 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
         taskStartedLatch = new CountDownLatch(expTaskCnt);
         taskUnblockedLatch = new CountDownLatch(1);
 
-        CANCELLED_TASK_CNTR.set(0);
-        EXECUTED_TASK_CNTR.set(0);
+        CANCELLED_JOB_CNT.set(0);
+        EXECUTED_JOB_CNT.set(0);
 
-        try {
-            Future<?> fut = taskStarter.get();
+        Future<?> fut = taskStarter.get();
 
-            assertTrue(taskStartedLatch.await(getTestTimeout(), MILLISECONDS));
+        assertTrue(taskStartedLatch.await(getTestTimeout(), MILLISECONDS));
 
-            try (
-                OperationSecurityContext ignored = initiator == null
-                    ? null
-                    : grid(0).context().security().withContext(initiator)
-            ) {
-                if (expE == null) {
-                    fut.cancel(true);
+        try (
+            OperationSecurityContext ignored = initiator == null
+                ? null
+                : grid(0).context().security().withContext(initiator)
+        ) {
+            if (expE == null) {
+                fut.cancel(true);
 
-                    assertTrue(fut.isCancelled());
+                assertTrue(fut.isCancelled());
 
-                    assertTrue(waitForCondition(() -> expTaskCnt == CANCELLED_TASK_CNTR.get(), getTestTimeout()));
+                assertTrue(waitForCondition(() -> expTaskCnt == CANCELLED_JOB_CNT.get(), getTestTimeout()));
 
-                    assertEquals(0, EXECUTED_TASK_CNTR.get());
-                }
-                else {
-                    assertThrowsWithCause(() -> fut.cancel(true), expE);
-
-                    assertFalse(fut.isCancelled());
-
-                    taskUnblockedLatch.countDown();
-
-                    assertTrue(waitForCondition(() -> expTaskCnt == EXECUTED_TASK_CNTR.get(), getTestTimeout()));
-                }
+                assertEquals(0, EXECUTED_JOB_CNT.get());
             }
-        }
-        finally {
-            taskUnblockedLatch.countDown();
+            else {
+                assertThrowsWithCause(() -> fut.cancel(true), expE);
+
+                assertFalse(fut.isCancelled());
+
+                taskUnblockedLatch.countDown();
+
+                assertTrue(waitForCondition(() -> expTaskCnt == EXECUTED_JOB_CNT.get(), getTestTimeout()));
+            }
         }
     }
 
@@ -535,16 +608,16 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
 
     /** */
     private void assertCompleted(RunnableX r, int expCnt) {
-        EXECUTED_TASK_CNTR.set(0);
+        EXECUTED_JOB_CNT.set(0);
 
         r.run();
 
-        assertEquals(expCnt, EXECUTED_TASK_CNTR.get());
+        assertEquals(expCnt, EXECUTED_JOB_CNT.get());
     }
 
     /** */
     private void assertFailed(RunnableX r) {
-        EXECUTED_TASK_CNTR.set(0);
+        EXECUTED_JOB_CNT.set(0);
 
         try {
             r.run();
@@ -566,7 +639,7 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
 
         fail();
 
-        assertEquals(0, EXECUTED_TASK_CNTR.get());
+        assertEquals(0, EXECUTED_JOB_CNT.get());
     }
 
     /** */
@@ -648,7 +721,7 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     private abstract static class AbstractRunnable implements IgniteRunnable {
         /** {@inheritDoc} */
         @Override public void run() {
-            EXECUTED_TASK_CNTR.incrementAndGet();
+            EXECUTED_JOB_CNT.incrementAndGet();
         }
     }
 
@@ -656,7 +729,7 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     private abstract static class AbstractCallable implements IgniteCallable<AtomicInteger> {
         /** {@inheritDoc} */
         @Override public AtomicInteger call() throws Exception {
-            EXECUTED_TASK_CNTR.incrementAndGet();
+            EXECUTED_JOB_CNT.incrementAndGet();
 
             return new AtomicInteger(0);
         }
@@ -666,7 +739,7 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
     private abstract static class AbstractClosure implements IgniteClosure<Boolean, Boolean> {
         /** {@inheritDoc} */
         @Override public Boolean apply(Boolean o) {
-            EXECUTED_TASK_CNTR.incrementAndGet();
+            EXECUTED_JOB_CNT.incrementAndGet();
 
             return null;
         }
@@ -700,7 +773,17 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
 
         /** {@inheritDoc} */
         @Override public @Nullable Object reduce(List<ComputeJobResult> results) throws IgniteException {
+            for (ComputeJobResult res : results) {
+                if (!res.isCancelled() && res.getException() != null)
+                    throw res.getException();
+            }
+
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
+            return ComputeJobResultPolicy.WAIT;
         }
 
         /** */
@@ -726,7 +809,7 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
 
         /** {@inheritDoc} */
         @Override public Object execute() {
-            EXECUTED_TASK_CNTR.incrementAndGet();
+            EXECUTED_JOB_CNT.incrementAndGet();
 
             return null;
         }
@@ -744,14 +827,14 @@ public class ComputeTaskPermissionsTest extends AbstractSecurityTest {
                 taskUnblockedLatch.await(5_000, MILLISECONDS);
             }
             catch (InterruptedException e) {
-                CANCELLED_TASK_CNTR.incrementAndGet();
+                CANCELLED_JOB_CNT.incrementAndGet();
 
                 Thread.currentThread().interrupt();
 
                 throw new IgniteException(e);
             }
 
-            EXECUTED_TASK_CNTR.incrementAndGet();
+            EXECUTED_JOB_CNT.incrementAndGet();
 
             return null;
         }

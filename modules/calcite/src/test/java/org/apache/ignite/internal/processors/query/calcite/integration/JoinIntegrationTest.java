@@ -39,9 +39,8 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
         List<Object[]> params = new ArrayList<>();
 
         for (SqlTransactionMode sqlTxMode : SqlTransactionMode.values()) {
-            for (JoinType jt : JoinType.values()) {
-                params.add(new Object[]{sqlTxMode, jt});
-            }
+            for (JoinType jt : JoinType.values())
+                params.add(new Object[] {sqlTxMode, jt});
         }
 
         return params;
@@ -64,6 +63,49 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
     /** {@inheritDoc} */
     @Override protected void afterTest() {
         // NO-OP
+    }
+
+    /** */
+    @Test
+    public void testIsNotDistinctWithEquiConditionFrom() {
+        // 'IS NOT DISTINCT' is first.
+        assertQuery("select t1.c2, t1.c3, t2.c2, t2.c3 from t1 join t2 on t1.c2 is not distinct from t2.c2 and t1.c3 = t2.c3 - 1")
+            .returns(null, 2, null, 3)
+            .check();
+
+        // 'IS NOT DISTINCT' is second.
+        assertQuery("select t1.c2, t1.c3, t2.c2, t2.c3 from t1 join t2 on t1.c3 = t2.c3 - 1 and t1.c2 is not distinct from t2.c2")
+            .returns(null, 2, null, 3)
+            .check();
+
+        // Duplicated condition.
+        assertQuery("select t1.c2, t1.c3, t2.c2, t2.c3 from t1 join t2 on t1.c2 is not distinct from t2.c2 " +
+            "and t1.c2 is not distinct from t2.c2 and t1.c3 = t2.c3 - 1")
+            .returns(null, 2, null, 3)
+            .check();
+        assertQuery("select t1.c2, t1.c3, t2.c2, t2.c3 from t1 join t2 on t1.c3 = t2.c3 - 1 and t1.c3 = t2.c3 - 1" +
+            "and t1.c2 is not distinct from t2.c2 and t1.c2 is not distinct from t2.c2")
+            .returns(null, 2, null, 3)
+            .check();
+
+        // Other fields.
+        assertQuery("select t1.c2, t1.c3, t2.c1, t2.c2 from t1 join t2 on t1.c3 is not distinct from t2.c2 - 1 " +
+            "and t1.c2 = t2.c1")
+            .returns(3, null, 3, null)
+            .check();
+        assertQuery("select t1.c2, t1.c3, t2.c2, t2.c3 from t1 join t2 " +
+            "on t1.c2 is not distinct from t2.c2 and t1.c2 = t2.c2 and t1.c3 = t2.c3 and t1.c3 is not distinct from t2.c3")
+            .returns(1, 1, 1, 1)
+            .returns(2, 2, 2, 2)
+            .returns(3, 3, 3, 3)
+            .returns(4, 4, 4, 4)
+            .check();
+
+        // Two 'IS NOT DISTINCT's.
+        assertQuery("select t1.c2, t1.c3, t2.c2, t2.c3 from t1 join t2 on t1.c3 is not distinct from t2.c3 - 1 " +
+            "and t1.c2 is not distinct from t2.c2")
+            .returns(null, 2, null, 3)
+            .check();
     }
 
     /**

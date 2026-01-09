@@ -17,15 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -33,12 +31,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,25 +44,22 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  *
  */
 public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingleUpdateRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Optional arguments for entry processor. */
-    @GridDirectTransient
-    private Object[] invokeArgs;
+    private @Nullable Object[] invokeArgs;
 
     /** Entry processor arguments bytes. */
-    private byte[][] invokeArgsBytes;
+    @Order(value = 12, method = "invokeArgumentsBytes")
+    private @Nullable List<byte[]> invokeArgsBytes;
 
     /** Entry processors. */
-    @GridDirectTransient
-    private EntryProcessor<Object, Object, Object> entryProcessor;
+    private @Nullable EntryProcessor<Object, Object, Object> entryProc;
 
     /** Entry processors bytes. */
-    private byte[] entryProcessorBytes;
+    @Order(value = 13, method = "entryProcessorBytes")
+    private @Nullable byte[] entryProcBytes;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridNearAtomicSingleUpdateInvokeRequest() {
         // No-op.
@@ -95,7 +88,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         GridCacheOperation op,
         @Nullable Object[] invokeArgs,
         int taskNameHash,
-        byte flags,
+        short flags,
         boolean addDepInfo
     ) {
         super(
@@ -132,14 +125,14 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         assert conflictVer == null : conflictVer;
         assert val instanceof EntryProcessor : val;
 
-        entryProcessor = (EntryProcessor<Object, Object, Object>)val;
+        entryProc = (EntryProcessor<Object, Object, Object>)val;
 
         this.key = key;
     }
 
     /** {@inheritDoc} */
     @Override public List<?> values() {
-        return Collections.singletonList(entryProcessor);
+        return Collections.singletonList(entryProc);
     }
 
     /** {@inheritDoc} */
@@ -153,7 +146,7 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
     @Override public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
         assert idx == 0 : idx;
 
-        return entryProcessor;
+        return entryProc;
     }
 
     /** {@inheritDoc} */
@@ -168,6 +161,26 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         return invokeArgs;
     }
 
+    /** */
+    public @Nullable byte[] entryProcessorBytes() {
+        return entryProcBytes;
+    }
+
+    /** */
+    public void entryProcessorBytes(@Nullable byte[] entryProcBytes) {
+        this.entryProcBytes = entryProcBytes;
+    }
+
+    /** */
+    public @Nullable List<byte[]> invokeArgumentsBytes() {
+        return invokeArgsBytes;
+    }
+
+    /** */
+    public void invokeArgumentsBytes(@Nullable List<byte[]> invokeArgsBytes) {
+        this.invokeArgsBytes = invokeArgsBytes;
+    }
+
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
@@ -178,102 +191,33 @@ public class GridNearAtomicSingleUpdateInvokeRequest extends GridNearAtomicSingl
         if (!addDepInfo && ctx.deploymentEnabled())
             addDepInfo = true;
 
-        if (entryProcessor != null && entryProcessorBytes == null) {
+        if (entryProc != null && entryProcBytes == null) {
             if (addDepInfo)
-                prepareObject(entryProcessor, cctx);
+                prepareObject(entryProc, cctx);
 
-            entryProcessorBytes = CU.marshal(cctx, entryProcessor);
+            entryProcBytes = CU.marshal(cctx, entryProc);
         }
 
-        if (invokeArgsBytes == null)
-            invokeArgsBytes = marshalInvokeArguments(invokeArgs, cctx);
+        if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
+            invokeArgsBytes = F.asList(marshalInvokeArguments(invokeArgs, cctx));
     }
 
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (entryProcessorBytes != null && entryProcessor == null)
-            entryProcessor = U.unmarshal(ctx, entryProcessorBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
+        if (entryProcBytes != null && entryProc == null)
+            entryProc = U.unmarshal(ctx, entryProcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
-        if (invokeArgs == null)
-            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
+        if (invokeArgsBytes != null && invokeArgs == null)
+            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), ctx, ldr);
     }
 
     /** {@inheritDoc} */
     @Override public void cleanup(boolean clearKey) {
         super.cleanup(clearKey);
 
-        entryProcessor = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 12:
-                if (!writer.writeByteArray("entryProcessorBytes", entryProcessorBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, MessageCollectionItemType.BYTE_ARR))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 12:
-                entryProcessorBytes = reader.readByteArray("entryProcessorBytes");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", MessageCollectionItemType.BYTE_ARR, byte[].class);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(GridNearAtomicSingleUpdateInvokeRequest.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 14;
+        entryProc = null;
     }
 
     /** {@inheritDoc} */

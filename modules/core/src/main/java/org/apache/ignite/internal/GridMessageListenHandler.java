@@ -153,9 +153,9 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         assert ctx.config().isPeerClassLoadingEnabled();
 
         if (topic != null)
-            topicBytes = U.marshal(ctx.config().getMarshaller(), topic);
+            topicBytes = U.marshal(ctx.marshaller(), topic);
 
-        predBytes = U.marshal(ctx.config().getMarshaller(), pred);
+        predBytes = U.marshal(ctx.marshaller(), pred);
 
         // Deploy only listener, as it is very likely to be of some user class.
         GridPeerDeployAware pda = U.peerDeployAware(pred);

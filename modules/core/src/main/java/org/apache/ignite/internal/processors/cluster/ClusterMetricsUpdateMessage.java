@@ -17,140 +17,81 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
-import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType.BYTE_ARR;
-
-/**
- *
- */
-public class ClusterMetricsUpdateMessage implements Message {
+/** */
+public final class ClusterMetricsUpdateMessage implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
+    public static final short TYPE_CODE = 133;
 
-    /** */
-    private byte[] nodeMetrics;
+    /** Single node metrics message. */
+    @Order(0)
+    @Nullable private NodeFullMetricsMessage singleNodeMetricsMsg;
 
-    /** */
-    @GridDirectMap(keyType = UUID.class, valueType = byte[].class)
-    private Map<UUID, byte[]> allNodesMetrics;
+    /** All-nodes cache metrics messages. */
+    @Order(1)
+    @Nullable private Map<UUID, NodeFullMetricsMessage> allNodesMetrics;
 
-    /**
-     * Required by {@link GridIoMessageFactory}.
-     */
+    /** Default constructor. Required for {@link GridIoMessageFactory}. */
     public ClusterMetricsUpdateMessage() {
         // No-op.
     }
 
-    /**
-     * @param nodeMetrics Node metrics.
-     */
-    ClusterMetricsUpdateMessage(byte[] nodeMetrics) {
-        this.nodeMetrics = nodeMetrics;
+    /** Single node metrics constructor. */
+    public ClusterMetricsUpdateMessage(ClusterMetrics nodeMetrics, Map<Integer, CacheMetrics> cacheMetrics) {
+        singleNodeMetricsMsg = new NodeFullMetricsMessage(nodeMetrics, cacheMetrics);
     }
 
-    /**
-     * @param allNodesMetrics All nodes metrcis.
-     */
-    ClusterMetricsUpdateMessage(Map<UUID, byte[]> allNodesMetrics) {
-        this.allNodesMetrics = allNodesMetrics;
+    /** All-nodes metrics constructor. */
+    public ClusterMetricsUpdateMessage(Map<UUID, ClusterNodeMetrics> allNodesMetrics) {
+        this.allNodesMetrics = new HashMap<>(allNodesMetrics.size(), 1.0f);
+
+        allNodesMetrics.forEach((id, e) -> this.allNodesMetrics.put(id, new NodeFullMetricsMessage(e.nodeMetrics(), e.cacheMetrics())));
     }
 
-    /**
-     * @return Node metrics.
-     */
-    @Nullable byte[] nodeMetrics() {
-        return nodeMetrics;
-    }
-
-    /**
-     * @return All nodes metrics.
-     */
-    @Nullable Map<UUID, byte[]> allNodesMetrics() {
+    /** */
+    public @Nullable Map<UUID, NodeFullMetricsMessage> allNodesMetrics() {
         return allNodesMetrics;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
+    /** */
+    public void allNodesMetrics(@Nullable Map<UUID, NodeFullMetricsMessage> allNodesMetrics) {
+        assert allNodesMetrics == null || singleNodeMetricsMsg == null;
 
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeMap("allNodesMetrics", allNodesMetrics, MessageCollectionItemType.UUID, BYTE_ARR))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByteArray("nodeMetrics", nodeMetrics))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
+        this.allNodesMetrics = allNodesMetrics;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
+    /** */
+    public @Nullable NodeFullMetricsMessage singleNodeMetricsMsg() {
+        return singleNodeMetricsMsg;
+    }
 
-        if (!reader.beforeMessageRead())
-            return false;
+    /** */
+    public void singleNodeMetricsMsg(@Nullable NodeFullMetricsMessage singleNodeMetricsMsg) {
+        assert singleNodeMetricsMsg == null || allNodesMetrics == null;
 
-        switch (reader.state()) {
-            case 0:
-                allNodesMetrics = reader.readMap("allNodesMetrics", MessageCollectionItemType.UUID, BYTE_ARR, false);
+        this.singleNodeMetricsMsg = singleNodeMetricsMsg;
+    }
 
-                if (!reader.isLastRead())
-                    return false;
+    /** */
+    public boolean singleNodeMetrics() {
+        assert (singleNodeMetricsMsg == null && allNodesMetrics != null) || (singleNodeMetricsMsg != null && allNodesMetrics == null);
 
-                reader.incrementState();
-
-            case 1:
-                nodeMetrics = reader.readByteArray("nodeMetrics");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(ClusterMetricsUpdateMessage.class);
+        return singleNodeMetricsMsg != null;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 133;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
+        return TYPE_CODE;
     }
 
     /** {@inheritDoc} */

@@ -66,7 +66,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -87,6 +86,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Key partition.
@@ -1390,7 +1390,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         buf.a("[topVer=").a(topVer);
         buf.a(", lastChangeTopVer=").a(top.lastTopologyChangeVersion());
         buf.a(", waitRebalance=").a(ctx.kernalContext().cache().context().affinity().waitRebalance(grp.groupId(), id));
-        buf.a(", nodes=").a(F.nodeIds(top.nodes(id, topVer)).stream().limit(limit).collect(Collectors.toList()));
+        buf.a(", nodes=").a(nodeIds(top.nodes(id, topVer)).stream().limit(limit).collect(Collectors.toList()));
         buf.a(", locPart=").a(toString());
 
         NavigableSet<AffinityTopologyVersion> versions = grp.affinity().cachedVersions();
@@ -1403,7 +1403,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             AffinityTopologyVersion topVer0 = iter.next();
             buf.a(", ver").a(i).a('=').a(topVer0);
 
-            Collection<UUID> nodeIds = F.nodeIds(grp.affinity().cachedAffinity(topVer0).get(id));
+            Collection<UUID> nodeIds = nodeIds(grp.affinity().cachedAffinity(topVer0).get(id));
             buf.a(", affOwners").a(i).a('=').a(nodeIds.stream().limit(limit).collect(Collectors.toList()));
         }
 

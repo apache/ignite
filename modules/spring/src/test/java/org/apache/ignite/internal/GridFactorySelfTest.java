@@ -22,6 +22,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -849,7 +850,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
             assert log != null;
             assert appCtx != null;
 
-            assert F.eq(igniteInstanceName, ignite.name());
+            assert Objects.equals(igniteInstanceName, ignite.name());
 
             if (exec)
                 // Execute any grid method.

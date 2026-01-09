@@ -18,19 +18,16 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.management.api.CommandUtils;
-import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.management.api.NativeCommand;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,11 +38,7 @@ import static org.apache.ignite.internal.management.cache.ViewCacheCmd.GROUPS;
 import static org.apache.ignite.internal.management.cache.ViewCacheCmd.SEQ;
 
 /** Prints info regarding caches, groups or sequences. */
-public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewCacheTaskResult> {
-    /** */
-    Function<CacheListCommandArg, Predicate<ClusterNode>> FILTER = arg -> node ->
-        arg.nodeId() == null || Objects.equals(node.id(), arg.nodeId());
-
+public class CacheListCommand implements NativeCommand<CacheListCommandArg, ViewCacheTaskResult> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Show information about caches, groups or sequences that match a regular expression. " +
@@ -68,19 +61,22 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewC
             ? GROUPS
             : (arg.seq() ? SEQ : CACHES);
 
-        Optional<ClusterNode> node = nodes(client, ignite)
-            .stream()
-            .filter(FILTER.apply(arg))
-            .findFirst();
+        ClusterNode node;
 
-        if (!node.isPresent())
-            throw new IllegalArgumentException("Node not found: id=" + arg.nodeId());
+        if (arg.nodeId() == null) {
+            node = nodes(client, ignite).stream().filter(n -> !n.isClient())
+                .findFirst().orElseThrow(() -> new IllegalStateException("No server nodes in topology."));
+        }
+        else {
+            node = nodes(client, ignite).stream().filter(n -> arg.nodeId().equals(n.id()))
+                .findFirst().orElseThrow(() -> new IllegalArgumentException("Node not found: id=" + arg.nodeId()));
+        }
 
         ViewCacheTaskResult res = CommandUtils.execute(client, ignite,
-            ViewCacheTask.class, arg, singletonList(node.get()));
+            ViewCacheTask.class, arg, singletonList(node));
 
         if (arg.config() && cmd == CACHES)
-            cachesConfig(client, ignite, arg, res, printer);
+            cachesConfig(client, ignite, node, arg, res, printer);
         else
             printCacheInfos(res.cacheInfos(), cmd, printer);
 
@@ -95,21 +91,17 @@ public class CacheListCommand implements LocalCommand<CacheListCommandArg, ViewC
     private void cachesConfig(
         IgniteClient client,
         Ignite ignite,
+        ClusterNode node,
         CacheListCommandArg arg,
         ViewCacheTaskResult viewRes,
         Consumer<String> printer
     ) throws Exception {
-        Collection<ClusterNode> nodes = nodes(client, ignite)
-            .stream()
-            .filter(FILTER.apply(arg))
-            .collect(Collectors.toSet());
-
         Map<String, CacheConfiguration> res = CommandUtils.execute(
             client,
             ignite,
             CacheConfigurationCollectorTask.class,
             new CacheConfigurationCollectorTaskArg(arg.regex()),
-            nodes
+            Collections.singleton(node)
         );
 
         Map<String, Integer> cacheToMapped =

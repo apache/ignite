@@ -22,14 +22,14 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.regex.Pattern;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Argument for {@link CacheConfigurationCollectorTask}.
  */
-public class CacheConfigurationCollectorTaskArg extends VisorDataTransferObject {
+public class CacheConfigurationCollectorTaskArg extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -78,22 +78,15 @@ public class CacheConfigurationCollectorTaskArg extends VisorDataTransferObject 
     }
 
     /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V2;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, cacheNames);
         U.writeString(out, regex);
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         cacheNames = U.readCollection(in);
-
-        if (protoVer > V1)
-            regex = U.readString(in);
+        regex = U.readString(in);
     }
 
     /** {@inheritDoc} */

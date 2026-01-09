@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.client.service;
 
 import java.util.Collection;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.client.thin.ClientUtils;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
@@ -42,14 +42,14 @@ public class ClientServiceDescriptorsResponse extends ClientResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public void encode(ClientConnectionContext ctx, BinaryRawWriterEx writer) {
+    @Override public void encode(ClientConnectionContext ctx, BinaryWriterEx writer) {
         super.encode(ctx, writer);
 
         ClientUtils.collection(svcs, writer.out(), (out, svc) -> writeDescriptor(writer, svc));
     }
 
     /** */
-    public static void writeDescriptor(BinaryRawWriterEx writer, ServiceDescriptor svc) {
+    public static void writeDescriptor(BinaryWriterEx writer, ServiceDescriptor svc) {
         writer.writeString(svc.name());
         writer.writeString(svc.serviceClass().getName());
         writer.writeInt(svc.totalCount());

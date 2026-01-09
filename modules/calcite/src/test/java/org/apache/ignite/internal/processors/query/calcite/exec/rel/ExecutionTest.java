@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableSet;
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -540,15 +539,13 @@ public class ExecutionTest extends AbstractExecutionTest {
 
     /** */
     @Test
-    public void testMergeJoin() throws IgniteCheckedException {
+    public void testMergeJoin() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, int.class);
 
-        int inBufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
-
-        int[] sizes = {1, max(inBufSize / 3, 1), max(inBufSize / 2, 1), max(inBufSize - 1, 1), inBufSize,
-            inBufSize + 1, 2 * inBufSize - 1, 2 * inBufSize, 2 * inBufSize + 1};
+        int[] sizes = {1, max(IN_BUFFER_SIZE / 3, 1), max(IN_BUFFER_SIZE / 2, 1), max(IN_BUFFER_SIZE - 1, 1),
+            IN_BUFFER_SIZE, IN_BUFFER_SIZE + 1, 2 * IN_BUFFER_SIZE - 1, 2 * IN_BUFFER_SIZE, 2 * IN_BUFFER_SIZE + 1};
 
         for (int leftSize : sizes) {
             for (int rightSize : sizes) {

@@ -54,6 +54,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SERVICES;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SERVICE_POOL;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Services deployment task.
@@ -296,7 +297,7 @@ class ServiceDeploymentTask {
         });
 
         if (!depActions.servicesToDeploy().isEmpty()) {
-            final Collection<UUID> evtTopNodes = F.nodeIds(ctx.discovery().nodes(evtTopVer));
+            final Collection<UUID> evtTopNodes = nodeIds(ctx.discovery().nodes(evtTopVer));
 
             depActions.servicesToDeploy().forEach((srvcId, desc) -> {
                 try {

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.utils;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
@@ -211,7 +211,7 @@ public class PlatformFutureUtils {
                             try (PlatformMemory mem = ctx.memory().allocate()) {
                                 PlatformOutputStream out = mem.output();
 
-                                BinaryRawWriterEx outWriter = ctx.writer(out);
+                                BinaryWriterEx outWriter = ctx.writer(out);
 
                                 outWriter.writeObjectDetached(res);
 
@@ -291,7 +291,7 @@ public class PlatformFutureUtils {
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx outWriter = ctx.writer(out);
+            BinaryWriterEx outWriter = ctx.writer(out);
 
             PlatformUtils.writeError(err, outWriter);
             PlatformUtils.writeErrorData(err, outWriter);
@@ -321,7 +321,7 @@ public class PlatformFutureUtils {
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            BinaryRawWriterEx outWriter = ctx.writer(out);
+            BinaryWriterEx outWriter = ctx.writer(out);
 
             writer.write(outWriter, obj, err);
 
@@ -354,7 +354,7 @@ public class PlatformFutureUtils {
          * @param obj Object.
          * @param err Error.
          */
-        public void write(BinaryRawWriterEx writer, Object obj, Throwable err);
+        public void write(BinaryWriterEx writer, Object obj, Throwable err);
 
         /**
          * Determines whether this writer can write given data.

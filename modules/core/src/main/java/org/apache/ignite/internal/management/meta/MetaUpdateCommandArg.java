@@ -48,7 +48,7 @@ public class MetaUpdateCommandArg extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         this.in = U.readString(in);
         metaMarshalled = U.readByteArray(in);
     }

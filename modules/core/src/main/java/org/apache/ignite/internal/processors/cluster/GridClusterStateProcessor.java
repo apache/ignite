@@ -122,6 +122,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.extract
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeConsistentIds;
 
 /**
  *
@@ -638,7 +639,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             TransitionOnJoinWaitFuture joinFut = this.joinFut;
 
             if (joinFut != null)
-                joinFut.onDone(false);
+                joinFut.onDone(globalState.state().active());
 
             GridFutureAdapter<Void> transitionFut = transitionFuts.get(discoClusterState.transitionRequestId());
 
@@ -1377,7 +1378,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     }
 
     /** {@inheritDoc} */
-    @Override public void onStateChangeError(Map<UUID, Exception> errs, StateChangeRequest req) {
+    @Override public void onStateChangeError(Map<UUID, Throwable> errs, StateChangeRequest req) {
         assert !F.isEmpty(errs);
 
         // Revert caches start if activation request fail.
@@ -1407,7 +1408,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (fut != null) {
             IgniteCheckedException e = new IgniteCheckedException("Failed to " + prettyStr(req.state()), null, false);
 
-            for (Map.Entry<UUID, Exception> entry : errs.entrySet())
+            for (Map.Entry<UUID, Throwable> entry : errs.entrySet())
                 e.addSuppressed(entry.getValue());
 
             fut.onDone(e);
@@ -1527,11 +1528,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         assert msg != null;
 
         if (log.isDebugEnabled()) {
-            log.debug("Received activation response [requestId=" + msg.getRequestId() +
+            log.debug("Received activation response [requestId=" + msg.requestId() +
                 ", nodeId=" + nodeId + "]");
         }
 
-        UUID reqId = msg.getRequestId();
+        UUID reqId = msg.requestId();
 
         final GridChangeGlobalStateFuture fut = stateChangeFut.get();
 
@@ -1673,12 +1674,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         }
 
         return exchActs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onExchangeFinishedOnCoordinator(IgniteInternalFuture exchangeFuture,
-        boolean hasMovingPartitions) {
-        // no-op
     }
 
     /** {@inheritDoc} */
@@ -1853,7 +1848,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         Collection<ClusterNode> srvNodes = ctx.discovery().aliveServerNodes();
 
-        Set<Object> aliveNodeIds = new HashSet<>(F.nodeConsistentIds(srvNodes));
+        Set<Object> aliveNodeIds = new HashSet<>(nodeConsistentIds(srvNodes));
 
         for (Object consistentId : consistentIds)
             rows.add(new BaselineNodeView(consistentId, aliveNodeIds.contains(consistentId)));

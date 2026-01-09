@@ -63,6 +63,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.processors.tracing.MTC;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -183,6 +184,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     /** Skip store flag. */
     private final boolean skipStore;
 
+    /** Skip read-through cache store flag. */
+    private final boolean skipReadThrough;
+
     /** Keep binary. */
     private final boolean keepBinary;
 
@@ -214,6 +218,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         long createTtl,
         long accessTtl,
         boolean skipStore,
+        boolean skipReadThrough,
         boolean keepBinary) {
         super(CU.boolReducer());
 
@@ -233,6 +238,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         this.createTtl = createTtl;
         this.accessTtl = accessTtl;
         this.skipStore = skipStore;
+        this.skipReadThrough = skipReadThrough;
         this.keepBinary = keepBinary;
 
         if (tx != null)
@@ -871,7 +877,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 return;
 
             if (log.isDebugEnabled())
-                log.debug("Mapped DHT lock future [dhtMap=" + F.nodeIds(dhtMap.keySet()) +
+                log.debug("Mapped DHT lock future [dhtMap=" + ClusterNodeFunc.nodeIds(dhtMap.keySet()) +
                     ", dhtLockFut=" + this + ']');
 
             long timeout = inTx() ? tx.remainingTime() : this.timeout;
@@ -915,6 +921,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                             inTx() ? tx.taskNameHash() : 0,
                             read ? accessTtl : -1L,
                             skipStore,
+                            skipReadThrough,
                             cctx.store().configured(),
                             keepBinary,
                             cctx.deploymentEnabled(),
@@ -1046,7 +1053,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      *
      */
     private void loadMissingFromStore() {
-        if (!skipStore && (read || cctx.loadPreviousValue()) && cctx.readThrough() && (needReturnVal || read)) {
+        if (!skipStore && !skipReadThrough
+            && (read || cctx.loadPreviousValue()) && cctx.readThrough() && (needReturnVal || read)) {
             final Map<KeyCacheObject, GridDhtCacheEntry> loadMap = new LinkedHashMap<>();
 
             final GridCacheVersion ver = version();
@@ -1338,7 +1346,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                     if (checkDone())
                         return;
 
-                    for (GridCacheEntryInfo info : res.preloadEntries()) {
+                    for (GridCacheEntryInfo info : F.emptyIfNull(res.preloadEntries())) {
                         try {
                             GridCacheEntryEx entry = cache0.entryEx(info.key(), topVer);
 

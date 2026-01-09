@@ -29,6 +29,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql2rel.SqlRexConvertlet;
+import org.apache.calcite.tools.FrameworkConfig;
+import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -47,6 +51,7 @@ import org.apache.ignite.internal.processors.query.calcite.Query;
 import org.apache.ignite.internal.processors.query.calcite.QueryState;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
+import org.apache.ignite.internal.processors.query.calcite.prepare.IgniteConvertletTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.CacheTableImpl;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteCacheTable;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteTable;
@@ -63,6 +68,7 @@ import org.junit.Test;
 
 import static java.util.stream.Collectors.joining;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
+import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.IGNITE_CALCITE_PLANNER_TIMEOUT;
 import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_QRY_VIEW;
 import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_USER_QUERIES_REG_NAME;
@@ -114,13 +120,32 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
         String bigJoin = IntStream.range(0, cnt).mapToObj((i) -> "test_tbl" + i + " p" + i).collect(joining(", "));
         String sql = "SELECT * FROM " + bigJoin;
 
-        IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> sql(sql));
+        CountDownLatch latch = new CountDownLatch(1);
 
-        assertTrue(GridTestUtils.waitForCondition(
-            () -> !engine.runningQueries().isEmpty() || fut.isDone(), TIMEOUT_IN_MS));
+        IgniteConvertletTable convTbl = new IgniteConvertletTable() {
+            @Override public SqlRexConvertlet get(SqlCall call) {
+                if (latch.getCount() > 0) {
+                    try {
+                        latch.await(TIMEOUT_IN_MS, TimeUnit.MILLISECONDS);
+                    }
+                    catch (InterruptedException e) {
+                        throw new IllegalStateException(e);
+                    }
+                }
+
+                return super.get(call);
+            }
+        };
+
+        FrameworkConfig fCfg = Frameworks.newConfigBuilder(FRAMEWORK_CONFIG).convertletTable(convTbl).build();
+
+        IgniteInternalFuture<List<List<?>>> fut = GridTestUtils.runAsync(() -> assertQuery(sql).withFrameworkConfig(fCfg).check());
+
+        assertTrue(GridTestUtils.waitForCondition(() -> !engine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
 
         Collection<? extends Query<?>> running = engine.runningQueries();
 
+        assertFalse(fut.isDone());
         assertEquals("Running: " + running, 1, running.size());
 
         Query<?> qry = F.first(running);
@@ -133,8 +158,9 @@ public class RunningQueriesIntegrationTest extends AbstractBasicIntegrationTest 
 
         qry.cancel();
 
-        assertTrue(GridTestUtils.waitForCondition(
-            () -> engine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
+        latch.countDown();
+
+        assertTrue(GridTestUtils.waitForCondition(() -> engine.runningQueries().isEmpty(), TIMEOUT_IN_MS));
 
         GridTestUtils.assertThrowsAnyCause(log, () -> fut.get(0), IgniteSQLException.class, "The query was cancelled while planning");
 

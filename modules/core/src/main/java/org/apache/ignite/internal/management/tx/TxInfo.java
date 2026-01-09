@@ -26,11 +26,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.TimeZone;
 import java.util.UUID;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -40,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  */
-public class TxInfo extends VisorDataTransferObject {
+public class TxInfo extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -142,11 +142,6 @@ public class TxInfo extends VisorDataTransferObject {
         this(xid, 0L, 0L, null, null, 0L, null, null, state, 0, null, null, null, null);
     }
 
-    /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V5;
-    }
-
     /** */
     public IgniteUuid getXid() {
         return xid;
@@ -244,10 +239,7 @@ public class TxInfo extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(
-        byte protoVer,
-        ObjectInput in
-    ) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         xid = U.readIgniteUuid(in);
         duration = in.readLong();
         isolation = TransactionIsolation.fromOrdinal(in.readByte());
@@ -257,20 +249,17 @@ public class TxInfo extends VisorDataTransferObject {
         primaryNodes = U.readCollection(in);
         state = TransactionState.fromOrdinal(in.readByte());
         size = in.readInt();
-        if (protoVer >= V2) {
-            nearXid = U.readIgniteUuid(in);
-            masterNodeIds = U.readCollection(in);
-            startTime = in.readLong();
-        }
-        if (protoVer >= V3) {
-            long topVer = in.readLong();
-            int minorTopVer = in.readInt();
+        nearXid = U.readIgniteUuid(in);
+        masterNodeIds = U.readCollection(in);
+        startTime = in.readLong();
 
-            if (topVer != -1)
-                this.topVer = new AffinityTopologyVersion(topVer, minorTopVer);
-        }
-        if (protoVer >= V4)
-            txVerboseInfo = (TxVerboseInfo)in.readObject();
+        long topVer = in.readLong();
+        int minorTopVer = in.readInt();
+
+        if (topVer != -1)
+            this.topVer = new AffinityTopologyVersion(topVer, minorTopVer);
+
+        txVerboseInfo = (TxVerboseInfo)in.readObject();
     }
 
     /**

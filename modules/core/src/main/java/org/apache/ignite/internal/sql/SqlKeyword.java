@@ -19,8 +19,8 @@ package org.apache.ignite.internal.sql;
 
 import java.lang.reflect.Field;
 import java.util.HashSet;
+import java.util.Objects;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * SQL keyword constants.
@@ -355,7 +355,7 @@ public class SqlKeyword {
 
         try {
             for (Field field : SqlKeyword.class.getDeclaredFields()) {
-                if (F.eq(String.class, field.getType())) {
+                if (Objects.equals(String.class, field.getType())) {
                     String val = (String)field.get(null);
 
                     KEYWORDS.add(val);

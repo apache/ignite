@@ -37,7 +37,7 @@ import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -408,8 +408,8 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
      */
     @SuppressWarnings("IfMayBeConditional")
     private Object reflectiveValue(CacheObject obj) {
-        if (obj instanceof BinaryObjectImpl)
-            return GridTestUtils.getFieldValue(obj, BinaryObjectImpl.class, "obj");
+        if (BinaryUtils.isBinaryObjectImpl(obj))
+            return GridTestUtils.getFieldValue(obj, obj.getClass(), "obj");
         else
             return GridTestUtils.getFieldValue(obj, CacheObjectAdapter.class, "val");
     }

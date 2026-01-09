@@ -234,8 +234,8 @@ public class CacheExchangeMessageDuplicatedStateTest extends GridCommonAbstractT
 
         if (partCntrs != null) {
             for (CachePartitionFullCountersMap cntrs : partCntrs.values()) {
-                long[] initUpdCntrs = getFieldValue(cntrs, "initialUpdCntrs");
-                long[] updCntrs = getFieldValue(cntrs, "updCntrs");
+                long[] initUpdCntrs = cntrs.initialUpdateCounters();
+                long[] updCntrs = cntrs.updateCounters();
 
                 for (int i = 0; i < initUpdCntrs.length; i++) {
                     assertEquals(0, initUpdCntrs[i]);

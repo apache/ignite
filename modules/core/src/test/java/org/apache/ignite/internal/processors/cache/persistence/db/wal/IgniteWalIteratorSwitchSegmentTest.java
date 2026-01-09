@@ -153,8 +153,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
      * @throws Exception If some thing failed.
      */
     private void checkInvariantSwitchSegmentSize(int serVer) throws Exception {
-        GridKernalContext kctx = new StandaloneGridKernalContext(
-            log, null, null) {
+        GridKernalContext kctx = new StandaloneGridKernalContext(log, null) {
             @Override public IgniteCacheObjectProcessor cacheObjects() {
                 return new CacheObjectBinaryProcessorImpl(this);
             }
@@ -407,9 +406,7 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         String workDir
     ) throws IgniteCheckedException {
 
-        GridKernalContext kctx = new StandaloneGridKernalContext(
-            log, null, null
-        ) {
+        GridKernalContext kctx = new StandaloneGridKernalContext(log, null) {
             @Override protected IgniteConfiguration prepareIgniteConfiguration() {
                 IgniteConfiguration cfg = super.prepareIgniteConfiguration();
 

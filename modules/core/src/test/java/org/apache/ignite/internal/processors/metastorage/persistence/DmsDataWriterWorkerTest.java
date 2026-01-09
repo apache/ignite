@@ -23,6 +23,7 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.thread.IgniteThread;
@@ -352,7 +353,7 @@ public class DmsDataWriterWorkerTest extends GridCommonAbstractTest {
 
     /** */
     private IgniteThread startWorker() throws InterruptedException {
-        IgniteThread workerThread = new IgniteThread(worker);
+        IgniteThread workerThread = U.newThread(worker);
 
         workerThread.start();
 

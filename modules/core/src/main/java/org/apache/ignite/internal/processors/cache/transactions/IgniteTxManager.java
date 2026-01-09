@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -722,7 +721,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         tx.applicationAttributes(appAttrs);
 
-        return onCreated(sysCacheCtx, tx);
+        onCreated(sysCacheCtx, tx);
+
+        tx.initTimeoutHandler();
+
+        return tx;
     }
 
     /**
@@ -1223,19 +1226,28 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 if (committed == null)
                     committed = new ArrayList<>();
 
-                committed.add(e.getKey());
+                committed.add(returnVersion(e.getKey()));
             }
             else {
                 if (rolledback == null)
                     rolledback = new ArrayList<>();
 
-                rolledback.add(e.getKey());
+                rolledback.add(returnVersion(e.getKey()));
             }
         }
 
         return new IgnitePair<>(
             committed == null ? Collections.emptyList() : committed,
             rolledback == null ? Collections.emptyList() : rolledback);
+    }
+
+    /**
+     * Hides internal {@link CommittedVersion}.
+     *
+     * @return Cache version.
+     */
+    private static GridCacheVersion returnVersion(GridCacheVersion ver) {
+        return ver instanceof CommittedVersion ? ((CommittedVersion)ver).originVer : ver;
     }
 
     /**
@@ -3243,20 +3255,21 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     *
+     * Near version container. Is not for resending or serialization. Should not be exposed outside.
      */
     private static class CommittedVersion extends GridCacheVersion {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Corresponding near version. Transient. */
-        private GridCacheVersion nearVer;
+        /** Transient corresponding near version. */
+        private final GridCacheVersion nearVer;
 
-        /**
-         * Empty constructor required by {@link Externalizable}.
-         */
+        /** */
+        private final GridCacheVersion originVer;
+
+        /** */
         public CommittedVersion() {
-            // No-op.
+            throw new UnsupportedOperationException("Near committed version container is not a message to send or serialize.");
         }
 
         /**
@@ -3266,9 +3279,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         private CommittedVersion(GridCacheVersion ver, GridCacheVersion nearVer) {
             super(ver.topologyVersion(), ver.order(), ver.nodeOrder(), ver.dataCenterId());
 
+            assert ver != null;
             assert nearVer != null;
 
+            originVer = ver;
             this.nearVer = nearVer;
+        }
+
+        /** {@inheritDoc} */
+        @Override public short directType() {
+            throw new UnsupportedOperationException("Near committed version container is not a message to send or serialize.");
         }
     }
 

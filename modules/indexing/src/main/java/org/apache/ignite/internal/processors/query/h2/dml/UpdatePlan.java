@@ -202,8 +202,6 @@ public final class UpdatePlan {
         GridQueryRowDescriptor rowDesc = tbl.rowDescriptor();
         GridQueryTypeDescriptor desc = rowDesc.type();
 
-        GridCacheContext cctx = rowDesc.context();
-
         Object key = keySupplier.apply(row);
 
         if (QueryUtils.isSqlType(desc.keyClass())) {
@@ -278,13 +276,11 @@ public final class UpdatePlan {
             desc.setValue(colName, key, val, colVal);
         }
 
-        if (cctx.binaryMarshaller()) {
-            if (key instanceof BinaryObjectBuilder)
-                key = ((BinaryObjectBuilder)key).build();
+        if (key instanceof BinaryObjectBuilder)
+            key = ((BinaryObjectBuilder)key).build();
 
-            if (val instanceof BinaryObjectBuilder)
-                val = ((BinaryObjectBuilder)val).build();
-        }
+        if (val instanceof BinaryObjectBuilder)
+            val = ((BinaryObjectBuilder)val).build();
 
         desc.validateKeyAndValue(key, val);
 
@@ -312,7 +308,7 @@ public final class UpdatePlan {
 
         Object oldVal = row.get(1);
 
-        if (cctx.binaryMarshaller() && !(oldVal instanceof BinaryObject))
+        if (!(oldVal instanceof BinaryObject))
             oldVal = cctx.grid().binary().toBinary(oldVal);
 
         Object newVal;
@@ -358,7 +354,7 @@ public final class UpdatePlan {
             rowDesc.setFieldValue(null, newVal, colVal, i);
         }
 
-        if (cctx.binaryMarshaller() && hasProps) {
+        if (hasProps) {
             assert newVal instanceof BinaryObjectBuilder;
 
             newVal = ((BinaryObjectBuilder)newVal).build();

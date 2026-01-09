@@ -18,9 +18,10 @@
 package org.apache.ignite.internal.processors.performancestatistics;
 
 import java.io.File;
-import java.lang.management.ThreadInfo;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.util.GridIntList;
@@ -32,7 +33,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.util.Collections.singletonList;
 import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.PERF_STAT_DIR;
-import static org.apache.ignite.internal.processors.performancestatistics.FilePerformanceStatisticsWriter.WRITER_THREAD_NAME;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
@@ -124,19 +124,26 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
                 if (performanceStatsEnabled != statisticsMBean(grid.name()).started())
                     return false;
 
-            // Make sure that writer flushed data and stopped.
-            if (!performanceStatsEnabled) {
-                for (long id : U.getThreadMx().getAllThreadIds()) {
-                    ThreadInfo info = U.getThreadMx().getThreadInfo(id);
-
-                    if (info != null && info.getThreadState() != Thread.State.TERMINATED &&
-                        info.getThreadName().startsWith(WRITER_THREAD_NAME))
-                        return false;
-                }
-            }
-
             return true;
         }, TIMEOUT));
+    }
+
+    /**
+     * @param files Performance statistics files.
+     */
+    public static List<File> systemViewStatisticsFiles(List<File> files) {
+        return files.stream()
+            .filter(file1 -> file1.getName().matches("node-.*-system-views(-\\d+)?\\.prf"))
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * @param files Performance statistics files.
+     */
+    public static List<File> performanceStatisticsFiles(List<File> files) {
+        List<File> perfFiles = new ArrayList<>(files);
+        perfFiles.removeAll(systemViewStatisticsFiles(files));
+        return perfFiles;
     }
 
     /**
@@ -235,6 +242,11 @@ public abstract class AbstractPerformanceStatisticsTest extends GridCommonAbstra
 
         /** {@inheritDoc} */
         @Override public void pagesWriteThrottle(UUID nodeId, long endTime, long duration) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void systemView(UUID id, String name, List<String> schema, List<Object> row) {
             // No-op.
         }
     }

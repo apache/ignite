@@ -45,4 +45,9 @@ public class IgniteSqlConformance extends SqlAbstractConformance {
     @Override public boolean isGroupByOrdinal() {
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean allowNiladicParentheses() {
+        return true;
+    }
 }

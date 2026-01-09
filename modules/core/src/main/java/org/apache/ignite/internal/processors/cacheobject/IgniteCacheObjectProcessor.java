@@ -30,6 +30,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -90,13 +91,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return {@code True} if object is already a binary object, {@code false} otherwise.
      */
     public boolean isBinaryObject(Object obj);
-
-    /**
-     * Checks whether given class is binary.
-     *
-     * @return {@code true} If binary objects are enabled.
-     */
-    public boolean isBinaryEnabled(CacheConfiguration<?, ?> ccfg);
 
     /**
      * @param obj Binary object to get field from.
@@ -173,20 +167,20 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
         boolean failIfUnregistered);
 
     /**
-     * @param ctx Cache context.
+     * @param ctx Optional cache context. If {@code null} then skip umarshalling the byte array.
      * @param type Object type.
      * @param bytes Object bytes.
      * @return Cache object.
      */
-    public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes);
+    public CacheObject toCacheObject(@Nullable CacheObjectContext ctx, byte type, byte[] bytes);
 
     /**
-     * @param ctx Cache context.
+     * @param ctx Optional cache context. If {@code null} then skip umarshalling the byte array.
      * @param type Object type.
      * @param bytes Object bytes.
      * @return Cache object.
      */
-    public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) throws IgniteCheckedException;
+    public KeyCacheObject toKeyCacheObject(@Nullable CacheObjectContext ctx, byte type, byte[] bytes) throws IgniteCheckedException;
 
     /**
      * @param ctx Cache context.
@@ -214,12 +208,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      */
     public IncompleteCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf,
         @Nullable IncompleteCacheObject incompleteObj) throws IgniteCheckedException;
-
-    /**
-     * @param obj Value.
-     * @return {@code True} if object is of known immutable type.
-     */
-    public boolean immutable(Object obj);
 
     /**
      * @return Ignite binary interface.
@@ -385,4 +373,18 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @param lsnr Listener.
      */
     public void addBinaryMetadataUpdateListener(BinaryMetadataUpdatedListener lsnr);
+
+    /**
+     * @return Binary context.
+     */
+    public BinaryContext binaryContext();
+
+    /**
+     * Forces caller thread to wait for binary metadata write operation for given type ID.
+     *
+     * In case of in-memory mode this method becomes a No-op as no binary metadata is written to disk in this mode.
+     *
+     * @param typeId ID of binary type to wait for metadata write operation.
+     */
+    public void waitMetadataWriteIfNeeded(final int typeId);
 }

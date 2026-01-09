@@ -68,10 +68,8 @@ public class CliIgniteClientInvoker<A extends IgniteDataTransferObject> extends 
     /** {@inheritDoc} */
     @Override protected IgniteClient igniteClient() {
         if (client == null) {
-            if (cmd instanceof BeforeNodeStartCommand) {
-                cfg.setUserAttributes(F.asMap(MANAGEMENT_CLIENT_ATTR, Boolean.TRUE.toString()));
-                cfg.setAutoBinaryConfigurationEnabled(false);
-            }
+            cfg.setUserAttributes(F.asMap(MANAGEMENT_CLIENT_ATTR, Boolean.TRUE.toString()));
+            cfg.setAutoBinaryConfigurationEnabled(false);
 
             client = Ignition.startClient(cfg);
         }

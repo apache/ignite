@@ -17,26 +17,31 @@
 
 package org.apache.ignite.internal.metric;
 
+import java.util.Collections;
+import javax.management.DynamicMBean;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.management.api.CommandMBean;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.MetricsMxBeanImpl;
 import org.apache.ignite.internal.processors.metric.impl.HistogramMetricImpl;
 import org.apache.ignite.internal.processors.metric.impl.HitRateMetric;
+import org.apache.ignite.internal.processors.metric.impl.MaxValueMetric;
 import org.apache.ignite.internal.processors.metric.impl.PeriodicHistogramMetricImpl;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.mxbean.MetricsMxBean;
 import org.apache.ignite.spi.metric.HistogramMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 import static org.apache.ignite.configuration.WALMode.FSYNC;
+import static org.apache.ignite.internal.binary.BinaryUtils.arrayEq;
 import static org.apache.ignite.internal.processors.cache.transactions.TransactionMetricsAdapter.METRIC_SYSTEM_TIME_HISTOGRAM;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.HISTOGRAM_CFG_PREFIX;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.HITRATE_CFG_PREFIX;
+import static org.apache.ignite.internal.processors.metric.GridMetricManager.MAXVAL_CFG_PREFIX;
 import static org.apache.ignite.internal.processors.metric.GridMetricManager.TX_METRICS;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.cacheMetricsRegistryName;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
@@ -53,6 +58,9 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
     /** Test hitrate metric name. */
     public static final String HITRATE_NAME = "hitrate";
+
+    /** Test maxval metric name. */
+    public static final String MAXVAL_NAME = "maxval";
 
     /** Test histogram metric name. */
     public static final String HISTOGRAM_NAME = "histogram";
@@ -115,7 +123,57 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
             HitRateMetric allocationRate = g.context().metric().registry(metricName("io.dataregion.default"))
                 .findMetric("AllocationRate");
 
-            assertEquals(5000, allocationRate.rateTimeInterval());
+            assertEquals(5000, allocationRate.timeInterval());
+        }
+    }
+
+    /** Tests configuration of {@link MaxValueMetric}. */
+    @Test
+    public void testMaxValueMetricConfiguration() throws Exception {
+        try (IgniteEx g = startGrid(0)) {
+            MetricRegistryImpl mreg = g.context().metric().registry(TEST_REG);
+            MaxValueMetric metric = mreg.maxValueMetric(MAXVAL_NAME, "test", 10000, 5);
+            String metricName = metricName(TEST_REG, MAXVAL_NAME);
+
+            // Empty name.
+            assertThrowsWithCause(
+                () -> configureMaxValueMetric(g, null, 1),
+                NullPointerException.class);
+
+            // Wrong interval value.
+            assertThrowsWithCause(
+                () -> configureMaxValueMetric(g, metricName, 0),
+                IllegalArgumentException.class);
+
+            assertThrowsWithCause(
+                () -> configureMaxValueMetric(g, metricName, -1),
+                IllegalArgumentException.class);
+
+            configureMaxValueMetric(g, metricName, 5000);
+
+            assertEquals(5000, metric.timeInterval());
+        }
+    }
+
+    /** */
+    private void configureMaxValueMetric(IgniteEx ignite, String metricName, int interval) {
+        DynamicMBean mbean = getMxBean(
+            ignite.context().igniteInstanceName(),
+            "management",
+            Collections.singletonList("Metric"),
+            "ConfigureMaxValue",
+            DynamicMBean.class
+        );
+
+        try {
+            mbean.invoke(
+                CommandMBean.INVOKE,
+                new Object[] {metricName, Integer.toString(interval), null},
+                new String[] {String.class.getName(), String.class.getName(), String.class.getName()}
+            );
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -242,27 +300,37 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
             MetricRegistryImpl mreg = g0.context().metric().registry(TEST_REG);
 
             mreg.hitRateMetric(HITRATE_NAME, "test", 10000, 5);
+            mreg.maxValueMetric(MAXVAL_NAME, "test", 10000, 5);
             mreg.histogram(HISTOGRAM_NAME, new long[] {250, 500}, "test");
 
             metricsBean(g0).configureHistogramMetric(metricName(TEST_REG, HISTOGRAM_NAME), BOUNDS);
             metricsBean(g0).configureHitRateMetric(metricName(TEST_REG, HITRATE_NAME), 1000);
+            configureMaxValueMetric(g0, metricName(TEST_REG, MAXVAL_NAME), 1000);
         }, (g0, g1) -> {
             MetricRegistryImpl mreg = g0.context().metric().registry(TEST_REG);
 
             HitRateMetric hitRate = mreg.hitRateMetric(HITRATE_NAME, "test", 10000, 5);
+            MaxValueMetric maxVal = mreg.maxValueMetric(MAXVAL_NAME, "test", 10000, 5);
             HistogramMetricImpl histogram = mreg.histogram(HISTOGRAM_NAME, new long[] {250, 500}, "test");
 
-            assertEquals(1000, hitRate.rateTimeInterval());
+            assertEquals(1000, hitRate.timeInterval());
+            assertEquals(1000, maxVal.timeInterval());
             assertArrayEquals(BOUNDS, histogram.bounds());
 
             assertEquals((Long)1000L,
                 g0.context().distributedMetastorage().read(metricName(HITRATE_CFG_PREFIX, TEST_REG, HITRATE_NAME)));
+
+            assertEquals((Long)1000L,
+                g0.context().distributedMetastorage().read(metricName(MAXVAL_CFG_PREFIX, TEST_REG, MAXVAL_NAME)));
 
             assertArrayEquals(BOUNDS,
                 g0.context().distributedMetastorage().read(metricName(HISTOGRAM_CFG_PREFIX, TEST_REG, HISTOGRAM_NAME)));
 
             assertEquals((Long)1000L,
                 g1.context().distributedMetastorage().read(metricName(HITRATE_CFG_PREFIX, TEST_REG, HITRATE_NAME)));
+
+            assertEquals((Long)1000L,
+                g1.context().distributedMetastorage().read(metricName(MAXVAL_CFG_PREFIX, TEST_REG, MAXVAL_NAME)));
 
             assertArrayEquals(BOUNDS,
                 g1.context().distributedMetastorage().read(metricName(HISTOGRAM_CFG_PREFIX, TEST_REG, HISTOGRAM_NAME)));
@@ -272,10 +340,14 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
             assertNull(
                 g0.context().distributedMetastorage().read(metricName(HITRATE_CFG_PREFIX, TEST_REG, HITRATE_NAME)));
             assertNull(
+                g0.context().distributedMetastorage().read(metricName(MAXVAL_CFG_PREFIX, TEST_REG, MAXVAL_NAME)));
+            assertNull(
                 g0.context().distributedMetastorage().read(metricName(HISTOGRAM_CFG_PREFIX, TEST_REG, HISTOGRAM_NAME)));
 
             assertNull(
                 g1.context().distributedMetastorage().read(metricName(HITRATE_CFG_PREFIX, TEST_REG, HITRATE_NAME)));
+            assertNull(
+                g1.context().distributedMetastorage().read(metricName(MAXVAL_CFG_PREFIX, TEST_REG, MAXVAL_NAME)));
             assertNull(
                 g1.context().distributedMetastorage().read(metricName(HISTOGRAM_CFG_PREFIX, TEST_REG, HISTOGRAM_NAME)));
         });
@@ -331,11 +403,11 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
         HistogramMetric hist = ignite.context().metric().registry(regName).findMetric(TASK_EXEC_TIME);
 
-        assertFalse(F.arrayEq(BOUNDS, hist.bounds()));
+        assertFalse(arrayEq(BOUNDS, hist.bounds()));
 
         ignite.context().metric().configureHistogram(metricName(regName, TASK_EXEC_TIME), BOUNDS);
 
-        assertTrue(F.arrayEq(BOUNDS, hist.bounds()));
+        assertTrue(arrayEq(BOUNDS, hist.bounds()));
 
         stopGrid("persistent-0", false);
 
@@ -343,7 +415,7 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
         hist = ignite.context().metric().registry(regName).findMetric(TASK_EXEC_TIME);
 
-        assertTrue(F.arrayEq(BOUNDS, hist.bounds()));
+        assertTrue(arrayEq(BOUNDS, hist.bounds()));
     }
 
     /** Tests metric configuration removed on registry remove. */
@@ -400,8 +472,8 @@ public class MetricsConfigurationTest extends GridCommonAbstractTest {
 
             afterStart.apply(g0, g1);
 
-            g0.close();
-            g1.close();
+            stopGrid("persistent-0", false);
+            stopGrid("persistent-1", false);
 
             g0 = startGrid("persistent-0");
             g1 = startGrid("persistent-1");

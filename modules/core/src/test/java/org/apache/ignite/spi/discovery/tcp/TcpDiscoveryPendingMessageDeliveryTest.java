@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Set;
 import org.apache.ignite.Ignite;
@@ -102,6 +101,8 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
 
         startGrid("listener");
 
+        awaitPartitionMapExchange();
+
         sentEnsuredMsgs.clear();
         receivedEnsuredMsgs.clear();
 
@@ -162,6 +163,8 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
 
         startGrid("listener");
 
+        awaitPartitionMapExchange();
+
         sentEnsuredMsgs.clear();
         receivedEnsuredMsgs.clear();
 
@@ -208,6 +211,8 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
 
         //Node which should received all fail message in any way.
         startGrid("listener");
+
+        awaitPartitionMapExchange();
 
         sentEnsuredMsgs.clear();
         receivedEnsuredMsgs.clear();
@@ -259,17 +264,10 @@ public class TcpDiscoveryPendingMessageDeliveryTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (!blockMsgs)
-                super.writeToSocket(sock, msg, timeout);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
-            long timeout) throws IOException, IgniteCheckedException {
-            if (!blockMsgs)
-                super.writeToSocket(sock, out, msg, timeout);
+                super.writeMessage(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */

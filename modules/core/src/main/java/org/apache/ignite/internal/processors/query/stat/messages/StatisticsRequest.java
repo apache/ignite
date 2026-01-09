@@ -34,9 +34,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class StatisticsRequest implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     public static final short TYPE_CODE = 187;
 
     /** Gathering id. */
@@ -127,7 +124,7 @@ public class StatisticsRequest implements Message {
         writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
+            if (!writer.writeHeader(directType()))
                 return false;
 
             writer.onHeaderWritten();
@@ -135,31 +132,31 @@ public class StatisticsRequest implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeMessage(key))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeUuid("reqId", reqId))
+                if (!writer.writeUuid(reqId))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeAffinityTopologyVersion("topVer", topVer))
+                if (!writer.writeAffinityTopologyVersion(topVer))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByte("type", type != null ? (byte)type.ordinal() : -1))
+                if (!writer.writeByte(type != null ? (byte)type.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMap("versions", versions, MessageCollectionItemType.STRING, MessageCollectionItemType.LONG))
+                if (!writer.writeMap(versions, MessageCollectionItemType.STRING, MessageCollectionItemType.LONG))
                     return false;
 
                 writer.incrementState();
@@ -173,12 +170,9 @@ public class StatisticsRequest implements Message {
     @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
         reader.setBuffer(buf);
 
-        if (!reader.beforeMessageRead())
-            return false;
-
         switch (reader.state()) {
             case 0:
-                key = reader.readMessage("key");
+                key = reader.readMessage();
 
                 if (!reader.isLastRead())
                     return false;
@@ -186,7 +180,7 @@ public class StatisticsRequest implements Message {
                 reader.incrementState();
 
             case 1:
-                reqId = reader.readUuid("reqId");
+                reqId = reader.readUuid();
 
                 if (!reader.isLastRead())
                     return false;
@@ -194,7 +188,7 @@ public class StatisticsRequest implements Message {
                 reader.incrementState();
 
             case 2:
-                topVer = reader.readAffinityTopologyVersion("topVer");
+                topVer = reader.readAffinityTopologyVersion();
 
                 if (!reader.isLastRead())
                     return false;
@@ -204,7 +198,7 @@ public class StatisticsRequest implements Message {
             case 3:
                 byte typeOrd;
 
-                typeOrd = reader.readByte("type");
+                typeOrd = reader.readByte();
 
                 if (!reader.isLastRead())
                     return false;
@@ -214,7 +208,7 @@ public class StatisticsRequest implements Message {
                 reader.incrementState();
 
             case 4:
-                versions = reader.readMap("versions", MessageCollectionItemType.STRING, MessageCollectionItemType.LONG, false);
+                versions = reader.readMap(MessageCollectionItemType.STRING, MessageCollectionItemType.LONG, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -223,7 +217,7 @@ public class StatisticsRequest implements Message {
 
         }
 
-        return reader.afterMessageRead(StatisticsRequest.class);
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -231,13 +225,4 @@ public class StatisticsRequest implements Message {
         return TYPE_CODE;
     }
 
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 5;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-
-    }
 }

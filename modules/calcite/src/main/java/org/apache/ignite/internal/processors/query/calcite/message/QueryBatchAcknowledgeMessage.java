@@ -17,26 +17,27 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
-
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.internal.Order;
 
 /**
  *
  */
 public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
     /** */
-    private UUID queryId;
+    @Order(value = 0, method = "queryId")
+    private UUID qryId;
 
     /** */
+    @Order(1)
     private long fragmentId;
 
     /** */
+    @Order(2)
     private long exchangeId;
 
     /** */
+    @Order(3)
     private int batchId;
 
     /** */
@@ -45,8 +46,8 @@ public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
     }
 
     /** */
-    public QueryBatchAcknowledgeMessage(UUID queryId, long fragmentId, long exchangeId, int batchId) {
-        this.queryId = queryId;
+    public QueryBatchAcknowledgeMessage(UUID qryId, long fragmentId, long exchangeId, int batchId) {
+        this.qryId = qryId;
         this.fragmentId = fragmentId;
         this.exchangeId = exchangeId;
         this.batchId = batchId;
@@ -54,12 +55,26 @@ public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
 
     /** {@inheritDoc} */
     @Override public UUID queryId() {
-        return queryId;
+        return qryId;
+    }
+
+    /**
+     * @param qryId New query ID.
+     */
+    public void queryId(UUID qryId) {
+        this.qryId = qryId;
     }
 
     /** {@inheritDoc} */
     @Override public long fragmentId() {
         return fragmentId;
+    }
+
+    /**
+     * @param fragmentId New fragment ID.
+     */
+    public void fragmentId(long fragmentId) {
+        this.fragmentId = fragmentId;
     }
 
     /**
@@ -70,105 +85,28 @@ public class QueryBatchAcknowledgeMessage implements ExecutionContextAware {
     }
 
     /**
+     * @param exchangeId New exchange ID.
+     */
+    public void exchangeId(long exchangeId) {
+        this.exchangeId = exchangeId;
+    }
+
+    /**
      * @return Batch ID.
      */
     public int batchId() {
         return batchId;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt("batchId", batchId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong("exchangeId", exchangeId))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeLong("fragmentId", fragmentId))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeUuid("queryId", queryId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                batchId = reader.readInt("batchId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                exchangeId = reader.readLong("exchangeId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                fragmentId = reader.readLong("fragmentId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                queryId = reader.readUuid("queryId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(QueryBatchAcknowledgeMessage.class);
+    /**
+     * @param batchId New batch ID.
+     */
+    public void batchId(int batchId) {
+        this.batchId = batchId;
     }
 
     /** {@inheritDoc} */
     @Override public MessageType type() {
         return MessageType.QUERY_ACKNOWLEDGE_MESSAGE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 4;
     }
 }

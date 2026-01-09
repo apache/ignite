@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.cache.query.index.sorted.inline;
 
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryObjectTestUtils;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IntegerIndexKey;
@@ -35,11 +35,11 @@ public class InlineIndexKeyTypeRegistryTest extends GridCommonAbstractTest {
 
     /** */
     private static final IndexKeyTypeSettings pojoArrayKeyTypeSettings =
-        new IndexKeyTypeSettings().inlineObjHash(false);
+        new IndexKeyTypeSettings().inlineObjectHash(false);
 
     /** */
     private static final IndexKeyTypeSettings strNoCompareKeyTypeSettings =
-        new IndexKeyTypeSettings().inlineObjHash(false).stringOptimizedCompare(false);
+        new IndexKeyTypeSettings().inlineObjectHash(false).stringOptimizedCompare(false);
 
     /** */
     @Test
@@ -61,14 +61,14 @@ public class InlineIndexKeyTypeRegistryTest extends GridCommonAbstractTest {
         assertEquals(IndexKeyType.INT, t.type());
 
         t = InlineIndexKeyTypeRegistry.get(
-            new PlainJavaObjectIndexKey(new BinaryObjectImpl(), null),
+            new PlainJavaObjectIndexKey(BinaryObjectTestUtils.binaryObject(), null),
             IndexKeyType.JAVA_OBJECT,
             pojoArrayKeyTypeSettings
         );
         assertEquals(IndexKeyType.JAVA_OBJECT, t.type());
 
         t = InlineIndexKeyTypeRegistry.get(
-            new PlainJavaObjectIndexKey(new BinaryObjectImpl(), null),
+            new PlainJavaObjectIndexKey(BinaryObjectTestUtils.binaryObject(), null),
             IndexKeyType.INT,
             pojoArrayKeyTypeSettings
         );

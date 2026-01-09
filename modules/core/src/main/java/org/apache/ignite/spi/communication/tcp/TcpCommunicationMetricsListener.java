@@ -147,8 +147,8 @@ public class TcpCommunicationMetricsListener {
         rcvdMsgsMetric = mreg.longAdderMetric(RECEIVED_MESSAGES_METRIC_NAME, RECEIVED_MESSAGES_METRIC_DESC);
 
         spiCtx.addMetricRegistryCreationListener(mreg -> {
-            // Metrics for the specific nodes.
-            if (!mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR))
+            // Metrics for the specific nodes or other communication metrics.
+            if (!TcpCommunicationSpi.isCommunicationMetrics(mreg.name()))
                 return;
 
             ((MetricRegistryImpl)mreg).longAdderMetric(
@@ -380,7 +380,7 @@ public class TcpCommunicationMetricsListener {
         }
 
         for (ReadOnlyMetricRegistry mreg : spiCtx.metricRegistries()) {
-            if (mreg.name().startsWith(COMMUNICATION_METRICS_GROUP_NAME + SEPARATOR)) {
+            if (TcpCommunicationSpi.isCommunicationMetrics(mreg.name())) {
                 mreg.findMetric(SENT_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME).reset();
 
                 mreg.findMetric(RECEIVED_MESSAGES_BY_NODE_CONSISTENT_ID_METRIC_NAME).reset();

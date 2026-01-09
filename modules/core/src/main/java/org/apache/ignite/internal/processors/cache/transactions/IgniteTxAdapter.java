@@ -512,8 +512,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             try {
                 GridCacheEntryEx entry = e.cached();
 
-                if (e.op() != NOOP)
+                if (e.op() != NOOP) {
                     entry.invalidate(xidVer);
+
+                    if (e.context().readThrough())
+                        entry.clear(xidVer, true);
+                }
             }
             catch (Throwable t) {
                 U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);

@@ -54,8 +54,12 @@ public abstract class CommandRegistryImpl<A extends IgniteDataTransferObject, R>
             hasParent ? (Class<? extends CommandsRegistry<?, ?>>)getClass() : null
         );
 
-        if (commands.containsKey(key))
-            throw new IllegalArgumentException("Command already registered");
+        if (commands.containsKey(key)) {
+            String k = CommandUtils.cmdText(cmd);
+
+            throw new IllegalArgumentException("Found conflict for command " + k + ". Tries to register command " +
+                cmd + ", but this command has already been registered " + command(k));
+        }
 
         commands.put(key, cmd);
     }

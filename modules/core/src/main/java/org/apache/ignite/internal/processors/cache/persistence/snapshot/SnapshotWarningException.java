@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 
 /**
  * Snapshot operation warning. Warnings do not interrupt snapshot process but raise exception at the end to make the
- * operation status 'not OK' if no other error occurred.
+ * operation status {@code EXIT_CODE_COMPLETED_WITH_WARNINGS} if no other error occurred.
  */
 public class SnapshotWarningException extends IgniteCheckedException {
     /** Serialization version. */

@@ -36,8 +36,8 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.ClientFeatureNotSupportedByServerException;
 import org.apache.ignite.client.ClientServiceDescriptor;
 import org.apache.ignite.client.ClientServices;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.service.ServiceCallContextImpl;
 import org.apache.ignite.internal.util.typedef.F;
@@ -125,7 +125,7 @@ class ClientServicesImpl implements ClientServices {
         return ch.service(ClientOperation.SERVICE_GET_DESCRIPTORS,
             req -> checkGetServiceDescriptorsSupported(req.clientChannel().protocolCtx()),
             res -> {
-                try (BinaryReaderExImpl reader = utils.createBinaryReader(res.in())) {
+                try (BinaryReaderEx reader = utils.createBinaryReader(res.in())) {
                     int sz = res.in().readInt();
 
                     Collection<ClientServiceDescriptor> svcs = new ArrayList<>(sz);
@@ -150,12 +150,12 @@ class ClientServicesImpl implements ClientServices {
             req -> {
                 checkGetServiceDescriptorsSupported(req.clientChannel().protocolCtx());
 
-                try (BinaryRawWriterEx writer = utils.createBinaryWriter(req.out())) {
+                try (BinaryWriterEx writer = utils.createBinaryWriter(req.out())) {
                     writer.writeString(name);
                 }
             },
             res -> {
-                try (BinaryReaderExImpl reader = utils.createBinaryReader(res.in())) {
+                try (BinaryReaderEx reader = utils.createBinaryReader(res.in())) {
                     return readServiceDescriptor(reader);
                 }
                 catch (IOException e) {
@@ -166,7 +166,7 @@ class ClientServicesImpl implements ClientServices {
     }
 
     /** */
-    private ClientServiceDescriptorImpl readServiceDescriptor(BinaryReaderExImpl reader) {
+    private ClientServiceDescriptorImpl readServiceDescriptor(BinaryReaderEx reader) {
         return new ClientServiceDescriptorImpl(
             reader.readString(),
             reader.readString(),
@@ -363,7 +363,7 @@ class ClientServicesImpl implements ClientServices {
             ch.clientChannel().protocolCtx().checkFeatureSupported(callAttrs != null ?
                 ProtocolBitmaskFeature.SERVICE_INVOKE_CALLCTX : ProtocolBitmaskFeature.SERVICE_INVOKE);
 
-            try (BinaryRawWriterEx writer = utils.createBinaryWriter(ch.out())) {
+            try (BinaryWriterEx writer = utils.createBinaryWriter(ch.out())) {
                 writer.writeString(name);
                 writer.writeByte(FLAG_PARAMETER_TYPES_MASK); // Flags.
                 writer.writeLong(timeout);

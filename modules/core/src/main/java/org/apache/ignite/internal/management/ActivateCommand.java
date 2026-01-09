@@ -20,7 +20,7 @@ package org.apache.ignite.internal.management;
 import java.util.function.Consumer;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.internal.management.api.LocalCommand;
+import org.apache.ignite.internal.management.api.NativeCommand;
 import org.apache.ignite.internal.management.api.NoArg;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,7 +28,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 
 /** */
 @Deprecated
-public class ActivateCommand implements LocalCommand<NoArg, NoArg> {
+public class ActivateCommand implements NativeCommand<NoArg, NoArg> {
     /** {@inheritDoc} */
     @Override public String description() {
         return "Activate cluster (deprecated. Use --set-state instead)";

@@ -21,11 +21,14 @@ import java.io.File;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.cacheStartRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.jobRecordSize;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.taskRecordSize;
@@ -34,6 +37,36 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
  * Tests strings caching.
  */
 public class StringCacheTest extends AbstractPerformanceStatisticsTest {
+    /** Test value of {@link IgniteSystemProperties#IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD}. */
+    private static final int TEST_CACHED_STRINGS_THRESHOLD = 3;
+
+    /** */
+    @Test
+    public void testCache() {
+        StringCache cache = new StringCache();
+
+        assertFalse(cache.cacheIfPossible("A"));
+
+        assertTrue(cache.cacheIfPossible("A"));
+        assertTrue(cache.cacheIfPossible("A"));
+    }
+
+    /** */
+    @Test
+    @WithSystemProperty(key = IGNITE_PERF_STAT_CACHED_STRINGS_THRESHOLD, value = "" + TEST_CACHED_STRINGS_THRESHOLD)
+    public void testThreshold() {
+        StringCache cache = new StringCache();
+
+        assertFalse(cache.cacheIfPossible("1"));
+        assertTrue(cache.cacheIfPossible("1"));
+
+        assertFalse(cache.cacheIfPossible("2"));
+        assertTrue(cache.cacheIfPossible("2"));
+
+        assertFalse(cache.cacheIfPossible("3"));
+        assertFalse(cache.cacheIfPossible("3"));
+    }
+
     /** @throws Exception If failed. */
     @Test
     public void testCacheTaskName() throws Exception {
@@ -76,7 +109,10 @@ public class StringCacheTest extends AbstractPerformanceStatisticsTest {
 
         List<File> files = statisticsFiles();
 
-        assertEquals(1, files.size());
-        assertEquals(expLen, files.get(0).length());
+        assertEquals(2, files.size());
+
+        File file = performanceStatisticsFiles(files).get(0);
+
+        assertEquals(expLen, file.length());
     }
 }

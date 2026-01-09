@@ -33,16 +33,16 @@ import java.util.TreeMap;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Result for {@link BaselineTask}.
  */
-public class BaselineTaskResult extends VisorDataTransferObject {
+public class BaselineTaskResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -224,11 +224,6 @@ public class BaselineTaskResult extends VisorDataTransferObject {
         return servers;
     }
 
-    /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V3;
-    }
-
     /**
      * @return Baseline autoadjustment settings.
      */
@@ -252,7 +247,6 @@ public class BaselineTaskResult extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(clusterState.active());
         out.writeLong(topVer);
         U.writeMap(out, baseline);
         U.writeMap(out, servers);
@@ -263,23 +257,14 @@ public class BaselineTaskResult extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException {
-        boolean active = in.readBoolean();
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         topVer = in.readLong();
         baseline = U.readTreeMap(in);
         servers = U.readTreeMap(in);
-
-        if (protoVer > V1) {
-            autoAdjustSettings = (BaselineAutoAdjustSettings)in.readObject();
-            remainingTimeToBaselineAdjust = in.readLong();
-            baselineAdjustInProgress = in.readBoolean();
-        }
-
-        if (protoVer <= V2)
-            clusterState = active ? ClusterState.ACTIVE : ClusterState.INACTIVE;
-        else
-            clusterState = U.readEnum(in, ClusterState.class);
+        autoAdjustSettings = (BaselineAutoAdjustSettings)in.readObject();
+        remainingTimeToBaselineAdjust = in.readLong();
+        baselineAdjustInProgress = in.readBoolean();
+        clusterState = U.readEnum(in, ClusterState.class);
     }
 
     /** {@inheritDoc} */

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.logger.platform;
 
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
@@ -207,7 +207,7 @@ public class PlatformLogger implements IgniteLogger {
         if (ctx != null && e0 != null) {
             try (PlatformMemory mem = ctx.memory().allocate()) {
                 PlatformOutputStream out = mem.output();
-                BinaryRawWriterEx writer = ctx.writer(out);
+                BinaryWriterEx writer = ctx.writer(out);
                 writer.writeObject(e0.cause());
                 out.synchronize();
 

@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -387,7 +388,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
                             Collection<ClusterNode> nodes = affinityNodes(g, p);
 
-                            Collection<UUID> nodeIds = U.nodeIds(nodes);
+                            Collection<UUID> nodeIds = ClusterNodeFunc.nodeIds(nodes);
 
                             assert nodeIds.contains(nodeId) : "Invalid affinity mapping [nodeId=" + nodeId +
                                 ", part=" + p + ", state=" + state + ", igniteInstanceName=" +

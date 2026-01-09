@@ -27,16 +27,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses.TestObjectAllTypes;
-import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
+
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERED_TYPE_ID;
 
 /** */
 public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
@@ -49,18 +51,19 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
         
         byte[] serializedTestObjectsBytes;
 
-        try (BinaryWriterExImpl writer = new BinaryWriterExImpl(ctx)) {
+        try (BinaryWriterEx writer = BinaryUtils.writer(ctx, false, UNREGISTERED_TYPE_ID)) {
             testObjects.forEach(writer::writeObject);
 
             serializedTestObjectsBytes = writer.array();
         }
 
-        RawBinaryObjectExtractor rawReader = new RawBinaryObjectExtractor(BinaryHeapInputStream.create(serializedTestObjectsBytes, 0));
+        RawBinaryObjectExtractor rawReader = new RawBinaryObjectExtractor(BinaryStreams.inputStream(serializedTestObjectsBytes));
 
         for (Object testObj : testObjects) {
             byte[] objRawBytes = rawReader.extractObject();
 
-            try (BinaryReaderExImpl binReader = new BinaryReaderExImpl(ctx, BinaryHeapInputStream.create(objRawBytes, 0), null, false)) {
+            try (BinaryReaderEx binReader
+                     = BinaryUtils.reader(ctx, BinaryStreams.inputStream(objRawBytes), null, false)) {
                 Object deserializedObj = binReader.readObject();
 
                 if (testObj instanceof Proxy)
@@ -77,15 +80,11 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
 
     /** */
     public static BinaryContext createTestBinaryContext() {
-        BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), null);
-
         BinaryMarshaller marsh = new BinaryMarshaller();
 
         marsh.setContext(new TestMarshallerContext());
 
-        ctx.configure(marsh);
-
-        return ctx;
+        return U.binaryContext(marsh);
     }
 
     /** */
@@ -161,7 +160,7 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public JdkMarshaller jdkMarshaller() {
-            return new JdkMarshaller();
+            return Marshallers.jdk();
         }
     }
 
@@ -256,7 +255,7 @@ public class RawBinaryObjectExtractorTest extends GridCommonAbstractTest {
                 new Class[] { UnregisteredClass.class },
                 new TestInvocationHandler(UnregisteredClass.class));
 
-            binObj = new BinaryObjectBuilderImpl(ctx, "TestBinaryType").setField("test-field", "test-value").build();
+            binObj = BinaryObjectBuilders.builder(ctx, "TestBinaryType").setField("test-field", "test-value").build();
         }
     }
 }

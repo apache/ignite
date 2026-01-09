@@ -272,6 +272,9 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("'aA' !~ '.*aa.*'").returns(true).check();
         assertExpression("'aA' !~* '.*aa.*'").returns(false).check();
         assertExpression("REGEXP_REPLACE('aA', '[Aa]+', 'X')").returns("X").check();
+        assertExpression("REGEXP_REPLACE('aAaA', '[Aa]+', 'X', 2)").returns("aX").check();
+        assertExpression("REGEXP_REPLACE('aAbaAcaA', '[Aa]+', 'X', 2, 2)").returns("aAbXcaA").check();
+        assertExpression("REGEXP_REPLACE('aAbaAcaA', 'a', 'X', 2, 0, 'i')").returns("aXbXXcXX").check();
     }
 
     /** */
@@ -285,6 +288,8 @@ public class StdSqlOperatorsTest extends AbstractBasicIntegrationTest {
         assertExpression("CARDINALITY(ARRAY[1, 2, 3])").returns(3).check();
         assertExpression("ARRAY[1, 2, 3] IS EMPTY").returns(false).check();
         assertExpression("ARRAY[1, 2, 3] IS NOT EMPTY").returns(true).check();
+        assertQuery("SELECT * FROM UNNEST(ARRAY[1, 2]) WITH ORDINALITY").returns(1, 1).returns(2, 2)
+            .check();
     }
 
     /** */

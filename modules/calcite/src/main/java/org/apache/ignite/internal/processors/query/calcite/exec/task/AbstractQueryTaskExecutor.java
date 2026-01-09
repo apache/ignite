@@ -31,6 +31,9 @@ public abstract class AbstractQueryTaskExecutor extends AbstractService implemen
     public static final String THREAD_POOL_NAME = "CalciteQueryExecutor";
 
     /** */
+    public static final String THREAD_PREFIX = "calciteQry";
+
+    /** */
     protected final GridKernalContext ctx;
 
     /** */

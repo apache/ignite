@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestConfigurator;
 import org.apache.ignite.util.GridCommandHandlerClusterByClassTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
+import org.apache.ignite.util.GridPersistenceCommandsTest;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -30,6 +31,7 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     GridCommandHandlerTest.class,
+    GridPersistenceCommandsTest.class,
     GridCommandHandlerClusterByClassTest.class
 })
 public class ZookeeperIgniteControlUtilityTestSuite {

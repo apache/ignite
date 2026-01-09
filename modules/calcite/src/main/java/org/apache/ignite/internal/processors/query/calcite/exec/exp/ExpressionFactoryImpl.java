@@ -62,7 +62,8 @@ import org.apache.calcite.rex.RexShuttle;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlConformance;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
@@ -104,13 +105,13 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     private final RexBuilder rexBuilder;
 
     /** */
-    private final RelDataType emptyType;
+    private static final RelDataType EMPTY_TYPE = new RelDataTypeFactory.Builder(Commons.typeFactory()).build();
 
     /** */
-    private final RelDataType nullType;
+    private static final RelDataType NULL_TYPE = Commons.typeFactory().createSqlType(SqlTypeName.NULL);
 
     /** */
-    private final RelDataType booleanType;
+    private static final RelDataType BOOLEAN_TYPE = Commons.typeFactory().createJavaType(Boolean.class);
 
     /** */
     private final ExecutionContext<Row> ctx;
@@ -126,10 +127,6 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         this.typeFactory = typeFactory;
         this.conformance = conformance;
         this.rexBuilder = rexBuilder;
-
-        emptyType = new RelDataTypeFactory.Builder(this.typeFactory).build();
-        nullType = typeFactory.createSqlType(SqlTypeName.NULL);
-        booleanType = typeFactory.createJavaType(Boolean.class);
     }
 
     /** {@inheritDoc} */
@@ -197,7 +194,11 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override public Comparator<Row> comparator(List<RelFieldCollation> left, List<RelFieldCollation> right, boolean nullsEqual) {
+    @Override public Comparator<Row> comparator(
+        List<RelFieldCollation> left,
+        List<RelFieldCollation> right,
+        ImmutableBitSet allowNulls
+    ) {
         if (F.isEmpty(left) || F.isEmpty(right) || left.size() != right.size())
             throw new IllegalArgumentException("Both inputs should be non-empty and have the same size: left="
                 + (left != null ? left.size() : "null") + ", right=" + (right != null ? right.size() : "null"));
@@ -213,8 +214,9 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
         return new Comparator<Row>() {
             @Override public int compare(Row o1, Row o2) {
-                boolean hasNulls = false;
                 RowHandler<Row> hnd = ctx.rowHandler();
+
+                boolean hasNulls = false;
 
                 for (int i = 0; i < left.size(); i++) {
                     RelFieldCollation leftField = left.get(i);
@@ -226,8 +228,9 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
                     Object c1 = hnd.get(lIdx, o1);
                     Object c2 = hnd.get(rIdx, o2);
 
-                    if (c1 == null && c2 == null) {
-                        hasNulls = true;
+                    if (c1 == null && c2 == null && !hasNulls) {
+                        hasNulls = !allowNulls.get(i);
+
                         continue;
                     }
 
@@ -243,7 +246,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
                 // If compared rows contain NULLs, they shouldn't be treated as equals, since NULL <> NULL in SQL.
                 // Except cases with IS DISTINCT / IS NOT DISTINCT.
-                return hasNulls && !nullsEqual ? 1 : 0;
+                return hasNulls ? 1 : 0;
             }
         };
     }
@@ -251,7 +254,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     /** */
     @SuppressWarnings("rawtypes")
     private static int compare(Object o1, Object o2, int nullComparison) {
-        if (o1 instanceof BinaryObjectImpl)
+        if (BinaryUtils.isBinaryObjectImpl(o1))
             return compareBinary(o1, o2, nullComparison);
 
         final Comparable c1 = (Comparable)o1;
@@ -268,7 +271,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         else if (o2 == null)
             return -nullComparison;
 
-        return BinaryObjectImpl.compareForDml(o1, o2);
+        return BinaryUtils.compareForDml(o1, o2);
     }
 
     /** {@inheritDoc} */
@@ -289,7 +292,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     /** {@inheritDoc} */
     @Override public Supplier<Row> rowSource(List<RexNode> values) {
         return new ValuesImpl(scalar(values, null), ctx.rowHandler().factory(typeFactory,
-            Commons.transform(values, v -> v != null ? v.getType() : nullType)));
+            Commons.transform(values, v -> v != null ? v.getType() : NULL_TYPE)));
     }
 
     /** {@inheritDoc} */
@@ -487,7 +490,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     /** */
     private Scalar compile(List<RexNode> nodes, RelDataType type, boolean biInParams) {
         if (type == null)
-            type = emptyType;
+            type = EMPTY_TYPE;
 
         RexProgramBuilder programBuilder = new RexProgramBuilder(type, rexBuilder);
 
@@ -501,8 +504,8 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
             else {
                 unspecifiedValues.set(i);
 
-                programBuilder.addProject(rexBuilder.makeNullLiteral(type == emptyType ?
-                    nullType : type.getFieldList().get(i).getType()), null);
+                programBuilder.addProject(rexBuilder.makeNullLiteral(type == EMPTY_TYPE ?
+                    NULL_TYPE : type.getFieldList().get(i).getType()), null);
             }
         }
 
@@ -562,7 +565,9 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
 
         Class<? extends Scalar> clazz = biInParams ? BiScalar.class : SingleScalar.class;
 
-        return Commons.compile(clazz, Expressions.toString(F.asList(decl), "\n", false));
+        String code = Expressions.toString(F.asList(decl), "\n", false);
+
+        return Commons.compile(clazz, code);
     }
 
     /** */
@@ -628,7 +633,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         private AbstractScalarPredicate(T scalar) {
             this.scalar = scalar;
             hnd = ctx.rowHandler();
-            out = hnd.factory(typeFactory, booleanType).create();
+            out = hnd.factory(typeFactory, BOOLEAN_TYPE).create();
         }
     }
 

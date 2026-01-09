@@ -37,7 +37,6 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -47,6 +46,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.eqNodes;
 import static org.apache.ignite.testframework.GridLoadTestUtils.appendLineToFile;
 import static org.apache.ignite.testframework.GridLoadTestUtils.startDaemon;
 
@@ -320,7 +320,7 @@ public class GridIoManagerBenchmark {
                 Thread.sleep(1000);
 
             for (ClusterNode node : disc.allNodes())
-                if (!F.eqNodes(node, disc.localNode()))
+                if (!eqNodes(node, disc.localNode()))
                     return node;
 
             assert false;

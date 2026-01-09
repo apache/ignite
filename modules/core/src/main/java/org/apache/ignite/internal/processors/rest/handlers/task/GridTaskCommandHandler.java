@@ -78,6 +78,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.EXE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.NOOP;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.RESULT;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeForNodeId;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 
 /**
@@ -131,15 +132,13 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                         if (err != null)
                             res.error(err.getMessage());
-                        else {
-                            res.result(desc.result());
-                            res.resultBytes(U.marshal(ctx, desc.result()));
-                        }
+                        else
+                            res.marshalResult(ctx, desc.result());
                     }
                     else
                         res.found(false);
 
-                    Object topic = U.unmarshal(ctx, req.topicBytes(), U.resolveClassLoader(ctx.config()));
+                    Object topic = TOPIC_REST.topic("task-result", req.topicId());
 
                     ctx.io().sendToCustomTopic(nodeId, topic, res, SYSTEM_POOL);
                 }
@@ -222,7 +221,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 else {
                     // Using predicate instead of node intentionally
                     // in order to provide user well-structured EmptyProjectionException.
-                    ClusterGroup prj = ctx.grid().cluster().forPredicate(F.nodeForNodeId(req.destinationId()));
+                    ClusterGroup prj = ctx.grid().cluster().forPredicate(nodeForNodeId(req.destinationId()));
 
                     taskFut = ctx.closure().callAsync(
                         BALANCE,
@@ -432,7 +431,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                     res = (GridTaskResultResponse)msg;
 
                 try {
-                    res.result(U.unmarshal(ctx, res.resultBytes(), U.resolveClassLoader(ctx.config())));
+                    res.unmarshalResult(ctx);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal task result: " + res, e);
@@ -478,16 +477,15 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         };
 
         // 1. Create unique topic name and register listener.
-        Object topic = TOPIC_REST.topic("task-result", topicIdGen.getAndIncrement());
+        long topicId = topicIdGen.getAndIncrement();
+        Object topic = TOPIC_REST.topic("task-result", topicId);
 
         try {
             ctx.io().addMessageListener(topic, msgLsnr);
 
             // 2. Send message.
             try {
-                byte[] topicBytes = U.marshal(ctx, topic);
-
-                ctx.io().sendToGridTopic(taskNode, TOPIC_REST, new GridTaskResultRequest(taskId, topic, topicBytes), SYSTEM_POOL);
+                ctx.io().sendToGridTopic(taskNode, TOPIC_REST, new GridTaskResultRequest(taskId, topicId), SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
                 String errMsg = "Failed to send task result request [resHolderId=" + resHolderId +

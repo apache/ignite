@@ -17,44 +17,44 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Message sent to check that transactions related to transaction were prepared on remote node.
  */
 public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Future ID. */
+    @Order(value = 7, method = "futureId")
     private IgniteUuid futId;
 
     /** Mini future ID. */
+    @Order(8)
     private IgniteUuid miniId;
 
     /** Near transaction ID. */
+    @Order(value = 9, method = "nearXidVersion")
     private GridCacheVersion nearXidVer;
 
     /** Expected number of transactions on node. */
+    @Order(value = 10, method = "transactions")
     private int txNum;
 
     /** System transaction flag. */
+    @Order(value = 11, method = "system")
     private boolean sys;
 
     /** {@code True} if should check only tx on near node. */
+    @Order(12)
     private boolean nearTxCheck;
 
     /**
-     * Empty constructor required by {@link Externalizable}
+     * Empty constructor.
      */
     public GridCacheTxRecoveryRequest() {
         // No-op.
@@ -94,10 +94,24 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
     }
 
     /**
+     * @param nearTxCheck {@code True} if should check only tx on near node.
+     */
+    public void nearTxCheck(boolean nearTxCheck) {
+        this.nearTxCheck = nearTxCheck;
+    }
+
+    /**
      * @return Near version.
      */
     public GridCacheVersion nearXidVersion() {
         return nearXidVer;
+    }
+
+    /**
+     * @param nearXidVer Near version.
+     */
+    public void nearXidVersion(GridCacheVersion nearXidVer) {
+        this.nearXidVer = nearXidVer;
     }
 
     /**
@@ -108,10 +122,24 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
     }
 
     /**
+     * @param futId Future ID.
+     */
+    public void futureId(IgniteUuid futId) {
+        this.futId = futId;
+    }
+
+    /**
      * @return Mini future ID.
      */
     public IgniteUuid miniId() {
         return miniId;
+    }
+
+    /**
+     * @param miniId Mini future ID.
+     */
+    public void miniId(IgniteUuid miniId) {
+        this.miniId = miniId;
     }
 
     /**
@@ -122,10 +150,24 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
     }
 
     /**
+     * @param txNum Expected number of transactions on node.
+     */
+    public void transactions(int txNum) {
+        this.txNum = txNum;
+    }
+
+    /**
      * @return System transaction flag.
      */
     public boolean system() {
         return sys;
+    }
+
+    /**
+     * @param sys System transaction flag.
+     */
+    public void system(boolean sys) {
+        this.sys = sys;
     }
 
     /** {@inheritDoc} */
@@ -134,133 +176,8 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 8:
-                if (!writer.writeIgniteUuid("futId", futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeIgniteUuid("miniId", miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeBoolean("nearTxCheck", nearTxCheck))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeMessage("nearXidVer", nearXidVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
-                if (!writer.writeBoolean("sys", sys))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
-                if (!writer.writeInt("txNum", txNum))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 8:
-                futId = reader.readIgniteUuid("futId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                miniId = reader.readIgniteUuid("miniId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 10:
-                nearTxCheck = reader.readBoolean("nearTxCheck");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                nearXidVer = reader.readMessage("nearXidVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
-                sys = reader.readBoolean("sys");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
-                txNum = reader.readInt("txNum");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(GridCacheTxRecoveryRequest.class);
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 16;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 14;
     }
 
     /** {@inheritDoc} */

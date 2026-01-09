@@ -55,7 +55,7 @@ The following table lists available configuration parameters:
 [cols="1,1,1",opts="header"]
 |===
 | Setter | Description | Default
-| `setBackups(int)` | The number of backups. | 0
+| `setBackups(int)` | The number of backups. | 1
 | `setCacheMode(CacheMode)` | Cache mode for all atomic types. | `PARTITIONED`
 | `setAtomicSequenceReserveSize(int)` | Sets the number of sequence values reserved for `IgniteAtomicSequence` instances. |  1000
 |===

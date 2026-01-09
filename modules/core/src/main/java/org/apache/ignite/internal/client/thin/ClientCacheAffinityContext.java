@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.client.thin;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -32,6 +35,8 @@ import java.util.function.Predicate;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.client.ClientPartitionAwarenessMapper;
 import org.apache.ignite.client.ClientPartitionAwarenessMapperFactory;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -45,6 +50,20 @@ import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVer
 public class ClientCacheAffinityContext {
     /** If a factory needs to be removed. */
     private static final long REMOVED_TS = 0;
+
+    /** Affinity operations, allowed to be executed on backup nodes. */
+    private static final EnumSet<ClientOperation> OPS_ALLOWED_ON_BACKUPS = EnumSet.of(
+        ClientOperation.CACHE_GET,
+        ClientOperation.CACHE_CONTAINS_KEY,
+        ClientOperation.ATOMIC_LONG_VALUE_GET,
+        ClientOperation.OP_SET_VALUE_CONTAINS,
+        ClientOperation.OP_SET_VALUE_CONTAINS_ALL,
+        ClientOperation.OP_SET_ITERATOR_START,
+        ClientOperation.QUERY_SQL,
+        ClientOperation.QUERY_SQL_FIELDS,
+        ClientOperation.QUERY_SCAN,
+        ClientOperation.QUERY_INDEX
+    );
 
     /**
      * Factory for each cache id to produce key to partition mapping functions.
@@ -74,18 +93,24 @@ public class ClientCacheAffinityContext {
     /** Predicate to check whether a connection to the node with the specified ID is open. */
     private final Predicate<UUID> connectionEstablishedPredicate;
 
+    /** Data center ID. */
+    private final String dataCenterId;
+
     /**
      * @param binary Binary data processor.
      * @param factory Factory for caches with custom affinity.
+     * @param dataCenterId Data center ID.
      */
     public ClientCacheAffinityContext(
         IgniteBinary binary,
         @Nullable ClientPartitionAwarenessMapperFactory factory,
-        Predicate<UUID> connectionEstablishedPredicate
+        Predicate<UUID> connectionEstablishedPredicate,
+        String dataCenterId
     ) {
         this.paMapFactory = factory;
         this.binary = binary;
         this.connectionEstablishedPredicate = connectionEstablishedPredicate;
+        this.dataCenterId = dataCenterId;
     }
 
     /**
@@ -150,7 +175,7 @@ public class ClientCacheAffinityContext {
 
         // In case of IO error rq can hold previous mapping request. Just overwrite it, we don't need it anymore.
         rq = new CacheMappingRequest(cacheIds, lastAccessed);
-        ClientCacheAffinityMapping.writeRequest(ch, rq.caches, rq.ts > 0);
+        ClientCacheAffinityMapping.writeRequest(ch, rq.caches, rq.ts > 0, dataCenterId);
     }
 
     /**
@@ -222,6 +247,36 @@ public class ClientCacheAffinityContext {
     }
 
     /**
+     * @param ch Payload output channel.
+     */
+    public void writeDataCenterNodesRequest(PayloadOutputChannel ch) {
+        try (BinaryWriterEx w = BinaryUtils.writer(null, ch.out(), null)) {
+            w.writeString(dataCenterId);
+        }
+    }
+
+    /**
+     * @param ch Payload input channel.
+     */
+    public boolean readDataCenterNodesResponse(PayloadInputChannel ch) {
+        TopologyNodes top = lastTop.get();
+
+        if (top == null)
+            return false;
+
+        int cnt = ch.in().readInt();
+
+        List<UUID> dcNodes = new ArrayList<>(cnt);
+
+        for (int i = 0; i < cnt; i++)
+            dcNodes.add(new UUID(ch.in().readLong(), ch.in().readLong()));
+
+        top.dcNodes = dcNodes;
+
+        return true;
+    }
+
+    /**
      * Gets last topology information.
      */
     public TopologyNodes lastTopology() {
@@ -246,12 +301,15 @@ public class ClientCacheAffinityContext {
      *
      * @param cacheId Cache ID.
      * @param key Key.
+     * @param op Client operation.
      * @return Affinity node id or {@code null} if affinity node can't be determined for given cache and key.
      */
-    public UUID affinityNode(int cacheId, Object key) {
+    public UUID affinityNode(int cacheId, Object key, ClientOperation op) {
         ClientCacheAffinityMapping mapping = currentMapping();
 
-        return mapping == null ? null : mapping.affinityNode(binary, cacheId, key);
+        boolean primary = !OPS_ALLOWED_ON_BACKUPS.contains(op);
+
+        return mapping == null ? null : mapping.affinityNode(binary, cacheId, key, primary);
     }
 
     /**
@@ -259,12 +317,24 @@ public class ClientCacheAffinityContext {
      *
      * @param cacheId Cache ID.
      * @param part Partition.
+     * @param op Client operation.
      * @return Affinity node id or {@code null} if affinity node can't be determined for given cache and partition.
      */
-    public UUID affinityNode(int cacheId, int part) {
+    public UUID affinityNode(int cacheId, int part, ClientOperation op) {
         ClientCacheAffinityMapping mapping = currentMapping();
 
-        return mapping == null ? null : mapping.affinityNode(cacheId, part);
+        boolean primary = !OPS_ALLOWED_ON_BACKUPS.contains(op);
+
+        return mapping == null ? null : mapping.affinityNode(cacheId, part, primary);
+    }
+
+    /**
+     * @return List of nodes in current data center.
+     */
+    public List<UUID> dataCenterNodes() {
+        TopologyNodes top = lastTop.get();
+
+        return top == null ? null : top.dataCenterNodes();
     }
 
     /**
@@ -315,6 +385,11 @@ public class ClientCacheAffinityContext {
     }
 
     /** */
+    public String dataCenterId() {
+        return dataCenterId;
+    }
+
+    /** */
     private boolean isTopologyOutdated(TopologyNodes top, AffinityTopologyVersion srvSideTopVer) {
         if (top == null)
             return true;
@@ -340,6 +415,9 @@ public class ClientCacheAffinityContext {
         /** Nodes. */
         private final Collection<UUID> nodes = new ConcurrentLinkedQueue<>();
 
+        /** Current data center nodes. */
+        private volatile List<UUID> dcNodes;
+
         /**
          * @param topVer Topology version.
          * @param nodeId Node id.
@@ -355,6 +433,13 @@ public class ClientCacheAffinityContext {
          */
         public Iterable<UUID> nodes() {
             return Collections.unmodifiableCollection(nodes);
+        }
+
+        /**
+         * Gets nodes of current data center.
+         */
+        public List<UUID> dataCenterNodes() {
+            return dcNodes;
         }
 
         /**

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
@@ -51,10 +52,10 @@ import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteExperimental;
@@ -62,6 +63,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.spi.encryption.EncryptionSpi;
 import org.apache.ignite.spi.encryption.keystore.KeystoreEncryptionSpi;
+import org.apache.ignite.topology.MdcTopologyValidator;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DEFAULT_DISK_PAGE_COMPRESSION;
@@ -433,6 +435,22 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** */
     private Integer diskPageCompressionLevel;
 
+    /**
+     * Root directories where partition files are stored.
+     * @see DataStorageConfiguration#setStoragePath(String)
+     * @see DataStorageConfiguration#setExtraStoragePaths(String[])
+     */
+    @IgniteExperimental
+    @Nullable private String[] storagePaths;
+
+    /**
+     * Root directory where index file are stored.
+     * @see DataStorageConfiguration#setStoragePath(String)
+     * @see DataStorageConfiguration#setExtraStoragePaths(String[])
+     */
+    @IgniteExperimental
+    @Nullable private String idxPath;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -531,6 +549,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         sqlOnheapCache = cc.isSqlOnheapCacheEnabled();
         sqlOnheapCacheMaxSize = cc.getSqlOnheapCacheMaxSize();
         evtsDisabled = cc.isEventsDisabled();
+        storagePaths = cc.getStoragePaths();
+        idxPath = cc.getIndexPath();
     }
 
     /**
@@ -924,8 +944,29 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets flag indicating whether value should be loaded from store if it is not in the cache
-     * for following cache operations:
+     * Indicates whether a value should be loaded from storage if it's missing in the cache during
+     * SQL Data Manipulation Language (DML) operations or specific cache methods:
+     * <ul>
+     *     <li>{@link IgniteCache#putIfAbsent(Object, Object)}</li>
+     *     <li>{@link IgniteCache#replace(Object, Object)}</li>
+     *     <li>{@link IgniteCache#replace(Object, Object, Object)}</li>
+     *     <li>{@link IgniteCache#remove(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndPut(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndRemove(Object)}</li>
+     *     <li>{@link IgniteCache#getAndReplace(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndPutIfAbsent(Object, Object)}</li>
+     *</ul>
+     * Default value is {@link #DFLT_LOAD_PREV_VAL}.
+     *
+     * @return Load previous value flag.
+     */
+    public boolean isLoadPreviousValue() {
+        return loadPrevVal;
+    }
+
+    /**
+     * Indicates whether a value should be loaded from storage if it's missing in the cache during
+     * SQL Data Manipulation Language (DML) operations or specific cache methods:
      * <ul>
      *     <li>{@link IgniteCache#putIfAbsent(Object, Object)}</li>
      *     <li>{@link IgniteCache#replace(Object, Object)}</li>
@@ -937,25 +978,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      *     <li>{@link IgniteCache#getAndPutIfAbsent(Object, Object)}</li>
      *</ul>
      *
-     * @return Load previous value flag.
-     */
-    public boolean isLoadPreviousValue() {
-        return loadPrevVal;
-    }
-
-    /**
-     * Sets flag indicating whether value should be loaded from store if it is not in the cache
-     * for following cache operations:
-     * <ul>
-     *     <li>{@link IgniteCache#putIfAbsent(Object, Object)}</li>
-     *     <li>{@link IgniteCache#replace(Object, Object)}</li>
-     *     <li>{@link IgniteCache#replace(Object, Object, Object)}</li>
-     *     <li>{@link IgniteCache#remove(Object, Object)}</li>
-     *     <li>{@link IgniteCache#getAndPut(Object, Object)}</li>
-     *     <li>{@link IgniteCache#getAndRemove(Object)}</li>
-     *     <li>{@link IgniteCache#getAndReplace(Object, Object)}</li>
-     *     <li>{@link IgniteCache#getAndPutIfAbsent(Object, Object)}</li>
-     *</ul>
      * When not set, default value is {@link #DFLT_LOAD_PREV_VAL}.
      *
      * @param loadPrevVal Load previous value flag.
@@ -2002,7 +2024,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             boolean dup = false;
 
             for (QueryEntity entity : qryEntities) {
-                if (F.eq(entity.findValueType(), newEntity.findValueType())) {
+                if (Objects.equals(entity.findValueType(), newEntity.findValueType())) {
                     dup = true;
 
                     break;
@@ -2013,7 +2035,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                 qryEntities.add(newEntity);
 
             // Set key configuration if needed.
-            String affFieldName = BinaryContext.affinityFieldName(keyCls);
+            String affFieldName = CU.affinityFieldName(keyCls);
 
             if (affFieldName != null) {
                 CacheKeyConfiguration newKeyCfg = new CacheKeyConfiguration(newEntity.getKeyType(), affFieldName);
@@ -2024,7 +2046,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
                     boolean keyCfgDup = false;
 
                     for (CacheKeyConfiguration oldKeyCfg : keyCfg) {
-                        if (F.eq(oldKeyCfg.getTypeName(), newKeyCfg.getTypeName())) {
+                        if (Objects.equals(oldKeyCfg.getTypeName(), newKeyCfg.getTypeName())) {
                             keyCfgDup = true;
 
                             break;
@@ -2119,7 +2141,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
             boolean found = false;
 
             for (QueryEntity existing : this.qryEntities) {
-                if (F.eq(entity.findValueType(), existing.findValueType())) {
+                if (Objects.equals(entity.findValueType(), existing.findValueType())) {
                     found = true;
 
                     break;
@@ -2200,6 +2222,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setTopologyValidator(TopologyValidator topValidator) {
+        try {
+            if (topValidator instanceof MdcTopologyValidator)
+                ((MdcTopologyValidator)topValidator).checkConfiguration();
+        }
+        catch (Exception e) {
+            throw new CacheException(e);
+        }
+
         this.topValidator = topValidator;
 
         return this;
@@ -2452,6 +2482,50 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setDiskPageCompressionLevel(Integer diskPageCompressionLevel) {
         this.diskPageCompressionLevel = diskPageCompressionLevel;
+
+        return this;
+    }
+
+    /**
+     * @return A path to the root directory where the Persistent Store for cache group will persist data and indexes.
+     */
+    @IgniteExperimental
+    @Nullable public String[] getStoragePaths() {
+        return storagePaths;
+    }
+
+    /**
+     * Sets a path to the root directory where the Persistent Store will persist data.
+     * By default, the Persistent Store's files are located under {@link DataStorageConfiguration#getStoragePath()}.
+     *
+     * @param storagePaths Persistence store path.
+     * @return {@code this} for chaining.
+     */
+    @IgniteExperimental
+    public CacheConfiguration<K, V> setStoragePaths(String... storagePaths) {
+        this.storagePaths = storagePaths;
+
+        return this;
+    }
+
+    /**
+     * @return A path to the root directory where the Persistent Store for cache group will persist index.
+     */
+    @IgniteExperimental
+    @Nullable public String getIndexPath() {
+        return idxPath;
+    }
+
+    /**
+     * Sets a path to the root directory where the Persistent Store will persist index partition.
+     * By default, the Persistent Store's files are located under {@link DataStorageConfiguration#getStoragePath()}.
+     *
+     * @param idxPath Index path.
+     * @return {@code this} for chaining.
+     */
+    @IgniteExperimental
+    public CacheConfiguration<K, V> setIndexPath(String idxPath) {
+        this.idxPath = idxPath;
 
         return this;
     }

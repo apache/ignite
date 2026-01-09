@@ -17,33 +17,25 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedUnlockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.GridNearUnlockRequest;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * DHT cache unlock request.
  */
-public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class GridDhtUnlockRequest extends GridNearUnlockRequest {
     /** Near keys. */
-    @GridDirectCollection(KeyCacheObject.class)
+    @Order(8)
     private List<KeyCacheObject> nearKeys;
 
     /**
-     * Empty constructor required by {@link Externalizable}.
+     * Empty constructor.
      */
     public GridDhtUnlockRequest() {
         // No-op.
@@ -56,6 +48,13 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
      */
     public GridDhtUnlockRequest(int cacheId, int dhtCnt, boolean addDepInfo) {
         super(cacheId, dhtCnt, addDepInfo);
+    }
+
+    /**
+     * Sets the near.
+     */
+    public void nearKeys(List<KeyCacheObject> nearKeys) {
+        this.nearKeys = nearKeys;
     }
 
     /**
@@ -99,62 +98,7 @@ public class GridDhtUnlockRequest extends GridDistributedUnlockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 9:
-                if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 9:
-                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(GridDhtUnlockRequest.class);
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 36;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 10;
     }
 }

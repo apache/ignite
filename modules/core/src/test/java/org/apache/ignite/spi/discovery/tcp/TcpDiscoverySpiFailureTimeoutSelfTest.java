@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import org.apache.ignite.IgniteCheckedException;
@@ -34,6 +33,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
 
 /**
@@ -194,14 +194,18 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
 
             Thread.sleep(firstSpi().failureDetectionTimeout());
 
-            firstSpi().cntConnCheckMsg = false;
-            nextSpi.cntConnCheckMsg = false;
+            TestTcpDiscoverySpi first = firstSpi();
+            TestTcpDiscoverySpi next = nextSpi;
 
-            int sent = firstSpi().connCheckStatusMsgCntSent;
-            int received = nextSpi.connCheckStatusMsgCntReceived;
+            // The check message is sent in case no any discovery message were sent in configured period,
+            // but there are TcpDiscoveryMetricsUpdateMessage that is sent every 2 seconds and may affect
+            // the counters.
+            assertTrue(GridTestUtils.waitForCondition(() -> {
+                int sent = first.connCheckStatusMsgCntSent;
+                int received = next.connCheckStatusMsgCntReceived;
 
-            assert sent >= 15 && sent < 25 : "messages sent: " + sent;
-            assert received >= 15 && received < 25 : "messages received: " + received;
+                return sent > 5 && received > 5;
+            }, firstSpi().failureDetectionTimeout(), 500));
         }
         finally {
             firstSpi().resetState();
@@ -298,13 +302,13 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout)
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg, long timeout)
             throws IOException, IgniteCheckedException {
             if (!(msg instanceof TcpDiscoveryPingRequest)) {
                 if (cntConnCheckMsg && msg instanceof TcpDiscoveryConnectionCheckMessage)
                     connCheckStatusMsgCntSent++;
 
-                super.writeToSocket(sock, out, msg, timeout);
+                super.writeMessage(ses, msg, timeout);
 
                 return;
             }
@@ -324,7 +328,7 @@ public class TcpDiscoverySpiFailureTimeoutSelfTest extends AbstractDiscoverySelf
                 }
             }
             else
-                super.writeToSocket(sock, out, msg, timeout);
+                super.writeMessage(ses, msg, timeout);
         }
 
         /** {@inheritDoc} */

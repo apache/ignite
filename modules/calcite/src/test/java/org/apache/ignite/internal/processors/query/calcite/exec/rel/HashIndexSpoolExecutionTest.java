@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
@@ -54,14 +53,14 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
      *
      */
     @Test
-    public void testIndexSpool() throws Exception {
+    public void testIndexSpool() {
         ExecutionContext<Object[]> ctx = executionContext(F.first(nodes()), UUID.randomUUID(), 0);
         IgniteTypeFactory tf = ctx.getTypeFactory();
         RelDataType rowType = TypeUtils.createRowType(tf, int.class, String.class, int.class);
 
-        int inBufSize = U.field(AbstractNode.class, "IN_BUFFER_SIZE");
+        int[] sizes = {1, IN_BUFFER_SIZE / 2 - 1, IN_BUFFER_SIZE / 2, IN_BUFFER_SIZE / 2 + 1, IN_BUFFER_SIZE,
+            IN_BUFFER_SIZE + 1, IN_BUFFER_SIZE * 4};
 
-        int[] sizes = {1, inBufSize / 2 - 1, inBufSize / 2, inBufSize / 2 + 1, inBufSize, inBufSize + 1, inBufSize * 4};
         int[] eqCnts = {1, 10};
 
         for (int size : sizes) {

@@ -27,7 +27,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskAdapter;
-import org.apache.ignite.internal.binary.BinaryArray;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -63,7 +63,7 @@ public class PlatformSetUseBinaryArrayTask extends ComputeTaskAdapter<Boolean, V
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() {
             System.setProperty(IGNITE_USE_BINARY_ARRAYS, Boolean.toString(argument(0)));
-            BinaryArray.initUseBinaryArrays();
+            BinaryUtils.initUseBinaryArrays();
 
             return null;
         }

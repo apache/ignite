@@ -89,7 +89,6 @@ import org.junit.Test;
 
 import static org.apache.ignite.events.EventType.EVT_CONSISTENCY_VIOLATION;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.AbstractSnapshotSelfTest.snp;
-import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER;
 
 /** */
 public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotTest {
@@ -626,7 +625,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         GridTestUtils.assertThrowsAnyCause(log,
             () -> grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(),
-            IgniteException.class, "Force to fail snapshot restore.");
+            RuntimeException.class, "Force to fail snapshot restore.");
 
         awaitPartitionMapExchange();
 
@@ -636,7 +635,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         stopAllGrids();
 
-        startGrids(3);
+        startGrids(3).cluster().state(ClusterState.ACTIVE);
 
         checkData(expSnpData, CACHE);
     }
@@ -972,7 +971,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         SnapshotFileTree sft = snapshotFileTree(grid(nodeIdx), SNP);
 
-        File[] incSegs = sft.incrementalSnapshotFileTree(incIdx).wal().listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
+        File[] incSegs = sft.incrementalSnapshotFileTree(incIdx).walCompactedOrRawSegments();
 
         Arrays.sort(incSegs);
 

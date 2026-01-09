@@ -72,7 +72,10 @@ public class H2QueryInfo implements TrackableQuery {
     private final UUID nodeId;
 
     /** Query id. */
-    private final long queryId;
+    private final long qryId;
+
+    /** Query initiator ID. */
+    private final String initiatorId;
 
     /** Query SQL plan. */
     private volatile String plan;
@@ -82,16 +85,18 @@ public class H2QueryInfo implements TrackableQuery {
      * @param stmt Query statement.
      * @param sql Query statement.
      * @param nodeId Originator node id.
-     * @param queryId Query id.
+     * @param qryId Query id.
+     * @param initiatorId Query initiator id.
      */
-    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, UUID nodeId, long queryId) {
+    public H2QueryInfo(QueryType type, PreparedStatement stmt, String sql, UUID nodeId, long qryId, String initiatorId) {
         try {
             assert stmt != null;
 
             this.type = type;
             this.sql = sql;
             this.nodeId = nodeId;
-            this.queryId = queryId;
+            this.qryId = qryId;
+            this.initiatorId = initiatorId;
 
             beginTs = U.currentTimeMillis();
 
@@ -116,13 +121,16 @@ public class H2QueryInfo implements TrackableQuery {
 
     /** */
     public long queryId() {
-        return queryId;
+        return qryId;
     }
 
     /** */
     public synchronized String plan() {
-        if (plan == null)
-            plan = planWithoutScanCount(stmt.getPlanSQL());
+        if (plan == null) {
+            String plan0 = stmt.getPlanSQL();
+
+            plan = (plan0 != null) ? planWithoutScanCount(plan0) : "";
+        }
 
         return plan;
     }
@@ -180,10 +188,10 @@ public class H2QueryInfo implements TrackableQuery {
     @Override public String queryInfo(@Nullable String additionalInfo) {
         StringBuilder msgSb = new StringBuilder();
 
-        if (queryId == RunningQueryManager.UNDEFINED_QUERY_ID)
+        if (qryId == RunningQueryManager.UNDEFINED_QUERY_ID)
             msgSb.append(" [globalQueryId=(undefined), node=").append(nodeId);
         else
-            msgSb.append(" [globalQueryId=").append(QueryUtils.globalQueryId(nodeId, queryId));
+            msgSb.append(" [globalQueryId=").append(QueryUtils.globalQueryId(nodeId, qryId));
 
         if (additionalInfo != null)
             msgSb.append(", ").append(additionalInfo);
@@ -194,6 +202,7 @@ public class H2QueryInfo implements TrackableQuery {
                 .append(", enforceJoinOrder=").append(enforceJoinOrder)
                 .append(", lazy=").append(lazy)
                 .append(", schema=").append(schema)
+                .append(", initiatorId=").append(initiatorId)
                 .append(", sql='").append(sql)
                 .append("', plan=").append(plan());
 
@@ -233,17 +242,35 @@ public class H2QueryInfo implements TrackableQuery {
      * @return SQL plan without the scanCount suffix.
      */
     public String planWithoutScanCount(String plan) {
-        String res = null;
+        if (plan == null || !plan.contains("scanCount:"))
+            return plan;
 
-        int start = plan.indexOf("\n    /* scanCount");
+        StringBuilder res = new StringBuilder(plan);
 
-        if (start != -1) {
-            int end = plan.indexOf("*/", start);
+        removePattern(res, "\n    /* scanCount:", "*/");
+        removePattern(res, "\n    /++ scanCount:", "++/");
 
-            res = plan.substring(0, start) + plan.substring(end + 2);
+        return res.toString();
+    }
+
+    /**
+     * @param sb StringBuilder.
+     * @param startPattern Start pattern.
+     * @param endMarker End marker.
+     */
+    private void removePattern(StringBuilder sb, String startPattern, String endMarker) {
+        int start = sb.lastIndexOf(startPattern);
+
+        while (start != -1) {
+            int end = sb.indexOf(endMarker, start);
+
+            if (end == -1)
+                break;
+
+            sb.delete(start, end + endMarker.length());
+
+            start = sb.lastIndexOf(startPattern);
         }
-
-        return (res == null) ? plan : res;
     }
 
     /**

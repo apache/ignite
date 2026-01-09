@@ -56,7 +56,7 @@ public class SnapshotCheckCommandArg extends IgniteDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         snapshotName = U.readString(in);
         src = U.readString(in);
         increment = in.readInt();

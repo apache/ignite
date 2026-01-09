@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.calcite.integration;
 
+import java.util.Collections;
 import java.util.List;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -83,6 +84,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         // Wait for pending queries before destroying caches. If some error occurs during query execution, client code
         // can get control earlier than query leave the running queries registry (need some time for async message
         // exchange), but eventually, all queries should be closed.
@@ -238,10 +241,45 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
     /** */
     protected List<List<?>> sql(IgniteEx ignite, String sql, Object... params) {
-        List<FieldsQueryCursor<List<?>>> cur = queryProcessor(ignite).query(queryContext(), "PUBLIC", sql, params);
+        // {@code sql} can contain more than one query.
+        List<FieldsQueryCursor<List<?>>> allCurs = queryProcessor(ignite).query(queryContext(), "PUBLIC", sql, params);
 
-        try (QueryCursor<List<?>> srvCursor = cur.get(0)) {
-            return srvCursor.getAll();
+        if (allCurs.size() > 1) {
+            log.warning("The query statement '" + sql + "' contains " + allCurs.size() + " actual queries. " +
+                "All the cursors are fetched, but only the last result is returned.");
+        }
+
+        List<List<?>> res = Collections.emptyList();
+
+        for (FieldsQueryCursor<List<?>> cur : allCurs)
+            res = cur.getAll();
+
+        return res;
+    }
+
+    /** */
+    protected void gatherStatistics() throws Exception {
+        for (List<?> lst : sql("SELECT TABLE_NAME FROM SYS.TABLES")) {
+            assert lst.size() == 1 : "Single table name expected";
+
+            String tbl = lst.get(0).toString().toUpperCase();
+
+            sql("ANALYZE " + tbl);
+
+            waitForCondition(
+                () -> {
+                    for (Ignite node : G.allGrids()) {
+                        if (node.configuration().isClientMode())
+                            continue;
+
+                        if (F.isEmpty(sql((IgniteEx)node, "select * from sys.statistics_local_data where name = ?", tbl)))
+                            return false;
+                    }
+
+                    return true;
+                },
+                getTestTimeout()
+            );
         }
     }
 

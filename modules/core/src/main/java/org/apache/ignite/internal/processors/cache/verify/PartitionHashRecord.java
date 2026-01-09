@@ -22,19 +22,19 @@ import java.io.ObjectOutput;
 import java.util.Objects;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.cache.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.VerifyPartitionContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Record containing partition checksum, primary flag and consistent ID of owner.
  */
-public class PartitionHashRecord extends VisorDataTransferObject {
+public class PartitionHashRecord extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -242,8 +242,7 @@ public class PartitionHashRecord extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer,
-        ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         partKey = (PartitionKey)in.readObject();
         isPrimary = in.readBoolean();
         consistentId = in.readObject();
@@ -251,22 +250,12 @@ public class PartitionHashRecord extends VisorDataTransferObject {
         partVerHash = in.readInt();
         updateCntr = in.readObject();
         size = in.readLong();
-
-        if (protoVer >= V2)
-            partitionState = PartitionState.fromOrdinal(in.readByte());
-        else
-            partitionState = size == MOVING_PARTITION_SIZE ? PartitionState.MOVING : PartitionState.OWNING;
-
+        partitionState = PartitionState.fromOrdinal(in.readByte());
         cfKeys = in.readInt();
         noCfKeys = in.readInt();
         binKeys = in.readInt();
         regKeys = in.readInt();
         hasExpiringEntries = in.readBoolean();
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V2;
     }
 
     /** {@inheritDoc} */

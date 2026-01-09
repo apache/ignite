@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -27,8 +27,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateRequest.DHT_ATOMIC_HAS_RESULT_MASK;
@@ -37,26 +35,28 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.atomic
  * Message sent from DHT nodes to near node in FULL_SYNC mode.
  */
 public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** */
+    @Order(value = 4, method = "partition")
     private int partId;
 
     /** */
+    @Order(value = 5, method = "futureId")
     private long futId;
 
     /** */
+    @Order(6)
     private UUID primaryId;
 
     /** */
+    @Order(7)
     @GridToStringExclude
     private byte flags;
 
     /** */
+    @Order(value = 8, method = "errors")
     @GridToStringInclude
     private UpdateErrors errs;
 
@@ -92,7 +92,7 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
     /**
      * @return Errors.
      */
-    @Nullable UpdateErrors errors() {
+    @Nullable public UpdateErrors errors() {
         return errs;
     }
 
@@ -106,13 +106,41 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
     /**
      * @return Primary node ID.
      */
-    UUID primaryId() {
+    public UUID primaryId() {
         return primaryId;
+    }
+
+    /**
+     * @param primaryId Primary node ID.
+     */
+    public void primaryId(UUID primaryId) {
+        this.primaryId = primaryId;
+    }
+
+    /**
+     * @return Flags.
+     */
+    public byte flags() {
+        return flags;
+    }
+
+    /**
+     * @param flags Flags.
+     */
+    public void flags(byte flags) {
+        this.flags = flags;
     }
 
     /** {@inheritDoc} */
     @Override public int partition() {
         return partId;
+    }
+
+    /**
+     * @param partId Partition ID.
+     */
+    public void partition(int partId) {
+        this.partId = partId;
     }
 
     /**
@@ -159,6 +187,13 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
         return futId;
     }
 
+    /**
+     * @param futId Future ID.
+     */
+    public void futureId(long futId) {
+        this.futId = futId;
+    }
+
     /** {@inheritDoc} */
     @Override public int lookupIndex() {
         return CACHE_MSG_IDX;
@@ -170,17 +205,12 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 9;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean addDeploymentInfo() {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         if (errs != null)
@@ -188,117 +218,11 @@ public class GridDhtAtomicNearResponse extends GridCacheIdMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
         if (errs != null)
             errs.finishUnmarshal(this, ctx.cacheContext(cacheId), ldr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeMessage("errs", errs))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeByte("flags", flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeLong("futId", futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeInt("partId", partId))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeUuid("primaryId", primaryId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                errs = reader.readMessage("errs");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                flags = reader.readByte("flags");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                futId = reader.readLong("futId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                partId = reader.readInt("partId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                primaryId = reader.readUuid("primaryId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(GridDhtAtomicNearResponse.class);
     }
 
     /** {@inheritDoc} */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.File;
 import java.io.Serializable;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -171,6 +173,9 @@ public class ClusterCachesInfo {
 
     /** Flag that caches were already filtered out. */
     private final AtomicBoolean alreadyFiltered = new AtomicBoolean();
+
+    /** */
+    @Nullable private volatile ClusterCacheGroupRecoveryData clusterCacheGrpRecoveryData;
 
     /**
      * @param ctx Context.
@@ -331,7 +336,7 @@ public class ClusterCachesInfo {
                 CacheData cacheData = gridData.gridData.caches().get(locCfg.getName());
 
                 if (cacheData != null) {
-                    if (!F.eq(cacheData.sql(), locCacheInfo.sql())) {
+                    if (!Objects.equals(cacheData.sql(), locCacheInfo.sql())) {
                         throw new IgniteCheckedException("Cache configuration mismatch (local cache was created " +
                             "via " + (locCacheInfo.sql() ? "CREATE TABLE" : "Ignite API") + ", while remote cache " +
                             "was created via " + (cacheData.sql() ? "CREATE TABLE" : "Ignite API") + "): " +
@@ -404,8 +409,11 @@ public class ClusterCachesInfo {
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cachePreloadMode",
             "Cache preload mode", locAttr.cacheRebalanceMode(), rmtAttr.cacheRebalanceMode(), true);
 
-        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "topologyValidator",
-            "Cache topology validator", locAttr.topologyValidatorClassName(), rmtAttr.topologyValidatorClassName(), true);
+        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "topologyValidatorClass",
+            "Cache topology validator class", locAttr.topologyValidatorClassName(), rmtAttr.topologyValidatorClassName(), true);
+
+        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "topologyValidator", "Cache topology validator",
+            locAttr.configuration().getTopologyValidator(), rmtAttr.configuration().getTopologyValidator(), true);
 
         ClusterNode rmtNode = ctx.discovery().node(rmt);
 
@@ -425,6 +433,8 @@ public class ClusterCachesInfo {
         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "affinityPartitionsCount",
             "Affinity partitions count", locAttr.affinityPartitionsCount(),
             rmtAttr.affinityPartitionsCount(), true);
+
+        // TODO IGNITE-26967 - implement validation of affinity backup filter.
 
         CU.validateKeyConfigiration(rmtAttr.groupName(), rmtAttr.cacheName(), rmt, rmtAttr.configuration().getKeyConfiguration(),
             locAttr.configuration().getKeyConfiguration(), log, true);
@@ -1140,7 +1150,7 @@ public class ClusterCachesInfo {
         }
 
         assert req.cacheType() != null : req;
-        assert F.eq(ccfg.getName(), cacheName) : req;
+        assert Objects.equals(ccfg.getName(), cacheName) : req;
 
         int cacheId = CU.cacheId(cacheName);
 
@@ -1200,14 +1210,19 @@ public class ClusterCachesInfo {
         if (!CU.isPersistentCache(ccfg, ctx.config().getDataStorageConfiguration()))
             return false;
 
-        String cacheDir = ctx.pdsFolderResolver().fileTree().cacheStorage(ccfg).getName();
+        for (File cacheStorage : ctx.pdsFolderResolver().fileTree().cacheStorages(ccfg)) {
+            String cacheDir = cacheStorage.getName();
 
-        try {
-            return !cacheDir.endsWith(CU.cacheOrGroupName(ccfg));
+            try {
+                if (!cacheDir.endsWith(CU.cacheOrGroupName(ccfg)))
+                    return true;
+            }
+            catch (InvalidPathException ignored) {
+                return true;
+            }
         }
-        catch (InvalidPathException ignored) {
-            return true;
-        }
+
+        return false;
     }
 
     /**
@@ -1477,7 +1492,9 @@ public class ClusterCachesInfo {
             templates,
             cacheGrps,
             ctx.discovery().clientNodesMap(),
-            restarting);
+            restarting,
+            clusterCacheGrpRecoveryData
+        );
     }
 
     /**
@@ -1709,6 +1726,8 @@ public class ClusterCachesInfo {
                 grpData.config().getNodeFilter(),
                 grpData.config().getCacheMode());
         }
+
+        clusterCacheGrpRecoveryData = cachesData.clusterCacheGroupRecoveryData();
     }
 
     /**
@@ -2191,6 +2210,8 @@ public class ClusterCachesInfo {
     private String processJoiningNode(CacheJoinNodeDiscoveryData joinData, UUID nodeId, boolean locJoin) {
         registerNewCacheTemplates(joinData, nodeId);
 
+        processJoiningNodeClusterCacheGroupRecoveryData(joinData.clusterCacheGroupRecoveryData());
+
         Map<DynamicCacheDescriptor, QuerySchemaPatch> patchesToApply = new HashMap<>();
 
         boolean hasSchemaPatchConflict = false;
@@ -2560,8 +2581,11 @@ public class ClusterCachesInfo {
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "dataRegionName", "Data region",
             cfg.getDataRegionName(), startCfg.getDataRegionName(), true);
 
-        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "topologyValidator", "Topology validator",
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "topologyValidatorClass", "Topology validator class",
             attr1.topologyValidatorClassName(), attr2.topologyValidatorClassName(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "topologyValidator", "Topology validator",
+            cfg.getTopologyValidator(), startCfg.getTopologyValidator(), true);
 
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg, "partitionLossPolicy", "Partition Loss Policy",
             cfg.getPartitionLossPolicy(), startCfg.getPartitionLossPolicy(), true);
@@ -2590,6 +2614,14 @@ public class ClusterCachesInfo {
         CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg,
             "diskPageCompressionLevel", "Disk page compression level",
             cfg.getDiskPageCompressionLevel(), startCfg.getDiskPageCompressionLevel(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg,
+            "storagePath", "Storage path",
+            cfg.getStoragePaths(), startCfg.getStoragePaths(), true);
+
+        CU.validateCacheGroupsAttributesMismatch(log, cfg, startCfg,
+            "indexPath", "Index path",
+            cfg.getIndexPath(), startCfg.getIndexPath(), true);
     }
 
     /**
@@ -2788,6 +2820,32 @@ public class ClusterCachesInfo {
      */
     public void removeRestartingCaches() {
         restartingCaches.clear();
+    }
+
+    /** */
+    @Nullable public ClusterCacheGroupRecoveryData clusterCacheGroupRecoveryData() {
+        return clusterCacheGrpRecoveryData;
+    }
+
+    /** */
+    public void clusterCacheGroupRecoveryData(ClusterCacheGroupRecoveryData data) {
+        clusterCacheGrpRecoveryData = data;
+    }
+
+    /** */
+    private void processJoiningNodeClusterCacheGroupRecoveryData(ClusterCacheGroupRecoveryData joiningNodeData) {
+        if (joiningNodeData == null)
+            return;
+
+        DiscoveryDataClusterState clusterState = ctx.state().clusterState();
+
+        if (clusterState.transition() || clusterState.state().active())
+            return;
+
+        ClusterCacheGroupRecoveryData locData = clusterCacheGrpRecoveryData;
+
+        if (locData == null || joiningNodeData.isMoreRelevantThan(locData))
+            clusterCacheGrpRecoveryData = joiningNodeData;
     }
 
     /**

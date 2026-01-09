@@ -21,11 +21,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.messaging.IgniteMessagingConfigVariationFullApiTest;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.configvariations.ConfigParameter;
-import org.apache.ignite.testframework.configvariations.ConfigVariations;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.Parameters;
 import org.apache.ignite.testframework.junits.DynamicSuite;
@@ -39,11 +36,6 @@ public class IgniteMessagingConfigVariationFullApiTestSuite {
     /** */
     @SuppressWarnings("unchecked")
     private static final ConfigParameter<IgniteConfiguration>[][] GRID_PARAMETER_VARIATION = new ConfigParameter[][] {
-        Parameters.objectParameters("setMarshaller",
-            Parameters.factory(JdkMarshaller.class),
-            Parameters.factory(BinaryMarshaller.class),
-            ConfigVariations.binaryMarshallerFactory()
-        ),
         Parameters.booleanParameters("setPeerClassLoadingEnabled")
     };
 

@@ -90,6 +90,7 @@ import static javax.cache.event.EventType.UPDATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeForNodeId;
 
 /**
  * Continuous queries manager.
@@ -739,7 +740,7 @@ public class CacheContinuousQueryManager<K, V> extends GridCacheManagerAdapter<K
         hnd.keepBinary(keepBinary);
         hnd.localOnly(loc);
 
-        IgnitePredicate<ClusterNode> pred = loc ? F.nodeForNodeId(cctx.localNodeId())
+        IgnitePredicate<ClusterNode> pred = loc ? nodeForNodeId(cctx.localNodeId())
             : new IsAllPredicate<>(cctx.group().nodeFilter(), new AttributeNodeFilter(ATTR_CLIENT_MODE, false));
 
         assert pred != null : cctx.config();

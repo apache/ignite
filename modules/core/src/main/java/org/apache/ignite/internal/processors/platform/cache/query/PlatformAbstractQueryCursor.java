@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.cache.query;
 
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -71,7 +71,7 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
     }
 
     /** {@inheritDoc} */
-    @Override public void processOutStream(int type, final BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override public void processOutStream(int type, final BinaryWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_BATCH: {
                 assert iter != null : "iterator() has not been called";
@@ -173,7 +173,7 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
      * @param writer Writer.
      * @param val Value.
      */
-    protected abstract void write(BinaryRawWriterEx writer, T val);
+    protected abstract void write(BinaryWriterEx writer, T val);
 
     /**
      * Gets the cursor.
@@ -192,7 +192,7 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
         private final PlatformAbstractQueryCursor<T> cursor;
 
         /** Writer. */
-        private final BinaryRawWriterEx writer;
+        private final BinaryWriterEx writer;
 
         /** Count. */
         private int cnt;
@@ -202,7 +202,7 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
          *
          * @param writer Writer.
          */
-        Consumer(PlatformAbstractQueryCursor<T> cursor, BinaryRawWriterEx writer) {
+        Consumer(PlatformAbstractQueryCursor<T> cursor, BinaryWriterEx writer) {
             this.cursor = cursor;
             this.writer = writer;
         }

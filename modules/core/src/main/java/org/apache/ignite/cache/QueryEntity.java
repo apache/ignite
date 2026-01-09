@@ -813,11 +813,11 @@ public class QueryEntity implements Serializable {
      */
     private static void processAnnotationsInClass(boolean key, Class<?> cls, QueryEntityTypeDescriptor type,
         @Nullable QueryEntityClassProperty parent) {
-        if (U.isJdk(cls) || QueryUtils.isGeometryClass(cls)) {
+        if (U.isJdk(cls) || U.isGeometryClass(cls)) {
             if (parent == null && !key && QueryUtils.isSqlType(cls)) { // We have to index primitive _val.
                 String idxName = cls.getSimpleName() + "_" + QueryUtils.VAL_FIELD_NAME + "_idx";
 
-                type.addIndex(idxName, QueryUtils.isGeometryClass(cls) ?
+                type.addIndex(idxName, U.isGeometryClass(cls) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, QueryIndex.DFLT_INLINE_SIZE);
 
                 type.addFieldToIndex(idxName, QueryUtils.VAL_FIELD_NAME, 0, false);
@@ -896,7 +896,7 @@ public class QueryEntity implements Serializable {
                 if (cls != curCls)
                     idxName = cls.getSimpleName() + "_" + idxName;
 
-                desc.addIndex(idxName, QueryUtils.isGeometryClass(prop.type()) ?
+                desc.addIndex(idxName, U.isGeometryClass(prop.type()) ?
                     QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED, sqlAnn.inlineSize());
 
                 desc.addFieldToIndex(idxName, prop.fullName(), 0, sqlAnn.descending());
@@ -942,19 +942,19 @@ public class QueryEntity implements Serializable {
 
         QueryEntity entity = (QueryEntity)o;
 
-        return F.eq(keyType, entity.keyType) &&
-            F.eq(valType, entity.valType) &&
-            F.eq(keyFieldName, entity.keyFieldName) &&
-            F.eq(valueFieldName, entity.valueFieldName) &&
-            F.eq(fields, entity.fields) &&
-            F.eq(keyFields, entity.keyFields) &&
-            F.eq(aliases, entity.aliases) &&
+        return Objects.equals(keyType, entity.keyType) &&
+            Objects.equals(valType, entity.valType) &&
+            Objects.equals(keyFieldName, entity.keyFieldName) &&
+            Objects.equals(valueFieldName, entity.valueFieldName) &&
+            Objects.equals(fields, entity.fields) &&
+            Objects.equals(keyFields, entity.keyFields) &&
+            Objects.equals(aliases, entity.aliases) &&
             F.eqNotOrdered(idxs, entity.idxs) &&
-            F.eq(tableName, entity.tableName) &&
-            F.eq(_notNullFields, entity._notNullFields) &&
-            F.eq(defaultFieldValues, entity.defaultFieldValues) &&
-            F.eq(fieldsPrecision, entity.fieldsPrecision) &&
-            F.eq(fieldsScale, entity.fieldsScale);
+            Objects.equals(tableName, entity.tableName) &&
+            Objects.equals(_notNullFields, entity._notNullFields) &&
+            Objects.equals(defaultFieldValues, entity.defaultFieldValues) &&
+            Objects.equals(fieldsPrecision, entity.fieldsPrecision) &&
+            Objects.equals(fieldsScale, entity.fieldsScale);
     }
 
     /** {@inheritDoc} */

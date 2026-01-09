@@ -1779,6 +1779,11 @@ public class PageMemoryImpl implements PageMemoryEx {
         return rwLock.isReadLocked(absPtr + PAGE_LOCK_OFFSET);
     }
 
+    /** {@inheritDoc} */
+    @Override public String pageLockStateInfo(long absPtr) {
+        return rwLock.stateInfo(absPtr + PAGE_LOCK_OFFSET);
+    }
+
     /**
      * @param pageId Page ID to check if it was added to the checkpoint list.
      * @return {@code True} if it was added to the checkpoint list.

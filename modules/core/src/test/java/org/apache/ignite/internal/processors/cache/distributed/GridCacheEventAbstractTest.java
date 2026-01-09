@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -781,7 +782,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
             if (TEST_INFO)
                 X.println("Cache event: " + evt.shortDisplay());
 
-            AtomicInteger cntr = F.addIfAbsent(cntrs, evt.type(), F.newAtomicInt());
+            AtomicInteger cntr = F.addIfAbsent(cntrs, evt.type(), (Callable<AtomicInteger>)AtomicInteger::new);
 
             assert cntr != null;
 

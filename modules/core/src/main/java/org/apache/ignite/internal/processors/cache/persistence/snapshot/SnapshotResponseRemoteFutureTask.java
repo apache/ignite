@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +34,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.filename.FileTreeUtils;
 import org.apache.ignite.internal.processors.cache.persistence.filename.NodeFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -112,11 +115,18 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
                 File snpPart = sinfo.sft.partitionFile(ccfg, gp.getPartitionId());
 
                 if (!snpPart.exists()) {
-                    throw new IgniteException("Snapshot partition file not found [cacheDir=" + sinfo.sft.cacheStorage(ccfg) +
+                    throw new IgniteException("Snapshot partition file not found [" +
+                        "cacheDirs=" + Arrays.toString(sinfo.sft.cacheStorages(ccfg)) +
                         ", pair=" + gp + ']');
                 }
 
-                snpSndr.sendPart(snpPart, sft.partitionFile(ccfg, gp.getPartitionId()), gp, snpPart.length());
+                snpSndr.sendPart(
+                    snpPart,
+                    sft.partitionFile(ccfg, gp.getPartitionId()),
+                    FileTreeUtils.partitionStorage(ccfg, gp.getPartitionId()),
+                    gp,
+                    snpPart.length()
+                );
             }), snpSndr.executor())
                 .whenComplete((r, t) -> {
                     if (t != null)
@@ -195,21 +205,25 @@ public class SnapshotResponseRemoteFutureTask extends AbstractSnapshotFutureTask
             if (cacheData.containsKey(grpId))
                 return cacheData.get(grpId);
 
-            File cacheDir = sft.existingCacheDirectory(grpId);
+            List<File> cacheDirs = sft.existingCacheDirectories(grpId);
 
-            if (cacheDir == null) {
+            if (F.isEmpty(cacheDirs)) {
                 throw new IgniteException("Cache directory not found [snpName=" + snpName + ", meta=" + meta +
                     ", grp=" + grpId + ']');
             }
 
-            List<StoredCacheData> res = NodeFileTree.existingCacheConfigFiles(cacheDir).stream().map(f -> {
-                try {
-                    return cctx.cache().configManager().readCacheData(f);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
-            }).collect(Collectors.toList());
+            List<StoredCacheData> res = new ArrayList<>();
+
+            for (File cacheDir : cacheDirs) {
+                res.addAll(NodeFileTree.existingCacheConfigFiles(cacheDir).stream().map(f -> {
+                    try {
+                        return cctx.cache().configManager().readCacheData(f);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }).collect(Collectors.toList()));
+            }
 
             if (res.isEmpty()) {
                 throw new IgniteException("Cache configs not found [snpName=" + snpName + ", meta=" + meta +

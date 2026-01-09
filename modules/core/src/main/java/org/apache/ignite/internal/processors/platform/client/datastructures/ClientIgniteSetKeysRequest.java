@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.platform.client.datastructures;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteSet;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
@@ -36,7 +36,7 @@ public abstract class ClientIgniteSetKeysRequest extends ClientIgniteSetRequest 
      *
      * @param reader Reader.
      */
-    ClientIgniteSetKeysRequest(BinaryRawReaderEx reader) {
+    ClientIgniteSetKeysRequest(BinaryReaderEx reader) {
         super(reader);
 
         // Clients can enable deserialized values on server so that user objects are stored the same way

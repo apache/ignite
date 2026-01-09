@@ -643,7 +643,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
      */
     @Test
     public void testPutJsonArray() throws Exception {
-        Map<String, int[]> map = U.map("1", new int[] {1, 2, 3});
+        Map<String, int[]> map = Map.of("1", new int[] {1, 2, 3});
         putObject(DEFAULT_CACHE_NAME, "1", map, Map.class.getName());
         assertTrue(Map.class.isAssignableFrom(jcache().get(1).getClass()));
 
@@ -1795,7 +1795,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
             GridCacheSqlMetadata meta = F.find(metas, null, new P1<GridCacheSqlMetadata>() {
                 @Override public boolean apply(GridCacheSqlMetadata meta) {
-                    return F.eq(meta.cacheName(), cacheName);
+                    return Objects.equals(meta.cacheName(), cacheName);
                 }
             });
 
@@ -1982,7 +1982,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends JettyRestProces
 
                 IgniteCacheProxy<?, ?> publicCache = F.find(publicCaches, null, new P1<IgniteCacheProxy<?, ?>>() {
                     @Override public boolean apply(IgniteCacheProxy<?, ?> c) {
-                        return F.eq(c.getName(), cacheName);
+                        return Objects.equals(c.getName(), cacheName);
                     }
                 });
 

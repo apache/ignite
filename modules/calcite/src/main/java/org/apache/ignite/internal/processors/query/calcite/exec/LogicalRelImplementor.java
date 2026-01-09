@@ -27,6 +27,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Intersect;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -37,6 +38,7 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.mapping.IntPair;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
@@ -65,6 +67,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanStorageN
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortAggregateNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolNode;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.UncollectNode;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.UnionAllNode;
 import org.apache.ignite.internal.processors.query.calcite.metadata.AffinityService;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
@@ -92,6 +95,7 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableModify
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableSpool;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTrimExchange;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUncollect;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteUnionAll;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteValues;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedHashAggregate;
@@ -114,8 +118,6 @@ import org.apache.ignite.internal.processors.query.calcite.util.RexUtils;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.calcite.rel.RelDistribution.Type.HASH_DISTRIBUTED;
-import static org.apache.calcite.sql.SqlKind.IS_DISTINCT_FROM;
-import static org.apache.calcite.sql.SqlKind.IS_NOT_DISTINCT_FROM;
 import static org.apache.ignite.internal.processors.query.calcite.util.TypeUtils.combinedRowType;
 
 /**
@@ -296,12 +298,40 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RelDataType rightType = rel.getRight().getRowType();
         JoinRelType joinType = rel.getJoinType();
 
-        int pairsCnt = rel.analyzeCondition().pairs().size();
+        List<IntPair> joinPairs = rel.analyzeCondition().pairs();
+        int pairsCnt = joinPairs.size();
+
+        List<RelFieldCollation> leftCollations = rel.leftCollation().getFieldCollations();
+        List<RelFieldCollation> rightCollations = rel.rightCollation().getFieldCollations();
+
+        ImmutableBitSet allowNulls = rel.allowNulls();
+        ImmutableBitSet.Builder collsAllowNullsBuilder = ImmutableBitSet.builder();
+        int lastCollField = -1;
+
+        for (int c = 0; c < Math.min(leftCollations.size(), rightCollations.size()); ++c) {
+            RelFieldCollation leftColl = leftCollations.get(c);
+            RelFieldCollation rightColl = rightCollations.get(c);
+            collsAllowNullsBuilder.set(c);
+
+            for (int p = 0; p < pairsCnt; ++p) {
+                IntPair pair = joinPairs.get(p);
+
+                if (pair.source == leftColl.getFieldIndex() && pair.target == rightColl.getFieldIndex()) {
+                    lastCollField = c;
+
+                    if (!allowNulls.get(p)) {
+                        collsAllowNullsBuilder.clear(c);
+
+                        break;
+                    }
+                }
+            }
+        }
 
         Comparator<Row> comp = expressionFactory.comparator(
-            rel.leftCollation().getFieldCollations().subList(0, pairsCnt),
-            rel.rightCollation().getFieldCollations().subList(0, pairsCnt),
-            rel.getCondition().getKind() == IS_NOT_DISTINCT_FROM || rel.getCondition().getKind() == IS_DISTINCT_FROM
+            leftCollations.subList(0, lastCollField + 1),
+            rightCollations.subList(0, lastCollField + 1),
+            collsAllowNullsBuilder.build()
         );
 
         Node<Row> node = MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, comp, hasExchange(rel));
@@ -338,7 +368,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         ImmutableBitSet requiredColumns = rel.requiredColumns();
         List<SearchBounds> searchBounds = rel.searchBounds();
 
-        RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
+        RelDataType rowType = rel.getDataSourceRowType();
 
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rowType);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);
@@ -352,7 +382,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
             Iterable<Row> rowsIter = idx.scan(ctx, grp, ranges, requiredColumns);
 
-            return new ScanStorageNode<>(idx.name(), ctx, rowType, rowsIter, filters, prj);
+            return new ScanStorageNode<>(tbl.name() + '.' + idx.name(), ctx, rowType, rowsIter, filters, prj);
         }
         else {
             // Index was invalidated after planning, workaround through table-scan -> sort -> index spool.
@@ -443,7 +473,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         IgniteIndex idx = tbl.getIndex(rel.indexName());
 
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
-            return new ScanStorageNode<>(idx.name() + "_COUNT", ctx, rel.getRowType(),
+            return new ScanStorageNode<>(tbl.name() + '.' + idx.name() + "_COUNT", ctx, rel.getRowType(),
                 idx.count(ctx, ctx.group(rel.sourceId()), rel.notNull()));
         }
         else {
@@ -474,7 +504,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
 
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
-            return new ScanStorageNode<>(idx.name() + "_BOUND", ctx, rowType,
+            return new ScanStorageNode<>(tbl.name() + '.' + idx.name() + "_BOUND", ctx, rowType,
                 idx.firstOrLast(idxBndRel.first(), ctx, grp, requiredColumns));
         }
         else {
@@ -516,9 +546,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         ImmutableBitSet requiredColumns = rel.requiredColumns();
 
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
-        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
 
-        RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
+        RelDataType rowType = rel.getDataSourceRowType();
 
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rowType);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);
@@ -530,7 +559,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         if (idx != null && !tbl.isIndexRebuildInProgress()) {
             Iterable<Row> rowsIter = idx.scan(ctx, grp, null, requiredColumns);
 
-            return new ScanStorageNode<>(idx.name(), ctx, rowType, rowsIter, filters, prj);
+            return new ScanStorageNode<>(tbl.name() + '.' + idx.name(), ctx, rowType, rowsIter, filters, prj);
         }
         else {
             Iterable<Row> rowsIter = tbl.scan(ctx, grp, requiredColumns);
@@ -876,6 +905,20 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         Node<Row> input = visit(rel.getInput());
 
         node.register(input);
+
+        return node;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Node<Row> visit(IgniteUncollect rel) {
+        UncollectNode<Row> node = new UncollectNode<>(
+            ctx,
+            rel.getInput().getRowType(),
+            rel.getRowType(),
+            rel.withOrdinality
+        );
+
+        node.register(visit(rel.getInput()));
 
         return node;
     }

@@ -17,23 +17,23 @@
 
 package org.apache.ignite.internal.processors.query.calcite.message;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
-
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.internal.Order;
 
 /**
  *
  */
 public class InboxCloseMessage implements CalciteMessage {
     /** */
-    private UUID queryId;
+    @Order(value = 0, method = "queryId")
+    private UUID qryId;
 
     /** */
+    @Order(1)
     private long fragmentId;
 
     /** */
+    @Order(2)
     private long exchangeId;
 
     /** */
@@ -42,8 +42,8 @@ public class InboxCloseMessage implements CalciteMessage {
     }
 
     /** */
-    public InboxCloseMessage(UUID queryId, long fragmentId, long exchangeId) {
-        this.queryId = queryId;
+    public InboxCloseMessage(UUID qryId, long fragmentId, long exchangeId) {
+        this.qryId = qryId;
         this.fragmentId = fragmentId;
         this.exchangeId = exchangeId;
     }
@@ -52,7 +52,14 @@ public class InboxCloseMessage implements CalciteMessage {
      * @return Query ID.
      */
     public UUID queryId() {
-        return queryId;
+        return qryId;
+    }
+
+    /**
+     * @param queryId New query ID.
+     */
+    public void queryId(UUID qryId) {
+        this.qryId = qryId;
     }
 
     /**
@@ -63,91 +70,28 @@ public class InboxCloseMessage implements CalciteMessage {
     }
 
     /**
+     * @param fragmentId New fragment ID.
+     */
+    public void fragmentId(long fragmentId) {
+        this.fragmentId = fragmentId;
+    }
+
+    /**
      * @return Exchange ID.
      */
     public long exchangeId() {
         return exchangeId;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeLong("exchangeId", exchangeId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong("fragmentId", fragmentId))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeUuid("queryId", queryId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                exchangeId = reader.readLong("exchangeId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                fragmentId = reader.readLong("fragmentId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                queryId = reader.readUuid("queryId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(InboxCloseMessage.class);
+    /**
+     * @param exchangeId New exchange ID.
+     */
+    public void exchangeId(long exchangeId) {
+        this.exchangeId = exchangeId;
     }
 
     /** {@inheritDoc} */
     @Override public MessageType type() {
         return MessageType.QUERY_INBOX_CANCEL_MESSAGE;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
     }
 }

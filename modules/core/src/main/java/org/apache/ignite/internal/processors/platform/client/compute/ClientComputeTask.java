@@ -39,6 +39,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.internal.processors.platform.client.ClientMessageParser.OP_COMPUTE_TASK_FINISHED;
 import static org.apache.ignite.internal.processors.task.TaskExecutionOptions.options;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeForNodeIds;
 
 /**
  * Client compute task.
@@ -101,8 +102,7 @@ class ClientComputeTask implements ClientCloseableResource {
 
         GridTaskProcessor task = ctx.kernalContext().task();
 
-        IgnitePredicate<ClusterNode> nodePredicate = F.isEmpty(nodeIds) ? node -> !node.isClient() :
-            F.nodeForNodeIds(nodeIds);
+        IgnitePredicate<ClusterNode> nodePredicate = F.isEmpty(nodeIds) ? node -> !node.isClient() : nodeForNodeIds(nodeIds);
 
         TaskExecutionOptions opts = options()
             .asPublicRequest()

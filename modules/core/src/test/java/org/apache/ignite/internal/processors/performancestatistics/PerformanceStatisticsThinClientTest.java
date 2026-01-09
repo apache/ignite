@@ -61,6 +61,7 @@ import static org.apache.ignite.internal.processors.performancestatistics.Operat
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE_ALL;
 import static org.apache.ignite.internal.processors.performancestatistics.OperationType.CACHE_REMOVE_ALL_CONFLICT;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.junit.Assume.assumeTrue;
 
 /**
@@ -156,7 +157,7 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
 
                 tasks.incrementAndGet();
 
-                assertTrue(F.nodeIds(grid(0).cluster().forServers().nodes()).contains(nodeId));
+                assertTrue(nodeIds(grid(0).cluster().forServers().nodes()).contains(nodeId));
                 assertEquals(TEST_TASK_NAME, taskName);
                 assertTrue(taskStartTime >= startTime);
                 assertTrue(duration >= 0);
@@ -169,7 +170,7 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
 
                 jobs.incrementAndGet();
 
-                assertTrue(F.nodeIds(grid(0).cluster().forServers().nodes()).contains(nodeId));
+                assertTrue(nodeIds(grid(0).cluster().forServers().nodes()).contains(nodeId));
                 assertTrue(queuedTime >= 0);
                 assertTrue(jobStartTime >= startTime);
                 assertTrue(duration >= 0);
@@ -237,7 +238,7 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
                 long duration) {
                 ops.incrementAndGet();
 
-                assertTrue(F.nodeIds(grid(0).cluster().forServers().nodes()).contains(nodeId));
+                assertTrue(nodeIds(grid(0).cluster().forServers().nodes()).contains(nodeId));
                 assertEquals(op, type);
                 assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), cacheId);
                 assertTrue(opStartTime >= startTime);
@@ -283,7 +284,7 @@ public class PerformanceStatisticsThinClientTest extends AbstractPerformanceStat
                 boolean txCommited) {
                 txs.incrementAndGet();
 
-                assertTrue(F.nodeIds(grid(0).cluster().forServers().nodes()).contains(nodeId));
+                assertTrue(nodeIds(grid(0).cluster().forServers().nodes()).contains(nodeId));
                 assertEquals(1, cacheIds.size());
                 assertEquals(CU.cacheId(DEFAULT_CACHE_NAME), cacheIds.get(0));
                 assertTrue(txStartTime >= startTime);

@@ -44,6 +44,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.management.snapshot.SnapshotStatusTask.SnapshotStatus;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_METRICS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotRestoreProcess.SNAPSHOT_RESTORE_METRICS;
+import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 
 /**
  * Task to get the status of the current snapshot operation in the cluster.
@@ -60,7 +61,7 @@ public class SnapshotStatusTask extends VisorMultiNodeTask<NoArg, SnapshotStatus
 
     /** {@inheritDoc} */
     @Override protected Collection<UUID> jobNodes(VisorTaskArgument<NoArg> arg) {
-        return F.nodeIds(ignite.cluster().forServers().nodes());
+        return nodeIds(ignite.cluster().forServers().nodes());
     }
 
     /** {@inheritDoc} */

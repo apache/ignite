@@ -287,6 +287,9 @@ public class IgniteStatisticsPersistenceStoreImpl implements IgniteStatisticsSto
     @Override public Map<StatisticsKey, Collection<ObjectPartitionStatisticsImpl>> getAllLocalPartitionsStatistics(
         String schema
     ) {
+        if (!checkMetastore("Unable to get local partition statistics."))
+            return Collections.emptyMap();
+
         String prefix = (schema == null) ? STAT_DATA_PREFIX : STAT_DATA_PREFIX + META_SEPARATOR + schema;
 
         Map<StatisticsKey, Collection<ObjectPartitionStatisticsImpl>> res = new HashMap<>();

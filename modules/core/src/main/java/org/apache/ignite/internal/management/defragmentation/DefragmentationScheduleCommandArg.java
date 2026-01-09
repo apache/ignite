@@ -46,8 +46,8 @@ public class DefragmentationScheduleCommandArg extends DefragmentationStatusComm
     }
 
     /** {@inheritDoc} */
-    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(protoVer, in);
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternalData(in);
 
         nodes = U.readArray(in, String.class);
         caches = U.readArray(in, String.class);

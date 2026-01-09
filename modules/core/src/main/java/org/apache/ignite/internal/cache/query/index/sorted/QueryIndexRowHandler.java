@@ -22,7 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexKeyType;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKey;
 import org.apache.ignite.internal.cache.query.index.sorted.keys.IndexKeyFactory;
@@ -91,7 +91,7 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
         try {
             return IndexKeyFactory.wrap(
                 props[idx].value(row.key(), row.value()),
-                keyDefs.get(idx).idxType(),
+                keyDefs.get(idx).indexKeyType(),
                 cacheInfo.cacheContext().cacheObjectContext(),
                 keyTypeSettings
             );
@@ -147,11 +147,8 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
 
     /** */
     private Object getBinaryObject(CacheObject o) {
-        if (o instanceof BinaryObjectImpl) {
-            ((BinaryObjectImpl)o).detachAllowed(true);
-            o = ((BinaryObjectImpl)o).detach();
-            return o;
-        }
+        if (BinaryUtils.isBinaryObjectImpl(o))
+            return BinaryUtils.detach(o);
 
         return null;
     }

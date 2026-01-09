@@ -17,31 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  *
  */
 public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Cache message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
     /** */
-    @GridDirectTransient
     private GridNearAtomicAbstractUpdateRequest updateReq;
 
     /** */
+    @Order(value = 4, method = "partition")
     private int partId;
 
     /** */
+    @Order(value = 5, method = "futureId")
     private long futId;
 
     /**
@@ -73,6 +68,14 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
     }
 
     /**
+     * @param futId Future ID on near node.
+     */
+    public void futureId(long futId) {
+        this.futId = futId;
+    }
+
+
+    /**
      * @return Related update request.
      */
     GridNearAtomicAbstractUpdateRequest updateRequest() {
@@ -82,6 +85,13 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
     /** {@inheritDoc} */
     @Override public int partition() {
         return partId;
+    }
+
+    /**
+     * @param partId Partition ID this message is targeted to or {@code -1} if it cannot be determined.
+     */
+    public void partition(int partId) {
+        this.partId = partId;
     }
 
     /** {@inheritDoc} */
@@ -97,75 +107,6 @@ public class GridNearAtomicCheckUpdateRequest extends GridCacheIdMessage {
     /** {@inheritDoc} */
     @Override public short directType() {
         return -50;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 6;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 4:
-                if (!writer.writeLong("futId", futId))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeInt("partId", partId))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 4:
-                futId = reader.readLong("futId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                partId = reader.readInt("partId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(GridNearAtomicCheckUpdateRequest.class);
     }
 
     /** {@inheritDoc} */

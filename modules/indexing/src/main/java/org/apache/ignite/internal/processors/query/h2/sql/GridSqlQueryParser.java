@@ -42,8 +42,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.CommandInterface;
@@ -89,6 +91,7 @@ import org.h2.expression.Parameter;
 import org.h2.expression.Subquery;
 import org.h2.expression.TableFunction;
 import org.h2.expression.ValueExpression;
+import org.h2.index.Index;
 import org.h2.index.ViewIndex;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.result.SortOrder;
@@ -106,6 +109,8 @@ import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.h2.H2Utils.sqlWithoutConst;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.AND;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.BIGGER;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.BIGGER_EQUAL;
@@ -826,11 +831,6 @@ public class GridSqlQueryParser {
 
         res.columns(cols);
 
-        if (!F.isEmpty(MERGE_KEYS.get(merge))) {
-            log.warning("The search row by explicit KEY isn't supported. The primary key is always used to search row " +
-                "[sql=" + merge.getSQL() + ']');
-        }
-
         List<Expression[]> srcRows = MERGE_ROWS.get(merge);
         if (!srcRows.isEmpty()) {
             List<GridSqlElement[]> rows = new ArrayList<>(srcRows.size());
@@ -853,6 +853,24 @@ public class GridSqlQueryParser {
         else {
             res.rows(Collections.emptyList());
             res.query(parseQuery(MERGE_QUERY.get(merge)));
+        }
+
+        Column[] srcKeys0 = MERGE_KEYS.get(merge);
+
+        boolean isKeyFld = srcKeys0.length == 1 && KEY_FIELD_NAME.equalsIgnoreCase(srcKeys0[0].getName());
+
+        if (!isKeyFld && !F.isEmpty(srcKeys0)) {
+            ArrayList<Index> idxs = DmlAstUtils.gridTableForElement(tbl).dataTable().getIndexes();
+
+            boolean isPkCols = idxs.stream()
+                .filter(idx -> idx.getIndexType().isPrimaryKey())
+                .anyMatch(idx -> Arrays.equals(srcKeys0, idx.getColumns())
+                    || F.eqNotOrdered(Arrays.asList(srcKeys0), Arrays.asList(idx.getColumns())));
+
+            if (!isPkCols) {
+                LT.warn(log, "The search row by explicit KEY isn't supported. " +
+                    "The primary key is always used to search row [sql=" + sqlWithoutConst(res) + ']');
+            }
         }
 
         return res;
@@ -1145,7 +1163,7 @@ public class GridSqlQueryParser {
                 throw new IgniteSQLException("Duplicate column name: " + col.getName(), IgniteQueryErrorCode.PARSING);
         }
 
-        if (cols.containsKey(QueryUtils.KEY_FIELD_NAME.toUpperCase()) ||
+        if (cols.containsKey(KEY_FIELD_NAME.toUpperCase()) ||
             cols.containsKey(QueryUtils.VAL_FIELD_NAME.toUpperCase())) {
             throw new IgniteSQLException("Direct specification of _KEY and _VAL columns is forbidden",
                 IgniteQueryErrorCode.PARSING);
@@ -1256,7 +1274,7 @@ public class GridSqlQueryParser {
         else
             res.wrapValue(true); // By default value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
 
-        if (!F.isEmpty(res.valueTypeName()) && F.eq(res.keyTypeName(), res.valueTypeName())) {
+        if (!F.isEmpty(res.valueTypeName()) && Objects.equals(res.keyTypeName(), res.valueTypeName())) {
             throw new IgniteSQLException("Key and value type names " +
                 "should be different for CREATE TABLE: " + res.valueTypeName(), IgniteQueryErrorCode.PARSING);
         }

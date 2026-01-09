@@ -507,7 +507,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      */
     private BinaryObjectExImpl convert(BinaryObjectExImpl obj, boolean offheap) {
         if (offheap) {
-            byte[] arr = obj.array();
+            byte[] arr = obj.bytes();
 
             long ptr = GridUnsafe.allocateMemory(arr.length);
 
@@ -515,7 +515,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
 
             GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF, null, ptr, arr.length);
 
-            obj = new BinaryObjectOffheapImpl(obj.context(), ptr, 0, obj.array().length);
+            obj = new BinaryObjectOffheapImpl(obj.context(), ptr, 0, obj.bytes().length);
         }
 
         return obj;

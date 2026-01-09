@@ -87,7 +87,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cache.query.index.IndexProcessor;
@@ -113,7 +112,6 @@ import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.IgniteConfigurationIterable;
 import org.apache.ignite.internal.managers.systemview.walker.ConfigurationViewWalker;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProviderImpl;
 import org.apache.ignite.internal.processors.GridProcessor;
@@ -148,7 +146,6 @@ import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingPro
 import org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageImpl;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
-import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.performancestatistics.PerformanceStatisticsProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformNoopProcessor;
@@ -162,6 +159,7 @@ import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.processors.rest.GridRestProcessor;
 import org.apache.ignite.internal.processors.rest.IgniteRestProcessor;
+import org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor;
 import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
 import org.apache.ignite.internal.processors.security.IgniteSecurityProcessor;
@@ -182,14 +180,15 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.UnsafeToStringFieldDescriptor;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -205,6 +204,7 @@ import org.apache.ignite.marshaller.IgniteMarshallerClassFilter;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.MarshallerUtils;
+import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.metric.IgniteMetrics;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.plugin.IgnitePlugin;
@@ -221,9 +221,9 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Collections.singleton;
 import static java.util.Optional.ofNullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DATA_CENTER_ID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
 import static org.apache.ignite.internal.GridKernalState.STARTED;
@@ -237,6 +237,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_DATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_CENTER_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STORAGE_CONFIG;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_STREAMER_POOL_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
@@ -360,14 +361,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
     /** Description of the configuration system view. */
     public static final String CFG_VIEW_DESC = "Node configuration";
 
-    /**
-     * Default interval of checking thread pool state for the starvation. Will be used only if the
-     * {@link IgniteSystemProperties#IGNITE_STARVATION_CHECK_INTERVAL} system property is not set.
-     * <p>
-     * Value is {@code 30 sec}.
-     */
-    public static final long DFLT_PERIODIC_STARVATION_CHECK_FREQ = 1000 * 30;
-
     /** Object is used to force completion the previous reconnection attempt. See {@link ReconnectState} for details. */
     private static final Object STOP_RECONNECT = new Object();
 
@@ -418,13 +411,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /** Spring context, potentially {@code null}. */
     private GridSpringResourceContext rsrcCtx;
-
-    /**
-     * The instance of scheduled thread pool starvation checker. {@code null} if starvation checks have been
-     * disabled by the value of {@link IgniteSystemProperties#IGNITE_STARVATION_CHECK_INTERVAL} system property.
-     */
-    @GridToStringExclude
-    private GridTimeoutProcessor.CancelableTask starveTask;
 
     /**
      * The instance of scheduled metrics logger. {@code null} means that the metrics loggin have been disabled
@@ -862,6 +848,8 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         Thread.UncaughtExceptionHandler hnd,
         TimeBag startTimer
     ) throws IgniteCheckedException {
+        initializeToStringBuilder();
+
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getIgniteInstanceName()));
 
         GridKernalGateway gw = this.gw.get();
@@ -1291,74 +1279,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         // Mark start timestamp.
         startTime = U.currentTimeMillis();
 
-        String intervalStr = IgniteSystemProperties.getString(IGNITE_STARVATION_CHECK_INTERVAL);
-
-        // Start starvation checker if enabled.
-        boolean starveCheck = !"0".equals(intervalStr);
-
-        if (starveCheck) {
-            final long interval = F.isEmpty(intervalStr) ? DFLT_PERIODIC_STARVATION_CHECK_FREQ : Long.parseLong(intervalStr);
-
-            starveTask = ctx.timeout().schedule(new Runnable() {
-                /** Last completed task count. */
-                private long lastCompletedCntPub;
-
-                /** Last completed task count. */
-                private long lastCompletedCntSys;
-
-                /** Last completed task count. */
-                private long lastCompletedCntQry;
-
-                @Override public void run() {
-                    if (ctx.pools().getExecutorService() instanceof ThreadPoolExecutor) {
-                        ThreadPoolExecutor exec = (ThreadPoolExecutor)ctx.pools().getExecutorService();
-
-                        lastCompletedCntPub = checkPoolStarvation(exec, lastCompletedCntPub, "public");
-                    }
-
-                    if (ctx.pools().getSystemExecutorService() instanceof ThreadPoolExecutor) {
-                        ThreadPoolExecutor exec = (ThreadPoolExecutor)ctx.pools().getSystemExecutorService();
-
-                        lastCompletedCntSys = checkPoolStarvation(exec, lastCompletedCntSys, "system");
-                    }
-
-                    if (ctx.pools().getQueryExecutorService() instanceof ThreadPoolExecutor) {
-                        ThreadPoolExecutor exec = (ThreadPoolExecutor)ctx.pools().getQueryExecutorService();
-
-                        lastCompletedCntQry = checkPoolStarvation(exec, lastCompletedCntQry, "query");
-                    }
-
-                    if (ctx.pools().getStripedExecutorService() != null)
-                        ctx.pools().getStripedExecutorService().detectStarvation();
-                }
-
-                /**
-                 * @param exec Thread pool executor to check.
-                 * @param lastCompletedCnt Last completed tasks count.
-                 * @param pool Pool name for message.
-                 * @return Current completed tasks count.
-                 */
-                private long checkPoolStarvation(
-                    ThreadPoolExecutor exec,
-                    long lastCompletedCnt,
-                    String pool
-                ) {
-                    long completedCnt = exec.getCompletedTaskCount();
-
-                    // If all threads are active and no task has completed since last time and there is
-                    // at least one waiting request, then it is possible starvation.
-                    if (exec.getPoolSize() == exec.getActiveCount() && completedCnt == lastCompletedCnt &&
-                        !exec.getQueue().isEmpty())
-                        LT.warn(
-                            log,
-                            "Possible thread pool starvation detected (no task completed in last " +
-                                interval + "ms, is " + pool + " thread pool size large enough?)");
-
-                    return completedCnt;
-                }
-            }, interval, interval);
-        }
-
         Ignite g = this;
         long metricsLogFreq = cfg.getMetricsLogFrequency();
 
@@ -1486,24 +1406,27 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /** */
     private void initializeMarshaller() {
-        Marshaller marsh = ctx.config().getMarshaller();
+        if (!BinaryMarshaller.available()) {
+            String msg = "Standard BinaryMarshaller can't be used on this JVM. " +
+                "Switch to HotSpot JVM or reach out Apache Ignite community for recommendations.";
 
-        if (marsh == null) {
-            if (!BinaryMarshaller.available()) {
-                U.warn(log, "Standard BinaryMarshaller can't be used on this JVM. " +
-                    "Switch to HotSpot JVM or reach out Apache Ignite community for recommendations.");
+            U.warn(log, msg);
 
-                marsh = ctx.marshallerContext().jdkMarshaller();
-            }
-            else
-                marsh = new BinaryMarshaller();
-
-            ctx.config().setMarshaller(marsh);
+            throw new IgniteException(msg);
         }
 
-        marsh.setContext(ctx.marshallerContext());
+        Marshaller marsh = ctx.marshaller();
 
-        MarshallerUtils.setNodeName(marsh, ctx.igniteInstanceName());
+        marsh.setContext(ctx.marshallerContext());
+        marsh.nodeName(ctx.igniteInstanceName());
+    }
+
+    /** */
+    private void initializeToStringBuilder() {
+        if (!BinaryMarshaller.available())
+            return;
+
+        GridToStringBuilder.fldDescFactory = UnsafeToStringFieldDescriptor::new;
     }
 
     /**
@@ -1523,9 +1446,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
         if (cfg.getIncludeEventTypes() != null && cfg.getIncludeEventTypes().length != 0)
             perf.add("Disable grid events (remove 'includeEventTypes' from configuration)");
-
-        if (BinaryMarshaller.available() && (cfg.getMarshaller() != null && !(cfg.getMarshaller() instanceof BinaryMarshaller)))
-            perf.add("Use default binary marshaller (do not set 'marshaller' explicitly)");
     }
 
     /**
@@ -1614,20 +1534,18 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         add(ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
         add(ATTR_BUILD_VER, VER_STR);
         add(ATTR_BUILD_DATE, BUILD_TSTAMP_STR);
-        add(ATTR_MARSHALLER, cfg.getMarshaller().getClass().getName());
+        add(ATTR_MARSHALLER, ctx.marshaller().getClass().getName());
         add(ATTR_MARSHALLER_USE_DFLT_SUID,
-            getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, OptimizedMarshaller.USE_DFLT_SUID));
+            getBoolean(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, Marshallers.USE_DFLT_SUID));
         add(ATTR_LATE_AFFINITY_ASSIGNMENT, cfg.isLateAffinityAssignment());
 
-        if (cfg.getMarshaller() instanceof BinaryMarshaller) {
-            add(ATTR_MARSHALLER_COMPACT_FOOTER, cfg.getBinaryConfiguration() == null ?
-                BinaryConfiguration.DFLT_COMPACT_FOOTER :
-                cfg.getBinaryConfiguration().isCompactFooter());
+        add(ATTR_MARSHALLER_COMPACT_FOOTER, cfg.getBinaryConfiguration() == null ?
+            BinaryConfiguration.DFLT_COMPACT_FOOTER :
+            cfg.getBinaryConfiguration().isCompactFooter());
 
-            add(ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2,
-                getBoolean(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2,
-                    BinaryUtils.USE_STR_SERIALIZATION_VER_2));
-        }
+        add(ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2,
+            getBoolean(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2,
+                BinaryUtils.USE_STR_SERIALIZATION_VER_2));
 
         add(ATTR_USER_NAME, System.getProperty("user.name"));
         add(ATTR_IGNITE_INSTANCE_NAME, igniteInstanceName);
@@ -1689,6 +1607,11 @@ public class IgniteKernal implements IgniteEx, Externalizable {
         // Save transactions configuration.
         add(ATTR_TX_SERIALIZABLE_ENABLED, cfg.getTransactionConfiguration().isTxSerializableEnabled());
         add(ATTR_TX_AWARE_QUERIES_ENABLED, cfg.getTransactionConfiguration().isTxAwareQueriesEnabled());
+
+        if (IgniteSystemProperties.getString(IGNITE_DATA_CENTER_ID) != null)
+            add(ATTR_DATA_CENTER_ID, IgniteSystemProperties.getString(IGNITE_DATA_CENTER_ID));
+        else if (userAttrs != null && userAttrs.get(IGNITE_DATA_CENTER_ID) != null)
+            add(ATTR_DATA_CENTER_ID, (Serializable)userAttrs.get(IGNITE_DATA_CENTER_ID));
 
         // Stick in SPI versions and classes attributes.
         addSpiAttributes(cfg.getCollisionSpi());
@@ -1858,9 +1781,6 @@ public class IgniteKernal implements IgniteEx, Externalizable {
                 }
             }
 
-            if (starveTask != null)
-                starveTask.close();
-
             if (metricsLogTask != null)
                 metricsLogTask.close();
 
@@ -1939,7 +1859,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
             U.clearClassCache();
             MarshallerExclusions.clearCache();
-            BinaryEnumCache.clear();
+            BinaryUtils.clearCache();
 
             gw.writeLock();
 
@@ -2036,7 +1956,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             objs.add(cfg.getConnectorConfiguration().getSslFactory());
         }
 
-        objs.add(cfg.getMarshaller());
+        objs.add(ctx.marshaller());
         objs.add(cfg.getGridLogger());
         objs.add(cfg.getMBeanServer());
 
@@ -3305,7 +3225,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             return (T)new CacheObjectBinaryProcessorImpl(ctx);
 
         if (cls.equals(DiscoveryNodeValidationProcessor.class))
-            return (T)new OsDiscoveryNodeValidationProcessor(ctx);
+            return (T)new RollingUpgradeProcessor(ctx);
 
         if (cls.equals(IGridClusterStateProcessor.class))
             return (T)new GridClusterStateProcessor(ctx);
