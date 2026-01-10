@@ -3379,10 +3379,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
                     if (msgBytes == null) {
                         try {
-                            msgBytes = U.marshal(spi.marshaller(), msg);
+                            msgBytes = clientMsgWorker.ses.serializeMessage(msg);
                         }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to marshal message: " + msg, e);
+                        catch (IgniteCheckedException | IOException e) {
+                            U.error(log, "Failed to serialize message to a client: " + msg + ". Client id: "
+                                + clientMsgWorker.clientNodeId, e);
 
                             break;
                         }
