@@ -170,13 +170,12 @@ public class TcpDiscoveryIoSession {
             if (MESSAGE_SERIALIZATION != serMode) {
                 detectSslAlert(serMode, in);
 
-                throw new IgniteCheckedException("Received unexpected byte while reading discovery message: " + serMode);
+                // IOException type is important for ServerImpl. It may search the cause (X.hasCause).
+                // The connection error processing behavior depends on it.
+                throw new IOException("Received unexpected byte while reading discovery message: " + serMode);
             }
 
-            byte b0 = (byte)in.read();
-            byte b1 = (byte)in.read();
-
-            Message msg = spi.messageFactory().create(makeMessageType(b0, b1));
+            Message msg = spi.messageFactory().create(makeMessageType((byte)in.read(), (byte)in.read()));
 
             msgReader.reset();
             msgReader.setBuffer(msgBuf);
@@ -185,19 +184,47 @@ public class TcpDiscoveryIoSession {
 
             boolean finished;
 
-            do {
-                // Should be cleared before first operation.
-                msgBuf.clear();
+            msgBuf.clear();
 
-                int read = in.read(msgBuf.array(), 0, msgBuf.limit());
+            do {
+                int read = in.read(msgBuf.array(), msgBuf.position(), msgBuf.remaining());
 
                 if (read == -1)
                     throw new EOFException("Connection closed before message was fully read.");
 
-                msgBuf.limit(read);
+                if (msgBuf.position() > 0) {
+                    msgBuf.limit(msgBuf.position() + read);
+
+                    // We've stored an unprocessed tail before.
+                    msgBuf.rewind();
+                }
+                else
+                    msgBuf.limit(read);
 
                 finished = msgSer.readFrom(msg, msgReader);
-            } while (!finished);
+
+                // We rely on the fact that Discovery only sends next message upon receiving a receipt for the previous one.
+                // This behaviour guarantees that we never read a next message from the buffer right after the end of
+                // the previous message.
+                assert msgBuf.remaining() == 0 || !finished : "Some data was read from the socket but left unprocessed.";
+
+                if (finished)
+                    break;
+
+                // We must keep the uprocessed bytes read from the socket. It won't return them again.
+                byte[] unprocessedTail = null;
+
+                if (msgBuf.remaining() > 0) {
+                    unprocessedTail = new byte[msgBuf.remaining()];
+                    msgBuf.get(unprocessedTail, 0, msgBuf.remaining());
+                }
+
+                msgBuf.clear();
+
+                if (unprocessedTail != null)
+                    msgBuf.put(unprocessedTail);
+            }
+            while (true);
 
             return (T)msg;
         }
