@@ -315,10 +315,10 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T extends Message> T readMessage() {
+    @Nullable @Override public <T extends Message> T readMessage(boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        T msg = stream.readMessage(this);
+        T msg = stream.readMessage(this, compress);
 
         lastRead = stream.lastFinished();
 
@@ -393,10 +393,10 @@ public class DirectMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType,
-        MessageCollectionItemType valType, boolean linked) {
+        MessageCollectionItemType valType, boolean linked, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        M map = stream.readMap(keyType, valType, linked, this);
+        M map = stream.readMap(keyType, valType, linked, this, compress);
 
         lastRead = stream.lastFinished();
 

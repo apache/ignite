@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -29,21 +27,19 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.Compress;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.communication.ErrorMessage;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.lang.IgniteThrowableFunction;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -57,16 +53,10 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     private static final byte REBALANCED_FLAG_MASK = 0x01;
 
     /** grpId -> FullMap */
+    @Order(value = 6, method = "localPartitions")
+    @Compress
     @GridToStringInclude
     private Map<Integer, GridDhtPartitionFullMap> parts;
-
-    /**
-     * Serialized local partitions.
-     * <p>
-     * TODO Remove this field after completing task IGNITE-26976.
-     */
-    @Order(value = 6, method = "partitionBytes")
-    private byte[] partsBytes;
 
     /** */
     @Order(value = 7, method = "duplicatedPartitionsData")
@@ -74,16 +64,19 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** Partitions update counters. */
     @Order(value = 8, method = "partitionCounters")
+    @Compress
     @GridToStringInclude
     private IgniteDhtPartitionCountersMap partCntrs;
 
     /** Partitions history suppliers. */
     @Order(value = 9, method = "partitionHistorySuppliers")
+    @Compress
     @GridToStringInclude
     private IgniteDhtPartitionHistorySuppliersMap partHistSuppliers;
 
     /** Partitions that must be cleared and re-loaded. */
     @Order(value = 10, method = "partitionsToReload")
+    @Compress
     @GridToStringInclude
     private IgniteDhtPartitionsToReloadMap partsToReload;
 
@@ -104,6 +97,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * All logic resides within getter and setter.
      */
     @Order(value = 13, method = "errorMessages")
+    @Compress
     @SuppressWarnings("unused")
     private Map<UUID, ErrorMessage> errMsgs;
 
@@ -180,7 +174,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             cp.parts = null;
 
         cp.dupPartsData = dupPartsData;
-        cp.partsBytes = partsBytes;
         cp.partCntrs = partCntrs;
         cp.partHistSuppliers = partHistSuppliers;
         cp.partsToReload = partsToReload;
@@ -258,17 +251,17 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /**
-     * @return Serialized local partitions.
+     * @return Local partitions as is for serializer.
      */
-    public byte[] partitionBytes() {
-        return partsBytes;
+    public Map<Integer, GridDhtPartitionFullMap> localPartitions() {
+        return parts;
     }
 
     /**
-     * @param partsBytes Serialized local partitions.
+     * @param parts Local partitions.
      */
-    public void partitionBytes(byte[] partsBytes) {
-        this.partsBytes = partsBytes;
+    public void localPartitions(Map<Integer, GridDhtPartitionFullMap> parts) {
+        this.parts = parts;
     }
 
     /**
@@ -294,7 +287,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
             parts.put(grpId, fullMap);
 
             if (dupDataCache != null) {
-                assert compressed();
                 assert parts.containsKey(dupDataCache);
 
                 if (dupPartsData == null)
@@ -506,43 +498,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         this.lostParts = lostParts;
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        boolean marshal = !F.isEmpty(parts) && partsBytes == null;
-
-        if (marshal) {
-            // Reserve at least 2 threads for system operations.
-            int parallelismLvl = U.availableThreadCount(ctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
-
-            Collection<Object> objectsToMarshall = new ArrayList<>();
-
-            if (!F.isEmpty(parts) && partsBytes == null)
-                objectsToMarshall.add(parts);
-
-            Collection<byte[]> marshalled = U.doInParallel(
-                parallelismLvl,
-                ctx.kernalContext().pools().getSystemExecutorService(),
-                objectsToMarshall,
-                new IgniteThrowableFunction<Object, byte[]>() {
-                    @Override public byte[] apply(Object payload) throws IgniteCheckedException {
-                        byte[] marshalled = U.marshal(ctx, payload);
-
-                        if (compressed())
-                            marshalled = U.zip(marshalled, ctx.gridConfig().getNetworkCompressionLevel());
-
-                        return marshalled;
-                    }
-                });
-
-            Iterator<byte[]> iter = marshalled.iterator();
-
-            if (!F.isEmpty(parts) && partsBytes == null)
-                partsBytes = iter.next();
-        }
-    }
-
     /**
      * @return Topology version.
      */
@@ -561,58 +516,29 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        ClassLoader clsLdr = U.resolveClassLoader(ldr, ctx.gridConfig());
+        if (dupPartsData != null) {
+            assert parts != null;
 
-        Collection<byte[]> objectsToUnmarshall = new ArrayList<>();
+            for (Map.Entry<Integer, Integer> e : dupPartsData.entrySet()) {
+                GridDhtPartitionFullMap map1 = parts.get(e.getKey());
+                GridDhtPartitionFullMap map2 = parts.get(e.getValue());
 
-        // Reserve at least 2 threads for system operations.
-        int parallelismLvl = U.availableThreadCount(ctx.kernalContext(), GridIoPolicy.SYSTEM_POOL, 2);
+                assert map1 != null : e.getKey();
+                assert map2 != null : e.getValue();
+                assert map1.size() == map2.size();
 
-        if (partsBytes != null && parts == null)
-            objectsToUnmarshall.add(partsBytes);
+                for (Map.Entry<UUID, GridDhtPartitionMap> e0 : map2.entrySet()) {
+                    GridDhtPartitionMap partMap1 = map1.get(e0.getKey());
 
-        Collection<Object> unmarshalled = U.doInParallel(
-            parallelismLvl,
-            ctx.kernalContext().pools().getSystemExecutorService(),
-            objectsToUnmarshall,
-            new IgniteThrowableFunction<byte[], Object>() {
-                @Override public Object apply(byte[] binary) throws IgniteCheckedException {
-                    return compressed()
-                        ? U.unmarshalZip(ctx.marshaller(), binary, clsLdr)
-                        : U.unmarshal(ctx, binary, clsLdr);
-                }
-            }
-        );
+                    assert partMap1 != null && partMap1.map().isEmpty() : partMap1;
+                    assert !partMap1.hasMovingPartitions() : partMap1;
 
-        Iterator<Object> iter = unmarshalled.iterator();
+                    GridDhtPartitionMap partMap2 = e0.getValue();
 
-        if (partsBytes != null && parts == null) {
-            parts = (Map<Integer, GridDhtPartitionFullMap>)iter.next();
+                    assert partMap2 != null;
 
-            if (dupPartsData != null) {
-                assert parts != null;
-
-                for (Map.Entry<Integer, Integer> e : dupPartsData.entrySet()) {
-                    GridDhtPartitionFullMap map1 = parts.get(e.getKey());
-                    GridDhtPartitionFullMap map2 = parts.get(e.getValue());
-
-                    assert map1 != null : e.getKey();
-                    assert map2 != null : e.getValue();
-                    assert map1.size() == map2.size();
-
-                    for (Map.Entry<UUID, GridDhtPartitionMap> e0 : map2.entrySet()) {
-                        GridDhtPartitionMap partMap1 = map1.get(e0.getKey());
-
-                        assert partMap1 != null && partMap1.map().isEmpty() : partMap1;
-                        assert !partMap1.hasMovingPartitions() : partMap1;
-
-                        GridDhtPartitionMap partMap2 = e0.getValue();
-
-                        assert partMap2 != null;
-
-                        for (Map.Entry<Integer, GridDhtPartitionState> stateEntry : partMap2.entrySet())
-                            partMap1.put(stateEntry.getKey(), stateEntry.getValue());
-                    }
+                    for (Map.Entry<Integer, GridDhtPartitionState> stateEntry : partMap2.entrySet())
+                        partMap1.put(stateEntry.getKey(), stateEntry.getValue());
                 }
             }
         }
@@ -679,7 +605,6 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * Cleans up resources to avoid excessive memory usage.
      */
     public void cleanUp() {
-        partsBytes = null;
         partCntrs = null;
     }
 }
