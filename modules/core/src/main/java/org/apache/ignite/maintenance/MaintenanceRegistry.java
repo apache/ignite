@@ -18,6 +18,7 @@
 package org.apache.ignite.maintenance;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.UnaryOperator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -138,6 +139,17 @@ public interface MaintenanceRegistry {
      * @return {@link MaintenanceTask} object for given name or null if no maintenance task was found.
      */
     @Nullable public MaintenanceTask activeMaintenanceTask(String maintenanceTaskName);
+
+    /**
+     * Returns all active {@link MaintenanceTask}s.
+     * Active tasks exist only when the node has entered Maintenance Mode.
+     * <p>
+     * A {@link MaintenanceTask} becomes active when node enters Maintenance Mode but doesn't complete its preparation
+     * phase within the maintenance window.
+     *
+     * @return a Map containing all {@link MaintenanceTask}s objects or null if no maintenance tasks were present.
+     */
+    @Nullable public Map<String, MaintenanceTask> activeMaintenanceTasks();
 
     /**
      * Registers {@link MaintenanceWorkflowCallback} for a {@link MaintenanceTask} with a given name.

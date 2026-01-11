@@ -62,6 +62,8 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.maintenance.MaintenanceRegistry;
+import org.apache.ignite.maintenance.MaintenanceTask;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 
@@ -677,6 +679,7 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
 
         GridKernalContext ctx = ignite.context();
         IgniteConfiguration cfg = ignite.configuration();
+        MaintenanceRegistry mntcProc = ctx.maintenanceRegistry();
 
         ExecutorService execSvc = ctx.pools().getExecutorService();
         ExecutorService sysExecSvc = ctx.pools().getSystemExecutorService();
@@ -735,6 +738,28 @@ public class IgniteLogInfoProviderImpl implements IgniteLogInfoProvider {
 
         if (cfg.getCommunicationSpi() instanceof TcpCommunicationSpi)
             netDetails += ", commPort=" + ((TcpCommunicationSpi)cfg.getCommunicationSpi()).boundPort();
+
+        SB maintModeInfo = new SB("");
+
+        if (mntcProc.isMaintenanceMode()) {
+            Map<String, MaintenanceTask> activeTasks = mntcProc.activeMaintenanceTasks();
+
+            maintModeInfo.a("ATTENTION! Node is in Maintenance Mode").nl();
+
+            if (activeTasks != null) {
+                int i = 1;
+                maintModeInfo.a("Active tasks:").nl();
+                    for (MaintenanceTask task : activeTasks.values()) {
+                        maintModeInfo.a(i == 1 ? "    - - - - - - - - - - - - - - -\n" : "");
+                        maintModeInfo.a("    ").a(i++).a(" Task name: ").a(task.name()).nl();
+                        maintModeInfo.a("    Description: ").a(task.description()).nl();
+                        maintModeInfo.a("    Task params: ").a(task.parameters()).nl();
+                        maintModeInfo.a("    - - - - - - - - - - - - - - -").nl();
+                    }
+            }
+
+            log.info(maintModeInfo.toString());
+        }
 
         SB msg = new SB();
 
