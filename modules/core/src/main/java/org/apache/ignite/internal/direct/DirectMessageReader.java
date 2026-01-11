@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.UserObject;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
@@ -59,10 +61,10 @@ public class DirectMessageReader implements MessageReader {
      * @param msgFactory Message factory.
      * @param cacheObjProc Cache object processor.
      */
-    public DirectMessageReader(final MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
+    public DirectMessageReader(final MessageFactory msgFactory, BinaryMarshaller marsh, IgniteCacheObjectProcessor cacheObjProc) {
         state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
             @Override public StateItem apply() {
-                return new StateItem(msgFactory, cacheObjProc);
+                return new StateItem(msgFactory, marsh, cacheObjProc);
             }
         });
     }
@@ -359,6 +361,17 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
+    @Override public UserObject readUserObject() {
+        DirectByteBufferStream stream = state.item().stream;
+
+        UserObject userObj = stream.readUserObject(this);
+
+        lastRead = stream.lastFinished();
+
+        return userObj;
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> T[] readObjectArray(MessageCollectionItemType itemType, Class<T> itemCls) {
         DirectByteBufferStream stream = state.item().stream;
 
@@ -453,8 +466,8 @@ public class DirectMessageReader implements MessageReader {
          * @param msgFactory Message factory.
          * @param cacheObjProc Cache object processor.
          */
-        public StateItem(MessageFactory msgFactory, IgniteCacheObjectProcessor cacheObjProc) {
-            stream = new DirectByteBufferStream(msgFactory, cacheObjProc);
+        public StateItem(MessageFactory msgFactory, BinaryMarshaller marsh, IgniteCacheObjectProcessor cacheObjProc) {
+            stream = new DirectByteBufferStream(msgFactory, marsh, cacheObjProc);
         }
 
         /** {@inheritDoc} */

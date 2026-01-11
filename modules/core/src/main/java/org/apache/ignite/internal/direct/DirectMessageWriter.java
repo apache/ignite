@@ -23,6 +23,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.UserObject;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
@@ -52,10 +54,10 @@ public class DirectMessageWriter implements MessageWriter {
     private ByteBuffer buf;
 
     /** */
-    public DirectMessageWriter(final MessageFactory msgFactory) {
+    public DirectMessageWriter(final MessageFactory msgFactory, BinaryMarshaller marsh) {
         state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
             @Override public StateItem apply() {
-                return new StateItem(msgFactory);
+                return new StateItem(msgFactory, marsh);
             }
         });
     }
@@ -362,6 +364,15 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean writeUserObject(UserObject obj) {
+        DirectByteBufferStream stream = state.item().stream;
+
+        stream.writeUserObject(obj);
+
+        return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isHeaderWritten() {
         return state.item().hdrWritten;
     }
@@ -416,8 +427,8 @@ public class DirectMessageWriter implements MessageWriter {
         private boolean hdrWritten;
 
         /** */
-        public StateItem(MessageFactory msgFactory) {
-            stream = new DirectByteBufferStream(msgFactory);
+        public StateItem(MessageFactory msgFactory, BinaryMarshaller marsh) {
+            stream = new DirectByteBufferStream(msgFactory, marsh);
         }
 
         /** {@inheritDoc} */

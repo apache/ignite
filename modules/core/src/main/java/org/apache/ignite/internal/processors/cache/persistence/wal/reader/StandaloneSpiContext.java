@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -179,6 +180,11 @@ public class StandaloneSpiContext implements IgniteSpiContext {
 
     /** {@inheritDoc} */
     @Override public MessageFormatter messageFormatter() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryMarshaller binaryMarshaller() {
         return null;
     }
 
