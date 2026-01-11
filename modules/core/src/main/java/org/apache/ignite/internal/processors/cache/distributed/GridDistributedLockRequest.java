@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.CustomMapper;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -83,6 +84,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
     /** Transaction isolation level. */
     @Order(15)
+    @CustomMapper("org.apache.ignite.plugin.extensions.communication.mappers.TransactionIsolationEnumMapper")
     private TransactionIsolation isolation;
 
     /** Key bytes for keys to lock. */
