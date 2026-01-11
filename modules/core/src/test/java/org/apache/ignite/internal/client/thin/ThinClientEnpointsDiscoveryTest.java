@@ -158,7 +158,8 @@ public class ThinClientEnpointsDiscoveryTest extends ThinClientAbstractPartition
             // Config has good server address, client discovery returns unreachable address.
             // We expect the client to connect to the good address and ignore the unreachable one.
             ClientConfiguration ccfg = new ClientConfiguration()
-                    .setTimeout(2000)
+                    .setConnectionTimeout(2000)
+                    .setRequestTimeout(2000)
                     .setAddresses("127.0.0.1:" + DFLT_PORT);
 
             IgniteClient client = Ignition.startClient(ccfg);
