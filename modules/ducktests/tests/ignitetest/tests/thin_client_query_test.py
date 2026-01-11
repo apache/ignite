@@ -47,10 +47,7 @@ class ThinClientQueryTest(IgniteTest):
         server_config = IgniteConfiguration(version=IgniteVersion(server_version),
                                             client_connector_configuration=ClientConnectorConfiguration())
 
-        ignite = IgniteService(self.test_context, server_config, 2)
-
-        if not filter:
-            ignite.spec = return_spec_without_ducktests(service=ignite, base_spec=ignite.spec.__class__)
+        ignite = IgniteService(self.test_context, server_config, 2, with_ducktest_module=filter)
 
         addresses = [ignite.nodes[0].account.hostname + ":" + str(server_config.client_connector_configuration.port)]
 
@@ -67,41 +64,3 @@ class ThinClientQueryTest(IgniteTest):
         ignite.start()
         thin_clients.run()
         ignite.stop()
-
-
-def return_spec_without_ducktests(service, base_spec):
-    """
-    Return new custom spec required for the test.
-    :param service: IgniteService.
-    :param base_spec: Spec class to inherit from.
-    """
-
-    class IgniteNodeSpecExcludeDucktests(base_spec):
-        """
-        Ignite node specification that excludes module 'ducktests' from classpath.
-        """
-
-        def modules(self):
-            """
-            Exclude module from preparing USER_LIBS environment variable.
-            """
-            modules = super().modules()
-
-            modules.remove("ducktests")
-
-            return modules
-
-        def envs(self):
-            """
-            Skip the module target directory while building classpath.
-            """
-            envs = super().envs()
-
-            if envs.get("EXCLUDE_MODULES") is not None:
-                envs["EXCLUDE_MODULES"] = envs["EXCLUDE_MODULES"] + ",ducktests"
-            else:
-                envs["EXCLUDE_MODULES"] = "ducktests"
-
-            return envs
-
-    return IgniteNodeSpecExcludeDucktests(service=service)
