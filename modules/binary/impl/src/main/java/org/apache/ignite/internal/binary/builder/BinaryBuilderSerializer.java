@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.binary.BinariesFactoryImpl;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
@@ -205,7 +206,7 @@ class BinaryBuilderSerializer {
 
             int compTypeId = writer.context().typeId(compCls.getName());
 
-            if (BinaryUtils.isAssignableToBinaryEnumObject(compCls) || val instanceof BinaryBuilderEnum[]) {
+            if (BinariesFactoryImpl.isAssignableToBinaryEnumObject(compCls) || val instanceof BinaryBuilderEnum[]) {
                 writeArray(writer, GridBinaryMarshaller.ENUM_ARR, (Object[])val, compTypeId);
 
                 return;

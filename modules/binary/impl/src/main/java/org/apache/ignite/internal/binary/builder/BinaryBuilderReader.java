@@ -22,7 +22,6 @@ import java.sql.Timestamp;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
@@ -484,7 +483,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
 
                 int start = readIntPositioned(pos + 4 + size);
 
-                BinaryObject binaryObj = BinaryUtils.binaryObject(ctx, arr, pos + 4 + start);
+                BinaryObjectEx binaryObj = BinaryUtils.binaryObject(ctx, arr, pos + 4 + start);
 
                 return new BinaryPlainBinaryObject(binaryObj);
             }
@@ -836,7 +835,7 @@ class BinaryBuilderReader implements BinaryPositionReadable {
 
                 int start = readInt();
 
-                BinaryObject binaryObj = BinaryUtils.binaryObject(ctx, arr, pos - 4 - size + start);
+                BinaryObjectEx binaryObj = BinaryUtils.binaryObject(ctx, arr, pos - 4 - size + start);
 
                 return new BinaryPlainBinaryObject(binaryObj);
             }

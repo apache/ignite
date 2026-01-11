@@ -59,15 +59,6 @@ public class BinaryFieldMetadata implements Externalizable {
     }
 
     /**
-     * Constructor.
-     * @param accessor Field accessor.
-     */
-    public BinaryFieldMetadata(BinaryFieldAccessor accessor) {
-        this.typeId = accessor.mode().typeId();
-        this.fieldId = accessor.id;
-    }
-
-    /**
      * @return Field ID in binary schema.
      */
     public int fieldId() {

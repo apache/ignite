@@ -1275,7 +1275,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     : (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes, coctx);
 
             case CacheObject.TYPE_BINARY_ENUM:
-                return (CacheObject)BinaryUtils.binaryEnum(binaryContext(), bytes);
+                return (CacheObject)BinaryUtils.binariesFactory.binaryEnum(binaryContext(), bytes);
 
             case CacheObject.TYPE_BYTE_ARR:
                 return new CacheObjectByteArrayImpl(bytes);

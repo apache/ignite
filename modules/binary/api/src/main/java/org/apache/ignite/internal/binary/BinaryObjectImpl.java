@@ -217,7 +217,7 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
 
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
-        BinaryObjectImpl res = detached() ? this : detach();
+        BinaryObjectImpl res = detached() ? this : detach(false);
 
         res.prepareMarshal(ctx);
 
@@ -265,17 +265,13 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
         return BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.TOTAL_LEN_POS);
     }
 
-    /**
-     * @return Detached binary object.
-     */
-    public BinaryObjectImpl detach() {
+    /** {@inheritDoc} */
+    @Override public BinaryObjectEx detach() {
         return detach(false);
     }
 
-    /**
-     * @return Detached binary object.
-     */
-    public BinaryObjectImpl detach(boolean checkCrossObjReferences) {
+    /** {@inheritDoc} */
+    @Override public BinaryObjectImpl detach(boolean checkCrossObjReferences) {
         if (!detachAllowed || detached())
             return this;
 
@@ -307,10 +303,8 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
         return start == 0 && length() == arr.length;
     }
 
-    /**
-     * @param detachAllowed Detach allowed flag.
-     */
-    public void detachAllowed(boolean detachAllowed) {
+    /** {@inheritDoc} */
+    @Override public void detachAllowed(boolean detachAllowed) {
         this.detachAllowed = detachAllowed;
     }
 
@@ -758,7 +752,7 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
 
     /** {@inheritDoc} */
     @Override BinarySchema createSchema() {
-        return ((BinaryReaderExImpl)reader(null, false)).getOrCreateSchema();
+        return reader(null, false).getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
@@ -858,8 +852,8 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
      */
     @SuppressWarnings("unchecked")
     static int compareForDml(Object first, Object second) {
-        boolean firstBinary = BinaryUtils.isBinaryObjectImpl(first);
-        boolean secondBinary = BinaryUtils.isBinaryObjectImpl(second);
+        boolean firstBinary = first instanceof BinaryObjectImpl;
+        boolean secondBinary = second instanceof BinaryObjectImpl;
 
         if (firstBinary) {
             if (secondBinary)
