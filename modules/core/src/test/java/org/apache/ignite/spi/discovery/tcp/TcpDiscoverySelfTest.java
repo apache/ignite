@@ -311,10 +311,14 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             assertNotNull(node);
             assertNotNull(node.lastSuccessfulAddress());
 
+            assertTrue(spi2.pingNode(ignite3.localNode().id()));
+
             node = (TcpDiscoveryNode)spi2.getNode(ignite3.localNode().id());
 
             assertNotNull(node);
             assertNotNull(node.lastSuccessfulAddress());
+
+            assertTrue(spi3.pingNode(ignite1.localNode().id()));
 
             node = (TcpDiscoveryNode)spi3.getNode(ignite1.localNode().id());
 
@@ -1901,11 +1905,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                 spi.failSingleMsg = true;
 
-                long order = ignite.cluster().localNode().order();
-
-                long nextOrder = order == NODES ? 1 : order + 1;
-
-                Ignite failingNode = nodes.get(nextOrder);
+                Ignite failingNode = nodes.get(((ServerImpl)spi.impl).ring().nextNode().order());
 
                 assertNotNull(failingNode);
 
