@@ -64,9 +64,13 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
     @GridToStringInclude
     private Object updateCntr;
 
-    /** Size. */
+    /** Size from partition metadata. */
     @GridToStringExclude
-    private long size;
+    private long metaSize;
+
+    /** Actual number of entries in partition. */
+    @GridToStringExclude
+    private long realSize;
 
     /** Partition state. */
     private PartitionState partitionState;
@@ -105,7 +109,8 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
      * @param isPrimary Is primary.
      * @param consistentId Consistent id.
      * @param updateCntr Update counter.
-     * @param size Size.
+     * @param metaSize Size from partition metadata.
+     * @param realSize Actual number of entries in partition.
      * @param partitionState Partition state.
      * @param ctx Verify partition data.
      */
@@ -114,7 +119,8 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
         boolean isPrimary,
         Object consistentId,
         Object updateCntr,
-        long size,
+        long metaSize,
+        long realSize,
         PartitionState partitionState,
         VerifyPartitionContext ctx
     ) {
@@ -124,7 +130,8 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
         this.partHash = ctx.partHash;
         this.partVerHash = ctx.partVerHash;
         this.updateCntr = updateCntr;
-        this.size = size;
+        this.metaSize = metaSize;
+        this.realSize = realSize;
         this.partitionState = partitionState;
         this.cfKeys = ctx.cf;
         this.noCfKeys = ctx.noCf;
@@ -181,10 +188,17 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
     }
 
     /**
-     * @return Size.
+     * @return Size from metadata.
      */
-    public long size() {
-        return size;
+    public long metaSize() {
+        return metaSize;
+    }
+
+    /**
+     * @return Actual number of entries in partition.
+     */
+    public long realSize() {
+        return realSize;
     }
 
     /**
@@ -232,7 +246,8 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
         out.writeInt(partHash);
         out.writeInt(partVerHash);
         out.writeObject(updateCntr);
-        out.writeLong(size);
+        out.writeLong(metaSize);
+        out.writeLong(realSize);
         U.writeEnum(out, partitionState);
         out.writeInt(cfKeys);
         out.writeInt(noCfKeys);
@@ -249,7 +264,8 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
         partHash = in.readInt();
         partVerHash = in.readInt();
         updateCntr = in.readObject();
-        size = in.readLong();
+        metaSize = in.readLong();
+        realSize = in.readLong();
         partitionState = PartitionState.fromOrdinal(in.readByte());
         cfKeys = in.readInt();
         noCfKeys = in.readInt();
@@ -260,9 +276,13 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return size == MOVING_PARTITION_SIZE ?
+        return metaSize == MOVING_PARTITION_SIZE ?
             S.toString(PartitionHashRecord.class, this, "state", "MOVING") :
-            S.toString(PartitionHashRecord.class, this, "size", size, "partHash", partHash, "partVerHash", partVerHash);
+            S.toString(PartitionHashRecord.class, this,
+                "metaSize", metaSize,
+                "realSize", realSize,
+                "partHash", partHash,
+                "partVerHash", partVerHash);
     }
 
     /** {@inheritDoc} */
@@ -276,7 +296,8 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
         PartitionHashRecord v2 = (PartitionHashRecord)o;
 
         return partHash == v2.partHash && partVerHash == v2.partVerHash && Objects.equals(updateCntr, v2.updateCntr) &&
-            size == v2.size && partKey.equals(v2.partKey) && consistentId.equals(v2.consistentId) &&
+            metaSize == v2.metaSize && realSize == v2.realSize &&
+            partKey.equals(v2.partKey) && consistentId.equals(v2.consistentId) &&
             partitionState == v2.partitionState &&
             cfKeys == v2.cfKeys && noCfKeys == v2.noCfKeys &&
             binKeys == v2.binKeys && regKeys == v2.regKeys;
@@ -284,7 +305,7 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(partKey, consistentId, partHash, partVerHash, updateCntr, size, partitionState,
+        return Objects.hash(partKey, consistentId, partHash, partVerHash, updateCntr, metaSize, realSize, partitionState,
             cfKeys, noCfKeys, binKeys, regKeys);
     }
 

@@ -144,7 +144,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
 
         PartitionHashRecord record = records.get(0);
 
-        if (record.size() != 0)
+        if (record.realSize() != 0)
             return true;
 
         int firstHash = record.partitionHash();
@@ -155,7 +155,7 @@ public class VerifyBackupPartitionsDumpTask extends ComputeTaskAdapter<CacheIdle
 
             if (record.partitionHash() != firstHash
                 || record.partitionVersionsHash() != firstVerHash
-                || record.size() != 0
+                || record.realSize() != 0
             )
                 return true;
         }
