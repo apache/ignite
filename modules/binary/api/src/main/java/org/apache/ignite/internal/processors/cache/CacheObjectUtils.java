@@ -24,7 +24,6 @@ import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -223,39 +222,6 @@ public class CacheObjectUtils {
      */
     public static int objectPutSize(int dataLen) {
         return dataLen + HEAD_SIZE;
-    }
-
-    /**
-     * @param addr Write address.
-     * @param type Object type.
-     * @param valBytes Value bytes array.
-     * @return Offset shift compared to initial address.
-     */
-    public static int putValue(long addr, byte type, byte[] valBytes) {
-        return putValue(addr, type, valBytes, 0, valBytes.length);
-    }
-
-    /**
-     * @param addr Write address.
-     * @param type Object type.
-     * @param srcBytes Source value bytes array.
-     * @param srcOff Start position in sourceBytes.
-     * @param len Number of bytes for write.
-     * @return Offset shift compared to initial address.
-     */
-    public static int putValue(long addr, byte type, byte[] srcBytes, int srcOff, int len) {
-        int off = 0;
-
-        PageUtils.putInt(addr, off, len);
-        off += 4;
-
-        PageUtils.putByte(addr, off, type);
-        off++;
-
-        PageUtils.putBytes(addr, off, srcBytes, srcOff, len);
-        off += len;
-
-        return off;
     }
 
     /**
