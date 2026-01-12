@@ -490,29 +490,18 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
 
     /** */
     private BinarySerializedFieldComparator comparator(BinaryObjectExImpl obj) {
-        byte[] arr = null;
-
-        long ptr = 0;
+        byte[] arr = obj.bytes();
+        long ptr = obj.offheapAddress();
 
         int start = obj.start();
-        int schemaOff;
 
-        short flags;
+        int schemaOff = (obj instanceof BinaryObjectOffheapImpl)
+            ? BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS)
+            : BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
-        if (obj instanceof BinaryObjectOffheapImpl) {
-            ptr = obj.offheapAddress();
-
-            schemaOff = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
-
-            flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
-        }
-        else {
-            arr = obj.bytes();
-
-            schemaOff = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
-
-            flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
-        }
+        short flags = (obj instanceof BinaryObjectOffheapImpl)
+            ? BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS)
+            : BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
 
         int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
         int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
