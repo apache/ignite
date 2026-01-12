@@ -71,7 +71,6 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1139,7 +1138,7 @@ public class BinaryUtils {
             return BinaryWriteMode.OBJECT_ARR;
         else if (cls == BinaryEnumArray.class)
             return BinaryWriteMode.ENUM_ARR;
-        else if (cls == BinaryObjectImpl.class)
+        else if (cls == binariesFactory.binaryObjectImplClass())
             return BinaryWriteMode.BINARY_OBJ;
         else if (Binarylizable.class.isAssignableFrom(cls))
             return BinaryWriteMode.BINARY;
@@ -1512,7 +1511,7 @@ public class BinaryUtils {
             byte[] arr = doReadByteArray(in);
             int start = in.readInt();
 
-            BinaryObject binO = binaryObject(ctx, arr, start);
+            BinaryObject binO = binariesFactory.binaryObject(ctx, arr, start);
 
             if (detach)
                 return (BinaryObject)detach(binO);
@@ -1676,32 +1675,6 @@ public class BinaryUtils {
     static BinaryObjectEx doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx,
         EnumType type) {
         return binariesFactory.binaryEnum(ctx, type.typeId, type.clsName, in.readInt());
-    }
-
-    /**
-     * Creates binary enum.
-     *
-     * @param ord Ordinal.
-     * @param ctx Context.
-     * @param typeId Type ID.
-     */
-    public static BinaryObjectEx binaryEnum(int ord, BinaryContext ctx, int typeId) {
-        return binariesFactory.binaryEnum(ctx, typeId, null, ord);
-    }
-
-    /** */
-    public static BinaryObjectEx binaryObject(BinaryContext ctx, byte[] arr, int start) {
-        return new BinaryObjectImpl(ctx, arr, start);
-    }
-
-    /** */
-    public static BinaryObjectEx binaryObject(BinaryContext ctx, byte[] bytes) {
-        return new BinaryObjectImpl(ctx, bytes);
-    }
-
-    /** */
-    public static BinaryObject binaryObject(BinaryContext ctx, byte[] valBytes, CacheObjectValueContext coCtx) {
-        return new BinaryObjectImpl(ctx, valBytes, coCtx);
     }
 
     /**
@@ -1880,7 +1853,7 @@ public class BinaryUtils {
                 BinaryObjectEx po;
 
                 if (detach) {
-                    BinaryObjectEx binObj = binaryObject(ctx, in.array(), start);
+                    BinaryObjectEx binObj = binariesFactory.binaryObject(ctx, in.array(), start);
 
                     binObj.detachAllowed(true);
 
@@ -1888,7 +1861,7 @@ public class BinaryUtils {
                 }
                 else {
                     if (in.offheapPointer() == 0)
-                        po = binaryObject(ctx, in.array(), start);
+                        po = binariesFactory.binaryObject(ctx, in.array(), start);
                     else
                         po = binariesFactory.binaryOffheapObject(ctx, in.offheapPointer(), start,
                             in.remaining() + in.position());
@@ -2935,14 +2908,6 @@ public class BinaryUtils {
 
     /**
      * @param val Value to check.
-     * @return {@code True} if {@code val} instance of {@link BinaryObjectImpl}.
-     */
-    public static boolean isBinaryObjectImpl(Object val) {
-        return val instanceof BinaryObjectImpl;
-    }
-
-    /**
-     * @param val Value to check.
      * @return {@code True} if {@code val} instance of {@link BinaryArray}.
      */
     public static boolean isBinaryArray(Object val) {
@@ -3015,17 +2980,6 @@ public class BinaryUtils {
     }
 
     /**
-     * Compare two objects for DML operation.
-     *
-     * @param first First.
-     * @param second Second.
-     * @return Comparison result.
-     */
-    public static int compareForDml(Object first, Object second) {
-        return BinaryObjectImpl.compareForDml(first, second);
-    }
-
-    /**
      * @param o Object to detach.
      * @return Detached object.
      */
@@ -3038,7 +2992,7 @@ public class BinaryUtils {
      * @param o
      */
     public static void detachAllowedIfPossible(Object o) {
-        if (isBinaryObjectImpl(o))
+        if (binariesFactory.isBinaryObjectImpl(o))
             ((BinaryObjectEx)o).detachAllowed(true);
     }
 

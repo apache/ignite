@@ -43,7 +43,7 @@ class BinaryObjectImplSerializer extends JsonSerializer<BinaryObjectImpl> {
                 for (String name : meta.fieldNames()) {
                     Object val = bin.field(name);
 
-                    if (BinaryUtils.isBinaryObjectImpl(val)) {
+                    if (BinaryUtils.binariesFactory.isBinaryObjectImpl(val)) {
                         BinaryObjectImpl ref = (BinaryObjectImpl)val;
 
                         if (ref.hasCircularReferences()) {

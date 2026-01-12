@@ -82,6 +82,12 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+
+        <!-- TODO: remove me -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ignite-binary-impl</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

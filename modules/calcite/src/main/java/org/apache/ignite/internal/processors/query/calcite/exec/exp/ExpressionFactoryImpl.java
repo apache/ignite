@@ -254,7 +254,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
     /** */
     @SuppressWarnings("rawtypes")
     private static int compare(Object o1, Object o2, int nullComparison) {
-        if (BinaryUtils.isBinaryObjectImpl(o1))
+        if (BinaryUtils.binariesFactory.isBinaryObjectImpl(o1))
             return compareBinary(o1, o2, nullComparison);
 
         final Comparable c1 = (Comparable)o1;
@@ -271,7 +271,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         else if (o2 == null)
             return -nullComparison;
 
-        return BinaryUtils.compareForDml(o1, o2);
+        return BinaryUtils.binariesFactory.compareForDml(o1, o2);
     }
 
     /** {@inheritDoc} */

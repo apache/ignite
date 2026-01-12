@@ -188,7 +188,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
 
             byte[] arr = writer.array();
 
-            return BinaryUtils.binaryObject(ctx, arr, 0);
+            return BinariesFactoryImpl.newBinaryObject(ctx, arr, 0);
         }
     }
 
