@@ -175,7 +175,7 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
                     client.services().cancel(SERVICE_NAME);
 
                 if (shouldThrow)
-                    fail("Exception has been expected.");
+                    fail("An expected exception has not been thrown.");
             }
             catch (ServiceDeploymentException ex) {
                 assertTrue(shouldThrow);
@@ -245,7 +245,7 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
         /** {@inheritDoc} */
         @Override public void cancel() {
             if (throwOnCancel)
-                exThrower.throwRunnableException();
+                exThrower.throwRuntimeException();
         }
 
         /** {@inheritDoc} */
@@ -329,7 +329,7 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
         }
 
         /** */
-        public void throwRunnableException() {
+        public void throwRuntimeException() {
             if (isSerializable)
                 throw new RuntimeException(EX_MSG);
 

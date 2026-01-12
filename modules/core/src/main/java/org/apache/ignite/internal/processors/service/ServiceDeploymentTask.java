@@ -543,7 +543,7 @@ class ServiceDeploymentTask {
                     log.error("Failed to unmarshal deployment error.", e);
 
                     Exception ex = new IgniteCheckedException(
-                        "Failed to unmarshal deployment error! See server logs for details."
+                        "Failed to unmarshal deployment error, see server logs for details."
                     );
 
                     if (depErr == null)
@@ -697,7 +697,7 @@ class ServiceDeploymentTask {
 
                 try {
                     Exception ex = new IgniteCheckedException(
-                        "Failed to marshal deployment error! See server logs for details, err=" + th
+                        "Failed to marshal deployment error, see server logs for details, err=" + th
                     );
 
                     byte[] arr = U.marshal(ctx, ex);
@@ -705,7 +705,7 @@ class ServiceDeploymentTask {
                     errorsBytes.add(arr);
                 }
                 catch (IgniteCheckedException ex) {
-                    log.error("Failed to attach marshal deployment error to the message, err=" + th, ex);
+                    log.error("Failed to attach deployment error information to deployment result message", ex);
                 }
             }
         }
