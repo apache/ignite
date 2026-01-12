@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -71,13 +72,13 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.binary.streams.BinaryStreams;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshallers;
@@ -178,6 +179,20 @@ public class BinaryUtils {
 
     /** FNV1 hash prime. */
     private static final int FNV1_PRIME = 0x01000193;
+
+    /** */
+    public static final BinariesFactory binariesFactory;
+
+    static {
+        Iterator<BinariesFactory> factories = CommonUtils.loadService(BinariesFactory.class).iterator();
+
+        A.ensure(
+            factories.hasNext(),
+            "Implementation for BinariesFactory service not found. Please add ignite-binary-impl to classpath"
+        );
+
+        binariesFactory = factories.next();
+    }
 
     /*
      * Static class initializer.
@@ -1566,7 +1581,7 @@ public class BinaryUtils {
      * @param in Input stream.
      * @return Plain type.
      */
-    private static EnumType doReadEnumType(BinaryInputStream in) {
+    static EnumType doReadEnumType(BinaryInputStream in) {
         int typeId = in.readInt();
 
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
@@ -1658,21 +1673,10 @@ public class BinaryUtils {
      *
      * @param in Input stream.
      * @param ctx Binary context.
-     * @return Enum.
-     */
-    static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx) {
-        return doReadBinaryEnum(in, ctx, doReadEnumType(in));
-    }
-
-    /**
-     * Read binary enum.
-     *
-     * @param in Input stream.
-     * @param ctx Binary context.
      * @param type Plain type.
      * @return Enum.
      */
-    private static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx,
+    static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx,
         EnumType type) {
         return new BinaryEnumObjectImpl(ctx, type.typeId, type.clsName, in.readInt());
     }
@@ -2846,7 +2850,7 @@ public class BinaryUtils {
      * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      */
     public static BinaryReaderEx reader(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr, boolean forUnmarshal) {
-        return new BinaryReaderExImpl(ctx, in, ldr, forUnmarshal);
+        return binariesFactory.reader(ctx, in, ldr, forUnmarshal);
     }
 
     /**
@@ -2880,7 +2884,7 @@ public class BinaryUtils {
                                         ClassLoader ldr,
                                         @Nullable BinaryReaderHandles hnds,
                                         boolean forUnmarshal) {
-        return new BinaryReaderExImpl(ctx, in, ldr, hnds, forUnmarshal);
+        return binariesFactory.reader(ctx, in, ldr, hnds, forUnmarshal);
     }
 
     /**
@@ -2916,7 +2920,7 @@ public class BinaryUtils {
                                         @Nullable BinaryReaderHandles hnds,
                                         boolean skipHdrCheck,
                                         boolean forUnmarshal) {
-        return new BinaryReaderExImpl(ctx, in, ldr, hnds, skipHdrCheck, forUnmarshal);
+        return binariesFactory.reader(ctx, in, ldr, hnds, skipHdrCheck, forUnmarshal);
     }
 
     /**
@@ -2926,16 +2930,7 @@ public class BinaryUtils {
      * @return Writer instance.
      */
     public static BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered, int typeId) {
-        BinaryThreadLocalContext locCtx = BinaryThreadLocalContext.get();
-
-        return new BinaryWriterExImpl(
-            ctx,
-            BinaryStreams.outputStream((int)CommonUtils.KB, locCtx.chunk()),
-            locCtx.schemaHolder(),
-            null,
-            failIfUnregistered,
-            typeId
-        );
+        return binariesFactory.writer(ctx, failIfUnregistered, typeId);
     }
 
     /**
@@ -2944,14 +2939,7 @@ public class BinaryUtils {
      * @return Writer instance.
      */
     public static BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out) {
-        return new BinaryWriterExImpl(
-            ctx,
-            out,
-            BinaryThreadLocalContext.get().schemaHolder(),
-            null,
-            false,
-            GridBinaryMarshaller.UNREGISTERED_TYPE_ID
-        );
+        return binariesFactory.writer(ctx, out);
     }
 
     /**
@@ -2960,7 +2948,7 @@ public class BinaryUtils {
      * @return Writer instance.
      */
     public static BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema) {
-        return new BinaryWriterExImpl(ctx, out, schema, null, false, GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+        return binariesFactory.writer(ctx, out, schema);
     }
 
     /** @return Instance of caching handler. */
@@ -3105,7 +3093,7 @@ public class BinaryUtils {
      * @param order Order.
      */
     public static int fieldId(BinaryReaderEx reader, int order) {
-        return ((BinaryReaderExImpl)reader).getOrCreateSchema().fieldId(order);
+        return reader.getOrCreateSchema().fieldId(order);
     }
 
     /**
