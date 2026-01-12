@@ -166,8 +166,11 @@ public class TcpDiscoveryIoSession {
     <T> T readMessage() throws IgniteCheckedException, IOException {
         byte serMode = (byte)in.read();
 
-        if (JAVA_SERIALIZATION == serMode)
+        if (JAVA_SERIALIZATION == serMode) {
+            assert unprocessedReadTail == null;
+
             return U.unmarshal(spi.marshaller(), in, clsLdr);
+        }
 
         try {
             if (MESSAGE_SERIALIZATION != serMode) {
