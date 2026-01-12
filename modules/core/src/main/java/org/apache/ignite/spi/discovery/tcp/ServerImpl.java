@@ -2203,14 +2203,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             !(msg instanceof TcpDiscoveryConnectionCheckMessage);
     }
 
-    /**
-     * @param msg Message.
-     * @param nodeId Node ID.
-     */
-    private static void removeMetrics(TcpDiscoveryMetricsUpdateMessage msg, UUID nodeId) {
-        msg.removeServerMetrics(nodeId);
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ServerImpl.class, this);

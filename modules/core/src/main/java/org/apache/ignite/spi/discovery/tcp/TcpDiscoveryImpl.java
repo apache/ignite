@@ -454,7 +454,7 @@ abstract class TcpDiscoveryImpl {
                 : msg.connectedClientsMetricsMessages().get(srvrId);
 
             if (clientsMetricsMsg == null)
-                return;
+                continue;
 
             assert clientsMetricsMsg.nodesMetricsMessages() != null;
 
