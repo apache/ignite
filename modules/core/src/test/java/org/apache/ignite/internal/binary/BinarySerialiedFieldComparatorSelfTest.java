@@ -489,11 +489,11 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
     }
 
     /** */
-    private BinarySerializedFieldComparator comparator(BinaryObjectExImpl obj0) {
-        int start = obj0.start();
+    private BinarySerializedFieldComparator comparator(BinaryObjectExImpl obj) {
+        int start = obj.start();
 
-        if (obj0 instanceof BinaryObjectOffheapImpl) {
-            long ptr = obj0.offheapAddress();
+        if (obj instanceof BinaryObjectOffheapImpl) {
+            long ptr = obj.offheapAddress();
 
             int schemaOff = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
@@ -505,10 +505,10 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
             int orderBase = start + schemaOff + fieldIdLen;
             int orderMultiplier = fieldIdLen + fieldOffLen;
 
-            return new BinarySerializedFieldComparator(obj0, null, ptr, start, orderBase, orderMultiplier, fieldOffLen);
+            return new BinarySerializedFieldComparator(obj, null, ptr, start, orderBase, orderMultiplier, fieldOffLen);
         }
 
-        byte[] arr = obj0.bytes();
+        byte[] arr = obj.bytes();
 
         int schemaOff = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
@@ -520,7 +520,7 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
         int orderBase = start + schemaOff + fieldIdLen;
         int orderMultiplier = fieldIdLen + fieldOffLen;
 
-        return new BinarySerializedFieldComparator(obj0, arr, 0L, start, orderBase, orderMultiplier, fieldOffLen);
+        return new BinarySerializedFieldComparator(obj, arr, 0L, start, orderBase, orderMultiplier, fieldOffLen);
     }
 
     /**
