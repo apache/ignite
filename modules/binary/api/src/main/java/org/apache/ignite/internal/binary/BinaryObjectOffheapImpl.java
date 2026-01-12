@@ -201,21 +201,6 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     }
 
     /** {@inheritDoc} */
-    @Override public BinarySerializedFieldComparator createFieldComparator() {
-        int schemaOff = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
-
-        short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
-
-        int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
-        int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
-
-        int orderBase = start + schemaOff + fieldIdLen;
-        int orderMultiplier = fieldIdLen + fieldOffLen;
-
-        return new BinarySerializedFieldComparator(this, null, ptr, start, orderBase, orderMultiplier, fieldOffLen);
-    }
-
-    /** {@inheritDoc} */
     @Override public int dataStartOffset() {
         int typeId = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.TYPE_ID_POS);
 
