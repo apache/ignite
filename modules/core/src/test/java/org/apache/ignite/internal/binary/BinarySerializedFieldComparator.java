@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import static org.apache.ignite.internal.binary.BinaryUtils.arrayEq;
 
 /**
- * Compares fiels in serialized form when possible.
+ * Compares fields in serialized form when possible.
  */
 class BinarySerializedFieldComparator {
     /** Position: not found. */
@@ -68,7 +68,7 @@ class BinarySerializedFieldComparator {
      * @param orderMultiplier Order multiplier.
      * @param fieldOffLen Field offset length.
      */
-    public BinarySerializedFieldComparator(BinaryObjectExImpl obj, byte[] arr, long ptr, int startOff, int orderBase,
+    BinarySerializedFieldComparator(BinaryObjectExImpl obj, byte[] arr, long ptr, int startOff, int orderBase,
         int orderMultiplier, int fieldOffLen) {
         assert arr != null && ptr == 0L || arr == null && ptr != 0L;
 
