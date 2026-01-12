@@ -747,7 +747,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         @Nullable AffinityTopologyVersion exchangeVer,
         GridDhtPartitionFullMap partMap,
         @Nullable CachePartitionFullCountersMap cntrMap,
-        Collection<Integer> partsToReload,
+        Set<Integer> partsToReload,
         @Nullable Map<Integer, Long> partSizes,
         @Nullable AffinityTopologyVersion msgTopVer,
         @Nullable GridDhtPartitionsExchangeFuture exchFut,

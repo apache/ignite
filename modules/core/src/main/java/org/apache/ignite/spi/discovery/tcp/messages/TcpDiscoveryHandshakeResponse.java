@@ -18,10 +18,8 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.UUID;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -46,7 +44,7 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
 
     /** Redirect addresses messages serialization holder. */
     @Order(value = 7, method = "redirectAddressesMessages")
-    private @Nullable Collection<InetAddressMessage> redirectAddrsMsgs;
+    private @Nullable Collection<InetSocketAddressMessage> redirectAddrsMsgs;
 
     /**
      * Default constructor for {@link DiscoveryMessageFactory}.
@@ -109,30 +107,23 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage i
     public @Nullable Collection<InetSocketAddress> redirectAddresses() {
         return F.isEmpty(redirectAddrsMsgs)
             ? null
-            : F.transform(redirectAddrsMsgs, msg -> {
-                try {
-                    return new InetSocketAddress(msg.address(), msg.port());
-                }
-                catch (UnknownHostException e) {
-                    throw new IgniteException("Failed to read host address.", e);
-                }
-            });
+            : F.transform(redirectAddrsMsgs, msg -> new InetSocketAddress(msg.address(), msg.port()));
     }
 
     /** @param sockAddrs Socket addresses list for redirect. */
     public void redirectAddresses(@Nullable Collection<InetSocketAddress> sockAddrs) {
         redirectAddrsMsgs = sockAddrs == null
             ? null
-            : F.viewReadOnly(sockAddrs, addr -> new InetAddressMessage(addr.getAddress(), addr.getPort()));
+            : F.viewReadOnly(sockAddrs, addr -> new InetSocketAddressMessage(addr.getAddress(), addr.getPort()));
     }
 
     /** @return Collection of {@link InetAddressMessage}. */
-    public @Nullable Collection<InetAddressMessage> redirectAddressesMessages() {
+    public @Nullable Collection<InetSocketAddressMessage> redirectAddressesMessages() {
         return redirectAddrsMsgs;
     }
 
     /** @param redirectAddrsMsgs Collection of {@link InetAddressMessage}. */
-    public void redirectAddressesMessages(@Nullable Collection<InetAddressMessage> redirectAddrsMsgs) {
+    public void redirectAddressesMessages(@Nullable Collection<InetSocketAddressMessage> redirectAddrsMsgs) {
         this.redirectAddrsMsgs = redirectAddrsMsgs;
     }
 

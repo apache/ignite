@@ -112,6 +112,9 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
     private final ImmutableBitSet insertFields;
 
     /** */
+    private RelDataType tableRowType;
+
+    /** */
     public CacheTableDescriptorImpl(GridCacheContextInfo<?, ?> cacheInfo, GridQueryTypeDescriptor typeDesc,
         Object affinityIdentity) {
         this.cacheInfo = cacheInfo;
@@ -481,18 +484,23 @@ public class CacheTableDescriptorImpl extends NullInitializerExpressionFactory
 
     /** {@inheritDoc} */
     @Override public RelDataType rowType(IgniteTypeFactory factory, ImmutableBitSet usedColumns) {
+        if (usedColumns == null && tableRowType != null)
+            return tableRowType;
+
         RelDataTypeFactory.Builder b = new RelDataTypeFactory.Builder(factory);
 
         if (usedColumns == null) {
             for (int i = 0; i < descriptors.length; i++)
                 b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
+
+            return tableRowType = b.build();
         }
         else {
             for (int i = usedColumns.nextSetBit(0); i != -1; i = usedColumns.nextSetBit(i + 1))
                 b.add(descriptors[i].name(), descriptors[i].logicalType(factory));
-        }
 
-        return b.build();
+            return b.build();
+        }
     }
 
     /** {@inheritDoc} */

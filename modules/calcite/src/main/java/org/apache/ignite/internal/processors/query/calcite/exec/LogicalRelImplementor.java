@@ -370,7 +370,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         ImmutableBitSet requiredColumns = rel.requiredColumns();
         List<SearchBounds> searchBounds = rel.searchBounds();
 
-        RelDataType inputRowType = tbl.getRowType(typeFactory, requiredColumns);
+        RelDataType inputRowType = rel.getDataSourceRowType();
 
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, inputRowType);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, inputRowType);
@@ -547,9 +547,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         ImmutableBitSet requiredColumns = rel.requiredColumns();
 
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
-        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
 
-        RelDataType inputRowType = tbl.getRowType(typeFactory, requiredColumns);
+        RelDataType inputRowType = rel.getDataSourceRowType();
 
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, inputRowType);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, inputRowType);

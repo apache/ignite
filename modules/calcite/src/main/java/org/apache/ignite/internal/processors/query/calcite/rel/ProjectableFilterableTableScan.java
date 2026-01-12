@@ -66,6 +66,9 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
     /** Columns used by condition. */
     protected ImmutableBitSet conditionColumns;
 
+    /** Required columns from table row type (No need to be serialized, for caching only). */
+    protected RelDataType dataSourceRowType;
+
     /** */
     protected ProjectableFilterableTableScan(
         RelOptCluster cluster,
@@ -152,6 +155,16 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
             return RexUtil.createStructType(Commons.typeFactory(getCluster()), projects);
         else
             return table.unwrap(IgniteTable.class).getRowType(Commons.typeFactory(getCluster()), requiredColumns);
+    }
+
+    /** */
+    public RelDataType getDataSourceRowType() {
+        if (dataSourceRowType == null) {
+            dataSourceRowType = table.unwrap(IgniteTable.class).getRowType(Commons.typeFactory(getCluster()),
+                requiredColumns);
+        }
+
+        return dataSourceRowType;
     }
 
     /** */

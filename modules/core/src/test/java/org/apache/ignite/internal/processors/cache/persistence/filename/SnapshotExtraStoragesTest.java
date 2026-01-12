@@ -15,24 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.processors.cache.persistence.filename;
 
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 
-public class UnwrappedEnumFieldMessage implements Message {
-    @Order(0)
-    private TransactionIsolation isolation;
+/**
+ * Test snapshot can be created when {@link DataStorageConfiguration#setStoragePath(String)} used.
+ */
+public class SnapshotExtraStoragesTest extends SnapshotCreationNonDefaultStoragePathTest {
+    /** {@inheritDoc} */
+    @Override protected DataStorageConfiguration dataStorageConfiguration() {
+        extraSnpPaths = new String[] {
+            "snp_path",
+            "snp_path2"
+        };
 
-    public TransactionIsolation isolation() {
-        return isolation;
-    }
-
-    public void isolation(TransactionIsolation isolation) {
-        this.isolation = isolation;
-    }
-
-    public short directType() {
-        return 0;
+        return super.dataStorageConfiguration().setExtraSnapshotPaths(storagePath("snp_path"), storagePath("snp_path2"));
     }
 }
