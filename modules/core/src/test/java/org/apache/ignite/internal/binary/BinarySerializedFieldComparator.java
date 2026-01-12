@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import static org.apache.ignite.internal.binary.BinaryUtils.arrayEq;
 
 /**
- * Compares fiels in serialized form when possible.
+ * Compares fields in serialized form when possible.
  */
 class BinarySerializedFieldComparator {
     /** Position: not found. */
