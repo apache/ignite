@@ -2363,7 +2363,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @return Object.
      * @throws BinaryObjectException If failed.
      */
-    Object read(BinaryClassDescriptor desc) throws BinaryObjectException {
+    private Object read(BinaryClassDescriptor desc) throws BinaryObjectException {
         try {
             assert desc.mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + desc.cls.getName();
 

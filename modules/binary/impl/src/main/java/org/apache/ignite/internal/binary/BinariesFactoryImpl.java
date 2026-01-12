@@ -95,6 +95,13 @@ public class BinariesFactoryImpl implements BinariesFactory {
 
         switch (mode) {
             case P_BYTE:
+            case P_BOOLEAN:
+            case P_SHORT:
+            case P_CHAR:
+            case P_INT:
+            case P_LONG:
+            case P_FLOAT:
+            case P_DOUBLE:
                 return new BinaryFieldAccessor(field, id, mode, GridUnsafe.objectFieldOffset(field), false);
 
             case BYTE:
