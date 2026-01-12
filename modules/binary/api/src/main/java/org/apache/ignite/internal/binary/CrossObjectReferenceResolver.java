@@ -188,7 +188,7 @@ class CrossObjectReferenceResolver {
             overrideHeader(
                 outObjStartPos,
                 /** flags */ setFieldOffsetFlag(inObjDesc.flags, footerFieldOffsetLen),
-                /** hash */ BinaryArrayIdentityResolver.instance().hashCode(out.array(), outObjStartPos + DFLT_HDR_LEN, outFooterStartPos),
+                /** hash */ BinaryUtils.hashCode(out.array(), outObjStartPos + DFLT_HDR_LEN, outFooterStartPos),
                 /** total length */ out.position() - outObjStartPos,
                 schemaOrRawOffsetPos
             );

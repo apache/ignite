@@ -167,14 +167,17 @@ public interface BinariesFactory {
      */
     public int compareForDml(Object first, Object second);
 
-    /** */
+    /** Creates new instance of binary object. */
     public BinaryObjectEx binaryObject(BinaryContext ctx, byte[] arr, int start);
 
-    /** */
+    /** Creates new instance of binary object. */
     public BinaryObjectEx binaryObject(BinaryContext ctx, byte[] bytes);
 
-    /** */
+    /** Creates new instance of binary object. */
     public BinaryObject binaryObject(BinaryContext ctx, byte[] valBytes, CacheObjectValueContext coCtx);
+
+    /** */
+    public BinaryIdentityResolver arrayIdentityResolver();
 
     /**
      * @param val Value to check.

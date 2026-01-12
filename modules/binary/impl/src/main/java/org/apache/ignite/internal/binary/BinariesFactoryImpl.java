@@ -235,6 +235,11 @@ public class BinariesFactoryImpl implements BinariesFactory {
     }
 
     /** {@inheritDoc} */
+    @Override public BinaryIdentityResolver arrayIdentityResolver() {
+        return BinaryArrayIdentityResolver.instance();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isBinaryObjectImpl(Object val) {
         return val instanceof BinaryObjectImpl;
     }
