@@ -21,17 +21,17 @@ import java.util.Iterator;
 /**
  * Interface to iterate over raw table data and convert this data to relational node rows.
  *
- * @param <TableRow>> Raw table row type.
- * @param <Row>> Relational node row type.
+ * @param <TableRow> Raw table row type.
+ * @param <Row> Relational node row type.
  */
 public interface TableRowIterable<TableRow, Row> extends Iterable<Row> {
     /**
      * @return Table row iterator.
-     * */
+     */
     public Iterator<TableRow> tableRowIterator();
 
     /**
-     * Enriches {@code nodeRow} with columns from {@code tableRow} *
+     * Enriches {@code nodeRow} with columns from {@code tableRow}.
      *
      * @param tableRow Table row.
      * @param nodeRow Relational node row.

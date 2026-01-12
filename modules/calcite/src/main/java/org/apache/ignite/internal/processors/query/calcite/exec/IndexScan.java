@@ -156,7 +156,7 @@ public class IndexScan<Row> extends AbstractCacheColumnsScan<IndexRow, Row> {
         int[] fieldIdxMapping = new int[rowType.getFieldCount()];
 
         for (int i = 0; i < fieldColMapping.length; i++) {
-            // j = source field index, i = target field index.
+            // i = output row field index, fieldColMapping[i] = table row column index.
             int keyIdx = idxFieldMapping.indexOf(fieldColMapping[i]);
 
             if (keyIdx >= 0 && keyIdx < inlinedKeys.size())

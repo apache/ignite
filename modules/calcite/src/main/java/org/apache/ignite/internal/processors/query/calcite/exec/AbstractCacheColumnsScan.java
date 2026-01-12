@@ -36,7 +36,7 @@ public abstract class AbstractCacheColumnsScan<TableRow, Row> extends AbstractCa
     /** */
     protected final RelDataType rowType;
 
-    /** Row field to column mapping. */
+    /** Output node row fields to input table row columns mapping. */
     protected final int[] fieldColMapping;
 
     /** */
@@ -53,7 +53,8 @@ public abstract class AbstractCacheColumnsScan<TableRow, Row> extends AbstractCa
         rowType = desc.rowType(ectx.getTypeFactory(), requiredColumns);
         factory = ectx.rowHandler().factory(ectx.getTypeFactory(), rowType);
 
-        ImmutableBitSet reqCols = requiredColumns == null ? ImmutableBitSet.range(0, rowType.getFieldCount())
+        ImmutableBitSet reqCols = requiredColumns == null
+            ? ImmutableBitSet.range(0, rowType.getFieldCount())
             : requiredColumns;
 
         fieldColMapping = reqCols.toArray();
