@@ -26,6 +26,7 @@ import java.util.UUID;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
+import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -48,11 +49,16 @@ public class DirectMessageWriter implements MessageWriter {
     @GridToStringInclude
     private final DirectMessageState<StateItem> state;
 
+    /** */
+    private final MessageFactory msgFactory;
+
     /** Buffer for writing. */
     private ByteBuffer buf;
 
     /** */
     public DirectMessageWriter(final MessageFactory msgFactory) {
+        this.msgFactory = msgFactory;
+
         state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
             @Override public StateItem apply() {
                 return new StateItem(msgFactory);
@@ -293,10 +299,10 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeMessage(@Nullable Message msg, boolean compress) {
+    @Override public boolean writeMessage(@Nullable Message msg) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeMessage(msg, this, compress);
+        stream.writeMessage(msg, this);
 
         return stream.lastFinished();
     }
@@ -356,7 +362,21 @@ public class DirectMessageWriter implements MessageWriter {
         MessageCollectionItemType valType, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeMap(map, keyType, valType, this, compress);
+        if (compress) {
+            DirectMessageWriter tmpWriter = new DirectMessageWriter(msgFactory);
+
+            tmpWriter.setBuffer(ByteBuffer.allocateDirect(600_000));
+
+            DirectByteBufferStream tmpStream = tmpWriter.state.item().stream;
+
+            tmpStream.writeMap(map, keyType, valType, tmpWriter);
+
+            CompressedMessage compressedMsg = map != null ? new CompressedMessage(tmpWriter.getBuffer()) : CompressedMessage.empty();
+
+            stream.writeMessage(compressedMsg, this);
+        }
+        else
+            stream.writeMap(map, keyType, valType, this);
 
         return stream.lastFinished();
     }
@@ -379,6 +399,11 @@ public class DirectMessageWriter implements MessageWriter {
     /** {@inheritDoc} */
     @Override public void incrementState() {
         state.item().state++;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void decrementState() {
+        state.item().state--;
     }
 
     /** {@inheritDoc} */

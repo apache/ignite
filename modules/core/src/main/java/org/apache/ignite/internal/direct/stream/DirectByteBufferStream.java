@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.direct.stream;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -32,12 +29,9 @@ import java.util.Map;
 import java.util.RandomAccess;
 import java.util.Set;
 import java.util.UUID;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.Inflater;
-import java.util.zip.InflaterInputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.managers.communication.CompressedMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -345,9 +339,6 @@ public class DirectByteBufferStream {
 
     /** */
     private byte cacheObjType;
-
-    /** */
-    private boolean uncompressFinished;
 
     /**
      * Constructror for stream used for writing messages.
@@ -889,26 +880,14 @@ public class DirectByteBufferStream {
     /**
      * @param msg Message.
      * @param writer Writer.
-     * @param compress Whether to compress message.
      */
-    public void writeMessage(Message msg, MessageWriter writer, boolean compress) {
-        if (compress && buf.position() != 0) {
-            lastFinished = false;
-
-            return;
-        }
-
+    public void writeMessage(Message msg, MessageWriter writer) {
         if (msg != null) {
             if (buf.hasRemaining()) {
                 try {
                     writer.beforeInnerMessageWrite();
 
-                    boolean finished = msgFactory.serializer(msg.directType()).writeTo(msg, writer);
-
-                    if (compress)
-                        compressData();
-
-                    lastFinished = finished;
+                    lastFinished = msgFactory.serializer(msg.directType()).writeTo(msg, writer);
                 }
                 finally {
                     writer.afterInnerMessageWrite(lastFinished);
@@ -917,12 +896,8 @@ public class DirectByteBufferStream {
             else
                 lastFinished = false;
         }
-        else {
-            if (compress)
-                writeInt(-1);
-            else
-                writeShort(Short.MIN_VALUE);
-        }
+        else
+            writeShort(Short.MIN_VALUE);
     }
 
     /**
@@ -1038,21 +1013,13 @@ public class DirectByteBufferStream {
      * @param keyType Key type.
      * @param valType Value type.
      * @param writer Writer.
-     * @param compress Whether to compress map.
      */
     public <K, V> void writeMap(
         Map<K, V> map,
         MessageCollectionItemType keyType,
         MessageCollectionItemType valType,
-        MessageWriter writer,
-        boolean compress
+        MessageWriter writer
     ) {
-        if (compress && buf.position() != 0) {
-            lastFinished = false;
-
-            return;
-        }
-
         if (map != null) {
             if (mapIt == null) {
                 writeInt(map.size());
@@ -1074,31 +1041,20 @@ public class DirectByteBufferStream {
                 if (!keyDone) {
                     write(keyType, e.getKey(), writer);
 
-                    if (!lastFinished) {
-                        if (compress)
-                            compressData();
-
+                    if (!lastFinished)
                         return;
-                    }
 
                     keyDone = true;
                 }
 
                 write(valType, e.getValue(), writer);
 
-                if (!lastFinished) {
-                    if (compress)
-                        compressData();
-
+                if (!lastFinished)
                     return;
-                }
 
                 mapCur = NULL;
                 keyDone = false;
             }
-
-            if (compress)
-                compressData();
 
             mapIt = null;
         }
@@ -1569,26 +1525,7 @@ public class DirectByteBufferStream {
      * @param reader Reader.
      * @return Message.
      */
-    public <T extends Message> T readMessage(MessageReader reader, boolean compress) {
-        if (compress && !uncompressFinished) {
-            int startPos = buf.position();
-
-            if (readInt() == -1) {
-                lastFinished = true;
-
-                return null;
-            }
-
-            buf.position(startPos);
-
-            boolean uncompressed = uncompressData();
-
-            if (!lastFinished || !uncompressed)
-                return null;
-
-            uncompressFinished = true;
-        }
-
+    public <T extends Message> T readMessage(MessageReader reader) {
         if (!msgTypeDone) {
             if (buf.remaining() < Message.DIRECT_TYPE_SIZE) {
                 lastFinished = false;
@@ -1620,9 +1557,6 @@ public class DirectByteBufferStream {
             Message msg0 = msg;
 
             msgTypeDone = false;
-
-            if (compress)
-                uncompressFinished = false;
 
             msg = null;
 
@@ -1747,30 +1681,10 @@ public class DirectByteBufferStream {
      * @param valType Value type.
      * @param linked Whether linked map should be created.
      * @param reader Reader.
-     * @param compress Whether the map is compressed.
      * @return Map.
      */
     public <M extends Map<?, ?>> M readMap(MessageCollectionItemType keyType, MessageCollectionItemType valType,
-                                           boolean linked, MessageReader reader, boolean compress) {
-        if (compress && !uncompressFinished) {
-            int startPos = buf.position();
-
-            if (readInt() == -1) {
-                lastFinished = true;
-
-                return null;
-            }
-
-            buf.position(startPos);
-
-            boolean uncompressed = uncompressData();
-
-            if (!lastFinished || !uncompressed)
-                return null;
-
-            uncompressFinished = true;
-        }
-
+                                           boolean linked, MessageReader reader) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1815,9 +1729,6 @@ public class DirectByteBufferStream {
         M map0 = (M)map;
 
         map = null;
-
-        if (compress)
-            uncompressFinished = false;
 
         return map0;
     }
@@ -2202,11 +2113,14 @@ public class DirectByteBufferStream {
                 break;
 
             case MSG:
+                if (val instanceof CompressedMessage)
+                    throw new IllegalArgumentException("CompressedMessage is not supported in collections.");
+
                 try {
                     if (val != null)
                         writer.beforeInnerMessageWrite();
 
-                    writeMessage((Message)val, writer, false);
+                    writeMessage((Message)val, writer);
                 }
                 finally {
                     if (val != null)
@@ -2300,7 +2214,7 @@ public class DirectByteBufferStream {
                 return readGridLongList();
 
             case MSG:
-                return readMessage(reader, false);
+                return readMessage(reader);
 
             default:
                 throw new IllegalArgumentException("Unknown type: " + type);
@@ -2354,79 +2268,6 @@ public class DirectByteBufferStream {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DirectByteBufferStream.class, this);
-    }
-
-    /** */
-    private void compressData() {
-        if (buf.position() == 0)
-            return;
-
-        byte[] rawData = new byte[buf.position()];
-
-        buf.flip();
-        buf.get(rawData);
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(rawData.length);
-        Deflater deflater = new Deflater(Deflater.BEST_SPEED, true);
-
-        try (DeflaterOutputStream dos = new DeflaterOutputStream(baos, deflater)) {
-            dos.write(rawData);
-            dos.finish();
-        }
-        catch (IOException ex) {
-            throw new IgniteException(ex);
-        }
-        finally {
-            deflater.end();
-        }
-
-        buf.clear();
-
-        writeByteArray(baos.toByteArray());
-    }
-
-    /** */
-    private boolean uncompressData() {
-        byte[] compressedData = readByteArray();
-
-        if (!lastFinished || compressedData == null)
-            return false;
-
-        byte[] uncompressedData;
-
-        Inflater inflater = new Inflater(true);
-
-        try (InflaterInputStream iis = new InflaterInputStream(new ByteArrayInputStream(compressedData), inflater)) {
-            uncompressedData = iis.readAllBytes();
-        }
-        catch (IOException ex) {
-            throw new IgniteException(ex);
-        }
-        finally {
-            inflater.end();
-        }
-
-        byte[] tmpBuf = null;
-
-        if (buf.remaining() > 0) {
-            tmpBuf = new byte[buf.remaining()];
-            buf.get(tmpBuf);
-        }
-
-        int tmpBufLength = tmpBuf != null ? tmpBuf.length : 0;
-
-        if (uncompressedData.length + tmpBufLength > buf.capacity())
-            buf = ByteBuffer.allocateDirect(uncompressedData.length + tmpBufLength);
-
-        buf.clear();
-        buf.put(uncompressedData);
-
-        if (tmpBuf != null)
-            buf.put(tmpBuf);
-
-        buf.flip();
-
-        return true;
     }
 
     /**

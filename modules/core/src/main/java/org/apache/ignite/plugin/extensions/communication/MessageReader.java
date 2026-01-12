@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -199,18 +200,7 @@ public interface MessageReader {
      * @param <T> Type of the message.
      * @return Message.
      */
-    public default <T extends Message> T readMessage() {
-        return readMessage(false);
-    }
-
-    /**
-     * Reads nested message.
-     *
-     * @param compress Whether the message is compressed.
-     * @param <T> Type of the message.
-     * @return Message.
-     */
-    public <T extends Message> T readMessage(boolean compress);
+    public <T extends Message> T readMessage();
 
     /**
      * Reads {@link CacheObject}.
@@ -282,8 +272,8 @@ public interface MessageReader {
      * @param keyType Map key type.
      * @param valType Map value type.
      * @param linked Whether {@link LinkedHashMap} should be created.
-     * @param compress Whether the map is compressed.
-     * @param <M> Type of the red map.
+     * @param compress Whether map should be compressed.
+     * @param <M> Type of the read map.
      * @return Map.
      */
     // TODO: IGNITE-26329 — switch to the new readMap method without the linked flag parameter
@@ -310,6 +300,11 @@ public interface MessageReader {
      * Increments read state.
      */
     public void incrementState();
+
+    /**
+     * Deccrements read state.
+     */
+    public void decrementState();
 
     /**
      * Callback called before inner message is read.

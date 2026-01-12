@@ -272,6 +272,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @return Partitions history reservation counters.
      */
     public Map<Integer, IntLongMap> partitionHistoryCountersMap() {
+        System.out.println(">>> partitionHistoryCountersMap size=" + (partHistCntrs != null ? partHistCntrs.size() : null));
         return partHistCntrs;
     }
 

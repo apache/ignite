@@ -286,7 +286,7 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeMessage(Message val, boolean compress) {
+        @Override public boolean writeMessage(Message val) {
             return writeField(Message.class);
         }
 
@@ -327,6 +327,11 @@ public abstract class AbstractMessageSerializationTest {
         /** {@inheritDoc} */
         @Override public void incrementState() {
             ++state;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void decrementState() {
+            --state;
         }
 
         /** {@inheritDoc} */
@@ -518,7 +523,7 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T extends Message> T readMessage(boolean compress) {
+        @Override public <T extends Message> T readMessage() {
             readField(Message.class);
 
             return null;
@@ -592,6 +597,11 @@ public abstract class AbstractMessageSerializationTest {
         /** {@inheritDoc} */
         @Override public void incrementState() {
             ++state;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void decrementState() {
+            --state;
         }
 
         /** {@inheritDoc} */

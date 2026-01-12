@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -247,18 +248,7 @@ public interface MessageWriter {
      * @param val Message.
      * @return Whether value was fully written.
      */
-    public default boolean writeMessage(Message val) {
-        return writeMessage(val, false);
-    }
-
-    /**
-     * Writes nested message.
-     *
-     * @param val Message.
-     * @param compress Whether to compress message.
-     * @return Whether value was fully written.
-     */
-    public boolean writeMessage(Message val, boolean compress);
+    public boolean writeMessage(Message val);
 
     /**
      * Writes {@link CacheObject}.
@@ -335,7 +325,7 @@ public interface MessageWriter {
      * @param map Map.
      * @param keyType Map key type.
      * @param valType Map value type.
-     * @param compress Whether to compress map.
+     * @param compress Whether map need to compress.
      * @param <K> Initial key types of the map to write.
      * @param <V> Initial value types of the map to write.
      * @return Whether value was fully written.
@@ -364,6 +354,11 @@ public interface MessageWriter {
      * Increments state.
      */
     public void incrementState();
+
+    /**
+     * Decrements state.
+     */
+    public void decrementState();
 
     /**
      * Callback called before inner message is written.
