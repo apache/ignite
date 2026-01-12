@@ -245,13 +245,13 @@ public class PageUtils {
     public static int putValue(long addr, byte type, byte[] srcBytes, int srcOff, int len) {
         int off = 0;
 
-        PageUtils.putInt(addr, off, len);
+        putInt(addr, off, len);
         off += 4;
 
-        PageUtils.putByte(addr, off, type);
+        putByte(addr, off, type);
         off++;
 
-        PageUtils.putBytes(addr, off, srcBytes, srcOff, len);
+        putBytes(addr, off, srcBytes, srcOff, len);
         off += len;
 
         return off;
