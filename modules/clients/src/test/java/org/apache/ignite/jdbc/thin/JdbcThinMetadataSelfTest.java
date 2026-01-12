@@ -52,7 +52,6 @@ import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.systemview.view.sql.SqlIndexView;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static java.sql.Types.DATE;
@@ -69,6 +68,11 @@ import static org.apache.ignite.internal.processors.query.QueryUtils.SCHEMA_SYS;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.schema.management.SchemaManager.SQL_IDXS_VIEW;
 import static org.apache.ignite.internal.util.lang.GridFunc.asMap;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Metadata tests.
@@ -664,7 +668,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                     actualSysCols.add(colDefinition);
             }
 
-            Assert.assertEquals(expectedCols, actualUserCols);
+            assertEquals(expectedCols, actualUserCols);
 
             expectedCols = new TreeSet<>(Arrays.asList(
                 "SYS.BASELINE_NODES.CONSISTENT_ID.null",
@@ -1172,7 +1176,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "SYS.SQL_PLANS_HISTORY.SQL.null"
                 ));
 
-            Assert.assertEquals(expectedCols, actualSysCols);
+            assertEquals(expectedCols, actualSysCols);
         }
     }
 
@@ -1243,7 +1247,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 assertNull(rs.getString("FILTER_CONDITION"));
             }
 
-            assertEquals("Unexpected indexes count", expectedIdxs.size(), actualIdxs.size());
+            assertEquals(expectedIdxs.size(), actualIdxs.size(), "Unexpected indexes count");
 
             for (int i = 0; i < actualIdxs.size(); i++)
                 assertEquals("Unexpected index", expectedIdxs.get(i), actualIdxs.get(i));
@@ -1297,7 +1301,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                     rs.getString("COLUMN_NAME")));
             }
 
-            assertEquals("Unexpected indexes count", expectedIdxs.size(), actualIdxs.size());
+            assertEquals(expectedIdxs.size(), actualIdxs.size(), "Unexpected indexes count");
 
             for (int i = 0; i < actualIdxs.size(); i++)
                 assertEquals("Unexpected index", expectedIdxs.get(i), actualIdxs.get(i));
@@ -1329,7 +1333,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 // Check sorting by ordinal position
                 int fieldsCnt = indexesFromMeta.get(idxName).split(", ").length;
                 int ordinalPos = idxMeta.getInt("ORDINAL_POSITION");
-                assertEquals("Unexpected ordinal position", ordinalPos, fieldsCnt);
+                assertEquals(ordinalPos, fieldsCnt, "Unexpected ordinal position");
             }
         }
 
@@ -1397,7 +1401,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                     '.' + rs.getString("COLUMN_NAME"));
             }
 
-            assertEquals("Metadata contains unexpected primary keys info.", expectedPks, actualPks);
+            assertEquals(expectedPks, actualPks, "Metadata contains unexpected primary keys info.");
         }
     }
 
@@ -1415,7 +1419,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 PreparedStatement noParams = conn.prepareStatement("select * from Person;");
                 ParameterMetaData params = noParams.getParameterMetaData();
 
-                assertEquals("Parameters should be empty.", 0, params.getParameterCount());
+                assertEquals(0, params.getParameterCount(), "Parameters should be empty.");
             }
 
             // Selects.
@@ -1575,7 +1579,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         try {
             boolean empty = !rs.next();
 
-            assertTrue("Result should be empty because invalid catalog is specified.", empty);
+            assertTrue(empty, "Result should be empty because invalid catalog is specified.");
         }
         finally {
             rs.close();

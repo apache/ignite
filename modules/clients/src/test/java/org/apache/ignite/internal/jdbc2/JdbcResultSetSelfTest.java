@@ -47,12 +47,17 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Result set test.
@@ -683,10 +688,10 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         assertTrue(rs.next());
         Blob blob = rs.getBlob("blobVal");
-        Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
+        assertArrayEquals(new byte[] {1}, blob.getBytes(1, (int)blob.length()));
 
         blob = rs.getBlob(23);
-        Assert.assertArrayEquals(blob.getBytes(1, (int)blob.length()), new byte[] {1});
+        assertArrayEquals(new byte[] {1}, blob.getBytes(1, (int)blob.length()));
         assertFalse(rs.next());
     }
 
@@ -699,10 +704,10 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         assertTrue(rs.next());
         Clob clob = rs.getClob("clobVal");
-        Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
+        assertEquals("str", clob.getSubString(1, (int)clob.length()));
 
         clob = rs.getClob(24);
-        Assert.assertEquals("str", clob.getSubString(1, (int)clob.length()));
+        assertEquals("str", clob.getSubString(1, (int)clob.length()));
         assertFalse(rs.next());
     }
 
@@ -1231,9 +1236,8 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
                 strValToSearch = "";
             }
         }
-        assertTrue("Expected to find field "
+        assertTrue(strToCheck.contains(fieldName + "=" + strValToSearch), "Expected to find field "
                 + fieldName + " having value " + strValToSearch
-                + " in toString representation [" + strToCheck + "]",
-            strToCheck.contains(fieldName + "=" + strValToSearch));
+                + " in toString representation [" + strToCheck + "]");
     }
 }

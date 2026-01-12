@@ -27,8 +27,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.junit.Assert;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.calcite.rel.core.JoinRelType.ANTI;
@@ -37,7 +36,7 @@ import static org.apache.calcite.rel.core.JoinRelType.INNER;
 import static org.apache.calcite.rel.core.JoinRelType.LEFT;
 import static org.apache.calcite.rel.core.JoinRelType.RIGHT;
 import static org.apache.calcite.rel.core.JoinRelType.SEMI;
-import static org.hamcrest.core.IsEqual.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /** */
 @SuppressWarnings("TypeMayBeWeakened")
@@ -48,7 +47,7 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
     /**
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     @Override public void setup() throws Exception {
         nodesCnt = 1;
         super.setup();
@@ -452,7 +451,7 @@ public class MergeJoinExecutionTest extends AbstractExecutionTest {
         while (node.hasNext())
             rows.add(node.next());
 
-        Assert.assertThat(rows.toArray(EMPTY), equalTo(expRes));
+        assertThat(rows.toArray(EMPTY), equalTo(expRes));
     }
 
     /**

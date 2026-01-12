@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import redis.clients.jedis.Jedis;
 
 import static org.apache.ignite.internal.util.IgniteUtils.KB;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Tests for Connection commands of Redis protocol.
@@ -34,7 +36,7 @@ public class RedisProtocolConnectSelfTest extends RedisCommonAbstractTest {
     @Test
     public void testPing() throws Exception {
         try (Jedis jedis = pool.getResource()) {
-            Assert.assertEquals("PONG", jedis.ping());
+            assertEquals("PONG", jedis.ping());
         }
     }
 
@@ -44,7 +46,7 @@ public class RedisProtocolConnectSelfTest extends RedisCommonAbstractTest {
     @Test
     public void testEcho() throws Exception {
         try (Jedis jedis = pool.getResource()) {
-            Assert.assertEquals("Hello, grid!", jedis.echo("Hello, grid!"));
+            assertEquals("Hello, grid!", jedis.echo("Hello, grid!"));
         }
     }
 
@@ -56,25 +58,25 @@ public class RedisProtocolConnectSelfTest extends RedisCommonAbstractTest {
         try (Jedis jedis = pool.getResource()) {
             // connected to cache with index 0
             jedis.set("k0", "v0");
-            Assert.assertEquals("v0", jedis.get("k0"));
+            assertEquals("v0", jedis.get("k0"));
 
             // connect to cache with index 1
             jedis.select(1);
             jedis.set("k1", "v1");
-            Assert.assertEquals("v1", jedis.get("k1"));
-            Assert.assertNull(jedis.get("k0"));
+            assertEquals("v1", jedis.get("k1"));
+            assertNull(jedis.get("k0"));
 
             try (Jedis jedis2 = pool.getResource()) {
                 // connected to cache with index 0
-                Assert.assertEquals("v0", jedis2.get("k0"));
-                Assert.assertNull(jedis2.get("k1"));
+                assertEquals("v0", jedis2.get("k0"));
+                assertNull(jedis2.get("k1"));
             }
 
-            Assert.assertEquals("v1", jedis.get("k1"));
-            Assert.assertNull(jedis.get("k0"));
+            assertEquals("v1", jedis.get("k1"));
+            assertNull(jedis.get("k0"));
 
             jedis.select(0);
-            Assert.assertEquals("v0", jedis.get("k0"));
+            assertEquals("v0", jedis.get("k0"));
         }
     }
 
@@ -87,12 +89,12 @@ public class RedisProtocolConnectSelfTest extends RedisCommonAbstractTest {
                 String val = RandomStringUtils.randomAscii((int)(len * KB));
 
                 jedis.set(key.getBytes(), val.getBytes());
-                Assert.assertArrayEquals(val.getBytes(), jedis.get(key.getBytes()));
+                assertArrayEquals(val.getBytes(), jedis.get(key.getBytes()));
 
                 key += "-str";
 
                 jedis.set(key, val);
-                Assert.assertEquals(val, jedis.get(key));
+                assertEquals(val, jedis.get(key));
             }
         }
     }

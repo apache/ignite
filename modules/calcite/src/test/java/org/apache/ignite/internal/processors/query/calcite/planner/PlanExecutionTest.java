@@ -64,11 +64,14 @@ import org.apache.ignite.internal.processors.security.NoOpIgniteSecurityProcesso
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.calcite.tools.Frameworks.createRootSchema;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  *
@@ -152,8 +155,8 @@ public class PlanExecutionTest extends AbstractPlannerTest {
 
         assertFalse(res.isEmpty());
 
-        Assert.assertArrayEquals(new Object[]{0, "Igor", 0, "Calcite", 1}, res.get(0));
-        Assert.assertArrayEquals(new Object[]{1, "Roman", 0, "Calcite", 1}, res.get(1));
+        assertArrayEquals(new Object[]{0, "Igor", 0, "Calcite", 1}, res.get(0));
+        assertArrayEquals(new Object[]{1, "Roman", 0, "Calcite", 1}, res.get(1));
     }
 
     /**
@@ -214,7 +217,7 @@ public class PlanExecutionTest extends AbstractPlannerTest {
         int pos = 0;
 
         for (Object obj : checkRes.get())
-            Assert.assertArrayEquals((Object[])obj, res.get(pos++));
+            assertArrayEquals((Object[])obj, res.get(pos++));
     }
 
     /** */

@@ -48,7 +48,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.Metric;
 import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.metric.IoStatisticsCacheSelfTest.logicalReads;
@@ -58,6 +57,11 @@ import static org.apache.ignite.internal.metric.IoStatisticsType.HASH_INDEX;
 import static org.apache.ignite.internal.metric.IoStatisticsType.SORTED_INDEX;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.queryProcessor;
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * A set of basic tests for caches with indexes.
@@ -211,23 +215,23 @@ public class IoStatisticsBasicIndexSelfTest extends AbstractIndexingCommonTest {
 
         Set<String> hashIndexes = deriveStatisticNames(grid(), HASH_INDEX);
 
-        Assert.assertEquals(PK_HASH_INDEXES, hashIndexes);
+        assertEquals(PK_HASH_INDEXES, hashIndexes);
 
         Set<String> sortedIdxCaches = deriveStatisticNames(grid(), SORTED_INDEX);
 
-        Assert.assertEquals(1, sortedIdxCaches.size());
+        assertEquals(1, sortedIdxCaches.size());
 
         Set<String> sortedIdxNames = deriveStatisticSubNames(grid(), SORTED_INDEX);
 
-        Assert.assertEquals(sortedIdxCaches.toString(), indexes.size() + NUMBER_OF_PK_SORTED_INDEXES,
-            sortedIdxNames.size());
+        assertEquals(indexes.size() + NUMBER_OF_PK_SORTED_INDEXES,
+            sortedIdxNames.size(), sortedIdxCaches.toString());
 
         for (String idxName : sortedIdxNames) {
             Long logicalReads = logicalReads(mmgr, SORTED_INDEX, metricName(DEFAULT_CACHE_NAME, idxName));
 
-            Assert.assertNotNull(idxName, logicalReads);
+            assertNotNull(logicalReads, idxName);
 
-            Assert.assertTrue(logicalReads > 0);
+            assertTrue(logicalReads > 0);
         }
 
         resetAllIoMetrics(grid());

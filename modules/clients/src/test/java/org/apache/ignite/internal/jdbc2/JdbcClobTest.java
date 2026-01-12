@@ -23,12 +23,12 @@ import java.sql.Clob;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test for JDBC CLOB.
@@ -140,23 +140,25 @@ public class JdbcClobTest {
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableNotThrown")
     @Test
     public void testGetAsciiStream() throws Exception {
         JdbcClob clob = new JdbcClob("1234567890");
         byte[] bytes = IOUtils.toByteArray(clob.getAsciiStream());
-        Assert.assertArrayEquals("1234567890".getBytes(UTF_8), bytes);
+        assertArrayEquals("1234567890".getBytes(UTF_8), bytes);
 
         clob.free();
         assertThrows(null, clob::getAsciiStream, SQLException.class, ERROR_CLOB_FREE);
 
         Clob emptyClob = new JdbcClob("");
         bytes = IOUtils.toByteArray(emptyClob.getAsciiStream());
-        Assert.assertArrayEquals("".getBytes(UTF_8), bytes);
+        assertArrayEquals("".getBytes(UTF_8), bytes);
     }
 
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ThrowableNotThrown")
     @Test
     public void testGetAsciiStreamForNonAsciiDataBufferedRead() throws Exception {
         StringBuilder sb = new StringBuilder();

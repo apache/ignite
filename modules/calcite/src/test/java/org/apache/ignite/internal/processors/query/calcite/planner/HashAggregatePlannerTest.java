@@ -41,11 +41,11 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.util.typedef.F;
-import org.hamcrest.core.IsInstanceOf;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.trait.TraitUtils.createFieldCollation;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  *
@@ -242,18 +242,18 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
         IgniteReduceHashAggregate rdcAgg = findFirstNode(phys, byClass(IgniteReduceHashAggregate.class));
         IgniteMapHashAggregate mapAgg = findFirstNode(phys, byClass(IgniteMapHashAggregate.class));
 
-        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), rdcAgg);
-        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), mapAgg);
+        assertNotNull(rdcAgg, "Invalid plan\n" + RelOptUtil.toString(phys));
+        assertNotNull(mapAgg, "Invalid plan\n" + RelOptUtil.toString(phys));
 
-        Assert.assertThat(
+        assertThat(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.first(rdcAgg.getAggregateCalls()).getAggregation(),
-            IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
+            isInstanceOf(SqlAvgAggFunction.class));
 
-        Assert.assertThat(
+        assertThat(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.first(mapAgg.getAggCallList()).getAggregation(),
-            IsInstanceOf.instanceOf(SqlAvgAggFunction.class));
+            isInstanceOf(SqlAvgAggFunction.class));
     }
 
     /**
@@ -279,17 +279,17 @@ public class HashAggregatePlannerTest extends AbstractAggregatePlannerTest {
         IgniteMapHashAggregate mapAgg = findFirstNode(phys, byClass(IgniteMapHashAggregate.class));
         IgniteReduceHashAggregate rdcAgg = findFirstNode(phys, byClass(IgniteReduceHashAggregate.class));
 
-        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), rdcAgg);
-        assertNotNull("Invalid plan\n" + RelOptUtil.toString(phys), mapAgg);
+        assertNotNull(rdcAgg, "Invalid plan\n" + RelOptUtil.toString(phys));
+        assertNotNull(mapAgg, "Invalid plan\n" + RelOptUtil.toString(phys));
 
-        Assert.assertThat(
+        assertThat(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.first(rdcAgg.getAggregateCalls()).getAggregation(),
-            IsInstanceOf.instanceOf(SqlCountAggFunction.class));
+            isInstanceOf(SqlCountAggFunction.class));
 
-        Assert.assertThat(
+        assertThat(
             "Invalid plan\n" + RelOptUtil.toString(phys),
             F.first(mapAgg.getAggCallList()).getAggregation(),
-            IsInstanceOf.instanceOf(SqlCountAggFunction.class));
+            isInstanceOf(SqlCountAggFunction.class));
     }
 }

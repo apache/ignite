@@ -34,10 +34,12 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.h2.jdbc.JdbcSQLException;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test to check dynamic columns related features.
@@ -786,7 +788,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
             List<List<?>> resBefore = run(qry);
 
-            Assert.assertEquals(1, resBefore.size());
+            assertEquals(1, resBefore.size());
 
             run("ALTER TABLE test DROP COLUMN b");
 
@@ -794,16 +796,15 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
             List<List<?>> resAfter = run(qry);
 
-            Assert.assertEquals(1, resAfter.size());
+            assertEquals(1, resAfter.size());
 
-            Assert.assertEquals(resBefore, resAfter);
+            assertEquals(resBefore, resAfter);
 
             String plan = (String)run("EXPLAIN SELECT * FROM test WHERE id1 = 3 AND id2 = 4").get(0).get(0);
 
             String pkIdxName = "PUBLIC.\"_key_PK\"";
 
-            Assert.assertTrue("Query plan does not contain index '" + pkIdxName + "': plan=" + plan,
-                plan.contains(pkIdxName));
+            assertTrue(plan.contains(pkIdxName), "Query plan does not contain index '" + pkIdxName + "': plan=" + plan);
         }
         finally {
             run("DROP TABLE IF EXISTS test");

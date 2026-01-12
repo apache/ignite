@@ -40,8 +40,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Test index behavior when key is of plain Object type per indexing settings.
@@ -142,7 +144,7 @@ public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest
 
         // If this assertion fails, then we need to either correct the size of the rebalance batch,
         // or add rebalance throttling, or increase the size of the cache.
-        Assert.assertFalse("Nothing was inserted during rebalance.", after.isEmpty());
+        assertFalse(after.isEmpty(), "Nothing was inserted during rebalance.");
 
         fut.get(getTestTimeout());
 
@@ -154,7 +156,7 @@ public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest
             List<List<?>> res = cache.query(new SqlFieldsQuery("select _val from TestObject where _key = ?")
                 .setArgs(entry.getKey())).getAll();
 
-            Assert.assertEquals(createSingleColumnResult(exp), res);
+            assertEquals(createSingleColumnResult(exp), res);
         }
     }
 

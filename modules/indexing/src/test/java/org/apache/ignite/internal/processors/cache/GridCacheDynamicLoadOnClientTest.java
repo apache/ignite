@@ -37,8 +37,9 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test lazy cache start on client nodes with inmemory cache.
@@ -101,7 +102,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
 
             int[] updCnts = stmt.executeBatch();
 
-            assertEquals("Invalid update counts size", BATCH_SIZE, updCnts.length);
+            assertEquals(BATCH_SIZE, updCnts.length, "Invalid update counts size");
         }
     }
 
@@ -116,12 +117,12 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
              Statement stmt = con.createStatement()) {
             int cnt = stmt.executeUpdate(("DELETE " + FULL_TABLE_NAME + " WHERE _key=1"));
 
-            Assert.assertEquals(1, cnt);
+            assertEquals(1, cnt);
         }
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM " + FULL_TABLE_NAME);
 
-        Assert.assertEquals(CACHE_ELEMENT_COUNT - 1, getDefaultCacheOnClient().query(qry).getAll().size());
+        assertEquals(CACHE_ELEMENT_COUNT - 1, getDefaultCacheOnClient().query(qry).getAll().size());
     }
 
     /**
@@ -136,12 +137,12 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
             int cnt = stmt.executeUpdate(
                 "INSERT INTO " + FULL_TABLE_NAME + "(_key, name, orgId) VALUES(1000,'new_name', 10000)");
 
-            Assert.assertEquals(1, cnt);
+            assertEquals(1, cnt);
         }
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM " + FULL_TABLE_NAME);
 
-        Assert.assertEquals(CACHE_ELEMENT_COUNT + 1, getDefaultCacheOnClient().query(qry).getAll().size());
+        assertEquals(CACHE_ELEMENT_COUNT + 1, getDefaultCacheOnClient().query(qry).getAll().size());
     }
 
     /**
@@ -155,12 +156,12 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
              Statement stmt = con.createStatement()) {
             int cnt = stmt.executeUpdate(("UPDATE " + FULL_TABLE_NAME + " SET name = 'new_name'"));
 
-            Assert.assertEquals(CACHE_ELEMENT_COUNT, cnt);
+            assertEquals(CACHE_ELEMENT_COUNT, cnt);
         }
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM " + FULL_TABLE_NAME + " WHERE name = 'new_name'");
 
-        Assert.assertEquals(CACHE_ELEMENT_COUNT, getDefaultCacheOnClient().query(qry).getAll().size());
+        assertEquals(CACHE_ELEMENT_COUNT, getDefaultCacheOnClient().query(qry).getAll().size());
     }
 
     /**
@@ -176,7 +177,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
 
             rs.next();
 
-            Assert.assertEquals(CACHE_ELEMENT_COUNT, rs.getInt(1));
+            assertEquals(CACHE_ELEMENT_COUNT, rs.getInt(1));
         }
     }
 
@@ -187,7 +188,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     public void testClientPut() {
         clientNode.cache(PERSON_CACHE).put(-100, new Person(-100, "name-"));
 
-        Assert.assertEquals(CACHE_ELEMENT_COUNT + 1, clientNode.cache(PERSON_CACHE).size());
+        assertEquals(CACHE_ELEMENT_COUNT + 1, clientNode.cache(PERSON_CACHE).size());
     }
 
     /**
@@ -221,7 +222,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     public void testClientSqlFieldsQuery() {
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM " + FULL_TABLE_NAME);
 
-        Assert.assertEquals(CACHE_ELEMENT_COUNT, getDefaultCacheOnClient().query(qry).getAll().size());
+        assertEquals(CACHE_ELEMENT_COUNT, getDefaultCacheOnClient().query(qry).getAll().size());
     }
 
     /**
@@ -231,7 +232,7 @@ public class GridCacheDynamicLoadOnClientTest extends GridCommonAbstractTest {
     public void testClientSqlQuery() {
         SqlQuery<Integer, Person> qry = new SqlQuery<>(PERSON_CACHE, "FROM " + PERSON_CACHE);
 
-        Assert.assertEquals(CACHE_ELEMENT_COUNT, clientNode.getOrCreateCache(PERSON_CACHE).query(qry).getAll().size());
+        assertEquals(CACHE_ELEMENT_COUNT, clientNode.getOrCreateCache(PERSON_CACHE).query(qry).getAll().size());
     }
 
     /**

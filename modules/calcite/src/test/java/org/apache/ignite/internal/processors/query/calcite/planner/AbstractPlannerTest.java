@@ -510,7 +510,7 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
     /**
      * Predicate builder for "Instance of class" condition.
      */
-    protected <T extends RelNode> Predicate<T> isInstanceOf(Class<T> cls) {
+    protected <T> Predicate<T> isInstanceOf(Class<T> cls) {
         return node -> {
             if (cls.isInstance(node))
                 return true;

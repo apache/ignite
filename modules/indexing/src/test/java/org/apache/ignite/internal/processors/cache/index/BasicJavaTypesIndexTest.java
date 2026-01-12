@@ -43,13 +43,15 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.AFFINITY_KEY_IDX_NAME;
 import static org.apache.ignite.internal.processors.query.h2.H2TableDescriptor.PK_IDX_NAME;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Basic tests for different types of indexed data
@@ -83,7 +85,7 @@ public class BasicJavaTypesIndexTest extends AbstractIndexingCommonTest {
     }
 
     /** */
-    @Before
+    @BeforeEach
     public void clearState() {
         maxStrLen = 40;
     }
@@ -399,7 +401,7 @@ public class BasicJavaTypesIndexTest extends AbstractIndexingCommonTest {
             .map(e -> (Integer)e)
             .collect(Collectors.toList());
 
-        Assert.assertEquals(exp, act);
+        assertEquals(exp, act);
     }
 
     /**
@@ -416,9 +418,9 @@ public class BasicJavaTypesIndexTest extends AbstractIndexingCommonTest {
                 String.format(SELECT_VALUE_TEMPLATE, tblName, idxName, idxFieldName), entry.getKey()
             );
 
-            Assert.assertFalse("Result should not be empty", res.isEmpty());
-            Assert.assertFalse("Result should contain at least one column", res.get(0).isEmpty());
-            Assert.assertEquals(entry.getValue(), res.get(0).get(0));
+            assertFalse(res.isEmpty(), "Result should not be empty");
+            assertFalse(res.get(0).isEmpty(), "Result should contain at least one column");
+            assertEquals(entry.getValue(), res.get(0).get(0));
         }
     }
 

@@ -33,11 +33,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.engine.Session;
 import org.h2.result.SearchRow;
-import org.junit.Assert;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Arrays.asList;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Since sql (unlike cache api) doesn't remove expired rows, we need to check that expired rows are filtered by the
@@ -60,7 +60,7 @@ public class H2RowExpireTimeIndexSelfTest extends GridCommonAbstractTest {
     /**
      * Cleans up before test.
      */
-    @Before
+    @BeforeEach
     public void dropTestCache() {
         grid(0).destroyCache("notEager");
     }
@@ -140,14 +140,14 @@ public class H2RowExpireTimeIndexSelfTest extends GridCommonAbstractTest {
         {
             List<List<?>> expired = cache.query(new SqlFieldsQuery("SELECT * FROM \"notEager\".Integer where _key = 42")).getAll();
 
-            Assert.assertTrue("Expired row should not be returned by sql. Result = " + expired, expired.isEmpty());
+            assertTrue(expired.isEmpty(), "Expired row should not be returned by sql. Result = " + expired);
         }
 
         {
             List<List<?>> expired =
                 cache.query(new SqlFieldsQuery("SELECT * FROM \"notEager\".Integer where id >= 42 and id <= 42")).getAll();
 
-            Assert.assertTrue("Expired row should not be returned by sql. Result = " + expired, expired.isEmpty());
+            assertTrue(expired.isEmpty(), "Expired row should not be returned by sql. Result = " + expired);
         }
 
         {
@@ -191,7 +191,7 @@ public class H2RowExpireTimeIndexSelfTest extends GridCommonAbstractTest {
         {
             List<List<?>> expired = cache.query(new SqlFieldsQuery("SELECT * FROM \"notEager\".Integer WHERE id >= 42")).getAll();
 
-            Assert.assertTrue("Expired row should not be returned by sql. Result = " + expired, expired.isEmpty());
+            assertTrue(expired.isEmpty(), "Expired row should not be returned by sql. Result = " + expired);
         }
     }
 
@@ -225,7 +225,7 @@ public class H2RowExpireTimeIndexSelfTest extends GridCommonAbstractTest {
         List<List<?>> expired = cache.query(new SqlFieldsQuery(
             "SELECT * FROM \"notEager\".Integer USE INDEX (\"_key_PK_hash\") WHERE id >= 42 and id <= 42")).getAll();
 
-        Assert.assertTrue("Expired row should not be returned by sql. Result = " + expired, expired.isEmpty());
+        assertTrue(expired.isEmpty(), "Expired row should not be returned by sql. Result = " + expired);
     }
 
 }
