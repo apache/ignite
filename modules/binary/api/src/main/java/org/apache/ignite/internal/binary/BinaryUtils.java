@@ -1673,6 +1673,17 @@ public class BinaryUtils {
      *
      * @param in Input stream.
      * @param ctx Binary context.
+     * @return Enum.
+     */
+    static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx) {
+        return doReadBinaryEnum(in, ctx, doReadEnumType(in));
+    }
+
+    /**
+     * Read binary enum.
+     *
+     * @param in Input stream.
+     * @param ctx Binary context.
      * @param type Plain type.
      * @return Enum.
      */
@@ -3093,7 +3104,7 @@ public class BinaryUtils {
      * @param order Order.
      */
     public static int fieldId(BinaryReaderEx reader, int order) {
-        return reader.getOrCreateSchema().fieldId(order);
+        return ((BinaryReaderExImpl)reader).getOrCreateSchema().fieldId(order);
     }
 
     /**

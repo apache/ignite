@@ -35,7 +35,6 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.CommonUtils;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.marshaller.Marshallers;
 import org.jetbrains.annotations.Nullable;
@@ -340,8 +339,11 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         out.write(val, off, len);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeBinaryArray(BinaryArray val) throws BinaryObjectException {
+    /**
+     * @param val Array wrapper.
+     * @throws BinaryObjectException In case of error.
+     */
+    void writeBinaryArray(BinaryArray val) throws BinaryObjectException {
         if (val.array() == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -365,9 +367,11 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeBinaryEnum(BinaryObjectEx val) {
-        assert val instanceof BinaryEnumObjectImpl;
+    /**
+     * @param val Value.
+     */
+    void writeBinaryEnum(BinaryEnumObjectImpl val) {
+        assert val != null;
 
         int typeId = val.typeId();
 
@@ -390,8 +394,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeProxy(Proxy proxy, Class<?>[] intfs) {
+    /**
+     * @param proxy Proxy.
+     */
+    public void writeProxy(Proxy proxy, Class<?>[] intfs) {
         if (proxy == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -438,8 +444,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
             writeByteFieldPrimitive(val);
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeClass(@Nullable Class val) {
+    /**
+     * @param val Class.
+     */
+    void writeClass(@Nullable Class val) {
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
@@ -1289,8 +1297,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         doWriteEnumArray(val);
     }
 
-    /** {@inheritDoc} */
-    @Override public void doWriteEnumArray(@Nullable Object[] val) {
+    /**
+     * @param val Array.
+     */
+    void doWriteEnumArray(@Nullable Object[] val) {
         assert val == null || val.getClass().getComponentType().isEnum();
 
         if (val == null)
@@ -1490,8 +1500,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         return written;
     }
 
-    /** {@inheritDoc} */
-    @Override public void schemaId(int schemaId) {
+    /**
+     * @param schemaId Schema ID.
+     */
+    public void schemaId(int schemaId) {
         this.schemaId = schemaId;
     }
 
@@ -1500,8 +1512,10 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         return schemaId;
     }
 
-    /** {@inheritDoc} */
-    @Override public BinarySchema currentSchema() {
+    /**
+     * @return Current writer's schema.
+     */
+    BinarySchema currentSchema() {
         BinarySchema.Builder builder = BinarySchema.Builder.newBuilder();
 
         if (schema != null)
@@ -1523,8 +1537,13 @@ class BinaryWriterExImpl implements BinaryWriterEx {
         return handles;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean tryWriteAsHandle(Object obj) {
+    /**
+     * Attempts to write the object as a handle.
+     *
+     * @param obj Object to write.
+     * @return {@code true} if the object has been written as a handle.
+     */
+    boolean tryWriteAsHandle(Object obj) {
         assert obj != null;
 
         int pos = out.position();
@@ -1566,283 +1585,5 @@ class BinaryWriterExImpl implements BinaryWriterEx {
 
         if (clearHandler)
             this.handles = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeField(Object obj, BinaryFieldAccessor fld) throws BinaryObjectException {
-        writeFieldIdNoSchemaUpdate(fld.id);
-        switch (fld.mode) {
-            case P_BYTE:
-                writeByteFieldPrimitive(GridUnsafe.getByteField(obj, fld.offset));
-
-            case P_BOOLEAN:
-                writeBooleanFieldPrimitive(GridUnsafe.getBooleanField(obj, fld.offset));
-
-            case P_SHORT:
-                writeShortFieldPrimitive(GridUnsafe.getShortField(obj, fld.offset));
-
-            case P_CHAR:
-                writeCharFieldPrimitive(GridUnsafe.getCharField(obj, fld.offset));
-
-            case P_INT:
-                writeIntFieldPrimitive(GridUnsafe.getIntField(obj, fld.offset));
-
-            case P_LONG:
-                writeLongFieldPrimitive(GridUnsafe.getLongField(obj, fld.offset));
-
-            case P_FLOAT:
-                writeFloatFieldPrimitive(GridUnsafe.getFloatField(obj, fld.offset));
-
-            case P_DOUBLE:
-                writeDoubleFieldPrimitive(GridUnsafe.getDoubleField(obj, fld.offset));
-
-            case BYTE:
-            case BOOLEAN:
-            case SHORT:
-            case CHAR:
-            case INT:
-            case LONG:
-            case FLOAT:
-            case DOUBLE:
-            case DECIMAL:
-            case STRING:
-            case UUID:
-            case DATE:
-            case TIMESTAMP:
-            case TIME:
-            case BYTE_ARR:
-            case SHORT_ARR:
-            case INT_ARR:
-            case LONG_ARR:
-            case FLOAT_ARR:
-            case DOUBLE_ARR:
-            case CHAR_ARR:
-            case BOOLEAN_ARR:
-            case DECIMAL_ARR:
-            case STRING_ARR:
-            case UUID_ARR:
-            case DATE_ARR:
-            case TIMESTAMP_ARR:
-            case TIME_ARR:
-            case ENUM_ARR:
-            case OBJECT_ARR:
-            case BINARY_OBJ:
-            case BINARY:
-            default:
-                assert obj != null;
-
-                Object val;
-
-                try {
-                    val = fld.field.get(obj);
-                }
-                catch (IllegalAccessException e) {
-                    throw new BinaryObjectException("Failed to get value for field: " + fld.field, e);
-                }
-
-                switch (mode(fld, val)) {
-                    case BYTE:
-                        writeByteField((Byte)val);
-
-                        break;
-
-                    case SHORT:
-                        writeShortField((Short)val);
-
-                        break;
-
-                    case INT:
-                        writeIntField((Integer)val);
-
-                        break;
-
-                    case LONG:
-                        writeLongField((Long)val);
-
-                        break;
-
-                    case FLOAT:
-                        writeFloatField((Float)val);
-
-                        break;
-
-                    case DOUBLE:
-                        writeDoubleField((Double)val);
-
-                        break;
-
-                    case CHAR:
-                        writeCharField((Character)val);
-
-                        break;
-
-                    case BOOLEAN:
-                        writeBooleanField((Boolean)val);
-
-                        break;
-
-                    case DECIMAL:
-                        writeDecimal((BigDecimal)val);
-
-                        break;
-
-                    case STRING:
-                        writeString((String)val);
-
-                        break;
-
-                    case UUID:
-                        writeUuid((UUID)val);
-
-                        break;
-
-                    case DATE:
-                        writeDate((Date)val);
-
-                        break;
-
-                    case TIMESTAMP:
-                        writeTimestamp((Timestamp)val);
-
-                        break;
-
-                    case TIME:
-                        writeTime((Time)val);
-
-                        break;
-
-                    case BYTE_ARR:
-                        writeByteArray((byte[])val);
-
-                        break;
-
-                    case SHORT_ARR:
-                        writeShortArray((short[])val);
-
-                        break;
-
-                    case INT_ARR:
-                        writeIntArray((int[])val);
-
-                        break;
-
-                    case LONG_ARR:
-                        writeLongArray((long[])val);
-
-                        break;
-
-                    case FLOAT_ARR:
-                        writeFloatArray((float[])val);
-
-                        break;
-
-                    case DOUBLE_ARR:
-                        writeDoubleArray((double[])val);
-
-                        break;
-
-                    case CHAR_ARR:
-                        writeCharArray((char[])val);
-
-                        break;
-
-                    case BOOLEAN_ARR:
-                        writeBooleanArray((boolean[])val);
-
-                        break;
-
-                    case DECIMAL_ARR:
-                        writeDecimalArray((BigDecimal[])val);
-
-                        break;
-
-                    case STRING_ARR:
-                        writeStringArray((String[])val);
-
-                        break;
-
-                    case UUID_ARR:
-                        writeUuidArray((UUID[])val);
-
-                        break;
-
-                    case DATE_ARR:
-                        writeDateArray((Date[])val);
-
-                        break;
-
-                    case TIMESTAMP_ARR:
-                        writeTimestampArray((Timestamp[])val);
-
-                        break;
-
-                    case TIME_ARR:
-                        writeTimeArray((Time[])val);
-
-                        break;
-
-                    case OBJECT_ARR:
-                        writeObjectArray((Object[])val);
-
-                        break;
-
-                    case COL:
-                        writeCollection((Collection<?>)val);
-
-                        break;
-
-                    case MAP:
-                        writeMap((Map<?, ?>)val);
-
-                        break;
-
-                    case BINARY_OBJ:
-                        writeBinaryObject((BinaryObjectImpl)val);
-
-                        break;
-
-                    case ENUM:
-                        writeEnum((Enum<?>)val);
-
-                        break;
-
-                    case BINARY_ENUM:
-                        writeBinaryEnum((BinaryEnumObjectImpl)val);
-
-                        break;
-
-                    case ENUM_ARR:
-                        doWriteEnumArray((Object[])val);
-
-                        break;
-
-                    case BINARY:
-                    case OBJECT:
-                    case PROXY:
-                        writeObject(val);
-
-                        break;
-
-                    case CLASS:
-                        writeClass((Class)val);
-
-                        break;
-
-                    default:
-                        assert false : "Invalid mode: " + fld.mode;
-                }
-        }
-
-    }
-
-    /**
-     * @param fld Field.
-     * @param val Val to get write mode for.
-     * @return Write mode.
-     */
-    protected BinaryWriteMode mode(BinaryFieldAccessor fld, Object val) {
-        return fld.dynamic ?
-            val == null ? BinaryWriteMode.OBJECT : BinaryUtils.mode(val.getClass()) :
-            fld.mode;
     }
 }

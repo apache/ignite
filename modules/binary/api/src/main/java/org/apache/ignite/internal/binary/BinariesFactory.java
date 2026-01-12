@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.lang.reflect.Field;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.jetbrains.annotations.Nullable;
@@ -89,13 +88,4 @@ public interface BinariesFactory {
      * @return Writer instance.
      */
     public BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema);
-
-    /**
-     * Create accessor for the field.
-     *
-     * @param field Field.
-     * @param id FIeld ID.
-     * @return Accessor.
-     */
-    public BinaryFieldAccessor create(Field field, int id);
 }

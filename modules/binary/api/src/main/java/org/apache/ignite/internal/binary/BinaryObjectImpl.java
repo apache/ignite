@@ -743,7 +743,7 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
 
     /** {@inheritDoc} */
     @Override BinarySchema createSchema() {
-        return reader(null, false).getOrCreateSchema();
+        return ((BinaryReaderExImpl)reader(null, false)).getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
