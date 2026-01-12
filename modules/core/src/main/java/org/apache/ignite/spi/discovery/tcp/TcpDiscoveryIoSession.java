@@ -92,6 +92,9 @@ public class TcpDiscoveryIoSession {
     /** Intermediate buffer for serializing discovery messages. */
     private final ByteBuffer msgBuf;
 
+    /** */
+    private byte[] unprocessedReadTail;
+
     /**
      * Creates a new discovery I/O session bound to the given socket.
      *
@@ -187,6 +190,12 @@ public class TcpDiscoveryIoSession {
             msgBuf.clear();
 
             do {
+                if (unprocessedReadTail != null) {
+                    msgBuf.put(unprocessedReadTail);
+
+                    unprocessedReadTail = null;
+                }
+
                 int read = in.read(msgBuf.array(), msgBuf.position(), msgBuf.remaining());
 
                 if (read == -1)
@@ -203,26 +212,20 @@ public class TcpDiscoveryIoSession {
 
                 finished = msgSer.readFrom(msg, msgReader);
 
-                // We rely on the fact that Discovery only sends next message upon receiving a receipt for the previous one.
+                // Server Discovery only sends next message to next Server upon receiving a receipt for the previous one.
                 // This behaviour guarantees that we never read a next message from the buffer right after the end of
-                // the previous message.
-                assert msgBuf.remaining() == 0 || !finished : "Some data was read from the socket but left unprocessed.";
+                // the previous message. But it is not guaranteed for clients where messages aren't acknowledged.
+                // Thus, we have to keep the uprocessed bytes read from the socket. It won't return them again.
+                if (msgBuf.remaining() > 0) {
+                    unprocessedReadTail = new byte[msgBuf.remaining()];
+
+                    msgBuf.get(unprocessedReadTail, 0, msgBuf.remaining());
+                }
 
                 if (finished)
                     break;
 
-                // We must keep the uprocessed bytes read from the socket. It won't return them again.
-                byte[] unprocessedTail = null;
-
-                if (msgBuf.remaining() > 0) {
-                    unprocessedTail = new byte[msgBuf.remaining()];
-                    msgBuf.get(unprocessedTail, 0, msgBuf.remaining());
-                }
-
                 msgBuf.clear();
-
-                if (unprocessedTail != null)
-                    msgBuf.put(unprocessedTail);
             }
             while (true);
 
