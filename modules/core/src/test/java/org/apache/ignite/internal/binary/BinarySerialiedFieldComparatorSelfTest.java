@@ -478,14 +478,49 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
      * @param expRes Expected result.
      */
     private void compareSingle(BinaryObjectExImpl first, BinaryObjectExImpl second, boolean expRes) {
-        BinarySerializedFieldComparator firstComp = first.createFieldComparator();
-        BinarySerializedFieldComparator secondComp = second.createFieldComparator();
+        BinarySerializedFieldComparator firstComp = comparator(first);
+        BinarySerializedFieldComparator secondComp = comparator(second);
 
         // Compare expected result.
         firstComp.findField(singleFieldOrder(first));
         secondComp.findField(singleFieldOrder(second));
 
         assertEquals(expRes, BinarySerializedFieldComparator.equals(firstComp, secondComp));
+    }
+
+    /** */
+    private BinarySerializedFieldComparator comparator(BinaryObjectExImpl obj0) {
+        int start = obj0.start();
+
+        if (obj0 instanceof BinaryObjectOffheapImpl) {
+            long ptr = obj0.offheapAddress();
+
+            int schemaOff = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
+
+            short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
+
+            int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
+            int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
+
+            int orderBase = start + schemaOff + fieldIdLen;
+            int orderMultiplier = fieldIdLen + fieldOffLen;
+
+            return new BinarySerializedFieldComparator(obj0, null, ptr, start, orderBase, orderMultiplier, fieldOffLen);
+        }
+
+        byte[] arr = obj0.bytes();
+
+        int schemaOff = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
+
+        short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
+
+        int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
+        int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
+
+        int orderBase = start + schemaOff + fieldIdLen;
+        int orderMultiplier = fieldIdLen + fieldOffLen;
+
+        return new BinarySerializedFieldComparator(obj0, arr, 0L, start, orderBase, orderMultiplier, fieldOffLen);
     }
 
     /**

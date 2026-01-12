@@ -395,21 +395,6 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public BinarySerializedFieldComparator createFieldComparator() {
-        int schemaOff = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
-
-        short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
-
-        int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
-        int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
-
-        int orderBase = start + schemaOff + fieldIdLen;
-        int orderMultiplier = fieldIdLen + fieldOffLen;
-
-        return new BinarySerializedFieldComparator(this, arr, 0L, start, orderBase, orderMultiplier, fieldOffLen);
-    }
-
-    /** {@inheritDoc} */
     @Override public int dataStartOffset() {
         int typeId = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.TYPE_ID_POS);
 

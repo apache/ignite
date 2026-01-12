@@ -68,7 +68,7 @@ class BinarySerializedFieldComparator {
      * @param orderMultiplier Order multiplier.
      * @param fieldOffLen Field offset length.
      */
-    public BinarySerializedFieldComparator(BinaryObjectExImpl obj, byte[] arr, long ptr, int startOff, int orderBase,
+    BinarySerializedFieldComparator(BinaryObjectExImpl obj, byte[] arr, long ptr, int startOff, int orderBase,
         int orderMultiplier, int fieldOffLen) {
         assert arr != null && ptr == 0L || arr == null && ptr != 0L;
 

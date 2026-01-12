@@ -94,13 +94,6 @@ abstract class BinaryObjectExImpl implements BinaryObjectEx {
     @Nullable public abstract <F> F fieldByOrder(int order);
 
     /**
-     * Create field comparator.
-     *
-     * @return Comparator.
-     */
-    public abstract BinarySerializedFieldComparator createFieldComparator();
-
-    /**
      * Writes field value defined by the given field offset to the given byte buffer.
      *
      * @param fieldOffset Field offset.
