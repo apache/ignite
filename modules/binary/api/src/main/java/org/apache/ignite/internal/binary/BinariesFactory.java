@@ -43,7 +43,7 @@ public interface BinariesFactory {
      * @param in Input stream.
      * @param ldr Class loader.
      * @param hnds Context.
-     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
+     * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      */
     public BinaryReaderEx reader(BinaryContext ctx,
                                  BinaryInputStream in,
@@ -59,7 +59,7 @@ public interface BinariesFactory {
      * @param ldr Class loader.
      * @param hnds Context.
      * @param skipHdrCheck Whether to skip header check.
-     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
+     * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      */
     public BinaryReaderEx reader(BinaryContext ctx,
                                  BinaryInputStream in,
