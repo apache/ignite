@@ -27,6 +27,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -342,7 +343,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
     @Override public int putValue(long addr) throws IgniteCheckedException {
         assert valBytes != null : "Value bytes must be initialized before object is stored";
 
-        return CacheObjectUtils.putValue(addr, cacheObjectType(), valBytes);
+        return PageUtils.putValue(addr, cacheObjectType(), valBytes);
     }
 
     /** {@inheritDoc} */
