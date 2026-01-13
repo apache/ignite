@@ -34,11 +34,11 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
-import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.CacheObjectUnsafeUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.Marshallers;
@@ -202,8 +202,8 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public int putValue(long addr) throws IgniteCheckedException {
-        return PageUtils.putValue(addr, cacheObjectType(), valBytes, 0, valBytes.length);
+    @Override public int putValue(long addr) {
+        return CacheObjectUnsafeUtils.putValue(addr, cacheObjectType(), valBytes, 0, valBytes.length);
     }
 
     /** {@inheritDoc} */
