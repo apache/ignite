@@ -26,7 +26,7 @@ class BinaryFieldDescriptor {
     /** Field ID. */
     final int id;
 
-    /** Field name */
+    /** Field name. */
     final String name;
 
     /** Mode. */
@@ -46,8 +46,8 @@ class BinaryFieldDescriptor {
      *
      * @param field Field.
      * @param id Field ID.
-     * @param mode Mode;
-     * @param offset Offset of the field in the byte array
+     * @param mode Mode.
+     * @param offset Offset of the field in the byte array.
      * @param dynamic If {@code true} then field is not final.
      */
     protected BinaryFieldDescriptor(Field field, int id, BinaryWriteMode mode, long offset, boolean dynamic) {
