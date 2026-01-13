@@ -91,11 +91,8 @@ public class TcpDiscoveryIoSession {
     /** Buffered socket input stream. */
     private final PrefixedBufferedInputStream in;
 
-    /** Intermediate buffer for deserializing discovery messages. */
-    private final ByteBuffer msgInBuf;
-
     /** Intermediate buffer for serializing discovery messages. */
-    private final ByteBuffer msgOutBuf;
+    private final ByteBuffer msgBuf;
 
     /**
      * Creates a new discovery I/O session bound to the given socket.
@@ -110,8 +107,7 @@ public class TcpDiscoveryIoSession {
 
         clsLdr = U.resolveClassLoader(spi.ignite().configuration());
 
-        msgInBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
-        msgOutBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
+        msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
 
         msgWriter = new DirectMessageWriter(spi.messageFactory());
         msgReader = new DirectMessageReader(spi.messageFactory(), null);
@@ -167,8 +163,6 @@ public class TcpDiscoveryIoSession {
      * @throws IgniteCheckedException If deserialization fails.
      */
     <T> T readMessage() throws IgniteCheckedException, IOException {
-        ByteBuffer msgBuf = msgInBuf;
-
         byte serMode = (byte)in.read();
 
         if (JAVA_SERIALIZATION == serMode)
@@ -281,8 +275,6 @@ public class TcpDiscoveryIoSession {
      * @throws IOException If serialization fails.
      */
     private void serializeMessage(Message m, OutputStream out) throws IOException {
-        ByteBuffer msgBuf = msgOutBuf;
-
         MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
 
         msgWriter.reset();
@@ -338,7 +330,7 @@ public class TcpDiscoveryIoSession {
         }
 
         /** {@inheritDoc} */
-        @Override public synchronized int read() throws IOException {
+        @Override public int read() throws IOException {
             if (prefixBytesLeft() > 0) {
                 int res = bais.read();
 
@@ -353,7 +345,6 @@ public class TcpDiscoveryIoSession {
         /** */
         private int prefixBytesLeft() {
             return bais == null ? 0 : bais.available();
-            //return prefixBuf.length - prefOffset;
         }
 
         /** */
@@ -369,24 +360,6 @@ public class TcpDiscoveryIoSession {
             if (len0 == len)
                 return len0;
 
-//            int len0 = 0;
-//
-//            if (len > b.length - off)
-//                len = b.length - off;
-//
-//            if (prefLeft() > 0) {
-//                len0 = Math.min(len, prefLeft());
-//
-//                System.arraycopy(prefixBuf, prefOffset, b, off, len0);
-//
-//                prefOffset += len0;
-//
-//                assert prefLeft() >= 0;
-//
-//                if (len0 == len)
-//                    return len0;
-//            }
-//
             return len0 + super.read(b, off + len0, len - len0);
         }
 
