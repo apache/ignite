@@ -89,7 +89,7 @@ class BinaryClassDescriptor {
     private final String affKeyFieldName;
 
     /** */
-    private final Constructor<?> ctor;
+    final Constructor<?> ctor;
 
     /** */
     final BinaryFieldDescriptor[] fields;
@@ -1002,14 +1002,6 @@ class BinaryClassDescriptor {
         // No need to call "postWriteHashCode" here because we do not care about hash code.
         if (postWriteRequired)
             writer.postWriteHashCode(registered ? null : cls.getName());
-    }
-
-    /**
-     * @return Instance.
-     * @throws BinaryObjectException In case of error.
-     */
-    Object newInstance() throws BinaryObjectException {
-        return BinaryUtils.binariesFactory.newInstance(ctor, cls);
     }
 
     /** */

@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.ToIntFunction;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
@@ -148,16 +145,6 @@ public class BinariesFactoryImpl implements BinariesFactory {
 
             default:
                 return new BinaryFieldDescriptor(field, id, mode, -1L, !CommonUtils.isFinal(field.getType()));
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object newInstance(@Nullable Constructor<?> ctor, Class<?> cls) throws BinaryObjectException {
-        try {
-            return ctor != null ? ctor.newInstance() : GridUnsafe.allocateInstance(cls);
-        }
-        catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
-            throw new BinaryObjectException("Failed to instantiate instance: " + cls, e);
         }
     }
 

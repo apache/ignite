@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.sql.Time;
@@ -2371,7 +2372,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
 
             switch (desc.mode) {
                 case BINARY:
-                    res = desc.newInstance();
+                    res = newInstance(desc.ctor, desc.cls);
 
                     setHandle(res);
 
@@ -2383,7 +2384,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                     break;
 
                 case OBJECT:
-                    res = desc.newInstance();
+                    res = newInstance(desc.ctor, desc.cls);
 
                     setHandle(res);
 
@@ -2747,6 +2748,21 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      */
     private static BinaryObjectEx doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx) {
         return BinaryUtils.doReadBinaryEnum(in, ctx, BinaryUtils.doReadEnumType(in));
+    }
+
+    /**
+     * @param ctor Constructor.
+     * @param cls Class.
+     * @return Instance.
+     * @throws BinaryObjectException In case of error.
+     */
+    private static Object newInstance(@Nullable Constructor<?> ctor, Class<?> cls) throws BinaryObjectException {
+        try {
+            return ctor != null ? ctor.newInstance() : GridUnsafe.allocateInstance(cls);
+        }
+        catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
+            throw new BinaryObjectException("Failed to instantiate instance: " + cls, e);
+        }
     }
 
     /**

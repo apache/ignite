@@ -17,12 +17,10 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.function.ToIntFunction;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
@@ -105,14 +103,6 @@ public interface BinariesFactory {
      * @return Accessor.
      */
     public BinaryFieldDescriptor create(Field field, int id);
-
-    /**
-     * @param ctor Constructor.
-     * @param cls Class.
-     * @return Instance.
-     * @throws BinaryObjectException In case of error.
-     */
-    public Object newInstance(Constructor<?> ctor, Class<?> cls) throws BinaryObjectException;
 
     /**
      * Creates binary enum.
