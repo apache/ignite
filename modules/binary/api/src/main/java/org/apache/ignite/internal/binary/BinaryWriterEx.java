@@ -211,7 +211,7 @@ public interface BinaryWriterEx extends BinaryWriter, BinaryRawWriter, ObjectOut
      * @param fld Field.
      * @throws BinaryObjectException If failed.
      */
-    public void writeField(Object obj, BinaryFieldAccessor fld) throws BinaryObjectException;
+    public void writeField(Object obj, BinaryFieldDescriptor fld) throws BinaryObjectException;
 
     /**
      * @return Current writer's schema.

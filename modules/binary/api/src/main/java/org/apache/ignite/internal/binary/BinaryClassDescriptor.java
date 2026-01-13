@@ -92,7 +92,7 @@ class BinaryClassDescriptor {
     private final Constructor<?> ctor;
 
     /** */
-    final BinaryFieldAccessor[] fields;
+    final BinaryFieldDescriptor[] fields;
 
     /** Write replacer. */
     private final BinaryWriteReplacer writeReplacer;
@@ -326,7 +326,7 @@ class BinaryClassDescriptor {
                     stableSchema = null;
                 }
                 else {
-                    Map<Object, BinaryFieldAccessor> fields0;
+                    Map<Object, BinaryFieldDescriptor> fields0;
 
                     if (BinaryUtils.FIELDS_SORTED_ORDER) {
                         fields0 = new TreeMap<>();
@@ -363,7 +363,7 @@ class BinaryClassDescriptor {
                                 if (!ids.add(fieldId))
                                     throw new BinaryObjectException("Duplicate field ID: " + name);
 
-                                BinaryFieldAccessor fieldInfo = BinaryUtils.binariesFactory.create(f, fieldId);
+                                BinaryFieldDescriptor fieldInfo = BinaryUtils.binariesFactory.create(f, fieldId);
 
                                 fields0.put(name, fieldInfo);
 
@@ -373,11 +373,11 @@ class BinaryClassDescriptor {
                         }
                     }
 
-                    fields = fields0.values().toArray(new BinaryFieldAccessor[fields0.size()]);
+                    fields = fields0.values().toArray(new BinaryFieldDescriptor[fields0.size()]);
 
                     BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
 
-                    for (BinaryFieldAccessor field : fields)
+                    for (BinaryFieldDescriptor field : fields)
                         schemaBuilder.addField(field.id);
 
                     stableSchema = schemaBuilder.build();
@@ -868,7 +868,7 @@ class BinaryClassDescriptor {
 
                     if (preWrite(writer, obj)) {
                         try {
-                            for (BinaryFieldAccessor info : fields) {
+                            for (BinaryFieldDescriptor info : fields) {
                                 try {
                                     writer.writeField(obj, info);
                                 }

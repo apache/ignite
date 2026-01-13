@@ -20,34 +20,37 @@ package org.apache.ignite.internal.binary;
 import java.lang.reflect.Field;
 
 /**
- * Field accessor to speedup access.
+ * Field descriptor.
  */
-class BinaryFieldAccessor {
+class BinaryFieldDescriptor {
     /** Field ID. */
-    protected final int id;
+    final int id;
 
-    /** Field name */
-    protected final String name;
+    /** Field name. */
+    final String name;
 
     /** Mode. */
-    protected final BinaryWriteMode mode;
+    final BinaryWriteMode mode;
 
     /** Offset. Used for primitive fields, only. */
-    protected final long offset;
+    final long offset;
 
     /** Target field. */
-    protected final Field field;
+    final Field field;
 
     /** Dynamic accessor flag. */
-    protected final boolean dynamic;
+    final boolean dynamic;
 
     /**
      * Protected constructor.
      *
+     * @param field Field.
      * @param id Field ID.
-     * @param mode Mode;
+     * @param mode Mode.
+     * @param offset Offset of the field in the byte array.
+     * @param dynamic If {@code true} then field is not final.
      */
-    protected BinaryFieldAccessor(Field field, int id, BinaryWriteMode mode, long offset, boolean dynamic) {
+    protected BinaryFieldDescriptor(Field field, int id, BinaryWriteMode mode, long offset, boolean dynamic) {
         assert field != null;
         assert id != 0;
         assert mode != null;

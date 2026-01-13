@@ -2363,7 +2363,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @return Object.
      * @throws BinaryObjectException If failed.
      */
-    Object read(BinaryClassDescriptor desc) throws BinaryObjectException {
+    private Object read(BinaryClassDescriptor desc) throws BinaryObjectException {
         try {
             assert desc.mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + desc.cls.getName();
 
@@ -2387,7 +2387,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
 
                     setHandle(res);
 
-                    for (BinaryFieldAccessor info : desc.fields)
+                    for (BinaryFieldDescriptor info : desc.fields)
                         readField(res, info);
 
                     break;
@@ -2438,32 +2438,48 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @param fld Field info.
      * @throws BinaryObjectException If failed.
      */
-    private void readField(Object obj, BinaryFieldAccessor fld) {
+    private void readField(Object obj, BinaryFieldDescriptor fld) {
         try {
             switch (fld.mode) {
                 case P_BYTE:
                     GridUnsafe.putByteField(obj, fld.offset, readByte(fld.id));
 
+                    break;
+
                 case P_BOOLEAN:
                     GridUnsafe.putBooleanField(obj, fld.offset, readBoolean(fld.id));
+
+                    break;
 
                 case P_SHORT:
                     GridUnsafe.putShortField(obj, fld.offset, readShort(fld.id));
 
+                    break;
+
                 case P_CHAR:
                     GridUnsafe.putCharField(obj, fld.offset, readChar(fld.id));
+
+                    break;
 
                 case P_INT:
                     GridUnsafe.putIntField(obj, fld.offset, readInt(fld.id));
 
+                    break;
+
                 case P_LONG:
                     GridUnsafe.putLongField(obj, fld.offset, readLong(fld.id));
+
+                    break;
 
                 case P_FLOAT:
                     GridUnsafe.putFloatField(obj, fld.offset, readFloat(fld.id));
 
+                    break;
+
                 case P_DOUBLE:
                     GridUnsafe.putDoubleField(obj, fld.offset, readDouble(fld.id));
+
+                    break;
 
                 case BYTE:
                 case BOOLEAN:
@@ -2525,7 +2541,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @return Read value.
      * @throws BinaryObjectException If failed to read value from the stream.
      */
-    protected Object readFixedType(BinaryFieldAccessor fld) throws BinaryObjectException {
+    protected Object readFixedType(BinaryFieldDescriptor fld) throws BinaryObjectException {
         Object val = null;
 
         switch (fld.mode) {

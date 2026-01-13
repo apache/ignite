@@ -1569,32 +1569,49 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeField(Object obj, BinaryFieldAccessor fld) throws BinaryObjectException {
+    @Override public void writeField(Object obj, BinaryFieldDescriptor fld) throws BinaryObjectException {
         writeFieldIdNoSchemaUpdate(fld.id);
+
         switch (fld.mode) {
             case P_BYTE:
                 writeByteFieldPrimitive(GridUnsafe.getByteField(obj, fld.offset));
 
+                break;
+
             case P_BOOLEAN:
                 writeBooleanFieldPrimitive(GridUnsafe.getBooleanField(obj, fld.offset));
+
+                break;
 
             case P_SHORT:
                 writeShortFieldPrimitive(GridUnsafe.getShortField(obj, fld.offset));
 
+                break;
+
             case P_CHAR:
                 writeCharFieldPrimitive(GridUnsafe.getCharField(obj, fld.offset));
+
+                break;
 
             case P_INT:
                 writeIntFieldPrimitive(GridUnsafe.getIntField(obj, fld.offset));
 
+                break;
+
             case P_LONG:
                 writeLongFieldPrimitive(GridUnsafe.getLongField(obj, fld.offset));
+
+                break;
 
             case P_FLOAT:
                 writeFloatFieldPrimitive(GridUnsafe.getFloatField(obj, fld.offset));
 
+                break;
+
             case P_DOUBLE:
                 writeDoubleFieldPrimitive(GridUnsafe.getDoubleField(obj, fld.offset));
+
+                break;
 
             case BYTE:
             case BOOLEAN:
@@ -1807,7 +1824,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
                         break;
 
                     case BINARY_ENUM:
-                        writeBinaryEnum((BinaryEnumObjectImpl)val);
+                        writeBinaryEnum((BinaryObjectEx)val);
 
                         break;
 
@@ -1832,7 +1849,6 @@ class BinaryWriterExImpl implements BinaryWriterEx {
                         assert false : "Invalid mode: " + fld.mode;
                 }
         }
-
     }
 
     /**
@@ -1840,7 +1856,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
      * @param val Val to get write mode for.
      * @return Write mode.
      */
-    protected BinaryWriteMode mode(BinaryFieldAccessor fld, Object val) {
+    protected BinaryWriteMode mode(BinaryFieldDescriptor fld, Object val) {
         return fld.dynamic ?
             val == null ? BinaryWriteMode.OBJECT : BinaryUtils.mode(val.getClass()) :
             fld.mode;

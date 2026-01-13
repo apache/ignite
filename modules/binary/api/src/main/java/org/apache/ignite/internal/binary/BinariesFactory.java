@@ -49,7 +49,7 @@ public interface BinariesFactory {
      * @param in Input stream.
      * @param ldr Class loader.
      * @param hnds Context.
-     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
+     * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      */
     public BinaryReaderEx reader(BinaryContext ctx,
                                  BinaryInputStream in,
@@ -65,7 +65,7 @@ public interface BinariesFactory {
      * @param ldr Class loader.
      * @param hnds Context.
      * @param skipHdrCheck Whether to skip header check.
-     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
+     * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      */
     public BinaryReaderEx reader(BinaryContext ctx,
                                  BinaryInputStream in,
@@ -92,6 +92,7 @@ public interface BinariesFactory {
     /**
      * @param ctx Context.
      * @param out Output stream.
+     * @param schema Schema holder
      * @return Writer instance.
      */
     public BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema);
@@ -100,10 +101,10 @@ public interface BinariesFactory {
      * Create accessor for the field.
      *
      * @param field Field.
-     * @param id FIeld ID.
+     * @param id Field ID.
      * @return Accessor.
      */
-    public BinaryFieldAccessor create(Field field, int id);
+    public BinaryFieldDescriptor create(Field field, int id);
 
     /**
      * @param ctor Constructor.
