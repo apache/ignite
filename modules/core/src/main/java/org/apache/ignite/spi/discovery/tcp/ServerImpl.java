@@ -3383,7 +3383,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             msgBytes = clientMsgWorker.ses.serializeMessage(msg);
                         }
                         catch (IgniteCheckedException | IOException e) {
-                            U.error(log, "Failed to serialize message to a client: " + msg + ". Client id: "
+                            U.error(log, "Failed to serialize message to a client: " + msg + ", client id: "
                                 + clientMsgWorker.clientNodeId, e);
 
                             break;
