@@ -20,7 +20,7 @@ package org.apache.ignite.internal.util;
 import org.apache.ignite.internal.pagemem.PageUtils;
 
 /**
- * Cache object utility methods that uses unsafe features.
+ * Cache object utility methods.
  */
 public class CacheObjectUnsafeUtils {
     /**
