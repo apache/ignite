@@ -7874,6 +7874,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     assert topologyInitialized(msg) : msg;
 
+                    //log.error("TEST | writeToClientSocket data: " + Arrays.toString(msgBytes));
+
                     spi.writeToSocket(sock, msg, msgBytes, spi.getEffectiveSocketTimeout(false));
                 }
 

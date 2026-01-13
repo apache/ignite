@@ -1698,8 +1698,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
             if (msg != null) {
                 byte mode = msg instanceof Message ? TcpDiscoveryIoSession.MESSAGE_SERIALIZATION : TcpDiscoveryIoSession.JAVA_SERIALIZATION;
 
+                //log.error("TEST | writeToSocket mode " + mode);
+
                 out.write(mode);
             }
+
+            //log.error("TEST | writeToSocket data " + Arrays.toString(data));
 
             out.write(data);
 

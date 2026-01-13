@@ -39,6 +39,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.makeMessageType;
@@ -84,10 +85,10 @@ public class TcpDiscoveryIoSession {
     private final DirectMessageReader msgReader;
 
     /** Buffered socket output stream. */
-    private final OutputStream out;
+    private final BufferedOutputStream out;
 
     /** Buffered socket input stream. */
-    private final InputStream in;
+    private final BufferedInputStream in;
 
     /** Intermediate buffer for serializing discovery messages. */
     private final ByteBuffer msgBuf;
@@ -164,12 +165,26 @@ public class TcpDiscoveryIoSession {
      * @throws IgniteCheckedException If deserialization fails.
      */
     <T> T readMessage() throws IgniteCheckedException, IOException {
-        byte serMode = (byte)in.read();
+        byte serMode;
+        InputStream in;
+
+        if (unprocessedReadTail == null) {
+            in = this.in;
+
+            serMode = (byte)in.read();
+        }
+        else {
+            serMode = unprocessedReadTail[0];
+
+            in = new PrefixedBufferedInputStream(unprocessedReadTail, 1, this.in);
+
+            unprocessedReadTail = null;
+        }
 
         if (JAVA_SERIALIZATION == serMode) {
-            assert unprocessedReadTail == null;
+            T m = U.unmarshal(spi.marshaller(), in, clsLdr);
 
-            return U.unmarshal(spi.marshaller(), in, clsLdr);
+            return m;
         }
 
         try {
@@ -181,6 +196,8 @@ public class TcpDiscoveryIoSession {
                 throw new IOException("Received unexpected byte while reading discovery message: " + serMode);
             }
 
+            msgBuf.clear();
+
             Message msg = spi.messageFactory().create(makeMessageType((byte)in.read(), (byte)in.read()));
 
             msgReader.reset();
@@ -189,8 +206,6 @@ public class TcpDiscoveryIoSession {
             MessageSerializer msgSer = spi.messageFactory().serializer(msg.directType());
 
             boolean finished;
-
-            msgBuf.clear();
 
             do {
                 if (unprocessedReadTail != null) {
@@ -227,8 +242,8 @@ public class TcpDiscoveryIoSession {
 
                 if (finished)
                     break;
-
-                msgBuf.clear();
+                else
+                    msgBuf.clear();
             }
             while (true);
 
@@ -326,4 +341,113 @@ public class TcpDiscoveryIoSession {
         if (hex.matches("15....00"))
             throw new StreamCorruptedException("invalid stream header: " + hex);
     }
+
+    /** */
+    private static class PrefixedBufferedInputStream extends BufferedInputStream {
+        /** */
+        private int prefixLeft;
+
+        /** */
+        private final byte[] prefixBuf;
+
+        /** */
+        private PrefixedBufferedInputStream(byte[] prefix, int offset, InputStream in) {
+            super(in);
+
+            this.prefixBuf = prefix;
+            prefixLeft = prefix.length - offset;
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized int read() throws IOException {
+            if (prefixLeft > 0) {
+                --prefixLeft;
+
+                return prefixBuf[prefixBuf.length - prefixLeft + 1];
+            }
+
+            return super.read();
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized int read(@NotNull byte[] b, int off, int len) throws IOException {
+            int len0 = 0;
+
+            if (len > b.length - off)
+                len = b.length - off;
+
+            if (prefixLeft > 0) {
+                len0 = Math.min(len, prefixLeft);
+
+                System.arraycopy(prefixBuf, prefixBuf.length - prefixLeft, b, off, len0);
+
+                prefixLeft -= len0;
+
+                assert prefixLeft >= 0;
+
+                if (len0 == len)
+                    return len0;
+            }
+
+            return len0 + super.read(b, off + len0, len - len0);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int read(@NotNull byte[] b) throws IOException {
+            return read(b, 0, b.length);
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized int available() throws IOException {
+            return super.available() + prefixLeft;
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized void mark(int readlimit) {
+            throw new UnsupportedOperationException("mark() is not supported.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean markSupported() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized void reset() throws IOException {
+            throw new UnsupportedOperationException("reset() is not supported.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public synchronized long skip(long n) throws IOException {
+            throw new UnsupportedOperationException("skip() is not supported.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public long transferTo(OutputStream out) throws IOException {
+            throw new UnsupportedOperationException("transferTo() is not supported.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public int readNBytes(byte[] b, int off, int len) throws IOException {
+            throw new UnsupportedOperationException("readNBytes() is not supported.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public @NotNull byte[] readAllBytes() throws IOException {
+            throw new UnsupportedOperationException("readAllBytes() is not supported.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public @NotNull byte[] readNBytes(int len) throws IOException {
+            throw new UnsupportedOperationException("readNBytes() is not supported.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+            prefixLeft = 0;
+
+            super.close();
+        }
+    }
 }
+
