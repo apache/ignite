@@ -72,6 +72,7 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.NodeValidationFailedEvent;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -7581,7 +7582,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
 
             if (wrk != null)
-                wrk.metrics(msg.metrics());
+                wrk.metrics(new ClusterMetricsSnapshot(msg.metricsMessage()));
             else if (log.isDebugEnabled())
                 log.debug("Received client metrics update message from unknown client node: " + msg);
         }
