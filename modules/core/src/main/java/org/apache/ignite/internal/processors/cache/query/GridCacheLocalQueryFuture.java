@@ -98,10 +98,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
             try {
                 qry.query().validate();
 
-                if (fields())
-                    cctx.queries().runFieldsQuery(localQueryInfo());
-                else
-                    cctx.queries().runQuery(localQueryInfo());
+                cctx.queries().runQuery(localQueryInfo());
             }
             catch (Throwable e) {
                 onDone(e);
