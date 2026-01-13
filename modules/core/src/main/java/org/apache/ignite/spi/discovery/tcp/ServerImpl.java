@@ -6040,6 +6040,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (metrics != null)
                             msg.setClientMetrics(locNodeId, nodeId, metrics);
+
+                        msg.addClientNodeId(nodeId);
                     }
                 }
                 else {
