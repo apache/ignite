@@ -76,13 +76,6 @@ public interface BinaryObjectEx extends BinaryObject {
     }
 
     /**
-     * @return {@code True} if object is binary enum.
-     */
-    public default boolean isEnum() {
-        return false;
-    }
-
-    /**
      * @return {@code True} if object has bytes array.
      */
     public default boolean hasBytes() {

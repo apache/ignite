@@ -1675,7 +1675,7 @@ public class BinaryUtils {
      */
     static BinaryObjectEx doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx,
         EnumType type) {
-        return binariesFactory.createBinaryEnum(ctx, type.typeId, type.clsName, in.readInt());
+        return binariesFactory.binaryEnum(ctx, type.typeId, type.clsName, in.readInt());
     }
 
     /** */
@@ -2791,7 +2791,7 @@ public class BinaryUtils {
      * @return {@code True} if {@code val} instance of binary Enum object.
      */
     public static boolean isBinaryEnumObject(Object val) {
-        return val instanceof BinaryObjectEx && ((BinaryObjectEx)val).isEnum();
+        return val != null && val.getClass() == binariesFactory.binaryEnumClass();
     }
 
     /**
