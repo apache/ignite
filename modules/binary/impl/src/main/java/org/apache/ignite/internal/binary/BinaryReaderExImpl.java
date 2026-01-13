@@ -2387,7 +2387,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
 
                     setHandle(res);
 
-                    for (BinaryFieldAccessor info : desc.fields)
+                    for (BinaryFieldDescriptor info : desc.fields)
                         readField(res, info);
 
                     break;
@@ -2438,7 +2438,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @param fld Field info.
      * @throws BinaryObjectException If failed.
      */
-    private void readField(Object obj, BinaryFieldAccessor fld) {
+    private void readField(Object obj, BinaryFieldDescriptor fld) {
         try {
             switch (fld.mode) {
                 case P_BYTE:
@@ -2541,7 +2541,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @return Read value.
      * @throws BinaryObjectException If failed to read value from the stream.
      */
-    protected Object readFixedType(BinaryFieldAccessor fld) throws BinaryObjectException {
+    protected Object readFixedType(BinaryFieldDescriptor fld) throws BinaryObjectException {
         Object val = null;
 
         switch (fld.mode) {

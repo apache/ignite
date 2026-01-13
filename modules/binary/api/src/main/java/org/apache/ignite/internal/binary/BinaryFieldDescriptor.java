@@ -20,9 +20,9 @@ package org.apache.ignite.internal.binary;
 import java.lang.reflect.Field;
 
 /**
- * Field accessor to speedup access.
+ * Field descriptor.
  */
-class BinaryFieldAccessor {
+class BinaryFieldDescriptor {
     /** Field ID. */
     final int id;
 
@@ -50,7 +50,7 @@ class BinaryFieldAccessor {
      * @param offset Offset of the field in the byte array
      * @param dynamic If {@code true} then field is not final.
      */
-    protected BinaryFieldAccessor(Field field, int id, BinaryWriteMode mode, long offset, boolean dynamic) {
+    protected BinaryFieldDescriptor(Field field, int id, BinaryWriteMode mode, long offset, boolean dynamic) {
         assert field != null;
         assert id != 0;
         assert mode != null;

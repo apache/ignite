@@ -90,7 +90,7 @@ public class BinariesFactoryImpl implements BinariesFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryFieldAccessor create(Field field, int id) {
+    @Override public BinaryFieldDescriptor create(Field field, int id) {
         BinaryWriteMode mode = BinaryUtils.mode(field.getType());
 
         switch (mode) {
@@ -102,7 +102,7 @@ public class BinariesFactoryImpl implements BinariesFactory {
             case P_LONG:
             case P_FLOAT:
             case P_DOUBLE:
-                return new BinaryFieldAccessor(field, id, mode, GridUnsafe.objectFieldOffset(field), false);
+                return new BinaryFieldDescriptor(field, id, mode, GridUnsafe.objectFieldOffset(field), false);
 
             case BYTE:
             case BOOLEAN:
@@ -136,10 +136,10 @@ public class BinariesFactoryImpl implements BinariesFactory {
             case OBJECT_ARR:
             case BINARY_OBJ:
             case BINARY:
-                return new BinaryFieldAccessor(field, id, mode, -1L, false);
+                return new BinaryFieldDescriptor(field, id, mode, -1L, false);
 
             default:
-                return new BinaryFieldAccessor(field, id, mode, -1L, !CommonUtils.isFinal(field.getType()));
+                return new BinaryFieldDescriptor(field, id, mode, -1L, !CommonUtils.isFinal(field.getType()));
         }
     }
 }

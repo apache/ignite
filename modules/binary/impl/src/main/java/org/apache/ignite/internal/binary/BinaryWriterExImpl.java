@@ -1569,7 +1569,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeField(Object obj, BinaryFieldAccessor fld) throws BinaryObjectException {
+    @Override public void writeField(Object obj, BinaryFieldDescriptor fld) throws BinaryObjectException {
         writeFieldIdNoSchemaUpdate(fld.id);
 
         switch (fld.mode) {
@@ -1856,7 +1856,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
      * @param val Val to get write mode for.
      * @return Write mode.
      */
-    protected BinaryWriteMode mode(BinaryFieldAccessor fld, Object val) {
+    protected BinaryWriteMode mode(BinaryFieldDescriptor fld, Object val) {
         return fld.dynamic ?
             val == null ? BinaryWriteMode.OBJECT : BinaryUtils.mode(val.getClass()) :
             fld.mode;

@@ -98,5 +98,5 @@ public interface BinariesFactory {
      * @param id Field ID.
      * @return Accessor.
      */
-    public BinaryFieldAccessor create(Field field, int id);
+    public BinaryFieldDescriptor create(Field field, int id);
 }
