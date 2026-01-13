@@ -1824,7 +1824,7 @@ class BinaryWriterExImpl implements BinaryWriterEx {
                         break;
 
                     case BINARY_ENUM:
-                        writeBinaryEnum((BinaryEnumObjectImpl)val);
+                        writeBinaryEnum((BinaryObjectEx)val);
 
                         break;
 
