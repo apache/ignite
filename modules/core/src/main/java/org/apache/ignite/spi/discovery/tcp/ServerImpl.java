@@ -6058,7 +6058,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (!clientNode.clientAliveTimeSet())
                                     clientNode.clientAliveTime(spi.clientFailureDetectionTimeout());
 
-                                if (!clientNode.isClientAlive() && isLocalNodeCoordinator()) {
+                                boolean aliveCheck = clientNode.isClientAlive();
+
+                                if (!aliveCheck && isLocalNodeCoordinator()) {
                                     boolean failedNode;
 
                                     synchronized (mux) {
