@@ -148,7 +148,7 @@ public class BinariesFactoryImpl implements BinariesFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObjectEx binaryEnum(BinaryContext ctx, int ord, @Nullable String clsName, int typeId) {
+    @Override public BinaryObjectEx binaryEnum(BinaryContext ctx, int typeId, @Nullable String clsName, int ord) {
         return new BinaryEnumObjectImpl(ctx, typeId, clsName, ord);
     }
 
