@@ -35,10 +35,10 @@ import org.junit.Test;
 /** */
 public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest {
     /** */
-    private static final String EX_BROKEN_SER_MSG = "Exception occurred on serialization step";
+    private static final String BROKEN_EX_MSG = "Exception occurred on serialization step";
 
     /** */
-    private static final String RETURNED_EX_BROKEN_SER_MSG = "See server logs for details";
+    private static final String BROKEN_EX_WRAPPER_MSG = ", see server logs for details";
 
     /** */
     private static final String EX_MSG = "Exception message";
@@ -47,16 +47,19 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
     private static final String SERVICE_NAME = "my-service";
 
     /** */
-    private static final ExceptionThrower SERIAL_EX = ExceptionThrower.serializable();
+    private static final ExceptionThrower SERIALIZABLE_EX_THROWER = ExceptionThrower.serializable();
 
     /** */
-    private static final ExceptionThrower EXT_EX = ExceptionThrower.externalizable(false, false);
+    private static final ExceptionThrower EXTERNALIZABLE_EX_THROWER =
+        ExceptionThrower.externalizable(false, false);
 
     /** */
-    private static final ExceptionThrower EX_WITH_BROKEN_SER = ExceptionThrower.externalizable(true, true);
+    private static final ExceptionThrower BROKEN_WRITE_EX_THROWER =
+        ExceptionThrower.externalizable(true, true);
 
     /** */
-    private static final ExceptionThrower EX_WITH_BROKEN_DESER = ExceptionThrower.externalizable(true, false);
+    private static final ExceptionThrower BROKEN_READ_EX_THROWER =
+        ExceptionThrower.externalizable(true, false);
 
     /** */
     private boolean isNodeInfoAvailableInExMsg = true;
@@ -64,7 +67,7 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
     /** */
     @Test
     public void testServiceCancelThrowsSerializableException() throws Exception {
-        Service svc = new ServiceWithException().withCancelException(SERIAL_EX);
+        Service svc = new ServiceWithException().withCancelException(SERIALIZABLE_EX_THROWER);
 
         testExceptionPropagation(getServiceConfiguration(svc), false, true);
     }
@@ -72,7 +75,7 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
     /** */
     @Test
     public void testServiceCancelThrowsExternalizableException() throws Exception {
-        Service svc = new ServiceWithException().withCancelException(EXT_EX);
+        Service svc = new ServiceWithException().withCancelException(EXTERNALIZABLE_EX_THROWER);
 
         testExceptionPropagation(getServiceConfiguration(svc), false, true);
     }
@@ -80,7 +83,7 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
     /** */
     @Test
     public void testServiceCancelThrowsExternalizableExceptionWithBrokenSerialization() throws Exception {
-        Service svc = new ServiceWithException().withCancelException(EX_WITH_BROKEN_SER);
+        Service svc = new ServiceWithException().withCancelException(BROKEN_WRITE_EX_THROWER);
 
         testExceptionPropagation(getServiceConfiguration(svc), false, true);
     }
@@ -88,7 +91,7 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
     /** */
     @Test
     public void testServiceCancelThrowsExternalizableExceptionWithBrokenDeserialization() throws Exception {
-        Service svc = new ServiceWithException().withCancelException(EX_WITH_BROKEN_DESER);
+        Service svc = new ServiceWithException().withCancelException(BROKEN_READ_EX_THROWER);
 
         testExceptionPropagation(getServiceConfiguration(svc), false, true);
     }
@@ -96,7 +99,7 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
     /** */
     @Test
     public void testServiceInitThrowsSerializableException() throws Exception {
-        Service svc = new ServiceWithException().withInitException(SERIAL_EX);
+        Service svc = new ServiceWithException().withInitException(SERIALIZABLE_EX_THROWER);
 
         testExceptionPropagation(getServiceConfiguration(svc), true, false);
     }
@@ -104,7 +107,7 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
     /** */
     @Test
     public void testServiceInitThrowsExternalizableException() throws Exception {
-        Service svc = new ServiceWithException().withInitException(EXT_EX);
+        Service svc = new ServiceWithException().withInitException(EXTERNALIZABLE_EX_THROWER);
 
         testExceptionPropagation(getServiceConfiguration(svc), true, false);
     }
@@ -112,7 +115,7 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
     /** */
     @Test
     public void testServiceInitThrowsExternalizableExceptionWithBrokenSerialization() throws Exception {
-        Service svc = new ServiceWithException().withInitException(EX_WITH_BROKEN_SER);
+        Service svc = new ServiceWithException().withInitException(BROKEN_WRITE_EX_THROWER);
 
         testExceptionPropagation(getServiceConfiguration(svc), true, false);
     }
@@ -120,7 +123,7 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
     /** */
     @Test
     public void testServiceInitThrowsExternalizableExceptionWithBrokenDeserialization() throws Exception {
-        Service svc = new ServiceWithException().withInitException(EX_WITH_BROKEN_DESER);
+        Service svc = new ServiceWithException().withInitException(BROKEN_READ_EX_THROWER);
 
         isNodeInfoAvailableInExMsg = false;
 
@@ -132,7 +135,7 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
     /** */
     @Test
     public void testServiceExecuteThrowsSerializableException() throws Exception {
-        Service svc = new ServiceWithException().withExecuteException(SERIAL_EX);
+        Service svc = new ServiceWithException().withExecuteException(SERIALIZABLE_EX_THROWER);
 
         testExceptionPropagation(getServiceConfiguration(svc), false, false);
     }
@@ -140,7 +143,7 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
     /** */
     @Test
     public void testServiceExecuteThrowsExternalizableException() throws Exception {
-        Service svc = new ServiceWithException().withExecuteException(EXT_EX);
+        Service svc = new ServiceWithException().withExecuteException(EXTERNALIZABLE_EX_THROWER);
 
         testExceptionPropagation(getServiceConfiguration(svc), false, false);
     }
@@ -148,7 +151,7 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
     /** */
     @Test
     public void testServiceExecuteThrowsExternalizableExceptionWithBrokenSerialization() throws Exception {
-        Service svc = new ServiceWithException().withExecuteException(EX_WITH_BROKEN_SER);
+        Service svc = new ServiceWithException().withExecuteException(BROKEN_WRITE_EX_THROWER);
 
         testExceptionPropagation(getServiceConfiguration(svc), false, false);
     }
@@ -156,7 +159,7 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
     /** */
     @Test
     public void testServiceExecuteThrowsExternalizableExceptionWithBrokenDeserialization() throws Exception {
-        Service svc = new ServiceWithException().withExecuteException(EX_WITH_BROKEN_DESER);
+        Service svc = new ServiceWithException().withExecuteException(BROKEN_READ_EX_THROWER);
 
         testExceptionPropagation(getServiceConfiguration(svc), false, false);
     }
@@ -190,7 +193,7 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
                 Throwable cause = ex.getSuppressed()[0].getCause();
 
                 if (cause == null)
-                    assertTrue(errMsg.contains(RETURNED_EX_BROKEN_SER_MSG));
+                    assertTrue(errMsg.contains(BROKEN_EX_WRAPPER_MSG));
                 else
                     assertTrue(cause.getMessage().contains(EX_MSG));
             }
@@ -291,125 +294,77 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
     /** */
     private static class ExceptionThrower implements Serializable {
         /** */
-        private final boolean isSerializable;
+        private final boolean isExternalizable;
 
         /** */
         private final boolean isBroken;
 
         /** */
-        private final boolean isSerializationBroken;
+        private final boolean isWriteBroken;
 
         /** */
-        private ExceptionThrower(boolean isSerializable, boolean isBroken, boolean isSerializationBroken) {
-            this.isSerializable = isSerializable;
+        private ExceptionThrower(boolean isExternalizable, boolean isBroken, boolean isWriteBroken) {
+            this.isExternalizable = isExternalizable;
             this.isBroken = isBroken;
-            this.isSerializationBroken = isSerializationBroken;
+            this.isWriteBroken = isWriteBroken;
         }
 
         /**
          * @return Serializable exception configuration
          */
         static ExceptionThrower serializable() {
-            return new ExceptionThrower(true, false, false);
+            return new ExceptionThrower(false, false, false);
         }
 
         /**
          * @return Externalizable exception configuration
          */
-        static ExceptionThrower externalizable(boolean isBroken, boolean isSerializationBroken) {
-            return new ExceptionThrower(false, isBroken, isSerializationBroken);
+        static ExceptionThrower externalizable(boolean isBroken, boolean isWriteBroken) {
+            return new ExceptionThrower(true, isBroken, isWriteBroken);
         }
 
         /** */
         public void throwException() throws Exception {
-            if (isSerializable)
+            if (!isExternalizable)
                 throw new Exception(EX_MSG);
 
-            throw new ExternalizableException(EX_MSG, isBroken, isSerializationBroken);
+            if (!isBroken)
+                throw new ExternalizableException(EX_MSG);
+
+            throw new BrokenExternalizableException(EX_MSG, isWriteBroken);
         }
 
         /** */
         public void throwRuntimeException() {
-            if (isSerializable)
+            if (!isExternalizable)
                 throw new RuntimeException(EX_MSG);
 
-            throw new ExternalizableRuntimeException(EX_MSG, isBroken, isSerializationBroken);
+            if (!isBroken)
+                throw new ExternalizableRuntimeException(EX_MSG);
+
+            throw new BrokenExternalizableRuntimeException(EX_MSG, isWriteBroken);
         }
     }
 
     /** Custom {@link Externalizable} Exception */
     public static class ExternalizableException extends Exception implements Externalizable {
         /** */
-        private boolean isBroken;
-
-        /** */
-        private boolean isSerializationBroken;
-
-        /** */
         public ExternalizableException() {
             // No-op.
         }
 
         /** */
-        public ExternalizableException(
-            String msg,
-            boolean isBroken,
-            boolean isSerializationBroken
-        ) {
+        public ExternalizableException(String msg) {
             super(msg);
-
-            this.isBroken = isBroken;
-            this.isSerializationBroken = isSerializationBroken;
-        }
-
-        /** */
-        public boolean isBroken() {
-            return isBroken;
-        }
-
-        /** */
-        public void setBroken(boolean broken) {
-            isBroken = broken;
-        }
-
-        /** */
-        public boolean isSerializationBroken() {
-            return isSerializationBroken;
-        }
-
-        /** */
-        public void setSerializationBroken(boolean serializationBroken) {
-            isSerializationBroken = serializationBroken;
         }
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            if (isBroken() && isSerializationBroken())
-                throw new ExternalizableRuntimeException(EX_BROKEN_SER_MSG);
-
-            out.writeBoolean(isBroken());
-            out.writeBoolean(isSerializationBroken());
-
             out.writeObject(getMessage());
-            out.writeObject(getStackTrace());
-            out.writeObject(getCause());
-
-            Throwable[] suppressed = getSuppressed();
-
-            out.writeInt(suppressed.length);
-
-            for (Throwable t : suppressed)
-                out.writeObject(t);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            setBroken(in.readBoolean());
-            setSerializationBroken(in.readBoolean());
-
-            if (isBroken() && !isSerializationBroken())
-                throw new ExternalizableRuntimeException(EX_BROKEN_SER_MSG);
-
             String msg = (String)in.readObject();
 
             try {
@@ -421,29 +376,59 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
             catch (Exception ignored) {
                 // No-op.
             }
+        }
+    }
 
-            setStackTrace((StackTraceElement[])in.readObject());
+    /** Custom {@link Externalizable} Exception with broken serialization. */
+    public static class BrokenExternalizableException extends ExternalizableException {
+        /** */
+        private boolean isWriteBroken;
 
-            Throwable cause = (Throwable)in.readObject();
+        /** */
+        public BrokenExternalizableException() {
+            // No-op.
+        }
 
-            if (cause != null)
-                initCause(cause);
+        /** */
+        public BrokenExternalizableException(String msg, boolean isWriteBroken) {
+            super(msg);
 
-            int suppressedLen = in.readInt();
+            this.isWriteBroken = isWriteBroken;
+        }
 
-            for (int i = 0; i < suppressedLen; i++)
-                addSuppressed((Throwable)in.readObject());
+        /** */
+        public boolean isWriteBroken() {
+            return isWriteBroken;
+        }
+
+        /** */
+        public void setWriteBroken(boolean writeBroken) {
+            isWriteBroken = writeBroken;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            if (isWriteBroken())
+                throw new RuntimeException(BROKEN_EX_MSG);
+
+            out.writeBoolean(isWriteBroken());
+
+            super.writeExternal(out);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            setWriteBroken(in.readBoolean());
+
+            if (!isWriteBroken())
+                throw new RuntimeException(BROKEN_EX_MSG);
+
+            super.readExternal(in);
         }
     }
 
     /** Custom externalizable {@link RuntimeException} Exception */
     public static class ExternalizableRuntimeException extends RuntimeException implements Externalizable {
-        /** */
-        private boolean isBroken;
-
-        /** */
-        private boolean isSerializationBroken;
-
         /** */
         public ExternalizableRuntimeException() {
             // No-op.
@@ -454,66 +439,13 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
             super(msg);
         }
 
-        /** */
-        public ExternalizableRuntimeException(
-            String msg,
-            boolean isBroken,
-            boolean isSerializationBroken
-        ) {
-            super(msg);
-
-            this.isBroken = isBroken;
-            this.isSerializationBroken = isSerializationBroken;
-        }
-
-        /** */
-        public boolean isBroken() {
-            return isBroken;
-        }
-
-        /** */
-        public void setBroken(boolean broken) {
-            isBroken = broken;
-        }
-
-        /** */
-        public boolean isSerializationBroken() {
-            return isSerializationBroken;
-        }
-
-        /** */
-        public void setSerializationBroken(boolean serializationBroken) {
-            isSerializationBroken = serializationBroken;
-        }
-
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            if (isBroken() && isSerializationBroken())
-                throw new ExternalizableRuntimeException(EX_BROKEN_SER_MSG);
-
-            out.writeBoolean(isBroken());
-            out.writeBoolean(isSerializationBroken());
-
             out.writeObject(getMessage());
-            out.writeObject(getStackTrace());
-            out.writeObject(getCause());
-
-            Throwable[] suppressed = getSuppressed();
-
-            out.writeInt(suppressed.length);
-
-            for (Throwable t : suppressed)
-                out.writeObject(t);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            setBroken(in.readBoolean());
-            setSerializationBroken(in.readBoolean());
-
-            if (isBroken() && !isSerializationBroken())
-                throw new ExternalizableRuntimeException(EX_BROKEN_SER_MSG);
-
             String msg = (String)in.readObject();
 
             try {
@@ -525,18 +457,54 @@ public class GridServiceExceptionPropagationTest extends GridCommonAbstractTest 
             catch (Exception ignored) {
                 // No-op.
             }
+        }
+    }
 
-            setStackTrace((StackTraceElement[])in.readObject());
+    /** Custom externalizable {@link RuntimeException} Exception with broken serialization. */
+    public static class BrokenExternalizableRuntimeException extends ExternalizableRuntimeException {
+        /** */
+        private boolean isWriteBroken;
 
-            Throwable cause = (Throwable)in.readObject();
+        /** */
+        public BrokenExternalizableRuntimeException() {
+            // No-op.
+        }
 
-            if (cause != null)
-                initCause(cause);
+        /** */
+        public BrokenExternalizableRuntimeException(String msg, boolean isWriteBroken) {
+            super(msg);
 
-            int suppressedLen = in.readInt();
+            this.isWriteBroken = isWriteBroken;
+        }
 
-            for (int i = 0; i < suppressedLen; i++)
-                addSuppressed((Throwable)in.readObject());
+        /** */
+        public boolean isWriteBroken() {
+            return isWriteBroken;
+        }
+
+        /** */
+        public void setWriteBroken(boolean writeBroken) {
+            isWriteBroken = writeBroken;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            if (isWriteBroken())
+                throw new RuntimeException(BROKEN_EX_MSG);
+
+            out.writeBoolean(isWriteBroken());
+
+            super.writeExternal(out);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            setWriteBroken(in.readBoolean());
+
+            if (!isWriteBroken())
+                throw new RuntimeException(BROKEN_EX_MSG);
+
+            super.readExternal(in);
         }
     }
 }
