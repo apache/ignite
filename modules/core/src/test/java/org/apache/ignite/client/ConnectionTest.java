@@ -21,10 +21,10 @@ import java.io.OutputStream;
 import java.net.Socket;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Checks if it can connect to a valid address from the node address list.
@@ -37,9 +37,10 @@ public class ConnectionTest {
     public static final String IPv6_HOST = "::1";
 
     /** */
-    @Test(expected = org.apache.ignite.client.ClientException.class)
+    @Test
     public void testEmptyNodeAddress() throws Exception {
-        testConnection(IPv4_HOST, "");
+        assertThrows(org.apache.ignite.client.ClientException.class, () ->
+            testConnection(IPv4_HOST, ""));
     }
 
     /** */
@@ -73,7 +74,7 @@ public class ConnectionTest {
     }
 
     /** */
-    @Ignore("IPv6 is not enabled by default on some systems.")
+    @Disabled("IPv6 is not enabled by default on some systems.")
     @Test
     public void testIPv6NodeAddresses() throws Exception {
         testConnection(IPv6_HOST, "[::1]:10800");

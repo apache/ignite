@@ -17,10 +17,10 @@
 
 package org.apache.ignite.compatibility.testframework.util;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.compatibility.testframework.util.MavenUtils.escapeSpaceCharsInPath;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test class for {@link MavenUtils}.
@@ -47,16 +47,16 @@ public class MavenUtilsTest {
     /** */
     @Test
     public void testPathsWithoutSpacesStayUnchanged() {
-        Assert.assertEquals(NO_NEED_TO_ESCAPE_PATH_0, escapeSpaceCharsInPath(NO_NEED_TO_ESCAPE_PATH_0));
+        assertEquals(NO_NEED_TO_ESCAPE_PATH_0, escapeSpaceCharsInPath(NO_NEED_TO_ESCAPE_PATH_0));
 
-        Assert.assertEquals(NO_NEED_TO_ESCAPE_PATH_1, escapeSpaceCharsInPath(NO_NEED_TO_ESCAPE_PATH_1));
+        assertEquals(NO_NEED_TO_ESCAPE_PATH_1, escapeSpaceCharsInPath(NO_NEED_TO_ESCAPE_PATH_1));
     }
 
     /** */
     @Test
     public void testPathsWithSpaceCharsEscaped() {
-        Assert.assertEquals(ESCAPED_PATH_0, escapeSpaceCharsInPath(UNESCAPED_PATH_0));
+        assertEquals(ESCAPED_PATH_0, escapeSpaceCharsInPath(UNESCAPED_PATH_0));
 
-        Assert.assertEquals(ESCAPED_PATH_1, escapeSpaceCharsInPath(UNESCAPED_PATH_1));
+        assertEquals(ESCAPED_PATH_1, escapeSpaceCharsInPath(UNESCAPED_PATH_1));
     }
 }

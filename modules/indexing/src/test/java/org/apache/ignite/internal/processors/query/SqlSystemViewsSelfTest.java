@@ -89,7 +89,6 @@ import org.apache.ignite.spi.systemview.view.SqlQueryView;
 import org.apache.ignite.spi.systemview.view.SystemView;
 import org.apache.ignite.spi.systemview.view.sql.SqlTableView;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Arrays.asList;
@@ -99,7 +98,12 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
 import static org.apache.ignite.internal.processors.query.running.RunningQueryManager.SQL_QRY_VIEW;
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests for ignite SQL system views.
@@ -236,13 +240,13 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         Set schemasSrv = srvNodeSchemas.stream().map(f -> f.get(0)).map(String.class::cast).collect(toSet());
 
-        Assert.assertEquals(expSchemasSrv, schemasSrv);
+        assertEquals(expSchemasSrv, schemasSrv);
 
         Set expSchemasCli = Sets.newHashSet("PREDIFINED_SCHEMA_2", "PUBLIC", "TST1", systemSchemaName());
 
         Set schemasCli = clientNodeSchemas.stream().map(f -> f.get(0)).map(String.class::cast).collect(toSet());
 
-        Assert.assertEquals(expSchemasCli, schemasCli);
+        assertEquals(expSchemasCli, schemasCli);
     }
 
     /**
@@ -337,7 +341,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             assertEquals(expRow.length, resRow.size());
 
             for (int j = 0; j < expRow.length; j++)
-                assertEquals("expRow: [" + Arrays.toString(expRow) + "]", expRow[j], resRow.get(j));
+                assertEquals(expRow[j], resRow.get(j), "expRow: [" + Arrays.toString(expRow) + "]");
         }
     }
 
@@ -642,7 +646,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
         res0 = (List<?>)cur.get(0);
         res1 = (List<?>)cur.get(1);
 
-        assertTrue(expSqlQry, res0.get(0).equals(expSqlQry) || res1.get(0).equals(expSqlQry));
+        assertTrue(res0.get(0).equals(expSqlQry) || res1.get(0).equals(expSqlQry), expSqlQry);
 
         assertFalse((Boolean)res0.get(3));
 
@@ -701,7 +705,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
     private void assertColumnTypes(List<?> rowData, Class<?>... colTypes) {
         for (int i = 0; i < colTypes.length; i++) {
             if (rowData.get(i) != null)
-                assertEquals("Column " + i + " type", colTypes[i], rowData.get(i).getClass());
+                assertEquals(colTypes[i], rowData.get(i).getClass(), "Column " + i + " type");
         }
     }
 
@@ -1251,10 +1255,10 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
             false                // IS_INDEX_REBUILD_IN_PROGRESS
         );
 
-        assertEquals("Returned incorrect info. ", expRow, cacheSqlInfos.get(0));
+        assertEquals(expRow, cacheSqlInfos.get(0), "Returned incorrect info. ");
 
         // no more rows are expected.
-        assertEquals("Expected to return only one row", 1, cacheSqlInfos.size());
+        assertEquals(1, cacheSqlInfos.size(), "Expected to return only one row");
 
         List<List<?>> allInfos = execSql("SELECT * FROM " + systemSchemaName() + ".TABLES");
 
@@ -1313,7 +1317,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         final String selectTabNameCacheName = "SELECT TABLE_NAME, CACHE_NAME FROM " + systemSchemaName() + ".TABLES ORDER BY TABLE_NAME";
 
-        assertTrue("Initially no tables expected", execSql(selectTabNameCacheName).isEmpty());
+        assertTrue(execSql(selectTabNameCacheName).isEmpty(), "Initially no tables expected");
 
         execSql("CREATE TABLE PUBLIC.TAB1 (ID INT PRIMARY KEY, VAL VARCHAR)");
 
@@ -1349,7 +1353,7 @@ public class SqlSystemViewsSelfTest extends AbstractIndexingCommonTest {
 
         execSql("DROP TABLE PUBLIC.TAB1");
 
-        assertTrue("All tables should be dropped", execSql(selectTabNameCacheName).isEmpty());
+        assertTrue(execSql(selectTabNameCacheName).isEmpty(), "All tables should be dropped");
     }
 
     /**

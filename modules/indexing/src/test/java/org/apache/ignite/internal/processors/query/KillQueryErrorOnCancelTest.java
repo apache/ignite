@@ -42,10 +42,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -136,7 +136,7 @@ public class KillQueryErrorOnCancelTest extends GridCommonAbstractTest {
         List<GridRunningQueryInfo> runningQueries =
             (List<GridRunningQueryInfo>)node.context().query().runningQueries(-1);
 
-        assertTrue("runningQueries=" + runningQueries, runningQueries.isEmpty());
+        assertTrue(runningQueries.isEmpty(), "runningQueries=" + runningQueries);
         ensureMapQueriesHasFinished(grid(0));
         ensureMapQueriesHasFinished(grid(1));
     }
@@ -149,8 +149,8 @@ public class KillQueryErrorOnCancelTest extends GridCommonAbstractTest {
     private void ensureMapQueriesHasFinished(IgniteEx node) throws Exception {
         boolean noTasksInQryPool = GridTestUtils.waitForCondition(() -> queryPoolIsEmpty(node), 5_000);
 
-        Assert.assertTrue("Node " + node.localNode().id() + " has not finished its tasks in the query pool",
-            noTasksInQryPool);
+        assertTrue(noTasksInQryPool,
+            "Node " + node.localNode().id() + " has not finished its tasks in the query pool");
     }
 
     /**

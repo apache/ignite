@@ -27,8 +27,9 @@ import java.util.function.Supplier;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Abstract test to verify default sql schema. */
 public abstract class AbstractDefaultSchemaTest extends AbstractIndexingCommonTest {
@@ -128,6 +129,6 @@ public abstract class AbstractDefaultSchemaTest extends AbstractIndexingCommonTe
         List<List<?>> res = execSql(qry);
 
         if (validator != null)
-            Assert.assertTrue(validator.test(res));
+            assertTrue(validator.test(res));
     }
 }

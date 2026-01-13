@@ -25,7 +25,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.ignite.internal.util.GridJavaProcess;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Utility to work with 'java -version' command.

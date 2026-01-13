@@ -19,8 +19,9 @@ package org.apache.ignite.tools.checkstyle;
 
 import java.util.Arrays;
 import java.util.List;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** */
 public class IgniteAbbrevationRuleTest {
@@ -33,17 +34,17 @@ public class IgniteAbbrevationRuleTest {
         );
 
         assertListEquals(
-            Arrays.asList("XXX"),
+            List.of("XXX"),
             IgniteAbbrevationsRule.words("XXX")
         );
 
         assertListEquals(
-            Arrays.asList("i"),
+            List.of("i"),
             IgniteAbbrevationsRule.words("i")
         );
 
         assertListEquals(
-            Arrays.asList("i1"),
+            List.of("i1"),
             IgniteAbbrevationsRule.words("i1")
         );
 
@@ -90,6 +91,6 @@ public class IgniteAbbrevationRuleTest {
         }
 
         for (int i = 0; i < expected.size(); i++)
-            Assert.assertEquals("Expected same element at " + i + " index", expected.get(i), actual.get(i));
+            assertEquals("Expected same element at " + i + " index", expected.get(i), actual.get(i));
     }
 }

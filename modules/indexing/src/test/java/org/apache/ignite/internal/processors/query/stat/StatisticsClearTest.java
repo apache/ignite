@@ -24,10 +24,15 @@ import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.query.stat.IgniteStatisticsHelper.buildDefaultConfigurations;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Statistics cleaning tests.
@@ -50,9 +55,9 @@ public class StatisticsClearTest extends StatisticsRestartAbstractTest {
     public void testStatisticsClear() throws Exception {
         updateStatistics(StatisticsType.GLOBAL, SMALL_TARGET);
 
-        Assert.assertNotNull(statisticsMgr(0).getLocalStatistics(SMALL_KEY));
+        assertNotNull(statisticsMgr(0).getLocalStatistics(SMALL_KEY));
 
-        Assert.assertNotNull(statisticsMgr(1).getLocalStatistics(SMALL_KEY));
+        assertNotNull(statisticsMgr(1).getLocalStatistics(SMALL_KEY));
 
         statisticsMgr(1).dropStatistics(SMALL_TARGET);
 
@@ -64,22 +69,21 @@ public class StatisticsClearTest extends StatisticsRestartAbstractTest {
     }
 
     /**
-     * Clear statistics by non existing table.
-     *
-     * @throws Exception In case of errors.
+     * Clear statistics for not existing table.
      */
-    @Test(expected = Throwable.class)
-    public void testStatisticsClearOnNotExistingTable() throws Exception {
-        statisticsMgr(1).dropStatistics(new StatisticsTarget(SCHEMA, "NO_NAME"));
+    @Test
+    public void testStatisticsClearOnNotExistingTable() {
+        assertThrows(Throwable.class, () ->
+                statisticsMgr(1).dropStatistics(new StatisticsTarget(SCHEMA, "NO_NAME")));
     }
 
     /**
-     * Acquire statistics by non existing table.
+     * Acquire statistics for not existing table.
      */
     @Test
     public void testGetNonExistingTableStatistics() {
-        Assert.assertNull(statisticsMgr(0).getLocalStatistics(new StatisticsKey(SCHEMA, "NO_NAME")));
-        Assert.assertNull(statisticsMgr(1).getLocalStatistics(new StatisticsKey(SCHEMA, "NO_NAME")));
+        assertNull(statisticsMgr(0).getLocalStatistics(new StatisticsKey(SCHEMA, "NO_NAME")));
+        assertNull(statisticsMgr(1).getLocalStatistics(new StatisticsKey(SCHEMA, "NO_NAME")));
     }
 
     /**
@@ -95,7 +99,7 @@ public class StatisticsClearTest extends StatisticsRestartAbstractTest {
                 metaStorage.write("stats.version", 2);
             }
             catch (IgniteCheckedException e) {
-                Assert.fail();
+                fail();
             }
         });
     }
@@ -112,7 +116,7 @@ public class StatisticsClearTest extends StatisticsRestartAbstractTest {
                 metaStorage.remove("stats.version");
             }
             catch (IgniteCheckedException e) {
-                Assert.fail();
+                fail();
             }
         });
     }
@@ -129,7 +133,7 @@ public class StatisticsClearTest extends StatisticsRestartAbstractTest {
                 metaStorage.write("stats.version", "corrupted");
             }
             catch (IgniteCheckedException e) {
-                Assert.fail();
+                fail();
             }
         });
     }

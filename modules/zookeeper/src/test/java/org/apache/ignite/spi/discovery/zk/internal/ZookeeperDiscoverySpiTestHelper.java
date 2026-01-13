@@ -36,10 +36,13 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.zookeeper.ZooKeeper;
-import org.junit.Assert;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_THRESHOLD;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Non-base functionality shared by some of Zookeeper SPI discovery test classes in this package.
@@ -87,8 +90,7 @@ class ZookeeperDiscoverySpiTestHelper {
      */
     private void checkEvents(final UUID nodeId, ConcurrentHashMap<UUID, Map<T2<Integer, Long>, DiscoveryEvent>> evts,
         final DiscoveryEvent...expEvts) throws Exception {
-        Assert.assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 Map<T2<Integer, Long>, DiscoveryEvent> nodeEvts = evts.get(nodeId);
 
@@ -108,9 +110,10 @@ class ZookeeperDiscoverySpiTestHelper {
                             return false;
                         }
 
-                        Assert.assertEquals("Unexpected event [topVer=" + expEvt.topologyVersion() + //todo check
-                            ", exp=" + U.gridEventName(expEvt.type()) +
-                            ", evt=" + evt0 + ']', expEvt.type(), evt0.type());
+                        assertEquals(expEvt.type(), evt0.type(),
+                            "Unexpected event [topVer=" + expEvt.topologyVersion() + //todo check
+                                    ", exp=" + U.gridEventName(expEvt.type()) +
+                                    ", evt=" + evt0 + ']');
                     }
                 }
 
@@ -163,7 +166,7 @@ class ZookeeperDiscoverySpiTestHelper {
 
         ZookeeperDiscoverySpi spi = spis.get(nodeName);
 
-        Assert.assertNotNull("Failed to get SPI for node: " + nodeName, spi);
+        assertNotNull(spi, "Failed to get SPI for node: " + nodeName);
 
         return spi;
     }
@@ -191,7 +194,7 @@ class ZookeeperDiscoverySpiTestHelper {
      * @throws Exception If failed.
      */
     void waitForEventsAcks(final Ignite node) throws Exception {
-        Assert.assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 Map<Object, Object> evts = GridTestUtils.getFieldValue(node.configuration().getDiscoverySpi(),
                     "impl", "rtState", "evtsData", "evts");
@@ -218,7 +221,7 @@ class ZookeeperDiscoverySpiTestHelper {
 
             U.dumpThreads(log);
 
-            Assert.fail("Failed to wait for disconnect/reconnect event.");
+            fail("Failed to wait for disconnect/reconnect event.");
         }
     }
 
@@ -245,7 +248,7 @@ class ZookeeperDiscoverySpiTestHelper {
         final ZookeeperClient zkClient = new ZookeeperClient(log, connectStr, 10_000, null);
 
         try {
-            Assert.assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() { //todo check
+            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() { //todo check
                 @Override public boolean apply() {
                     try {
                         List<String> c = zkClient.getChildren(IGNITE_ZK_ROOT + "/" + ZkIgnitePaths.ALIVE_NODES_DIR);
@@ -263,7 +266,7 @@ class ZookeeperDiscoverySpiTestHelper {
                     catch (Exception e) {
                         e.printStackTrace();
 
-                        Assert.fail();
+                        fail();
 
                         return true;
                     }

@@ -24,10 +24,11 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryParserMetricsHolder;
 import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.query.QueryParserMetricsHolder.QUERY_PARSER_METRIC_GROUP_NAME;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test to check {@link QueryParserMetricsHolder}
@@ -55,28 +56,28 @@ public class QueryParserMetricsHolderSelfTest extends GridCommonAbstractTest {
      */
     @Test
     public void testParserCacheHits() {
-        LongMetric hits = (LongMetric)ignite.context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME).findMetric("hits");
+        LongMetric hits = ignite.context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME).findMetric("hits");
 
-        Assert.assertNotNull("Unable to find metric with name " + QUERY_PARSER_METRIC_GROUP_NAME + ".hits", hits);
+        assertNotNull(hits, "Unable to find metric with name " + QUERY_PARSER_METRIC_GROUP_NAME + ".hits");
 
         hits.reset();
 
         cache.query(new SqlFieldsQuery("CREATE TABLE tbl_hits (id LONG PRIMARY KEY, val LONG)"));
 
-        Assert.assertEquals(0, hits.value());
+        assertEquals(0, hits.value());
 
         for (int i = 0; i < 10; i++)
             cache.query(new SqlFieldsQuery("INSERT INTO tbl_hits (id, val) values (?, ?)").setArgs(i, i));
 
-        Assert.assertEquals(9, hits.value());
+        assertEquals(9, hits.value());
 
         cache.query(new SqlFieldsQuery("SELECT * FROM tbl_hits"));
 
-        Assert.assertEquals(9, hits.value());
+        assertEquals(9, hits.value());
 
         cache.query(new SqlFieldsQuery("SELECT * FROM tbl_hits"));
 
-        Assert.assertEquals(10, hits.value());
+        assertEquals(10, hits.value());
     }
 
     /**
@@ -86,25 +87,25 @@ public class QueryParserMetricsHolderSelfTest extends GridCommonAbstractTest {
     public void testParserCacheMisses() {
         LongMetric misses = ignite.context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME).findMetric("misses");
 
-        Assert.assertNotNull("Unable to find metric with name " + QUERY_PARSER_METRIC_GROUP_NAME + ".misses", misses);
+        assertNotNull(misses, "Unable to find metric with name " + QUERY_PARSER_METRIC_GROUP_NAME + ".misses");
 
         misses.reset();
 
         cache.query(new SqlFieldsQuery("CREATE TABLE tbl_misses (id LONG PRIMARY KEY, val LONG)"));
 
-        Assert.assertEquals(1, misses.value());
+        assertEquals(1, misses.value());
 
         for (int i = 0; i < 10; i++)
             cache.query(new SqlFieldsQuery("INSERT INTO tbl_misses (id, val) values (?, ?)").setArgs(i, i));
 
-        Assert.assertEquals(2, misses.value());
+        assertEquals(2, misses.value());
 
         cache.query(new SqlFieldsQuery("SELECT * FROM tbl_misses"));
 
-        Assert.assertEquals(3, misses.value());
+        assertEquals(3, misses.value());
 
         cache.query(new SqlFieldsQuery("SELECT * FROM tbl_misses"));
 
-        Assert.assertEquals(3, misses.value());
+        assertEquals(3, misses.value());
     }
 }

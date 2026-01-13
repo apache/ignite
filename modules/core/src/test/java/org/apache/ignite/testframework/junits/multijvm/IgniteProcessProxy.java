@@ -98,7 +98,7 @@ import org.apache.ignite.spi.tracing.TracingConfigurationManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Ignite proxy for ignite instance at another JVM.
@@ -959,7 +959,7 @@ public class IgniteProcessProxy implements IgniteEx {
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public ClusterNode call() throws Exception {
+        @Override public ClusterNode call() {
             return ((IgniteEx)ignite).localNode();
         }
     }

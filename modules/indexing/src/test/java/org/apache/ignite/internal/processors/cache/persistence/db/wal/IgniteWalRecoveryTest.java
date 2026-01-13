@@ -126,13 +126,19 @@ import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_CHECKPOINT_FREQ;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME;
 import static org.apache.ignite.internal.processors.cache.persistence.CheckpointState.FINISHED;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -366,7 +372,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             int[] val = (int[])cache.get("key_" + i);
 
-            assertTrue("Invalid data. [key=key_" + i + ']', Arrays.equals(data, val));
+            assertTrue(Arrays.equals(data, val), "Invalid data. [key=key_" + i + ']');
         }
     }
 
@@ -481,7 +487,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If fail.
+     * @throws Exception If failed.
      */
     @Test
     public void testWalLargeValue() throws Exception {
@@ -519,7 +525,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             final byte[] loaded = (byte[])cache.get(i);
 
-            Assert.assertArrayEquals(data, loaded);
+            assertArrayEquals(data, loaded);
 
             if (i % 1000 == 0)
                 X.println(" ---> get: " + i);
@@ -587,7 +593,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         assertTrue(!files.isEmpty());
 
         for (final File file : files)
-            assertTrue("Can't remove " + file.getAbsolutePath(), file.delete());
+            assertTrue(file.delete(), "Can't remove " + file.getAbsolutePath());
 
         startGrids(2);
 
@@ -856,7 +862,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
 
             Arrays.fill(data, i);
 
-            Assert.assertArrayEquals(data, (long[])cache.get(i));
+            assertArrayEquals(data, (long[])cache.get(i));
         }
     }
 
@@ -1434,7 +1440,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                         rolledPages.put(fullId, pageData);
                     }
 
-                    assertNotNull("Missing page snapshot [page=" + fullId + ", delta=" + delta + ']', pageData);
+                    assertNotNull(pageData, "Missing page snapshot [page=" + fullId + ", delta=" + delta + ']');
 
                     buf.clear();
                     buf.put(pageData);
@@ -1493,7 +1499,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
                         }
 
                         for (int i = 0; i < data.length; i++)
-                            assertEquals("page=" + fullId + ", pos=" + i, PageUtils.getByte(bufPtr, i), data[i]);
+                            assertEquals(PageUtils.getByte(bufPtr, i), data[i], "page=" + fullId + ", pos=" + i);
                     }
                     finally {
                         pageMem.writeUnlock(fullId.groupId(), fullId.pageId(), page, null, false, true);
@@ -1579,7 +1585,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         for (Object key : map.keySet()) {
             Object expectedVal = map.get(key);
             Object actualVal = cache.get(key);
-            Assert.assertEquals("Unexpected value for key " + key, expectedVal, actualVal);
+            assertEquals(expectedVal, actualVal, "Unexpected value for key " + key);
         }
     }
 

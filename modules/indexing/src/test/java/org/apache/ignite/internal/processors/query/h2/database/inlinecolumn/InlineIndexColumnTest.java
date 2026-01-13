@@ -71,11 +71,13 @@ import org.h2.value.ValueStringIgnoreCase;
 import org.h2.value.ValueTime;
 import org.h2.value.ValueTimestamp;
 import org.h2.value.ValueUuid;
-import org.junit.Assert;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.cache.query.index.sorted.inline.types.NullableInlineIndexKeyType.CANT_BE_COMPARE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Simple tests for compatibility of {@link InlineIndexKeyType} and H2 Value.
@@ -99,7 +101,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
     private boolean inlineObjHash;
 
     /** */
-    @Before
+    @BeforeEach
     public void resetState() throws Exception {
         inlineObjHash = false;
 
@@ -549,7 +551,7 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
                 int savedBytesCnt = keyType.put(pageAddr, off, idxKey(exp), maxSize);
 
-                Assert.assertEquals(0, savedBytesCnt);
+                assertEquals(0, savedBytesCnt);
             }
 
             {
@@ -557,12 +559,12 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
                 int savedBytesCnt = keyType.put(pageAddr, off, idxKey(exp), maxSize);
 
-                Assert.assertEquals(5, savedBytesCnt);
+                assertEquals(5, savedBytesCnt);
 
-                Assert.assertEquals(exp.getObject().hashCode(),
+                assertEquals(exp.getObject().hashCode(),
                     keyType.get(pageAddr, off, maxSize).key().hashCode());
 
-                Assert.assertEquals(CANT_BE_COMPARE,
+                assertEquals(CANT_BE_COMPARE,
                     keyType.compare(pageAddr, off, maxSize, idxKey(exp)));
             }
         }
@@ -656,14 +658,14 @@ public class InlineIndexColumnTest extends AbstractIndexingCommonTest {
 
         int maxSize = 1 + 8; // 1 byte header + 8 bytes value.
 
-        assertEquals(1, putAndCompare((long)42, null, Long.class, maxSize));
-        assertEquals(1, putAndCompare((long)42, (long)16, Long.class, maxSize));
-        assertEquals(-1, putAndCompare((long)16, (long)42, Long.class, maxSize));
-        assertEquals(0, putAndCompare((long)42, (long)42, Long.class, maxSize));
+        assertEquals(1, putAndCompare(42L, null, Long.class, maxSize));
+        assertEquals(1, putAndCompare(42L, 16L, Long.class, maxSize));
+        assertEquals(-1, putAndCompare(16L, 42L, Long.class, maxSize));
+        assertEquals(0, putAndCompare(42L, 42L, Long.class, maxSize));
         assertEquals(0, putAndCompare(Long.MAX_VALUE, Long.MAX_VALUE, Long.class, maxSize));
         assertEquals(1, putAndCompare(Long.MAX_VALUE, Long.MIN_VALUE, Long.class, maxSize));
         assertEquals(-1, putAndCompare(Long.MIN_VALUE, Long.MAX_VALUE, Long.class, maxSize));
-        assertEquals(-2, putAndCompare((long)42, (long)16, Long.class, maxSize - 1));
+        assertEquals(-2, putAndCompare(42L, 16L, Long.class, maxSize - 1));
     }
 
     /** */

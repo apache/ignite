@@ -56,19 +56,24 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager.IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Testing corner cases in cache group functionality: -stopping cache in shared group and immediate node leaving;
  * -starting cache in shared group with the same name as destroyed one; -etc.
  */
 @WithSystemProperty(key = IGNITE_PDS_SKIP_CHECKPOINT_ON_NODE_STOP, value = "true")
-@SuppressWarnings({"unchecked", "ThrowableNotThrown"})
+@SuppressWarnings({"unchecked"})
 public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
     /** Group name. */
     public static final String GROUP = "group";
@@ -152,7 +157,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8717")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-8717")
     @Test
     public void testNodeRestartRightAfterCacheStop() throws Exception {
         IgniteEx ex = startGrids(3);
@@ -219,7 +224,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12072")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-12072")
     @Test
     public void testNodeRestartWithNewStaticallyConfiguredCache() throws Exception {
         IgniteEx ex = startGrids(3);
@@ -284,7 +289,7 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
 
         cache = crd.cache(cacheName);
 
-        assertEquals("Cache was not properly restored or required key is lost.", 42, cache.get(12));
+        assertEquals(42, cache.get(12), "Cache was not properly restored or required key is lost.");
     }
 
     /**
@@ -317,20 +322,20 @@ public class IgniteCacheGroupsWithRestartsTest extends GridCommonAbstractTest {
 
         FindAndDeleteGarbageInPersistenceJobResult result = taskResult.result().get(ex1.localNode().id());
 
-        Assert.assertTrue(result.hasGarbage());
+        assertTrue(result.hasGarbage());
 
-        Assert.assertTrue(result.checkResult()
+        assertTrue(result.checkResult()
             .get(CU.cacheId("group"))
             .get(CU.cacheId(getCacheName(0))) > 0);
 
         //removing garbage
         result = doFindAndRemove.apply(ex1, true).result().get(ex1.localNode().id());
 
-        Assert.assertTrue(result.hasGarbage());
+        assertTrue(result.hasGarbage());
 
         result = doFindAndRemove.apply(ex1, false).result().get(ex1.localNode().id());
 
-        Assert.assertFalse(result.hasGarbage());
+        assertFalse(result.hasGarbage());
     }
 
     /**

@@ -32,7 +32,6 @@ import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
 import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
 import org.apache.ignite.spi.tracing.TracingSpi;
 import org.apache.ignite.spi.tracing.opencensus.OpenCensusTracingSpi;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static io.opencensus.trace.AttributeValue.stringAttributeValue;
@@ -51,6 +50,10 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.DISCOVERY_N
 import static org.apache.ignite.internal.processors.tracing.SpanType.DISCOVERY_NODE_LEFT;
 import static org.apache.ignite.internal.processors.tracing.SpanType.EXCHANGE_FUTURE;
 import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests to check correctness of OpenCensus Tracing SPI implementation.
@@ -110,11 +113,10 @@ public class OpenCensusTracingSpiTest extends AbstractTracingTest {
         clusterNodeNames.stream().filter(
             node -> node.endsWith(String.valueOf(CRD_IDX))
         ).forEach(nodeName ->
-            Assert.assertTrue(
+            assertTrue(nodeJoinReqSpans.containsKey(stringAttributeValue(nodeName)),
                 String.format(
-                    "%s not found on node with name=%s, nodeJoinReqSpans=%s",
-                    DISCOVERY_NODE_JOIN_REQUEST, nodeName, nodeJoinReqSpans),
-                nodeJoinReqSpans.containsKey(stringAttributeValue(nodeName)))
+                        "%s not found on node with name=%s, nodeJoinReqSpans=%s",
+                        DISCOVERY_NODE_JOIN_REQUEST, nodeName, nodeJoinReqSpans))
         );
 
         // Check existence of Traces.Discovery.NODE_JOIN_ADD spans with OK status on all nodes:
@@ -126,28 +128,23 @@ public class OpenCensusTracingSpiTest extends AbstractTracingTest {
                     span.getAttributes().getAttributeMap().get(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID))))
                 .collect(Collectors.toList());
 
-            Assert.assertTrue(
-                String.format("%s span not found, nodeId=%d",
-                    DISCOVERY_NODE_JOIN_ADD, i),
-                !nodeJoinReqSpans.isEmpty()
-            );
+            assertFalse(nodeJoinReqSpans.isEmpty(), 
+                String.format("%s span not found, nodeId=%d", DISCOVERY_NODE_JOIN_ADD, i));
 
             nodeJoinAddSpans.forEach(spanData -> {
                 SpanData parentSpan = handler().spanById(spanData.getParentSpanId());
 
-                Assert.assertNotNull(
-                    "Parent span doesn't exist for " + spanData,
-                    parentSpan
-                );
-                Assert.assertEquals(
+                assertNotNull(parentSpan, "Parent span doesn't exist for " + spanData);
+                
+                assertEquals(parentSpan.getName(),
                     "Parent span name is invalid, parentSpan=" + parentSpan,
-                    DISCOVERY_NODE_JOIN_REQUEST.spanName(),
-                    parentSpan.getName()
+                    DISCOVERY_NODE_JOIN_REQUEST.spanName()
                 );
-                Assert.assertEquals(
-                    "Parent span is not related to joined node, parentSpan=" + parentSpan,
+                
+                assertEquals(
                     stringAttributeValue(joinedNodeId),
-                    parentSpan.getAttributes().getAttributeMap().get(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID))
+                    parentSpan.getAttributes().getAttributeMap().get(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID)),
+                    "Parent span is not related to joined node, parentSpan=" + parentSpan
                 );
             });
         }
@@ -161,28 +158,24 @@ public class OpenCensusTracingSpiTest extends AbstractTracingTest {
                     span.getAttributes().getAttributeMap().get(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID))))
                 .collect(Collectors.toList());
 
-            Assert.assertTrue(
-                String.format("%s span not found, nodeId=%d",
-                    DISCOVERY_NODE_JOIN_FINISH, i),
-                !nodeJoinReqSpans.isEmpty()
-            );
+            assertFalse(nodeJoinReqSpans.isEmpty(), String.format("%s span not found, nodeId=%d",
+                    DISCOVERY_NODE_JOIN_FINISH, i));
 
             nodeJoinAddSpans.forEach(spanData -> {
                 SpanData parentSpan = handler().spanById(spanData.getParentSpanId());
 
-                Assert.assertNotNull(
-                    "Parent span doesn't exist for " + spanData,
-                    parentSpan
+                assertNotNull(parentSpan,
+                    "Parent span doesn't exist for " + spanData
                 );
-                Assert.assertEquals(
+                assertEquals(
                     "Parent span name is invalid " + parentSpan,
                     DISCOVERY_NODE_JOIN_ADD.spanName(),
                     parentSpan.getName()
                 );
-                Assert.assertEquals(
-                    "Parent span is not related to joined node " + parentSpan,
+                assertEquals(
                     stringAttributeValue(joinedNodeId),
-                    parentSpan.getAttributes().getAttributeMap().get(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID))
+                    parentSpan.getAttributes().getAttributeMap().get(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID)),
+                    "Parent span is not related to joined node " + parentSpan
                 );
             });
         }
@@ -224,9 +217,8 @@ public class OpenCensusTracingSpiTest extends AbstractTracingTest {
             ));
 
         clusterNodeNames.forEach(nodeName ->
-            Assert.assertTrue(
-                "Span " + DISCOVERY_NODE_LEFT + " doesn't exist on node with name=" + nodeName,
-                nodeLeftSpans.containsKey(stringAttributeValue(nodeName)))
+            assertTrue(nodeLeftSpans.containsKey(stringAttributeValue(nodeName)),
+                    "Span " + DISCOVERY_NODE_LEFT + " doesn't exist on node with name=" + nodeName)
         );
     }
 
@@ -256,40 +248,34 @@ public class OpenCensusTracingSpiTest extends AbstractTracingTest {
                     span.getAttributes().getAttributeMap().get(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID))))
                 .collect(Collectors.toList());
 
-            Assert.assertTrue(
-                String.format("%s span not found (or more than 1), nodeId=%d, exchFutSpans=%s",
-                    EXCHANGE_FUTURE, i, exchFutSpans),
-                exchFutSpans.size() == 1
-            );
+            assertEquals(1, exchFutSpans.size(),
+                    String.format("%s span not found (or more than 1), nodeId=%d, exchFutSpans=%s", EXCHANGE_FUTURE, i, exchFutSpans));
 
             exchFutSpans.forEach(span -> {
                 SpanData parentSpan = handler().spanById(span.getParentSpanId());
 
-                Assert.assertNotNull(
-                    "Parent span doesn't exist for " + span,
-                    parentSpan
-                );
-                Assert.assertEquals(
-                    "Parent span name is invalid " + parentSpan,
+                assertNotNull(parentSpan, "Parent span doesn't exist for " + span);
+                assertEquals(
                     DISCOVERY_NODE_LEFT.spanName(),
-                    parentSpan.getName()
+                    parentSpan.getName(),
+                    "Parent span name is invalid " + parentSpan
                 );
-                Assert.assertEquals(
-                    "Parent span is not related to joined node " + parentSpan,
+                assertEquals(
                     stringAttributeValue(leftNodeId),
-                    parentSpan.getAttributes().getAttributeMap().get(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID))
+                    parentSpan.getAttributes().getAttributeMap().get(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID)),
+                    "Parent span is not related to joined node " + parentSpan
                 );
-                Assert.assertEquals(
-                    "Exchange future major topology version is invalid " + span,
+                assertEquals(
                     AttributeValue.stringAttributeValue(String.valueOf(curTopVer + 1)),
                     span.getAttributes().getAttributeMap().get(
-                        SpanTags.tag(SpanTags.RESULT, SpanTags.TOPOLOGY_VERSION, SpanTags.MAJOR))
+                        SpanTags.tag(SpanTags.RESULT, SpanTags.TOPOLOGY_VERSION, SpanTags.MAJOR)),
+                    "Exchange future major topology version is invalid " + span
                 );
-                Assert.assertEquals(
-                    "Exchange future minor version is invalid " + span,
+                assertEquals(
                     AttributeValue.stringAttributeValue("0"),
                     span.getAttributes().getAttributeMap().get(
-                        SpanTags.tag(SpanTags.RESULT, SpanTags.TOPOLOGY_VERSION, SpanTags.MINOR))
+                        SpanTags.tag(SpanTags.RESULT, SpanTags.TOPOLOGY_VERSION, SpanTags.MINOR)),
+                    "Exchange future minor version is invalid " + span
                 );
             });
         }
@@ -322,7 +308,7 @@ public class OpenCensusTracingSpiTest extends AbstractTracingTest {
             .map(SpanData::getName)
             .collect(Collectors.toList());
 
-        assertEquals(nodejobTraces.toString(), 7, nodejobTraces.size());
+        assertEquals(7, nodejobTraces.size(), nodejobTraces.toString());
 
         assertEquals(1, nodejobTraces.stream().filter(it -> it.contains(CUSTOM_JOB_CALL.spanName())).count());
 

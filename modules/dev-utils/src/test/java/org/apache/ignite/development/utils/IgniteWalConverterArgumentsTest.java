@@ -33,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.charset.Charset.defaultCharset;
@@ -43,6 +42,11 @@ import static org.apache.ignite.development.utils.IgniteWalConverterArguments.pa
 import static org.apache.ignite.development.utils.IgniteWalConverterArguments.parsePageIds;
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.corruptedPagesFile;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test for IgniteWalConverterArguments
@@ -69,11 +73,11 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
 
         final IgniteWalConverterArguments parseArgs = parse(new PrintStream(out), null);
 
-        Assert.assertNull(parseArgs);
+        assertNull(parseArgs);
 
         final String help = out.toString();
 
-        Assert.assertTrue(help.startsWith("Print WAL log data in human-readable form."));
+        assertTrue(help.startsWith("Print WAL log data in human-readable form."));
 
         for (final Field field : IgniteWalConverterArguments.class.getDeclaredFields()) {
             if (Modifier.isStatic(field.getModifiers())
@@ -83,7 +87,7 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
 
                 final String arg = (String)field.get(null);
 
-                Assert.assertTrue(help.contains("    " + arg + " "));
+                assertTrue(help.contains("    " + arg + " "));
             }
         }
     }
@@ -312,16 +316,16 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
 
             final IgniteWalConverterArguments parseArgs = parse(System.out, args);
 
-            Assert.assertEquals(4096, parseArgs.getPageSize());
-            Assert.assertNotNull(parseArgs.getFileTree());
-            Assert.assertTrue(parseArgs.isKeepBinary());
-            Assert.assertTrue(parseArgs.getRecordTypes().isEmpty());
-            Assert.assertNull(parseArgs.getFromTime());
-            Assert.assertNull(parseArgs.getToTime());
-            Assert.assertNull(parseArgs.getRecordContainsText());
-            Assert.assertEquals(ProcessSensitiveData.SHOW, parseArgs.getProcessSensitiveData());
-            Assert.assertFalse(parseArgs.isPrintStat());
-            Assert.assertFalse(parseArgs.isSkipCrc());
+            assertEquals(4096, parseArgs.getPageSize());
+            assertNotNull(parseArgs.getFileTree());
+            assertTrue(parseArgs.isKeepBinary());
+            assertTrue(parseArgs.getRecordTypes().isEmpty());
+            assertNull(parseArgs.getFromTime());
+            assertNull(parseArgs.getToTime());
+            assertNull(parseArgs.getRecordContainsText());
+            assertEquals(ProcessSensitiveData.SHOW, parseArgs.getProcessSensitiveData());
+            assertFalse(parseArgs.isPrintStat());
+            assertFalse(parseArgs.isSkipCrc());
         });
 
     }
@@ -352,18 +356,18 @@ public class IgniteWalConverterArgumentsTest extends GridCommonAbstractTest {
             "skipCrc=true"};
 
         final IgniteWalConverterArguments parseArgs = parse(System.out, args);
-        Assert.assertEquals(ft.wal(), parseArgs.getFileTree().wal());
-        Assert.assertEquals(ft.walArchive(), parseArgs.getFileTree().walArchive());
-        Assert.assertEquals(2048, parseArgs.getPageSize());
-        Assert.assertFalse(parseArgs.isKeepBinary());
-        Assert.assertTrue(parseArgs.getRecordTypes().contains(WALRecord.RecordType.DATA_RECORD_V2));
-        Assert.assertTrue(parseArgs.getRecordTypes().contains(WALRecord.RecordType.TX_RECORD));
-        Assert.assertEquals(1575158400000L, (long)parseArgs.getFromTime());
-        Assert.assertEquals(1577836740999L, (long)parseArgs.getToTime());
-        Assert.assertEquals("search string", parseArgs.getRecordContainsText());
-        Assert.assertEquals(ProcessSensitiveData.MD5, parseArgs.getProcessSensitiveData());
-        Assert.assertTrue(parseArgs.isPrintStat());
-        Assert.assertTrue(parseArgs.isSkipCrc());
+        assertEquals(ft.wal(), parseArgs.getFileTree().wal());
+        assertEquals(ft.walArchive(), parseArgs.getFileTree().walArchive());
+        assertEquals(2048, parseArgs.getPageSize());
+        assertFalse(parseArgs.isKeepBinary());
+        assertTrue(parseArgs.getRecordTypes().contains(WALRecord.RecordType.DATA_RECORD_V2));
+        assertTrue(parseArgs.getRecordTypes().contains(WALRecord.RecordType.TX_RECORD));
+        assertEquals(1575158400000L, (long)parseArgs.getFromTime());
+        assertEquals(1577836740999L, (long)parseArgs.getToTime());
+        assertEquals("search string", parseArgs.getRecordContainsText());
+        assertEquals(ProcessSensitiveData.MD5, parseArgs.getProcessSensitiveData());
+        assertTrue(parseArgs.isPrintStat());
+        assertTrue(parseArgs.isSkipCrc());
     }
 
     /**

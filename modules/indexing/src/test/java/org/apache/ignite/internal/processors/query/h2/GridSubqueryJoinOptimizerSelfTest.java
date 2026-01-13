@@ -34,12 +34,14 @@ import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
  */
+@SuppressWarnings("ConcatenationWithEmptyString")
 public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
     /** */
     private static final Comparator<List<?>> ROW_COMPARATOR = new RowComparator();
@@ -818,12 +820,12 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test should verify all cases where subquery should not be rewrited.
+     * Test should verify all cases where subquery should not be rewritten.
      */
     @Test
     public void testOptimizationShouldNotBeApplied1() {
         String sql = "" +
-            // follow should not be rewrited beacuse of aggregates
+            // follow should not be rewritten beacuse of aggregates
             "select (select max(id) from emp) f1," +
             "       (select sum(id) from emp) f2," +
             "       (select distinct id from emp where id = 1) f3," +
@@ -994,7 +996,7 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
 
         act.sort(ROW_COMPARATOR);
 
-        Assert.assertEquals("Result set mismatch", exp, act);
+        assertEquals(exp, act, "Result set mismatch");
 
         List<String> expFieldTypes = new ArrayList<>();
         List<String> actualFieldTypes = new ArrayList<>();
@@ -1007,7 +1009,7 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
             actualFieldTypes.add(actMeta.fieldName() + ":" + actMeta.fieldTypeName());
         }
 
-        Assert.assertEquals("Result set field names or field types mismatch", expFieldTypes, actualFieldTypes);
+        assertEquals(expFieldTypes, actualFieldTypes, "Result set field names or field types mismatch");
 
         String plan = cache.query(new SqlFieldsQuery("explain " + sql)).getAll().get(0).get(0).toString();
 
@@ -1015,8 +1017,8 @@ public class GridSubqueryJoinOptimizerSelfTest extends GridCommonAbstractTest {
 
         int actCnt = countEntries(plan, "SELECT");
 
-        Assert.assertEquals(String.format("SELECT-clause count mismatch: exp=%d, act=%d, plan=[%s]",
-            expSelectClauses, actCnt, plan), expSelectClauses, actCnt);
+        assertEquals(expSelectClauses, actCnt, String.format("SELECT-clause count mismatch: exp=%d, act=%d, plan=[%s]",
+                expSelectClauses, actCnt, plan));
     }
 
     /**

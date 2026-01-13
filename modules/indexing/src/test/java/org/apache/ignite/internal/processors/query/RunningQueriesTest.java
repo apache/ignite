@@ -64,14 +64,12 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Rule;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for running queries.
@@ -157,7 +155,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        Assert.assertEquals(0, barrier.getNumberWaiting());
+        assertEquals(0, barrier.getNumberWaiting());
 
         assertNoRunningQueries();
     }
@@ -242,13 +240,12 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         cache.query(new SqlFieldsQuery("SELECT * FROM Integer order by _key"));
 
-        Assert.assertEquals("Should be one running query",
-            1,
-            ign.context().query().runningQueries(-1).size());
+        assertEquals(1, ign.context().query().runningQueries(-1).size(),
+                "Should be one running query");
 
         ign.close();
 
-        Assert.assertEquals(0, ign.context().query().runningQueries(-1).size());
+        assertEquals(0, ign.context().query().runningQueries(-1).size());
     }
 
     /**
@@ -265,9 +262,8 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
         FieldsQueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery("SELECT * FROM Integer order by _key"));
 
         qry.iterator().forEachRemaining((e) -> {
-            Assert.assertEquals("Should be one running query",
-                1,
-                ignite.context().query().runningQueries(-1).size());
+            assertEquals(1, ignite.context().query().runningQueries(-1).size(),
+                    "Should be one running query");
         });
 
         assertNoRunningQueries();
@@ -315,7 +311,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
             new SqlQuery<Integer, Integer>(Integer.class, "FROM /* comment */ Integer WHERE 1 = 1"))
             .getAll());
 
-        Assert.assertTrue(GridTestUtils.waitForCondition(
+        assertTrue(GridTestUtils.waitForCondition(
             () -> barrier.getNumberWaiting() == 2, TIMEOUT_IN_MS));
 
         Collection<GridRunningQueryInfo> runningQueries = ignite.context().query().runningQueries(-1);
@@ -323,7 +319,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
         assertEquals(2, runningQueries.size());
 
         for (GridRunningQueryInfo info : runningQueries)
-            assertTrue("Failed to find comment in query: " + info.query(), info.query().contains("/* comment */"));
+            assertTrue(info.query().contains("/* comment */"), "Failed to find comment in query: " + info.query());
 
         assertNoRunningQueries(ignite);
 
@@ -339,7 +335,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
      *
      * @throws Exception Exception in case of failure.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11510")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11510")
     @Test
     public void testQueryDmlDelete() throws Exception {
         testQueryDML("DELETE FROM /* comment */ Integer");
@@ -350,7 +346,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
      *
      * @throws Exception Exception in case of failure.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11510")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11510")
     @Test
     public void testQueryDmlInsert() throws Exception {
         testQueryDML("INSERT INTO Integer(_key, _val) VALUES(1,1)");
@@ -361,7 +357,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
      *
      * @throws Exception Exception in case of failure.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11510")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11510")
     @Test
     public void testQueryDmlUpdate() throws Exception {
         testQueryDML("UPDATE Integer set _val = 1 where 1=1");
@@ -390,7 +386,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         assertNoRunningQueries(ignite);
 
-        runningQueries.forEach((info) -> Assert.assertEquals(qry.getSql(), info.query()));
+        runningQueries.forEach((info) -> assertEquals(qry.getSql(), info.query()));
 
         IgniteInternalFuture<Integer> fut1 = GridTestUtils.runAsync(() -> barrier.await());
 
@@ -477,7 +473,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
 
         assertNoRunningQueries(ignite);
 
-        runningQueries.forEach((info) -> Assert.assertEquals(qry.getSql(), info.query()));
+        runningQueries.forEach((info) -> assertEquals(qry.getSql(), info.query()));
 
         awaitTimeout();
 
@@ -628,8 +624,8 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
      * @throws IgniteInterruptedCheckedException In case of failure.
      */
     private void assertWaitingOnBarrier() throws IgniteInterruptedCheckedException {
-        Assert.assertTrue("Still waiting " + barrier.getNumberWaiting() + " parties",
-            GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS));
+        assertTrue(GridTestUtils.waitForCondition(() -> barrier.getNumberWaiting() == 1, TIMEOUT_IN_MS),
+                "Still waiting " + barrier.getNumberWaiting() + " parties");
     }
 
     /**
@@ -646,7 +642,7 @@ public class RunningQueriesTest extends AbstractIndexingCommonTest {
             if (!excludeIds.contains(node.localNode().id())) {
                 Collection<GridRunningQueryInfo> runningQueries = node.context().query().runningQueries(-1);
 
-                Assert.assertEquals(0, runningQueries.size());
+                assertEquals(0, runningQueries.size());
             }
         }
     }

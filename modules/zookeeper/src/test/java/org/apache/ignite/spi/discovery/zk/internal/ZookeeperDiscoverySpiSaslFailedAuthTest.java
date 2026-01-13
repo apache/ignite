@@ -17,11 +17,11 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT;
 import static org.apache.zookeeper.client.ZooKeeperSaslClient.LOGIN_CONTEXT_NAME_KEY;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -37,7 +37,7 @@ public class ZookeeperDiscoverySpiSaslFailedAuthTest extends ZookeeperDiscoveryS
         try {
             startGrid(0);
 
-            Assert.fail("Ignite node with invalid password should fail on join.");
+            fail("Ignite node with invalid password should fail on join.");
         }
         catch (Exception ignored) {
             //ignored

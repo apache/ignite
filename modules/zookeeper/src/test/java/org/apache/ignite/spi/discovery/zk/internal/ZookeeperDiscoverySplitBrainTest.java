@@ -28,8 +28,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.G;
-import org.junit.Assert;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests for Zookeeper SPI discovery.
@@ -100,7 +101,7 @@ public class ZookeeperDiscoverySplitBrainTest extends ZookeeperDiscoverySpiTestB
             .map(g -> g.cluster().localNode())
             .collect(Collectors.toList());
 
-        Assert.assertEquals(5, srvNodes.size());
+        assertEquals(5, srvNodes.size());
 
         startClientGridsMultiThreaded(5, 3);
 
@@ -144,7 +145,7 @@ public class ZookeeperDiscoverySplitBrainTest extends ZookeeperDiscoverySpiTestB
             .map(g -> g.cluster().localNode())
             .collect(Collectors.toList());
 
-        Assert.assertEquals(6, srvNodes.size());
+        assertEquals(6, srvNodes.size());
 
         List<ClusterNode> srvPart1 = srvNodes.subList(0, 3);
         List<ClusterNode> srvPart2 = srvNodes.subList(3, srvNodes.size());
@@ -158,7 +159,7 @@ public class ZookeeperDiscoverySplitBrainTest extends ZookeeperDiscoverySpiTestB
             .filter(ClusterNode::isClient)
             .collect(Collectors.toList());
 
-        Assert.assertEquals(5, clientNodes.size());
+        assertEquals(5, clientNodes.size());
 
         List<ClusterNode> clientPart1 = clientNodes.subList(0, 2);
         List<ClusterNode> clientPart2 = clientNodes.subList(2, 4);
