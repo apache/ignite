@@ -20,7 +20,6 @@ package org.apache.ignite.internal.binary;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
@@ -46,7 +45,6 @@ import org.apache.ignite.internal.UnregisteredClassException;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.util.CommonUtils;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -64,7 +62,7 @@ class BinaryClassDescriptor {
     private final BinaryContext ctx;
 
     /** */
-    final Class<?> cls;
+    private final Class<?> cls;
 
     /** Configured serializer. */
     final BinarySerializer serializer;
@@ -1004,19 +1002,6 @@ class BinaryClassDescriptor {
         // No need to call "postWriteHashCode" here because we do not care about hash code.
         if (postWriteRequired)
             writer.postWriteHashCode(registered ? null : cls.getName());
-    }
-
-    /**
-     * @return Instance.
-     * @throws BinaryObjectException In case of error.
-     */
-    Object newInstance() throws BinaryObjectException {
-        try {
-            return ctor != null ? ctor.newInstance() : GridUnsafe.allocateInstance(cls);
-        }
-        catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
-            throw new BinaryObjectException("Failed to instantiate instance: " + cls, e);
-        }
     }
 
     /** */
