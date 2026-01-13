@@ -260,10 +260,11 @@ public class BinaryContext {
         registerPredefinedType(BinaryObjectImpl.class, 0);
         registerPredefinedType(BinaryObjectOffheapImpl.class, 0);
         registerPredefinedType(BinaryMetadata.class, 0);
-        registerPredefinedType(BinaryEnumObjectImpl.class, 0);
         registerPredefinedType(BinaryTreeMap.class, 0);
         registerPredefinedType(BinaryArray.class, 0);
         registerPredefinedType(BinaryEnumArray.class, 0);
+
+        BinaryUtils.binariesFactory.predefinedTypes().forEach(this::registerPredefinedType);
 
         // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
         registerBinarilizableSystemClass(BinaryTreeMap.class);
@@ -1520,7 +1521,7 @@ public class BinaryContext {
         // Interfaces and array not registered as binary types.
         BinaryClassDescriptor desc = descriptorForClass(compCls);
 
-        if (compCls.isEnum() || compCls == BinaryEnumObjectImpl.class) {
+        if (compCls.isEnum() || compCls == BinaryUtils.binariesFactory.binaryEnumClass()) {
             return new BinaryEnumArray(
                 this,
                 desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,

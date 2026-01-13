@@ -18,6 +18,10 @@
 package org.apache.ignite.internal.binary;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.ToIntFunction;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
@@ -141,5 +145,52 @@ public class BinariesFactoryImpl implements BinariesFactory {
             default:
                 return new BinaryFieldDescriptor(field, id, mode, -1L, !CommonUtils.isFinal(field.getType()));
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryObjectEx createBinaryEnum(BinaryContext ctx, int ord, @Nullable String clsName, int typeId) {
+        return new BinaryEnumObjectImpl(ctx, typeId, clsName, ord);
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryObjectEx createBinaryEnum(BinaryContext ctx, byte[] arr) {
+        return new BinaryEnumObjectImpl(ctx, arr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<?> binaryEnumClass() {
+        return BinaryEnumObjectImpl.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Class<?>, Integer> predefinedTypes() {
+        Map<Class<?>, Integer> predefinedTypes = new HashMap<>();
+
+        predefinedTypes.put(BinaryEnumObjectImpl.class, 0);
+
+        return predefinedTypes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Class<?>, ToIntFunction<Object>> sizeProviders() {
+        return Map.of(
+            BinaryObjectOffheapImpl.class, obj -> 0, // No extra heap memory.
+            BinaryObjectImpl.class, new ToIntFunction<>() {
+                private final long byteArrOffset = GridUnsafe.arrayBaseOffset(byte[].class);
+
+                @Override public int applyAsInt(Object bo) {
+                    return (int)GridUnsafe.align(byteArrOffset + ((BinaryObjectImpl)bo).bytes().length);
+                }
+            },
+            BinaryEnumObjectImpl.class, bo -> ((BinaryObject)bo).size()
+        );
+    }
+
+    /**
+     * @param cls Class to check.
+     * @return {@code True} if {@code val} is assignable to binary Enum object.
+     */
+    public static boolean isAssignableToBinaryEnumObject(Class<?> cls) {
+        return BinaryEnumObjectImpl.class.isAssignableFrom(cls);
     }
 }

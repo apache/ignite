@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.binary;
 
 import java.lang.reflect.Field;
+import java.util.Map;
+import java.util.function.ToIntFunction;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.jetbrains.annotations.Nullable;
@@ -99,4 +101,36 @@ public interface BinariesFactory {
      * @return Accessor.
      */
     public BinaryFieldDescriptor create(Field field, int id);
+
+    /**
+     * Creates binary enum.
+     *
+     * @param ord Ordinal.
+     * @param ctx Context.
+     * @param typeId Type ID.
+     */
+    public BinaryObjectEx createBinaryEnum(BinaryContext ctx, int ord, @Nullable String clsName, int typeId);
+
+    /**
+     * Creates binary enum.
+     *
+     * @param ctx Context.
+     * @param arr Array.
+     */
+    public BinaryObjectEx createBinaryEnum(BinaryContext ctx, byte[] arr);
+
+    /**
+     * @return Binary enum class.
+     */
+    public Class<?> binaryEnumClass();
+
+    /**
+     * @return Map of predefined types.
+     */
+    public Map<Class<?>, Integer> predefinedTypes();
+
+    /**
+     * @return Map of function returning size of the object.
+     */
+    public Map<Class<?>, ToIntFunction<Object>> sizeProviders();
 }
