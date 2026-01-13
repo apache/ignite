@@ -2366,13 +2366,14 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      */
     private Object read(BinaryClassDescriptor desc) throws BinaryObjectException {
         try {
-            assert desc.mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + desc.cls.getName();
+            assert desc.mode != BinaryWriteMode.OPTIMIZED
+                : "OptimizedMarshaller should not be used here: " + desc.describedClass().getName();
 
             Object res;
 
             switch (desc.mode) {
                 case BINARY:
-                    res = newInstance(desc.ctor, desc.cls);
+                    res = newInstance(desc.ctor(), desc.describedClass());
 
                     setHandle(res);
 
@@ -2384,7 +2385,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                     break;
 
                 case OBJECT:
-                    res = newInstance(desc.ctor, desc.cls);
+                    res = newInstance(desc.ctor(), desc.describedClass());
 
                     setHandle(res);
 

@@ -62,7 +62,7 @@ class BinaryClassDescriptor {
     private final BinaryContext ctx;
 
     /** */
-    final Class<?> cls;
+    private final Class<?> cls;
 
     /** Configured serializer. */
     final BinarySerializer serializer;
