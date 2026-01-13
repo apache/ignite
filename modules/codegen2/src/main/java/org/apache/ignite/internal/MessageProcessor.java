@@ -34,8 +34,13 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
+
+import org.apache.ignite.lang.IgniteBiTuple;
+
+import static org.apache.ignite.internal.MessageSerializerGenerator.DLFT_ENUM_MAPPER_CLS;
 
 /**
  * Annotation processor that generates serialization and deserialization code for classes implementing the {@code Message} interface.
@@ -70,6 +75,9 @@ public class MessageProcessor extends AbstractProcessor {
 
     /** This is the only message with zero fields. A serializer must be generated due to restrictions in our communication process. */
     static final String HANDSHAKE_WAIT_MESSAGE = "org.apache.ignite.spi.communication.tcp.messages.HandshakeWaitMessage";
+
+    /** */
+    private final Map<String, IgniteBiTuple<String, String>> enumMappersInUse = new HashMap<>();
 
     /**
      * Processes all classes implementing the {@code Message} interface and generates corresponding serializer code.
@@ -132,9 +140,11 @@ public class MessageProcessor extends AbstractProcessor {
                     if (el.getModifiers().contains(Modifier.STATIC)) {
                         processingEnv.getMessager().printMessage(
                             Diagnostic.Kind.ERROR,
-                            "Annotation @Order must be used only for non-static fields.",
+                            "Annotation @Order must only be used for non-static fields.",
                             el);
                     }
+
+                    validateEnumFieldMapping(type, el);
                 }
             }
 
@@ -155,5 +165,55 @@ public class MessageProcessor extends AbstractProcessor {
         }
 
         return result;
+    }
+
+    /**
+     * Validates consistency of enum field mappers configuration: the same mapper is used for the same enum in different messages,
+     * CustomMapper annotation is used only for enum fields.
+     *
+     * @param type Type implementing Message interface.
+     * @param el Enclosed element of the type.
+     */
+    private void validateEnumFieldMapping(TypeElement type, Element el) {
+        CustomMapper custMappAnn = el.getAnnotation(CustomMapper.class);
+        if (isEnumField(el)) {
+            String enumClsFullName = el.asType().toString();
+            String enumMapperClsName = custMappAnn != null ? custMappAnn.value() : DLFT_ENUM_MAPPER_CLS;
+            String msgClsName = type.toString();
+
+            IgniteBiTuple<String, String> otherMsgAndMapperClassesNames =
+                enumMappersInUse.put(enumClsFullName, new IgniteBiTuple<>(msgClsName, enumMapperClsName));
+
+            if (otherMsgAndMapperClassesNames != null) {
+                String otherMsgClsName = otherMsgAndMapperClassesNames.get1();
+                String otherEnumMapperClsName = otherMsgAndMapperClassesNames.get2();
+
+                if (!otherEnumMapperClsName.equals(enumMapperClsName)) {
+                    processingEnv.getMessager().printMessage(
+                        Diagnostic.Kind.ERROR,
+                        "Enum " + enumClsFullName + " is declared with different mappers: " +
+                            otherEnumMapperClsName + " in " + otherMsgClsName + " and " +
+                            enumMapperClsName + " in " + msgClsName +
+                            ". Only one mapper is allowed per enum type.",
+                        el);
+                }
+            }
+        }
+        else if (custMappAnn != null) {
+            processingEnv.getMessager().printMessage(
+                Diagnostic.Kind.ERROR,
+                "Annotation @CustomMapper must only be used for enum fields.",
+                el);
+        }
+    }
+
+    /** */
+    private boolean isEnumField(Element el) {
+        TypeMirror elType = el.asType();
+
+        if (elType.getKind() != TypeKind.DECLARED)
+            return false;
+
+        return processingEnv.getTypeUtils().asElement(elType).getKind() == ElementKind.ENUM;
     }
 }

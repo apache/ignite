@@ -21,7 +21,6 @@ import java.util.Collection;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.Order;
-import org.apache.ignite.internal.managers.communication.CacheWriteSynchronizationModeMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
@@ -96,9 +95,9 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     @Order(16)
     private byte flags;
 
-    /** Write synchronization mode wrapper message. */
-    @Order(value = 17, method = "writeSynchronizationModeMessage")
-    private CacheWriteSynchronizationModeMessage syncModeMsg;
+    /** Write synchronization mode. */
+    @Order(value = 17)
+    private CacheWriteSynchronizationMode syncMode;
 
     /** Transient TX state. */
     private IgniteTxState txState;
@@ -152,7 +151,7 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
         this.commit = commit;
         this.invalidate = invalidate;
         this.plc = plc;
-        syncModeMsg = new CacheWriteSynchronizationModeMessage(syncMode);
+        this.syncMode = syncMode;
         this.baseVer = baseVer;
         this.taskNameHash = taskNameHash;
 
@@ -160,24 +159,17 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
     }
 
     /**
-     * @return Transaction write synchronization mode (can be null is message sent from old nodes).
+     * @return Transaction write synchronization mode.
      */
     @Nullable public final CacheWriteSynchronizationMode syncMode() {
-        return syncModeMsg != null ? syncModeMsg.value() : null;
+        return syncMode;
     }
 
     /**
-     * @return Transaction write synchronization mode wrapper message.
+     * @param syncMode Transaction write synchronization mode.
      */
-    public CacheWriteSynchronizationModeMessage writeSynchronizationModeMessage() {
-        return syncModeMsg;
-    }
-
-    /**
-     * @param syncModeMsg Transaction write synchronization mode wrapper message.
-     */
-    public void writeSynchronizationModeMessage(CacheWriteSynchronizationModeMessage syncModeMsg) {
-        this.syncModeMsg = syncModeMsg;
+    public void syncMode(CacheWriteSynchronizationMode syncMode) {
+        this.syncMode = syncMode;
     }
 
     /**
@@ -346,9 +338,9 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage i
      * @return {@code True} if reply is required.
      */
     public boolean replyRequired() {
-        assert syncModeMsg != null && syncModeMsg.value() != null;
+        assert syncMode != null;
 
-        return syncModeMsg.value() == FULL_SYNC;
+        return syncMode == FULL_SYNC;
     }
 
     /** {@inheritDoc} */

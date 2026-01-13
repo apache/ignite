@@ -3338,7 +3338,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         private void processAuthFailedMessage(TcpDiscoveryAuthFailedMessage authFailedMsg) {
             try {
-                sendDirectlyToClient(authFailedMsg.getTargetNodeId(), authFailedMsg);
+                sendDirectlyToClient(authFailedMsg.targetNodeId(), authFailedMsg);
             }
             catch (IgniteSpiException ex) {
                 log.warning(
@@ -3544,7 +3544,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 boolean changeTop = sndState != null && !sndState.isStartingPoint();
 
                                 if (changeTop)
-                                    hndMsg.changeTopology(ring.previousNodeOf(next).id());
+                                    hndMsg.previousNodeId(ring.previousNodeOf(next).id());
 
                                 if (log.isDebugEnabled()) {
                                     log.debug("Sending handshake [hndMsg=" + hndMsg + ", sndState=" + sndState +
@@ -5415,7 +5415,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             if (msg.maxHopsReached()) {
                 if (log.isInfoEnabled()) {
                     log.info("Latency check has been discarded (max hops reached) [id=" + msg.id() +
-                        ", maxHops=" + msg.maxHops() + ']');
+                        ", maxHops=" + msg.maximalHops() + ']');
                 }
 
                 return;
@@ -6102,7 +6102,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private void processDiscardMessage(TcpDiscoveryDiscardMessage msg) {
             assert msg != null;
 
-            IgniteUuid msgId = msg.msgId();
+            IgniteUuid msgId = msg.messageId();
 
             assert msgId != null;
 
@@ -6871,7 +6871,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             }
                         }
                     }
-                    else if (req.changeTopology()) {
+                    else if (req.previousNodeId() != null) {
                         // Node cannot connect to it's next (for local node it's previous).
                         // Need to check connectivity to it.
                         long rcvdTime = lastRingMsgReceivedTime;
@@ -6896,7 +6896,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             InetSocketAddress liveAddr = null;
 
                             if (previous != null && !previous.id().equals(nodeId) &&
-                                (req.checkPreviousNodeId() == null || previous.id().equals(req.checkPreviousNodeId()))) {
+                                (req.previousNodeId() == null || previous.id().equals(req.previousNodeId()))) {
 
                                 // The connection recovery connection to one node is connCheckTick.
                                 // We need to suppose network delays. So we use half of this time.
@@ -6919,7 +6919,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (log.isInfoEnabled()) {
                             log.info("Previous node alive status [alive=" + ok +
-                                ", checkPreviousNodeId=" + req.checkPreviousNodeId() +
+                                ", checkPreviousNodeId=" + req.previousNodeId() +
                                 ", actualPreviousNode=" + previous +
                                 ", lastMessageReceivedTime=" + rcvdTime + ", now=" + now +
                                 ", connCheckInterval=" + connCheckInterval + ']');
@@ -7166,7 +7166,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     mux.notifyAll();
                                 }
                                 else {
-                                    UUID targetNode = ((TcpDiscoveryAuthFailedMessage)msg).getTargetNodeId();
+                                    UUID targetNode = ((TcpDiscoveryAuthFailedMessage)msg).targetNodeId();
 
                                     if (targetNode == null || targetNode.equals(locNodeId)) {
                                         if (log.isDebugEnabled())

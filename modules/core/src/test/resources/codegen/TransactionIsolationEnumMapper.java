@@ -15,15 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query.index;
+package org.apache.ignite.internal;
 
-/**
- * Enum of possible sort orders.
- */
-public enum SortOrder {
-    /** */
-    ASC,
+import org.apache.ignite.plugin.extensions.communication.mappers.EnumMapper;
+import org.apache.ignite.transactions.TransactionIsolation;
 
-    /** */
-    DESC
+public class TransactionIsolationEnumMapper implements EnumMapper<TransactionIsolation> {
+    @Override public byte encode(TransactionIsolation val) {
+        return 0;
+    }
+
+    @Override public TransactionIsolation decode(byte code) {
+        return null;
+    }
 }

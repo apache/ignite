@@ -18,18 +18,18 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.transactions.TransactionIsolation;
 
-public class UnwrappedEnumFieldMessage implements Message {
+public class CustomEnumMapperOnPrimitiveFieldMessage implements Message {
     @Order(0)
-    private TransactionIsolation isolation;
+    @CustomMapper("org.apache.ignite.internal.CustomEnumMapper")
+    private int intField;
 
-    public TransactionIsolation isolation() {
-        return isolation;
+    public int intField() {
+        return intField;
     }
 
-    public void isolation(TransactionIsolation isolation) {
-        this.isolation = isolation;
+    public void intField(int intField) {
+        this.intField = intField;
     }
 
     public short directType() {

@@ -15,31 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.cache.query.index;
+package org.apache.ignite.internal.processors.cache.persistence.filename;
+
+import org.apache.ignite.configuration.DataStorageConfiguration;
 
 /**
- * Represents ordering of rows within sorted index.
+ * Test snapshot can be created when {@link DataStorageConfiguration#setStoragePath(String)} used.
  */
-public class Order {
-    /** */
-    private final NullsOrder nullsOrder;
+public class SnapshotExtraStoragesTest extends SnapshotCreationNonDefaultStoragePathTest {
+    /** {@inheritDoc} */
+    @Override protected DataStorageConfiguration dataStorageConfiguration() {
+        extraSnpPaths = new String[] {
+            "snp_path",
+            "snp_path2"
+        };
 
-    /** */
-    private final SortOrder sortOrder;
-
-    /** */
-    public Order(SortOrder sortOrder, NullsOrder nullsOrder) {
-        this.sortOrder = sortOrder;
-        this.nullsOrder = nullsOrder;
-    }
-
-    /** */
-    public SortOrder sortOrder() {
-        return sortOrder;
-    }
-
-    /** */
-    public NullsOrder nullsOrder() {
-        return nullsOrder;
+        return super.dataStorageConfiguration().setExtraSnapshotPaths(storagePath("snp_path"), storagePath("snp_path2"));
     }
 }

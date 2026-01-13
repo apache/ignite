@@ -34,6 +34,8 @@ import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static java.sql.Connection.TRANSACTION_NONE;
 import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
@@ -47,9 +49,20 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 
 /** */
+@RunWith(Parameterized.class)
 public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
+    /** */
+    @Parameterized.Parameter
+    public boolean partitionAwareness;
+
+    /** */
+    @Parameterized.Parameters(name = "partitionAwareness={0}")
+    public static Object[] parameters() {
+        return new Object[] {false, true};
+    }
+
     /** URL. */
-    public static final String URL = "jdbc:ignite:thin://127.0.0.1";
+    public static final String URL = "jdbc:ignite:thin://127.0.0.1?";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -71,7 +84,7 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testDatabaseMetadata() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url())) {
             DatabaseMetaData meta = conn.getMetaData();
 
             assertTrue(meta.supportsTransactions());
@@ -89,7 +102,7 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testInvalidHoldability() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url())) {
             List<TestRunnable> checks = Arrays.asList(
                 () -> conn.setHoldability(HOLD_CURSORS_OVER_COMMIT),
                 () -> conn.createStatement(TYPE_FORWARD_ONLY, CONCUR_READ_ONLY, HOLD_CURSORS_OVER_COMMIT),
@@ -116,7 +129,7 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
     @Test
     public void testTransactionConcurrencyProperty() throws Exception {
         for (TransactionConcurrency txConcurrency : TransactionConcurrency.values()) {
-            String url = URL + "?transactionConcurrency=" + txConcurrency;
+            String url = url("transactionConcurrency=" + txConcurrency);
 
             try (Connection conn = DriverManager.getConnection(url)) {
                 conn.setAutoCommit(false);
@@ -132,7 +145,7 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testTransactionIsolation() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url())) {
             assertEquals(TRANSACTION_READ_COMMITTED, conn.getTransactionIsolation());
 
             conn.setTransactionIsolation(TRANSACTION_NONE);
@@ -156,7 +169,7 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testChangeStreamInsideTransactionThrows() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url())) {
             conn.setAutoCommit(false);
 
             conn.prepareStatement("SELECT 1").executeQuery();
@@ -176,7 +189,7 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testNoTxInNoTxIsolation() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url())) {
             conn.setTransactionIsolation(TRANSACTION_NONE);
 
             conn.prepareStatement("SELECT 1").executeQuery();
@@ -188,9 +201,7 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testTransactionLabel() throws Exception {
-        String url = URL + "?transactionLabel=mylabel";
-
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DriverManager.getConnection(url("transactionLabel=mylabel"))) {
             conn.setAutoCommit(false);
 
             try (ResultSet rs = conn.prepareStatement("SELECT 1").executeQuery()) {
@@ -205,9 +216,7 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
     public void testTransactionTimeout() throws Exception {
         int timeout = 1000;
 
-        String url = URL + "?transactionTimeout=" + timeout;
-
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = DriverManager.getConnection(url("transactionTimeout=" + timeout))) {
             conn.setAutoCommit(false);
 
             ResultSet rs = conn.prepareStatement("SELECT 1").executeQuery();
@@ -232,7 +241,7 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
     public void testStatementsClosedOnTxEnd() throws Exception {
         for (boolean commit : new boolean[]{true, false}) {
 
-            try (Connection conn = DriverManager.getConnection(URL)) {
+            try (Connection conn = DriverManager.getConnection(url())) {
                 conn.setAutoCommit(false);
 
                 PreparedStatement stmt0 = conn.prepareStatement("SELECT 1");
@@ -273,7 +282,7 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
         ResultSet rs0;
         ResultSet rs1;
 
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url())) {
             conn.setAutoCommit(false);
 
             stmt0 = conn.prepareStatement("SELECT 1");
@@ -297,7 +306,7 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
     /** */
     @Test
     public void testCreateStatementOnDefaults() throws Exception {
-        try (Connection conn = DriverManager.getConnection(URL)) {
+        try (Connection conn = DriverManager.getConnection(url())) {
             conn.setAutoCommit(false);
 
             try (Statement stmt = conn.createStatement()) {
@@ -313,5 +322,30 @@ public class JdbcThinTransactionalSelfTest extends GridCommonAbstractTest {
             }
 
         }
+    }
+
+    /** */
+    private String url(String...params) {
+        String url = URL;
+
+        boolean first = true;
+
+        if (partitionAwareness) {
+            url += "partitionAwareness=true";
+            first = false;
+        }
+
+        if (!F.isEmpty(params)) {
+            for (String param : params) {
+                if (first) {
+                    url += param;
+                    first = false;
+                }
+                else
+                    url += "&" + param;
+            }
+        }
+
+        return url;
     }
 }
