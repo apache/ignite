@@ -44,8 +44,11 @@ class BinaryFieldAccessor {
     /**
      * Protected constructor.
      *
+     * @param field Field.
      * @param id Field ID.
      * @param mode Mode;
+     * @param offset Offset of the field in the byte array
+     * @param dynamic If {@code true} then field is not final.
      */
     protected BinaryFieldAccessor(Field field, int id, BinaryWriteMode mode, long offset, boolean dynamic) {
         assert field != null;

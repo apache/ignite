@@ -188,7 +188,7 @@ public class BinaryUtils {
 
         A.ensure(
             factories.hasNext(),
-            "Implementation for BinariesFactory service not found. Please add ignite-binary-impl to classpath"
+            "Implementation for " + BinariesFactory.class.getSimpleName() + " service not found. Please add ignite-binary-impl to classpath"
         );
 
         binariesFactory = factories.next();
