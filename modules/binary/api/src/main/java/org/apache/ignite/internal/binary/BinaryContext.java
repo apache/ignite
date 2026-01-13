@@ -1380,7 +1380,7 @@ public class BinaryContext {
                 typeName = meta.typeName();
             }
 
-            BinarySchema curSchema = ((BinaryWriterExImpl)writer).currentSchema();
+            BinarySchema curSchema = writer.currentSchema();
 
             if (affFieldName == null)
                 affFieldName = affinityKeyFieldName(typeId);
