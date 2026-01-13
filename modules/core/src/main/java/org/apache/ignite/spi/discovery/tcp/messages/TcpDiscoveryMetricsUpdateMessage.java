@@ -18,7 +18,9 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
@@ -59,6 +61,10 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
     @GridToStringExclude
     @Order(value = 6, method = "serversFullMetricsMessages")
     private @Nullable Map<UUID, TcpDiscoveryNodeFullMetricsMessage> serversFullMetricsMsgs;
+
+    /** Client node IDs. */
+    @Order(value = 7)
+    private @Nullable Set<UUID> clientNodeIds;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
     public TcpDiscoveryMetricsUpdateMessage() {
@@ -189,6 +195,36 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
     /** @param connectedClientsMetricsMsgs Map of nodes metrics messages. */
     public void connectedClientsMetricsMessages(Map<UUID, TcpDiscoveryNodesMetricsMapMessage> connectedClientsMetricsMsgs) {
         this.connectedClientsMetricsMsgs = connectedClientsMetricsMsgs;
+    }
+
+    /**
+     * Gets client node IDs.
+     *
+     * @return Client node IDs.
+     */
+    public @Nullable Set<UUID> clientNodeIds() {
+        return clientNodeIds;
+    }
+
+    /**
+     * Sets client node IDs.
+     *
+     * @param clientNodeIds Client node IDs.
+     */
+    public void clientNodeIds(@Nullable Set<UUID> clientNodeIds) {
+        this.clientNodeIds = clientNodeIds;
+    }
+
+    /**
+     * Adds client node ID.
+     *
+     * @param clientNodeId Client node ID.
+     */
+    public void addClientNodeId(UUID clientNodeId) {
+        if (clientNodeIds == null)
+            clientNodeIds = new HashSet<>();
+
+        clientNodeIds.add(clientNodeId);
     }
 
     /** {@inheritDoc} */

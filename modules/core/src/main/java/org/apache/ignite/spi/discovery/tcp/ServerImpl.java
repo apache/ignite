@@ -6048,9 +6048,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     // Message is on its second ring.
                     msg.removeServerMetrics(locNodeId);
 
-                    Collection<UUID> clientNodeIds = F.isEmpty(msg.connectedClientsMetricsMessages())
+                    Collection<UUID> clientNodeIds = msg.clientNodeIds() == null
                         ? Collections.emptySet()
-                        : msg.connectedClientsMetricsMessages().keySet();
+                        : msg.clientNodeIds();
 
                     for (TcpDiscoveryNode clientNode : ring.clientNodes()) {
                         if (clientNode.visible()) {
