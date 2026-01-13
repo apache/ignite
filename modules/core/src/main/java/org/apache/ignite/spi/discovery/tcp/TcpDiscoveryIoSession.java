@@ -339,13 +339,6 @@ public class TcpDiscoveryIoSession {
 
         /** {@inheritDoc} */
         @Override public synchronized int read() throws IOException {
-//            if (prefLeft() > 0) {
-//                ++prefOffset;
-//
-//                return prefixBuf[prefOffset - 1];
-//            }
-//
-//            return super.read();
             if (prefixBytesLeft() > 0) {
                 int res = bais.read();
 
@@ -360,7 +353,6 @@ public class TcpDiscoveryIoSession {
         /** */
         private int prefixBytesLeft() {
             return bais == null ? 0 : bais.available();
-            //return prefixBuf.length - prefOffset;
         }
 
         /** */
@@ -376,24 +368,6 @@ public class TcpDiscoveryIoSession {
             if (len0 == len)
                 return len0;
 
-//            int len0 = 0;
-//
-//            if (len > b.length - off)
-//                len = b.length - off;
-//
-//            if (prefLeft() > 0) {
-//                len0 = Math.min(len, prefLeft());
-//
-//                System.arraycopy(prefixBuf, prefOffset, b, off, len0);
-//
-//                prefOffset += len0;
-//
-//                assert prefLeft() >= 0;
-//
-//                if (len0 == len)
-//                    return len0;
-//            }
-//
             return len0 + super.read(b, off + len0, len - len0);
         }
 
