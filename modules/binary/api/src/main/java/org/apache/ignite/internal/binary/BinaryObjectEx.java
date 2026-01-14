@@ -132,4 +132,13 @@ public interface BinaryObjectEx extends BinaryObject {
     public default void detachAllowed(boolean detachAllowed) {
         // No-op.
     }
+
+    /**
+     * Check if object graph has circular references.
+     *
+     * @return {@code true} if object has circular references.
+     */
+    public default boolean hasCircularReferences() {
+        return false;
+    }
 }
