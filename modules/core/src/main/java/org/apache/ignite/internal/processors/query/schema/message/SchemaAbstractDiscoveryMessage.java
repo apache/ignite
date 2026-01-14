@@ -62,7 +62,7 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
 
     /** Error code. */
     @Order(value = 3, method = "errorCode")
-    private int errCode = -1;
+    private int errCode;
 
     /** Error. */
     protected SchemaOperationException err;
@@ -81,6 +81,8 @@ public abstract class SchemaAbstractDiscoveryMessage implements DiscoveryCustomM
      */
     protected SchemaAbstractDiscoveryMessage(SchemaAbstractOperation op) {
         id = IgniteUuid.randomUuid();
+        errCode = -1;
+
         this.op = op;
     }
 
