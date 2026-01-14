@@ -3391,6 +3391,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (clientMsgWorker.clientNodeId.equals(node.id())) {
                             try {
+                                // TODO: https://issues.apache.org/jira/browse/IGNITE-27556 refactor serialization.
                                 msg0 = U.unmarshal(spi.marshaller(), msgBytes,
                                     U.resolveClassLoader(spi.ignite().configuration()));
 
