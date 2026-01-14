@@ -89,7 +89,7 @@ class BinaryClassDescriptor {
     private final String affKeyFieldName;
 
     /** */
-    final Constructor<?> ctor;
+    private final Constructor<?> ctor;
 
     /** */
     final BinaryFieldDescriptor[] fields;

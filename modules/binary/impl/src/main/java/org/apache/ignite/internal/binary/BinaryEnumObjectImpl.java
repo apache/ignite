@@ -138,11 +138,6 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isEnum() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public int typeId() {
         return typeId;
     }
