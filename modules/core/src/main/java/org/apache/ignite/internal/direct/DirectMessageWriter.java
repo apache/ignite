@@ -45,6 +45,9 @@ import org.jetbrains.annotations.Nullable;
  * Message writer implementation.
  */
 public class DirectMessageWriter implements MessageWriter {
+    /** */
+    private static final int TMP_BUF_CAPACITY = 1024 * 100;
+
     /** State. */
     @GridToStringInclude
     private final DirectMessageState<StateItem> state;
@@ -54,6 +57,12 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** Buffer for writing. */
     private ByteBuffer buf;
+
+    /** */
+    private DirectMessageWriter tmpWriter;
+
+    /** */
+    private ByteBuffer tmpBuf;
 
     /** */
     public DirectMessageWriter(final MessageFactory msgFactory) {
@@ -363,17 +372,24 @@ public class DirectMessageWriter implements MessageWriter {
         DirectByteBufferStream stream = state.item().stream;
 
         if (compress) {
-            DirectMessageWriter tmpWriter = new DirectMessageWriter(msgFactory);
+            if (tmpWriter == null)
+                tmpWriter = new DirectMessageWriter(msgFactory);
 
-            tmpWriter.setBuffer(ByteBuffer.allocateDirect(600_000));
+            if (tmpBuf == null)
+                tmpBuf = ByteBuffer.allocateDirect(TMP_BUF_CAPACITY);
 
-            DirectByteBufferStream tmpStream = tmpWriter.state.item().stream;
+            tmpWriter.setBuffer(tmpBuf);
 
-            tmpStream.writeMap(map, keyType, valType, tmpWriter);
+            tmpWriter.state.item().stream.writeMap(map, keyType, valType, tmpWriter);
 
-            CompressedMessage compressedMsg = map != null ? new CompressedMessage(tmpWriter.getBuffer()) : CompressedMessage.empty();
+            CompressedMessage msg = map != null ? new CompressedMessage(tmpWriter.getBuffer()) : CompressedMessage.empty();
 
-            stream.writeMessage(compressedMsg, this);
+            stream.writeMessage(msg, this);
+
+            if (stream.lastFinished()) {
+                tmpWriter = null;
+                tmpBuf = null;
+            }
         }
         else
             stream.writeMap(map, keyType, valType, this);

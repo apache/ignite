@@ -69,9 +69,6 @@ public class DirectMessageReader implements MessageReader {
     /** */
     private ByteBuffer tmpBuf;
 
-    /** */
-    private boolean uncompressFinished;
-
     /**
      * @param msgFactory Message factory.
      * @param cacheObjProc Cache object processor.
