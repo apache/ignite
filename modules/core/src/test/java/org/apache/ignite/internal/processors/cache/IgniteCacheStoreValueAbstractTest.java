@@ -408,7 +408,7 @@ public abstract class IgniteCacheStoreValueAbstractTest extends IgniteCacheAbstr
      */
     @SuppressWarnings("IfMayBeConditional")
     private Object reflectiveValue(CacheObject obj) {
-        if (BinaryUtils.binariesFactory.isBinaryObjectImpl(obj))
+        if (BinaryUtils.isBinaryObjectImpl(obj))
             return GridTestUtils.getFieldValue(obj, obj.getClass(), "obj");
         else
             return GridTestUtils.getFieldValue(obj, CacheObjectAdapter.class, "val");

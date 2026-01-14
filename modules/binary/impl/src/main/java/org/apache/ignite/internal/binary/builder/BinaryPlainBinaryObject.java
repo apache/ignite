@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.binary.builder;
 
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 
 /**
@@ -25,12 +27,12 @@ import org.apache.ignite.internal.binary.BinaryWriterEx;
  */
 class BinaryPlainBinaryObject implements BinaryLazyValue {
     /** */
-    private final BinaryObjectEx binaryObj;
+    private final BinaryObject binaryObj;
 
     /**
      * @param binaryObj Binary object.
      */
-    public BinaryPlainBinaryObject(BinaryObjectEx binaryObj) {
+    public BinaryPlainBinaryObject(BinaryObject binaryObj) {
         this.binaryObj = binaryObj;
     }
 
@@ -41,6 +43,6 @@ class BinaryPlainBinaryObject implements BinaryLazyValue {
 
     /** {@inheritDoc} */
     @Override public void writeTo(BinaryWriterEx writer, BinaryBuilderSerializer ctx) {
-        writer.writeBinaryObject(binaryObj.heapCopy());
+        writer.writeBinaryObject((BinaryObjectEx)BinaryUtils.unwrapTemporary(binaryObj));
     }
 }

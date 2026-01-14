@@ -76,7 +76,7 @@ public class IndexKeyFactory {
             case UUID:
                 return new UuidIndexKey((UUID)o);
             case JAVA_OBJECT:
-                if (BinaryUtils.binariesFactory.isBinaryObjectImpl(o))
+                if (BinaryUtils.isBinaryObjectImpl(o))
                     return new CacheJavaObjectIndexKey((CacheObject)o, coctx);
 
                 return new PlainJavaObjectIndexKey(o, null);
