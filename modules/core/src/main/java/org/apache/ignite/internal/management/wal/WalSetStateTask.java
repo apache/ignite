@@ -23,48 +23,22 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.management.wal.WalDisableCommand.WalDisableCommandArg;
 import org.apache.ignite.internal.management.wal.WalEnableCommand.WalEnableCommandArg;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorJob;
-import org.apache.ignite.internal.visor.VisorMultiNodeTask;
+import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class WalSetStateTask extends VisorMultiNodeTask<WalDisableCommandArg, WalSetStateTaskResult, WalSetStateTaskResult> {
+public class WalSetStateTask extends VisorOneNodeTask<WalDisableCommandArg, WalSetStateTaskResult> {
     /** */
     private static final long serialVersionUID = 0;
 
     /** {@inheritDoc} */
     @Override protected VisorJob<WalDisableCommandArg, WalSetStateTaskResult> job(WalDisableCommandArg arg) {
         return new WalDisableJob(arg, debug);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected @Nullable WalSetStateTaskResult reduce0(List<ComputeJobResult> res) throws IgniteException {
-        Set<String> successGrps = new HashSet<>();
-        List<String> errors = new ArrayList<>();
-
-        for (ComputeJobResult jobRes : res) {
-            if (jobRes.getException() != null) {
-                Throwable e = jobRes.getException();
-                errors.add("Node " + jobRes.getNode().consistentId() + ": Task execution failed - " + e.getMessage());
-            }
-            else {
-                WalSetStateTaskResult result = jobRes.getData();
-                if (result.successGroups() != null)
-                    successGrps.addAll(result.successGroups());
-                if (!Boolean.TRUE.equals(result.success()) && result.errorMessages() != null)
-                    errors.addAll(result.errorMessages());
-            }
-        }
-
-        if (errors.isEmpty())
-            return new WalSetStateTaskResult(new ArrayList<>(successGrps));
-        else
-            return new WalSetStateTaskResult(new ArrayList<>(successGrps), errors);
     }
 
     /** */
@@ -85,13 +59,10 @@ public class WalSetStateTask extends VisorMultiNodeTask<WalDisableCommandArg, Wa
             List<String> errors = new ArrayList<>();
 
             try {
-                Set<String> availableGrps = new HashSet<>();
-
                 for (CacheGroupContext gctx : ignite.context().cache().cacheGroups()) {
                     String grpName = gctx.cacheOrGroupName();
-                    availableGrps.add(grpName);
 
-                    if (requestedGrps != null && !requestedGrps.contains(grpName))
+                    if (requestedGrps != null && !requestedGrps.remove(grpName))
                         continue;
 
                     try {
@@ -108,10 +79,8 @@ public class WalSetStateTask extends VisorMultiNodeTask<WalDisableCommandArg, Wa
                     }
                 }
 
-                for (String requestedGrp : requestedGrps) {
-                    if (!availableGrps.contains(requestedGrp))
-                        errors.add("Cache group not found: " + requestedGrp);
-                }
+                if (!requestedGrps.isEmpty())
+                    errors.add("Cache groups not found: " + requestedGrps);
 
                 if (errors.isEmpty())
                     return new WalSetStateTaskResult(successGrps);
@@ -120,6 +89,7 @@ public class WalSetStateTask extends VisorMultiNodeTask<WalDisableCommandArg, Wa
             }
             catch (Exception e) {
                 errors.add("Failed to execute operation - " + e.getMessage());
+
                 return new WalSetStateTaskResult(successGrps, errors);
             }
         }

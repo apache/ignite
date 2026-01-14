@@ -32,9 +32,6 @@ public class WalSetStateTaskResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Success flag. */
-    private Boolean success;
-
     /** Successfully processed groups. */
     private List<String> successGrps;
 
@@ -52,7 +49,6 @@ public class WalSetStateTaskResult extends IgniteDataTransferObject {
      * @param successGrps Successfully processed groups.
      */
     public WalSetStateTaskResult(List<String> successGrps) {
-        this.success = true;
         this.successGrps = new ArrayList<>(successGrps);
         this.errMsgs = null;
     }
@@ -64,30 +60,20 @@ public class WalSetStateTaskResult extends IgniteDataTransferObject {
      * @param errMsgs Error messages.
      */
     public WalSetStateTaskResult(List<String> successGrps, List<String> errMsgs) {
-        this.success = false;
         this.successGrps = new ArrayList<>(successGrps);
         this.errMsgs = new ArrayList<>(errMsgs);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeObject(success);
         U.writeCollection(out, successGrps);
         U.writeCollection(out, errMsgs);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        success = (Boolean)in.readObject();
         successGrps = U.readList(in);
         errMsgs = U.readList(in);
-    }
-
-    /**
-     * @return Success flag.
-     */
-    public Boolean success() {
-        return success;
     }
 
     /**

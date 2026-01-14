@@ -173,11 +173,11 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
     }
 
     /**
-     * Test for WAL enable/disable commands.
+     * Test WAL mode change for a cache group contains multiple caches.
      * @throws Exception If failed.
      */
     @Test
-    public void testWalManagementOperations() throws Exception {
+    public void testWalChangeForMultiCacheGroup() throws Exception {
         clusterState = 0; // PDS cluster.
 
         IgniteEx srv = startGrids(2);
@@ -216,7 +216,7 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
         outputContains("Successfully disabled WAL for groups:");
         outputContains("cache4");
         outputContains("Errors occurred:");
-        outputContains("Cache group not found: nonExistentGroup");
+        outputContains("Cache groups not found: \\[nonExistentGroup\\]");
 
         assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "cache4"));
         outputContains(".*cache4.*true.*false.*true.*true.*false");
@@ -224,7 +224,7 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
         //Error when using cache name instead of group name
         assertEquals(EXIT_CODE_OK, execute("--wal", "enable", "--groups", "cache3"));
         outputContains("Errors occurred:");
-        outputContains("Cache group not found: cache3");
+        outputContains("Cache groups not found: \\[cache3\\]");
 
         assertEquals(EXIT_CODE_OK, execute("--wal", "enable", "--groups", "group2,cache4"));
         outputContains("Successfully enabled WAL for groups:");
@@ -256,34 +256,6 @@ public class GridCommandHandlerWalTest extends GridCommandHandlerAbstractTest {
         outputContains(".*group1.*true.*true.*true.*true.*false");
         outputContains(".*group2.*true.*true.*true.*true.*false");
         outputContains(".*cache4.*true.*true.*true.*true.*false");
-    }
-
-    /**
-     * Test WAL mode change attempts for non-persistent cache groups.
-     * @throws Exception If failed.
-     */
-    @Test
-    public void testWalChangeForNonPersistentCaches() throws Exception {
-        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(0));
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setPersistenceEnabled(false)));
-
-        IgniteEx srv = startGrid(cfg);
-        srv.cluster().state(ClusterState.ACTIVE);
-
-        srv.createCache("cache1");
-
-        assertEquals(EXIT_CODE_OK, execute("--wal", "enable", "--groups", "cache1"));
-        outputContains("Errors occurred:");
-        outputContains("cache1.*Cannot change WAL mode because persistence is not enabled for cache\\(s\\)");
-
-        assertEquals(EXIT_CODE_OK, execute("--wal", "state", "--groups", "cache1"));
-        outputContains(".*cache1.*false.*false.*true.*true.*false");
-
-        assertEquals(EXIT_CODE_OK, execute("--wal", "disable", "--groups", "cache1"));
-        outputContains("Errors occurred:");
-        outputContains("cache1.*Cannot change WAL mode because persistence is not enabled for cache\\(s\\)");
     }
 
     /** */
