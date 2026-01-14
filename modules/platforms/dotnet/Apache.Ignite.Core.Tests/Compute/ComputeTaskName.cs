@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Compute
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
@@ -38,19 +39,85 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             // Call task asynchronously with delay
             var task = new LongTask(3000);
-            Ignite.GetCompute().ExecuteAsync(task, 123);
+            var cts = new CancellationTokenSource();
+            Ignite.GetCompute().ExecuteAsync(task, 123, cts.Token);
 
-            // Check task in system views via SQL
-            var res = Ignite
-                .GetOrCreateCache<string, string>("test")
-                .Query(new SqlFieldsQuery("SELECT TASK_NAME, TASK_CLASS_NAME FROM SYS.TASKS", null))
-                .GetAll()
-                .Single();
-            
-            Assert.AreEqual("Apache.Ignite.Core.Tests.Compute.ComputeTaskNameTest+LongTask", res[0]);
-            Assert.AreEqual("org.apache.ignite.internal.processors.platform.compute.PlatformFullTask", res[1]);
+            try
+            {
+                // Check task in system views via SQL
+                var res = Ignite
+                    .GetOrCreateCache<string, string>("test")
+                    .Query(new SqlFieldsQuery("SELECT TASK_NAME, TASK_CLASS_NAME FROM SYS.TASKS", null))
+                    .GetAll()
+                    .Single();
+
+                Assert.AreEqual("Apache.Ignite.Core.Tests.Compute.ComputeTaskNameTest+LongTask", res[0]);
+                Assert.AreEqual("org.apache.ignite.internal.processors.platform.compute.PlatformFullTask", res[1]);
+            }
+            finally
+            {
+                cts.Cancel();
+            }
         }
-        
+
+        /// <summary>
+        /// .Net compute closure name is propagated into platform task.
+        /// </summary>
+        [Test]
+        public void ClosureNameTakenFromPlatformTask()
+        {
+            // Call task asynchronously with delay
+            var clo = new LongClosure(3000);
+            var cts = new CancellationTokenSource();
+            Ignite.GetCompute().CallAsync(clo, cts.Token);
+
+            try
+            {
+                // Check task in system views via SQL
+                var res = Ignite
+                    .GetOrCreateCache<string, string>("test")
+                    .Query(new SqlFieldsQuery("SELECT TASK_NAME, TASK_CLASS_NAME FROM SYS.TASKS", null))
+                    .GetAll()
+                    .Single();
+                
+                Assert.AreEqual("Apache.Ignite.Core.Tests.Compute.LongClosure", res[0]);
+                Assert.AreEqual("org.apache.ignite.internal.processors.platform.compute.PlatformBalancingSingleClosureTask", res[1]);
+            }
+            finally
+            {
+                cts.Cancel();
+            }
+        }
+
+        /// <summary>
+        /// .Net broadcast compute closure name is propagated into platform task.
+        /// </summary>
+        [Test]
+        public void BroadcastClosureNameTakenFromPlatformTask()
+        {
+            // Call task asynchronously with delay
+            var clo = new LongClosure(3000);
+            var cts = new CancellationTokenSource();
+            Ignite.GetCompute().BroadcastAsync(clo, cts.Token);
+
+            try
+            {
+                // Check task in system views via SQL
+                var res = Ignite
+                    .GetOrCreateCache<string, string>("test")
+                    .Query(new SqlFieldsQuery("SELECT TASK_NAME, TASK_CLASS_NAME FROM SYS.TASKS", null))
+                    .GetAll()
+                    .Single();
+                
+                Assert.AreEqual("Apache.Ignite.Core.Tests.Compute.LongClosure", res[0]);
+                Assert.AreEqual("org.apache.ignite.internal.processors.platform.compute.PlatformBroadcastingSingleClosureTask", res[1]);
+            }
+            finally
+            {
+                cts.Cancel();
+            }
+        }
+
         /// <summary>
         /// Creates a task that executes <see cref="LongJob"/>.
         /// </summary>
@@ -103,6 +170,33 @@ namespace Apache.Ignite.Core.Tests.Compute
                 
                 return "OK";   
             }
+        }
+    }
+    
+    /// <summary>
+    /// Implements closure with delayed execution.
+    /// </summary>
+    [Serializable]
+    public class LongClosure : IComputeFunc<String>
+    {
+        /// Delay time in milliseconds.
+        private readonly int _delay;
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="s"></param>
+        public LongClosure(int delay)
+        {
+            _delay = delay;
+        }
+
+        /** <inheritDoc /> */
+        public string Invoke()
+        {
+            Thread.Sleep(_delay);
+                
+            return "OK";   
         }
     }
 }
