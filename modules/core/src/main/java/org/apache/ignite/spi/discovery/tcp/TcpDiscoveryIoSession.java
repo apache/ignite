@@ -170,7 +170,16 @@ public class TcpDiscoveryIoSession {
 
         try {
             if (MESSAGE_SERIALIZATION != serMode) {
-                detectSslAlert(serMode, in);
+                byte[] hdr = new byte[4];
+                hdr[0] = serMode;
+
+                int read = in.readNBytes(hdr, 1, 3);
+
+                if (read < 3)
+                    throw new EOFException();
+
+                detectSslAlert(hdr);
+                detectJavaObjectStreamHeader(hdr);
 
                 // IOException type is important for ServerImpl. It may search the cause (X.hasCause).
                 // The connection error processing behavior depends on it.
@@ -293,19 +302,26 @@ public class TcpDiscoveryIoSession {
      * See handling {@code StreamCorruptedException} in {@link #readMessage()}.
      * Keeps logic similar to {@link java.io.ObjectInputStream#readStreamHeader}.
      */
-    private void detectSslAlert(byte firstByte, InputStream in) throws IOException {
-        byte[] hdr = new byte[4];
-        hdr[0] = firstByte;
-        int read = in.readNBytes(hdr, 1, 3);
-
-        if (read < 3)
-            throw new EOFException();
-
+    private void detectSslAlert(byte[] hdr) throws IOException {
         String hex = String.format("%02x%02x%02x%02x", hdr[0], hdr[1], hdr[2], hdr[3]);
 
         if (hex.matches("15....00"))
             throw new StreamCorruptedException("invalid stream header: " + hex);
     }
+
+    /**
+     * Detects Java Object Serialization stream header (AC ED 00 05).
+     * This indicates that the remote node sends discovery messages without leading serMode byte.
+     */
+    private void detectJavaObjectStreamHeader(byte[] hdr) throws IOException {
+        if ((hdr[0] == (byte)0xAC) && (hdr[1] == (byte)0xED) && (hdr[2] == (byte)0x00) && (hdr[3] == (byte)0x05))
+            throw new IOException(
+                "Incompatible discovery protocol: received Java ObjectStream header (AC ED 00 05) where serMode byte is expected. "
+                    + "Remote node likely uses a discovery message format without serMode. "
+                    + "All nodes must run compatible Ignite versions."
+            );
+    }
+}
 
     /**
      * Input stream implementation that combines a byte array and a regular InputStream allowing to read bytes
