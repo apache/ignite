@@ -34,6 +34,27 @@
             </bean>
         </property>
 
+        <property name="dataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+                <property name="defaultDataRegionConfiguration">
+                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                        <property name="name" value="default"/>
+                        <property name="initialSize" value="#{128 * 1024 * 1024}"/>
+                        <property name="maxSize" value="#{384 * 1024 * 1024}"/>
+                    </bean>
+                </property>
+                <property name="dataRegionConfigurations">
+                    <list>
+                        <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                            <property name="name" value="memoryOnly"/>
+                            <property name="initialSize" value="8589934592"/>
+                            <property name="maxSize" value="167788937216"/>
+                        </bean>
+                    </list>
+                </property>
+            </bean>
+        </property>
+
         <property name="clientMode" value="{{ config.client_mode or False | lower }}"/>
         <property name="consistentId" value="{{ config.consistent_id }}"/>
         <property name="igniteInstanceName" value="{{ config.ignite_instance_name }}"/>
