@@ -102,13 +102,14 @@ namespace Apache.Ignite.Core.Tests.Compute
             _grid1.GetCompute().ExecuteAsync(task, 123);
 
             // Check task in system views via SQL
-            var results = _grid1
+            var res = _grid1
                 .GetOrCreateCache<string, string>("test")
-                .Query(new SqlFieldsQuery("SELECT * FROM SYS.TASKS", null)).GetAll();
+                .Query(new SqlFieldsQuery("SELECT TASK_NAME, TASK_CLASS_NAME FROM SYS.TASKS", null))
+                .GetAll()
+                .Single();
             
-            Assert.AreEqual(1, results.Count());
-            Assert.AreEqual("Apache.Ignite.Core.Tests.Compute.ComputeTaskNameTest+LongTask", results[0][3]);
-            Assert.AreEqual("org.apache.ignite.internal.processors.platform.compute.PlatformFullTask", results[0][4]);
+            Assert.AreEqual("Apache.Ignite.Core.Tests.Compute.ComputeTaskNameTest+LongTask", res[0]);
+            Assert.AreEqual("org.apache.ignite.internal.processors.platform.compute.PlatformFullTask", res[1]);
         }
 
         /// <summary>
