@@ -25,7 +25,7 @@
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="{{ cache.name }}"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-                    <property name="dataRegionName" value="memoryOnly"/>
+                    <property name="dataRegionName" value="default"/>
                     {% if cache.cache_mode == 'PARTITIONED' %}
                         <property name="backups" value="{{ cache.backups or 0 }}"/>
                     {% endif %}
