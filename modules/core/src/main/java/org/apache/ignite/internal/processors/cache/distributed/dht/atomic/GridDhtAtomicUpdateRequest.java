@@ -49,7 +49,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
 
     /** Values to update. */
     @GridToStringInclude
-    @Order(12)
+    @Order(value = 12, method = "values")
     private List<CacheObject> vals;
 
     /** Previous values. */
@@ -114,7 +114,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     private Object[] invokeArgs;
 
     /** Entry processor arguments bytes. */
-    @Order(25)
+    @Order(value = 25, method = "invokeArgumentsBytes")
     private List<byte[]> invokeArgsBytes;
 
     /** Partition. */
@@ -404,14 +404,14 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     /**
      * @return Values to update.
      */
-    public List<CacheObject> vals() {
+    public List<CacheObject> values() {
         return vals;
     }
 
     /**
      * @param vals New values to update.
      */
-    public void vals(List<CacheObject> vals) {
+    public void values(List<CacheObject> vals) {
         this.vals = vals;
     }
 
@@ -620,6 +620,20 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     }
 
     /**
+     * @return Partition update counters.
+     */
+    public GridLongList updateCounters() {
+        return updateCntrs;
+    }
+
+    /**
+     * @param updateCntrs New partition update counters.
+     */
+    public void updateCounters(GridLongList updateCntrs) {
+        this.updateCntrs = updateCntrs;
+    }
+
+    /**
      * @return Serialized entry processors.
      */
     public List<byte[]> entryProcessorsBytes() {
@@ -650,14 +664,14 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     /**
      * @return Serialized optional entry processor arguments.
      */
-    public List<byte[]> invokeArgsBytes() {
+    public List<byte[]> invokeArgumentsBytes() {
         return invokeArgsBytes;
     }
 
     /**
      * @param invokeArgsBytes New serialized optional entry processor arguments.
      */
-    public void invokeArgsBytes(List<byte[]> invokeArgsBytes) {
+    public void invokeArgumentsBytes(List<byte[]> invokeArgsBytes) {
         this.invokeArgsBytes = invokeArgsBytes;
     }
 
@@ -718,7 +732,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
             if (entryProcessors == null)
                 entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);
 
-            if (invokeArgs == null)
+            if (invokeArgsBytes != null && invokeArgs == null)
                 invokeArgs = unmarshalInvokeArguments(invokeArgsBytes.toArray(new byte[invokeArgsBytes.size()][]), ctx, ldr);
 
             if (nearEntryProcessors == null)
@@ -735,20 +749,6 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
     /** {@inheritDoc} */
     @Override public short directType() {
         return 38;
-    }
-
-    /**
-     * @return Partition update counters.
-     */
-    public GridLongList updateCounters() {
-        return updateCntrs;
-    }
-
-    /**
-     * @param updateCntrs New partition update counters.
-     */
-    public void updateCounters(GridLongList updateCntrs) {
-        this.updateCntrs = updateCntrs;
     }
 
     /** {@inheritDoc} */
