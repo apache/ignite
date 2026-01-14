@@ -1271,8 +1271,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     coctx = fakeCacheObjCtx;
 
                 return coctx == null
-                    ? (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes)
-                    : (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes, coctx);
+                    ? (CacheObject)BinaryUtils.binariesFactory.binaryObject(binaryContext(), bytes)
+                    : (CacheObject)BinaryUtils.binariesFactory.binaryObject(binaryContext(), bytes, coctx);
 
             case CacheObject.TYPE_BINARY_ENUM:
                 return (CacheObject)BinaryUtils.binariesFactory.binaryEnum(binaryContext(), bytes);
@@ -1292,7 +1292,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         throws IgniteCheckedException {
         switch (type) {
             case CacheObject.TYPE_BINARY:
-                return (KeyCacheObject)BinaryUtils.binaryObject(binaryContext(), bytes);
+                return (KeyCacheObject)BinaryUtils.binariesFactory.binaryObject(binaryContext(), bytes);
 
             case CacheObject.TYPE_BYTE_ARR:
                 throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");

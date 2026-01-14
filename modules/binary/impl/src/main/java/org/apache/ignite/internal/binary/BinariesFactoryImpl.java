@@ -25,6 +25,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.Nullable;
@@ -168,11 +169,17 @@ public class BinariesFactoryImpl implements BinariesFactory {
     }
 
     /** {@inheritDoc} */
+    @Override public Class<?> binaryObjectImplClass() {
+        return BinaryObjectImpl.class;
+    }
+
+    /** {@inheritDoc} */
     @Override public Map<Class<?>, Integer> predefinedTypes() {
         Map<Class<?>, Integer> predefinedTypes = new HashMap<>();
 
         predefinedTypes.put(BinaryEnumObjectImpl.class, 0);
         predefinedTypes.put(BinaryObjectOffheapImpl.class, 0);
+        predefinedTypes.put(BinaryObjectImpl.class, 0);
 
         return predefinedTypes;
     }
@@ -190,6 +197,26 @@ public class BinariesFactoryImpl implements BinariesFactory {
             },
             BinaryEnumObjectImpl.class, bo -> ((BinaryObject)bo).size()
         );
+    }
+
+    /** {@inheritDoc} */
+    @Override public int compareForDml(Object first, Object second) {
+        return BinaryObjectImpl.compareForDml(first, second);
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryObjectEx binaryObject(BinaryContext ctx, byte[] arr, int start) {
+        return new BinaryObjectImpl(ctx, arr, start);
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryObjectEx binaryObject(BinaryContext ctx, byte[] bytes) {
+        return new BinaryObjectImpl(ctx, bytes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryObject binaryObject(BinaryContext ctx, byte[] valBytes, CacheObjectValueContext coCtx) {
+        return new BinaryObjectImpl(ctx, valBytes, coCtx);
     }
 
     /**
