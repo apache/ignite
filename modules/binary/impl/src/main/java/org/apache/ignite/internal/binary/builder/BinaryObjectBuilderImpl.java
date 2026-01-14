@@ -34,6 +34,7 @@ import org.apache.ignite.internal.binary.BinariesFactoryImpl;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -188,7 +189,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
 
             byte[] arr = writer.array();
 
-            return BinariesFactoryImpl.newBinaryObject(ctx, arr, 0);
+            return new BinaryObjectImpl(ctx, arr, 0);
         }
     }
 

@@ -1514,7 +1514,7 @@ public class BinaryUtils {
             BinaryObject binO = binariesFactory.binaryObject(ctx, arr, start);
 
             if (detach)
-                return (BinaryObject)detach(binO);
+                return detach(binO);
 
             return binO;
         }
@@ -2908,6 +2908,14 @@ public class BinaryUtils {
 
     /**
      * @param val Value to check.
+     * @return {@code True} if {@code val} instance of {@link BinaryObjectImpl}.
+     */
+    public static boolean isBinaryObjectImpl(Object val) {
+        return (val != null) && val.getClass() == binariesFactory.binaryObjectImplClass();
+    }
+
+    /**
+     * @param val Value to check.
      * @return {@code True} if {@code val} instance of {@link BinaryArray}.
      */
     public static boolean isBinaryArray(Object val) {
@@ -2983,7 +2991,7 @@ public class BinaryUtils {
      * @param o Object to detach.
      * @return Detached object.
      */
-    public static Object detach(Object o) {
+    public static BinaryObjectEx detach(Object o) {
         ((BinaryObjectEx)o).detachAllowed(true);
         return ((BinaryObjectEx)o).detach();
     }
@@ -2992,7 +3000,7 @@ public class BinaryUtils {
      * @param o
      */
     public static void detachAllowedIfPossible(Object o) {
-        if (binariesFactory.isBinaryObjectImpl(o))
+        if (isBinaryObjectImpl(o))
             ((BinaryObjectEx)o).detachAllowed(true);
     }
 

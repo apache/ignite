@@ -156,7 +156,7 @@ public interface BinariesFactory {
      *
      * @param first First.
      * @param second Second.
-     * @return Comparison result.
+     * @return Comparison result which is aligned with the {@link java.util.Comparator#compare(Object, Object)} contract.
      */
     public int compareForDml(Object first, Object second);
 
@@ -171,10 +171,4 @@ public interface BinariesFactory {
 
     /** */
     public BinaryIdentityResolver arrayIdentityResolver();
-
-    /**
-     * @param val Value to check.
-     * @return {@code True} if {@code val} instance of {@code BinaryObjectImpl}.
-     */
-    public boolean isBinaryObjectImpl(Object val);
 }

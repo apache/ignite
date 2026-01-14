@@ -50,7 +50,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED
 /**
  * Binary object implementation.
  */
-final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizable, KeyCacheObject {
+public final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizable, KeyCacheObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -87,7 +87,7 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
      * @param arr Array.
      * @param start Start.
      */
-    BinaryObjectImpl(BinaryContext ctx, byte[] arr, int start) {
+    public BinaryObjectImpl(BinaryContext ctx, byte[] arr, int start) {
         assert ctx != null;
         assert arr != null;
 

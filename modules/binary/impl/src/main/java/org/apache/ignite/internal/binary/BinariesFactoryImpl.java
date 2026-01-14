@@ -206,11 +206,6 @@ public class BinariesFactoryImpl implements BinariesFactory {
 
     /** {@inheritDoc} */
     @Override public BinaryObjectEx binaryObject(BinaryContext ctx, byte[] arr, int start) {
-        return newBinaryObject(ctx, arr, start);
-    }
-
-    /** */
-    public static BinaryObjectEx newBinaryObject(BinaryContext ctx, byte[] arr, int start) {
         return new BinaryObjectImpl(ctx, arr, start);
     }
 
@@ -227,11 +222,6 @@ public class BinariesFactoryImpl implements BinariesFactory {
     /** {@inheritDoc} */
     @Override public BinaryIdentityResolver arrayIdentityResolver() {
         return BinaryArrayIdentityResolver.instance();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isBinaryObjectImpl(Object val) {
-        return val instanceof BinaryObjectImpl;
     }
 
     /**
