@@ -34,13 +34,13 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 /** */
 public class FlexLoadApplication extends IgniteAwareApplication {
     /** */
-    private static final int THREADS = 10;
+    private static final int THREADS = 16;
 
     /** */
     private static final int START_TIME_WAIT_SEC = 20;
 
     /** */
-    private static final int PRELOAD_TIME_SEC = 20;
+    private static final int PRELOAD_TIME_SEC = 5;
 
     /** {@inheritDoc} */
     @Override public void run(JsonNode jsonNode) throws Exception {

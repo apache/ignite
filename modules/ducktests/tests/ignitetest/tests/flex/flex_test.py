@@ -26,6 +26,7 @@ from typing import NamedTuple
 
 from ignitetest.services.ignite import IgniteService
 from ignitetest.services.ignite_app import IgniteApplicationService
+from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_aware import node_failed_event_pattern
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration, \
     IgniteThinJdbcConfiguration
@@ -40,13 +41,16 @@ from ignitetest.utils.version import LATEST_2_17
 
 class FlexTest(IgniteTest):
     SERVERS = 3
-    LOAD_SECONDS = 30
+    LOAD_SECONDS = 5
     SERVER_IDX_TO_DROP = 1
     IGNITE_VERSION = LATEST_2_17
 
     @cluster(num_nodes=SERVERS + 1)
     def flex_test(self):
         servers, ignite_config = self.launch_cluster()
+
+        control_utility = ControlUtility(servers)
+        control_utility.activate()
 
         load_app = self.start_load_app(servers, ignite_config.client_connector_configuration.port)
 
@@ -62,6 +66,10 @@ class FlexTest(IgniteTest):
         load_app.await_stopped()
 
         self.logger.info("TEST | The load application has stopped.")
+
+        output = control_utility.idle_verify("TBG_SCS_DM_DOCUMENTS")
+
+        self.logger.info(f"TEST | Idle verify finished: {output}")
 
         servers.stop()
 
