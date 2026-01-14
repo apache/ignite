@@ -125,6 +125,7 @@ public interface BinariesFactory {
      * @param ptr Memory address.
      * @param start Object start.
      * @param size Memory size.
+     * @return Binary object based on offheap memory.
      */
     public BinaryObjectEx binaryOffheapObject(BinaryContext ctx, long ptr, int start, int size);
 
