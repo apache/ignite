@@ -19,9 +19,9 @@ package org.apache.ignite.internal.management.wal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.management.wal.WalDisableCommand.WalDisableCommandArg;
 import org.apache.ignite.internal.management.wal.WalEnableCommand.WalEnableCommandArg;
@@ -53,45 +53,34 @@ public class WalSetStateTask extends VisorOneNodeTask<WalDisableCommandArg, WalS
 
         /** {@inheritDoc} */
         @Override protected WalSetStateTaskResult run(@Nullable WalDisableCommandArg arg) throws IgniteException {
-            Set<String> requestedGrps = F.isEmpty(arg.groups()) ? null : new HashSet<>(Arrays.asList(arg.groups()));
-            boolean isEnable = arg instanceof WalEnableCommandArg;
+            List<String> requestedGrps = F.isEmpty(arg.groups()) ? null : new ArrayList<>(Arrays.asList(arg.groups()));
             List<String> successGrps = new ArrayList<>();
-            List<String> errors = new ArrayList<>();
+            Map<String, String> errorsByGrp = new HashMap<>();
 
-            try {
-                for (CacheGroupContext gctx : ignite.context().cache().cacheGroups()) {
-                    String grpName = gctx.cacheOrGroupName();
+            for (CacheGroupContext gctx : ignite.context().cache().cacheGroups()) {
+                String grpName = gctx.cacheOrGroupName();
 
-                    if (requestedGrps != null && !requestedGrps.remove(grpName))
-                        continue;
+                if (requestedGrps != null && !requestedGrps.remove(grpName))
+                    continue;
 
-                    try {
-                        if (isEnable)
-                            ignite.cluster().enableWal(grpName);
-                        else
-                            ignite.cluster().disableWal(grpName);
+                try {
+                    if (arg instanceof WalEnableCommandArg)
+                        ignite.cluster().enableWal(grpName);
+                    else
+                        ignite.cluster().disableWal(grpName);
 
-                        successGrps.add(grpName);
-                    }
-                    catch (Exception e) {
-                        errors.add("Failed to " + (isEnable ? "enable" : "disable") +
-                            " WAL for cache group: " + grpName + " - " + e.getMessage());
-                    }
+                    successGrps.add(grpName);
                 }
-
-                if (!requestedGrps.isEmpty())
-                    errors.add("Cache groups not found: " + requestedGrps);
-
-                if (errors.isEmpty())
-                    return new WalSetStateTaskResult(successGrps);
-                else
-                    return new WalSetStateTaskResult(successGrps, errors);
+                catch (Exception e) {
+                    errorsByGrp.put(grpName, e.getMessage());
+                }
             }
-            catch (Exception e) {
-                errors.add("Failed to execute operation - " + e.getMessage());
 
-                return new WalSetStateTaskResult(successGrps, errors);
-            }
+            if (requestedGrps != null && !requestedGrps.isEmpty())
+                for (String requestedGrp : requestedGrps)
+                    errorsByGrp.put(requestedGrp, "Cache group not found");
+
+            return new WalSetStateTaskResult(successGrps, errorsByGrp);
         }
     }
 }

@@ -21,7 +21,10 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -35,8 +38,8 @@ public class WalSetStateTaskResult extends IgniteDataTransferObject {
     /** Successfully processed groups. */
     private List<String> successGrps;
 
-    /** Error messages if operation failed. */
-    private List<String> errMsgs;
+    /** Errors by group name. */
+    private Map<String, String> errorsByGrp;
 
     /** Default constructor. */
     public WalSetStateTaskResult() {
@@ -44,49 +47,39 @@ public class WalSetStateTaskResult extends IgniteDataTransferObject {
     }
 
     /**
-     * Constructor for success.
+     * Constructor.
      *
      * @param successGrps Successfully processed groups.
+     * @param errorsByGrp Error messages.
      */
-    public WalSetStateTaskResult(List<String> successGrps) {
+    public WalSetStateTaskResult(List<String> successGrps, Map<String, String> errorsByGrp) {
         this.successGrps = new ArrayList<>(successGrps);
-        this.errMsgs = null;
-    }
-
-    /**
-     * Constructor for failure.
-     *
-     * @param successGrps Successfully processed groups.
-     * @param errMsgs Error messages.
-     */
-    public WalSetStateTaskResult(List<String> successGrps, List<String> errMsgs) {
-        this.successGrps = new ArrayList<>(successGrps);
-        this.errMsgs = new ArrayList<>(errMsgs);
+        this.errorsByGrp = new HashMap<>(errorsByGrp);
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, successGrps);
-        U.writeCollection(out, errMsgs);
+        U.writeMap(out, errorsByGrp);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
         successGrps = U.readList(in);
-        errMsgs = U.readList(in);
+        errorsByGrp = U.readMap(in);
     }
 
     /**
      * @return Successfully processed groups.
      */
     public List<String> successGroups() {
-        return successGrps;
+        return Collections.unmodifiableList(successGrps);
     }
 
     /**
-     * @return Error messages if operation failed.
+     * @return Error messages by group name if operation failed.
      */
-    public List<String> errorMessages() {
-        return errMsgs;
+    public Map<String, String> errorsByGroup() {
+        return Collections.unmodifiableMap(errorsByGrp);
     }
 }

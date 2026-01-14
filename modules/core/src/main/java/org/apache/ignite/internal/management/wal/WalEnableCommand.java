@@ -40,8 +40,7 @@ public class WalEnableCommand implements ComputeCommand<WalDisableCommandArg, Wa
 
     /** {@inheritDoc} */
     @Override public void printResult(WalDisableCommandArg arg, WalSetStateTaskResult res, Consumer<String> printer) {
-        WalDisableCommand cmd = new WalDisableCommand();
-        cmd.printResult(arg, res, printer);
+        WalSetStateResultReporter.printResult(arg, res, printer);
     }
 
     /** */
