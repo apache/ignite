@@ -34,14 +34,15 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 /** */
 public class FlexLoadApplication extends IgniteAwareApplication {
     /** */
-    private final int WAIT_START_SECS = 20;
+    private static final int WAIT_START_SECS = 20;
 
     /** {@inheritDoc} */
     @Override public void run(JsonNode jsonNode) throws Exception {
         final int preloadDurSec = jsonNode.get("preloadDurSec").asInt();
         final int threads = jsonNode.get("threads").asInt();
+        final String cacheName = jsonNode.get("CACHE_NAME").asText();
 
-        createTable();
+        createTable(cacheName);
 
         final ForkJoinPool executor = new ForkJoinPool(threads);
         final CountDownLatch initLatch = new CountDownLatch(threads);
@@ -57,7 +58,7 @@ public class FlexLoadApplication extends IgniteAwareApplication {
 
                 while (active()) {
                     try (Connection conn = thinJdbcDataSource.getConnection()) {
-                        PreparedStatement ps = conn.prepareStatement("INSERT INTO SCS_DM_DOCUMENTS values(?,?,?)");
+                        PreparedStatement ps = conn.prepareStatement("INSERT INTO " + cacheName + " values(?,?,?)");
 
                         while (active()) {
                             long id = counter.incrementAndGet();
@@ -130,11 +131,11 @@ public class FlexLoadApplication extends IgniteAwareApplication {
     }
 
     /** */
-    private void createTable() throws Exception {
+    private void createTable(String cacheName) throws Exception {
         try (Connection conn = thinJdbcDataSource.getConnection()) {
             conn.createStatement().execute("CREATE TABLE SCS_DM_DOCUMENTS(" +
                 "id INT, strVal VARCHAR, decVal DECIMAL, PRIMARY KEY(id)" +
-                ") WITH \"cache_name=TBG_SCS_DM_DOCUMENTS\""
+                ") WITH \"cache_name=" + cacheName + "\""
             );
 
             try {

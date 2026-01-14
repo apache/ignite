@@ -41,10 +41,11 @@ from ignitetest.utils.version import LATEST_2_17
 class FlexTest(IgniteTest):
     SERVERS = 3
     SERVER_IDX_TO_DROP = 1
-    PRELOAD_SECONDS = 120
-    LOAD_SECONDS = 40
+    PRELOAD_SECONDS = 10
+    LOAD_SECONDS = 10
     LOAD_THREADS = 8
     IGNITE_VERSION = LATEST_2_17
+    CACHE_NAME = "TBG_SCS_DM_DOCUMENTS"
 
     @cluster(num_nodes=SERVERS + 1)
     def flex_test(self):
@@ -68,7 +69,7 @@ class FlexTest(IgniteTest):
 
         self.logger.info("TEST | The load application has stopped.")
 
-        output = control_utility.idle_verify("TBG_SCS_DM_DOCUMENTS")
+        output = control_utility.idle_verify(self.CACHE_NAME)
 
         self.logger.info(f"TEST | Idle verify finished: {output}")
 
@@ -103,7 +104,7 @@ class FlexTest(IgniteTest):
             IgniteThinJdbcConfiguration(version=self.IGNITE_VERSION, addresses=addrs),
             java_class_name="org.apache.ignite.internal.ducktest.tests.flex.FlexLoadApplication",
             num_nodes=1,
-            params={"preloadDurSec": self.PRELOAD_SECONDS, "threads": self.LOAD_THREADS},
+            params={"preloadDurSec": self.PRELOAD_SECONDS, "threads": self.LOAD_THREADS, "cacheName": self.CACHE_NAME},
             startup_timeout_sec=self.PRELOAD_SECONDS + 10
         )
 
@@ -126,7 +127,7 @@ class FlexTest(IgniteTest):
             version=self.IGNITE_VERSION,
             metrics_log_frequency = 0,
             caches=[CacheConfiguration(
-                name='TBG_SCS_DM_DOCUMENTS',
+                name=self.CACHE_NAME,
                 atomicity_mode='TRANSACTIONAL',
                 affinity = cacheAffinity,
                 cache_mode = 'REPLICATED'
