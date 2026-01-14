@@ -18,12 +18,13 @@
 package org.apache.ignite.internal.direct;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
@@ -47,6 +48,9 @@ import org.jetbrains.annotations.Nullable;
  * Message reader implementation.
  */
 public class DirectMessageReader implements MessageReader {
+    /** */
+    private static final int TMP_BUF_CAPACITY = 1024 * 100;
+
     /** State. */
     @GridToStringInclude
     private final DirectMessageState<StateItem> state;
@@ -332,12 +336,21 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T extends Message> T readMessage() {
+    @Nullable @Override public <T extends Message> T readMessage(boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        T msg = stream.readMessage(this);
+        T msg;
 
-        lastRead = stream.lastFinished();
+        if (compress)
+            msg = readCompressedMessageAndDeserialize(
+                stream,
+                () -> tmpReader.state.item().stream.readMessage(tmpReader)
+            );
+        else {
+            msg = stream.readMessage(this);
+
+            lastRead = stream.lastFinished();
+        }
 
         return msg;
     }
@@ -415,80 +428,11 @@ public class DirectMessageReader implements MessageReader {
 
         M map;
 
-        if (compress) {
-            System.out.println(">>> BEFORE READ");
-
-            Message msg = stream.readMessage(this);
-
-            System.out.println(">>> AFTER READ [msg=" + msg + ']');
-
-            if (msg == null) {
-                lastRead = stream.lastFinished();
-
-                return null;
-            }
-
-            assert msg instanceof CompressedMessage : msg;
-
-            CompressedMessage msg0 = (CompressedMessage)msg;
-
-            if (msg0.dataSize() == 0) {
-                lastRead = true;
-
-                return null;
-            }
-
-            byte[] uncompressedBytes = msg0.uncompressed();
-
-            byte[] res;
-
-            int pos = buf.position();
-
-            if (buf.hasRemaining()) {
-                byte[] remaining = new byte[buf.remaining()];
-
-                System.out.println(">>> remaining: " + Arrays.toString(remaining));
-
-                buf.get(remaining);
-                buf.position(pos);
-
-                res = new byte[uncompressedBytes.length + remaining.length];
-
-                System.arraycopy(uncompressedBytes, 0, res, 0, uncompressedBytes.length);
-                System.arraycopy(remaining, 0, res, uncompressedBytes.length, remaining.length);
-            }
-            else {
-                res = new byte[uncompressedBytes.length];
-
-                System.arraycopy(uncompressedBytes, 0, res, 0, uncompressedBytes.length);
-            }
-
-            res = new byte[uncompressedBytes.length];
-
-            System.arraycopy(uncompressedBytes, 0, res, 0, uncompressedBytes.length);
-
-            if (tmpReader == null)
-                tmpReader = new DirectMessageReader(msgFactory, cacheObjProc);
-
-            if (tmpBuf == null)
-                tmpBuf = ByteBuffer.allocateDirect(600_000);
-
-            int startPos = tmpBuf.position();
-
-            tmpBuf.put(res);
-            tmpBuf.position(startPos);
-
-            tmpReader.setBuffer(tmpBuf);
-
-            map = tmpReader.state.item().stream.readMap(keyType, valType, linked, tmpReader);
-
-            lastRead = tmpReader.state.item().stream.lastFinished();
-
-            if (lastRead) {
-                tmpReader = null;
-                tmpBuf = null;
-            }
-        }
+        if (compress)
+            map = readCompressedMessageAndDeserialize(
+                stream,
+                () -> tmpReader.state.item().stream.readMap(keyType, valType, linked, tmpReader)
+            );
         else {
             map = stream.readMap(keyType, valType, linked, this);
 
@@ -538,6 +482,58 @@ public class DirectMessageReader implements MessageReader {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DirectMessageReader.class, this);
+    }
+
+    /** */
+    private <T> T readCompressedMessageAndDeserialize(DirectByteBufferStream stream, Callable<T> callable) {
+        Message msg = stream.readMessage(this);
+
+        if (msg == null) {
+            lastRead = stream.lastFinished();
+
+            return null;
+        }
+
+        assert msg instanceof CompressedMessage : msg;
+
+        CompressedMessage msg0 = (CompressedMessage)msg;
+
+        if (msg0.dataSize() == 0) {
+            lastRead = true;
+
+            return null;
+        }
+
+        if (tmpReader == null)
+            tmpReader = new DirectMessageReader(msgFactory, cacheObjProc);
+
+        if (tmpBuf == null)
+            tmpBuf = ByteBuffer.allocateDirect(TMP_BUF_CAPACITY);
+
+        int startPos = tmpBuf.position();
+
+        tmpBuf.put(msg0.uncompressed());
+        tmpBuf.position(startPos);
+
+        tmpReader.setBuffer(tmpBuf);
+
+        T res;
+
+        try {
+            res = callable.call();
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
+        }
+
+        lastRead = tmpReader.state.item().stream.lastFinished();
+
+        if (lastRead) {
+            tmpReader = null;
+            tmpBuf = null;
+        }
+
+        return res;
     }
 
     /**

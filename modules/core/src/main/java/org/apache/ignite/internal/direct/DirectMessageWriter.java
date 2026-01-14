@@ -308,10 +308,17 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeMessage(@Nullable Message msg) {
+    @Override public boolean writeMessage(@Nullable Message msg, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeMessage(msg, this);
+        if (compress)
+            writeCompressedMessage(
+                () -> tmpWriter.state.item().stream.writeMessage(msg, tmpWriter),
+                msg == null,
+                stream
+            );
+        else
+            stream.writeMessage(msg, this);
 
         return stream.lastFinished();
     }
@@ -371,26 +378,12 @@ public class DirectMessageWriter implements MessageWriter {
         MessageCollectionItemType valType, boolean compress) {
         DirectByteBufferStream stream = state.item().stream;
 
-        if (compress) {
-            if (tmpWriter == null)
-                tmpWriter = new DirectMessageWriter(msgFactory);
-
-            if (tmpBuf == null)
-                tmpBuf = ByteBuffer.allocateDirect(TMP_BUF_CAPACITY);
-
-            tmpWriter.setBuffer(tmpBuf);
-
-            tmpWriter.state.item().stream.writeMap(map, keyType, valType, tmpWriter);
-
-            CompressedMessage msg = map != null ? new CompressedMessage(tmpWriter.getBuffer()) : CompressedMessage.empty();
-
-            stream.writeMessage(msg, this);
-
-            if (stream.lastFinished()) {
-                tmpWriter = null;
-                tmpBuf = null;
-            }
-        }
+        if (compress)
+            writeCompressedMessage(
+                () -> tmpWriter.state.item().stream.writeMap(map, keyType, valType, tmpWriter),
+                map == null,
+                stream
+            );
         else
             stream.writeMap(map, keyType, valType, this);
 
@@ -442,6 +435,28 @@ public class DirectMessageWriter implements MessageWriter {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DirectMessageWriter.class, this);
+    }
+
+    /** */
+    private void writeCompressedMessage(Runnable task, boolean empty, DirectByteBufferStream stream) {
+        if (tmpWriter == null)
+            tmpWriter = new DirectMessageWriter(msgFactory);
+
+        if (tmpBuf == null)
+            tmpBuf = ByteBuffer.allocateDirect(TMP_BUF_CAPACITY);
+
+        tmpWriter.setBuffer(tmpBuf);
+
+        task.run();
+
+        CompressedMessage msg = empty ? CompressedMessage.empty() : new CompressedMessage(tmpWriter.getBuffer());
+
+        stream.writeMessage(msg, this);
+
+        if (stream.lastFinished()) {
+            tmpWriter = null;
+            tmpBuf = null;
+        }
     }
 
     /**

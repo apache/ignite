@@ -24,7 +24,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -200,7 +199,18 @@ public interface MessageReader {
      * @param <T> Type of the message.
      * @return Message.
      */
-    public <T extends Message> T readMessage();
+    public default <T extends Message> T readMessage() {
+        return readMessage(false);
+    }
+
+    /**
+     * Reads nested message.
+     *
+     * @param compress Whether message should be decompressed.
+     * @param <T> Type of the message.
+     * @return Message.
+     */
+    public <T extends Message> T readMessage(boolean compress);
 
     /**
      * Reads {@link CacheObject}.

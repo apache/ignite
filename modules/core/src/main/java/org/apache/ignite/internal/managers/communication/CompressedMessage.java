@@ -31,7 +31,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-/** TODO */
+/** */
 public class CompressedMessage implements Message {
     /** Type code. */
     public static final short TYPE_CODE = 517;
@@ -70,7 +70,7 @@ public class CompressedMessage implements Message {
         chunkedReader = new ChunkedByteReader(compress(buf), CHUNK_SIZE);
     }
 
-    /** TODO */
+    /** */
     public static CompressedMessage empty() {
         CompressedMessage msg = new CompressedMessage();
 
@@ -86,7 +86,7 @@ public class CompressedMessage implements Message {
         return dataSize;
     }
 
-    /** TODO */
+    /** */
     public byte[] uncompressed() {
         assert finalChunk;
 
@@ -114,8 +114,6 @@ public class CompressedMessage implements Message {
             if (chunk == null && chunkedReader != null) {
                 chunk = chunkedReader.nextChunk();
 
-                System.out.println(">>> After next chunk [" + Arrays.toString(chunk) + ']');
-
                 finalChunk = (chunk == null);
             }
 
@@ -123,8 +121,6 @@ public class CompressedMessage implements Message {
                 case 0:
                     if (!writer.writeInt(dataSize))
                         return false;
-
-                    System.out.println(">>> WRITE dataSize=" + dataSize);
 
                     writer.incrementState();
 
@@ -143,8 +139,6 @@ public class CompressedMessage implements Message {
                 case 2:
                     if (!writer.writeByteArray(chunk))
                         return false;
-
-                    System.out.println(">>> WRITED chunk [length=" + chunk.length + ", chunk=" + Arrays.toString(chunk) + ']');
 
                     chunk = null;
 
@@ -167,8 +161,6 @@ public class CompressedMessage implements Message {
             switch (reader.state()) {
                 case 0:
                     dataSize = reader.readInt();
-
-                    System.out.println(">>> READ dataSize=" + dataSize);
 
                     if (!reader.isLastRead())
                         return false;
@@ -198,8 +190,6 @@ public class CompressedMessage implements Message {
                     if (chunk != null) {
                         tmpBuf.put(chunk);
 
-                        System.out.println(">>> ADD chunk to tmpBuf [length=" + chunk.length + " , chunk=" + Arrays.toString(chunk) + ']');
-
                         reader.decrementState();
 
                         chunk = null;
@@ -222,8 +212,6 @@ public class CompressedMessage implements Message {
         buf.flip();
         buf.get(data);
 
-        System.out.println(">>> RAW DATA: length=" + data.length + ", data=" + Arrays.toString(data));
-
         ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length);
         Deflater deflater = new Deflater(Deflater.BEST_SPEED, true);
 
@@ -238,11 +226,7 @@ public class CompressedMessage implements Message {
             deflater.end();
         }
 
-        byte[] res = baos.toByteArray();
-
-        System.out.println(">>> SUCCESS compress [length=" + res.length + ", res=" + Arrays.toString(res) + ']');
-
-        return res;
+        return baos.toByteArray();
     }
 
     /** */
@@ -264,8 +248,6 @@ public class CompressedMessage implements Message {
             inflater.end();
         }
 
-        System.out.println(">>> SUCCESS uncompress [length=" + uncompressedData.length + ", data=" + Arrays.toString(uncompressedData) + ']');
-
         tmpBuf.clear();
 
         return uncompressedData;
@@ -274,11 +256,45 @@ public class CompressedMessage implements Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return "CompressedMessage{" +
-                "chunk=" + Arrays.toString(chunk) +
-                ", tmpBuf=" + tmpBuf +
-                ", dataSize=" + dataSize +
-                ", chunkedReader=" + chunkedReader +
-                ", finalChunk=" + finalChunk +
-                '}';
+            "chunk=" + Arrays.toString(chunk) +
+            ", tmpBuf=" + tmpBuf +
+            ", dataSize=" + dataSize +
+            ", chunkedReader=" + chunkedReader +
+            ", finalChunk=" + finalChunk +
+            '}';
+    }
+
+    /** */
+    private static class ChunkedByteReader {
+        /** */
+        private final byte[] inputData;
+
+        /** */
+        private final int chunkSize;
+
+        /** */
+        private int position;
+
+        /** */
+        ChunkedByteReader(byte[] inputData, int chunkSize) {
+            this.inputData = inputData;
+            this.chunkSize = chunkSize;
+        }
+
+        /** */
+        byte[] nextChunk() {
+            if (position >= inputData.length)
+                return null;
+
+            int curChunkSize = Math.min(inputData.length - position, chunkSize);
+
+            byte[] chunk = new byte[curChunkSize];
+
+            System.arraycopy(inputData, position, chunk, 0, curChunkSize);
+
+            position += curChunkSize;
+
+            return chunk;
+        }
     }
 }
