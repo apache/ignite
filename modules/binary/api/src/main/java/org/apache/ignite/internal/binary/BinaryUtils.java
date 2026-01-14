@@ -2813,8 +2813,8 @@ public class BinaryUtils {
      * @param out Output stream.
      * @return Writer instance.
      */
-    public static BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema) {
-        return binariesFactory.writer(ctx, out, schema);
+    public static BinaryWriterEx writerWithoutSchemaHolder(BinaryContext ctx, BinaryOutputStream out) {
+        return binariesFactory.writer(ctx, out, null);
     }
 
     /** @return Instance of caching handler. */

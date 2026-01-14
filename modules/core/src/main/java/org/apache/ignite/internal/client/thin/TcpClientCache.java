@@ -1287,7 +1287,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
 
             BinaryOutputStream out = payloadCh.out();
 
-            try (BinaryWriterEx w = BinaryUtils.writer(marsh.context(), out, null)) {
+            try (BinaryWriterEx w = BinaryUtils.writerWithoutSchemaHolder(marsh.context(), out)) {
                 w.writeInt(qry.getPageSize());
                 w.writeBoolean(qry.isLocal());
                 w.writeInt(qry.getPartition() == null ? -1 : qry.getPartition());
