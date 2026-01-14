@@ -36,7 +36,7 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
     private IgniteUuid depId;
 
     /** Whether to perform exchange. */
-    private transient boolean exchange;
+    private boolean exchange;
 
     /**
      * Constructor.
