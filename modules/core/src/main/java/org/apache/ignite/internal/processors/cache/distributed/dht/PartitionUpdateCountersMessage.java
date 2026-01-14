@@ -17,37 +17,32 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Map;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Partition update counters message.
  */
-@IgniteCodeGeneratingFail
 public class PartitionUpdateCountersMessage implements Message {
     /** */
     private static final int ITEM_SIZE = 4 /* partition */ + 8 /* initial counter */ + 8 /* updates count */;
 
     /** */
-    private byte data[];
-
-    /** */
+    @Order(0)
     private int cacheId;
 
     /** */
-    @GridDirectTransient
+    @Order(value = 1, method = "payload")
+    private byte[] data;
+
+    /** */
     private int size;
 
     /** Used for assigning counters to cache entries during tx finish. */
-    @GridDirectTransient
     private Map<Integer, Long> counters;
 
     /** */
@@ -67,10 +62,32 @@ public class PartitionUpdateCountersMessage implements Message {
     }
 
     /**
+     * @return Payload.
+     */
+    public byte[] payload() {
+        return Arrays.copyOf(data, size * ITEM_SIZE);
+    }
+
+    /**
+     * @param payload New payload.
+     */
+    public void payload(byte[] payload) {
+        this.data = payload;
+        this.size = this.data.length / ITEM_SIZE;
+    }
+
+    /**
      * @return Cache id.
      */
     public int cacheId() {
         return cacheId;
+    }
+
+    /**
+     * @param cacheId New cache id.
+     */
+    public void cacheId(int cacheId) {
+        this.cacheId = cacheId;
     }
 
     /**
@@ -153,13 +170,6 @@ public class PartitionUpdateCountersMessage implements Message {
     }
 
     /**
-     * Clears message.
-     */
-    public void clear() {
-        size = 0;
-    }
-
-    /**
      * Check if there is enough space is allocated.
      *
      * @param newSize Size to ensure.
@@ -169,63 +179,6 @@ public class PartitionUpdateCountersMessage implements Message {
 
         if (data.length < req)
             data = Arrays.copyOf(data, data.length << 1);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeInt(cacheId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByteArray(data, 0, size * ITEM_SIZE))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                cacheId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                data = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                size = data.length / ITEM_SIZE;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
