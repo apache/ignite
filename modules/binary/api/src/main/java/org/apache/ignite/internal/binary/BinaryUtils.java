@@ -3000,7 +3000,7 @@ public class BinaryUtils {
      * @param o
      */
     public static void detachAllowedIfPossible(Object o) {
-        if (o instanceof BinaryObjectEx)
+        if (isBinaryObjectImpl(o))
             ((BinaryObjectEx)o).detachAllowed(true);
     }
 
