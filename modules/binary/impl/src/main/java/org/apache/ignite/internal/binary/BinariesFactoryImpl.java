@@ -178,8 +178,8 @@ public class BinariesFactoryImpl implements BinariesFactory {
         Map<Class<?>, Integer> predefinedTypes = new HashMap<>();
 
         predefinedTypes.put(BinaryEnumObjectImpl.class, 0);
-        predefinedTypes.put(BinaryObjectImpl.class, 0);
         predefinedTypes.put(BinaryObjectOffheapImpl.class, 0);
+        predefinedTypes.put(BinaryObjectImpl.class, 0);
 
         return predefinedTypes;
     }
