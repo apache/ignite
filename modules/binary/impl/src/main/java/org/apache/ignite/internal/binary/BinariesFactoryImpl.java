@@ -158,6 +158,11 @@ public class BinariesFactoryImpl implements BinariesFactory {
     }
 
     /** {@inheritDoc} */
+    @Override public BinaryObjectEx binaryOffheapObject(BinaryContext ctx, long ptr, int start, int size) {
+        return new BinaryObjectOffheapImpl(ctx, ptr, start, size);
+    }
+
+    /** {@inheritDoc} */
     @Override public Class<?> binaryEnumClass() {
         return BinaryEnumObjectImpl.class;
     }
@@ -167,6 +172,7 @@ public class BinariesFactoryImpl implements BinariesFactory {
         Map<Class<?>, Integer> predefinedTypes = new HashMap<>();
 
         predefinedTypes.put(BinaryEnumObjectImpl.class, 0);
+        predefinedTypes.put(BinaryObjectOffheapImpl.class, 0);
 
         return predefinedTypes;
     }
