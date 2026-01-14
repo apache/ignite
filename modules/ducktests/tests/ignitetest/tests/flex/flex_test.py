@@ -29,6 +29,7 @@ from ignitetest.services.utils.ignite_aware import node_failed_event_pattern
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.utils import cluster
+from ignitetest.utils.bean import Bean
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import LATEST_2_17, IgniteVersion
 
@@ -41,19 +42,24 @@ class FlexTest(IgniteTest):
 
     @cluster(num_nodes=SERVERS + 1)
     def flex_test(self):
+        cacheAffinity = Bean("org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction", partitions=512)
+
         ignite_config = IgniteConfiguration(
             version=self.IGNITE_VERSION,
             metrics_log_frequency = 0,
             failure_detection_timeout=self.FAILURE_DETECTION_TIMEOUT_SEC * 1000,
             caches=[CacheConfiguration(
-                name='test-cache',
-                atomicity_mode='ATOMIC'
+                name='TBG_SCS_DM_DOCUMENTS',
+                atomicity_mode='TRANSACTIONAL',
+                affinity = cacheAffinity,
+                cache_mode = 'REPLICATED'
             )]
         )
 
         servers, start_servers_sec = start_servers(self.test_context, self.SERVERS, ignite_config)
 
-        servers.await_event(f"servers={self.SERVERS}, clients=0, state=ACTIVE, CPUs=", 30, from_the_beginning=True, nodes=servers.nodes)
+        servers.await_event(f"servers={self.SERVERS}, clients=0, state=ACTIVE, CPUs=", 30, from_the_beginning=True,
+                            nodes=servers.nodes)
 
         failedNode = servers.nodes[self.SERVER_IDX_TO_DROP]
         failedNodeId = servers.node_id(failedNode)

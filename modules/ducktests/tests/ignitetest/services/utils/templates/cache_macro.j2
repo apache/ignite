@@ -24,8 +24,13 @@
                 {% for cache in caches %}
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="{{ cache.name }}"/>
+                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+                    <property name="dataRegionName" value="memoryOnly"/>
                     {% if cache.cache_mode == 'PARTITIONED' %}
                         <property name="backups" value="{{ cache.backups or 0 }}"/>
+                    {% endif %}
+                    {% if cache.cache_mode == 'REPLICATED' %}
+                        <property name="cacheMode" value="REPLICATED"/>
                     {% endif %}
                     <property name="atomicityMode" value="{{ cache.atomicity_mode or 'ATOMIC' }}"/>
                     <property name="statisticsEnabled" value="{{ cache.statistics_enabled }}"/>
@@ -39,6 +44,23 @@
                         {{ misc_utils.bean(cache.affinity_mapper) }}
                     </property>
                     {% endif %}
+                    <property name="copyOnRead" value="true"/>
+                    <property name="eagerTtl" value="true"/>
+                    <property name="readFromBackup" value="true"/>
+                    <!-- property name="readThrough" value="true"/ -->
+                    <!-- property name="writeThrough" value="true"/ -->
+                    <property name="sqlEscapeAll" value="true"/>
+                    <property name="storeKeepBinary" value="true"/>
+                    <property name="maxConcurrentAsyncOperations" value="500"/>
+                    <property name="maxQueryIteratorsCount" value="1025"/>
+                    <property name="rebalanceMode" value="ASYNC"/>
+                    <property name="rebalanceOrder" value="0"/>
+                    <property name="rebalanceTimeout" value="1000"/>
+                    <property name="writeBehindBatchSize" value="512"/>
+                    <property name="writeBehindCoalescing" value="true"/>
+                    <property name="writeBehindFlushFrequency" value="5000"/>
+                    <property name="writeBehindFlushSize" value="10240"/>
+                    <property name="writeBehindFlushThreadCount" value="1"/>
                 </bean>
                 {% endfor %}
             </list>
