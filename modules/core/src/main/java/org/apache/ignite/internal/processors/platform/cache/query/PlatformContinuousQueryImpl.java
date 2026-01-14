@@ -108,7 +108,7 @@ public class PlatformContinuousQueryImpl implements PlatformContinuousQuery {
      * @return Java filter or null.
      */
     private static CacheEntryEventFilter getJavaFilter(Object filter, GridKernalContext ctx) {
-        if (BinaryUtils.isBinaryObjectImpl(filter)) {
+        if (BinaryUtils.binariesFactory.isBinaryObjectImpl(filter)) {
             BinaryObjectEx bo = (BinaryObjectEx)filter;
 
             if (bo.typeId() == GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY) {

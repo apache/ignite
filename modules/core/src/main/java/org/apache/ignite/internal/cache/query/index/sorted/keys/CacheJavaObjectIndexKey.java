@@ -47,7 +47,7 @@ public class CacheJavaObjectIndexKey extends JavaObjectIndexKey {
     public CacheJavaObjectIndexKey(CacheObject obj, CacheObjectValueContext valCtx) {
         assert obj != null;
 
-        if (BinaryUtils.isBinaryObjectImpl(obj))
+        if (BinaryUtils.binariesFactory.isBinaryObjectImpl(obj))
             obj = (CacheObject)BinaryUtils.detach(obj);
 
         this.obj = obj;

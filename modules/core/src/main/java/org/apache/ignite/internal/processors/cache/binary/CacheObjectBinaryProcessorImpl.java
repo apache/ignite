@@ -1157,7 +1157,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (obj instanceof KeyCacheObject) {
             KeyCacheObject key = (KeyCacheObject)obj;
 
-            if (BinaryUtils.isBinaryObjectImpl(key)) {
+            if (BinaryUtils.binariesFactory.isBinaryObjectImpl(key)) {
                 // Need to create a copy because the key can be reused at the application layer after that (IGNITE-3505).
                 key = key.copy(partition(ctx, cctx, key));
             }
@@ -1170,7 +1170,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         obj = toBinary(obj, false);
 
-        if (BinaryUtils.isBinaryObjectImpl(obj)) {
+        if (BinaryUtils.binariesFactory.isBinaryObjectImpl(obj)) {
             ((KeyCacheObject)obj).partition(partition(ctx, cctx, obj));
 
             return (KeyCacheObject)obj;
@@ -1271,8 +1271,8 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     coctx = fakeCacheObjCtx;
 
                 return coctx == null
-                    ? (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes)
-                    : (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes, coctx);
+                    ? (CacheObject)BinaryUtils.binariesFactory.binaryObject(binaryContext(), bytes)
+                    : (CacheObject)BinaryUtils.binariesFactory.binaryObject(binaryContext(), bytes, coctx);
 
             case CacheObject.TYPE_BINARY_ENUM:
                 return (CacheObject)BinaryUtils.binariesFactory.binaryEnum(binaryContext(), bytes);
@@ -1292,7 +1292,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         throws IgniteCheckedException {
         switch (type) {
             case CacheObject.TYPE_BINARY:
-                return (KeyCacheObject)BinaryUtils.binaryObject(binaryContext(), bytes);
+                return (KeyCacheObject)BinaryUtils.binariesFactory.binaryObject(binaryContext(), bytes);
 
             case CacheObject.TYPE_BYTE_ARR:
                 throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");

@@ -147,7 +147,7 @@ public class QueryIndexRowHandler implements InlineIndexRowHandler {
 
     /** */
     private Object getBinaryObject(CacheObject o) {
-        if (BinaryUtils.isBinaryObjectImpl(o))
+        if (BinaryUtils.binariesFactory.isBinaryObjectImpl(o))
             return BinaryUtils.detach(o);
 
         return null;

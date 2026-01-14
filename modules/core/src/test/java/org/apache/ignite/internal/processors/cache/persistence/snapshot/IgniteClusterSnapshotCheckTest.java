@@ -55,8 +55,8 @@ import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.binary.BinariesFactoryImpl;
 import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.management.cache.CacheFilterEnum;
 import org.apache.ignite.internal.management.cache.CacheIdleVerifyCommandArg;
@@ -435,7 +435,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 new Random().nextBytes(bytes);
 
                 try {
-                    BinaryObject newVal = BinaryUtils.binaryObject(binCtx, binCtx.marshaller().marshal(new Value(bytes)), 0);
+                    BinaryObject newVal = BinariesFactoryImpl.newBinaryObject(binCtx, binCtx.marshaller().marshal(new Value(bytes)), 0);
 
                     boolean success = cached.initialValue(
                         (CacheObject)newVal,

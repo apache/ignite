@@ -20,8 +20,10 @@ package org.apache.ignite.internal.binary;
 import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.function.ToIntFunction;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -135,6 +137,11 @@ public interface BinariesFactory {
     public Class<?> binaryEnumClass();
 
     /**
+     * @return Binary object impl class.
+     */
+    public Class<?> binaryObjectImplClass();
+
+    /**
      * @return Map of predefined types.
      */
     public Map<Class<?>, Integer> predefinedTypes();
@@ -143,4 +150,28 @@ public interface BinariesFactory {
      * @return Map of function returning size of the object.
      */
     public Map<Class<?>, ToIntFunction<Object>> sizeProviders();
+
+    /**
+     * Compare two objects for DML operation.
+     *
+     * @param first First.
+     * @param second Second.
+     * @return Comparison result.
+     */
+    public int compareForDml(Object first, Object second);
+
+    /** Creates new instance of binary object. */
+    public BinaryObjectEx binaryObject(BinaryContext ctx, byte[] arr, int start);
+
+    /** Creates new instance of binary object. */
+    public BinaryObjectEx binaryObject(BinaryContext ctx, byte[] bytes);
+
+    /** Creates new instance of binary object. */
+    public BinaryObject binaryObject(BinaryContext ctx, byte[] valBytes, CacheObjectValueContext coCtx);
+
+    /**
+     * @param val Value to check.
+     * @return {@code True} if {@code val} instance of {@code BinaryObjectImpl}.
+     */
+    public boolean isBinaryObjectImpl(Object val);
 }
