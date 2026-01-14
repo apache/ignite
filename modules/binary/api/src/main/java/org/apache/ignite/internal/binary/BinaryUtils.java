@@ -2775,7 +2775,7 @@ public class BinaryUtils {
      * @return {@code True} if {@code val} instance of binary Enum object.
      */
     public static boolean isBinaryEnumObject(Object val) {
-        return val instanceof BinaryObjectEx && ((BinaryObjectEx)val).isEnum();
+        return val != null && val.getClass() == binariesFactory.binaryEnumClass();
     }
 
     /**

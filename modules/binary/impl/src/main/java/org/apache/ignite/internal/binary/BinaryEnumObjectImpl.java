@@ -55,7 +55,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
     private int typeId;
 
     /** Raw data. */
-    private String clsName;
+    private @Nullable String clsName;
 
     /** Ordinal. */
     private int ord;

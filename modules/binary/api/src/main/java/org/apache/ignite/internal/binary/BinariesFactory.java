@@ -107,11 +107,12 @@ public interface BinariesFactory {
     /**
      * Creates binary enum.
      *
+     * @param typeId Type ID.
+     * @param clsName Class name.
      * @param ord Ordinal.
      * @param ctx Context.
-     * @param typeId Type ID.
      */
-    public BinaryObjectEx binaryEnum(BinaryContext ctx, int ord, @Nullable String clsName, int typeId);
+    public BinaryObjectEx binaryEnum(BinaryContext ctx, int typeId, @Nullable String clsName, int ord);
 
     /**
      * Creates binary enum.

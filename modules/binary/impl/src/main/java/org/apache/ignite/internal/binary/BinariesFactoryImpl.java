@@ -149,7 +149,7 @@ public class BinariesFactoryImpl implements BinariesFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObjectEx binaryEnum(BinaryContext ctx, int ord, @Nullable String clsName, int typeId) {
+    @Override public BinaryObjectEx binaryEnum(BinaryContext ctx, int typeId, @Nullable String clsName, int ord) {
         return new BinaryEnumObjectImpl(ctx, typeId, clsName, ord);
     }
 
@@ -177,13 +177,7 @@ public class BinariesFactoryImpl implements BinariesFactory {
     @Override public Map<Class<?>, Integer> predefinedTypes() {
         Map<Class<?>, Integer> predefinedTypes = new HashMap<>();
 
-        predefinedTypes.put(BinaryObjectImpl.class, 0);
-        predefinedTypes.put(BinaryObjectOffheapImpl.class, 0);
-        predefinedTypes.put(BinaryMetadata.class, 0);
         predefinedTypes.put(BinaryEnumObjectImpl.class, 0);
-        predefinedTypes.put(BinaryTreeMap.class, 0);
-        predefinedTypes.put(BinaryArray.class, 0);
-        predefinedTypes.put(BinaryEnumArray.class, 0);
 
         return predefinedTypes;
     }
@@ -237,6 +231,7 @@ public class BinariesFactoryImpl implements BinariesFactory {
     @Override public boolean isBinaryObjectImpl(Object val) {
         return val instanceof BinaryObjectImpl;
     }
+
 
     /**
      * @param cls Class to check.

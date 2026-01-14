@@ -210,7 +210,7 @@ public class BinaryContext {
         mapTypes.put(HashMap.class, GridBinaryMarshaller.HASH_MAP);
         mapTypes.put(LinkedHashMap.class, GridBinaryMarshaller.LINKED_HASH_MAP);
 
-        // IDs range from [0..200] is used by Java SDK API and GridGain legacy API
+        // IDs range from [0..200] is used by Java SDK API
 
         registerPredefinedType(Object.class, GridBinaryMarshaller.OBJECT);
         registerPredefinedType(Byte.class, GridBinaryMarshaller.BYTE);
@@ -256,6 +256,13 @@ public class BinaryContext {
         registerPredefinedType(IgniteBiTuple.class, 61);
         registerPredefinedType(T2.class, 62);
         registerPredefinedType(IgniteUuid.class, 63);
+
+        registerPredefinedType(BinaryObjectImpl.class, 0);
+        registerPredefinedType(BinaryObjectOffheapImpl.class, 0);
+        registerPredefinedType(BinaryMetadata.class, 0);
+        registerPredefinedType(BinaryTreeMap.class, 0);
+        registerPredefinedType(BinaryArray.class, 0);
+        registerPredefinedType(BinaryEnumArray.class, 0);
 
         BinaryUtils.binariesFactory.predefinedTypes().forEach(this::registerPredefinedType);
 
