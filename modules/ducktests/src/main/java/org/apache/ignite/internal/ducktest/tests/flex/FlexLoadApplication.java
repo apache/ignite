@@ -40,9 +40,10 @@ public class FlexLoadApplication extends IgniteAwareApplication {
     @Override public void run(JsonNode jsonNode) throws Exception {
         final int preloadDurSec = jsonNode.get("preloadDurSec").asInt();
         final int threads = jsonNode.get("threads").asInt();
-        final String cacheName = jsonNode.get("CACHE_NAME").asText();
+        final String cacheName = jsonNode.get("cacheName").asText();
+        final String tableName = jsonNode.get("tableName").asText();
 
-        createTable(cacheName);
+        createTable(cacheName, tableName);
 
         final ForkJoinPool executor = new ForkJoinPool(threads);
         final CountDownLatch initLatch = new CountDownLatch(threads);
@@ -131,33 +132,32 @@ public class FlexLoadApplication extends IgniteAwareApplication {
     }
 
     /** */
-    private void createTable(String cacheName) throws Exception {
+    private void createTable(String tableName, String cacheName) throws Exception {
         try (Connection conn = thinJdbcDataSource.getConnection()) {
-            conn.createStatement().execute("CREATE TABLE SCS_DM_DOCUMENTS(" +
+            conn.createStatement().execute("CREATE TABLE " + tableName + "(" +
                 "id INT, strVal VARCHAR, decVal DECIMAL, PRIMARY KEY(id)" +
                 ") WITH \"cache_name=" + cacheName + "\""
             );
 
             try {
-                ResultSet rs = conn.prepareStatement("SELECT count(1) FROM SCS_DM_DOCUMENTS").executeQuery();
+                ResultSet rs = conn.prepareStatement("SELECT count(1) FROM " + tableName).executeQuery();
 
                 rs.next();
 
                 int cnt = rs.getInt(1);
 
                 if (cnt == 0)
-                    log.info("TEST | Created table 'SCS_DM_DOCUMENTS'.");
+                    log.info("TEST | Created table '" + tableName + "'.");
                 else
                     throw new IllegalStateException("Unexpected empty table count: " + cnt);
             }
             catch (Exception t) {
-                t = new IllegalStateException("Failed to create table SCS_DM_DOCUMENTS.", t);
+                t = new IllegalStateException("Failed to create table " + tableName + ".", t);
 
                 markBroken(t);
 
                 throw t;
             }
         }
-
     }
 }
