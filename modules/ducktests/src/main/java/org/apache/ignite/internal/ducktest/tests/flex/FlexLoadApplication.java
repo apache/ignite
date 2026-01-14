@@ -40,7 +40,7 @@ public class FlexLoadApplication extends IgniteAwareApplication {
     private static final int START_TIME_WAIT_SEC = 20;
 
     /** */
-    private static final int PRELOAD_TIME_SEC = 10;
+    private static final int PRELOAD_TIME_SEC = 20;
 
     /** {@inheritDoc} */
     @Override public void run(JsonNode jsonNode) throws Exception {
@@ -117,7 +117,7 @@ public class FlexLoadApplication extends IgniteAwareApplication {
 
         preloaded.set(true);
 
-        log.info("TEST | Preloaded. Inserted about " + counter.get() + " records. Continue loading...");
+        log.info("TEST | Preloaded. Loaded about " + counter.get() + " records. Continue loading...");
 
         markInitialized();
 
@@ -127,7 +127,7 @@ public class FlexLoadApplication extends IgniteAwareApplication {
             }
         }
 
-        log.info("TEST | Finished. Stopping...");
+        log.info("TEST | Stopping. Loaded about " + counter.get() + " records.");
 
         markFinished();
     }

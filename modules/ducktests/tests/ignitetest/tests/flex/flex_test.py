@@ -19,9 +19,9 @@ Module contains Flex tests.
 
 import os
 import random
+import time
 from ducktape.mark import matrix
 from enum import IntEnum
-from time import monotonic
 from typing import NamedTuple
 
 from ignitetest.services.ignite import IgniteService
@@ -35,10 +35,12 @@ from ignitetest.services.utils.ssl.client_connector_configuration import ClientC
 from ignitetest.utils import cluster
 from ignitetest.utils.bean import Bean
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import LATEST_2_17, IgniteVersion
+from ignitetest.utils.version import LATEST_2_17
+
 
 class FlexTest(IgniteTest):
     SERVERS = 3
+    LOAD_SECONDS = 30
     SERVER_IDX_TO_DROP = 1
     IGNITE_VERSION = LATEST_2_17
 
@@ -47,6 +49,10 @@ class FlexTest(IgniteTest):
         servers, ignite_config = self.launch_cluster()
 
         load_app = self.start_load_app(servers, ignite_config.client_connector_configuration.port)
+
+        self.logger.info(f"TEST | Loading the cluster for {self.LOAD_SECONDS} seconds...")
+
+        time.sleep(self.LOAD_SECONDS)
 
         self.kill_node(servers)
 
@@ -142,6 +148,6 @@ def start_servers(test_context, num_nodes, ignite_config, modules=None):
                             # mute spam in log.
                             jvm_opts=["-DIGNITE_DUMP_THREADS_ON_FAILURE=false"])
 
-    start = monotonic()
+    start = time.monotonic()
     servers.start_async()
-    return servers, round(monotonic() - start, 1)
+    return servers, round(time.monotonic() - start, 1)
