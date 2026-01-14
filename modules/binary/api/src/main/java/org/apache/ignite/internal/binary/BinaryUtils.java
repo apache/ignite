@@ -574,8 +574,8 @@ public class BinaryUtils {
      * @return Unwrapped value.
      */
     public static Object unwrapTemporary(Object obj) {
-        if (obj instanceof BinaryObjectOffheapImpl)
-            return ((BinaryObjectOffheapImpl)obj).heapCopy();
+        if (obj instanceof BinaryObjectEx)
+            return ((BinaryObjectEx)obj).heapCopy();
 
         return obj;
     }
@@ -1506,7 +1506,7 @@ public class BinaryUtils {
 
             int start = in.readInt();
 
-            return new BinaryObjectOffheapImpl(ctx, in.offheapPointer() + pos, start, len);
+            return binariesFactory.binaryOffheapObject(ctx, in.offheapPointer() + pos, start, len);
         }
         else {
             byte[] arr = doReadByteArray(in);
@@ -1866,7 +1866,7 @@ public class BinaryUtils {
 
                 int len = length(in, start);
 
-                BinaryObjectExImpl po;
+                BinaryObjectEx po;
 
                 if (detach) {
                     BinaryObjectImpl binObj = new BinaryObjectImpl(ctx, in.array(), start);
@@ -1879,7 +1879,7 @@ public class BinaryUtils {
                     if (in.offheapPointer() == 0)
                         po = new BinaryObjectImpl(ctx, in.array(), start);
                     else
-                        po = new BinaryObjectOffheapImpl(ctx, in.offheapPointer(), start,
+                        po = binariesFactory.binaryOffheapObject(ctx, in.offheapPointer(), start,
                             in.remaining() + in.position());
                 }
 

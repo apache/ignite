@@ -104,4 +104,11 @@ public interface BinaryObjectEx extends BinaryObject {
     public default BinaryContext context() {
         throw new UnsupportedOperationException("Context unknown");
     }
+
+    /**
+     * @return Heap copy of the object.
+     */
+    public default BinaryObjectEx heapCopy() {
+        return this;
+    }
 }

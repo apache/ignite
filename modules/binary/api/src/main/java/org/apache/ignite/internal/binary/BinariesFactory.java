@@ -121,6 +121,14 @@ public interface BinariesFactory {
     public BinaryObjectEx binaryEnum(BinaryContext ctx, byte[] arr);
 
     /**
+     * @param ctx Context.
+     * @param ptr Memory address.
+     * @param start Object start.
+     * @param size Memory size.
+     */
+    public BinaryObjectEx binaryOffheapObject(BinaryContext ctx, long ptr, int start, int size);
+
+    /**
      * @return Binary enum class.
      */
     public Class<?> binaryEnumClass();
