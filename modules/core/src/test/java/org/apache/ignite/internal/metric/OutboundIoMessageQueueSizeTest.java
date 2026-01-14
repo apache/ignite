@@ -103,10 +103,12 @@ public class OutboundIoMessageQueueSizeTest extends GridCommonAbstractTest {
 
         GridTestUtils.skipCommNioServerRead(srv1, true);
 
+        Integer key = primaryKey(cache0);
+
         // Initiate messages for srv1.
         // Some messages still may be sent until buffers overflow, so use MSG_LIMIT * 2 messages.
         for (int i = 0; i < MSG_LIMIT * 2; i++)
-            cache0.put(0, new byte[10 * 1024]);
+            cache0.put(key, new byte[10 * 1024]);
 
         assertTrue(metric.value() >= MSG_LIMIT);
 
