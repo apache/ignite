@@ -38,13 +38,12 @@ from ignitetest.utils.bean import Bean
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import LATEST_2_17
 
-
 class FlexTest(IgniteTest):
     SERVERS = 3
     SERVER_IDX_TO_DROP = 1
-    PRELOAD_SECONDS = 30
-    LOAD_SECONDS = PRELOAD_SECONDS
-    LOAD_THREADS = 10
+    PRELOAD_SECONDS = 120
+    LOAD_SECONDS = 40
+    LOAD_THREADS = 8
     IGNITE_VERSION = LATEST_2_17
 
     @cluster(num_nodes=SERVERS + 1)
