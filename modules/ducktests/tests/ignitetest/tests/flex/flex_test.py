@@ -41,8 +41,10 @@ from ignitetest.utils.version import LATEST_2_17
 
 class FlexTest(IgniteTest):
     SERVERS = 3
-    LOAD_SECONDS = 5
     SERVER_IDX_TO_DROP = 1
+    PRELOAD_SECONDS = 30
+    LOAD_SECONDS = PRELOAD_SECONDS
+    LOAD_THREADS = 10
     IGNITE_VERSION = LATEST_2_17
 
     @cluster(num_nodes=SERVERS + 1)
@@ -94,18 +96,16 @@ class FlexTest(IgniteTest):
     def start_load_app(self, servers, jdbcPort):
         jdbcPort = str(jdbcPort)
 
-        addrs = [servers.nodes[0].account.hostname + ":" + jdbcPort,
-                 servers.nodes[1].account.hostname + ":" + jdbcPort,
+        addrs = [servers.nodes[0].account.hostname + ":" + jdbcPort, servers.nodes[1].account.hostname + ":" + jdbcPort,
                  servers.nodes[2].account.hostname + ":" + jdbcPort]
 
         app = IgniteApplicationService(
             self.test_context,
-            IgniteThinJdbcConfiguration(
-                version=self.IGNITE_VERSION,
-                addresses=addrs
-            ),
+            IgniteThinJdbcConfiguration(version=self.IGNITE_VERSION, addresses=addrs),
             java_class_name="org.apache.ignite.internal.ducktest.tests.flex.FlexLoadApplication",
-            num_nodes=1
+            num_nodes=1,
+            params={"preloadDurSec": self.PRELOAD_SECONDS, "threads": self.LOAD_THREADS},
+            startup_timeout_sec=self.PRELOAD_SECONDS + 10
         )
 
         self.logger.info("TEST | Starting the loading application...")

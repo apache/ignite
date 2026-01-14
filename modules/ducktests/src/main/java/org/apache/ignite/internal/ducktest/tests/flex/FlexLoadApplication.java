@@ -34,26 +34,23 @@ import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 /** */
 public class FlexLoadApplication extends IgniteAwareApplication {
     /** */
-    private static final int THREADS = 16;
-
-    /** */
-    private static final int START_TIME_WAIT_SEC = 20;
-
-    /** */
-    private static final int PRELOAD_TIME_SEC = 5;
+    private final int WAIT_START_SECS = 20;
 
     /** {@inheritDoc} */
     @Override public void run(JsonNode jsonNode) throws Exception {
+        final int preloadDurSec = jsonNode.get("preloadDurSec").asInt();
+        final int threads = jsonNode.get("threads").asInt();
+
         createTable();
 
-        final ForkJoinPool executor = new ForkJoinPool(THREADS);
-        final CountDownLatch initLatch = new CountDownLatch(THREADS);
+        final ForkJoinPool executor = new ForkJoinPool(threads);
+        final CountDownLatch initLatch = new CountDownLatch(threads);
         final AtomicLong counter = new AtomicLong();
         final AtomicBoolean preloaded = new AtomicBoolean();
 
         log.info("TEST | Load pool parallelism=" + executor.getParallelism());
 
-        for (int i = 0; i < THREADS; ++i) {
+        for (int i = 0; i < threads; ++i) {
             executor.submit(() -> {
                 final Random rnd = new Random();
                 boolean init = false;
@@ -101,7 +98,7 @@ public class FlexLoadApplication extends IgniteAwareApplication {
         if (!active())
             return;
 
-        if (!initLatch.await(START_TIME_WAIT_SEC, TimeUnit.SECONDS)) {
+        if (!initLatch.await(WAIT_START_SECS, TimeUnit.SECONDS)) {
             Exception th = new IllegalStateException("Failed to start loading.");
 
             markBroken(th);
@@ -109,10 +106,10 @@ public class FlexLoadApplication extends IgniteAwareApplication {
             throw th;
         }
 
-        log.info("TEST | Started " + THREADS + " loading threads. Preloading...");
+        log.info("TEST | Started " + threads + " loading threads. Preloading...");
 
         synchronized (this) {
-            wait(PRELOAD_TIME_SEC * 1000);
+            wait(preloadDurSec * 1000);
         }
 
         preloaded.set(true);
