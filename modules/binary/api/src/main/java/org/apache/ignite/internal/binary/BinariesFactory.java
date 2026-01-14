@@ -90,10 +90,9 @@ public interface BinariesFactory {
     /**
      * @param ctx Context.
      * @param out Output stream.
-     * @param schema Schema holder
      * @return Writer instance.
      */
-    public BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema);
+    public BinaryWriterEx writerNoSchemaHolder(BinaryContext ctx, BinaryOutputStream out);
 
     /**
      * Create accessor for the field.

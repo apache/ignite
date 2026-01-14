@@ -2814,7 +2814,7 @@ public class BinaryUtils {
      * @return Writer instance.
      */
     public static BinaryWriterEx writerWithoutSchemaHolder(BinaryContext ctx, BinaryOutputStream out) {
-        return binariesFactory.writer(ctx, out, null);
+        return binariesFactory.writerNoSchemaHolder(ctx, out);
     }
 
     /** @return Instance of caching handler. */
