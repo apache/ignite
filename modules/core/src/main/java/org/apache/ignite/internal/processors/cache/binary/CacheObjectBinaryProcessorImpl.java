@@ -982,7 +982,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         updateMetadata(typeId, typeName, null, null, true, null);
 
-        return BinaryUtils.binaryEnum(ord, binaryCtx, typeId);
+        return BinaryUtils.binariesFactory.binaryEnum(binaryCtx, typeId, null, ord);
     }
 
     /** {@inheritDoc} */
@@ -1006,7 +1006,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             throw new BinaryObjectException("Failed to resolve enum ordinal by name [typeId=" +
                     typeId + ", typeName='" + typeName + "', name='" + name + "']");
 
-        return BinaryUtils.binaryEnum(ordinal, binaryCtx, typeId);
+        return BinaryUtils.binariesFactory.binaryEnum(binaryCtx, typeId, null, ordinal);
     }
 
     /** {@inheritDoc} */
@@ -1275,7 +1275,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     : (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes, coctx);
 
             case CacheObject.TYPE_BINARY_ENUM:
-                return (CacheObject)BinaryUtils.binaryEnum(binaryContext(), bytes);
+                return (CacheObject)BinaryUtils.binariesFactory.binaryEnum(binaryContext(), bytes);
 
             case CacheObject.TYPE_BYTE_ARR:
                 return new CacheObjectByteArrayImpl(bytes);

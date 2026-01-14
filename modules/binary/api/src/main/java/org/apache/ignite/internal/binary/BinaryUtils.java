@@ -58,7 +58,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
 import java.util.function.IntFunction;
-import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
@@ -74,7 +73,6 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.util.CommonUtils;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -89,7 +87,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.IgniteCommonsSystemProperties.DFLT_IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_USE_BINARY_ARRAYS;
-import static org.apache.ignite.internal.util.GridUnsafe.align;
 
 /**
  * Binary utils.
@@ -1152,7 +1149,7 @@ public class BinaryUtils {
             return BinaryWriteMode.MAP;
         else if (CommonUtils.isEnum(cls))
             return BinaryWriteMode.ENUM;
-        else if (cls == BinaryEnumObjectImpl.class)
+        else if (cls == binariesFactory.binaryEnumClass())
             return BinaryWriteMode.BINARY_ENUM;
         else if (cls == Class.class)
             return BinaryWriteMode.CLASS;
@@ -1676,28 +1673,9 @@ public class BinaryUtils {
      * @param type Plain type.
      * @return Enum.
      */
-    static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx,
+    static BinaryObjectEx doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx,
         EnumType type) {
-        return new BinaryEnumObjectImpl(ctx, type.typeId, type.clsName, in.readInt());
-    }
-
-    /**
-     * Read binary enum.
-     *
-     * @param ord Ordinal.
-     * @param ctx Context.
-     * @param typeId Type ID.
-     */
-    public static BinaryObjectEx binaryEnum(int ord, BinaryContext ctx, int typeId) {
-        return new BinaryEnumObjectImpl(ctx, typeId, null, ord);
-    }
-
-    /**
-     * @param ctx Context.
-     * @param arr Array.
-     */
-    public static BinaryObjectEx binaryEnum(BinaryContext ctx, byte[] arr) {
-        return new BinaryEnumObjectImpl(ctx, arr);
+        return binariesFactory.binaryEnum(ctx, type.typeId, type.clsName, in.readInt());
     }
 
     /** */
@@ -1725,7 +1703,7 @@ public class BinaryUtils {
     private static Object[] doReadBinaryEnumArray(BinaryInputStream in, BinaryContext ctx) {
         int len = in.readInt();
 
-        Object[] arr = (Object[])Array.newInstance(BinaryEnumObjectImpl.class, len);
+        Object[] arr = (Object[])Array.newInstance(binariesFactory.binaryEnumClass(), len);
 
         for (int i = 0; i < len; i++) {
             byte flag = in.readByte();
@@ -2801,23 +2779,6 @@ public class BinaryUtils {
     }
 
     /**
-     * @return Map of function returning size of the object.
-     */
-    public static Map<Class<?>, ToIntFunction<Object>> sizeProviders() {
-        return Map.of(
-            BinaryObjectOffheapImpl.class, obj -> 0, // No extra heap memory.
-            BinaryObjectImpl.class, new ToIntFunction<>() {
-                private final long byteArrOffset = GridUnsafe.arrayBaseOffset(byte[].class);
-
-                @Override public int applyAsInt(Object bo) {
-                    return (int)align(byteArrOffset + ((BinaryObjectImpl)bo).bytes().length);
-                }
-            },
-            BinaryEnumObjectImpl.class, bo -> ((BinaryObject)bo).size()
-        );
-    }
-
-    /**
      * @param val Value to check.
      * @return {@code True} if {@code val} instance of {@link BinaryEnumArray}.
      */
@@ -2830,15 +2791,7 @@ public class BinaryUtils {
      * @return {@code True} if {@code val} instance of binary Enum object.
      */
     public static boolean isBinaryEnumObject(Object val) {
-        return val instanceof BinaryEnumObjectImpl;
-    }
-
-    /**
-     * @param cls Class to check.
-     * @return {@code True} if {@code val} is assignable to binary Enum object.
-     */
-    public static boolean isAssignableToBinaryEnumObject(Class<?> cls) {
-        return BinaryEnumObjectImpl.class.isAssignableFrom(cls);
+        return val != null && val.getClass() == binariesFactory.binaryEnumClass();
     }
 
     /**

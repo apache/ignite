@@ -223,7 +223,7 @@ class BinaryClassDescriptor {
         else if (useOptMarshaller)
             mode = BinaryWriteMode.OPTIMIZED; // Will not be used anywhere.
         else {
-            if (cls == BinaryEnumObjectImpl.class)
+            if (cls == BinaryUtils.binariesFactory.binaryEnumClass())
                 mode = BinaryWriteMode.BINARY_ENUM;
             else
                 mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
