@@ -386,7 +386,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
         Collection<UUID> nodeIds = readNodeIds(reader);
 
-        if (!keepBinary && (BinaryUtils.binariesFactory.isBinaryObjectImpl(arg) || BinaryUtils.isBinaryArray(arg)))
+        if (!keepBinary && (BinaryUtils.isBinaryObjectImpl(arg) || BinaryUtils.isBinaryArray(arg)))
             arg = ((BinaryObject)arg).deserialize();
 
         if (nodeIds != null)

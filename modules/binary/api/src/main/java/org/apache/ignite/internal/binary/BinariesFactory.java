@@ -168,10 +168,4 @@ public interface BinariesFactory {
 
     /** Creates new instance of binary object. */
     public BinaryObject binaryObject(BinaryContext ctx, byte[] valBytes, CacheObjectValueContext coCtx);
-
-    /**
-     * @param val Value to check.
-     * @return {@code True} if {@code val} instance of {@code BinaryObjectImpl}.
-     */
-    public boolean isBinaryObjectImpl(Object val);
 }

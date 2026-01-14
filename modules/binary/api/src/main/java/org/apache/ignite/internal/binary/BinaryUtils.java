@@ -2908,6 +2908,14 @@ public class BinaryUtils {
 
     /**
      * @param val Value to check.
+     * @return {@code True} if {@code val} instance of {@link BinaryObjectImpl}.
+     */
+    public static boolean isBinaryObjectImpl(Object val) {
+        return (val != null) && val.getClass() == binariesFactory.binaryObjectImplClass();
+    }
+
+    /**
+     * @param val Value to check.
      * @return {@code True} if {@code val} instance of {@link BinaryArray}.
      */
     public static boolean isBinaryArray(Object val) {

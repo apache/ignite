@@ -219,11 +219,6 @@ public class BinariesFactoryImpl implements BinariesFactory {
         return new BinaryObjectImpl(ctx, valBytes, coCtx);
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isBinaryObjectImpl(Object val) {
-        return val instanceof BinaryObjectImpl;
-    }
-
     /**
      * @param cls Class to check.
      * @return {@code True} if {@code val} is assignable to binary Enum object.

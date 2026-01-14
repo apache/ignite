@@ -1157,7 +1157,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         if (obj instanceof KeyCacheObject) {
             KeyCacheObject key = (KeyCacheObject)obj;
 
-            if (BinaryUtils.binariesFactory.isBinaryObjectImpl(key)) {
+            if (BinaryUtils.isBinaryObjectImpl(key)) {
                 // Need to create a copy because the key can be reused at the application layer after that (IGNITE-3505).
                 key = key.copy(partition(ctx, cctx, key));
             }
@@ -1170,7 +1170,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         obj = toBinary(obj, false);
 
-        if (BinaryUtils.binariesFactory.isBinaryObjectImpl(obj)) {
+        if (BinaryUtils.isBinaryObjectImpl(obj)) {
             ((KeyCacheObject)obj).partition(partition(ctx, cctx, obj));
 
             return (KeyCacheObject)obj;
