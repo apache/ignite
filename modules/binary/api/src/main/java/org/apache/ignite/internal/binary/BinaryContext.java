@@ -257,8 +257,6 @@ public class BinaryContext {
         registerPredefinedType(T2.class, 62);
         registerPredefinedType(IgniteUuid.class, 63);
 
-        registerPredefinedType(BinaryObjectImpl.class, 0);
-        registerPredefinedType(BinaryObjectOffheapImpl.class, 0);
         registerPredefinedType(BinaryMetadata.class, 0);
         registerPredefinedType(BinaryTreeMap.class, 0);
         registerPredefinedType(BinaryArray.class, 0);
