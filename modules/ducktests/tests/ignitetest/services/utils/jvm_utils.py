@@ -19,7 +19,7 @@ This module contains JVM utilities.
 
 from ignitetest.services.utils.decorators import memoize
 
-DEFAULT_HEAP = "768M"
+DEFAULT_HEAP = "4G"
 
 JVM_PARAMS_GC_G1 = "-XX:+UseG1GC -XX:MaxGCPauseMillis=100 " \
                    "-XX:ConcGCThreads=$(((`nproc`/3)>1?(`nproc`/3):1)) " \

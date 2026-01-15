@@ -36,16 +36,16 @@ from ignitetest.services.utils.ssl.client_connector_configuration import ClientC
 from ignitetest.utils import cluster
 from ignitetest.utils.bean import Bean
 from ignitetest.utils.ignite_test import IgniteTest
-from ignitetest.utils.version import LATEST_2_17
+from ignitetest.utils.version import LATEST_2_17, DEV_BRANCH
 
 
 class MexTest(IgniteTest):
-    PRELOAD_SECONDS = 5
-    LOAD_SECONDS = 90
-    LOAD_THREADS = 30
+    PRELOAD_SECONDS = 50
+    LOAD_SECONDS = 15
+    LOAD_THREADS = 8
     SERVERS = 3
     SERVER_IDX_TO_DROP = 1
-    IGNITE_VERSION = LATEST_2_17
+    IGNITE_VERSION = DEV_BRANCH
     CACHE_NAME = "TEST_CACHE"
     TABLE_NAME = "TEST_TABLE"
 
@@ -69,26 +69,27 @@ class MexTest(IgniteTest):
         app.stop()
         app.await_stopped()
 
-        # Check idle verify.
-        self.logger.info("TEST | The load application has stopped.")
-        output = control_utility.idle_verify(self.CACHE_NAME)
-        self.logger.info(f"TEST | Idle verify finished: {output}")
-
         # Table rows cnt on srvr0.
         app = self.start_cnt_app(servers, 0, ignite_config.client_connector_configuration.port)
         rowCntOnNode0 = app.extract_result("tableRowsCnt")
+        self.logger.info(f"TEST | Partitions cnt on node0: {rowCntOnNode0}")
         app.stop()
         app.await_stopped()
 
         # Table rows cnt on srvr2.
         app = self.start_cnt_app(servers, 2, ignite_config.client_connector_configuration.port)
         rowCntOnNode2 = app.extract_result("tableRowsCnt")
+        self.logger.info(f"TEST | Partitions cnt on node2: {rowCntOnNode2}")
         app.stop()
         app.await_stopped()
 
+        # Check idle verify.
+        self.logger.info("TEST | The load application has stopped.")
+        output = control_utility.idle_verify(self.CACHE_NAME)
+        self.logger.info(f"TEST | Idle verify finished: {output}")
+
         # Compare the rows cnt results.
         assert rowCntOnNode0 == rowCntOnNode2
-        self.logger.info(f"TEST | Detected {rowCntOnNode0} table rows on the alive servers.")
 
         # Finish the test.
         servers.stop()
@@ -124,7 +125,9 @@ class MexTest(IgniteTest):
             num_nodes=1,
             params={"preloadDurSec": self.PRELOAD_SECONDS, "threads": self.LOAD_THREADS, "cacheName": self.CACHE_NAME,
                     "tableName" : self.TABLE_NAME},
-            startup_timeout_sec=self.PRELOAD_SECONDS + 10)
+            startup_timeout_sec=self.PRELOAD_SECONDS + 10,
+            jvm_opts="-Xms4G -Xmx4G"
+        )
 
         self.logger.info("TEST | Starting the loading application...")
         app.start()
@@ -147,7 +150,9 @@ class MexTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.mex.MexCntApplication",
             num_nodes=1,
             params={"tableName" : self.TABLE_NAME},
-            startup_timeout_sec=20)
+            startup_timeout_sec=10,
+            jvm_opts="-Xms4G -Xmx4G"
+        )
 
         self.logger.info(f"TEST | Starting the counter application to server node {nodeIdx}...")
         app.start()
@@ -173,9 +178,16 @@ class MexTest(IgniteTest):
             )],
             data_storage=DataStorageConfiguration(
                 default=DataRegionConfiguration(
-                    initial_size = 2147483648,
-                    max_size = 8589934592,
-                    persistence_enabled = True
+                    persistence_enabled = False,
+
+                    # initial_size = 128 * 1024 * 1024,
+                    # max_size = 256 * 1024 * 1024,
+
+                    initial_size = 1024 * 1024 * 1024,
+                    max_size = 2048 * 1024 * 1024,
+
+                    # initial_size = 2147483648,
+                    # max_size = 17179869184,
                 )
             ),
             cluster_state = 'ACTIVE',

@@ -47,8 +47,7 @@
                     <property name="copyOnRead" value="true"/>
                     <property name="eagerTtl" value="true"/>
                     <property name="readFromBackup" value="true"/>
-                    <!-- property name="readThrough" value="true"/ -->
-                    <!-- property name="writeThrough" value="true"/ -->
+
                     <property name="sqlEscapeAll" value="true"/>
                     <property name="storeKeepBinary" value="true"/>
                     <property name="maxConcurrentAsyncOperations" value="500"/>
@@ -61,6 +60,22 @@
                     <property name="writeBehindFlushFrequency" value="5000"/>
                     <property name="writeBehindFlushSize" value="10240"/>
                     <property name="writeBehindFlushThreadCount" value="1"/>
+
+                    <property name="cacheStoreFactory">
+                        <bean class="org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy.MapStoreFactory"/>
+                    </property>
+                    <property name="readThrough" value="true"/>
+                    <property name="writeThrough" value="true"/>
+
+                    <property name="expiryPolicyFactory">
+                        <bean class="javax.cache.expiry.EternalExpiryPolicy" factory-method="factoryOf"/>
+                    </property>
+
+                    <!-- property name="evictionPolicyFactory">
+                        <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory">
+                            <property name="maxSize" value="100000"/>
+                        </bean>
+                    </property -->
                 </bean>
                 {% endfor %}
             </list>
