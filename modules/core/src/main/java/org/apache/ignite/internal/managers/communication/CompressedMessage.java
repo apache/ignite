@@ -37,10 +37,10 @@ public class CompressedMessage implements Message {
     public static final short TYPE_CODE = 517;
 
     /** */
-    private static final int CHUNK_SIZE = 10 * 1024 * 1024;
+    private static final int CHUNK_SIZE = 1024 * 1024;
 
     /** */
-    private static final int BUFFER_CAPACITY = 100 * 1024;
+    private static final int BUFFER_CAPACITY = 10 * 1024 * 1024;
 
     /** */
     private ByteBuffer tmpBuf;
@@ -188,6 +188,14 @@ public class CompressedMessage implements Message {
                         return false;
 
                     if (chunk != null) {
+                        if (tmpBuf.remaining() <= CHUNK_SIZE) {
+                            ByteBuffer newTmpBuf = ByteBuffer.allocate(tmpBuf.capacity() * 2);
+
+                            newTmpBuf.put(tmpBuf);
+
+                            tmpBuf = newTmpBuf;
+                        }
+
                         tmpBuf.put(chunk);
 
                         reader.decrementState();
@@ -248,7 +256,7 @@ public class CompressedMessage implements Message {
             inflater.end();
         }
 
-        tmpBuf.clear();
+        tmpBuf = null;
 
         return uncompressedData;
     }

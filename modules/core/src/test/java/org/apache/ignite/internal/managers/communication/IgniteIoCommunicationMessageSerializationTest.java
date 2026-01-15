@@ -38,6 +38,9 @@ public class IgniteIoCommunicationMessageSerializationTest extends AbstractMessa
         if (msg instanceof NodeIdMessage)
             FieldUtils.writeField(msg, "nodeId", UUID.randomUUID(), true);
 
+        if (msg instanceof CompressedMessage)
+            FieldUtils.writeField(msg, "dataSize", 0, true);
+
         return msg;
     }
 

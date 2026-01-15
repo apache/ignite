@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
@@ -46,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class DirectMessageWriter implements MessageWriter {
     /** */
-    private static final int TMP_BUF_CAPACITY = 1024 * 100;
+    private static final int TMP_BUF_CAPACITY = 1024 * 1024;
 
     /** State. */
     @GridToStringInclude
@@ -57,12 +58,6 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** Buffer for writing. */
     private ByteBuffer buf;
-
-    /** */
-    private DirectMessageWriter tmpWriter;
-
-    /** */
-    private ByteBuffer tmpBuf;
 
     /** */
     public DirectMessageWriter(final MessageFactory msgFactory) {
@@ -313,7 +308,7 @@ public class DirectMessageWriter implements MessageWriter {
 
         if (compress)
             writeCompressedMessage(
-                () -> tmpWriter.state.item().stream.writeMessage(msg, tmpWriter),
+                tmpWriter -> tmpWriter.state.item().stream.writeMessage(msg, tmpWriter),
                 msg == null,
                 stream
             );
@@ -380,7 +375,7 @@ public class DirectMessageWriter implements MessageWriter {
 
         if (compress)
             writeCompressedMessage(
-                () -> tmpWriter.state.item().stream.writeMap(map, keyType, valType, tmpWriter),
+                tmpWriter -> tmpWriter.state.item().stream.writeMap(map, keyType, valType, tmpWriter),
                 map == null,
                 stream
             );
@@ -438,25 +433,37 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** */
-    private void writeCompressedMessage(Runnable task, boolean empty, DirectByteBufferStream stream) {
-        if (tmpWriter == null)
-            tmpWriter = new DirectMessageWriter(msgFactory);
+    private void writeCompressedMessage(Consumer<DirectMessageWriter> consumer, boolean empty, DirectByteBufferStream stream) {
+        if (empty) {
+            stream.writeMessage(CompressedMessage.empty(), this);
 
-        if (tmpBuf == null)
-            tmpBuf = ByteBuffer.allocateDirect(TMP_BUF_CAPACITY);
+            return;
+        }
+
+        ByteBuffer tmpBuf = ByteBuffer.allocateDirect(TMP_BUF_CAPACITY);
+
+        DirectMessageWriter tmpWriter = new DirectMessageWriter(msgFactory);
 
         tmpWriter.setBuffer(tmpBuf);
 
-        task.run();
+        boolean finished;
 
-        CompressedMessage msg = empty ? CompressedMessage.empty() : new CompressedMessage(tmpWriter.getBuffer());
+        do {
+            if (!tmpBuf.hasRemaining()) {
+                tmpBuf = ByteBuffer.allocateDirect(tmpBuf.capacity() * 2);
 
-        stream.writeMessage(msg, this);
+                tmpWriter.setBuffer(tmpBuf);
 
-        if (stream.lastFinished()) {
-            tmpWriter = null;
-            tmpBuf = null;
+                tmpWriter.reset();
+            }
+
+            consumer.accept(tmpWriter);
+
+            finished = tmpWriter.state.item().stream.lastFinished();
         }
+        while (!finished);
+
+        stream.writeMessage(new CompressedMessage(tmpBuf), this);
     }
 
     /**

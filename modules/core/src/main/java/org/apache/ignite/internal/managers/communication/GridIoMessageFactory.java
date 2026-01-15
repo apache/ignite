@@ -48,7 +48,6 @@ import org.apache.ignite.internal.codegen.CachePartitionsToReloadMapSerializer;
 import org.apache.ignite.internal.codegen.CacheVersionedValueSerializer;
 import org.apache.ignite.internal.codegen.CacheWriteSynchronizationModeMessageSerializer;
 import org.apache.ignite.internal.codegen.ClusterMetricsUpdateMessageSerializer;
-//import org.apache.ignite.internal.codegen.CompressedMessageSerializer;
 import org.apache.ignite.internal.codegen.ErrorMessageSerializer;
 import org.apache.ignite.internal.codegen.ExchangeInfoSerializer;
 import org.apache.ignite.internal.codegen.GenerateEncryptionKeyRequestSerializer;
@@ -525,7 +524,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
             new IgniteDhtPartitionsToReloadMapSerializer());
         factory.register(IntLongMap.TYPE_CODE, IntLongMap::new, new IntLongMapSerializer());
         factory.register(IndexKeyTypeMessage.TYPE_CODE, IndexKeyTypeMessage::new, new IndexKeyTypeMessageSerializer());
-        factory.register(CompressedMessage.TYPE_CODE, CompressedMessage::new); // new CompressedMessageSerializer()
+        factory.register(CompressedMessage.TYPE_CODE, CompressedMessage::new);
         factory.register(GridPartitionStateMap.TYPE_CODE, GridPartitionStateMap::new, new GridPartitionStateMapSerializer());
         factory.register(GridDhtPartitionMap.TYPE_CODE, GridDhtPartitionMap::new, new GridDhtPartitionMapSerializer());
         factory.register(GridDhtPartitionFullMap.TYPE_CODE, GridDhtPartitionFullMap::new, new GridDhtPartitionFullMapSerializer());
