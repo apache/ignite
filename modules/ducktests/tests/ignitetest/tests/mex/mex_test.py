@@ -40,38 +40,57 @@ from ignitetest.utils.version import LATEST_2_17
 
 
 class MexTest(IgniteTest):
+    PRELOAD_SECONDS = 5
+    LOAD_SECONDS = 90
+    LOAD_THREADS = 30
     SERVERS = 3
     SERVER_IDX_TO_DROP = 1
-    PRELOAD_SECONDS = 90
-    LOAD_SECONDS = 25
-    LOAD_THREADS = 12
     IGNITE_VERSION = LATEST_2_17
     CACHE_NAME = "TEST_CACHE"
     TABLE_NAME = "TEST_TABLE"
 
-    @cluster(num_nodes=SERVERS + 1)
+    @cluster(num_nodes=SERVERS + 3)
     def mex_test(self):
+        # Start the servers.
         servers, control_utility, ignite_config = self.launch_cluster()
 
-        load_app = self.start_load_app(servers, ignite_config.client_connector_configuration.port)
+        # Start the loading app. ant wait for some records preloaded.
+        app = self.start_load_app(servers, ignite_config.client_connector_configuration.port)
 
+        # The loading is on. Now, kill a server node.
         self.kill_node(servers)
 
-        self.logger.info(f"TEST | Loading the cluster for {self.LOAD_SECONDS} seconds...")
-
+        # Continue the loading a bit longer.
+        self.logger.info(f"TEST | Loading the cluster for additional {self.LOAD_SECONDS} seconds...")
         time.sleep(self.LOAD_SECONDS)
 
+        # Stop the loading.
         self.logger.info("TEST | Stopping the load application ...")
+        app.stop()
+        app.await_stopped()
 
-        load_app.stop()
-        load_app.await_stopped()
-
+        # Check idle verify.
         self.logger.info("TEST | The load application has stopped.")
-
         output = control_utility.idle_verify(self.CACHE_NAME)
-
         self.logger.info(f"TEST | Idle verify finished: {output}")
 
+        # Table rows cnt on srvr0.
+        app = self.start_cnt_app(servers, 0, ignite_config.client_connector_configuration.port)
+        rowCntOnNode0 = app.extract_result("tableRowsCnt")
+        app.stop()
+        app.await_stopped()
+
+        # Table rows cnt on srvr2.
+        app = self.start_cnt_app(servers, 2, ignite_config.client_connector_configuration.port)
+        rowCntOnNode2 = app.extract_result("tableRowsCnt")
+        app.stop()
+        app.await_stopped()
+
+        # Compare the rows cnt results.
+        assert rowCntOnNode0 == rowCntOnNode2
+        self.logger.info(f"TEST | Detected {rowCntOnNode0} table rows on the alive servers.")
+
+        # Finish the test.
         servers.stop()
 
     def kill_node(self, servers):
@@ -105,18 +124,38 @@ class MexTest(IgniteTest):
             num_nodes=1,
             params={"preloadDurSec": self.PRELOAD_SECONDS, "threads": self.LOAD_THREADS, "cacheName": self.CACHE_NAME,
                     "tableName" : self.TABLE_NAME},
-            startup_timeout_sec=self.PRELOAD_SECONDS + 10
-        )
+            startup_timeout_sec=self.PRELOAD_SECONDS + 10)
 
         self.logger.info("TEST | Starting the loading application...")
-
         app.start()
 
         self.logger.info("TEST | Waiting for the load application initialization...")
-
         app.await_started()
 
         self.logger.info("TEST | The load application has initialized.")
+
+        return app
+
+    def start_cnt_app(self, servers, nodeIdx, jdbcPort):
+        jdbcPort = str(jdbcPort)
+
+        addrs = [servers.nodes[nodeIdx].account.hostname + ":" + jdbcPort]
+
+        app = IgniteApplicationService(
+            self.test_context,
+            IgniteThinJdbcConfiguration(version=self.IGNITE_VERSION, addresses=addrs),
+            java_class_name="org.apache.ignite.internal.ducktest.tests.mex.MexCntApplication",
+            num_nodes=1,
+            params={"tableName" : self.TABLE_NAME},
+            startup_timeout_sec=20)
+
+        self.logger.info(f"TEST | Starting the counter application to server node {nodeIdx}...")
+        app.start()
+
+        self.logger.info(f"TEST | Waiting for the counter application initialization to server node {nodeIdx}...")
+        app.await_started()
+
+        self.logger.info(f"TEST | The counter application has initialized to server node {nodeIdx}.")
 
         return app
 
@@ -134,8 +173,8 @@ class MexTest(IgniteTest):
             )],
             data_storage=DataStorageConfiguration(
                 default=DataRegionConfiguration(
-                    initial_size = 256 * 1024 * 1024,
-                    max_size = 1024 * 1024 * 1024,
+                    initial_size = 2147483648,
+                    max_size = 8589934592,
                     persistence_enabled = True
                 )
             ),
@@ -149,7 +188,7 @@ class MexTest(IgniteTest):
 
         servers, start_servers_sec = start_servers(self.test_context, self.SERVERS, ignite_config)
 
-        servers.await_event(f"Topology snapshot \[ver={self.SERVERS}", 15, from_the_beginning=True, nodes=servers.nodes)
+        servers.await_event(f"Topology snapshot \\[ver={self.SERVERS}", 15, from_the_beginning=True, nodes=servers.nodes)
 
         control_utility = ControlUtility(servers)
         control_utility.activate()

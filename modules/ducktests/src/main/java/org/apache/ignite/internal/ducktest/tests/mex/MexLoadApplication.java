@@ -28,10 +28,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /** */
-public class MexLoadApplication extends IgniteAwareApplication {
+public class MexLoadApplication extends MexCntApplication {
     /** */
     private static final int WAIT_START_SECS = 20;
 
@@ -116,7 +115,7 @@ public class MexLoadApplication extends IgniteAwareApplication {
             return;
         }
 
-        log.info("TEST | Started " + threads + " loading threads. Preloading...");
+        log.info("TEST | Started " + threads + " loading threads. Preloading for " + preloadDurSec + " seconds...");
 
         synchronized (this) {
             wait(preloadDurSec * 1000);
@@ -128,37 +127,13 @@ public class MexLoadApplication extends IgniteAwareApplication {
 
         while (active()) {
             synchronized (this) {
-                wait(150);
+                wait(100);
             }
         }
-
-        log.info("TEST | Stopping. Loaded about " + counter.get() + " records.");
 
         printCount(tableName);
 
         markFinished();
-    }
-
-    /** */
-    private void printCount(String tableName) throws Exception {
-        try (Connection conn = thinJdbcDataSource.getConnection()) {
-            try {
-                ResultSet rs = conn.createStatement().executeQuery("SELECT COUNT(1) FROM " + tableName);
-
-                rs.next();
-
-                int cnt = rs.getInt(1);
-
-                log.info("TEST | Table '" + tableName + "' contains " + cnt + " records.");
-            }
-            catch (Exception t) {
-                t = new IllegalStateException("Failed to get records count from table '" + tableName + "'.", t);
-
-                markBroken(t);
-
-                throw t;
-            }
-        }
     }
 
     /** */
