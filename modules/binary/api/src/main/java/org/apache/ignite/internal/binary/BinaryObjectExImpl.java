@@ -367,12 +367,8 @@ abstract class BinaryObjectExImpl implements BinaryObjectEx {
             buf.a("... and ").a(overflow).a(" more");
     }
 
-    /**
-     * Check if object graph has circular references.
-     *
-     * @return {@code true} if object has circular references.
-     */
-    public boolean hasCircularReferences() {
+    /** {@inheritDoc} */
+    @Override public boolean hasCircularReferences() {
         try {
             BinaryReaderHandles ctx = new BinaryReaderHandles();
 

@@ -219,6 +219,11 @@ public class BinariesFactoryImpl implements BinariesFactory {
         return new BinaryObjectImpl(ctx, valBytes, coCtx);
     }
 
+    /** {@inheritDoc} */
+    @Override public BinaryIdentityResolver arrayIdentityResolver() {
+        return BinaryArrayIdentityResolver.instance();
+    }
+
     /**
      * @param cls Class to check.
      * @return {@code True} if {@code val} is assignable to binary Enum object.

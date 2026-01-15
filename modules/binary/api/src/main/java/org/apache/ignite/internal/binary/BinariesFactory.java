@@ -168,4 +168,7 @@ public interface BinariesFactory {
 
     /** Creates new instance of binary object. */
     public BinaryObject binaryObject(BinaryContext ctx, byte[] valBytes, CacheObjectValueContext coCtx);
+
+    /** */
+    public BinaryIdentityResolver arrayIdentityResolver();
 }

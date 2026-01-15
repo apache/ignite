@@ -461,7 +461,7 @@ public class GridBinaryMarshaller {
      * @return Writer.
      */
     public BinaryWriterEx writer(BinaryOutputStream out) {
-        return BinaryUtils.writer(ctx, out, BinaryThreadLocalContext.get().schemaHolder());
+        return BinaryUtils.writer(ctx, out);
     }
 
     /**

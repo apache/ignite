@@ -361,7 +361,7 @@ public class BinaryContext {
                 BinaryIdMapper idMapper = CommonUtils.firstNotNull(typeCfg.getIdMapper(), globalIdMapper);
                 BinaryNameMapper nameMapper = CommonUtils.firstNotNull(typeCfg.getNameMapper(), globalNameMapper);
                 BinarySerializer serializer = CommonUtils.firstNotNull(typeCfg.getSerializer(), globalSerializer);
-                BinaryIdentityResolver identity = BinaryArrayIdentityResolver.instance();
+                BinaryIdentityResolver identity = BinaryUtils.binariesFactory.arrayIdentityResolver();
 
                 BinaryInternalMapper mapper = resolveMapper(nameMapper, idMapper);
 
@@ -1338,7 +1338,7 @@ public class BinaryContext {
     public BinaryIdentityResolver identity(int typeId) {
         BinaryIdentityResolver rslvr = identities.get(typeId);
 
-        return rslvr != null ? rslvr : BinaryArrayIdentityResolver.instance();
+        return rslvr != null ? rslvr : BinaryUtils.binariesFactory.arrayIdentityResolver();
     }
 
     /**

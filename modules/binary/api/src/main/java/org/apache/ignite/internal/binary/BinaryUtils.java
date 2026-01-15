@@ -3057,6 +3057,16 @@ public class BinaryUtils {
         return new BinaryMetadata(typeId, typeName, fields, affKeyFieldName, schemas, isEnum, enumMap);
     }
 
+    /** */
+    public static int hashCode(byte[] data, int startPos, int endPos) {
+        int hash = 1;
+
+        for (int i = startPos; i < endPos; i++)
+            hash = 31 * hash + data[i];
+
+        return hash;
+    }
+
     /**
      * Enum type.
      */
