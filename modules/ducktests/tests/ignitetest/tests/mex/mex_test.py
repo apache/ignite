@@ -29,7 +29,7 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_aware import node_failed_event_pattern
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration, \
-    IgniteThinJdbcConfiguration
+    IgniteThinJdbcConfiguration, TransactionConfiguration
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
@@ -38,30 +38,28 @@ from ignitetest.utils.bean import Bean
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import LATEST_2_17
 
-class FlexTest(IgniteTest):
+
+class MexTest(IgniteTest):
     SERVERS = 3
     SERVER_IDX_TO_DROP = 1
-    PRELOAD_SECONDS = 120
-    LOAD_SECONDS = 40
-    LOAD_THREADS = 8
+    PRELOAD_SECONDS = 90
+    LOAD_SECONDS = 25
+    LOAD_THREADS = 12
     IGNITE_VERSION = LATEST_2_17
-    CACHE_NAME = "TBG_SCS_DM_DOCUMENTS"
-    TABLE_NAME = "SCS_DM_DOCUMENTS"
+    CACHE_NAME = "TEST_CACHE"
+    TABLE_NAME = "TEST_TABLE"
 
     @cluster(num_nodes=SERVERS + 1)
-    def flex_test(self):
-        servers, ignite_config = self.launch_cluster()
-
-        control_utility = ControlUtility(servers)
-        control_utility.activate()
+    def mex_test(self):
+        servers, control_utility, ignite_config = self.launch_cluster()
 
         load_app = self.start_load_app(servers, ignite_config.client_connector_configuration.port)
+
+        self.kill_node(servers)
 
         self.logger.info(f"TEST | Loading the cluster for {self.LOAD_SECONDS} seconds...")
 
         time.sleep(self.LOAD_SECONDS)
-
-        self.kill_node(servers)
 
         self.logger.info("TEST | Stopping the load application ...")
 
@@ -103,7 +101,7 @@ class FlexTest(IgniteTest):
         app = IgniteApplicationService(
             self.test_context,
             IgniteThinJdbcConfiguration(version=self.IGNITE_VERSION, addresses=addrs),
-            java_class_name="org.apache.ignite.internal.ducktest.tests.flex.FlexLoadApplication",
+            java_class_name="org.apache.ignite.internal.ducktest.tests.mex.MexLoadApplication",
             num_nodes=1,
             params={"preloadDurSec": self.PRELOAD_SECONDS, "threads": self.LOAD_THREADS, "cacheName": self.CACHE_NAME,
                     "tableName" : self.TABLE_NAME},
@@ -138,18 +136,25 @@ class FlexTest(IgniteTest):
                 default=DataRegionConfiguration(
                     initial_size = 256 * 1024 * 1024,
                     max_size = 1024 * 1024 * 1024,
-                    #persistence_enabled = True
+                    persistence_enabled = True
                 )
             ),
-            client_connector_configuration=ClientConnectorConfiguration()
+            cluster_state = 'ACTIVE',
+            client_connector_configuration=ClientConnectorConfiguration(),
+            transaction_configuration=TransactionConfiguration(
+                default_tx_timeout=300000,
+                default_tx_isolation="READ_COMMITTED",
+                tx_timeout_on_partition_map_exchange=120000),
         )
 
         servers, start_servers_sec = start_servers(self.test_context, self.SERVERS, ignite_config)
 
-        servers.await_event(f"servers={self.SERVERS}, clients=0, state=ACTIVE, CPUs=", 30, from_the_beginning=True,
-                            nodes=servers.nodes)
+        servers.await_event(f"Topology snapshot \[ver={self.SERVERS}", 15, from_the_beginning=True, nodes=servers.nodes)
 
-        return servers, ignite_config
+        control_utility = ControlUtility(servers)
+        control_utility.activate()
+
+        return servers, control_utility, ignite_config
 
 def start_servers(test_context, num_nodes, ignite_config, modules=None):
     """

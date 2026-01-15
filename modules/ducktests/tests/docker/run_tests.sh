@@ -31,7 +31,7 @@ IMAGE_PREFIX="ducker-ignite-eclipse-temurin"
 # DuckerTest parameters are specified with options to the script
 
 # Path to ducktests
-TC_PATHS="./ignitetest/tests/flex"
+TC_PATHS="./ignitetest/tests/mex"
 # Global parameters to pass to ducktape util with --global param
 GLOBALS="{}"
 # Ducktests parameters to pass to ducktape util with --parameters param

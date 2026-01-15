@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.ducktest.tests.flex;
+package org.apache.ignite.internal.ducktest.tests.mex;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -31,7 +31,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.ignite.internal.ducktest.utils.IgniteAwareApplication;
 
 /** */
-public class FlexLoadApplication extends IgniteAwareApplication {
+public class MexLoadApplication extends IgniteAwareApplication {
     /** */
     private static final int WAIT_START_SECS = 20;
 
@@ -39,17 +39,17 @@ public class FlexLoadApplication extends IgniteAwareApplication {
     @Override public void run(JsonNode jsonNode) throws Exception {
         final int preloadDurSec = jsonNode.get("preloadDurSec").asInt();
         final int threads = jsonNode.get("threads").asInt();
-        final String cacheName = jsonNode.get("cacheName").asText();
         final String tableName = jsonNode.get("tableName").asText();
+        final String cacheName = jsonNode.get("cacheName").asText();
 
-        createTable(cacheName, tableName);
+        createTable(tableName, cacheName);
 
         final ForkJoinPool executor = new ForkJoinPool(threads);
         final CountDownLatch initLatch = new CountDownLatch(threads);
         final AtomicLong counter = new AtomicLong();
         final AtomicBoolean preloaded = new AtomicBoolean();
 
-        log.info("TEST | Load pool parallelism=" + executor.getParallelism());
+        log.info("TEST | Load pool parallelism=" + executor.getParallelism() + ", ig=" + ignite + ", client=" + client);
 
         for (int i = 0; i < threads; ++i) {
             executor.submit(() -> {
@@ -58,23 +58,30 @@ public class FlexLoadApplication extends IgniteAwareApplication {
 
                 while (active()) {
                     try (Connection conn = thinJdbcDataSource.getConnection()) {
-                        PreparedStatement ps = conn.prepareStatement("INSERT INTO " + cacheName + " values(?,?,?)");
+                        conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+                        conn.setAutoCommit(false);
+
+                        PreparedStatement ps = conn.prepareStatement("INSERT INTO " + tableName + " values(?,?,?)");
 
                         while (active()) {
-                            long id = counter.incrementAndGet();
+                            for (int t = 0; t < 1 + rnd.nextInt(10); ++t) {
+                                long id = counter.incrementAndGet();
 
-                            ps.setLong(1, id);
+                                ps.setLong(1, id);
 
-                            byte[] data = new byte[rnd.nextInt(2048)];
-                            rnd.nextBytes(data);
-                            ps.setString(2, new String(data));
+                                byte[] data = new byte[rnd.nextInt(2048)];
+                                rnd.nextBytes(data);
+                                ps.setString(2, new String(data));
 
-                            ps.setBigDecimal(3, BigDecimal.valueOf(rnd.nextDouble()));
+                                ps.setBigDecimal(3, BigDecimal.valueOf(rnd.nextDouble()));
 
-                            int res = ps.executeUpdate();
+                                int res = ps.executeUpdate();
 
-                            if (res != 1)
-                                throw new IllegalStateException("Failed to insert a row. The results is not 1.");
+                                if (res != 1)
+                                    throw new IllegalStateException("Failed to insert a row. The results is not 1.");
+                            }
+
+                            conn.commit();
 
                             if (!init) {
                                 init = true;
@@ -104,11 +111,9 @@ public class FlexLoadApplication extends IgniteAwareApplication {
             return;
 
         if (!initLatch.await(WAIT_START_SECS, TimeUnit.SECONDS)) {
-            Exception th = new IllegalStateException("Failed to start loading.");
+            markBroken(new IllegalStateException("Failed to start loading."));
 
-            markBroken(th);
-
-            throw th;
+            return;
         }
 
         log.info("TEST | Started " + threads + " loading threads. Preloading...");
@@ -118,8 +123,6 @@ public class FlexLoadApplication extends IgniteAwareApplication {
         }
 
         preloaded.set(true);
-
-        log.info("TEST | Preloaded. Loaded about " + counter.get() + " records. Continue loading...");
 
         markInitialized();
 
@@ -131,7 +134,31 @@ public class FlexLoadApplication extends IgniteAwareApplication {
 
         log.info("TEST | Stopping. Loaded about " + counter.get() + " records.");
 
+        printCount(tableName);
+
         markFinished();
+    }
+
+    /** */
+    private void printCount(String tableName) throws Exception {
+        try (Connection conn = thinJdbcDataSource.getConnection()) {
+            try {
+                ResultSet rs = conn.createStatement().executeQuery("SELECT COUNT(1) FROM " + tableName);
+
+                rs.next();
+
+                int cnt = rs.getInt(1);
+
+                log.info("TEST | Table '" + tableName + "' contains " + cnt + " records.");
+            }
+            catch (Exception t) {
+                t = new IllegalStateException("Failed to get records count from table '" + tableName + "'.", t);
+
+                markBroken(t);
+
+                throw t;
+            }
+        }
     }
 
     /** */
@@ -150,12 +177,12 @@ public class FlexLoadApplication extends IgniteAwareApplication {
                 int cnt = rs.getInt(1);
 
                 if (cnt == 0)
-                    log.info("TEST | Created table '" + tableName + "'.");
+                    log.info("TEST | Created table '" + tableName + "' over cache '" + cacheName + "'.");
                 else
                     throw new IllegalStateException("Unexpected empty table count: " + cnt);
             }
             catch (Exception t) {
-                t = new IllegalStateException("Failed to create table " + tableName + ".", t);
+                t = new IllegalStateException("Failed to create table '" + tableName + "'.", t);
 
                 markBroken(t);
 
