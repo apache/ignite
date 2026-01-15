@@ -40,16 +40,16 @@ from ignitetest.utils.version import LATEST_2_17, DEV_BRANCH
 
 
 class MexTest(IgniteTest):
-    PRELOAD_SECONDS = 50
-    LOAD_SECONDS = 15
+    PRELOAD_SECONDS = 60
+    LOAD_SECONDS = 20
     LOAD_THREADS = 8
-    SERVERS = 3
+    SERVERS = 4
     SERVER_IDX_TO_DROP = 1
     IGNITE_VERSION = DEV_BRANCH
     CACHE_NAME = "TEST_CACHE"
     TABLE_NAME = "TEST_TABLE"
 
-    @cluster(num_nodes=SERVERS + 3)
+    @cluster(num_nodes=SERVERS * 2)
     def mex_test(self):
         # Start the servers.
         servers, control_utility, ignite_config = self.launch_cluster()
@@ -60,36 +60,35 @@ class MexTest(IgniteTest):
         # The loading is on. Now, kill a server node.
         self.kill_node(servers)
 
-        # Continue the loading a bit longer.
+        # Keep the loading a bit longer.
         self.logger.info(f"TEST | Loading the cluster for additional {self.LOAD_SECONDS} seconds...")
         time.sleep(self.LOAD_SECONDS)
 
         # Stop the loading.
-        self.logger.info("TEST | Stopping the load application ...")
+        self.logger.debug("TEST | Stopping the load application ...")
         app.stop()
         app.await_stopped()
 
-        # Table rows cnt on srvr0.
-        app = self.start_cnt_app(servers, 0, ignite_config.client_connector_configuration.port)
-        rowCntOnNode0 = app.extract_result("tableRowsCnt")
-        self.logger.info(f"TEST | Partitions cnt on node0: {rowCntOnNode0}")
-        app.stop()
-        app.await_stopped()
+        records_cnt = set()
 
-        # Table rows cnt on srvr2.
-        app = self.start_cnt_app(servers, 2, ignite_config.client_connector_configuration.port)
-        rowCntOnNode2 = app.extract_result("tableRowsCnt")
-        self.logger.info(f"TEST | Partitions cnt on node2: {rowCntOnNode2}")
-        app.stop()
-        app.await_stopped()
+        for node in self.alive_servers(servers.nodes):
+            app = self.start_cnt_app(node, ignite_config.client_connector_configuration.port)
+            app.await_started()
 
-        # Check idle verify.
+            cnt = app.extract_result("tableRowsCnt")
+            records_cnt.add(cnt)
+            self.logger.info(f"TEST | Partitions cnt on node {node}: {cnt}")
+
+            app.stop()
+            app.await_stopped()
+
+        # Run the idle verify.
         self.logger.info("TEST | The load application has stopped.")
         output = control_utility.idle_verify(self.CACHE_NAME)
         self.logger.info(f"TEST | Idle verify finished: {output}")
 
         # Compare the rows cnt results.
-        assert rowCntOnNode0 == rowCntOnNode2
+        assert len(records_cnt) == 1;
 
         # Finish the test.
         servers.stop()
@@ -97,26 +96,33 @@ class MexTest(IgniteTest):
     def kill_node(self, servers):
         failedNode = servers.nodes[self.SERVER_IDX_TO_DROP]
         failedNodeId = servers.node_id(failedNode)
+        alive_servers = self.alive_servers(servers.nodes)
 
         self.logger.info(f"TEST | 'kill -9' node {self.SERVER_IDX_TO_DROP} with id {failedNodeId} ...")
 
         servers.stop_node(failedNode, force_stop=True)
 
-        self.logger.info("TEST | Awaiting for the node-failed-event...")
-        servers.await_event(node_failed_event_pattern(failedNodeId), 30, from_the_beginning=True,
-                            nodes=[servers.nodes[0], servers.nodes[2]])
+        self.logger.debug("TEST | Awaiting for the node-failed-event...")
+        servers.await_event(node_failed_event_pattern(failedNodeId), 30, from_the_beginning=True, nodes = alive_servers)
 
-        self.logger.info("TEST | Awaiting for the new cluster state...")
+        self.logger.debug("TEST | Awaiting for the new cluster state...")
         servers.await_event(f"servers={self.SERVERS - 1}, clients=0, state=ACTIVE, CPUs=", 30, from_the_beginning=True,
-                            nodes=[servers.nodes[0], servers.nodes[2]])
+                            nodes = alive_servers)
 
         self.logger.info("TEST | The cluster has detected the node failure.")
 
-    def start_load_app(self, servers, jdbcPort):
+    def alive_servers(self, nodes):
+        return [item for index, item in enumerate(nodes) if index != self.SERVER_IDX_TO_DROP]
+
+    def alive_servers_addrs(self, nodes, jdbcPort):
+        nodes = self.alive_servers(nodes)
+
         jdbcPort = str(jdbcPort)
 
-        addrs = [servers.nodes[0].account.hostname + ":" + jdbcPort, servers.nodes[1].account.hostname + ":" + jdbcPort,
-                 servers.nodes[2].account.hostname + ":" + jdbcPort]
+        return [n.account.hostname + ":" + jdbcPort for n in nodes]
+
+    def start_load_app(self, servers, jdbcPort):
+        addrs = self.alive_servers_addrs(servers.nodes, jdbcPort)
 
         app = IgniteApplicationService(
             self.test_context,
@@ -129,20 +135,20 @@ class MexTest(IgniteTest):
             jvm_opts="-Xms4G -Xmx4G"
         )
 
-        self.logger.info("TEST | Starting the loading application...")
+        self.logger.debug("TEST | Starting the loading application...")
         app.start()
 
-        self.logger.info("TEST | Waiting for the load application initialization...")
+        self.logger.debug("TEST | Waiting for the load application initialization...")
         app.await_started()
 
         self.logger.info("TEST | The load application has initialized.")
 
         return app
 
-    def start_cnt_app(self, servers, nodeIdx, jdbcPort):
+    def start_cnt_app(self, node, jdbcPort):
         jdbcPort = str(jdbcPort)
 
-        addrs = [servers.nodes[nodeIdx].account.hostname + ":" + jdbcPort]
+        addrs = [node.account.hostname + ":" + jdbcPort]
 
         app = IgniteApplicationService(
             self.test_context,
@@ -154,13 +160,13 @@ class MexTest(IgniteTest):
             jvm_opts="-Xms4G -Xmx4G"
         )
 
-        self.logger.info(f"TEST | Starting the counter application to server node {nodeIdx}...")
+        self.logger.debug(f"TEST | Starting the counter application to server node {node}...")
         app.start()
 
-        self.logger.info(f"TEST | Waiting for the counter application initialization to server node {nodeIdx}...")
+        self.logger.debug(f"TEST | Waiting for the counter application initialization to server node {node}...")
         app.await_started()
 
-        self.logger.info(f"TEST | The counter application has initialized to server node {nodeIdx}.")
+        self.logger.info(f"TEST | The counter application has initialized to server node {node}.")
 
         return app
 
@@ -183,8 +189,8 @@ class MexTest(IgniteTest):
                     # initial_size = 128 * 1024 * 1024,
                     # max_size = 256 * 1024 * 1024,
 
-                    initial_size = 1024 * 1024 * 1024,
-                    max_size = 2048 * 1024 * 1024,
+                    initial_size = 4096 * 1024 * 1024,
+                    max_size = 4096 * 1024 * 1024,
 
                     # initial_size = 2147483648,
                     # max_size = 17179869184,

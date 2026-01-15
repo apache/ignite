@@ -61,11 +61,11 @@
                     <property name="writeBehindFlushSize" value="10240"/>
                     <property name="writeBehindFlushThreadCount" value="1"/>
 
-                    <property name="cacheStoreFactory">
+                    <!-- property name="cacheStoreFactory">
                         <bean class="org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy.MapStoreFactory"/>
                     </property>
                     <property name="readThrough" value="true"/>
-                    <property name="writeThrough" value="true"/>
+                    <property name="writeThrough" value="true"/ -->
 
                     <property name="expiryPolicyFactory">
                         <bean class="javax.cache.expiry.EternalExpiryPolicy" factory-method="factoryOf"/>
