@@ -136,8 +136,9 @@ class FlexTest(IgniteTest):
             )],
             data_storage=DataStorageConfiguration(
                 default=DataRegionConfiguration(
-                    initial_size = 2048 * 1024 * 1024,
-                    max_size = 8192 * 1024 * 1024
+                    initial_size = 256 * 1024 * 1024,
+                    max_size = 1024 * 1024 * 1024,
+                    #persistence_enabled = True
                 )
             ),
             client_connector_configuration=ClientConnectorConfiguration()

@@ -22,7 +22,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Random;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
@@ -65,7 +64,11 @@ public class FlexLoadApplication extends IgniteAwareApplication {
                             long id = counter.incrementAndGet();
 
                             ps.setLong(1, id);
-                            ps.setString(2, UUID.randomUUID().toString());
+
+                            byte[] data = new byte[rnd.nextInt(2048)];
+                            rnd.nextBytes(data);
+                            ps.setString(2, new String(data));
+
                             ps.setBigDecimal(3, BigDecimal.valueOf(rnd.nextDouble()));
 
                             int res = ps.executeUpdate();
@@ -136,7 +139,7 @@ public class FlexLoadApplication extends IgniteAwareApplication {
         try (Connection conn = thinJdbcDataSource.getConnection()) {
             conn.createStatement().execute("CREATE TABLE " + tableName + "(" +
                 "id INT, strVal VARCHAR, decVal DECIMAL, PRIMARY KEY(id)" +
-                ") WITH \"cache_name=" + cacheName + "\""
+                ") WITH \"cache_name=" + cacheName + ",atomicity=TRANSACTIONAL\""
             );
 
             try {
