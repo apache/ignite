@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupp
 import org.apache.ignite.internal.processors.job.ComputeJobStatusEnum;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.metric.impl.LongAdderMetric;
+import org.apache.ignite.internal.processors.platform.compute.PlatformAbstractTask;
 import org.apache.ignite.internal.processors.platform.compute.PlatformFullTask;
 import org.apache.ignite.internal.processors.task.monitor.ComputeGridMonitor;
 import org.apache.ignite.internal.processors.task.monitor.ComputeTaskStatus;
@@ -639,6 +640,13 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
 
                 deployEx = e;
             }
+        }
+
+        if (task instanceof PlatformAbstractTask) {
+            String taskName0 = ((PlatformAbstractTask)task).taskName();
+
+            if (taskName0 != null)
+                taskName = taskName0;
         }
 
         assert taskName != null;

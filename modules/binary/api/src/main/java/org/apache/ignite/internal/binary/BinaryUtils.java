@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -57,7 +58,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.Function;
 import java.util.function.IntFunction;
-import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCommonsSystemProperties;
@@ -71,13 +71,11 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.binary.streams.BinaryStreams;
-import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.util.CommonUtils;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshallers;
@@ -88,7 +86,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.IgniteCommonsSystemProperties.DFLT_IGNITE_USE_BINARY_ARRAYS;
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_USE_BINARY_ARRAYS;
-import static org.apache.ignite.internal.util.GridUnsafe.align;
 
 /**
  * Binary utils.
@@ -178,6 +175,20 @@ public class BinaryUtils {
 
     /** FNV1 hash prime. */
     private static final int FNV1_PRIME = 0x01000193;
+
+    /** */
+    public static final BinariesFactory binariesFactory;
+
+    static {
+        Iterator<BinariesFactory> factories = CommonUtils.loadService(BinariesFactory.class).iterator();
+
+        A.ensure(
+            factories.hasNext(),
+            "Implementation for " + BinariesFactory.class.getSimpleName() + " service not found. Please add ignite-binary-impl to classpath"
+        );
+
+        binariesFactory = factories.next();
+    }
 
     /*
      * Static class initializer.
@@ -562,8 +573,8 @@ public class BinaryUtils {
      * @return Unwrapped value.
      */
     public static Object unwrapTemporary(Object obj) {
-        if (obj instanceof BinaryObjectOffheapImpl)
-            return ((BinaryObjectOffheapImpl)obj).heapCopy();
+        if (obj instanceof BinaryObjectEx)
+            return ((BinaryObjectEx)obj).heapCopy();
 
         return obj;
     }
@@ -1127,7 +1138,7 @@ public class BinaryUtils {
             return BinaryWriteMode.OBJECT_ARR;
         else if (cls == BinaryEnumArray.class)
             return BinaryWriteMode.ENUM_ARR;
-        else if (cls == BinaryObjectImpl.class)
+        else if (cls == binariesFactory.binaryObjectImplClass())
             return BinaryWriteMode.BINARY_OBJ;
         else if (Binarylizable.class.isAssignableFrom(cls))
             return BinaryWriteMode.BINARY;
@@ -1137,7 +1148,7 @@ public class BinaryUtils {
             return BinaryWriteMode.MAP;
         else if (CommonUtils.isEnum(cls))
             return BinaryWriteMode.ENUM;
-        else if (cls == BinaryEnumObjectImpl.class)
+        else if (cls == binariesFactory.binaryEnumClass())
             return BinaryWriteMode.BINARY_ENUM;
         else if (cls == Class.class)
             return BinaryWriteMode.CLASS;
@@ -1494,16 +1505,16 @@ public class BinaryUtils {
 
             int start = in.readInt();
 
-            return new BinaryObjectOffheapImpl(ctx, in.offheapPointer() + pos, start, len);
+            return binariesFactory.binaryOffheapObject(ctx, in.offheapPointer() + pos, start, len);
         }
         else {
             byte[] arr = doReadByteArray(in);
             int start = in.readInt();
 
-            BinaryObjectImpl binO = new BinaryObjectImpl(ctx, arr, start);
+            BinaryObject binO = binariesFactory.binaryObject(ctx, arr, start);
 
             if (detach)
-                return (BinaryObject)detach(binO);
+                return detach(binO);
 
             return binO;
         }
@@ -1566,7 +1577,7 @@ public class BinaryUtils {
      * @param in Input stream.
      * @return Plain type.
      */
-    private static EnumType doReadEnumType(BinaryInputStream in) {
+    static EnumType doReadEnumType(BinaryInputStream in) {
         int typeId = in.readInt();
 
         if (typeId != GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
@@ -1658,57 +1669,12 @@ public class BinaryUtils {
      *
      * @param in Input stream.
      * @param ctx Binary context.
-     * @return Enum.
-     */
-    static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx) {
-        return doReadBinaryEnum(in, ctx, doReadEnumType(in));
-    }
-
-    /**
-     * Read binary enum.
-     *
-     * @param in Input stream.
-     * @param ctx Binary context.
      * @param type Plain type.
      * @return Enum.
      */
-    private static BinaryEnumObjectImpl doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx,
+    static BinaryObjectEx doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx,
         EnumType type) {
-        return new BinaryEnumObjectImpl(ctx, type.typeId, type.clsName, in.readInt());
-    }
-
-    /**
-     * Read binary enum.
-     *
-     * @param ord Ordinal.
-     * @param ctx Context.
-     * @param typeId Type ID.
-     */
-    public static BinaryObjectEx binaryEnum(int ord, BinaryContext ctx, int typeId) {
-        return new BinaryEnumObjectImpl(ctx, typeId, null, ord);
-    }
-
-    /**
-     * @param ctx Context.
-     * @param arr Array.
-     */
-    public static BinaryObjectEx binaryEnum(BinaryContext ctx, byte[] arr) {
-        return new BinaryEnumObjectImpl(ctx, arr);
-    }
-
-    /** */
-    public static BinaryObjectEx binaryObject(BinaryContext ctx, byte[] arr, int start) {
-        return new BinaryObjectImpl(ctx, arr, start);
-    }
-
-    /** */
-    public static BinaryObjectEx binaryObject(BinaryContext ctx, byte[] bytes) {
-        return new BinaryObjectImpl(ctx, bytes);
-    }
-
-    /** */
-    public static BinaryObject binaryObject(BinaryContext ctx, byte[] valBytes, CacheObjectValueContext coCtx) {
-        return new BinaryObjectImpl(ctx, valBytes, coCtx);
+        return binariesFactory.binaryEnum(ctx, type.typeId, type.clsName, in.readInt());
     }
 
     /**
@@ -1721,7 +1687,7 @@ public class BinaryUtils {
     private static Object[] doReadBinaryEnumArray(BinaryInputStream in, BinaryContext ctx) {
         int len = in.readInt();
 
-        Object[] arr = (Object[])Array.newInstance(BinaryEnumObjectImpl.class, len);
+        Object[] arr = (Object[])Array.newInstance(binariesFactory.binaryEnumClass(), len);
 
         for (int i = 0; i < len; i++) {
             byte flag = in.readByte();
@@ -1884,10 +1850,10 @@ public class BinaryUtils {
 
                 int len = length(in, start);
 
-                BinaryObjectExImpl po;
+                BinaryObjectEx po;
 
                 if (detach) {
-                    BinaryObjectImpl binObj = new BinaryObjectImpl(ctx, in.array(), start);
+                    BinaryObjectEx binObj = binariesFactory.binaryObject(ctx, in.array(), start);
 
                     binObj.detachAllowed(true);
 
@@ -1895,9 +1861,9 @@ public class BinaryUtils {
                 }
                 else {
                     if (in.offheapPointer() == 0)
-                        po = new BinaryObjectImpl(ctx, in.array(), start);
+                        po = binariesFactory.binaryObject(ctx, in.array(), start);
                     else
-                        po = new BinaryObjectOffheapImpl(ctx, in.offheapPointer(), start,
+                        po = binariesFactory.binaryOffheapObject(ctx, in.offheapPointer(), start,
                             in.remaining() + in.position());
                 }
 
@@ -2797,23 +2763,6 @@ public class BinaryUtils {
     }
 
     /**
-     * @return Map of function returning size of the object.
-     */
-    public static Map<Class<?>, ToIntFunction<Object>> sizeProviders() {
-        return Map.of(
-            BinaryObjectOffheapImpl.class, obj -> 0, // No extra heap memory.
-            BinaryObjectImpl.class, new ToIntFunction<>() {
-                private final long byteArrOffset = GridUnsafe.arrayBaseOffset(byte[].class);
-
-                @Override public int applyAsInt(Object bo) {
-                    return (int)align(byteArrOffset + ((BinaryObjectImpl)bo).bytes().length);
-                }
-            },
-            BinaryEnumObjectImpl.class, bo -> ((BinaryObject)bo).size()
-        );
-    }
-
-    /**
      * @param val Value to check.
      * @return {@code True} if {@code val} instance of {@link BinaryEnumArray}.
      */
@@ -2826,15 +2775,7 @@ public class BinaryUtils {
      * @return {@code True} if {@code val} instance of binary Enum object.
      */
     public static boolean isBinaryEnumObject(Object val) {
-        return val instanceof BinaryEnumObjectImpl;
-    }
-
-    /**
-     * @param cls Class to check.
-     * @return {@code True} if {@code val} is assignable to binary Enum object.
-     */
-    public static boolean isAssignableToBinaryEnumObject(Class<?> cls) {
-        return BinaryEnumObjectImpl.class.isAssignableFrom(cls);
+        return val != null && val.getClass() == binariesFactory.binaryEnumClass();
     }
 
     /**
@@ -2846,7 +2787,7 @@ public class BinaryUtils {
      * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      */
     public static BinaryReaderEx reader(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr, boolean forUnmarshal) {
-        return new BinaryReaderExImpl(ctx, in, ldr, forUnmarshal);
+        return binariesFactory.reader(ctx, in, ldr, forUnmarshal);
     }
 
     /**
@@ -2880,7 +2821,7 @@ public class BinaryUtils {
                                         ClassLoader ldr,
                                         @Nullable BinaryReaderHandles hnds,
                                         boolean forUnmarshal) {
-        return new BinaryReaderExImpl(ctx, in, ldr, hnds, forUnmarshal);
+        return binariesFactory.reader(ctx, in, ldr, hnds, forUnmarshal);
     }
 
     /**
@@ -2916,7 +2857,7 @@ public class BinaryUtils {
                                         @Nullable BinaryReaderHandles hnds,
                                         boolean skipHdrCheck,
                                         boolean forUnmarshal) {
-        return new BinaryReaderExImpl(ctx, in, ldr, hnds, skipHdrCheck, forUnmarshal);
+        return binariesFactory.reader(ctx, in, ldr, hnds, skipHdrCheck, forUnmarshal);
     }
 
     /**
@@ -2926,16 +2867,7 @@ public class BinaryUtils {
      * @return Writer instance.
      */
     public static BinaryWriterEx writer(BinaryContext ctx, boolean failIfUnregistered, int typeId) {
-        BinaryThreadLocalContext locCtx = BinaryThreadLocalContext.get();
-
-        return new BinaryWriterExImpl(
-            ctx,
-            BinaryStreams.outputStream((int)CommonUtils.KB, locCtx.chunk()),
-            locCtx.schemaHolder(),
-            null,
-            failIfUnregistered,
-            typeId
-        );
+        return binariesFactory.writer(ctx, failIfUnregistered, typeId);
     }
 
     /**
@@ -2944,14 +2876,7 @@ public class BinaryUtils {
      * @return Writer instance.
      */
     public static BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out) {
-        return new BinaryWriterExImpl(
-            ctx,
-            out,
-            BinaryThreadLocalContext.get().schemaHolder(),
-            null,
-            false,
-            GridBinaryMarshaller.UNREGISTERED_TYPE_ID
-        );
+        return binariesFactory.writer(ctx, out);
     }
 
     /**
@@ -2960,7 +2885,7 @@ public class BinaryUtils {
      * @return Writer instance.
      */
     public static BinaryWriterEx writer(BinaryContext ctx, BinaryOutputStream out, BinaryWriterSchemaHolder schema) {
-        return new BinaryWriterExImpl(ctx, out, schema, null, false, GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+        return binariesFactory.writer(ctx, out, schema);
     }
 
     /** @return Instance of caching handler. */
@@ -2986,7 +2911,7 @@ public class BinaryUtils {
      * @return {@code True} if {@code val} instance of {@link BinaryObjectImpl}.
      */
     public static boolean isBinaryObjectImpl(Object val) {
-        return val instanceof BinaryObjectImpl;
+        return (val != null) && val.getClass() == binariesFactory.binaryObjectImplClass();
     }
 
     /**
@@ -3063,23 +2988,12 @@ public class BinaryUtils {
     }
 
     /**
-     * Compare two objects for DML operation.
-     *
-     * @param first First.
-     * @param second Second.
-     * @return Comparison result.
-     */
-    public static int compareForDml(Object first, Object second) {
-        return BinaryObjectImpl.compareForDml(first, second);
-    }
-
-    /**
      * @param o Object to detach.
      * @return Detached object.
      */
-    public static Object detach(Object o) {
-        ((BinaryObjectImpl)o).detachAllowed(true);
-        return ((BinaryObjectImpl)o).detach();
+    public static BinaryObjectEx detach(Object o) {
+        ((BinaryObjectEx)o).detachAllowed(true);
+        return ((BinaryObjectEx)o).detach();
     }
 
     /**
@@ -3087,7 +3001,7 @@ public class BinaryUtils {
      */
     public static void detachAllowedIfPossible(Object o) {
         if (isBinaryObjectImpl(o))
-            ((BinaryObjectImpl)o).detachAllowed(true);
+            ((BinaryObjectEx)o).detachAllowed(true);
     }
 
     /**
@@ -3105,7 +3019,7 @@ public class BinaryUtils {
      * @param order Order.
      */
     public static int fieldId(BinaryReaderEx reader, int order) {
-        return ((BinaryReaderExImpl)reader).getOrCreateSchema().fieldId(order);
+        return reader.getOrCreateSchema().fieldId(order);
     }
 
     /**
@@ -3141,6 +3055,16 @@ public class BinaryUtils {
             .collect(Collectors.toList());
 
         return new BinaryMetadata(typeId, typeName, fields, affKeyFieldName, schemas, isEnum, enumMap);
+    }
+
+    /** */
+    public static int hashCode(byte[] data, int startPos, int endPos) {
+        int hash = 1;
+
+        for (int i = startPos; i < endPos; i++)
+            hash = 31 * hash + data[i];
+
+        return hash;
     }
 
     /**

@@ -83,10 +83,8 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
         this.size = size;
     }
 
-    /**
-     * @return Heap-based copy.
-     */
-    public BinaryObject heapCopy() {
+    /** {@inheritDoc} */
+    @Override public BinaryObjectEx heapCopy() {
         return new BinaryObjectImpl(ctx, GridUnsafe.copyMemory(ptr, size), start);
     }
 
@@ -129,7 +127,7 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
 
     /** {@inheritDoc} */
     @Override BinarySchema createSchema() {
-        return ((BinaryReaderExImpl)reader(null, false)).getOrCreateSchema();
+        return reader(null, false).getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
@@ -198,21 +196,6 @@ class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizab
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
         return (F)reader(null, false).unmarshalField(fieldId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public BinarySerializedFieldComparator createFieldComparator() {
-        int schemaOff = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
-
-        short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
-
-        int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
-        int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
-
-        int orderBase = start + schemaOff + fieldIdLen;
-        int orderMultiplier = fieldIdLen + fieldOffLen;
-
-        return new BinarySerializedFieldComparator(this, null, ptr, start, orderBase, orderMultiplier, fieldOffLen);
     }
 
     /** {@inheritDoc} */

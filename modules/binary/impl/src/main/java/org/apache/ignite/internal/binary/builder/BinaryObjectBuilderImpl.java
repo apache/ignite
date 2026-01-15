@@ -30,9 +30,11 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.binary.BinariesFactoryImpl;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
 import org.apache.ignite.internal.binary.BinaryObjectEx;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -187,7 +189,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
 
             byte[] arr = writer.array();
 
-            return BinaryUtils.binaryObject(ctx, arr, 0);
+            return new BinaryObjectImpl(ctx, arr, 0);
         }
     }
 
@@ -373,7 +375,7 @@ class BinaryObjectBuilderImpl implements BinaryObjectBuilderEx {
             newFldTypeId = GridBinaryMarshaller.ENUM;
 
         else if (newVal.getClass().isArray() &&
-            BinaryUtils.isAssignableToBinaryEnumObject(newVal.getClass().getComponentType()))
+            BinariesFactoryImpl.isAssignableToBinaryEnumObject(newVal.getClass().getComponentType()))
             newFldTypeId = GridBinaryMarshaller.ENUM_ARR;
 
         else if (newVal.getClass().isArray() && BinaryObject.class.isAssignableFrom(newVal.getClass().getComponentType()))

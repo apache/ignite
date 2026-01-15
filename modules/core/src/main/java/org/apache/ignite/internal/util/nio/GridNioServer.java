@@ -158,6 +158,12 @@ public class GridNioServer<T> {
         = "Total number of messages waiting to be sent over all connections";
 
     /** */
+    public static final String MAX_MESSAGES_QUEUE_SIZE_METRIC_NAME = "maxOutboundMessagesQueueSize";
+
+    /** */
+    public static final String MAX_MESSAGES_QUEUE_SIZE_METRIC_DESC = "Maximum number of messages waiting to be sent";
+
+    /** */
     public static final String RECEIVED_BYTES_METRIC_NAME = "receivedBytes";
 
     /** */

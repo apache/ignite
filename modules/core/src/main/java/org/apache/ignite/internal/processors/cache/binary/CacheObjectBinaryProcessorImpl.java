@@ -982,7 +982,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
 
         updateMetadata(typeId, typeName, null, null, true, null);
 
-        return BinaryUtils.binaryEnum(ord, binaryCtx, typeId);
+        return BinaryUtils.binariesFactory.binaryEnum(binaryCtx, typeId, null, ord);
     }
 
     /** {@inheritDoc} */
@@ -1006,7 +1006,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
             throw new BinaryObjectException("Failed to resolve enum ordinal by name [typeId=" +
                     typeId + ", typeName='" + typeName + "', name='" + name + "']");
 
-        return BinaryUtils.binaryEnum(ordinal, binaryCtx, typeId);
+        return BinaryUtils.binariesFactory.binaryEnum(binaryCtx, typeId, null, ordinal);
     }
 
     /** {@inheritDoc} */
@@ -1271,11 +1271,11 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
                     coctx = fakeCacheObjCtx;
 
                 return coctx == null
-                    ? (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes)
-                    : (CacheObject)BinaryUtils.binaryObject(binaryContext(), bytes, coctx);
+                    ? (CacheObject)BinaryUtils.binariesFactory.binaryObject(binaryContext(), bytes)
+                    : (CacheObject)BinaryUtils.binariesFactory.binaryObject(binaryContext(), bytes, coctx);
 
             case CacheObject.TYPE_BINARY_ENUM:
-                return (CacheObject)BinaryUtils.binaryEnum(binaryContext(), bytes);
+                return (CacheObject)BinaryUtils.binariesFactory.binaryEnum(binaryContext(), bytes);
 
             case CacheObject.TYPE_BYTE_ARR:
                 return new CacheObjectByteArrayImpl(bytes);
@@ -1292,7 +1292,7 @@ public class CacheObjectBinaryProcessorImpl extends GridProcessorAdapter impleme
         throws IgniteCheckedException {
         switch (type) {
             case CacheObject.TYPE_BINARY:
-                return (KeyCacheObject)BinaryUtils.binaryObject(binaryContext(), bytes);
+                return (KeyCacheObject)BinaryUtils.binariesFactory.binaryObject(binaryContext(), bytes);
 
             case CacheObject.TYPE_BYTE_ARR:
                 throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");
