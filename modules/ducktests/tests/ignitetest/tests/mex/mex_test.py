@@ -40,10 +40,10 @@ from ignitetest.utils.version import LATEST_2_17, DEV_BRANCH
 
 
 class MexTest(IgniteTest):
-    PRELOAD_SECONDS = 60
-    LOAD_SECONDS = 20
+    PRELOAD_SECONDS = 50
+    LOAD_SECONDS = PRELOAD_SECONDS / 3
     LOAD_THREADS = 8
-    SERVERS = 4
+    SERVERS = 3
     SERVER_IDX_TO_DROP = 1
     IGNITE_VERSION = DEV_BRANCH
     CACHE_NAME = "TEST_CACHE"

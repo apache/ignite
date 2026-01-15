@@ -55,21 +55,27 @@
                     <property name="rebalanceMode" value="ASYNC"/>
                     <property name="rebalanceOrder" value="0"/>
                     <property name="rebalanceTimeout" value="1000"/>
-                    <property name="writeBehindBatchSize" value="512"/>
-                    <property name="writeBehindCoalescing" value="true"/>
-                    <property name="writeBehindFlushFrequency" value="5000"/>
-                    <property name="writeBehindFlushSize" value="10240"/>
-                    <property name="writeBehindFlushThreadCount" value="1"/>
-
-                    <!-- property name="cacheStoreFactory">
-                        <bean class="org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy.MapStoreFactory"/>
-                    </property>
-                    <property name="readThrough" value="true"/>
-                    <property name="writeThrough" value="true"/ -->
 
                     <property name="expiryPolicyFactory">
                         <bean class="javax.cache.expiry.EternalExpiryPolicy" factory-method="factoryOf"/>
                     </property>
+
+                    <property name="cacheStoreFactory">
+                        <bean class="org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy.MapStoreFactory"/>
+                    </property>
+                    <property name="readThrough" value="true"/>
+                    <property name="writeThrough" value="true"/>
+
+{#                    <property name="writeBehindBatchSize" value="1"/>#}
+{#                    <property name="writeBehindCoalescing" value="false"/>#}
+{#                    <property name="writeBehindFlushFrequency" value="1"/>#}
+{#                    <property name="writeBehindFlushSize" value="1"/>#}
+{#                    <property name="writeBehindFlushThreadCount" value="1"/>#}
+{#                    <property name="writeBehindBatchSize" value="10000"/>#}
+{#                    <property name="writeBehindCoalescing" value="true"/>#}
+{#                    <property name="writeBehindFlushFrequency" value="10000"/>#}
+{#                    <property name="writeBehindFlushSize" value="100000"/>#}
+{#                    <property name="writeBehindFlushThreadCount" value="8"/>#}
 
                     <!-- property name="evictionPolicyFactory">
                         <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicyFactory">
