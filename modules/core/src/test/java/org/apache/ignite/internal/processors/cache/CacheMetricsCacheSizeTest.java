@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMetrics;
@@ -27,8 +29,13 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.direct.DirectMessageReader;
+import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
-import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.plugin.extensions.communication.MessageFactory;
+import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
@@ -93,17 +100,42 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         TcpDiscoveryMetricsUpdateMessage msg = new TcpDiscoveryMetricsUpdateMessage(UUID.randomUUID());
 
-        msg.addServerCacheMetrics(UUID.randomUUID(), cacheMetrics);
+        UUID srvrId = UUID.randomUUID();
 
-        Marshaller marshaller = marshaller(grid(0));
+        msg.addServerMetrics(srvrId, new ClusterMetricsSnapshot());
+        msg.addServerCacheMetrics(srvrId, cacheMetrics);
 
-        byte[] buf = marshaller.marshal(msg);
+        MessageFactory msgFactory = ((TcpDiscoverySpi)grid(0).context().discovery().getInjectedDiscoverySpi()).messageFactory();
+        MessageSerializer msgSerializer = msgFactory.serializer(msg.directType());
 
-        Object readObj = marshaller.unmarshal(buf, getClass().getClassLoader());
+        // First time we write initial message type which is not read by the reader because the message type is known.
+        // We have to skip this header at the further message reading.
+        AtomicInteger initHdrSize = new AtomicInteger();
 
-        assertTrue(readObj instanceof TcpDiscoveryMetricsUpdateMessage);
+        DirectMessageWriter msgWritter = new DirectMessageWriter(msgFactory) {
+            @Override public void onHeaderWritten() {
+                super.onHeaderWritten();
 
-        TcpDiscoveryMetricsUpdateMessage msg2 = (TcpDiscoveryMetricsUpdateMessage)readObj;
+                initHdrSize.compareAndSet(0, getBuffer().position());
+            }
+        };
+
+        // 2kb should be enough for an empty message even if it is a relatively large metrics message.
+        msgWritter.setBuffer(ByteBuffer.allocate(2048));
+
+        assertTrue(msgSerializer.writeTo(msg, msgWritter));
+
+        assertTrue(msgWritter.getBuffer().hasRemaining());
+
+        DirectMessageReader msgReader = new DirectMessageReader(msgFactory, null);
+        msgReader.setBuffer(msgWritter.getBuffer());
+
+        msgWritter.getBuffer().rewind();
+        msgWritter.getBuffer().position(initHdrSize.get());
+
+        TcpDiscoveryMetricsUpdateMessage msg2 = new TcpDiscoveryMetricsUpdateMessage();
+
+        assertTrue(msgSerializer.readFrom(msg2, msgReader));
 
         Map<Integer, CacheMetricsMessage> cacheMetrics2 = msg2.serversFullMetricsMessages().values().iterator().next()
             .cachesMetricsMessages();
