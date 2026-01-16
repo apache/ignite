@@ -19,9 +19,11 @@ package org.apache.ignite.internal;
 
 import java.util.BitSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
@@ -91,6 +93,15 @@ public class TestCollectionsMessage implements Message {
 
     @Order(21)
     private List<GridCacheVersion> messageList;
+
+    @Order(22)
+    private List<GridLongList> gridLongListList;
+
+    @Order(23)
+    private Set<Integer> boxedIntegerSet;
+
+    @Order(24)
+    private Set<BitSet> bitSetSet;
 
     public List<boolean[]> booleanArrayList() {
         return booleanArrayList;
@@ -265,14 +276,34 @@ public class TestCollectionsMessage implements Message {
     }
 
     public void messageList(List<GridCacheVersion> messageList) {
-        messageList = messageList;
+        this.messageList = messageList;
+    }
+
+    public List<GridLongList> gridLongListList() {
+        return gridLongListList;
+    }
+
+    public void gridLongListList(List<GridLongList> gridLongListList) {
+        this.gridLongListList = gridLongListList;
+    }
+
+    public Set<Integer> boxedIntegerSet() {
+        return boxedIntegerSet;
+    }
+
+    public void boxedIntegerSet(Set<Integer> boxedIntegerSet) {
+        this.boxedIntegerSet = boxedIntegerSet;
+    }
+
+    public Set<BitSet> bitSetSet() {
+        return bitSetSet;
+    }
+
+    public void bitSetSet(Set<BitSet> bitSetSet) {
+        this.bitSetSet = bitSetSet;
     }
 
     public short directType() {
         return 0;
-    }
-
-    public void onAckReceived() {
-        // No-op.
     }
 }

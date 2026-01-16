@@ -24,7 +24,6 @@ import java.util.Map;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.inline.InlineIndexImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContextInfo;
@@ -67,9 +66,10 @@ class H2IndexFactory {
         for (Map.Entry<String, IndexKeyDefinition> keyDef : keyDefs.entrySet()) {
             Column col = tbl.getColumn(keyDef.getKey());
 
-            idxCols.add(tbl.indexColumn(col.getColumnId(),
-                keyDef.getValue().order().sortOrder() == SortOrder.ASC ? org.h2.result.SortOrder.ASCENDING
-                    : org.h2.result.SortOrder.DESCENDING));
+            idxCols.add(
+                tbl.indexColumn(col.getColumnId(),
+                keyDef.getValue().ascending() ? org.h2.result.SortOrder.ASCENDING : org.h2.result.SortOrder.DESCENDING)
+            );
         }
 
         IndexColumn[] idxColsArr = idxCols.toArray(new IndexColumn[idxCols.size()]);

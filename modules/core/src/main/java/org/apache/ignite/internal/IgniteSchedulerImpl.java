@@ -183,7 +183,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     }
 
     /** */
-    private class SecurityAwareClosure<T> implements GridPlainRunnable, GridPlainCallable<T>, GridInternalWrapper<Object> {
+    private class SecurityAwareClosure<T> implements GridPlainRunnable, GridPlainCallable<T>, IgniteInternalWrapper<Object> {
         /** Security subject id. */
         private final UUID secSubjId;
 
@@ -226,7 +226,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override public Object userObject() {
+        @Override public Object delegate() {
             return runnable != null ? runnable : call;
         }
     }

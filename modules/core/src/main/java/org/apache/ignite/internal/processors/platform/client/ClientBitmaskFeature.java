@@ -21,8 +21,11 @@ import java.util.EnumSet;
 import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.ClientServices;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.ThinProtocolFeature;
 import org.apache.ignite.internal.client.thin.TcpClientCache;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 
 /**
  * Defines supported features for thin client.
@@ -94,7 +97,22 @@ public enum ClientBitmaskFeature implements ThinProtocolFeature {
      * @see ClientCacheConfiguration#setStoragePaths(String...)
      * @see ClientCacheConfiguration#setIndexPath(String)
      */
-    CACHE_STORAGES(20);
+    CACHE_STORAGES(20),
+
+    /**
+     * Internal operation.
+     * Support of specifying {@code sql} flag on cache creation.
+     * When {@code sql} flag is {@code true} Ignite treats cache as created via SQL DDL: {@code CREATE TABLE}.
+     * Set this flag required when creating caches during dump restoration and similar processes.
+     * @see GridCacheProcessor#dynamicStartCache(CacheConfiguration, String, NearCacheConfiguration, boolean, boolean, boolean)
+     */
+    SQL_CACHE_CREATION(21),
+
+    /** Data-center information. */
+    DC_AWARE(22),
+
+    /** SqlFieldsQuery initiatorId property. */
+    QRY_INITIATOR_ID(23);
 
     /** */
     private static final EnumSet<ClientBitmaskFeature> ALL_FEATURES_AS_ENUM_SET =

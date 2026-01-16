@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.managers.communication;
 
+import java.util.UUID;
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -27,7 +27,7 @@ import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import static org.apache.ignite.internal.util.IgniteUtils.toBytes;
 
 /** */
-public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommunicationMessageSerializationTest {
+public class IgniteIoCommunicationMessageSerializationTest extends AbstractMessageSerializationTest {
     /** {@inheritDoc} */
     @Override protected MessageFactoryProvider messageFactory() {
         return new GridIoMessageFactory();
@@ -35,11 +35,8 @@ public class IgniteIoCommunicationMessageSerializationTest extends AbstractCommu
 
     /** {@inheritDoc} */
     @Override protected Message initializeMessage(Message msg) throws Exception {
-        if (msg instanceof NodeIdMessage) {
-            int msgSize = U.field(NodeIdMessage.class, "MESSAGE_SIZE");
-
-            FieldUtils.writeField(msg, "nodeIdBytes", new byte[msgSize], true);
-        }
+        if (msg instanceof NodeIdMessage)
+            FieldUtils.writeField(msg, "nodeId", UUID.randomUUID(), true);
 
         return msg;
     }

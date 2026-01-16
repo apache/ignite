@@ -625,7 +625,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         GridTestUtils.assertThrowsAnyCause(log,
             () -> grid(0).snapshot().restoreSnapshot(SNP, null, 1).get(),
-            IgniteException.class, "Force to fail snapshot restore.");
+            RuntimeException.class, "Force to fail snapshot restore.");
 
         awaitPartitionMapExchange();
 
@@ -635,7 +635,7 @@ public class IncrementalSnapshotRestoreTest extends AbstractIncrementalSnapshotT
 
         stopAllGrids();
 
-        startGrids(3);
+        startGrids(3).cluster().state(ClusterState.ACTIVE);
 
         checkData(expSnpData, CACHE);
     }

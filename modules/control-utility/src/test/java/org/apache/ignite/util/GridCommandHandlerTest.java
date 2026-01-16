@@ -109,7 +109,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.DataStreamerUpdatesHandler;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsQuickVerifyHandler;
-import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyTaskResult;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotPartitionsVerifyResult;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
@@ -187,6 +187,7 @@ import static org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtili
 import static org.apache.ignite.internal.processors.diagnostic.DiagnosticProcessor.DEFAULT_TARGET_FOLDER;
 import static org.apache.ignite.internal.processors.job.GridJobProcessor.JOBS_VIEW;
 import static org.apache.ignite.internal.processors.task.GridTaskProcessor.TASKS_VIEW;
+import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
@@ -759,7 +760,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
         final String newTag = "new_tag";
 
         Ignite ignite = startGrids(2);
-        
+
         startClientGrid("client");
 
         assertFalse(ignite.cluster().state().active());
@@ -3255,7 +3256,7 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         StringBuilder sb = new StringBuilder();
 
-        ((SnapshotPartitionsVerifyTaskResult)h.getLastOperationResult()).print(sb::append);
+        ((SnapshotPartitionsVerifyResult)h.getLastOperationResult()).print(sb::append);
 
         assertContains(log, sb.toString(), "The check procedure has finished, no conflicts have been found");
     }
@@ -3740,7 +3741,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         awaitPartitionMapExchange();
 
-        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage
+            && ((SingleNodeMessage)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal());
 
         fut = srv.snapshot().restoreSnapshot(snapshotName, F.asList(DEFAULT_CACHE_NAME));
 
@@ -3759,7 +3761,8 @@ public class GridCommandHandlerTest extends GridCommandHandlerClusterPerMethodAb
 
         awaitPartitionMapExchange();
 
-        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage);
+        spi.blockMessages((node, msg) -> msg instanceof SingleNodeMessage
+            && ((SingleNodeMessage)msg).type() == RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE.ordinal());
 
         fut = srv.snapshot().restoreSnapshot(snapshotName, F.asList(DEFAULT_CACHE_NAME), 1);
 

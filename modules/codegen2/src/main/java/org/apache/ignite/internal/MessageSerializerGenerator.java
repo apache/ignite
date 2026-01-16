@@ -28,12 +28,15 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import javax.annotation.processing.FilerException;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
@@ -47,7 +50,6 @@ import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.JavaFileObject;
 import javax.tools.StandardLocation;
-
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.Nullable;
@@ -81,14 +83,23 @@ class MessageSerializerGenerator {
     /** */
     private static final String METHOD_JAVADOC = "/** */";
 
+    /** */
+    private static final String RETURN_FALSE_STMT = "return false;";
+
+    /** */
+    static final String DLFT_ENUM_MAPPER_CLS = "org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper";
+
     /** Collection of lines for {@code writeTo} method. */
-    private final Collection<String> write = new ArrayList<>();
+    private final List<String> write = new ArrayList<>();
 
     /** Collection of lines for {@code readFrom} method. */
-    private final Collection<String> read = new ArrayList<>();
+    private final List<String> read = new ArrayList<>();
 
     /** Collection of message-specific imports. */
-    private final Set<String> imports = new HashSet<>();
+    private final Set<String> imports = new TreeSet<>();
+
+    /** Collection of Serializer class fields containing mappers for message enum fields. */
+    private final Set<String> fields = new TreeSet<>();
 
     /** */
     private final ProcessingEnvironment env;
@@ -140,6 +151,8 @@ class MessageSerializerGenerator {
         try (Writer writer = new StringWriter()) {
             writeClassHeader(writer, PKG_NAME, serClsName);
 
+            writeClassFields(writer);
+
             // Write #writeTo method.
             for (String w: write)
                 writer.write(w + NL);
@@ -153,6 +166,8 @@ class MessageSerializerGenerator {
             writer.write(TAB + "}" + NL);
 
             writer.write("}");
+
+            writer.write(NL);
 
             return writer.toString();
         }
@@ -179,10 +194,8 @@ class MessageSerializerGenerator {
     /**
      * Generates start of write/read methods:
      * <pre>
-     *     public boolean writeTo(Message m, ByteBuffer buf, MessageWriter writer) {
+     *     public boolean writeTo(Message m, MessageWriter writer) {
      *         TestMessage msg = (TestMessage)m;
-     *
-     *         writer.setBuffer(buf);
      *
      *         if (!writer.isHeaderWritten()) {
      *             if (!writer.writeHeader(msg.directType()))
@@ -200,16 +213,13 @@ class MessageSerializerGenerator {
 
         code.add(line(METHOD_JAVADOC));
 
-        code.add(line("@Override public boolean %s(Message m, ByteBuffer buf, %s) {",
+        code.add(line("@Override public boolean %s(Message m, %s) {",
             write ? "writeTo" : "readFrom",
             write ? "MessageWriter writer" : "MessageReader reader"));
 
         indent++;
 
         code.add(line("%s msg = (%s)m;", type.getSimpleName().toString(), type.getSimpleName().toString()));
-        code.add(EMPTY);
-        code.add(line("%s.setBuffer(buf);", write ? "writer" : "reader"));
-
         code.add(EMPTY);
 
         if (write) {
@@ -236,6 +246,9 @@ class MessageSerializerGenerator {
      * @param opt Case option.
      */
     private void processField(VariableElement field, int opt) throws Exception {
+        if (assignableFrom(field.asType(), type(Throwable.class.getName())))
+            throw new UnsupportedOperationException("You should use ErrorMessage for serialization of throwables.");
+
         writeField(field, opt);
         readField(field, opt);
     }
@@ -351,6 +364,27 @@ class MessageSerializerGenerator {
             else if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
                 returnFalseIfWriteFailed(write, "writer.writeAffinityTopologyVersion", getExpr);
 
+            else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
+                List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+
+                assert typeArgs.size() == 2;
+
+                imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
+
+                returnFalseIfWriteFailed(write, "writer.writeMap", getExpr,
+                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)),
+                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)));
+            }
+
+            else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.KeyCacheObject")))
+                returnFalseIfWriteFailed(write, "writer.writeKeyCacheObject", getExpr);
+
+            else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.CacheObject")))
+                returnFalseIfWriteFailed(write, "writer.writeCacheObject", getExpr);
+
+            else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
+                returnFalseIfWriteFailed(write, "writer.writeGridLongList", getExpr);
+
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfWriteFailed(write, "writer.writeMessage", getExpr);
 
@@ -361,8 +395,51 @@ class MessageSerializerGenerator {
 
                 imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
-                returnFalseIfWriteFailed(write, "writer.writeCollection", getExpr,
+                String collectionWriter = assignableFrom(erasedType(type), type(Set.class.getName()))
+                    ? "writer.writeSet"
+                    : "writer.writeCollection";
+
+                returnFalseIfWriteFailed(write, collectionWriter, getExpr,
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
+            }
+
+            else if (enumType(type)) {
+                Element element = env.getTypeUtils().asElement(type);
+                imports.add(element.toString());
+
+                String enumName = element.getSimpleName().toString();
+                String enumFieldPrefix = typeNameToFieldName(enumName);
+
+                String mapperCallStmnt;
+
+                CustomMapper custMapperAnn = field.getAnnotation(CustomMapper.class);
+
+                if (custMapperAnn != null) {
+                    String fullMapperName = custMapperAnn.value();
+                    if (fullMapperName == null || fullMapperName.isEmpty())
+                        throw new IllegalArgumentException("Please specify a not-null not-empty EnumMapper class name");
+
+                    imports.add("org.apache.ignite.plugin.extensions.communication.mappers.EnumMapper");
+                    imports.add(fullMapperName);
+
+                    String simpleName = fullMapperName.substring(fullMapperName.lastIndexOf('.') + 1);
+
+                    String mapperFieldName = enumFieldPrefix + "Mapper";
+
+                    fields.add("private final EnumMapper<" + enumName + "> " + mapperFieldName + " = new " + simpleName + "();");
+
+                    mapperCallStmnt = mapperFieldName + ".encode";
+                }
+                else {
+                    imports.add(DLFT_ENUM_MAPPER_CLS);
+                    String enumValuesFieldName = enumFieldPrefix + "Vals";
+
+                    fields.add("private final " + enumName + "[] " + enumValuesFieldName + " = " + enumName + ".values();");
+
+                    mapperCallStmnt = "DefaultEnumMapper.INSTANCE.encode";
+                }
+
+                returnFalseIfEnumWriteFailed(write, "writer.writeByte", mapperCallStmnt, getExpr);
             }
 
             else
@@ -375,6 +452,15 @@ class MessageSerializerGenerator {
     }
 
     /**
+     * Converts type name to camel case field name. Example: {@code "MyType"} -> {@code "myType"}.
+     */
+    private String typeNameToFieldName(String typeName) {
+        char[] typeNameChars = typeName.toCharArray();
+        typeNameChars[0] = Character.toLowerCase(typeNameChars[0]);
+        return new String(typeNameChars);
+    }
+
+    /**
      * Generate code of writing single field:
      * <pre>
      * if (!writer.writeInt(msg.id()))
@@ -382,13 +468,30 @@ class MessageSerializerGenerator {
      * </pre>
      */
     private void returnFalseIfWriteFailed(Collection<String> code, String accessor, @Nullable String... args) {
-        String argsStr = String.join(",", args);
+        String argsStr = String.join(", ", args);
 
         code.add(line("if (!%s(msg.%s))", accessor, argsStr));
 
         indent++;
 
-        code.add(line("return false;"));
+        code.add(line(RETURN_FALSE_STMT));
+
+        indent--;
+    }
+
+    /**
+     * Generate code of writing single enum field mapped with EnumMapper:
+     * <pre>
+     * if (!writer.writeByte(myEnumMapper.encode(msg.myEnum()))
+     *     return false;
+     * </pre>
+     */
+    private void returnFalseIfEnumWriteFailed(Collection<String> code, String writerCall, String mapperCall, String fieldGetterCall) {
+        code.add(line("if (!%s(%s(msg.%s)))", writerCall, mapperCall, fieldGetterCall));
+
+        indent++;
+
+        code.add(line(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -438,11 +541,19 @@ class MessageSerializerGenerator {
             }
 
             if (componentType.getKind() == TypeKind.DECLARED) {
-                String cls = ((DeclaredType)arrType.getComponentType()).asElement().getSimpleName().toString();
+                Element componentElement = ((DeclaredType)componentType).asElement();
+
+                String cls = componentElement.getSimpleName().toString();
 
                 returnFalseIfReadFailed(name, "reader.readObjectArray",
                     "MessageCollectionItemType." + messageCollectionItemType(componentType),
                     cls + ".class");
+
+                if (!"java.lang".equals(env.getElementUtils().getPackageOf(componentElement).getQualifiedName().toString())) {
+                    String importCls = ((QualifiedNameable)componentElement).getQualifiedName().toString();
+
+                    imports.add(importCls);
+                }
 
                 return;
             }
@@ -464,6 +575,25 @@ class MessageSerializerGenerator {
             else if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
                 returnFalseIfReadFailed(name, "reader.readAffinityTopologyVersion");
 
+            else if (assignableFrom(erasedType(type), type(Map.class.getName()))) {
+                List<? extends TypeMirror> typeArgs = ((DeclaredType)type).getTypeArguments();
+
+                assert typeArgs.size() == 2;
+
+                returnFalseIfReadFailed(name, "reader.readMap",
+                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)),
+                    "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(1)), "false");
+            }
+
+            else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.KeyCacheObject")))
+                returnFalseIfReadFailed(name, "reader.readKeyCacheObject");
+
+            else if (assignableFrom(type, type("org.apache.ignite.internal.processors.cache.CacheObject")))
+                returnFalseIfReadFailed(name, "reader.readCacheObject");
+
+            else if (assignableFrom(type, type("org.apache.ignite.internal.util.GridLongList")))
+                returnFalseIfReadFailed(name, "reader.readGridLongList");
+
             else if (assignableFrom(type, type(MESSAGE_INTERFACE)))
                 returnFalseIfReadFailed(name, "reader.readMessage");
 
@@ -472,8 +602,23 @@ class MessageSerializerGenerator {
 
                 assert typeArgs.size() == 1;
 
-                returnFalseIfReadFailed(name, "reader.readCollection",
+                String collectionReader = assignableFrom(erasedType(type), type(Set.class.getName()))
+                    ? "reader.readSet"
+                    : "reader.readCollection";
+
+                returnFalseIfReadFailed(name, collectionReader,
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
+            }
+
+            else if (enumType(type)) {
+                String fieldPrefix = typeNameToFieldName(env.getTypeUtils().asElement(type).getSimpleName().toString());
+
+                boolean hasCustMapperAnn = field.getAnnotation(CustomMapper.class) != null;
+
+                String mapperCallStmnt = hasCustMapperAnn ? fieldPrefix + "Mapper.decode" : "DefaultEnumMapper.INSTANCE.decode";
+                String enumValsFieldName = hasCustMapperAnn ? null : fieldPrefix + "Vals";
+
+                returnFalseIfEnumReadFailed(name, mapperCallStmnt, enumValsFieldName);
             }
 
             else
@@ -524,6 +669,15 @@ class MessageSerializerGenerator {
             if (sameType(type, "org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion"))
                 return "AFFINITY_TOPOLOGY_VERSION";
 
+            if (sameType(type, "org.apache.ignite.internal.processors.cache.KeyCacheObject"))
+                return "KEY_CACHE_OBJECT";
+
+            if (sameType(type, "org.apache.ignite.internal.processors.cache.CacheObject"))
+                return "CACHE_OBJECT";
+
+            if (sameType(type, "org.apache.ignite.internal.util.GridLongList"))
+                return "GRID_LONG_LIST";
+
             PrimitiveType primitiveType = unboxedType(type);
 
             if (primitiveType != null)
@@ -532,10 +686,6 @@ class MessageSerializerGenerator {
 
         if (!assignableFrom(type, type(MESSAGE_INTERFACE)))
             throw new Exception("Do not support type: " + type);
-
-        String cls = ((QualifiedNameable)env.getTypeUtils().asElement(type)).getQualifiedName().toString();
-
-        imports.add(cls);
 
         return "MSG";
     }
@@ -579,13 +729,47 @@ class MessageSerializerGenerator {
 
         indent++;
 
-        read.add(line("return false;"));
+        read.add(line(RETURN_FALSE_STMT));
+
+        indent--;
+    }
+
+    /**
+     * Generate code of reading single field:
+     * <pre>
+     * msg.id(reader.readInt());
+     *
+     * if (!reader.isLastRead())
+     *     return false;
+     * </pre>
+     *
+     * @param msgSetterName Variable name.
+     * @param mapperDecodeCallStmnt Method name.
+     */
+    private void returnFalseIfEnumReadFailed(String msgSetterName, String mapperDecodeCallStmnt, String enumValuesFieldName) {
+        if (enumValuesFieldName == null)
+            read.add(line("msg.%s(%s(reader.readByte()));", msgSetterName, mapperDecodeCallStmnt));
+        else
+            read.add(line("msg.%s(%s(%s, reader.readByte()));", msgSetterName, mapperDecodeCallStmnt, enumValuesFieldName));
+
+        read.add(EMPTY);
+
+        read.add(line("if (!reader.isLastRead())"));
+
+        indent++;
+
+        read.add(line(RETURN_FALSE_STMT));
 
         indent--;
     }
 
     /** */
-    private void finish(Collection<String> code) {
+    private void finish(List<String> code) {
+        String lastLine = code.get(code.size() - 1);
+
+        if (EMPTY.equals(lastLine))
+            code.remove(code.size() - 1);
+
         code.add(line("}"));
         code.add(EMPTY);
 
@@ -608,6 +792,24 @@ class MessageSerializerGenerator {
         return sb.toString();
     }
 
+    /** Write serializer class fields: enum values, custom enum mappers. */
+    private void writeClassFields(Writer writer) throws IOException {
+        if (fields.isEmpty())
+            return;
+
+        indent = 1;
+
+        for (String field: fields) {
+            writer.write(line(METHOD_JAVADOC));
+            writer.write(NL);
+            writer.write(line(field));
+            writer.write(NL);
+        }
+        writer.write(NL);
+
+        indent = 0;
+    }
+
     /** Write header of serializer class: license, imports, class declaration. */
     private void writeClassHeader(Writer writer, String pkgName, String serClsName) throws IOException {
         try (InputStream in = getClass().getClassLoader().getResourceAsStream("license.txt");
@@ -623,14 +825,14 @@ class MessageSerializerGenerator {
 
         writer.write(NL);
         writer.write("package " + pkgName + ";" + NL + NL);
-        writer.write("import java.nio.ByteBuffer;" + NL);
-        writer.write("import org.apache.ignite.plugin.extensions.communication.Message;" + NL);
-        writer.write("import org.apache.ignite.plugin.extensions.communication.MessageSerializer;" + NL);
-        writer.write("import org.apache.ignite.plugin.extensions.communication.MessageWriter;" + NL);
-        writer.write("import org.apache.ignite.plugin.extensions.communication.MessageReader;" + NL);
 
-        for (String i: imports)
-            writer.write("import " + i + ";" + NL);
+        imports.add("org.apache.ignite.plugin.extensions.communication.Message");
+        imports.add("org.apache.ignite.plugin.extensions.communication.MessageSerializer");
+        imports.add("org.apache.ignite.plugin.extensions.communication.MessageWriter");
+        imports.add("org.apache.ignite.plugin.extensions.communication.MessageReader");
+
+        for (String regularImport: imports)
+            writer.write("import " + regularImport + ";" + NL);
 
         writer.write(NL);
         writer.write(CLS_JAVADOC);
@@ -651,6 +853,13 @@ class MessageSerializerGenerator {
     /** */
     private boolean assignableFrom(TypeMirror type, TypeMirror superType) {
         return env.getTypeUtils().isAssignable(type, superType);
+    }
+
+    /** */
+    private boolean enumType(TypeMirror type) {
+        Element element = env.getTypeUtils().asElement(type);
+
+        return element != null && element.getKind() == ElementKind.ENUM;
     }
 
     /** */

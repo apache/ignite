@@ -162,6 +162,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             collocated,
             replicatedOnly,
             lazy,
+            false,
             skipReducerOnUpdate,
             null,
             null,

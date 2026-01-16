@@ -128,7 +128,7 @@ public interface IGridClusterStateProcessor extends GridProcessor {
      * @param errs Errors.
      * @param req State change request.
      */
-    void onStateChangeError(Map<UUID, Exception> errs, StateChangeRequest req);
+    void onStateChangeError(Map<UUID, Throwable> errs, StateChangeRequest req);
 
     /**
      * @param exchangeActions Exchange actions.
@@ -140,12 +140,6 @@ public interface IGridClusterStateProcessor extends GridProcessor {
      * @param prevBltHistItem Previous baseline history item.
      */
     void onBaselineTopologyChanged(BaselineTopology blt, BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException;
-
-    /**
-     * @param exchangeFuture Exchange future.
-     * @param hasMovingPartitions {@code True} if there are moving partitions.
-     */
-    void onExchangeFinishedOnCoordinator(IgniteInternalFuture exchangeFuture, boolean hasMovingPartitions);
 
     /**
      * @return {@code True} if partition evictions are allowed in current state.

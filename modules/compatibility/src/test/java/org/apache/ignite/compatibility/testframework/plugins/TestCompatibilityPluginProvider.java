@@ -105,7 +105,14 @@ public class TestCompatibilityPluginProvider implements PluginProvider {
     /** {@inheritDoc} */
     @Nullable @Override public Object createComponent(PluginContext ctx, Class cls) {
         if (DiscoveryNodeValidationProcessor.class == cls)
-            return new DisabledValidationProcessor(kCtx);
+            try {
+                Class.forName("org.apache.ignite.internal.processors.rollingupgrade.RollingUpgradeProcessor");
+
+                return new DisabledRollingUpgradeProcessor(kCtx);
+            }
+            catch (ClassNotFoundException ignore) {
+                return new DisabledValidationProcessor(kCtx);
+            }
 
         return null;
     }

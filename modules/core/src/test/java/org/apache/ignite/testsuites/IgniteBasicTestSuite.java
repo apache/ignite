@@ -37,6 +37,12 @@ import org.apache.ignite.internal.IgniteLocalNodeMapBeforeStartTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.codegen.MessageProcessorTest;
+import org.apache.ignite.internal.managers.communication.CacheEntryPredicateAdapterMessageTest;
+import org.apache.ignite.internal.managers.communication.CacheWriteSynchroizationModeMessageTest;
+import org.apache.ignite.internal.managers.communication.DefaultEnumMapperTest;
+import org.apache.ignite.internal.managers.communication.ErrorMessageSelfTest;
+import org.apache.ignite.internal.managers.communication.GridCacheOperationModeMessageTest;
+import org.apache.ignite.internal.managers.communication.IndexKeyTypeMessageTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2Test;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentV2TestNoOptimizations;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
@@ -143,7 +149,13 @@ import org.junit.runners.Suite;
     JavaVersionCommandParserTest.class,
     ClientSessionOutboundQueueLimitTest.class,
 
-    MessageProcessorTest.class
+    MessageProcessorTest.class,
+    ErrorMessageSelfTest.class,
+    GridCacheOperationModeMessageTest.class,
+    CacheWriteSynchroizationModeMessageTest.class,
+    CacheEntryPredicateAdapterMessageTest.class,
+    DefaultEnumMapperTest.class,
+    IndexKeyTypeMessageTest.class
 })
 public class IgniteBasicTestSuite {
 }

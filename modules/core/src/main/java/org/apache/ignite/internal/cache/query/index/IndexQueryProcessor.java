@@ -84,11 +84,16 @@ public class IndexQueryProcessor {
     ) throws IgniteCheckedException {
         InlineIndexImpl idx = (InlineIndexImpl)findSortedIndex(cctx, idxQryDesc);
 
+        if (idx.rebuildInProgress()) {
+            throw new IgniteCheckedException(String.format("Failed to run IndexQuery due to index rebuild is in progress"
+                    + " [index=%s, query=%s]", idx.indexDefinition().idxName(), idxQryDesc));
+        }
+
         IndexMultipleRangeQuery qry = prepareQuery(idx, idxQryDesc);
 
         GridCursor<IndexRow> cursor = queryMultipleRanges(idx, cacheFilter, qry);
 
-        SortedIndexDefinition def = (SortedIndexDefinition)idxProc.indexDefinition(idx.id());
+        SortedIndexDefinition def = idx.indexDefinition();
 
         IndexQueryResultMeta meta = new IndexQueryResultMeta(def, qry.critSize());
 
@@ -212,14 +217,14 @@ public class IndexQueryProcessor {
      * @throws IgniteCheckedException If index not found or specified index doesn't match query criteria.
      */
     private SortedSegmentedIndex indexByName(IndexName idxName, final Map<String, String> criteriaFlds) throws IgniteCheckedException {
-        SortedSegmentedIndex idx = assertSortedIndex(idxProc.index(idxName));
+        SortedSegmentedIndex idx = assertSortedIndex(idxProc.index(idxName, true));
 
         if (idx == null && !QueryUtils.PRIMARY_KEY_INDEX.equals(idxName.idxName())) {
             String normIdxName = QueryUtils.normalizeObjectName(idxName.idxName(), false);
 
             idxName = new IndexName(idxName.cacheName(), idxName.schemaName(), idxName.tableName(), normIdxName);
 
-            idx = assertSortedIndex(idxProc.index(idxName));
+            idx = assertSortedIndex(idxProc.index(idxName, true));
         }
 
         if (idx == null)
@@ -240,7 +245,7 @@ public class IndexQueryProcessor {
         final Map<String, String> criteriaFlds,
         String tableName
     ) throws IgniteCheckedException {
-        Collection<Index> idxs = idxProc.indexes(cctx.name());
+        Collection<Index> idxs = idxProc.indexes(cctx.name(), true);
 
         for (Index idx: idxs) {
             SortedSegmentedIndex sortedIdx = assertSortedIndex(idx);
@@ -269,7 +274,7 @@ public class IndexQueryProcessor {
      * Criteria fields have to match to a prefix of the index. Order of fields in criteria doesn't matter.
      */
     private boolean checkIndex(SortedSegmentedIndex idx, String tblName, Map<String, String> criteriaFlds) {
-        IndexDefinition idxDef = idxProc.indexDefinition(idx.id());
+        IndexDefinition idxDef = idx.indexDefinition();
 
         if (!tblName.equals(idxDef.idxName().tableName()))
             return false;
@@ -406,7 +411,7 @@ public class IndexQueryProcessor {
         IndexingQueryFilter cacheFilter,
         IndexSingleRangeQuery qry
     ) throws IgniteCheckedException {
-        IndexRowComparator rowCmp = ((SortedIndexDefinition)idxProc.indexDefinition(idx.id())).rowComparator();
+        IndexRowComparator rowCmp = idx.indexDefinition().rowComparator();
 
         BPlusTree.TreeRowClosure<IndexRow, IndexRow> treeFilter = qry.filter(rowCmp);
 

@@ -21,11 +21,15 @@ import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.direct.state.DirectMessageState;
 import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -44,6 +48,9 @@ public class DirectMessageWriter implements MessageWriter {
     @GridToStringInclude
     private final DirectMessageState<StateItem> state;
 
+    /** Buffer for writing. */
+    private ByteBuffer buf;
+
     /** */
     public DirectMessageWriter(final MessageFactory msgFactory) {
         state = new DirectMessageState<>(StateItem.class, new IgniteOutClosure<StateItem>() {
@@ -55,7 +62,18 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** {@inheritDoc} */
     @Override public void setBuffer(ByteBuffer buf) {
+        this.buf = buf;
+
         state.item().stream.setBuffer(buf);
+    }
+
+    /**
+     * Gets buffer to write to.
+     *
+     * @return Byte buffer.
+     */
+    public ByteBuffer getBuffer() {
+        return buf;
     }
 
     /** {@inheritDoc} */
@@ -284,6 +302,33 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean writeCacheObject(@Nullable CacheObject obj) {
+        DirectByteBufferStream stream = state.item().stream;
+
+        stream.writeCacheObject(obj);
+
+        return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeKeyCacheObject(KeyCacheObject obj) {
+        DirectByteBufferStream stream = state.item().stream;
+
+        stream.writeKeyCacheObject(obj);
+
+        return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeGridLongList(@Nullable GridLongList ll) {
+        DirectByteBufferStream stream = state.item().stream;
+
+        stream.writeGridLongList(ll);
+
+        return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
     @Override public <T> boolean writeObjectArray(T[] arr, MessageCollectionItemType itemType) {
         DirectByteBufferStream stream = state.item().stream;
 
@@ -299,6 +344,11 @@ public class DirectMessageWriter implements MessageWriter {
         stream.writeCollection(col, itemType, this);
 
         return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> boolean writeSet(Set<T> set, MessageCollectionItemType itemType) {
+        return writeCollection(set, itemType);
     }
 
     /** {@inheritDoc} */
@@ -334,6 +384,8 @@ public class DirectMessageWriter implements MessageWriter {
     /** {@inheritDoc} */
     @Override public void beforeInnerMessageWrite() {
         state.forward();
+
+        state.item().stream.setBuffer(buf);
     }
 
     /** {@inheritDoc} */

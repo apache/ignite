@@ -28,6 +28,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.apache.calcite.rel.RelCollation;
+import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Intersect;
 import org.apache.calcite.rel.core.JoinRelType;
@@ -39,6 +40,7 @@ import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.util.ImmutableBitSet;
+import org.apache.calcite.util.mapping.IntPair;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler.RowFactory;
@@ -329,18 +331,40 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         RelDataType rightType = rel.getRight().getRowType();
         JoinRelType joinType = rel.getJoinType();
 
-        IgniteJoinInfo info = IgniteJoinInfo.of(rel);
+        List<IntPair> joinPairs = rel.analyzeCondition().pairs();
+        int pairsCnt = joinPairs.size();
 
-        assert !info.pairs().isEmpty() && info.isEqui();
+        List<RelFieldCollation> leftCollations = rel.leftCollation().getFieldCollations();
+        List<RelFieldCollation> rightCollations = rel.rightCollation().getFieldCollations();
 
-        int pairsCnt = rel.analyzeCondition().pairs().size();
+        ImmutableBitSet allowNulls = rel.allowNulls();
+        ImmutableBitSet.Builder collsAllowNullsBuilder = ImmutableBitSet.builder();
+        int lastCollField = -1;
 
-        // TODO : revise after https://issues.apache.org/jira/browse/IGNITE-26048
-        assert !info.hasMatchingNulls() || info.matchingNullsCnt() == info.pairs().size();
+        for (int c = 0; c < Math.min(leftCollations.size(), rightCollations.size()); ++c) {
+            RelFieldCollation leftColl = leftCollations.get(c);
+            RelFieldCollation rightColl = rightCollations.get(c);
+            collsAllowNullsBuilder.set(c);
+
+            for (int p = 0; p < pairsCnt; ++p) {
+                IntPair pair = joinPairs.get(p);
+
+                if (pair.source == leftColl.getFieldIndex() && pair.target == rightColl.getFieldIndex()) {
+                    lastCollField = c;
+
+                    if (!allowNulls.get(p)) {
+                        collsAllowNullsBuilder.clear(c);
+
+                        break;
+                    }
+                }
+            }
+        }
+
         Comparator<Row> comp = expressionFactory.comparator(
-            rel.leftCollation().getFieldCollations().subList(0, pairsCnt),
-            rel.rightCollation().getFieldCollations().subList(0, pairsCnt),
-            info.hasMatchingNulls()
+            leftCollations.subList(0, lastCollField + 1),
+            rightCollations.subList(0, lastCollField + 1),
+            collsAllowNullsBuilder.build()
         );
 
         Node<Row> node = MergeJoinNode.create(ctx, outType, leftType, rightType, joinType, comp, hasExchange(rel));
@@ -377,7 +401,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         ImmutableBitSet requiredColumns = rel.requiredColumns();
         List<SearchBounds> searchBounds = rel.searchBounds();
 
-        RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
+        RelDataType rowType = rel.getDataSourceRowType();
 
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rowType);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);
@@ -555,9 +579,8 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         ImmutableBitSet requiredColumns = rel.requiredColumns();
 
         IgniteTable tbl = rel.getTable().unwrap(IgniteTable.class);
-        IgniteTypeFactory typeFactory = ctx.getTypeFactory();
 
-        RelDataType rowType = tbl.getRowType(typeFactory, requiredColumns);
+        RelDataType rowType = rel.getDataSourceRowType();
 
         Predicate<Row> filters = condition == null ? null : expressionFactory.predicate(condition, rowType);
         Function<Row, Row> prj = projects == null ? null : expressionFactory.project(projects, rowType);

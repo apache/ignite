@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.codegen;
 
-import java.nio.ByteBuffer;
+import org.apache.ignite.internal.ChildMessage;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageSerializer;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.internal.ChildMessage;
 
 /**
  * This class is generated automatically.
@@ -31,10 +30,8 @@ import org.apache.ignite.internal.ChildMessage;
  */
 public class ChildMessageSerializer implements MessageSerializer {
     /** */
-    @Override public boolean writeTo(Message m, ByteBuffer buf, MessageWriter writer) {
+    @Override public boolean writeTo(Message m, MessageWriter writer) {
         ChildMessage msg = (ChildMessage)m;
-
-        writer.setBuffer(buf);
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(msg.directType()))
@@ -55,17 +52,14 @@ public class ChildMessageSerializer implements MessageSerializer {
                     return false;
 
                 writer.incrementState();
-
         }
 
         return true;
     }
 
     /** */
-    @Override public boolean readFrom(Message m, ByteBuffer buf, MessageReader reader) {
+    @Override public boolean readFrom(Message m, MessageReader reader) {
         ChildMessage msg = (ChildMessage)m;
-
-        reader.setBuffer(buf);
 
         switch (reader.state()) {
             case 0:
@@ -83,7 +77,6 @@ public class ChildMessageSerializer implements MessageSerializer {
                     return false;
 
                 reader.incrementState();
-
         }
 
         return true;

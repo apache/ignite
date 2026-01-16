@@ -30,6 +30,8 @@ import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Test;
 
 import static com.google.testing.compile.CompilationSubject.assertThat;
@@ -64,6 +66,20 @@ public class MessageProcessorTest {
         assertThat(compilation)
             .generatedSourceFile("org.apache.ignite.internal.codegen.TestCollectionsMessageSerializer")
             .hasSourceEquivalentTo(javaFile("TestCollectionsMessageSerializer.java"));
+    }
+
+    /** */
+    @Test
+    public void testMapMessage() {
+        Compilation compilation = compile("TestMapMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertEquals(1, compilation.generatedSourceFiles().size());
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.codegen.TestMapMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("TestMapMessageSerializer.java"));
     }
 
     /** */
@@ -145,6 +161,111 @@ public class MessageProcessorTest {
         Compilation compilation = compile("PojoFieldMessage.java");
 
         assertThat(compilation).failed();
+    }
+
+    /** */
+    @Test
+    public void testExceptionFailed() {
+        Compilation compilation = compile("ExceptionMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("You should use ErrorMessage for serialization of throwables.");
+    }
+
+    /**
+     * Positive test for default enum mapper for enum fields.
+     */
+    @Test
+    public void testDefaultMapperEnumFields() {
+        Compilation compilation = compile("DefaultMapperEnumFieldsMessage.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.codegen.DefaultMapperEnumFieldsMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("DefaultMapperEnumFieldsMessageSerializer.java"));
+    }
+
+    /**
+     * Negative test for CustomMapper annotation verifying an error is thrown by codegeneration tool if
+     * the annotation is used with a field of a primitive type.
+     */
+    @Test
+    public void testCustomMapperCannotBeUsedOnPrimitiveField() {
+        Compilation compilation = compile("CustomEnumMapperOnPrimitiveFieldMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("Annotation @CustomMapper must only be used for enum fields.");
+    }
+
+    /**
+     * Negative test for CustomMapper annotation verifying an error is thrown by codegeneration tool if
+     * the annotation is used with a field of an array type.
+     */
+    @Test
+    public void testCustomMapperCannotBeUsedOnArrayField() {
+        Compilation compilation = compile("CustomEnumMapperOnArrayFieldMessage.java");
+
+        assertThat(compilation).failed();
+        assertThat(compilation).hadErrorContaining("Annotation @CustomMapper must only be used for enum fields.");
+    }
+
+    /**
+     * Positive test for custom EnumMapper implementation for enum field: codegeneration tool
+     * generates a serializer using provided EnumMapper implementation.
+     * Generated serializer compiles successfully.
+     */
+    @Test
+    public void testCustomMapperEnumFieldsMessage() {
+        Compilation compilation = compile("CustomMapperEnumFieldsMessage.java", "TransactionIsolationEnumMapper.java");
+
+        assertThat(compilation).succeeded();
+
+        assertThat(compilation)
+            .generatedSourceFile("org.apache.ignite.internal.codegen.CustomMapperEnumFieldsMessageSerializer")
+            .hasSourceEquivalentTo(javaFile("CustomMapperEnumFieldsMessageSerializer.java"));
+    }
+
+    /**
+     * Negative test for a coflict situation when two enum mappers are used for the same enum in different messages.
+     */
+    @Test
+    public void testDifferentMappersForTheSameEnumAreProhibited() {
+        Compilation compilation = compile("DefaultMapperEnumFieldsMessage.java",
+            "CustomMapperEnumFieldsMessage.java",
+            "TransactionIsolationEnumMapper.java");
+
+        assertThat(compilation).failed();
+
+        String errMsg = "Enum " + TransactionIsolation.class.getName() + " is declared with different mappers: " +
+            DefaultEnumMapper.class.getName() + " in org.apache.ignite.internal.DefaultMapperEnumFieldsMessage" +
+            " and org.apache.ignite.internal.TransactionIsolationEnumMapper in org.apache.ignite.internal.CustomMapperEnumFieldsMessage.";
+
+        assertThat(compilation).hadErrorContaining(errMsg);
+    }
+
+    /**
+     * Positive test verifies that codegeneration is successful when two messages use DefaultEnumMapper for the same enum type.
+     */
+    @Test
+    public void testDefaultMapperForSameEnumTypeInDifferentMessagesIsAllowed() {
+        Compilation compilation = compile("DefaultMapperEnumFieldsMessage.java",
+            "DefaultMapperEnumFieldsSecondMessage.java");
+
+        assertThat(compilation).succeeded();
+    }
+
+    /**
+     * Positive test verifies that codegeneration is successful when two messages use
+     * the same custom EnumMapper for the same enum type.
+     */
+    @Test
+    public void testSameCustomMapperForSameEnumTypeInDifferentMessagesIsAllowed() {
+        Compilation compilation = compile("CustomMapperEnumFieldsMessage.java",
+            "CustomMapperEnumFieldsSecondMessage.java",
+            "TransactionIsolationEnumMapper.java");
+
+        assertThat(compilation).succeeded();
     }
 
     /** */

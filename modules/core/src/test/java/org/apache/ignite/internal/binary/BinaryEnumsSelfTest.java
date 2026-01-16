@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.Marshaller;
@@ -227,8 +226,7 @@ public class BinaryEnumsSelfTest extends AbstractBinaryArraysTest {
     public void testInstanceFromBytes() throws Exception {
         startUp(true);
 
-        BinaryContext binCtx =
-            ((CacheObjectBinaryProcessorImpl)((IgniteKernal)node1).context().cacheObjects()).binaryContext();
+        BinaryContext binCtx = ((IgniteEx)node1).context().cacheObjects().binaryContext();
 
         int ord = EnumType.ONE.ordinal();
 
@@ -256,6 +254,7 @@ public class BinaryEnumsSelfTest extends AbstractBinaryArraysTest {
 
         BinaryEnumObjectImpl binEnum = new BinaryEnumObjectImpl(binCtx, bytes);
 
+        assertEquals(bytes.length, srcBinEnum.size());
         assertEquals(srcBinEnum.size(), binEnum.size());
         assertEquals(clsName, binEnum.enumClassName());
         assertEquals(typeId, binEnum.typeId());

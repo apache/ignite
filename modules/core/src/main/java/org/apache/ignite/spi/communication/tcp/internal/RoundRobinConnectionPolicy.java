@@ -17,24 +17,32 @@
 
 package org.apache.ignite.spi.communication.tcp.internal;
 
-import org.apache.ignite.internal.util.typedef.internal.U;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Round robin connection policy.
  */
 public class RoundRobinConnectionPolicy implements ConnectionPolicy {
-    /** Config. */
-    private final TcpCommunicationConfiguration cfg;
+    /** Maximal connections number. */
+    private final int cnt;
+
+    /** */
+    private final AtomicInteger counter = new AtomicInteger();
 
     /**
-     * @param cfg Config.
+     * @param cnt Maximal connections number.
      */
-    public RoundRobinConnectionPolicy(TcpCommunicationConfiguration cfg) {
-        this.cfg = cfg;
+    public RoundRobinConnectionPolicy(int cnt) {
+        this.cnt = cnt;
     }
 
     /** {@inheritDoc} */
     @Override public int connectionIndex() {
-        return (int)(U.safeAbs(Thread.currentThread().getId()) % cfg.connectionsPerNode());
+        int idx = counter.getAndIncrement() % cnt;
+
+        if (idx < 0)
+            idx += cnt;
+
+        return idx;
     }
 }

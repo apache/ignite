@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 /**
@@ -130,7 +131,10 @@ public class DelayedOwningDuringExchangeTest extends GridCommonAbstractTest {
                 wait(fut, 0);
             }
 
-            @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
+            @Override public void onDoneBeforeTopologyUnlock(
+                GridDhtPartitionsExchangeFuture fut,
+                @Nullable Throwable err
+            ) {
                 wait(fut, 1);
             }
 

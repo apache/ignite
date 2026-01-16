@@ -65,7 +65,8 @@ import org.apache.ignite.internal.processors.query.calcite.rule.SetOpConverterRu
 import org.apache.ignite.internal.processors.query.calcite.rule.SortAggregateConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.SortConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.TableFunctionScanConverterRule;
-import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.TableModifyDistributedConverterRule;
+import org.apache.ignite.internal.processors.query.calcite.rule.TableModifySingleNodeConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UncollectConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.UnionConverterRule;
 import org.apache.ignite.internal.processors.query.calcite.rule.ValuesConverterRule;
@@ -294,7 +295,8 @@ public enum PlannerPhase {
                     SetOpConverterRule.MAP_REDUCE_INTERSECT,
                     ProjectConverterRule.INSTANCE,
                     FilterConverterRule.INSTANCE,
-                    TableModifyConverterRule.INSTANCE,
+                    TableModifySingleNodeConverterRule.INSTANCE,
+                    TableModifyDistributedConverterRule.INSTANCE,
                     UnionConverterRule.INSTANCE,
                     SortConverterRule.INSTANCE,
                     TableFunctionScanConverterRule.INSTANCE

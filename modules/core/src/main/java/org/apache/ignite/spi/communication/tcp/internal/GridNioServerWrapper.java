@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.net.ssl.SSLEngine;
@@ -50,6 +51,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.codegen.HandshakeWaitMessageSerializer;
+import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.GridManager;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.processors.metric.GridMetricManager;
@@ -106,6 +109,7 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONN_IDX_META;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.CONSISTENT_ID_META;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.HANDSHAKE_WAIT_MSG_TYPE;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.handshakeTimeoutException;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.isRecoverableException;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.nodeAddresses;
@@ -129,6 +133,9 @@ public class GridNioServerWrapper {
 
     /** Default delay between reconnects attempts in case of temporary network issues. */
     private static final int DFLT_RECONNECT_DELAY = 50;
+
+    /** Minimum frequency (in milliseconds) of high message queue size warning. */
+    private static final long MIN_MSG_QUEUE_SIZE_WARN_FREQUENCY = 30_000L;
 
     /** Channel meta used for establishing channel connections. */
     static final int CHANNEL_FUT_META = GridNioSessionMetaKey.nextUniqueKey();
@@ -202,8 +209,12 @@ public class GridNioServerWrapper {
     private volatile ThrowableSupplier<SocketChannel, IOException> socketChannelFactory = SocketChannel::open;
 
     /** Enable forcible node kill. */
-    private boolean forcibleNodeKillEnabled = IgniteSystemProperties
+    private final boolean forcibleNodeKillEnabled = IgniteSystemProperties
         .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
+
+    /** Message queue size to print warning. */
+    private final int msgQueueWarningSize = IgniteSystemProperties.getInteger(
+        IgniteSystemProperties.IGNITE_TCP_COMM_MSG_QUEUE_WARN_SIZE, 0);
 
     /** NIO server. */
     private GridNioServer<Message> nioSrv;
@@ -219,6 +230,9 @@ public class GridNioServerWrapper {
 
     /** Executor for establishing a connection to a node. */
     private final TcpHandshakeExecutor tcpHandshakeExecutor;
+
+    /** Timestamp of the last high message queue size warning. */
+    private final AtomicLong lastMsqQueueSizeWarningTs = new AtomicLong();
 
     /**
      * @param log Logger.
@@ -817,6 +831,10 @@ public class GridNioServerWrapper {
                     }
 
                     @Override public MessageSerializer serializer(short type) {
+                        // Enable sending wait message for a communication peer while context isn't initialized.
+                        if (impl == null && type == HANDSHAKE_WAIT_MSG_TYPE)
+                            return new HandshakeWaitMessageSerializer();
+
                         return get().serializer(type);
                     }
 
@@ -848,9 +866,7 @@ public class GridNioServerWrapper {
 
                         assert formatter != null;
 
-                        ConnectionKey key = ses.meta(CONN_IDX_META);
-
-                        return key != null ? formatter.reader(key.nodeId(), msgFactory) : null;
+                        return formatter.reader(msgFactory);
                     }
                 };
 
@@ -860,6 +876,10 @@ public class GridNioServerWrapper {
                     private MessageFormatter formatter;
 
                     @Override public MessageWriter writer(GridNioSession ses) throws IgniteCheckedException {
+                        // Enable sending wait message for a communication peer while context isn't initialized.
+                        if (!stateProvider.spiContextAvailable())
+                            return new DirectMessageWriter(msgFactory);
+
                         final IgniteSpiContext ctx = stateProvider.getSpiContextWithoutInitialLatch();
 
                         if (formatter == null || context != ctx) {
@@ -870,9 +890,7 @@ public class GridNioServerWrapper {
 
                         assert formatter != null;
 
-                        ConnectionKey key = ses.meta(CONN_IDX_META);
-
-                        return key != null ? formatter.writer(key.nodeId(), msgFactory) : null;
+                        return formatter.writer(msgFactory);
                     }
                 };
 
@@ -885,7 +903,9 @@ public class GridNioServerWrapper {
                 boolean clientMode = Boolean.TRUE.equals(igniteCfg.isClientMode());
 
                 IgniteBiInClosure<GridNioSession, Integer> queueSizeMonitor =
-                    !clientMode && cfg.slowClientQueueLimit() > 0 ? this::checkClientQueueSize : null;
+                    !clientMode && (cfg.slowClientQueueLimit() > 0 || msgQueueWarningSize > 0)
+                        ? msgQueueWarningSize > 0 ? this::checkNodeQueueSize : this::checkClientQueueSize
+                        : null;
 
                 List<GridNioFilter> filters = new ArrayList<>();
 
@@ -933,7 +953,8 @@ public class GridNioServerWrapper {
                     .skipRecoveryPredicate(skipRecoveryPred)
                     .messageQueueSizeListener(queueSizeMonitor)
                     .tracing(tracing)
-                    .readWriteSelectorsAssign(cfg.usePairedConnections());
+                    .readWriteSelectorsAssign(cfg.usePairedConnections())
+                    .messageFactory(msgFactory);
 
                 if (metricMgr != null) {
                     builder.workerListener(workersRegistry)
@@ -1199,7 +1220,7 @@ public class GridNioServerWrapper {
         handshakeTimeoutExecutorService.schedule(timeoutObj, timeout, TimeUnit.MILLISECONDS);
 
         try {
-            return tcpHandshakeExecutor.tcpHandshake(ch, rmtNodeId, sslMeta, msg);
+            return tcpHandshakeExecutor.tcpHandshake(ch, rmtNodeId, sslMeta, msg, stateProvider.getSpiContext());
         }
         finally {
             if (!timeoutObj.cancel())
@@ -1248,6 +1269,31 @@ public class GridNioServerWrapper {
                 }
             }
         }
+    }
+
+    /**
+     * Checks node message queue size and produce warning if message queue size exceeds the configured threshold.
+     *
+     * @param ses Node communication session.
+     * @param msgQueueSize Message queue size.
+     */
+    private void checkNodeQueueSize(GridNioSession ses, int msgQueueSize) {
+        if (msgQueueWarningSize > 0 && msgQueueSize > msgQueueWarningSize) {
+            long lastWarnTs = lastMsqQueueSizeWarningTs.get();
+
+            if (U.currentTimeMillis() > lastWarnTs + MIN_MSG_QUEUE_SIZE_WARN_FREQUENCY) {
+                if (lastMsqQueueSizeWarningTs.compareAndSet(lastWarnTs, U.currentTimeMillis())) {
+                    ConnectionKey id = ses.meta(CONN_IDX_META);
+                    if (id != null) {
+                        log.warning("Outbound message queue size for node exceeded configured " +
+                            "messageQueueWarningSize value, it may be caused by node failure or a network problems " +
+                            "[node=" + id.nodeId() + ", msqQueueSize=" + msgQueueSize + ']');
+                    }
+                }
+            }
+        }
+
+        checkClientQueueSize(ses, msgQueueSize);
     }
 
     /**

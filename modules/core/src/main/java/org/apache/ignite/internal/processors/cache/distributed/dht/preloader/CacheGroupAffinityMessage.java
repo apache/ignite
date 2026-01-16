@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -35,9 +33,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -45,15 +40,15 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CacheGroupAffinityMessage implements Message {
     /** */
-    @GridDirectCollection(GridLongList.class)
+    @Order(value = 0, method = "assignments")
     private List<GridLongList> assigns;
 
     /** */
-    @GridDirectCollection(GridLongList.class)
+    @Order(value = 1, method = "idealAssignments")
     private List<GridLongList> idealAssigns;
 
     /** */
-    @GridDirectMap(keyType = Integer.class, valueType = GridLongList.class)
+    @Order(value = 2, method = "assignmentsDiff")
     private Map<Integer, GridLongList> assignsDiff;
 
     /**
@@ -240,89 +235,50 @@ public class CacheGroupAffinityMessage implements Message {
     }
 
     /**
+     * @return Assignment.
+     */
+    public List<GridLongList> assignments() {
+        return assigns;
+    }
+
+    /**
+     * @param assigns Assignment.
+     */
+    public void assignments(List<GridLongList> assigns) {
+        this.assigns = assigns;
+    }
+
+    /**
+     * @return Ideal assignment.
+     */
+    public List<GridLongList> idealAssignments() {
+        return idealAssigns;
+    }
+
+    /**
+     * @param idealAssigns Ideal assignment.
+     */
+    public void idealAssignments(List<GridLongList> idealAssigns) {
+        this.idealAssigns = idealAssigns;
+    }
+
+    /**
      * @return Difference with ideal affinity assignment.
      */
     public Map<Integer, GridLongList> assignmentsDiff() {
         return assignsDiff;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeCollection(assigns, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeMap(assignsDiff, MessageCollectionItemType.INT, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeCollection(idealAssigns, MessageCollectionItemType.MSG))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                assigns = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                assignsDiff = reader.readMap(MessageCollectionItemType.INT, MessageCollectionItemType.MSG, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                idealAssigns = reader.readCollection(MessageCollectionItemType.MSG);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
+    /**
+     * @param assignsDiff Difference with ideal affinity assignment.
+     */
+    public void assignmentsDiff(Map<Integer, GridLongList> assignsDiff) {
+        this.assignsDiff = assignsDiff;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
         return 128;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 
     /** {@inheritDoc} */

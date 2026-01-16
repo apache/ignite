@@ -46,7 +46,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SCAN;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
-import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SPI;
 
 /**
  * Query request.
@@ -362,8 +361,8 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         @Nullable Collection<KeyCacheObject> skipKeys
     ) {
         assert type != null || fields;
-        assert clause != null || (type == SCAN || type == SET || type == SPI || type == INDEX);
-        assert clsName != null || fields || type == SCAN || type == SET || type == SPI;
+        assert clause != null || (type == SCAN || type == SET || type == INDEX);
+        assert clsName != null || fields || type == SCAN || type == SET;
 
         this.cacheId = cacheId;
         this.id = id;
@@ -819,7 +818,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
                 writer.incrementState();
 
             case 26:
-                if (!writer.writeCollection(skipKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeCollection(skipKeys, MessageCollectionItemType.KEY_CACHE_OBJECT))
                     return false;
 
                 writer.incrementState();
@@ -1017,7 +1016,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
                 reader.incrementState();
 
             case 26:
-                skipKeys = reader.readCollection(MessageCollectionItemType.MSG);
+                skipKeys = reader.readCollection(MessageCollectionItemType.KEY_CACHE_OBJECT);
 
                 if (!reader.isLastRead())
                     return false;

@@ -23,9 +23,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.ignite.IgniteCheckedException;
@@ -36,6 +40,8 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteTooManyOpenFilesException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.metric.GridMetricManager;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
@@ -54,6 +60,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.util.Objects.nonNull;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.DISABLED_CLIENT_PORT;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.nodeAddresses;
 import static org.apache.ignite.spi.communication.tcp.internal.CommunicationTcpUtils.usePairedConnections;
@@ -65,8 +72,48 @@ public class ConnectionClientPool {
     /** Time threshold to log too long connection establish. */
     private static final int CONNECTION_ESTABLISH_THRESHOLD_MS = 100;
 
+    /** */
+    public static final long METRICS_UPDATE_THRESHOLD = U.millisToNanos(200);
+
+    /** */
+    public static final String SHARED_METRICS_REGISTRY_NAME = metricName(TcpCommunicationSpi.COMMUNICATION_METRICS_GROUP_NAME,
+        "connectionPool");
+
+    /** */
+    public static final String METRIC_NAME_POOL_SIZE = "maxConnectionsCnt";
+
+    /** */
+    public static final String METRIC_NAME_PAIRED_CONNS = "isPaired";
+
+    /** */
+    public static final String METRIC_NAME_ASYNC_CONNS = "isAsync";
+
+    /** It is handy for a user to see consistent id of a problematic node. */
+    public static final String METRIC_NAME_CONSIST_ID = "consistentId";
+
+    /** */
+    public static final String METRIC_NAME_CUR_CNT = "currentConnectionsCnt";
+
+    /** */
+    public static final String METRIC_NAME_MSG_QUEUE_SIZE = "outboundMessagesQueueSize";
+
+    /** */
+    public static final String METRIC_NAME_REMOVED_CNT = "removedConnectionsCnt";
+
+    /** */
+    public static final String METRIC_NAME_MAX_NET_IDLE_TIME = "maxNetworkIdleTime";
+
+    /** */
+    public static final String METRIC_NAME_AVG_LIFE_TIME = "avgConnectionLifetime";
+
+    /** */
+    public static final String METRIC_NAME_ACQUIRING_THREADS_CNT = "acquiringThreadsCnt";
+
     /** Clients. */
     private final ConcurrentMap<UUID, GridCommunicationClient[]> clients = GridConcurrentFactory.newMap();
+
+    /** Metrics for each remote node. */
+    private final Map<UUID, NodeMetrics> metrics;
 
     /** Config. */
     private final TcpCommunicationConfiguration cfg;
@@ -116,6 +163,12 @@ public class ConnectionClientPool {
     private boolean forcibleNodeKillEnabled = IgniteSystemProperties
         .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
 
+    /** */
+    private final GridMetricManager metricsMgr;
+
+    /** */
+    private volatile AtomicBoolean asyncMetric;
+
     /**
      * @param cfg Config.
      * @param attrs Attributes.
@@ -129,6 +182,7 @@ public class ConnectionClientPool {
      * @param clusterStateProvider Cluster state provider.
      * @param nioSrvWrapper Nio server wrapper.
      * @param igniteInstanceName Ignite instance name.
+     * @param metricsMgr Metrics manager. If {@code null}, no metrics are created.
      */
     public ConnectionClientPool(
         TcpCommunicationConfiguration cfg,
@@ -142,23 +196,46 @@ public class ConnectionClientPool {
         TcpCommunicationSpi tcpCommSpi,
         ClusterStateProvider clusterStateProvider,
         GridNioServerWrapper nioSrvWrapper,
-        String igniteInstanceName
+        String igniteInstanceName,
+        GridMetricManager metricsMgr
     ) {
         this.cfg = cfg;
         this.attrs = attrs;
         this.log = log;
         this.metricsLsnr = metricsLsnr;
         this.locNodeSupplier = locNodeSupplier;
-        this.nodeGetter = nodeGetter;
         this.msgFormatterSupplier = msgFormatterSupplier;
         this.registry = registry;
         this.tcpCommSpi = tcpCommSpi;
         this.clusterStateProvider = clusterStateProvider;
         this.nioSrvWrapper = nioSrvWrapper;
+        this.metricsMgr = metricsMgr;
+
+        this.nodeGetter = new Function<>() {
+            @Override public ClusterNode apply(UUID nodeId) {
+                ClusterNode node = nodeGetter.apply(nodeId);
+
+                if (node == null)
+                    removeNodeMetrics(nodeId);
+
+                return node;
+            }
+        };
 
         this.handshakeTimeoutExecutorService = newSingleThreadScheduledExecutor(
             new IgniteThreadFactory(igniteInstanceName, "handshake-timeout-client")
         );
+
+        if (metricsMgr != null) {
+            MetricRegistryImpl mreg = metricsMgr.registry(SHARED_METRICS_REGISTRY_NAME);
+
+            mreg.register(METRIC_NAME_POOL_SIZE, () -> cfg.connectionsPerNode(), "Maximal connections number to a remote node.");
+            mreg.register(METRIC_NAME_PAIRED_CONNS, () -> cfg.usePairedConnections(), "Paired connections flag.");
+
+            metrics = new ConcurrentHashMap<>(64, 0.75f, Math.max(16, Runtime.getRuntime().availableProcessors()));
+        }
+        else
+            metrics = null;
     }
 
     /**
@@ -166,6 +243,10 @@ public class ConnectionClientPool {
      */
     public void stop() {
         this.stopping = true;
+
+        metricsMgr.remove(SHARED_METRICS_REGISTRY_NAME);
+
+        clients.keySet().forEach(this::removeNodeMetrics);
 
         for (GridFutureAdapter<GridCommunicationClient> fut : clientFuts.values()) {
             if (fut instanceof ConnectionRequestFuture) {
@@ -186,155 +267,188 @@ public class ConnectionClientPool {
      * @throws IgniteCheckedException Thrown if any exception occurs.
      */
     public GridCommunicationClient reserveClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
-        assert node != null;
-        assert (connIdx >= 0 && connIdx < cfg.connectionsPerNode())
-            || !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection()))
-            || GridNioServerWrapper.isChannelConnIdx(connIdx) : "Wrong communication connection index: " + connIdx;
+        NodeMetrics nodeMetrics = metrics.get(node.id());
 
-        if (locNodeSupplier.get().isClient()) {
-            if (node.isClient()) {
-                if (DISABLED_CLIENT_PORT.equals(node.attribute(attrs.port())))
-                    throw new IgniteSpiException("Cannot send message to the client node with no server socket opened.");
+        if (nodeMetrics != null)
+            nodeMetrics.acquiringThreadsCnt.incrementAndGet();
+
+        try {
+            assert node != null;
+            assert (connIdx >= 0 && connIdx < cfg.connectionsPerNode())
+                || !(cfg.usePairedConnections() && usePairedConnections(node, attrs.pairedConnection()))
+                || GridNioServerWrapper.isChannelConnIdx(connIdx) : "Wrong communication connection index: " + connIdx;
+
+            if (locNodeSupplier.get().isClient()) {
+                if (node.isClient()) {
+                    if (DISABLED_CLIENT_PORT.equals(node.attribute(attrs.port())))
+                        throw new IgniteSpiException("Cannot send message to the client node with no server socket opened.");
+                }
             }
-        }
 
-        UUID nodeId = node.id();
+            UUID nodeId = node.id();
 
-        if (log.isDebugEnabled())
-            log.debug("The node client is going to reserve a connection [nodeId=" + node.id() + ", connIdx=" + connIdx + "]");
+            if (log.isDebugEnabled())
+                log.debug("The node client is going to reserve a connection [nodeId=" + node.id() + ", connIdx=" + connIdx + "]");
 
-        while (true) {
-            GridCommunicationClient[] curClients = clients.get(nodeId);
+            while (true) {
+                GridCommunicationClient[] curClients = clients.get(nodeId);
 
-            GridCommunicationClient client = curClients != null && connIdx < curClients.length ?
-                curClients[connIdx] : null;
-
-            if (client == null) {
-                if (stopping)
-                    throw new IgniteSpiException("Node is stopping.");
-
-                // Do not allow concurrent connects.
-                GridFutureAdapter<GridCommunicationClient> fut = new ConnectFuture();
-
-                ConnectionKey connKey = new ConnectionKey(nodeId, connIdx, -1);
-
-                GridFutureAdapter<GridCommunicationClient> oldFut = clientFuts.putIfAbsent(connKey, fut);
-
-                if (oldFut == null) {
-                    try {
-                        GridCommunicationClient[] curClients0 = clients.get(nodeId);
-
-                        GridCommunicationClient client0 = curClients0 != null && connIdx < curClients0.length ?
-                            curClients0[connIdx] : null;
-
-                        if (client0 == null) {
-                            client0 = createCommunicationClient(node, connIdx);
-
-                            if (client0 != null) {
-                                addNodeClient(node, connIdx, client0);
-
-                                if (client0 instanceof GridTcpNioCommunicationClient) {
-                                    GridTcpNioCommunicationClient tcpClient = ((GridTcpNioCommunicationClient)client0);
-
-                                    if (tcpClient.session().closeTime() > 0 && removeNodeClient(nodeId, client0)) {
-                                        if (log.isDebugEnabled()) {
-                                            log.debug("Session was closed after client creation, will retry " +
-                                                "[node=" + node + ", client=" + client0 + ']');
-                                        }
-
-                                        client0 = null;
-                                    }
-                                }
-                            }
-                            else {
-                                U.sleep(200);
-
-                                if (nodeGetter.apply(node.id()) == null)
-                                    throw new ClusterTopologyCheckedException("Failed to send message " +
-                                        "(node left topology): " + node);
-                            }
-                        }
-
-                        fut.onDone(client0);
-                    }
-                    catch (NodeUnreachableException e) {
-                        log.warning(e.getMessage());
-
-                        fut = handleUnreachableNodeException(node, connIdx, fut, e);
-                    }
-                    catch (Throwable e) {
-                        if (e instanceof NodeUnreachableException)
-                            throw e;
-
-                        fut.onDone(e);
-
-                        if (e instanceof IgniteTooManyOpenFilesException)
-                            throw e;
-
-                        if (e instanceof Error)
-                            throw (Error)e;
-                    }
-                    finally {
-                        clientFuts.remove(connKey, fut);
-                    }
-                }
-                else
-                    fut = oldFut;
-
-                long clientReserveWaitTimeout = registry != null ? registry.getSystemWorkerBlockedTimeout() / 3
-                    : cfg.connectionTimeout() / 3;
-
-                long currTimeout = System.currentTimeMillis();
-
-                // This cycle will eventually quit when future is completed by concurrent thread reserving client.
-                while (true) {
-                    try {
-                        client = fut.get(clientReserveWaitTimeout, TimeUnit.MILLISECONDS);
-
-                        break;
-                    }
-                    catch (IgniteFutureTimeoutCheckedException ignored) {
-                        currTimeout += clientReserveWaitTimeout;
-
-                        if (log.isDebugEnabled()) {
-                            log.debug(
-                                "Still waiting for reestablishing connection to node " +
-                                    "[nodeId=" + node.id() + ", waitingTime=" + currTimeout + "ms]"
-                            );
-                        }
-
-                        if (registry != null) {
-                            GridWorker wrkr = registry.worker(Thread.currentThread().getName());
-
-                            if (wrkr != null)
-                                wrkr.updateHeartbeat();
-                        }
-                    }
-                }
+                GridCommunicationClient client = curClients != null && connIdx < curClients.length ?
+                    curClients[connIdx] : null;
 
                 if (client == null) {
-                    if (clusterStateProvider.isLocalNodeDisconnected())
-                        throw new IgniteCheckedException("Unable to create TCP client due to local node disconnecting.");
+                    if (stopping)
+                        throw new IgniteSpiException("Node is stopping.");
+
+                    // Do not allow concurrent connects.
+                    GridFutureAdapter<GridCommunicationClient> fut = new ConnectFuture();
+
+                    ConnectionKey connKey = new ConnectionKey(nodeId, connIdx, -1);
+
+                    GridFutureAdapter<GridCommunicationClient> oldFut = clientFuts.putIfAbsent(connKey, fut);
+
+                    if (oldFut == null) {
+                        try {
+                            GridCommunicationClient[] curClients0 = clients.get(nodeId);
+
+                            GridCommunicationClient client0 = curClients0 != null && connIdx < curClients0.length ?
+                                curClients0[connIdx] : null;
+
+                            if (client0 == null) {
+                                client0 = createCommunicationClient(node, connIdx);
+
+                                if (client0 != null) {
+                                    addNodeClient(node, connIdx, client0);
+
+                                    if (client0 instanceof GridTcpNioCommunicationClient) {
+                                        GridTcpNioCommunicationClient tcpClient = ((GridTcpNioCommunicationClient)client0);
+
+                                        if (tcpClient.session().closeTime() > 0 && removeNodeClient(nodeId, client0)) {
+                                            if (log.isDebugEnabled()) {
+                                                log.debug("Session was closed after client creation, will retry " +
+                                                    "[node=" + node + ", client=" + client0 + ']');
+                                            }
+
+                                            client0 = null;
+                                        }
+                                    }
+                                }
+                                else {
+                                    U.sleep(200);
+
+                                    if (nodeGetter.apply(node.id()) == null)
+                                        throw new ClusterTopologyCheckedException("Failed to send message " +
+                                            "(node left topology): " + node);
+                                }
+                            }
+
+                            fut.onDone(client0);
+                        }
+                        catch (NodeUnreachableException e) {
+                            log.warning(e.getMessage());
+
+                            fut = handleUnreachableNodeException(node, connIdx, fut, e);
+                        }
+                        catch (Throwable e) {
+                            if (e instanceof NodeUnreachableException)
+                                throw e;
+
+                            fut.onDone(e);
+
+                            if (e instanceof IgniteTooManyOpenFilesException)
+                                throw e;
+
+                            if (e instanceof Error)
+                                throw (Error)e;
+                        }
+                        finally {
+                            clientFuts.remove(connKey, fut);
+                        }
+                    }
                     else
-                        continue;
+                        fut = oldFut;
+
+                    long clientReserveWaitTimeout = registry != null ? registry.getSystemWorkerBlockedTimeout() / 3
+                        : cfg.connectionTimeout() / 3;
+
+                    long currTimeout = System.currentTimeMillis();
+
+                    // This cycle will eventually quit when future is completed by concurrent thread reserving client.
+                    while (true) {
+                        try {
+                            client = fut.get(clientReserveWaitTimeout, TimeUnit.MILLISECONDS);
+
+                            break;
+                        }
+                        catch (IgniteFutureTimeoutCheckedException ignored) {
+                            currTimeout += clientReserveWaitTimeout;
+
+                            if (log.isDebugEnabled()) {
+                                log.debug(
+                                    "Still waiting for reestablishing connection to node " +
+                                        "[nodeId=" + node.id() + ", waitingTime=" + currTimeout + "ms]"
+                                );
+                            }
+
+                            if (registry != null) {
+                                GridWorker wrkr = registry.worker(Thread.currentThread().getName());
+
+                                if (wrkr != null)
+                                    wrkr.updateHeartbeat();
+                            }
+                        }
+                    }
+
+                    if (client == null) {
+                        if (clusterStateProvider.isLocalNodeDisconnected())
+                            throw new IgniteCheckedException("Unable to create TCP client due to local node disconnecting.");
+                        else
+                            continue;
+                    }
+
+                    if (nodeGetter.apply(nodeId) == null) {
+                        if (removeNodeClient(nodeId, client))
+                            client.forceClose();
+
+                        throw new IgniteSpiException("Destination node is not in topology: " + node.id());
+                    }
                 }
 
-                if (nodeGetter.apply(nodeId) == null) {
-                    if (removeNodeClient(nodeId, client))
-                        client.forceClose();
+                assert connIdx == client.connectionIndex() : client;
 
-                    throw new IgniteSpiException("Destination node is not in topology: " + node.id());
+                if (client.reserve()) {
+                    updateClientAcquiredMetric(client);
+
+                    return client;
+                }
+                else
+                    // Client has just been closed by idle worker. Help it and try again.
+                    removeNodeClient(nodeId, client);
+            }
+        }
+        finally {
+            if (nodeMetrics != null)
+                nodeMetrics.acquiringThreadsCnt.decrementAndGet();
+        }
+    }
+
+    /** */
+    private void updateClientAcquiredMetric(GridCommunicationClient client) {
+        if (asyncMetric == null) {
+            synchronized (metrics) {
+                if (asyncMetric == null) {
+                    MetricRegistryImpl mreg = metricsMgr.registry(SHARED_METRICS_REGISTRY_NAME);
+
+                    // We assume that all the clients have the same async flag.
+                    asyncMetric = new AtomicBoolean(client.async());
+
+                    mreg.register(METRIC_NAME_ASYNC_CONNS, () -> asyncMetric.get(), "Asynchronous flag. If TRUE, " +
+                        "connections put data in a queue (with some preprocessing) instead of immediate sending.");
                 }
             }
-
-            assert connIdx == client.connectionIndex() : client;
-
-            if (client.reserve())
-                return client;
-            else
-                // Client has just been closed by idle worker. Help it and try again.
-                removeNodeClient(nodeId, client);
         }
+        else
+            assert client.async() == asyncMetric.get();
     }
 
     /**
@@ -514,7 +628,18 @@ public class ConnectionClientPool {
                 newClients = new GridCommunicationClient[cfg.connectionsPerNode()];
                 newClients[connIdx] = addClient;
 
-                if (clients.putIfAbsent(node.id(), newClients) == null)
+                curClients = clients.compute(node.id(), (nodeId0, clients0) -> {
+                    if (clients0 == null) {
+                        // Syncs metrics creation on this map.
+                        createNodeMetrics(node);
+
+                        return newClients;
+                    }
+
+                    return clients0;
+                });
+
+                if (curClients != null)
                     break;
             }
             else {
@@ -530,15 +655,108 @@ public class ConnectionClientPool {
         }
     }
 
+    /** */
+    private void createNodeMetrics(ClusterNode node) {
+        MetricRegistryImpl mreg = metricsMgr.registry(nodeMetricsRegName(node.id()));
+
+        assert !mreg.iterator().hasNext() : "Node connection pools metrics aren't empty.";
+
+        mreg.register(METRIC_NAME_CONSIST_ID, () -> node.consistentId().toString(), String.class,
+            "Consistent id of the remote node as string.");
+
+        mreg.register(METRIC_NAME_CUR_CNT, () -> updatedNodeMetrics(node.id()).connsCnt,
+            "Number of current connections to the remote node.");
+
+        mreg.register(METRIC_NAME_MSG_QUEUE_SIZE, () -> updatedNodeMetrics(node.id()).msgsQueueSize,
+            "Overal number of pending messages to the remote node.");
+
+        mreg.register(METRIC_NAME_MAX_NET_IDLE_TIME, () -> updatedNodeMetrics(node.id()).maxIdleTime,
+            "Maximal idle time of physical sending or receiving data in milliseconds.");
+
+        mreg.register(METRIC_NAME_AVG_LIFE_TIME, () -> updatedNodeMetrics(node.id()).avgLifetime,
+            "Average connection lifetime in milliseconds.");
+
+        mreg.register(METRIC_NAME_REMOVED_CNT, () -> updatedNodeMetrics(node.id()).removedConnectionsCnt.get(),
+            "Total number of removed connections.");
+
+        mreg.register(METRIC_NAME_ACQUIRING_THREADS_CNT, () -> updatedNodeMetrics(node.id()).acquiringThreadsCnt.get(),
+            "Number of threads currently acquiring a connection.");
+    }
+
+    /** */
+    private NodeMetrics updatedNodeMetrics(UUID nodeId) {
+        long nowNanos = System.nanoTime();
+
+        NodeMetrics res = metrics.get(nodeId);
+
+        if (res == null || (nowNanos - res.updateTs > METRICS_UPDATE_THRESHOLD && res.canUpdate())) {
+            GridCommunicationClient[] nodeClients = clients.get(nodeId);
+
+            // Node might already leave the cluster.
+            if (nodeClients != null) {
+                long nowMillis = U.currentTimeMillis();
+
+                res = new NodeMetrics(res);
+
+                long avgLifetime = 0;
+                long maxIdleTime = 0;
+
+                for (GridCommunicationClient nodeClient : nodeClients) {
+                    if (nodeClient == null)
+                        continue;
+
+                    ++res.connsCnt;
+
+                    avgLifetime += nowMillis - nodeClient.creationTime();
+
+                    long nodeIdleTime = nodeClient.getIdleTime();
+
+                    if (nodeIdleTime > maxIdleTime)
+                        maxIdleTime = nodeIdleTime;
+
+                    res.msgsQueueSize += nodeClient.messagesQueueSize();
+                }
+
+                if (res.connsCnt != 0)
+                    res.avgLifetime = avgLifetime / res.connsCnt;
+
+                res.maxIdleTime = maxIdleTime;
+
+                NodeMetrics res0 = res;
+
+                res.updateTs = System.nanoTime();
+
+                // Node might already leave the cluster. Syncs metrics removal on the clients map.
+                clients.compute(nodeId, (nodeId0, clients) -> {
+                    if (clients == null)
+                        removeNodeMetrics(nodeId);
+                    else
+                        metrics.put(nodeId, res0);
+
+                    return clients;
+                });
+            }
+            else if (res != null) {
+                removeNodeMetrics(nodeId);
+
+                res = null;
+            }
+        }
+
+        return res == null ? NodeMetrics.EMPTY : res;
+    }
+
+    /** */
+    public static String nodeMetricsRegName(UUID nodeId) {
+        return metricName(SHARED_METRICS_REGISTRY_NAME, nodeId.toString());
+    }
+
     /**
      * @param nodeId Node ID.
      * @param rmvClient Client to remove.
      * @return {@code True} if client was removed.
      */
     public boolean removeNodeClient(UUID nodeId, GridCommunicationClient rmvClient) {
-        if (log.isDebugEnabled())
-            log.debug("The client was removed [nodeId=" + nodeId + ",  client=" + rmvClient.toString() + "].");
-
         for (; ; ) {
             GridCommunicationClient[] curClients = clients.get(nodeId);
 
@@ -551,8 +769,17 @@ public class ConnectionClientPool {
 
             newClients[rmvClient.connectionIndex()] = null;
 
-            if (clients.replace(nodeId, curClients, newClients))
+            if (clients.replace(nodeId, curClients, newClients)) {
+                NodeMetrics nodeMetrics = metrics.get(nodeId);
+
+                if (nodeMetrics != null && nodeMetrics != NodeMetrics.EMPTY)
+                    nodeMetrics.removedConnectionsCnt.addAndGet(1);
+
+                if (log.isDebugEnabled())
+                    log.debug("The client was removed [nodeId=" + nodeId + ",  client=" + rmvClient.toString() + "].");
+
                 return true;
+            }
         }
     }
 
@@ -566,6 +793,8 @@ public class ConnectionClientPool {
     public void forceCloseConnection(UUID nodeId) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("The node client connections were closed [nodeId=" + nodeId + "]");
+
+        removeNodeMetrics(nodeId);
 
         GridCommunicationClient[] clients = this.clients.remove(nodeId);
         if (nonNull(clients)) {
@@ -589,6 +818,8 @@ public class ConnectionClientPool {
     public void onNodeLeft(UUID nodeId) {
         GridCommunicationClient[] clients0 = clients.remove(nodeId);
 
+        removeNodeMetrics(nodeId);
+
         if (clients0 != null) {
             for (GridCommunicationClient client : clients0) {
                 if (client != null) {
@@ -601,6 +832,13 @@ public class ConnectionClientPool {
                 }
             }
         }
+    }
+
+    /** */
+    private void removeNodeMetrics(UUID nodeId) {
+        metricsMgr.remove(nodeMetricsRegName(nodeId));
+
+        metrics.remove(nodeId);
     }
 
     /**
@@ -668,5 +906,58 @@ public class ConnectionClientPool {
      */
     public void metricsListener(@Nullable TcpCommunicationMetricsListener metricsLsnr) {
         this.metricsLsnr = metricsLsnr;
+    }
+
+    /** */
+    private static final class NodeMetrics {
+        /** Avoids NPEs on metrics getting because nodes leave cluster asynchronously. */
+        private static final NodeMetrics EMPTY = new NodeMetrics(null);
+
+        /** */
+        private volatile long updateTs = System.nanoTime();
+
+        /** */
+        private volatile boolean updatingFlag;
+
+        /** */
+        private int connsCnt;
+
+        /** */
+        private int msgsQueueSize;
+
+        /** */
+        private long maxIdleTime;
+
+        /** */
+        private long avgLifetime;
+
+        /** */
+        private final AtomicLong removedConnectionsCnt;
+
+        /** */
+        private final AtomicInteger acquiringThreadsCnt;
+
+        /** */
+        private NodeMetrics(@Nullable NodeMetrics prev) {
+            this.removedConnectionsCnt = prev == null ? new AtomicLong() : prev.removedConnectionsCnt;
+            this.acquiringThreadsCnt = prev == null ? new AtomicInteger() : prev.acquiringThreadsCnt;
+            this.avgLifetime = prev == null ? 0 : prev.avgLifetime;
+            this.maxIdleTime = prev == null ? 0 : prev.maxIdleTime;
+        }
+
+        /** */
+        private boolean canUpdate() {
+            if (updatingFlag)
+                return false;
+
+            synchronized (this) {
+                if (updatingFlag)
+                    return false;
+
+                updatingFlag = true;
+
+                return true;
+            }
+        }
     }
 }

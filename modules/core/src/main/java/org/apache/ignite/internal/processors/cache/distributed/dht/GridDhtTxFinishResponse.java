@@ -17,39 +17,37 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * DHT transaction finish response.
  */
-public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
-    /** Flag indicating if this is a check-committed response. */
-    private static final int CHECK_COMMITTED_FLAG_MASK = 0x01;
-
+public final class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     /** Mini future ID. */
+    @Order(6)
     private int miniId;
 
-    /** Error. */
-    @GridDirectTransient
-    private Throwable checkCommittedErr;
-
-    /** Serialized error. */
-    private byte[] checkCommittedErrBytes;
+    /** Error message. */
+    @Order(value = 7, method = "checkCommittedErrorMessage")
+    private @Nullable ErrorMessage checkCommittedErrMsg;
 
     /** Cache return value. */
+    @Order(value = 8, method = "returnValue")
     private GridCacheReturn retVal;
+
+    /** Flag indicating if this is a check-committed response. */
+    @Order(9)
+    private boolean checkCommitted;
 
     /**
      * Empty constructor.
@@ -79,40 +77,50 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
         return miniId;
     }
 
+    /** Sets mini future ID. */
+    public void miniId(int miniId) {
+        this.miniId = miniId;
+    }
+
     /**
      * @return Error for check committed backup requests.
      */
     public Throwable checkCommittedError() {
-        return checkCommittedErr;
+        return ErrorMessage.error(checkCommittedErrMsg);
     }
 
     /**
      * @param checkCommittedErr Error for check committed backup requests.
      */
     public void checkCommittedError(Throwable checkCommittedErr) {
-        this.checkCommittedErr = checkCommittedErr;
+        checkCommittedErrorMessage(new ErrorMessage(checkCommittedErr));
+    }
+
+    /** @return The check committed error message. */
+    public @Nullable ErrorMessage checkCommittedErrorMessage() {
+        return checkCommittedErrMsg;
+    }
+
+    /** Sets the check committed error message. */
+    public void checkCommittedErrorMessage(@Nullable ErrorMessage checkCommittedErrMsg) {
+        this.checkCommittedErrMsg = checkCommittedErrMsg;
+    }
+
+    /** Sets the flag indicating if this is a check-committed response. */
+    public void checkCommitted(boolean checkCommitted) {
+        this.checkCommitted = checkCommitted;
     }
 
     /**
-     * @return Check committed flag.
+     * @return The flag indicating if this is a check-committed response.
      */
     public boolean checkCommitted() {
-        return isFlag(CHECK_COMMITTED_FLAG_MASK);
-    }
-
-    /**
-     * @param checkCommitted Check committed flag.
-     */
-    public void checkCommitted(boolean checkCommitted) {
-        setFlag(checkCommitted, CHECK_COMMITTED_FLAG_MASK);
+        return checkCommitted;
     }
 
     /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
-
-        if (checkCommittedErr != null && checkCommittedErrBytes == null)
-            checkCommittedErrBytes = U.marshal(ctx, checkCommittedErr);
 
         if (retVal != null && retVal.cacheId() != 0) {
             GridCacheContext<?, ?> cctx = ctx.cacheContext(retVal.cacheId());
@@ -127,9 +135,6 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr)
         throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
-
-        if (checkCommittedErrBytes != null && checkCommittedErr == null)
-            checkCommittedErr = U.unmarshal(ctx, checkCommittedErrBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (retVal != null && retVal.cacheId() != 0) {
             GridCacheContext<?, ?> cctx = ctx.cacheContext(retVal.cacheId());
@@ -155,94 +160,12 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 7:
-                if (!writer.writeByteArray(checkCommittedErrBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeInt(miniId))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeMessage(retVal))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!super.readFrom(buf, reader))
-            return false;
-
-        switch (reader.state()) {
-            case 7:
-                checkCommittedErrBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                miniId = reader.readInt();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                retVal = reader.readMessage();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 33;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        StringBuilder flags = new StringBuilder();
-
-        if (checkCommitted())
-            appendFlag(flags, "checkComm");
-
-        return S.toString(GridDhtTxFinishResponse.class, this,
-            "flags", flags.toString(),
-            "super", super.toString());
+        return S.toString(GridDhtTxFinishResponse.class, this, "super", super.toString());
     }
 }

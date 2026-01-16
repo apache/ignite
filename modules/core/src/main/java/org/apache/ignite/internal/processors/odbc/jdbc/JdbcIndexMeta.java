@@ -27,7 +27,6 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cache.QueryIndexType;
 import org.apache.ignite.internal.binary.BinaryReaderEx;
 import org.apache.ignite.internal.binary.BinaryWriterEx;
-import org.apache.ignite.internal.cache.query.index.SortOrder;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -78,7 +77,7 @@ public class JdbcIndexMeta implements JdbcRawBinarylizable {
 
         for (Map.Entry<String, IndexKeyDefinition> keyDef : keyDefinitions) {
             fields.add(keyDef.getKey());
-            fieldsAsc.add(keyDef.getValue().order().sortOrder() == SortOrder.ASC);
+            fieldsAsc.add(keyDef.getValue().ascending());
         }
     }
 

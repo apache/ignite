@@ -65,7 +65,7 @@ public class WarningOnBigQueryResultsBaseTest extends AbstractIndexingCommonTest
     /** Log message pattern. */
     private static final Pattern logPtrn = Pattern.compile(
         "fetched=([0-9]+), duration=([0-9]+)ms, type=(MAP|LOCAL|REDUCE), distributedJoin=(true|false), " +
-            "enforceJoinOrder=(true|false), lazy=(true|false), schema=(\\S+), sql");
+            "enforceJoinOrder=(true|false), lazy=(true|false), schema=(\\S+), initiatorId=(\\S+), sql");
 
     /** Test log. */
     private static Map<String, BigResultsLogListener> logListeners = new HashMap<>();

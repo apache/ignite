@@ -18,12 +18,14 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -52,6 +54,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_METRICS_QNT_WARN;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CERTIFICATES;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS;
 import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_DISCOVERY_METRICS_QNT_WARN;
 
 /**
@@ -401,6 +405,16 @@ abstract class TcpDiscoveryImpl {
     }
 
     /** */
+    protected void clearNodeSensitiveData(TcpDiscoveryNode node) {
+        Map<String, Object> attrs = new HashMap<>(node.attributes());
+
+        attrs.remove(ATTR_NODE_CERTIFICATES);
+        attrs.remove(ATTR_SECURITY_CREDENTIALS);
+
+        node.setAttributes(attrs);
+    }
+
+    /** */
     public void processMsgCacheMetrics(TcpDiscoveryMetricsUpdateMessage msg, long tsNanos) {
         for (Map.Entry<UUID, TcpDiscoveryMetricsUpdateMessage.MetricsSet> e : msg.metrics().entrySet()) {
             UUID nodeId = e.getKey();
@@ -437,6 +451,16 @@ abstract class TcpDiscoveryImpl {
         Collections.sort(res);
 
         return res;
+    }
+
+    /**
+     * Instantiates IO session for exchanging discovery messages with remote node.
+     *
+     * @param sock Socket to remote node.
+     * @return IO session for writing and reading {@link TcpDiscoveryAbstractMessage}.
+     */
+    TcpDiscoveryIoSession createSession(Socket sock) {
+        return new TcpDiscoveryIoSession(sock, spi);
     }
 
     /**

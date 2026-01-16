@@ -144,8 +144,10 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryType;
@@ -173,6 +175,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.binary.BinaryMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderEx;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
@@ -184,6 +187,8 @@ import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
+import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgnitePeerToPeerClassLoadingException;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
@@ -217,8 +222,6 @@ import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.plugin.PluginProvider;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -6609,39 +6612,6 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /**
-     * Fully writes communication message to provided stream.
-     *
-     * @param msg Message.
-     * @param out Stream to write to.
-     * @param buf Byte buffer that will be passed to {@link Message#writeTo(ByteBuffer, MessageWriter)} method.
-     * @param writer Message writer.
-     * @return Number of written bytes.
-     * @throws IOException In case of error.
-     */
-    public static int writeMessageFully(Message msg, OutputStream out, ByteBuffer buf,
-        MessageWriter writer) throws IOException {
-        assert msg != null;
-        assert out != null;
-        assert buf != null;
-        assert buf.hasArray();
-
-        boolean finished = false;
-        int cnt = 0;
-
-        while (!finished) {
-            finished = msg.writeTo(buf, writer);
-
-            out.write(buf.array(), 0, buf.position());
-
-            cnt += buf.position();
-
-            buf.clear();
-        }
-
-        return cnt;
-    }
-
-    /**
      * Throws exception with uniform error message if given parameter's assertion condition
      * is {@code false}.
      *
@@ -8145,6 +8115,31 @@ public abstract class IgniteUtils extends CommonUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Prepare affinity field for builder (if possible).
+     *
+     * @param builder Builder.
+     */
+    public static void prepareAffinityField(BinaryObjectBuilder builder, CacheObjectContext cacheObjCtx) {
+        if (cacheObjCtx.customAffinityMapper())
+            return;
+
+        assert builder instanceof BinaryObjectBuilderEx;
+
+        BinaryObjectBuilderEx builder0 = (BinaryObjectBuilderEx)builder;
+
+        CacheDefaultBinaryAffinityKeyMapper mapper =
+            (CacheDefaultBinaryAffinityKeyMapper)cacheObjCtx.defaultAffMapper();
+
+        BinaryField field = mapper.affinityKeyField(builder0.typeId());
+
+        if (field != null) {
+            String fieldName = field.name();
+
+            builder0.affinityFieldName(fieldName);
+        }
     }
 
     /**

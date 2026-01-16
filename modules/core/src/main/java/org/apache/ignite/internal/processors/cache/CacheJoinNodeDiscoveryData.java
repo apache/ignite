@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Information about configured caches sent from joining node.
@@ -46,6 +47,9 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
 
     /** */
     private final boolean startCaches;
+
+    /** */
+    @Nullable private ClusterCacheGroupRecoveryData clusterCacheGroupRecoveryData;
 
     /**
      * @param cacheDeploymentId Deployment ID for started caches.
@@ -91,6 +95,16 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
      */
     public Map<String, CacheInfo> caches() {
         return caches;
+    }
+
+    /** */
+    public void clusterCacheGroupRecoveryData(@Nullable ClusterCacheGroupRecoveryData clusterCacheGroupRecoveryData) {
+        this.clusterCacheGroupRecoveryData = clusterCacheGroupRecoveryData;
+    }
+
+    /** */
+    @Nullable public ClusterCacheGroupRecoveryData clusterCacheGroupRecoveryData() {
+        return clusterCacheGroupRecoveryData;
     }
 
     /**
