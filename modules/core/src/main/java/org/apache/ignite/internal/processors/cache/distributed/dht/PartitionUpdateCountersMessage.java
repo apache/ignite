@@ -75,8 +75,8 @@ public class PartitionUpdateCountersMessage implements Message {
      * @param payload New payload.
      */
     public void payload(byte[] payload) {
-        this.data = payload;
-        this.size = this.data.length / ITEM_SIZE;
+        data = payload;
+        size = data == null ? 0 : data.length / ITEM_SIZE;
     }
 
     /**
