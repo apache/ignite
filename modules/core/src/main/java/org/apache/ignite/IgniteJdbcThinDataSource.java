@@ -194,6 +194,8 @@ public class IgniteJdbcThinDataSource implements DataSource, Serializable {
     public void setUrl(String url) throws SQLException {
         props = new ConnectionPropertiesImpl();
 
+        props.setPartitionAwareness(false);
+
         props.setUrl(url);
     }
 

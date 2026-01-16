@@ -57,13 +57,13 @@ public class MexLoadApplication extends MexCntApplication {
 
                 while (active()) {
                     try (Connection conn = thinJdbcDataSource.getConnection()) {
-                        conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-                        conn.setAutoCommit(false);
+                        //conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+                        //conn.setAutoCommit(false);
 
                         PreparedStatement ps = conn.prepareStatement("INSERT INTO " + tableName + " values(?,?,?)");
 
                         while (active()) {
-                            for (int t = 0; t < 1 + rnd.nextInt(10); ++t) {
+                            //for (int t = 0; t < 1 + rnd.nextInt(10); ++t) {
                                 long id = counter.incrementAndGet();
 
                                 ps.setLong(1, id);
@@ -77,10 +77,10 @@ public class MexLoadApplication extends MexCntApplication {
                                 int res = ps.executeUpdate();
 
                                 if (res != 1)
-                                    throw new IllegalStateException("Failed to insert a row. The results is not 1.");
-                            }
+                                    throw new IllegalStateException("Failed to insert a row. The result is not 1.");
+                           // }
 
-                            conn.commit();
+                            //conn.commit();
 
                             if (!init) {
                                 init = true;
@@ -131,7 +131,7 @@ public class MexLoadApplication extends MexCntApplication {
             }
         }
 
-        printCount(tableName);
+        //printCount(tableName);
 
         markFinished();
     }
@@ -141,7 +141,7 @@ public class MexLoadApplication extends MexCntApplication {
         try (Connection conn = thinJdbcDataSource.getConnection()) {
             conn.createStatement().execute("CREATE TABLE " + tableName + "(" +
                 "id INT, strVal VARCHAR, decVal DECIMAL, PRIMARY KEY(id)" +
-                ") WITH \"cache_name=" + cacheName + ",atomicity=TRANSACTIONAL\""
+                ") WITH \"cache_name=" + cacheName + "\""
             );
 
             try {
@@ -154,10 +154,10 @@ public class MexLoadApplication extends MexCntApplication {
                 if (cnt == 0)
                     log.info("TEST | Created table '" + tableName + "' over cache '" + cacheName + "'.");
                 else
-                    throw new IllegalStateException("Unexpected empty table count: " + cnt);
+                    throw new IllegalStateException("Unexpected empty table rows number: " + cnt);
             }
             catch (Exception t) {
-                t = new IllegalStateException("Failed to create table '" + tableName + "'.", t);
+                log.error("Failed to create table '" + tableName + "'.", t);
 
                 markBroken(t);
 
