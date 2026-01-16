@@ -86,16 +86,13 @@ public class TcpDiscoveryIoSession {
     private final DirectMessageReader msgReader;
 
     /** Buffered socket output stream. */
-    private final BufferedOutputStream out;
+    private final OutputStream out;
 
     /** Buffered socket input stream. */
     private final PrefixedBufferedInputStream in;
 
-    /** Intermediate buffer for deserializing discovery messages. */
-    private final ByteBuffer msgInBuf;
-
     /** Intermediate buffer for serializing discovery messages. */
-    private final ByteBuffer msgOutBuf;
+    private final ByteBuffer msgBuf;
 
     /**
      * Creates a new discovery I/O session bound to the given socket.
@@ -110,8 +107,7 @@ public class TcpDiscoveryIoSession {
 
         clsLdr = U.resolveClassLoader(spi.ignite().configuration());
 
-        msgInBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
-        msgOutBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
+        msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
 
         msgWriter = new DirectMessageWriter(spi.messageFactory());
         msgReader = new DirectMessageReader(spi.messageFactory(), null);
@@ -167,8 +163,6 @@ public class TcpDiscoveryIoSession {
      * @throws IgniteCheckedException If deserialization fails.
      */
     <T> T readMessage() throws IgniteCheckedException, IOException {
-        ByteBuffer msgBuf = msgInBuf;
-
         byte serMode = (byte)in.read();
 
         if (JAVA_SERIALIZATION == serMode)
@@ -183,8 +177,6 @@ public class TcpDiscoveryIoSession {
                 throw new IOException("Received unexpected byte while reading discovery message: " + serMode);
             }
 
-            msgBuf.clear();
-
             Message msg = spi.messageFactory().create(makeMessageType((byte)in.read(), (byte)in.read()));
 
             msgReader.reset();
@@ -195,6 +187,8 @@ public class TcpDiscoveryIoSession {
             boolean finished;
 
             do {
+                msgBuf.clear();
+
                 int read = in.read(msgBuf.array(), msgBuf.position(), msgBuf.remaining());
 
                 if (read == -1)
@@ -208,20 +202,15 @@ public class TcpDiscoveryIoSession {
                 // This behaviour guarantees that we never read a next message from the buffer right after the end of
                 // the previous message. But it is not guaranteed with Client Discovery where messages aren't acknowledged.
                 // Thus, we have to keep the uprocessed bytes read from the socket. It won't return them again.
-                if (msgBuf.remaining() > 0) {
+                if (msgBuf.hasRemaining()) {
                     byte[] unprocessedReadTail = new byte[msgBuf.remaining()];
 
                     msgBuf.get(unprocessedReadTail, 0, msgBuf.remaining());
 
                     in.acceptPrefixBuffer(unprocessedReadTail);
                 }
-
-                if (finished)
-                    break;
-
-                msgBuf.clear();
             }
-            while (true);
+            while (!finished);
 
             return (T)msg;
         }
@@ -281,8 +270,6 @@ public class TcpDiscoveryIoSession {
      * @throws IOException If serialization fails.
      */
     private void serializeMessage(Message m, OutputStream out) throws IOException {
-        ByteBuffer msgBuf = msgOutBuf;
-
         MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
 
         msgWriter.reset();
@@ -320,27 +307,30 @@ public class TcpDiscoveryIoSession {
             throw new StreamCorruptedException("invalid stream header: " + hex);
     }
 
-    /** */
+    /**
+     * Input stream allowing to read some data first as a prefix of an original input stream.
+     * Supports only basic read methods.
+     */
     private static class PrefixedBufferedInputStream extends BufferedInputStream {
-        /** */
-        private ByteArrayInputStream bais;
+        /** Prefix data input stream to read before the original input stream. */
+        @Nullable private ByteArrayInputStream prefixIs;
 
-        /** */
-        private PrefixedBufferedInputStream(InputStream in) {
-            super(in);
+        /** @param srcIs Original input stream to read when {@link #prefixIs} is empty. */
+        private PrefixedBufferedInputStream(InputStream srcIs) {
+            super(srcIs);
         }
 
-        /** */
-        public void acceptPrefixBuffer(byte[] prefixBuf) {
+        /** @param prefixData Prefix data to read before the original input stream. */
+        private void acceptPrefixBuffer(byte[] prefixData) {
             assert prefixBytesLeft() == 0;
 
-            bais = new ByteArrayInputStream(prefixBuf);
+            prefixIs = new ByteArrayInputStream(prefixData);
         }
 
         /** {@inheritDoc} */
-        @Override public synchronized int read() throws IOException {
+        @Override public int read() throws IOException {
             if (prefixBytesLeft() > 0) {
-                int res = bais.read();
+                int res = prefixIs.read();
 
                 checkPrefixBufferExhausted();
 
@@ -350,25 +340,48 @@ public class TcpDiscoveryIoSession {
             return super.read();
         }
 
-        /** */
-        private int prefixBytesLeft() {
-            return bais == null ? 0 : bais.available();
-        }
-
-        /** */
-        private void checkPrefixBufferExhausted() {
-            if (bais != null && bais.available() == 0)
-                bais = null;
-        }
-
         /** {@inheritDoc} */
         @Override public int read(@NotNull byte[] b, int off, int len) throws IOException {
             int len0 = readPrefixBuffer(b, off, len);
+
+            assert len0 <= len;
 
             if (len0 == len)
                 return len0;
 
             return len0 + super.read(b, off + len0, len - len0);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int read(@NotNull byte[] b) throws IOException {
+            return read(b, 0, b.length);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int readNBytes(byte[] b, int off, int len) throws IOException {
+            int len0 = readPrefixBuffer(b, off, len);
+
+            return super.readNBytes(b, off + len0, len - len0);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int available() throws IOException {
+            // Original input stream may return Integer#MAX_VALUE.
+            if (super.available() > Integer.MAX_VALUE - prefixBytesLeft())
+                return super.available();
+
+            return super.available() + prefixBytesLeft();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IOException {
+            if (prefixIs != null) {
+                prefixIs.close();
+
+                prefixIs = null;
+            }
+
+            super.close();
         }
 
         /** */
@@ -381,7 +394,7 @@ public class TcpDiscoveryIoSession {
                 if (len > b.length - off)
                     len = b.length - off;
 
-                res = bais.read(b, off, Math.min(len, prefixBytesLeft));
+                res = prefixIs.read(b, off, Math.min(len, prefixBytesLeft));
 
                 checkPrefixBufferExhausted();
             }
@@ -389,14 +402,15 @@ public class TcpDiscoveryIoSession {
             return res;
         }
 
-        /** {@inheritDoc} */
-        @Override public int read(@NotNull byte[] b) throws IOException {
-            return read(b, 0, b.length);
+        /** */
+        private int prefixBytesLeft() {
+            return prefixIs == null ? 0 : prefixIs.available();
         }
 
-        /** {@inheritDoc} */
-        @Override public int available() throws IOException {
-            return super.available() + prefixBytesLeft();
+        /** */
+        private void checkPrefixBufferExhausted() {
+            if (prefixIs != null && prefixIs.available() == 0)
+                prefixIs = null;
         }
 
         /** {@inheritDoc} */
@@ -410,46 +424,28 @@ public class TcpDiscoveryIoSession {
         }
 
         /** {@inheritDoc} */
-        @Override public void reset() throws IOException {
+        @Override public void reset() {
             throw new UnsupportedOperationException("reset() is not supported.");
         }
 
         /** {@inheritDoc} */
-        @Override public long skip(long n) throws IOException {
+        @Override public long skip(long n) {
             throw new UnsupportedOperationException("skip() is not supported.");
         }
 
         /** {@inheritDoc} */
-        @Override public long transferTo(OutputStream out) throws IOException {
+        @Override public long transferTo(OutputStream out) {
             throw new UnsupportedOperationException("transferTo() is not supported.");
         }
 
         /** {@inheritDoc} */
-        @Override public int readNBytes(byte[] b, int off, int len) throws IOException {
-            int len0 = readPrefixBuffer(b, off, len);
-
-            return super.readNBytes(b, off + len0, len - len0);
-        }
-
-        /** {@inheritDoc} */
-        @Override public @NotNull byte[] readAllBytes() throws IOException {
+        @Override public @NotNull byte[] readAllBytes() {
             throw new UnsupportedOperationException("readAllBytes() is not supported.");
         }
 
         /** {@inheritDoc} */
-        @Override public @NotNull byte[] readNBytes(int len) throws IOException {
+        @Override public @NotNull byte[] readNBytes(int len) {
             throw new UnsupportedOperationException("readNBytes() is not supported.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws IOException {
-            if (bais != null) {
-                bais.close();
-
-                bais = null;
-            }
-
-            super.close();
         }
     }
 }
