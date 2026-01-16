@@ -25,10 +25,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  */
 public class TcpDiscoveryMdcSelfTest extends TcpDiscoverySelfTest {
     /** */
-    protected static final String DC_ID_0 = "DC0";
+    private static final String DC_ID_0 = "DC0";
 
     /** */
-    protected static final String DC_ID_1 = "DC1";
+    private static final String DC_ID_1 = "DC1";
 
     /**
      * @throws Exception If fails.
@@ -40,16 +40,11 @@ public class TcpDiscoveryMdcSelfTest extends TcpDiscoverySelfTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        applyDC();
-
-        return cfg;
-    }
-
-    /** */
-    protected void applyDC() {
         String prev = System.getProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID);
 
         System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, prev == null ? DC_ID_0 : DC_ID_1);
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
