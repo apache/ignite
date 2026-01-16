@@ -23,8 +23,10 @@ import java.util.Comparator;
 import java.util.function.BiPredicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoinInfo;
@@ -398,8 +400,10 @@ public class HashJoinExecutionTest extends AbstractExecutionTest {
             ? leftType
             : TypeUtils.combinedRowType(tf, leftType, rightType);
 
-        return HashJoinNode.create(ctx, outType, leftType, rightType, joinType,
-            IgniteJoinInfo.of(ImmutableIntList.of(2), ImmutableIntList.of(0)), postCondition);
+        IgniteJoinInfo joinInfo = new IgniteJoinInfo(ImmutableIntList.of(2), ImmutableIntList.of(0),
+            ImmutableBitSet.of(), ImmutableList.of());
+
+        return HashJoinNode.create(ctx, outType, leftType, rightType, joinType, joinInfo, postCondition);
     }
 
     /** */

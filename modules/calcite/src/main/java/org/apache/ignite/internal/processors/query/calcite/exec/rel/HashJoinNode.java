@@ -81,7 +81,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         super(ctx, rowType);
 
         // For IS NOT DISTINCT we have to keep rows with null values.
-        if (info.hasMatchingNulls())
+        if (!info.allowNulls().isEmpty())
             keepRowsWithNull = true;
 
         leftKeys = info.leftKeys.toIntArray();
@@ -93,7 +93,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
         this.nonEqCond = nonEqCond;
 
-        rightHashStore = new RuntimeHashIndex<>(ctx, info.rightKeys, keepRowsWithNull, info.hasMatchingNulls(),
+        rightHashStore = new RuntimeHashIndex<>(ctx, info.rightKeys, keepRowsWithNull, !info.allowNulls().isEmpty(),
             INITIAL_CAPACITY, TouchedArrayList::new);
 
         remappedLeftSearcher = rightHashStore.remappedSearcher(leftKeys);
@@ -119,7 +119,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         @Nullable BiPredicate<RowT, RowT> nonEqCond
     ) {
         assert !info.pairs().isEmpty() && (info.isEqui() || type == JoinRelType.INNER || type == JoinRelType.SEMI);
-        assert !info.hasMatchingNulls() || info.matchingNullsCnt() == info.leftKeys.size();
+        assert info.allowNulls().isEmpty() || info.allowNulls().cardinality() == info.leftKeys.size();
         assert nonEqCond == null || type == JoinRelType.INNER || type == JoinRelType.SEMI;
 
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();

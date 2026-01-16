@@ -56,7 +56,7 @@ public class HashJoinConverterRule extends AbstractIgniteJoinConverterRule {
             return false;
 
         // IS NOT DISTINCT is currently not supported simultaneously with equi conditions.
-        if (joinInfo.hasMatchingNulls() && joinInfo.matchingNullsCnt() != joinInfo.pairs().size())
+        if (!joinInfo.allowNulls().isEmpty() && joinInfo.allowNulls().cardinality() != joinInfo.pairs().size())
             return false;
 
         // Current limitation: unmatched products on left or right part requires special handling of non-equi condition
