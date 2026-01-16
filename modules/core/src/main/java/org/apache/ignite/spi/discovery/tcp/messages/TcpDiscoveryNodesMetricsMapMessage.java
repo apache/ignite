@@ -24,7 +24,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
-/** Holds map of nodes metrics messages per node id. */
+/** Holds map of thick client or server metrics messages per node id. */
 public class TcpDiscoveryNodesMetricsMapMessage implements Message {
     /** Map of nodes metrics messages per node id. */
     @Order(value = 0, method = "nodesMetricsMessages")

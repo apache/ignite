@@ -136,13 +136,13 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
     }
 
     /**
-     * Sets metrics for a connected client node.
+     * Adds metrics for a connected client node.
      *
      * @param srvrId Server node ID.
      * @param clientNodeId Connected client node ID.
      * @param clientMetrics Client metrics.
      */
-    public void setClientMetrics(UUID srvrId, UUID clientNodeId, ClusterMetrics clientMetrics) {
+    public void addClientMetrics(UUID srvrId, UUID clientNodeId, ClusterMetrics clientMetrics) {
         assert srvrId != null;
         assert clientNodeId != null;
         assert clientMetrics != null;

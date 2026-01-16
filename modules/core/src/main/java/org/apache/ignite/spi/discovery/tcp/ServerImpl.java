@@ -6059,7 +6059,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         ClusterMetrics metrics = e.getValue().metrics();
 
                         if (metrics != null)
-                            msg.setClientMetrics(locNodeId, nodeId, metrics);
+                            msg.addClientMetrics(locNodeId, nodeId, metrics);
 
                         msg.addClientNodeId(nodeId);
                     }
