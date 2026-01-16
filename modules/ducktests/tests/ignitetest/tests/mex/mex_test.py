@@ -40,12 +40,12 @@ from ignitetest.utils.version import LATEST_2_17, DEV_BRANCH
 
 # Run: clear; ./docker/clean_up.sh; rm -drf ../../../results/*;  ./docker/run_tests.sh -t ./ignitetest/tests/mex
 class MexTest(IgniteTest):
-    PRELOAD_SECONDS = 60
+    PRELOAD_SECONDS = 40
     LOAD_SECONDS = PRELOAD_SECONDS / 3
-    FORCE_STOP = True
+    FORCE_STOP = False
     TRANSACTION = True
-    LOAD_THREADS = 8
-    SERVERS = 4
+    LOAD_THREADS = 12
+    SERVERS = 3
     SERVER_IDX_TO_DROP = 1
     IGNITE_VERSION = DEV_BRANCH
     CACHE_NAME = "TEST_CACHE"
@@ -110,7 +110,7 @@ class MexTest(IgniteTest):
 
             self.logger.info("TEST | The cluster has detected the node failure.")
         else:
-            self.logger.info(f"TEST | stopping node {self.SERVER_IDX_TO_DROP} with id {failedNodeId}...")
+            self.logger.info(f"TEST | gracefully stopping node {self.SERVER_IDX_TO_DROP} with id {failedNodeId}...")
             servers.stop_node(failedNode, force_stop=False)
 
         self.logger.debug("TEST | Awaiting for the new cluster state...")
