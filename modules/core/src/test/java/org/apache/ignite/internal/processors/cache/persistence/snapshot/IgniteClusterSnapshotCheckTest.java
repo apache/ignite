@@ -435,7 +435,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
                 new Random().nextBytes(bytes);
 
                 try {
-                    BinaryObject newVal = BinaryUtils.binaryObject(binCtx, binCtx.marshaller().marshal(new Value(bytes)), 0);
+                    BinaryObject newVal =
+                        BinaryUtils.binariesFactory.binaryObject(binCtx, binCtx.marshaller().marshal(new Value(bytes)), 0);
 
                     boolean success = cached.initialValue(
                         (CacheObject)newVal,

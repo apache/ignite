@@ -30,6 +30,7 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
+import org.apache.ignite.internal.util.CacheObjectUnsafeUtils;
 import org.apache.ignite.internal.util.CommonUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -54,7 +55,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
     private int typeId;
 
     /** Raw data. */
-    private String clsName;
+    private @Nullable String clsName;
 
     /** Ordinal. */
     private int ord;
@@ -337,7 +338,7 @@ class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, CacheObjec
     @Override public int putValue(long addr) throws IgniteCheckedException {
         assert valBytes != null : "Value bytes must be initialized before object is stored";
 
-        return CacheObjectUtils.putValue(addr, cacheObjectType(), valBytes);
+        return CacheObjectUnsafeUtils.putValue(addr, cacheObjectType(), valBytes);
     }
 
     /** {@inheritDoc} */

@@ -448,7 +448,7 @@ public class DmlBatchSender {
         @Override public int compare(Object first, Object second) {
             // We assume that only simple types or BinaryObjectImpl are possible. The latter comes from the fact
             // that we use BinaryObjectBuilder which produces only on-heap binary objects.
-            return BinaryUtils.compareForDml(first, second);
+            return BinaryUtils.binariesFactory.compareForDml(first, second);
         }
     }
 }
