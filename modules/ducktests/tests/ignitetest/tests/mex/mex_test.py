@@ -40,10 +40,10 @@ from ignitetest.utils.version import LATEST_2_17, DEV_BRANCH
 
 # Run: clear; ./docker/clean_up.sh; rm -drf ../../../results/*;  ./docker/run_tests.sh -t ./ignitetest/tests/mex
 class MexTest(IgniteTest):
+    FORCE_STOP = False
+    TRANSACTION = False
     PRELOAD_SECONDS = 40
     LOAD_SECONDS = PRELOAD_SECONDS / 3
-    FORCE_STOP = False
-    TRANSACTION = True
     LOAD_THREADS = 12
     SERVERS = 3
     SERVER_IDX_TO_DROP = 1
@@ -79,7 +79,7 @@ class MexTest(IgniteTest):
 
             cnt = app.extract_result("tableRowsCnt")
             records_cnt.add(cnt)
-            self.logger.info(f"TEST | Partitions cnt on node {node}: {cnt}")
+            self.logger.info(f"TEST | Partitions cnt on node {node.account.hostname}: {cnt}")
 
             app.stop()
             app.await_stopped()
