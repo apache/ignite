@@ -42,6 +42,7 @@ from ignitetest.utils.version import LATEST_2_17, DEV_BRANCH
 class MexTest(IgniteTest):
     FORCE_STOP = False
     TRANSACTION = False
+    WAIT_AFTER_LOAD_SEC = 5
     PRELOAD_SECONDS = 40
     LOAD_SECONDS = PRELOAD_SECONDS / 3
     LOAD_THREADS = 12
@@ -70,6 +71,10 @@ class MexTest(IgniteTest):
         self.logger.debug("TEST | Stopping the load application ...")
         app.stop()
         app.await_stopped()
+
+        if self.WAIT_AFTER_LOAD_SEC > 0:
+            self.logger.info(f"TEST | waiting after load for {self.WAIT_AFTER_LOAD_SEC} seconds...")
+            time.sleep(self.WAIT_AFTER_LOAD_SEC)
 
         records_cnt = set()
 
