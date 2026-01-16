@@ -599,11 +599,17 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** {@inheritDoc} */
     @Override public boolean isPartitionAwareness() {
-        return false;
+        // TODO: for testing purposes.
+        assert !partitionAwareness.value();
+
+        return partitionAwareness.value();
     }
 
     /** {@inheritDoc} */
     @Override public void setPartitionAwareness(boolean partitionAwareness) {
+        // TODO: for testing purposes.
+        assert !partitionAwareness;
+
         this.partitionAwareness.setValue(partitionAwareness);
     }
 

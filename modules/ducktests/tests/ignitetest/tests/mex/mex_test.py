@@ -38,11 +38,11 @@ from ignitetest.utils.bean import Bean
 from ignitetest.utils.ignite_test import IgniteTest
 from ignitetest.utils.version import LATEST_2_17, DEV_BRANCH
 
-
+# Run: clear; ./docker/clean_up.sh; rm -drf ../../../results/*;  ./docker/run_tests.sh -t ./ignitetest/tests/mex
 class MexTest(IgniteTest):
     PRELOAD_SECONDS = 60
     LOAD_SECONDS = PRELOAD_SECONDS / 3
-    FORCE_STOP = False
+    FORCE_STOP = True
     TRANSACTION = True
     LOAD_THREADS = 8
     SERVERS = 4
@@ -101,22 +101,21 @@ class MexTest(IgniteTest):
         alive_servers = self.alive_servers(servers.nodes)
 
         if self.FORCE_STOP:
-            self.logger.info(f"TEST | 'kill -9' node {self.SERVER_IDX_TO_DROP} with id {failedNodeId} ...")
+            self.logger.info(f"TEST | 'kill -9' node {self.SERVER_IDX_TO_DROP} with id {failedNodeId}...")
 
             servers.stop_node(failedNode, force_stop=True)
 
             self.logger.debug("TEST | Awaiting for the node-failed-event...")
             servers.await_event(node_failed_event_pattern(failedNodeId), 30, from_the_beginning=True, nodes=alive_servers)
-        else:
-            self.logger.info(f"TEST | stopping node {self.SERVER_IDX_TO_DROP} with id {failedNodeId} ...")
 
+            self.logger.info("TEST | The cluster has detected the node failure.")
+        else:
+            self.logger.info(f"TEST | stopping node {self.SERVER_IDX_TO_DROP} with id {failedNodeId}...")
             servers.stop_node(failedNode, force_stop=False)
 
         self.logger.debug("TEST | Awaiting for the new cluster state...")
         servers.await_event(f"servers={self.SERVERS - 1}, clients=0, state=ACTIVE, CPUs=", 30, from_the_beginning=True,
                             nodes=alive_servers)
-
-        self.logger.info("TEST | The cluster has detected the node failure.")
 
     def alive_servers(self, nodes):
         return [item for index, item in enumerate(nodes) if index != self.SERVER_IDX_TO_DROP]

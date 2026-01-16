@@ -49,8 +49,7 @@ public class MexLoadApplication extends MexCntApplication {
         final AtomicLong counter = new AtomicLong();
         final AtomicBoolean preloaded = new AtomicBoolean();
 
-        log.info("TEST | Load pool parallelism=" + executor.getParallelism() + ", transaction=" + transaction + ", ig="
-            + ignite + ", client=" + client);
+        log.info("TEST | Load pool parallelism=" + executor.getParallelism() + ", transaction=" + transaction);
 
         for (int i = 0; i < threads; ++i) {
             executor.submit(() -> {
