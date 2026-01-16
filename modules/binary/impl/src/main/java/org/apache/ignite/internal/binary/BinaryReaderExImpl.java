@@ -19,6 +19,8 @@ package org.apache.ignite.internal.binary;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -34,8 +36,11 @@ import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.util.CommonUtils;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.marshaller.Marshallers;
@@ -1422,8 +1427,8 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      * @return Binary Enum
      * @throws BinaryObjectException If failed.
      */
-    @Nullable BinaryEnumObjectImpl readBinaryEnum(int fieldId) throws BinaryObjectException {
-        return findFieldById(fieldId) ? BinaryUtils.doReadBinaryEnum(in, ctx) : null;
+    @Nullable BinaryObjectEx readBinaryEnum(int fieldId) throws BinaryObjectException {
+        return findFieldById(fieldId) ? doReadBinaryEnum(in, ctx) : null;
     }
 
     /**
@@ -1753,7 +1758,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 if (desc == null)
                     throw new BinaryInvalidTypeException("Unknown type ID: " + typeId);
 
-                obj = desc.read(this);
+                obj = read(desc);
 
                 streamPosition(footerStart + footerLen);
 
@@ -1933,7 +1938,7 @@ class BinaryReaderExImpl implements BinaryReaderEx {
                 break;
 
             case BINARY_ENUM:
-                obj = BinaryUtils.doReadBinaryEnum(in, ctx);
+                obj = doReadBinaryEnum(in, ctx);
 
                 break;
 
@@ -1981,12 +1986,8 @@ class BinaryReaderExImpl implements BinaryReaderEx {
         return mapper.fieldId(typeId, name);
     }
 
-    /**
-     * Get or create object schema.
-     *
-     * @return Schema.
-     */
-    BinarySchema getOrCreateSchema() {
+    /** {@inheritDoc} */
+    @Override public BinarySchema getOrCreateSchema() {
         BinarySchema schema = ctx.schemaRegistry(typeId).schema(schemaId);
 
         if (schema == null) {
@@ -2356,6 +2357,413 @@ class BinaryReaderExImpl implements BinaryReaderEx {
      */
     public BinaryContext context() {
         return ctx;
+    }
+
+    /**
+     * @param desc Class descriptor.
+     * @return Object.
+     * @throws BinaryObjectException If failed.
+     */
+    private Object read(BinaryClassDescriptor desc) throws BinaryObjectException {
+        try {
+            assert desc.mode != BinaryWriteMode.OPTIMIZED
+                : "OptimizedMarshaller should not be used here: " + desc.describedClass().getName();
+
+            Object res;
+
+            switch (desc.mode) {
+                case BINARY:
+                    res = newInstance(desc.ctor(), desc.describedClass());
+
+                    setHandle(res);
+
+                    if (desc.serializer != null)
+                        desc.serializer.readBinary(res, this);
+                    else
+                        ((Binarylizable)res).readBinary(this);
+
+                    break;
+
+                case OBJECT:
+                    res = newInstance(desc.ctor(), desc.describedClass());
+
+                    setHandle(res);
+
+                    for (BinaryFieldDescriptor info : desc.fields)
+                        readField(res, info);
+
+                    break;
+
+                default:
+                    assert false : "Invalid mode: " + desc.mode;
+
+                    return null;
+            }
+
+            if (desc.readResolveMtd != null) {
+                try {
+                    res = desc.readResolveMtd.invoke(res);
+
+                    setHandle(res);
+                }
+                catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+                catch (InvocationTargetException e) {
+                    if (e.getTargetException() instanceof BinaryObjectException)
+                        throw (BinaryObjectException)e.getTargetException();
+
+                    throw new BinaryObjectException("Failed to execute readResolve() method on " + res, e);
+                }
+            }
+
+            return res;
+        }
+        catch (Exception e) {
+            String msg;
+
+            if (S.includeSensitive() && !F.isEmpty(desc.typeName))
+                msg = "Failed to deserialize object [typeName=" + desc.typeName + ']';
+            else
+                msg = "Failed to deserialize object [typeId=" + typeId + ']';
+
+            CommonUtils.error(ctx.log(), msg, e);
+
+            throw new BinaryObjectException(msg, e);
+        }
+    }
+
+    /**
+     * Read field.
+     *
+     * @param obj Object.
+     * @param fld Field info.
+     * @throws BinaryObjectException If failed.
+     */
+    private void readField(Object obj, BinaryFieldDescriptor fld) {
+        try {
+            switch (fld.mode) {
+                case P_BYTE:
+                    GridUnsafe.putByteField(obj, fld.offset, readByte(fld.id));
+
+                    break;
+
+                case P_BOOLEAN:
+                    GridUnsafe.putBooleanField(obj, fld.offset, readBoolean(fld.id));
+
+                    break;
+
+                case P_SHORT:
+                    GridUnsafe.putShortField(obj, fld.offset, readShort(fld.id));
+
+                    break;
+
+                case P_CHAR:
+                    GridUnsafe.putCharField(obj, fld.offset, readChar(fld.id));
+
+                    break;
+
+                case P_INT:
+                    GridUnsafe.putIntField(obj, fld.offset, readInt(fld.id));
+
+                    break;
+
+                case P_LONG:
+                    GridUnsafe.putLongField(obj, fld.offset, readLong(fld.id));
+
+                    break;
+
+                case P_FLOAT:
+                    GridUnsafe.putFloatField(obj, fld.offset, readFloat(fld.id));
+
+                    break;
+
+                case P_DOUBLE:
+                    GridUnsafe.putDoubleField(obj, fld.offset, readDouble(fld.id));
+
+                    break;
+
+                case BYTE:
+                case BOOLEAN:
+                case SHORT:
+                case CHAR:
+                case INT:
+                case LONG:
+                case FLOAT:
+                case DOUBLE:
+                case DECIMAL:
+                case STRING:
+                case UUID:
+                case DATE:
+                case TIMESTAMP:
+                case TIME:
+                case BYTE_ARR:
+                case SHORT_ARR:
+                case INT_ARR:
+                case LONG_ARR:
+                case FLOAT_ARR:
+                case DOUBLE_ARR:
+                case CHAR_ARR:
+                case BOOLEAN_ARR:
+                case DECIMAL_ARR:
+                case STRING_ARR:
+                case UUID_ARR:
+                case DATE_ARR:
+                case TIMESTAMP_ARR:
+                case TIME_ARR:
+                case ENUM_ARR:
+                case OBJECT_ARR:
+                case BINARY_OBJ:
+                case BINARY:
+                default:
+
+                    Object val = fld.dynamic ? readField(fld.id) : readFixedType(fld);
+
+                    try {
+                        if (val != null || !fld.field.getType().isPrimitive())
+                            fld.field.set(obj, val);
+                    }
+                    catch (IllegalAccessException e) {
+                        throw new BinaryObjectException("Failed to set value for field: " + fld.field, e);
+                    }
+            }
+        }
+        catch (Exception ex) {
+            if (S.includeSensitive() && !F.isEmpty(fld.name))
+                throw new BinaryObjectException("Failed to read field [name=" + fld.name + ']', ex);
+            else
+                throw new BinaryObjectException("Failed to read field [id=" + fld.id + ']', ex);
+        }
+    }
+
+    /**
+     * Reads fixed type from the given reader with flags validation.
+     *
+     * @param fld Binary field.
+     * @return Read value.
+     * @throws BinaryObjectException If failed to read value from the stream.
+     */
+    protected Object readFixedType(BinaryFieldDescriptor fld) throws BinaryObjectException {
+        Object val = null;
+
+        switch (fld.mode) {
+            case BYTE:
+                val = readByteNullable(fld.id);
+
+                break;
+
+            case SHORT:
+                val = readShortNullable(fld.id);
+
+                break;
+
+            case INT:
+                val = readIntNullable(fld.id);
+
+                break;
+
+            case LONG:
+                val = readLongNullable(fld.id);
+
+                break;
+
+            case FLOAT:
+                val = readFloatNullable(fld.id);
+
+                break;
+
+            case DOUBLE:
+                val = readDoubleNullable(fld.id);
+
+                break;
+
+            case CHAR:
+                val = readCharNullable(fld.id);
+
+                break;
+
+            case BOOLEAN:
+                val = readBooleanNullable(fld.id);
+
+                break;
+
+            case DECIMAL:
+                val = readDecimal(fld.id);
+
+                break;
+
+            case STRING:
+                val = readString(fld.id);
+
+                break;
+
+            case UUID:
+                val = readUuid(fld.id);
+
+                break;
+
+            case DATE:
+                val = readDate(fld.id);
+
+                break;
+
+            case TIMESTAMP:
+                val = readTimestamp(fld.id);
+
+                break;
+
+            case TIME:
+                val = readTime(fld.id);
+
+                break;
+
+            case BYTE_ARR:
+                val = readByteArray(fld.id);
+
+                break;
+
+            case SHORT_ARR:
+                val = readShortArray(fld.id);
+
+                break;
+
+            case INT_ARR:
+                val = readIntArray(fld.id);
+
+                break;
+
+            case LONG_ARR:
+                val = readLongArray(fld.id);
+
+                break;
+
+            case FLOAT_ARR:
+                val = readFloatArray(fld.id);
+
+                break;
+
+            case DOUBLE_ARR:
+                val = readDoubleArray(fld.id);
+
+                break;
+
+            case CHAR_ARR:
+                val = readCharArray(fld.id);
+
+                break;
+
+            case BOOLEAN_ARR:
+                val = readBooleanArray(fld.id);
+
+                break;
+
+            case DECIMAL_ARR:
+                val = readDecimalArray(fld.id);
+
+                break;
+
+            case STRING_ARR:
+                val = readStringArray(fld.id);
+
+                break;
+
+            case UUID_ARR:
+                val = readUuidArray(fld.id);
+
+                break;
+
+            case DATE_ARR:
+                val = readDateArray(fld.id);
+
+                break;
+
+            case TIMESTAMP_ARR:
+                val = readTimestampArray(fld.id);
+
+                break;
+
+            case TIME_ARR:
+                val = readTimeArray(fld.id);
+
+                break;
+
+            case OBJECT_ARR:
+                val = readObjectArray(fld.id);
+
+                break;
+
+            case COL:
+                val = readCollection(fld.id, null);
+
+                break;
+
+            case MAP:
+                val = readMap(fld.id, null);
+
+                break;
+
+            case BINARY_OBJ:
+                val = readBinaryObject(fld.id);
+
+                break;
+
+            case ENUM:
+                val = readEnum(fld.id, fld.field.getType());
+
+                break;
+
+            case ENUM_ARR:
+                val = readEnumArray(fld.id, fld.field.getType().getComponentType());
+
+                break;
+
+            case BINARY_ENUM:
+                val = readBinaryEnum(fld.id);
+
+                break;
+
+            case BINARY:
+            case OBJECT:
+                val = readObject(fld.id);
+
+                break;
+
+            case CLASS:
+                val = readClass(fld.id);
+
+                break;
+
+            default:
+                assert false : "Invalid mode: " + fld.mode;
+        }
+
+        return val;
+    }
+
+    /**
+     * Read binary enum.
+     *
+     * @param in Input stream.
+     * @param ctx Binary context.
+     * @return Enum.
+     */
+    private static BinaryObjectEx doReadBinaryEnum(BinaryInputStream in, BinaryContext ctx) {
+        return BinaryUtils.doReadBinaryEnum(in, ctx, BinaryUtils.doReadEnumType(in));
+    }
+
+    /**
+     * @param ctor Constructor.
+     * @param cls Class.
+     * @return Instance.
+     * @throws BinaryObjectException In case of error.
+     */
+    private static Object newInstance(@Nullable Constructor<?> ctor, Class<?> cls) throws BinaryObjectException {
+        try {
+            return ctor != null ? ctor.newInstance() : GridUnsafe.allocateInstance(cls);
+        }
+        catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
+            throw new BinaryObjectException("Failed to instantiate instance: " + cls, e);
+        }
     }
 
     /**

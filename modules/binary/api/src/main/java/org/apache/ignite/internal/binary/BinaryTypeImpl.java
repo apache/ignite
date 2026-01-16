@@ -89,7 +89,7 @@ public class BinaryTypeImpl implements BinaryType {
         ArrayList<BinaryObject> enumValues = new ArrayList<>(ordinals.size());
 
         for (Integer ord: ordinals)
-            enumValues.add(new BinaryEnumObjectImpl(ctx, typeId(), typeName(), ord));
+            enumValues.add(BinaryUtils.binariesFactory.binaryEnum(ctx, typeId(), typeName(), ord));
 
         return enumValues;
     }

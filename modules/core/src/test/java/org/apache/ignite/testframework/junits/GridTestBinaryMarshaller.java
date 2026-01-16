@@ -55,7 +55,7 @@ public class GridTestBinaryMarshaller {
     public BinaryObject marshal(Object obj) throws IgniteCheckedException {
         byte[] bytes = marsh.marshal(obj);
 
-        return BinaryUtils.binaryObject(U.<GridBinaryMarshaller>field(marsh, "impl").context(), bytes, 0);
+        return BinaryUtils.binariesFactory.binaryObject(U.<GridBinaryMarshaller>field(marsh, "impl").context(), bytes, 0);
     }
 
     /**

@@ -210,7 +210,7 @@ public class BinaryContext {
         mapTypes.put(HashMap.class, GridBinaryMarshaller.HASH_MAP);
         mapTypes.put(LinkedHashMap.class, GridBinaryMarshaller.LINKED_HASH_MAP);
 
-        // IDs range from [0..200] is used by Java SDK API and GridGain legacy API
+        // IDs range from [0..200] is used by Java SDK API
 
         registerPredefinedType(Object.class, GridBinaryMarshaller.OBJECT);
         registerPredefinedType(Byte.class, GridBinaryMarshaller.BYTE);
@@ -257,13 +257,12 @@ public class BinaryContext {
         registerPredefinedType(T2.class, 62);
         registerPredefinedType(IgniteUuid.class, 63);
 
-        registerPredefinedType(BinaryObjectImpl.class, 0);
-        registerPredefinedType(BinaryObjectOffheapImpl.class, 0);
         registerPredefinedType(BinaryMetadata.class, 0);
-        registerPredefinedType(BinaryEnumObjectImpl.class, 0);
         registerPredefinedType(BinaryTreeMap.class, 0);
         registerPredefinedType(BinaryArray.class, 0);
         registerPredefinedType(BinaryEnumArray.class, 0);
+
+        BinaryUtils.binariesFactory.predefinedTypes().forEach(this::registerPredefinedType);
 
         // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
         registerBinarilizableSystemClass(BinaryTreeMap.class);
@@ -362,7 +361,7 @@ public class BinaryContext {
                 BinaryIdMapper idMapper = CommonUtils.firstNotNull(typeCfg.getIdMapper(), globalIdMapper);
                 BinaryNameMapper nameMapper = CommonUtils.firstNotNull(typeCfg.getNameMapper(), globalNameMapper);
                 BinarySerializer serializer = CommonUtils.firstNotNull(typeCfg.getSerializer(), globalSerializer);
-                BinaryIdentityResolver identity = BinaryArrayIdentityResolver.instance();
+                BinaryIdentityResolver identity = BinaryUtils.binariesFactory.arrayIdentityResolver();
 
                 BinaryInternalMapper mapper = resolveMapper(nameMapper, idMapper);
 
@@ -1339,7 +1338,7 @@ public class BinaryContext {
     public BinaryIdentityResolver identity(int typeId) {
         BinaryIdentityResolver rslvr = identities.get(typeId);
 
-        return rslvr != null ? rslvr : BinaryArrayIdentityResolver.instance();
+        return rslvr != null ? rslvr : BinaryUtils.binariesFactory.arrayIdentityResolver();
     }
 
     /**
@@ -1380,7 +1379,7 @@ public class BinaryContext {
                 typeName = meta.typeName();
             }
 
-            BinarySchema curSchema = ((BinaryWriterExImpl)writer).currentSchema();
+            BinarySchema curSchema = writer.currentSchema();
 
             if (affFieldName == null)
                 affFieldName = affinityKeyFieldName(typeId);
@@ -1520,7 +1519,7 @@ public class BinaryContext {
         // Interfaces and array not registered as binary types.
         BinaryClassDescriptor desc = descriptorForClass(compCls);
 
-        if (compCls.isEnum() || compCls == BinaryEnumObjectImpl.class) {
+        if (compCls.isEnum() || compCls == BinaryUtils.binariesFactory.binaryEnumClass()) {
             return new BinaryEnumArray(
                 this,
                 desc.registered() ? desc.typeId() : GridBinaryMarshaller.UNREGISTERED_TYPE_ID,

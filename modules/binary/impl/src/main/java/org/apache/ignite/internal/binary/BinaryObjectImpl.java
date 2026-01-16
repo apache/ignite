@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.CacheObjectUnsafeUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.Marshallers;
@@ -49,7 +50,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.TRANSFORMED
 /**
  * Binary object implementation.
  */
-final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizable, KeyCacheObject {
+public final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizable, KeyCacheObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -86,7 +87,7 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
      * @param arr Array.
      * @param start Start.
      */
-    BinaryObjectImpl(BinaryContext ctx, byte[] arr, int start) {
+    public BinaryObjectImpl(BinaryContext ctx, byte[] arr, int start) {
         assert ctx != null;
         assert arr != null;
 
@@ -201,8 +202,8 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public int putValue(long addr) throws IgniteCheckedException {
-        return CacheObjectUtils.putValue(addr, cacheObjectType(), valBytes, 0, valBytes.length);
+    @Override public int putValue(long addr) {
+        return CacheObjectUnsafeUtils.putValue(addr, cacheObjectType(), valBytes, 0, valBytes.length);
     }
 
     /** {@inheritDoc} */
@@ -217,7 +218,7 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
 
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectValueContext ctx) {
-        BinaryObjectImpl res = detached() ? this : detach();
+        BinaryObjectImpl res = detached() ? this : detach(false);
 
         res.prepareMarshal(ctx);
 
@@ -265,17 +266,13 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
         return BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.TOTAL_LEN_POS);
     }
 
-    /**
-     * @return Detached binary object.
-     */
-    public BinaryObjectImpl detach() {
+    /** {@inheritDoc} */
+    @Override public BinaryObjectEx detach() {
         return detach(false);
     }
 
-    /**
-     * @return Detached binary object.
-     */
-    public BinaryObjectImpl detach(boolean checkCrossObjReferences) {
+    /** {@inheritDoc} */
+    @Override public BinaryObjectImpl detach(boolean checkCrossObjReferences) {
         if (!detachAllowed || detached())
             return this;
 
@@ -307,10 +304,8 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
         return start == 0 && length() == arr.length;
     }
 
-    /**
-     * @param detachAllowed Detach allowed flag.
-     */
-    public void detachAllowed(boolean detachAllowed) {
+    /** {@inheritDoc} */
+    @Override public void detachAllowed(boolean detachAllowed) {
         this.detachAllowed = detachAllowed;
     }
 
@@ -392,21 +387,6 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
     /** {@inheritDoc} */
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
         return (F)reader(null, false).unmarshalField(fieldId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public BinarySerializedFieldComparator createFieldComparator() {
-        int schemaOff = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
-
-        short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
-
-        int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
-        int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
-
-        int orderBase = start + schemaOff + fieldIdLen;
-        int orderMultiplier = fieldIdLen + fieldOffLen;
-
-        return new BinarySerializedFieldComparator(this, arr, 0L, start, orderBase, orderMultiplier, fieldOffLen);
     }
 
     /** {@inheritDoc} */
@@ -758,7 +738,7 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
 
     /** {@inheritDoc} */
     @Override BinarySchema createSchema() {
-        return ((BinaryReaderExImpl)reader(null, false)).getOrCreateSchema();
+        return reader(null, false).getOrCreateSchema();
     }
 
     /** {@inheritDoc} */
@@ -858,8 +838,8 @@ final class BinaryObjectImpl extends BinaryObjectExImpl implements Externalizabl
      */
     @SuppressWarnings("unchecked")
     static int compareForDml(Object first, Object second) {
-        boolean firstBinary = BinaryUtils.isBinaryObjectImpl(first);
-        boolean secondBinary = BinaryUtils.isBinaryObjectImpl(second);
+        boolean firstBinary = first instanceof BinaryObjectImpl;
+        boolean secondBinary = second instanceof BinaryObjectImpl;
 
         if (firstBinary) {
             if (secondBinary)

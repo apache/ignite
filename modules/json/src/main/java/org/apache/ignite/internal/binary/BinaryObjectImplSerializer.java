@@ -30,9 +30,9 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Custom serializer for {@link GridCacheSqlIndexMetadata}
  */
-class BinaryObjectImplSerializer extends JsonSerializer<BinaryObjectImpl> {
+class BinaryObjectImplSerializer extends JsonSerializer<BinaryObjectEx> {
     /** {@inheritDoc} */
-    @Override public void serialize(BinaryObjectImpl bin, JsonGenerator gen, SerializerProvider ser) throws IOException {
+    @Override public void serialize(BinaryObjectEx bin, JsonGenerator gen, SerializerProvider ser) throws IOException {
         try {
             BinaryType meta = bin.rawType();
 
@@ -44,7 +44,7 @@ class BinaryObjectImplSerializer extends JsonSerializer<BinaryObjectImpl> {
                     Object val = bin.field(name);
 
                     if (BinaryUtils.isBinaryObjectImpl(val)) {
-                        BinaryObjectImpl ref = (BinaryObjectImpl)val;
+                        BinaryObjectEx ref = (BinaryObjectEx)val;
 
                         if (ref.hasCircularReferences()) {
                             throw ser.mappingException("Failed convert to JSON object for circular references");
