@@ -119,7 +119,6 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         @Nullable BiPredicate<RowT, RowT> nonEqCond
     ) {
         assert !info.pairs().isEmpty() && (info.isEqui() || type == JoinRelType.INNER || type == JoinRelType.SEMI);
-        assert info.allowNulls().isEmpty() || info.allowNulls().cardinality() == info.leftKeys.size();
         assert nonEqCond == null || type == JoinRelType.INNER || type == JoinRelType.SEMI;
 
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();

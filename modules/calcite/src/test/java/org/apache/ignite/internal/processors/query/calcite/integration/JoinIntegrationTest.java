@@ -332,9 +332,19 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
                 .check();
         }
 
+        assertQuery("select t1.c2, t1.c3, t2.c1, t2.c3 from t1 join t2 on t1.c2 is not distinct from t2.c3 and " +
+            "t1.c3 = t2.c1 order by t1.c2, t1.c3, t2.c1, t2.c3")
+            .returns(1, 1, 1, 1)
+            .returns(2, 2, 2, 2)
+            .returns(3, 3, 3, 3)
+            .returns(3, 3, 3, 3)
+            .returns(4, 4, 4, 4)
+            .returns(null, 2, 2, null)
+            .check();
+
         // HASH JOIN doesn't support: completely non-equi conditions, additional non-equi conditions (post filters)
-        // except INNER and SEMI joins, equi and IS NOT DISTINCT conditions simultaneously.
-        // MERGE JOIN doesn't support: non-equi conditions, equi and IS NOT DISTINCT conditions simultaneously.
+        // except INNER and SEMI joins.
+        // MERGE JOIN doesn't support: non-equi conditions.
         if (joinType == JoinType.HASH || joinType == JoinType.MERGE)
             return;
 
@@ -359,17 +369,6 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
         assertQuery("select t1.c1, t2.c3 from t1 join t2 on t1.c1=1 and t2.c3=3 order by t1.c1, t2.c3")
             .returns(1, 3)
             .returns(1, 3)
-            .check();
-
-        // TODO : for merge join, revise after https://issues.apache.org/jira/browse/IGNITE-26048
-        assertQuery("select t1.c2, t1.c3, t2.c1, t2.c3 from t1 join t2 on t1.c2 is not distinct from t2.c3 and " +
-            "t1.c3 = t2.c1 order by t1.c2, t1.c3, t2.c1, t2.c3")
-            .returns(1, 1, 1, 1)
-            .returns(2, 2, 2, 2)
-            .returns(3, 3, 3, 3)
-            .returns(3, 3, 3, 3)
-            .returns(4, 4, 4, 4)
-            .returns(null, 2, 2, null)
             .check();
     }
 
@@ -612,9 +611,20 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
             .returns(null, 2, 2, null)
             .check();
 
+        assertQuery("select t1.c2, t1.c3, t2.c1, t2.c3 from t1 left join t2 on t1.c2 is not distinct from t2.c3 and " +
+            "t1.c3 = t2.c1 order by t1.c2, t1.c3, t2.c1, t2.c3")
+            .returns(1, 1, 1, 1)
+            .returns(2, 2, 2, 2)
+            .returns(3, 3, 3, 3)
+            .returns(3, 3, 3, 3)
+            .returns(3, null, null, null)
+            .returns(4, 4, 4, 4)
+            .returns(null, 2, 2, null)
+            .check();
+
         // HASH JOIN doesn't support: completely non-equi conditions, additional non-equi conditions (post filters)
-        // except INNER and SEMI joins, equi and IS NOT DISTINCT conditions simultaneously.
-        // MERGE JOIN doesn't support: non-equi conditions, equi and IS NOT DISTINCT conditions simultaneously.
+        // except INNER and SEMI joins.
+        // MERGE JOIN doesn't support: non-equi conditions.
         if (joinType == JoinType.MERGE || joinType == JoinType.HASH)
             return;
 
@@ -669,18 +679,6 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
             .returns(3, null)
             .returns(3, null)
             .returns(4, null)
-            .check();
-
-        // TODO : for merge join, revise after https://issues.apache.org/jira/browse/IGNITE-26048
-        assertQuery("select t1.c2, t1.c3, t2.c1, t2.c3 from t1 left join t2 on t1.c2 is not distinct from t2.c3 and " +
-            "t1.c3 = t2.c1 order by t1.c2, t1.c3, t2.c1, t2.c3")
-            .returns(1, 1, 1, 1)
-            .returns(2, 2, 2, 2)
-            .returns(3, 3, 3, 3)
-            .returns(3, 3, 3, 3)
-            .returns(3, null, null, null)
-            .returns(4, 4, 4, 4)
-            .returns(null, 2, 2, null)
             .check();
     }
 
@@ -960,9 +958,19 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
             .returns(null, 2, 2, null)
             .check();
 
+        assertQuery("select t1.c2, t1.c3, t2.c1, t2.c3 from t1 right join t2 on t1.c2 is not distinct from t2.c3 and " +
+            "t1.c3 = t2.c1 order by t1.c2, t1.c3, t2.c1, t2.c3")
+            .returns(1, 1, 1, 1)
+            .returns(2, 2, 2, 2)
+            .returns(3, 3, 3, 3)
+            .returns(3, 3, 3, 3)
+            .returns(4, 4, 4, 4)
+            .returns(null, 2, 2, null)
+            .check();
+
         // HASH JOIN doesn't support: completely non-equi conditions, additional non-equi conditions (post filters)
-        // except INNER and SEMI joins, equi and IS NOT DISTINCT conditions simultaneously.
-        // MERGE JOIN doesn't support: non-equi conditions, equi and IS NOT DISTINCT conditions simultaneously.
+        // except INNER and SEMI joins.
+        // MERGE JOIN doesn't support: non-equi conditions.
         if (joinType == JoinType.MERGE || joinType == JoinType.HASH)
             return;
 
@@ -1017,17 +1025,6 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
             .returns(null, 4)
             .returns(null, null)
             .check();
-
-        // TODO : for merge join, revise after https://issues.apache.org/jira/browse/IGNITE-26048
-        assertQuery("select t1.c2, t1.c3, t2.c1, t2.c3 from t1 right join t2 on t1.c2 is not distinct from t2.c3 and " +
-            "t1.c3 = t2.c1 order by t1.c2, t1.c3, t2.c1, t2.c3")
-            .returns(1, 1, 1, 1)
-            .returns(2, 2, 2, 2)
-            .returns(3, 3, 3, 3)
-            .returns(3, 3, 3, 3)
-            .returns(4, 4, 4, 4)
-            .returns(null, 2, 2, null)
-            .check();
     }
 
     /**
@@ -1078,8 +1075,20 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
             .returns(null, 2, 2, null)
             .check();
 
-//        // Merge join doesn't support absence of equi pairs and not equi conditions.
-//        // Hash join supports non-equi conditions for INNER and SEMI joins.
+        assertQuery("select t1.c2, t1.c3, t2.c1, t2.c3 from t1 full join t2 on t1.c2 is not distinct from t2.c3 and " +
+            "t1.c3 = t2.c1 order by t1.c2, t1.c3, t2.c1, t2.c3")
+            .returns(1, 1, 1, 1)
+            .returns(2, 2, 2, 2)
+            .returns(3, 3, 3, 3)
+            .returns(3, 3, 3, 3)
+            .returns(3, null, null, null)
+            .returns(4, 4, 4, 4)
+            .returns(null, 2, 2, null)
+            .check();
+
+        // HASH JOIN doesn't support: completely non-equi conditions, additional non-equi conditions (post filters)
+        // except INNER and SEMI joins.
+        // MERGE JOIN doesn't support: non-equi conditions.
         if (joinType == JoinType.MERGE || joinType == JoinType.HASH)
             return;
 
@@ -1149,18 +1158,6 @@ public class JoinIntegrationTest extends AbstractBasicIntegrationTransactionalTe
             .returns(null, 2)
             .returns(null, 4)
             .returns(null, null)
-            .check();
-
-        // TODO : for merge join, revise after https://issues.apache.org/jira/browse/IGNITE-26048
-        assertQuery("select t1.c2, t1.c3, t2.c1, t2.c3 from t1 full join t2 on t1.c2 is not distinct from t2.c3 and " +
-            "t1.c3 = t2.c1 order by t1.c2, t1.c3, t2.c1, t2.c3")
-            .returns(1, 1, 1, 1)
-            .returns(2, 2, 2, 2)
-            .returns(3, 3, 3, 3)
-            .returns(3, 3, 3, 3)
-            .returns(3, null, null, null)
-            .returns(4, 4, 4, 4)
-            .returns(null, 2, 2, null)
             .check();
     }
 

@@ -133,7 +133,7 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
             F.asList("select t1.c1 from t1 %s join t2 ON t1.id is not distinct from t2.c1", true, false),
             F.asList("select t1.c1 from t1 %s join t2 ON t1.id is not distinct from t2.c1 and t1.c1 is not distinct from  t2.id",
                 true, false),
-            F.asList("select t1.c1 from t1 %s join t2 ON t1.id is not distinct from t2.c1 and t1.c1 = t2.id", false, false),
+            F.asList("select t1.c1 from t1 %s join t2 ON t1.id is not distinct from t2.c1 and t1.c1 = t2.id", true, false),
             F.asList("select t1.c1 from t1 %s join t2 ON t1.id is not distinct from t2.c1 and t1.c1 > t2.id", true, true),
             F.asList("select t1.c1 from t1 %s join t2 on t1.c1 = ?", false, false),
             F.asList("select t1.c1 from t1 %s join t2 on t1.c1 = OCTET_LENGTH('TEST')", false, false),
