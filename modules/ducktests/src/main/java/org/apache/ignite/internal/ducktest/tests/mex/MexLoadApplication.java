@@ -40,6 +40,7 @@ public class MexLoadApplication extends MexCntApplication {
         final int threads = jsonNode.get("threads").asInt();
         final String tableName = jsonNode.get("tableName").asText();
         final String cacheName = jsonNode.get("cacheName").asText();
+        final boolean transaction = jsonNode.get("transaction").asBoolean();
 
         createTable(tableName, cacheName);
 
@@ -48,7 +49,8 @@ public class MexLoadApplication extends MexCntApplication {
         final AtomicLong counter = new AtomicLong();
         final AtomicBoolean preloaded = new AtomicBoolean();
 
-        log.info("TEST | Load pool parallelism=" + executor.getParallelism() + ", ig=" + ignite + ", client=" + client);
+        log.info("TEST | Load pool parallelism=" + executor.getParallelism() + ", transaction=" + transaction + ", ig="
+            + ignite + ", client=" + client);
 
         for (int i = 0; i < threads; ++i) {
             executor.submit(() -> {
@@ -57,13 +59,15 @@ public class MexLoadApplication extends MexCntApplication {
 
                 while (active()) {
                     try (Connection conn = thinJdbcDataSource.getConnection()) {
-                        //conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-                        //conn.setAutoCommit(false);
+                        if (transaction) {
+                            conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+                            conn.setAutoCommit(false);
+                        }
 
                         PreparedStatement ps = conn.prepareStatement("INSERT INTO " + tableName + " values(?,?,?)");
 
                         while (active()) {
-                            //for (int t = 0; t < 1 + rnd.nextInt(10); ++t) {
+                            for (int t = 0; t < (transaction ? 3 + rnd.nextInt(8) : 1); ++t) {
                                 long id = counter.incrementAndGet();
 
                                 ps.setLong(1, id);
@@ -78,9 +82,10 @@ public class MexLoadApplication extends MexCntApplication {
 
                                 if (res != 1)
                                     throw new IllegalStateException("Failed to insert a row. The result is not 1.");
-                           // }
+                            }
 
-                            //conn.commit();
+                            if (transaction)
+                                conn.commit();
 
                             if (!init) {
                                 init = true;

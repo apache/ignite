@@ -40,10 +40,12 @@ from ignitetest.utils.version import LATEST_2_17, DEV_BRANCH
 
 
 class MexTest(IgniteTest):
-    PRELOAD_SECONDS = 50
+    PRELOAD_SECONDS = 60
     LOAD_SECONDS = PRELOAD_SECONDS / 3
+    FORCE_STOP = False
+    TRANSACTION = True
     LOAD_THREADS = 8
-    SERVERS = 3
+    SERVERS = 4
     SERVER_IDX_TO_DROP = 1
     IGNITE_VERSION = DEV_BRANCH
     CACHE_NAME = "TEST_CACHE"
@@ -54,7 +56,7 @@ class MexTest(IgniteTest):
         # Start the servers.
         servers, control_utility, ignite_config = self.launch_cluster()
 
-        # Start the loading app. ant wait for some records preloaded.
+        # Start the loading app. and wait for some records preloaded.
         app = self.start_load_app(servers, ignite_config.client_connector_configuration.port)
 
         # The loading is on. Now, kill a server node.
@@ -98,16 +100,21 @@ class MexTest(IgniteTest):
         failedNodeId = servers.node_id(failedNode)
         alive_servers = self.alive_servers(servers.nodes)
 
-        self.logger.info(f"TEST | 'kill -9' node {self.SERVER_IDX_TO_DROP} with id {failedNodeId} ...")
+        if self.FORCE_STOP:
+            self.logger.info(f"TEST | 'kill -9' node {self.SERVER_IDX_TO_DROP} with id {failedNodeId} ...")
 
-        servers.stop_node(failedNode, force_stop=True)
+            servers.stop_node(failedNode, force_stop=True)
 
-        self.logger.debug("TEST | Awaiting for the node-failed-event...")
-        servers.await_event(node_failed_event_pattern(failedNodeId), 30, from_the_beginning=True, nodes = alive_servers)
+            self.logger.debug("TEST | Awaiting for the node-failed-event...")
+            servers.await_event(node_failed_event_pattern(failedNodeId), 30, from_the_beginning=True, nodes=alive_servers)
+        else:
+            self.logger.info(f"TEST | stopping node {self.SERVER_IDX_TO_DROP} with id {failedNodeId} ...")
+
+            servers.stop_node(failedNode, force_stop=False)
 
         self.logger.debug("TEST | Awaiting for the new cluster state...")
         servers.await_event(f"servers={self.SERVERS - 1}, clients=0, state=ACTIVE, CPUs=", 30, from_the_beginning=True,
-                            nodes = alive_servers)
+                            nodes=alive_servers)
 
         self.logger.info("TEST | The cluster has detected the node failure.")
 
@@ -130,7 +137,7 @@ class MexTest(IgniteTest):
             java_class_name="org.apache.ignite.internal.ducktest.tests.mex.MexLoadApplication",
             num_nodes=1,
             params={"preloadDurSec": self.PRELOAD_SECONDS, "threads": self.LOAD_THREADS, "cacheName": self.CACHE_NAME,
-                    "tableName" : self.TABLE_NAME},
+                    "tableName" : self.TABLE_NAME, "transaction" : self.TRANSACTION},
             startup_timeout_sec=self.PRELOAD_SECONDS + 10,
             jvm_opts="-Xms4G -Xmx4G"
         )
