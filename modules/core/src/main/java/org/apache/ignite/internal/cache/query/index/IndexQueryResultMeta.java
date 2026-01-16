@@ -17,17 +17,16 @@
 
 package org.apache.ignite.internal.cache.query.index;
 
-import java.util.Collection;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyDefinition;
 import org.apache.ignite.internal.cache.query.index.sorted.IndexKeyTypeSettings;
 import org.apache.ignite.internal.cache.query.index.sorted.MetaPageInfo;
 import org.apache.ignite.internal.cache.query.index.sorted.SortedIndexDefinition;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -41,16 +40,13 @@ public class IndexQueryResultMeta implements Message {
     @Order(0)
     private IndexKeyTypeSettings keyTypeSettings;
 
-    /** Index names order holder. Should be serialized before the definitions. */
+    /** Index names order holder. Should be serialized together with  the definitions. */
     @Order(value = 1, method = "orderedIndexNames")
-    private List<String> idxNames;
+    private @Nullable String[] idxNames;
 
-    /** Index definitions serialization holder. Should be serialized after the names. */
+    /** Index definitions serialization holder. Should be serialized together with the names. */
     @Order(value = 2, method = "orderedIndexDefinitions")
-    private List<IndexKeyDefinition> idxDefs;
-
-    /** Map of index definitions with proper order. */
-    private LinkedHashMap<String, IndexKeyDefinition> idxDefsMap;
+    private @Nullable IndexKeyDefinition[] idxDefs;
 
     /** */
     public IndexQueryResultMeta() {
@@ -61,14 +57,18 @@ public class IndexQueryResultMeta implements Message {
     public IndexQueryResultMeta(SortedIndexDefinition def, int critSize) {
         keyTypeSettings = def.keyTypeSettings();
 
-        idxDefsMap = U.newLinkedHashMap(critSize);
-
         Iterator<Map.Entry<String, IndexKeyDefinition>> keys = def.indexKeyDefinitions().entrySet().iterator();
 
-        for (int i = 0; i < critSize; i++) {
-            Map.Entry<String, IndexKeyDefinition> key = keys.next();
+        if (critSize > 0) {
+            idxNames = new String[critSize];
+            idxDefs = new IndexKeyDefinition[critSize];
 
-            idxDefsMap.put(key.getKey(), key.getValue());
+            for (int i = 0; i < critSize; i++) {
+                Map.Entry<String, IndexKeyDefinition> key = keys.next();
+
+                idxNames[i] = key.getKey();
+                idxDefs[i] = key.getValue();
+            }
         }
     }
 
@@ -89,45 +89,37 @@ public class IndexQueryResultMeta implements Message {
 
     /** @return Map of index definitions with proper order. */
     public LinkedHashMap<String, IndexKeyDefinition> keyDefinitions() {
+        if (F.isEmpty(idxNames) && F.isEmpty(idxDefs))
+            return U.newLinkedHashMap(0);
+
+        assert idxNames.length == idxDefs.length : "Number of index names and index definitions must be equal " +
+            "[idxNames=" + Arrays.toString(idxNames) + ", idxDefs=" + Arrays.toString(idxDefs) + "]";
+
+        LinkedHashMap<String, IndexKeyDefinition> idxDefsMap = U.newLinkedHashMap(idxNames.length);
+
+        for (int i = 0; i < idxNames.length; i++)
+            idxDefsMap.put(idxNames[i], idxDefs[i]);
+
         return idxDefsMap;
     }
 
     /** @return Index names with proper order. */
-    public Collection<String> orderedIndexNames() {
-        return idxDefsMap == null ? Collections.emptyList() : idxDefsMap.keySet();
+    public @Nullable String[] orderedIndexNames() {
+        return idxNames;
     }
 
-    /**
-     * Stores index names with proper order to build the linked map later.
-     * Should be called once and before the setting of the definitions and the map.
-     */
-    public void orderedIndexNames(@Nullable List<String> idxNames) {
-        idxDefsMap = null;
-
+    /** Stores index names with proper order to build the linked map later. */
+    public void orderedIndexNames(@Nullable String[] idxNames) {
         this.idxNames = idxNames;
     }
 
     /** @return Index definitions with proper order. */
-    public Collection<IndexKeyDefinition> orderedIndexDefinitions() {
-        return idxDefsMap == null ? Collections.emptyList() : idxDefsMap.values();
+    public @Nullable IndexKeyDefinition[] orderedIndexDefinitions() {
+        return idxDefs;
     }
 
-    /**
-     * Process the index definitions with proper order and buils the linked map.
-     * Should be called once and after the setting of the index names.
-     */
-    public void orderedIndexDefinitions(@Nullable List<IndexKeyDefinition> idxDefs) {
-        assert idxNames != null || idxDefs == null : "The index names should be initialized already.";
-        assert idxNames == null || idxNames.size() == idxDefs.size() : "Number of index names and index definitions must be equal.";
-
-        if (idxDefs == null)
-            return;
-
-        idxDefsMap = U.newLinkedHashMap(idxDefs.size());
-
-        for (int i = 0; i < idxDefs.size(); ++i)
-            idxDefsMap.put(idxNames.get(i), idxDefs.get(i));
-
-        idxNames = null;
+    /** Process the index definitions with proper order and buils the linked map. */
+    public void orderedIndexDefinitions(@Nullable IndexKeyDefinition[] idxDefs) {
+        this.idxDefs = idxDefs;
     }
 }
