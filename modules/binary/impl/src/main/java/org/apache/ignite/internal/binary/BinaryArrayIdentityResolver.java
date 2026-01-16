@@ -57,7 +57,7 @@ class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
             int end = ex.footerStartOffset();
 
             if (ex.hasBytes())
-                return hashCode(ex.bytes(), start, end);
+                return BinaryUtils.hashCode(ex.bytes(), start, end);
             else {
                 // Handle offheap object.
                 int hash = 1;
@@ -86,16 +86,6 @@ class BinaryArrayIdentityResolver extends BinaryAbstractIdentityResolver {
         else
             throw new BinaryObjectException("Array identity resolver cannot be used with provided BinaryObject " +
                 "implementation: " + obj.getClass().getName());
-    }
-
-    /** */
-    public int hashCode(byte[] data, int startPos, int endPos) {
-        int hash = 1;
-
-        for (int i = startPos; i < endPos; i++)
-            hash = 31 * hash + data[i];
-
-        return hash;
     }
 
     /** {@inheritDoc} */

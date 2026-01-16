@@ -271,7 +271,7 @@ public class ExpressionFactoryImpl<Row> implements ExpressionFactory<Row> {
         else if (o2 == null)
             return -nullComparison;
 
-        return BinaryUtils.compareForDml(o1, o2);
+        return BinaryUtils.binariesFactory.compareForDml(o1, o2);
     }
 
     /** {@inheritDoc} */
