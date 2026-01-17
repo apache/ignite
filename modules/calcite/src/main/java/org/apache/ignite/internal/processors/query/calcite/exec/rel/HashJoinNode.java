@@ -236,7 +236,6 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         @Override protected void join() throws Exception {
             if (waitingRight == NOT_WAITING) {
                 inLoop = true;
-                int processed = 0;
 
                 try {
                     while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
@@ -252,12 +251,8 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                             while (requested > 0 && rightIt.hasNext()) {
                                 checkState();
 
-                                if (processed++ > IN_BUFFER_SIZE) {
-                                    // Allow others to do their job.
-                                    context().execute(this::join, this::onError);
-
+                                if (rescheduleJoin())
                                     return;
-                                }
 
                                 RowT right = rightIt.next();
 
@@ -320,7 +315,6 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         @Override protected void join() throws Exception {
             if (waitingRight == NOT_WAITING) {
                 inLoop = true;
-                int processed = 0;
 
                 try {
                     while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
@@ -346,12 +340,8 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                             while (requested > 0 && rightIt.hasNext()) {
                                 checkState();
 
-                                if (processed++ > IN_BUFFER_SIZE) {
-                                    // Allow others to do their job.
-                                    context().execute(this::join, this::onError);
-
+                                if (rescheduleJoin())
                                     return;
-                                }
 
                                 RowT right = rightIt.next();
 
@@ -414,7 +404,6 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         @Override protected void join() throws Exception {
             if (waitingRight == NOT_WAITING) {
                 inLoop = true;
-                int processed = 0;
 
                 try {
                     while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
@@ -432,11 +421,8 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                             while (requested > 0 && rightIt.hasNext()) {
                                 checkState();
 
-                                if (processed++ > IN_BUFFER_SIZE) {
-                                    context().execute(this::join, this::onError);
-
+                                if (rescheduleJoin())
                                     return;
-                                }
 
                                 RowT right = rightIt.next();
 
@@ -460,7 +446,6 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
             // Emit unmatched right rows.
             if (left == null && leftInBuf.isEmpty() && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && requested > 0) {
                 inLoop = true;
-                int processed = 0;
 
                 try {
                     if (!rightIt.hasNext() && !drainMaterialization) {
@@ -475,11 +460,8 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                     while (requested > 0 && rightIt.hasNext()) {
                         checkState();
 
-                        if (processed++ > IN_BUFFER_SIZE) {
-                            context().execute(this::join, this::onError);
-
+                        if (rescheduleJoin())
                             return;
-                        }
 
                         RowT right = rightIt.next();
 
@@ -551,7 +533,6 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         @Override protected void join() throws Exception {
             if (waitingRight == NOT_WAITING) {
                 inLoop = true;
-                int processed = 0;
 
                 try {
                     while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
@@ -574,11 +555,8 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                         if (rightIt.hasNext()) {
                             // Emits matched rows.
                             while (requested > 0 && rightIt.hasNext()) {
-                                if (processed++ > IN_BUFFER_SIZE) {
-                                    context().execute(this::join, this::onError);
-
+                                if (rescheduleJoin())
                                     return;
-                                }
 
                                 checkState();
 
@@ -604,7 +582,6 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
             // Emit unmatched right rows.
             if (left == null && leftInBuf.isEmpty() && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && requested > 0) {
                 inLoop = true;
-                int processed = 0;
 
                 try {
                     if (!rightIt.hasNext() && !drainMaterialization) {
@@ -617,11 +594,8 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                     RowT emptyLeft = leftRowFactory.create();
 
                     while (requested > 0 && rightIt.hasNext()) {
-                        if (processed++ > IN_BUFFER_SIZE) {
-                            context().execute(this::join, this::onError);
-
+                        if (rescheduleJoin())
                             return;
-                        }
 
                         checkState();
 
@@ -678,7 +652,6 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         @Override protected void join() throws Exception {
             if (waitingRight == NOT_WAITING) {
                 inLoop = true;
-                int processed = 0;
 
                 try {
                     while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
@@ -704,11 +677,8 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                                     break;
                                 }
 
-                                if (processed++ > IN_BUFFER_SIZE) {
-                                    context().execute(this::join, this::onError);
-
+                                if (rescheduleJoin())
                                     return;
-                                }
                             }
                         }
 
@@ -761,17 +731,13 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         @Override protected void join() throws Exception {
             if (waitingRight == NOT_WAITING) {
                 inLoop = true;
-                int processed = 0;
 
                 try {
                     while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
                         checkState();
 
-                        if (processed++ > IN_BUFFER_SIZE) {
-                            context().execute(this::join, this::onError);
-
+                        if (rescheduleJoin())
                             return;
-                        }
 
                         left = leftInBuf.remove();
 

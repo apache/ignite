@@ -51,6 +51,9 @@ public abstract class AbstractRightMaterializedJoinNode<Row> extends MemoryTrack
     protected @Nullable Row left;
 
     /** */
+    protected int processed;
+
+    /** */
     protected AbstractRightMaterializedJoinNode(ExecutionContext<Row> ctx, RelDataType rowType) {
         super(ctx, rowType);
     }
@@ -182,5 +185,18 @@ public abstract class AbstractRightMaterializedJoinNode<Row> extends MemoryTrack
         checkState();
 
         join();
+    }
+
+    /** */
+    protected boolean rescheduleJoin() {
+        if (processed++ > IN_BUFFER_SIZE) {
+            processed = 0;
+
+            context().execute(this::doJoin, this::onError);
+
+            return true;
+        }
+
+        return false;
     }
 }
