@@ -188,19 +188,28 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
     }
 
     /** */
-    protected void requestMoreOrEnd() throws Exception {
-        if (requested > 0 && waitingLeft == NOT_WAITING && waitingRight == NOT_WAITING && leftInBuf.isEmpty() && left == null
-            && !rightIt.hasNext()) {
+    protected boolean leftFinished() {
+        return waitingLeft == NOT_WAITING && left == null && leftInBuf.isEmpty();
+    }
+
+    /** */
+    protected boolean rightFinished() {
+        return waitingRight == NOT_WAITING && !rightIt.hasNext();
+    }
+
+    /** */
+    protected boolean checkJoinFinished() throws Exception {
+        if (requested > 0 && leftFinished() && rightFinished()) {
             requested = 0;
 
             rightHashStore.close();
 
             downstream().end();
 
-            return;
+            return true;
         }
 
-        tryToRequestInputs();
+        return false;
     }
 
     /** */
@@ -264,7 +273,10 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 }
             }
 
-            requestMoreOrEnd();
+            if (checkJoinFinished())
+                return;
+
+            tryToRequestInputs();
         }
     }
 
@@ -344,7 +356,10 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 }
             }
 
-            requestMoreOrEnd();
+            if (checkJoinFinished())
+                return;
+
+            tryToRequestInputs();
         }
     }
 
@@ -450,7 +465,10 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 }
             }
 
-            requestMoreOrEnd();
+            if (checkJoinFinished())
+                return;
+
+            tryToRequestInputs();
         }
 
         /** {@inheritDoc} */
@@ -577,7 +595,10 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 }
             }
 
-            requestMoreOrEnd();
+            if (checkJoinFinished())
+                return;
+
+            tryToRequestInputs();
         }
 
         /** {@inheritDoc} */
@@ -657,7 +678,10 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 }
             }
 
-            requestMoreOrEnd();
+            if (checkJoinFinished())
+                return;
+
+            tryToRequestInputs();
         }
     }
 
@@ -709,7 +733,10 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 }
             }
 
-            requestMoreOrEnd();
+            if (checkJoinFinished())
+                return;
+
+            tryToRequestInputs();
         }
     }
 
