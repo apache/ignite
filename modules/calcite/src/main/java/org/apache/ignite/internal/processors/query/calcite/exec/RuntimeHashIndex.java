@@ -24,7 +24,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.ImmutableIntList;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,17 +34,6 @@ import org.jetbrains.annotations.Nullable;
  * Runtime hash index based on on-heap hash map.
  */
 public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
-    /** Allowed key for null values but matching no any other key. */
-    private static final GroupKey NON_MATCHING_NULLS_KEY = new GroupKey<>(null, null) {
-        @Override public boolean equals(Object o) {
-            throw new UnsupportedOperationException("Rows with null values must not be compared at all.");
-        }
-
-        @Override public int hashCode() {
-            return 0;
-        }
-    };
-
     /** */
     protected final ExecutionContext<Row> ectx;
 
@@ -55,29 +46,24 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     /** */
     private final Supplier<Collection<Row>> collectionFactory;
 
-    /** Allow NULL values. */
-    private final boolean allowNulls;
-
     /** */
-    private final boolean nullsMatch;
+    private final ImmutableBitSet nullsMatch;
 
     /** Creates hash index with the default collection supplier. */
-    public RuntimeHashIndex(ExecutionContext<Row> ectx, ImmutableBitSet keys, boolean allowNulls) {
-        this(ectx, ImmutableIntList.of(keys.toArray()), allowNulls, true, -1, null);
+    public RuntimeHashIndex(ExecutionContext<Row> ectx, ImmutableBitSet keys, ImmutableBitSet nullsMatch) {
+        this(ectx, keys.toArray(), nullsMatch, -1, null);
     }
 
     /** */
     public RuntimeHashIndex(
         ExecutionContext<Row> ectx,
-        ImmutableIntList keys,
-        boolean allowNulls,
-        boolean nullsMatch,
+        int[] keys,
+        ImmutableBitSet nullsMatch,
         int initCapacity,
         @Nullable Supplier<Collection<Row>> collectionFactory
     ) {
         this(
             ectx,
-            allowNulls,
             nullsMatch,
             new MappingRowHandler<>(ectx.rowHandler(), keys),
             initCapacity >= 0 ? new HashMap<>(initCapacity) : new HashMap<>(),
@@ -88,15 +74,13 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     /** Fields setting constructor. */
     private RuntimeHashIndex(
         ExecutionContext<Row> ectx,
-        boolean allowNulls,
-        boolean nullsMatch,
+        ImmutableBitSet nullsMatch,
         RowHandler<Row> keysRowHnd,
         Map<GroupKey<Row>, Collection<Row>> rows,
         @Nullable Supplier<Collection<Row>> collectionFactory
     ) {
         this.ectx = ectx;
-        this.allowNulls = allowNulls;
-        this.nullsMatch = allowNulls && nullsMatch;
+        this.nullsMatch = nullsMatch;
 
         this.keysRowHnd = keysRowHnd;
         this.rows = rows;
@@ -137,21 +121,42 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
      * IS NOT DISTINCT FROM condition).
      */
     private @Nullable GroupKey<Row> key(Row r) {
-        assert !nullsMatch || allowNulls;
-
-        if (!allowNulls || !nullsMatch) {
-            for (int i = 0; i < keysRowHnd.columnCount(r); i++) {
-                if (keysRowHnd.get(i, r) == null)
-                    return allowNulls ? NON_MATCHING_NULLS_KEY : null;
-            }
-        }
-
-        return new GroupKey<>(r, keysRowHnd);
+        return new NullsCheckingGroupKey<>(r, keysRowHnd);
     }
 
     /** */
     public RuntimeHashIndex<Row> remappedSearcher(int[] remappedKeys) {
         return new RemappedSearcher<>(this, remappedKeys);
+    }
+
+    /** */
+    private class NullsCheckingGroupKey<Row> extends GroupKey<Row> {
+        /** */
+        private NullsCheckingGroupKey(Row row, RowHandler<Row> hnd) {
+            super(row, hnd);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean columnValuesEquals(int colIdx, Object v1, Object v2) {
+            if (v1 == null && v2 == null) {
+                if (nullsMatch.cardinality() == 0)
+                    return false;
+
+                return nullsMatch.get(colIdx);
+            }
+
+            return super.columnValuesEquals(colIdx, v1, v2);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            throw new UnsupportedOperationException("Serialization of row keys is not supported.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            throw new UnsupportedOperationException("Deserialization of row keys is not supported.");
+        }
     }
 
     /** */
@@ -161,10 +166,10 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
 
         /** */
         private RemappedSearcher(RuntimeHashIndex<Row> o, int[] remappedKeys) {
-            super(o.ectx, o.allowNulls, o.nullsMatch, new MappingRowHandler<>(o.ectx.rowHandler(), ImmutableIntList.of(remappedKeys)),
-                o.rows, o.collectionFactory);
+            super(o.ectx, o.nullsMatch, new MappingRowHandler<>(o.ectx.rowHandler(), remappedKeys), o.rows,
+                o.collectionFactory);
 
-            this.origin = o;
+            origin = o;
         }
 
         /** {@inheritDoc} */
@@ -191,7 +196,7 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
         public @Nullable Collection<Row> get() {
             GroupKey<Row> key = key(searchRow.get());
 
-            if (key == null || key == NON_MATCHING_NULLS_KEY)
+            if (key == null)
                 return null;
 
             return rows.get(key);

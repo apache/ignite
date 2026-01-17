@@ -95,10 +95,18 @@ public class GroupKey<Row> implements Binarylizable {
             return false;
 
         for (int i = 0; i < colCnt; i++) {
-            if (!Objects.equals(hnd.get(i, row), other.hnd.get(i, other.row)))
+            Object o1 = hnd.get(i, row);
+            Object o2 = other.hnd.get(i, other.row);
+
+            if (!columnValuesEquals(i, o1, o2) || !Objects.equals(o1, o2))
                 return false;
         }
 
+        return true;
+    }
+
+    /** */
+    protected boolean columnValuesEquals(int colIdx, Object val1, Object val2) {
         return true;
     }
 

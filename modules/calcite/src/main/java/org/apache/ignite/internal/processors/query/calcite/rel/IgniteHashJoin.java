@@ -39,6 +39,9 @@ import org.apache.ignite.internal.processors.query.calcite.util.Commons;
 /** */
 public class IgniteHashJoin extends AbstractIgniteJoin {
     /** */
+    private static final double DISTINCT_RIGHT_ROWS_RATIO = 0.9;
+
+    /** */
     public IgniteHashJoin(
         RelOptCluster cluster,
         RelTraitSet traitSet,
@@ -81,7 +84,8 @@ public class IgniteHashJoin extends AbstractIgniteJoin {
 
         double rightSize = rightRowCnt * IgniteCost.AVERAGE_FIELD_SIZE * getRight().getRowType().getFieldCount();
 
-        double distRightRows = Util.first(mq.getDistinctRowCount(right, ImmutableBitSet.of(joinInfo.rightKeys), null), 0.9 * rightRowCnt);
+        double distRightRows = Util.first(mq.getDistinctRowCount(right, ImmutableBitSet.of(joinInfo.rightKeys), null),
+            DISTINCT_RIGHT_ROWS_RATIO * rightRowCnt);
 
         rightSize += distRightRows * rightKeysSize * IgniteCost.AVERAGE_FIELD_SIZE;
 

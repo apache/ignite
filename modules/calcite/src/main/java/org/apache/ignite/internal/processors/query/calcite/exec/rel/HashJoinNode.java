@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.function.BiPredicate;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeHashIndex;
@@ -81,7 +82,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         super(ctx, rowType);
 
         // For IS NOT DISTINCT we have to keep rows with null values.
-        if (!info.allowNulls().isEmpty())
+        if (!keepRowsWithNull && info.allowNulls().cardinality() > 0)
             keepRowsWithNull = true;
 
         leftKeys = info.leftKeys.toIntArray();
@@ -93,7 +94,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
         this.nonEqCond = nonEqCond;
 
-        rightHashStore = new RuntimeHashIndex<>(ctx, info.rightKeys, keepRowsWithNull, !info.allowNulls().isEmpty(),
+        rightHashStore = new RuntimeHashIndex<>(ctx, rightKeys, keepRowsWithNull ? info.allowNulls() : ImmutableBitSet.of(),
             INITIAL_CAPACITY, TouchedArrayList::new);
 
         remappedLeftSearcher = rightHashStore.remappedSearcher(leftKeys);
@@ -199,11 +200,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
             return;
         }
 
-        if (waitingRight == 0 && requested > 0)
-            rightSource().request(waitingRight = IN_BUFFER_SIZE);
-
-        if (waitingLeft == 0 && leftInBuf.size() <= HALF_BUF_SIZE)
-            leftSource().request(waitingLeft = IN_BUFFER_SIZE - leftInBuf.size());
+        tryToRequestInputs();
     }
 
     /** */
@@ -234,7 +231,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 try {
                     while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
                         // Proceed with next left row, if previous was fully processed.
-                        if (!rightIt.hasNext()) {
+                        if (left == null) {
                             left = leftInBuf.remove();
 
                             rightIt = lookup(left).iterator();
@@ -673,6 +670,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
          * @param rowType Out row type.
          * @param info Join info.
          * @param outRowHnd Output row handler.
+         * @param nonEqCond Non-equi conditions.
          */
         private AntiHashJoin(
             ExecutionContext<RowT> ctx,
@@ -681,7 +679,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
             RowHandler<RowT> outRowHnd,
             @Nullable BiPredicate<RowT, RowT> nonEqCond
         ) {
-            super(ctx, rowType, info, outRowHnd, false, null);
+            super(ctx, rowType, info, outRowHnd, false, nonEqCond);
         }
 
         /** {@inheritDoc} */

@@ -629,13 +629,4 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
 
         return false;
     }
-
-    /** */
-    protected void tryToRequestInputs() throws Exception {
-        if (waitingLeft == 0 && leftInBuf.size() <= HALF_BUF_SIZE)
-            leftSource().request(waitingLeft = IN_BUFFER_SIZE - leftInBuf.size());
-
-        if (waitingRight == 0 && requested > 0)
-            rightSource().request(waitingRight = IN_BUFFER_SIZE);
-    }
 }

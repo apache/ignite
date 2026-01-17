@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.lang.reflect.Type;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.calcite.util.ImmutableIntList;
 
 /**
  * Read only handler to process subset of columns.
@@ -29,28 +28,28 @@ public class MappingRowHandler<Row> implements RowHandler<Row> {
     private final RowHandler<Row> delegate;
 
     /** */
-    private final ImmutableIntList mapping;
+    private final int[] mapping;
 
-    /** Creates a mapping handler based on a bit set mapping. Keeps columns unique, but may change required colums order. */
+    /** */
     public MappingRowHandler(RowHandler<Row> delegate, ImmutableBitSet requiredColumns) {
         this.delegate = delegate;
-        mapping = ImmutableIntList.of(requiredColumns.toArray());
+        mapping = requiredColumns.toArray();
     }
 
-    /** Creates a mapping handler based on a array mapping as is. */
-    public MappingRowHandler(RowHandler<Row> delegate, ImmutableIntList requiredColumns) {
+    /** */
+    public MappingRowHandler(RowHandler<Row> delegate, int[] requiredColumns) {
         this.delegate = delegate;
         mapping = requiredColumns;
     }
 
     /** {@inheritDoc} */
     @Override public Object get(int field, Row row) {
-        return delegate.get(mapping.get(field), row);
+        return delegate.get(mapping[field], row);
     }
 
     /** {@inheritDoc} */
     @Override public int columnCount(Row row) {
-        return mapping.size();
+        return mapping.length;
     }
 
     /** {@inheritDoc} */
