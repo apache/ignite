@@ -236,7 +236,7 @@ public final class ClientConfiguration implements Serializable {
      */
     @Deprecated
     public int getTimeout() {
-        if (reqTimeout != connTimeout )
+        if (reqTimeout != connTimeout)
             U.warn(logger, String.format(
                 "Deprecated getTimeout() API is used while request timeout (%d) differs from connection timeout (%d). " +
                 "Returning request timeout. Please use getRequestTimeout() and getConnectionTimeout() instead.",

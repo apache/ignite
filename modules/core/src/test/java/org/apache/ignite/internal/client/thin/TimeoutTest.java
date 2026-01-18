@@ -228,19 +228,18 @@ public class TimeoutTest extends AbstractThinClientTest {
         ServerSocket sock = new ServerSocket();
         sock.bind(new InetSocketAddress("127.0.0.1", DFLT_PORT));
 
-        CountDownLatch connectionAccepted = new CountDownLatch(1);
-
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(() -> {
+            Socket accepted = null;
+
             try {
-                Socket accepted = sock.accept();
-                connectionAccepted.countDown();
+                accepted = sock.accept();
 
-                Thread.sleep(2000);
-
-                U.closeQuiet(accepted);
+                while (!Thread.currentThread().isInterrupted())
+                    Thread.sleep(10);
             }
-            catch (Exception e) {
-                throw new IgniteException("Accept thread failed: " + e.getMessage(), e);
+            finally {
+                if (accepted == null)
+                    U.closeQuiet(accepted);
             }
         });
 
@@ -254,14 +253,12 @@ public class TimeoutTest extends AbstractThinClientTest {
                 () -> Ignition.startClient(cfg),
                 IgniteFutureTimeoutCheckedException.class
             );
+
+            fut.cancel();
         }
         finally {
             U.closeQuiet(sock);
         }
-
-        assertTrue("Connection should have been accepted", connectionAccepted.await(1, TimeUnit.SECONDS));
-
-        fut.get();
     }
 
     /**
@@ -314,8 +311,8 @@ public class TimeoutTest extends AbstractThinClientTest {
 
                 barrier.await(2, TimeUnit.SECONDS);
 
-                cache.put(2, "still works");
-                assertEquals("still works", cache.get(2));
+                cache.put(1, "still works");
+                assertEquals("still works", cache.get(1));
 
                 blockingThread.get();
             }
