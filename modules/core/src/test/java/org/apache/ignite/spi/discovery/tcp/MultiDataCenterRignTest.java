@@ -117,7 +117,7 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
     private void generateRandomDcOrderCluster(int cnt) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        for (int i = 0; i < cnt; i ++) {
+        for (int i = 0; i < cnt; i++) {
             System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, rnd.nextBoolean() ? DC_ID_0 : DC_ID_1);
 
             startGrid(i);
