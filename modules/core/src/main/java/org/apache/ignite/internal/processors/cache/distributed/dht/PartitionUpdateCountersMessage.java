@@ -65,9 +65,6 @@ public class PartitionUpdateCountersMessage implements Message {
      * @return Payload.
      */
     public byte[] payload() {
-        if (data == null)
-            return new byte[0];
-
         return Arrays.copyOf(data, size * ITEM_SIZE);
     }
 
