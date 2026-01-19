@@ -2705,11 +2705,14 @@ class ServerImpl extends TcpDiscoveryImpl {
      * Pending messages container.
      */
     private static class PendingMessages implements Iterable<TcpDiscoveryAbstractMessage> {
+        /** */
+        private static final int MAX = 1024;
+
         /** Pending messages. */
-        private final Queue<PendingMessage> msgs = new ArrayDeque<>();
+        private final Queue<PendingMessage> msgs = new ArrayDeque<>(MAX * 2);
 
         /** Processed custom message IDs. */
-        private final Set<IgniteUuid> procCustomMsgs = new GridBoundedLinkedHashSet<>(2048);
+        private final Set<IgniteUuid> procCustomMsgs = new GridBoundedLinkedHashSet<>(MAX * 2);
 
         /**
          * Adds pending message and shrinks queue if it exceeds limit
