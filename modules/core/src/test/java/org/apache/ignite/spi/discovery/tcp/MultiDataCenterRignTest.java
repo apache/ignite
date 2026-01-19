@@ -117,16 +117,10 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
     private void generateRandomDcOrderCluster(int cnt) throws Exception {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        boolean order = rnd.nextBoolean();
-
-        for (int i = 0; i < cnt; i += 2) {
-            System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, order ? DC_ID_0 : DC_ID_1);
+        for (int i = 0; i < cnt; i ++) {
+            System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, rnd.nextBoolean() ? DC_ID_0 : DC_ID_1);
 
             startGrid(i);
-
-            System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, order ? DC_ID_1 : DC_ID_0);
-
-            startGrid(i + 1);
         }
 
         waitForTopology(cnt);
