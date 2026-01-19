@@ -31,13 +31,13 @@ public class PartitionUpdateCountersMessage implements Message {
     /** */
     private static final int ITEM_SIZE = 4 /* partition */ + 8 /* initial counter */ + 8 /* updates count */;
 
-    /** */
+    /** Byte representation of partition counters. */
     @Order(0)
-    private int cacheId;
+    private byte[] data;
 
     /** */
-    @Order(value = 1, method = "payload")
-    private byte[] data;
+    @Order(1)
+    private int cacheId;
 
     /** */
     private int size;
@@ -62,17 +62,17 @@ public class PartitionUpdateCountersMessage implements Message {
     }
 
     /**
-     * @return Payload.
+     * @return Data.
      */
-    public byte[] payload() {
+    public byte[] data() {
         return Arrays.copyOf(data, size * ITEM_SIZE);
     }
 
     /**
-     * @param payload New payload.
+     * @param data New data.
      */
-    public void payload(byte[] payload) {
-        data = payload;
+    public void data(byte[] data) {
+        this.data = data;
         size = data == null ? 0 : data.length / ITEM_SIZE;
     }
 
