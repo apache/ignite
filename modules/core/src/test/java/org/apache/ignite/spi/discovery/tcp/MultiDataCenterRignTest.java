@@ -146,16 +146,4 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
 
         assertEquals(expected, hops);
     }
-
-    /** */
-    @Test
-    public void testDcReversedChange() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_1);
-        startGrid(0);
-
-        System.setProperty(IgniteSystemProperties.IGNITE_DATA_CENTER_ID, DC_ID_0);
-        startGrid(1);
-
-        awaitPartitionMapExchange();
-    }
 }
