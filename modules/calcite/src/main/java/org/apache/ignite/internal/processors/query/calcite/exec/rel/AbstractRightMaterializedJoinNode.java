@@ -69,8 +69,6 @@ public abstract class AbstractRightMaterializedJoinNode<Row> extends MemoryTrack
         assert !F.isEmpty(sources()) && sources().size() == 2;
         assert rowsCnt > 0 && requested == 0;
 
-        checkState();
-
         requested = rowsCnt;
 
         if (!inLoop)
@@ -128,8 +126,6 @@ public abstract class AbstractRightMaterializedJoinNode<Row> extends MemoryTrack
         assert downstream() != null;
         assert waitingLeft > 0;
 
-        checkState();
-
         --waitingLeft;
 
         leftInBuf.add(row);
@@ -142,8 +138,6 @@ public abstract class AbstractRightMaterializedJoinNode<Row> extends MemoryTrack
         assert downstream() != null;
         assert waitingLeft > 0;
 
-        checkState();
-
         waitingLeft = NOT_WAITING;
 
         join0();
@@ -153,8 +147,6 @@ public abstract class AbstractRightMaterializedJoinNode<Row> extends MemoryTrack
     private void endRight() throws Exception {
         assert downstream() != null;
         assert waitingRight > 0;
-
-        checkState();
 
         waitingRight = NOT_WAITING;
 
