@@ -488,9 +488,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
 
-        if (dsCfg != null) {
+        if (dsCfg != null)
             ctx.addNodeAttribute(ATTR_WAL_MODE, dsCfg.getWalMode());
-        }
 
         DiscoverySpi spi = getSpi();
 
@@ -1397,16 +1396,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             WALMode rmtWalMode = n.attribute(ATTR_WAL_MODE);
 
             if (locWalMode != rmtWalMode) {
-                throw new IgniteCheckedException("WAL mode validation failed. " +
-                        " Local node(locNodeAddrs=" + U.addressesAsString(locNode) +
-                        ", id=" + locNode.id() +
-                        ", consistentId=" + locNode.consistentId() +
-                        ", WALMode=" + locWalMode +
-                        "), Remote node(rmtNodeAddrs=" + U.addressesAsString(n) +
-                        ", id=" + n.id() +
-                        ", consistentId=" + n.consistentId() +
-                        ", WALMode=" + rmtWalMode +
-                        "). All nodes in the cluster must have the same WALMode configuration.");
+                throw new IgniteCheckedException("Remote node has WAL mode different from local " +
+                    "[locId8=" + U.id8(locNode.id()) + ", locWalMode=" + locWalMode +
+                    ", rmtId8=" + U.id8(n.id()) + ", rmtWalMode=" + rmtWalMode +
+                    ", rmtAddrs=" + U.addressesAsString(n) + ", rmtNode=" + U.toShortString(n) + "]");
             }
         }
 
