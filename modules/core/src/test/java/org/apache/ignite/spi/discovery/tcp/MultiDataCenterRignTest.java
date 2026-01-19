@@ -100,13 +100,13 @@ public class MultiDataCenterRignTest extends GridCommonAbstractTest {
 
         latch.await();
 
-        String curDC = null;
+        String curDc = null;
         int hops = 0;
 
         for (String dcId : dcs) {
-            if (!dcId.equals(curDC)) {
+            if (!dcId.equals(curDc)) {
                 hops++;
-                curDC = dcId;
+                curDc = dcId;
             }
         }
 
