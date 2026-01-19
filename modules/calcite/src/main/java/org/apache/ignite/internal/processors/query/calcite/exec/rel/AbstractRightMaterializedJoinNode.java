@@ -74,7 +74,7 @@ public abstract class AbstractRightMaterializedJoinNode<Row> extends MemoryTrack
         requested = rowsCnt;
 
         if (!inLoop)
-            context().execute(this::doJoin, this::onError);
+            context().execute(this::join0, this::onError);
     }
 
     /** {@inheritDoc} */
@@ -134,7 +134,7 @@ public abstract class AbstractRightMaterializedJoinNode<Row> extends MemoryTrack
 
         leftInBuf.add(row);
 
-        join();
+        join0();
     }
 
     /** */
@@ -146,7 +146,7 @@ public abstract class AbstractRightMaterializedJoinNode<Row> extends MemoryTrack
 
         waitingLeft = NOT_WAITING;
 
-        join();
+        join0();
     }
 
     /** */
@@ -158,7 +158,7 @@ public abstract class AbstractRightMaterializedJoinNode<Row> extends MemoryTrack
 
         waitingRight = NOT_WAITING;
 
-        join();
+        join0();
     }
 
     /** */
@@ -181,8 +181,10 @@ public abstract class AbstractRightMaterializedJoinNode<Row> extends MemoryTrack
     }
 
     /** */
-    private void doJoin() throws Exception {
+    private void join0() throws Exception {
         checkState();
+
+        processed = 0;
 
         join();
     }
@@ -190,9 +192,7 @@ public abstract class AbstractRightMaterializedJoinNode<Row> extends MemoryTrack
     /** */
     protected boolean rescheduleJoin() {
         if (processed++ > IN_BUFFER_SIZE) {
-            processed = 0;
-
-            context().execute(this::doJoin, this::onError);
+            context().execute(this::join0, this::onError);
 
             return true;
         }
