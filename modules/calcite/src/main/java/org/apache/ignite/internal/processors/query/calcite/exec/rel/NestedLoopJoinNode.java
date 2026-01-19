@@ -56,6 +56,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
     @Override protected void rewindInternal() {
         super.rewindInternal();
 
+        rightIdx = 0;
+
         rightMaterialized.clear();
     }
 
@@ -127,13 +129,6 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
         }
 
         /** {@inheritDoc} */
-        @Override protected void rewindInternal() {
-            super.rewindInternal();
-
-            rightIdx = 0;
-        }
-
-        /** {@inheritDoc} */
         @Override protected void join() throws Exception {
             if (waitingRight == NOT_WAITING) {
                 inLoop = true;
@@ -196,7 +191,6 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
             super.rewindInternal();
 
             matched = false;
-            rightIdx = 0;
         }
 
         /** {@inheritDoc} */
@@ -282,7 +276,6 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
 
             rightNotMatchedIndexes.clear();
             lastPushedInd = 0;
-            rightIdx = 0;
         }
 
         /** {@inheritDoc} */
@@ -401,7 +394,6 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
             leftMatched = false;
             rightNotMatchedIndexes.clear();
             lastPushedInd = 0;
-            rightIdx = 0;
         }
 
         /** {@inheritDoc} */
@@ -504,13 +496,6 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
         }
 
         /** {@inheritDoc} */
-        @Override protected void rewindInternal() {
-            super.rewindInternal();
-
-            rightIdx = 0;
-        }
-
-        /** {@inheritDoc} */
         @Override protected void join() throws Exception {
             if (waitingRight == NOT_WAITING) {
                 while (requested > 0 && (left != null || !leftInBuf.isEmpty())) {
@@ -550,13 +535,6 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
         /** */
         public AntiJoin(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
             super(ctx, rowType, cond);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void rewindInternal() {
-            super.rewindInternal();
-
-            rightIdx = 0;
         }
 
         /** {@inheritDoc} */
