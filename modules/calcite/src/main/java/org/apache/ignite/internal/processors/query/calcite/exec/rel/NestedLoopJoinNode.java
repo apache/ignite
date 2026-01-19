@@ -37,6 +37,9 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
     /** */
     protected final List<Row> rightMaterialized = new ArrayList<>(IN_BUFFER_SIZE);
 
+    /** */
+    protected int rightIdx;
+
     /**
      * @param ctx Execution context.
      * @param rowType Row type.
@@ -119,9 +122,6 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
     /** */
     private static class InnerJoin<Row> extends NestedLoopJoinNode<Row> {
         /** */
-        private int rightIdx;
-
-        /** */
         public InnerJoin(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
             super(ctx, rowType, cond);
         }
@@ -178,9 +178,6 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
 
         /** Shows whether current left row was matched. */
         private boolean matched;
-
-        /** */
-        private int rightIdx;
 
         /** */
         public LeftJoin(
@@ -266,9 +263,6 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
 
         /** */
         private int lastPushedInd;
-
-        /** */
-        private int rightIdx;
 
         /** */
         public RightJoin(
@@ -384,12 +378,6 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
 
         /** */
         private int lastPushedInd;
-
-        /** */
-        private Row left;
-
-        /** */
-        private int rightIdx;
 
         /** */
         public FullOuterJoin(
@@ -511,9 +499,6 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
     /** */
     private static class SemiJoin<Row> extends NestedLoopJoinNode<Row> {
         /** */
-        private int rightIdx;
-
-        /** */
         public SemiJoin(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
             super(ctx, rowType, cond);
         }
@@ -562,9 +547,6 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
 
     /** */
     private static class AntiJoin<Row> extends NestedLoopJoinNode<Row> {
-        /** */
-        private int rightIdx;
-
         /** */
         public AntiJoin(ExecutionContext<Row> ctx, RelDataType rowType, BiPredicate<Row, Row> cond) {
             super(ctx, rowType, cond);
