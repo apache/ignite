@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 import java.util.Iterator;
 
 /**
- * Interface to iterate over raw table data and convert this data to relational node rows.
+ * Interface to iterate over raw table data and form relational node rows from table row columns.
  *
  * @param <TableRow> Raw table row type.
  * @param <Row> Relational node row type.
