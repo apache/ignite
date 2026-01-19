@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
@@ -25,40 +26,60 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Is sent as an acknowledgement for end (with success or error) of user management operation on the cluster
  * (see {@link UserProposedMessage} and {@link UserManagementOperation}).
  */
-public class UserAcceptedMessage implements DiscoveryCustomMessage {
+public class UserAcceptedMessage implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    private IgniteUuid id;
 
     /** Operation ID. */
+    @Order(value = 1, method = "operationId")
     @GridToStringInclude
-    private final IgniteUuid opId;
+    private IgniteUuid opId;
 
-    /** Error. */
-    private final IgniteCheckedException error;
+    /** Error message. */
+    @Order(value = 2, method = "errorMessage")
+    private ErrorMessage errMsg;
+
+    /** Constructor. */
+    public UserAcceptedMessage() {
+        // No-op.
+    }
 
     /**
-     * @param opId THe ID of operation.
+     * @param opId The ID of operation.
      * @param error Error.
      */
-    UserAcceptedMessage(IgniteUuid opId, IgniteCheckedException error) {
+    UserAcceptedMessage(IgniteUuid opId, Throwable error) {
         assert opId != null || error != null;
 
+        id = IgniteUuid.randomUuid();
+
         this.opId = opId;
-        this.error = error;
+
+        if (error != null)
+            errMsg = new ErrorMessage(error);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {
         return id;
+    }
+
+    /**
+     * @param id Unique custom message ID.
+     */
+    public void id(IgniteUuid id) {
+        this.id = id;
     }
 
     /** {@inheritDoc} */
@@ -80,19 +101,45 @@ public class UserAcceptedMessage implements DiscoveryCustomMessage {
     /**
      * @return User operation ID.
      */
-    IgniteUuid operationId() {
+    public IgniteUuid operationId() {
         return opId;
+    }
+
+    /**
+     * @param opId User operation ID.
+     */
+    public void operationId(IgniteUuid opId) {
+        this.opId = opId;
+    }
+
+    /**
+     * @return Error message.
+     */
+    public ErrorMessage errorMessage() {
+        return errMsg;
+    }
+
+    /**
+     * @param errMsg Error message.
+     */
+    public void errorMessage(ErrorMessage errMsg) {
+        this.errMsg = errMsg;
     }
 
     /**
      * @return Error.
      */
-    IgniteCheckedException error() {
-        return error;
+    Throwable error() {
+        return ErrorMessage.error(errMsg);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(UserAcceptedMessage.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 500;
     }
 }

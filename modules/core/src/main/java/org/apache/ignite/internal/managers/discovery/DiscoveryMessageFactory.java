@@ -34,6 +34,8 @@ import org.apache.ignite.internal.codegen.TcpDiscoveryNodeMetricsMessageSerializ
 import org.apache.ignite.internal.codegen.TcpDiscoveryPingRequestSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryPingResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryRingLatencyCheckMessageSerializer;
+import org.apache.ignite.internal.codegen.UserAcceptedMessageSerializer;
+import org.apache.ignite.internal.processors.authentication.UserAcceptedMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
@@ -62,6 +64,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)-101, InetSocketAddressMessage::new, new InetSocketAddressMessageSerializer());
         factory.register((short)-100, InetAddressMessage::new, new InetAddressMessageSerializer());
 
+        // TcpDiscoveryAbstractMessage
         factory.register((short)0, TcpDiscoveryCheckFailedMessage::new, new TcpDiscoveryCheckFailedMessageSerializer());
         factory.register((short)1, TcpDiscoveryPingRequest::new, new TcpDiscoveryPingRequestSerializer());
         factory.register((short)2, TcpDiscoveryPingResponse::new, new TcpDiscoveryPingResponseSerializer());
@@ -76,5 +79,8 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)11, TcpDiscoveryAuthFailedMessage::new, new TcpDiscoveryAuthFailedMessageSerializer());
         factory.register((short)12, TcpDiscoveryDuplicateIdMessage::new, new TcpDiscoveryDuplicateIdMessageSerializer());
         factory.register((short)13, TcpDiscoveryClientMetricsUpdateMessage::new, new TcpDiscoveryClientMetricsUpdateMessageSerializer());
+
+        // DiscoveryCustomMessage
+        factory.register((short)500, UserAcceptedMessage::new, new UserAcceptedMessageSerializer());
     }
 }
