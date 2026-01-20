@@ -344,7 +344,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private final SnapshotCheckProcess checkSnpProc;
 
     /** Check previously performed snapshot operation and delete uncompleted files if we need. */
-    private final DistributedProcess<SnapshotOperationRequest, SnapshotOperationResponse> endSnpProc;
+    private final DistributedProcess<SnapshotOperationEndRequest, SnapshotOperationResponse> endSnpProc;
 
     /** Marshaller. */
     private final Marshaller marsh;
@@ -386,7 +386,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private ClusterSnapshotFuture clusterSnpFut;
 
     /** Current snapshot operation on local node. */
-    private volatile SnapshotOperationRequest clusterSnpReq;
+    private volatile SnapshotOperation curSnpOp;
 
     /** {@code true} if recovery process occurred for snapshot. */
     private volatile boolean recovered;
@@ -569,21 +569,24 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 UUID leftNodeId = evt.eventNode().id();
 
                 if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED) {
-                    SnapshotOperationRequest snpReq = clusterSnpReq;
+                    SnapshotOperation snpOp = curSnpOp;
                     String err = "Snapshot operation interrupted, because baseline node left the cluster: " + leftNodeId;
-                    boolean reqNodeLeft = snpReq != null && snpReq.nodes().contains(leftNodeId);
+                    boolean reqNodeLeft = snpOp != null && snpOp.request().nodes().contains(leftNodeId);
 
                     // If the coordinator left the cluster and did not start
                     // the final snapshot phase (SNAPSHOT_END), we start it from a new one.
-                    if (reqNodeLeft && snpReq.startStageEnded() && U.isLocalNodeCoordinator(ctx.discovery())) {
-                        snpReq.error(new ClusterTopologyCheckedException(err));
+                    if (reqNodeLeft && snpOp.startStageEnded() && U.isLocalNodeCoordinator(ctx.discovery())) {
+                        snpOp.error(new ClusterTopologyCheckedException(err));
 
-                        endSnpProc.start(snpReq.requestId(), snpReq);
+                        endSnpProc.start(
+                            snpOp.request().requestId(),
+                            new SnapshotOperationEndRequest(snpOp.request().requestId(), snpOp.error(), null)
+                        );
                     }
 
                     for (AbstractSnapshotFutureTask<?> sctx : locSnpTasks.values()) {
                         if (sctx.sourceNodeId().equals(leftNodeId) ||
-                            (reqNodeLeft && snpReq.snapshotName().equals(sctx.snapshotName())))
+                            (reqNodeLeft && snpOp.request().snapshotName().equals(sctx.snapshotName())))
                             sctx.acceptException(new ClusterTopologyCheckedException(err));
                     }
 
@@ -764,14 +767,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotStartStage(SnapshotOperationRequest req) {
         // Executed inside discovery notifier thread, prior to firing discovery custom event,
         // so it is safe to set new snapshot task inside this method without synchronization.
-        if (clusterSnpReq != null) {
+        if (curSnpOp != null) {
             return new GridFinishedFuture<>(new IgniteCheckedException("Snapshot operation has been rejected. " +
-                "Another snapshot operation in progress [req=" + req + ", curr=" + clusterSnpReq + ']'));
+                "Another snapshot operation in progress [req=" + req + ", curr=" + curSnpOp + ']'));
         }
 
-        req.snapshotFileTree(new SnapshotFileTree(cctx.kernalContext(), req.snapshotName(), req.snapshotPath()));
+        SnapshotOperation snpOp = new SnapshotOperation(req,
+            new SnapshotFileTree(cctx.kernalContext(), req.snapshotName(), req.snapshotPath()));
 
-        clusterSnpReq = req;
+        curSnpOp = snpOp;
 
         if (req.incremental())
             handleIncrementalSnapshotId(req.requestId(), cctx.discovery().topologyVersion());
@@ -819,18 +823,18 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             SnapshotMetadata meta;
 
             try {
-                meta = readSnapshotMetadata(req.snapshotFileTree().meta());
+                meta = readSnapshotMetadata(snpOp.snapshotFileTree().meta());
 
-                checkIncrementalCanBeCreated(req.snapshotFileTree(), meta);
+                checkIncrementalCanBeCreated(snpOp.snapshotFileTree(), meta);
             }
             catch (IgniteCheckedException | IOException e) {
                 return new GridFinishedFuture<>(e);
             }
 
-            return initLocalIncrementalSnapshot(req, meta);
+            return initLocalIncrementalSnapshot(snpOp, meta);
         }
         else
-            return initLocalFullSnapshot(req, grpIds, comprGrpIds, withMetaStorage);
+            return initLocalFullSnapshot(snpOp, grpIds, comprGrpIds, withMetaStorage);
     }
 
     /**
@@ -868,15 +872,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param req Request on snapshot creation.
+     * @param snpOp Snapshot creation operation.
      * @param meta Full snapshot metadata.
      * @return Future which will be completed when a snapshot has been started.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalIncrementalSnapshot(
-        SnapshotOperationRequest req,
+        SnapshotOperation snpOp,
         SnapshotMetadata meta
     ) {
-        SnapshotFileTree sft = req.snapshotFileTree();
+        SnapshotOperationRequest req = snpOp.request();
+        SnapshotFileTree sft = snpOp.snapshotFileTree();
         IncrementalSnapshotFileTree ift = sft.incrementalSnapshotFileTree(req.incrementIndex());
         WALPointer lowPtr;
 
@@ -917,7 +922,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 req.incrementIndex(),
                 cctx.localNode().consistentId().toString(),
                 ft.folderName(),
-                clusterSnpReq.startTime(),
+                req.startTime(),
                 markWalFut.result()
             );
 
@@ -935,9 +940,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         cctx.kernalContext().pools().getSnapshotExecutorService().submit(() -> {
-            SnapshotOperationRequest snpReq = clusterSnpReq;
-
-            AbstractSnapshotFutureTask<?> task = locSnpTasks.get(snpReq.snapshotName());
+            AbstractSnapshotFutureTask<?> task = locSnpTasks.get(req.snapshotName());
 
             if (task == null)
                 return;
@@ -964,18 +967,20 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param req Request
+     * @param snpOp Snapshot operation.
      * @param grpIds Groups.
      * @param comprGrpIds Compressed Groups.
      * @param withMetaStorage Flag to include metastorage.
      * @return Create snapshot future.
      */
     private IgniteInternalFuture<SnapshotOperationResponse> initLocalFullSnapshot(
-        SnapshotOperationRequest req,
+        SnapshotOperation snpOp,
         List<Integer> grpIds,
         Collection<Integer> comprGrpIds,
         boolean withMetaStorage
     ) {
+        SnapshotOperationRequest req = snpOp.request();
+
         if (!isPersistenceEnabled(cctx.gridConfig()) && req.snapshotPath() == null)
             ft.mkdirSnapshotsRoot();
 
@@ -1010,7 +1015,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         }
 
         IgniteInternalFuture<?> task0 = registerSnapshotTask(
-            req.snapshotFileTree(),
+            snpOp.snapshotFileTree(),
             req.operationalNodeId(),
             req.requestId(),
             parts,
@@ -1019,7 +1024,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             req.compress(),
             req.encrypt(),
             req.configOnly(),
-            locSndrFactory.apply(req.snapshotFileTree())
+            locSndrFactory.apply(snpOp.snapshotFileTree())
         );
 
         if (withMetaStorage) {
@@ -1038,7 +1043,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     .map(n -> cctx.discovery().node(n).consistentId().toString())
                     .collect(Collectors.toSet());
 
-                req.snapshotFileTree().root().mkdirs();
+                snpOp.snapshotFileTree().root().mkdirs();
 
                 SnapshotFutureTaskResult res = (SnapshotFutureTaskResult)task0.result();
 
@@ -1053,7 +1058,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     req.compress(),
                     cctx.gridConfig().getDataStorageConfiguration().getPageSize(),
                     grpIds,
-                    clusterSnpReq.startTime(),
+                    req.startTime(),
                     comprGrpIds,
                     blts,
                     res.parts(),
@@ -1064,14 +1069,14 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     encKey == null ? null : encSpi.encryptKey(encKey)
                 );
 
-                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), req.snapshotFileTree(),
-                    req.streamerWarning(), true);
+                SnapshotHandlerContext ctx = new SnapshotHandlerContext(meta, req.groups(), cctx.localNode(), snpOp.snapshotFileTree(),
+                    snpOp.streamerWarning(), true);
 
-                req.meta(meta);
+                snpOp.meta(meta);
 
-                storeSnapshotMeta(req.meta(), req.snapshotFileTree().meta());
+                storeSnapshotMeta(snpOp.meta(), snpOp.snapshotFileTree().meta());
 
-                log.info("Snapshot metafile has been created: " + req.snapshotFileTree().meta().getAbsolutePath());
+                log.info("Snapshot metafile has been created: " + snpOp.snapshotFileTree().meta().getAbsolutePath());
 
                 return new SnapshotOperationResponse(handlers.invokeAll(SnapshotHandlerType.CREATE, ctx));
             }
@@ -1087,7 +1092,8 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param err Errors.
      */
     private void processLocalSnapshotStartStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Throwable> err) {
-        SnapshotOperationRequest snpReq = clusterSnpReq;
+        SnapshotOperation snpOp = curSnpOp;
+        SnapshotOperationRequest snpReq = snpOp == null ? null : snpOp.request();
 
         if (snpReq != null && Objects.equals(id, snpReq.requestId()) && snpReq.incremental()) {
             cctx.tm().txMessageTransformer(null);
@@ -1126,7 +1132,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             }
         }
 
-        snpReq.startStageEnded(true);
+        snpOp.startStageEnded(true);
 
         if (isLocalNodeCoordinator(cctx.discovery())) {
             Set<UUID> missed = new HashSet<>(snpReq.nodes());
@@ -1134,24 +1140,27 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             missed.removeAll(err.keySet());
 
             if (cancelled) {
-                snpReq.error(new IgniteFutureCancelledCheckedException("Execution of snapshot tasks " +
+                snpOp.error(new IgniteFutureCancelledCheckedException("Execution of snapshot tasks " +
                     "has been cancelled by external process [err=" + err + ", missed=" + missed + ']'));
             }
             else if (!missed.isEmpty()) {
-                snpReq.error(new ClusterTopologyCheckedException("Snapshot operation interrupted, because baseline " +
+                snpOp.error(new ClusterTopologyCheckedException("Snapshot operation interrupted, because baseline " +
                     "node left the cluster. Uncompleted snapshot will be deleted [missed=" + missed + ']'));
             }
             else if (!F.isEmpty(err)) {
-                snpReq.error(new IgniteCheckedException("Execution of local snapshot tasks fails. " +
+                snpOp.error(new IgniteCheckedException("Execution of local snapshot tasks fails. " +
                     "Uncompleted snapshot will be deleted [err=" + err + ']'));
             }
 
-            completeHandlersAsyncIfNeeded(snpReq, res.values())
+            completeHandlersAsyncIfNeeded(snpOp, res.values())
                 .listen(f -> {
                         if (f.error() != null)
-                            snpReq.error(f.error());
+                            snpOp.error(f.error());
 
-                        endSnpProc.start(snpReq.requestId(), snpReq);
+                        endSnpProc.start(
+                            snpReq.requestId(),
+                            new SnapshotOperationEndRequest(snpReq.requestId(), snpOp.error(), snpOp.warnings())
+                        );
                     }
                 );
         }
@@ -1187,14 +1196,16 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     /**
      * Execute the {@link SnapshotHandler#complete(String, Collection)} method of the snapshot handlers asynchronously.
      *
-     * @param req Request on snapshot creation.
+     * @param snpOp Snapshot creation operation.
      * @param res Results.
      * @return Future that will be completed when the handlers are finished executing.
      */
-    private IgniteInternalFuture<Void> completeHandlersAsyncIfNeeded(SnapshotOperationRequest req,
+    private IgniteInternalFuture<Void> completeHandlersAsyncIfNeeded(SnapshotOperation snpOp,
         Collection<SnapshotOperationResponse> res) {
-        if (req.error() != null)
+        if (snpOp.error() != null)
             return new GridFinishedFuture<>();
+
+        SnapshotOperationRequest req = snpOp.request();
 
         Map<String, List<SnapshotHandlerResult<?>>> clusterHndResults = new HashMap<>();
 
@@ -1215,7 +1226,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
             handlers().execSvc.submit(() -> {
                 try {
                     handlers.completeAll(SnapshotHandlerType.CREATE, req.snapshotName(), clusterHndResults, req.nodes(),
-                        req::warnings);
+                        snpOp::warnings);
 
                     resultFut.onDone();
                 }
@@ -1235,60 +1246,62 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
     }
 
     /**
-     * @param req Request on snapshot creation.
+     * @param endReq Snapshot creation end request.
      * @return Future which will be completed when the snapshot will be finalized.
      */
-    private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(SnapshotOperationRequest req) {
-        SnapshotOperationRequest snpReq = clusterSnpReq;
+    private IgniteInternalFuture<SnapshotOperationResponse> initLocalSnapshotEndStage(SnapshotOperationEndRequest endReq) {
+        SnapshotOperation snpOp = curSnpOp;
 
-        if (snpReq == null || !Objects.equals(req.requestId(), snpReq.requestId()))
+        if (snpOp == null || !Objects.equals(endReq.requestId(), snpOp.request().requestId()))
             return new GridFinishedFuture<>();
 
-        IgniteInternalFuture<?> prepFut = req.incremental() ? wrapMsgsFut : new GridFinishedFuture<>();
+        SnapshotOperationRequest snpStartReq = curSnpOp.request();
+
+        IgniteInternalFuture<?> prepFut = snpStartReq.incremental() ? wrapMsgsFut : new GridFinishedFuture<>();
 
         if (cctx.kernalContext().clientNode())
             return (IgniteInternalFuture<SnapshotOperationResponse>)prepFut;
 
         return prepFut.chain(() -> {
             try {
-                if (req.error() != null) {
-                    snpReq.error(req.error());
+                if (endReq.error() != null) {
+                    snpOp.error(endReq.error());
 
-                    if (req.incremental())
-                        U.delete(snpReq.snapshotFileTree().incrementalSnapshotFileTree(req.incrementIndex()).root());
+                    if (snpStartReq.incremental())
+                        U.delete(snpOp.snapshotFileTree().incrementalSnapshotFileTree(snpStartReq.incrementIndex()).root());
                     else
-                        deleteSnapshot(snpReq.snapshotFileTree());
+                        deleteSnapshot(snpOp.snapshotFileTree());
                 }
-                else if (!F.isEmpty(req.warnings())) {
+                else if (!F.isEmpty(endReq.warnings())) {
                     // Pass the warnings further to the next stage for the case when snapshot started from not coordinator.
                     if (!isLocalNodeCoordinator(cctx.discovery()))
-                        snpReq.warnings(req.warnings());
+                        snpOp.warnings(endReq.warnings());
 
-                    snpReq.meta().warnings(Collections.unmodifiableList(req.warnings()));
+                    snpOp.meta().warnings(Collections.unmodifiableList(endReq.warnings()));
 
-                    storeWarnings(snpReq);
+                    storeWarnings(snpOp);
                 }
 
-                if (req.dump()) {
-                    if (!U.delete(snpReq.snapshotFileTree().dumpLock()))
-                        throw new IgniteCheckedException("Lock file can't be deleted: " + snpReq.snapshotFileTree().dumpLock());
+                if (snpStartReq.dump()) {
+                    if (!U.delete(snpOp.snapshotFileTree().dumpLock()))
+                        throw new IgniteCheckedException("Lock file can't be deleted: " + snpOp.snapshotFileTree().dumpLock());
                 }
                 else {
                     removeLastMetaStorageKey();
 
-                    if (req.error() == null) {
-                        Collection<Integer> grpIds = req.groups().stream().map(CU::cacheId).collect(Collectors.toList());
+                    if (endReq.error() == null) {
+                        Collection<Integer> grpIds = snpStartReq.groups().stream().map(CU::cacheId).collect(Collectors.toList());
 
                         enableIncrementalSnapshotsCreation(grpIds);
                     }
                 }
 
                 if (log.isInfoEnabled())
-                    log.info("Finishing local snapshot operation [req=" + req + ']');
+                    log.info("Finishing local snapshot operation [req=" + snpStartReq + ']');
             }
             catch (Exception e) {
                 log.error("Finishing local snapshot operation failed " +
-                    "[req=" + req + ", err=" + e + ']');
+                    "[req=" + snpStartReq + ", err=" + e + ']');
 
                 throw F.wrap(e);
             }
@@ -1303,8 +1316,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * process possible snapshot errors, deleting snapshot at second stage end. Doesn't worth. If an error occurs on
      * warnings writing, it is logged only.
      */
-    private void storeWarnings(SnapshotOperationRequest snpReq) {
-        assert !F.isEmpty(snpReq.warnings());
+    private void storeWarnings(SnapshotOperation snpOp) {
+        SnapshotOperationRequest snpReq = snpOp.request();
+
+        assert !F.isEmpty(snpOp.warnings());
 
         List<ClusterNode> snpNodes = cctx.kernalContext().cluster().get().nodes().stream()
             .filter(n -> snpReq.nodes().contains(n.id())).collect(Collectors.toList());
@@ -1315,11 +1330,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         if (!oldestBaseline)
             return;
 
-        File tempSmf = snpReq.snapshotFileTree().tmpMeta();
-        File smf = snpReq.snapshotFileTree().meta();
+        File tempSmf = snpOp.snapshotFileTree().tmpMeta();
+        File smf = snpOp.snapshotFileTree().meta();
 
         try {
-            storeSnapshotMeta(snpReq.meta(), tempSmf);
+            storeSnapshotMeta(snpOp.meta(), tempSmf);
 
             Files.move(tempSmf.toPath(), smf.toPath(), StandardCopyOption.ATOMIC_MOVE,
                 StandardCopyOption.REPLACE_EXISTING);
@@ -1330,7 +1345,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         catch (Exception e) {
             log.error("Failed to store warnings of snapshot '" + snpReq.snapshotName() +
                 "' to the snapshot metafile. Snapshot won't contain them. The warnings: [" +
-                String.join(",", snpReq.warnings()) + "].", e);
+                String.join(",", snpOp.warnings()) + "].", e);
         }
         finally {
             U.delete(tempSmf);
@@ -1343,10 +1358,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param err Errors.
      */
     private void processLocalSnapshotEndStageResult(UUID id, Map<UUID, SnapshotOperationResponse> res, Map<UUID, Throwable> err) {
-        SnapshotOperationRequest snpReq = clusterSnpReq;
+        SnapshotOperation snpOp = curSnpOp;
 
-        if (snpReq == null || !Objects.equals(id, snpReq.requestId()))
+        if (snpOp == null || !Objects.equals(id, snpOp.request().requestId()))
             return;
+
+        SnapshotOperationRequest snpReq = snpOp.request();
 
         Set<UUID> endFail = new HashSet<>(snpReq.nodes());
         endFail.removeAll(res.keySet());
@@ -1357,17 +1374,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
             incSnpId = null;
 
-            if (clusterSnpFut != null && endFail.isEmpty() && snpReq.error() == null)
+            if (clusterSnpFut != null && endFail.isEmpty() && snpOp.error() == null)
                 warnAtomicCachesInIncrementalSnapshot(snpReq.snapshotName(), snpReq.incrementIndex(), snpReq.groups());
         }
 
-        clusterSnpReq = null;
+        curSnpOp = null;
 
         synchronized (snpOpMux) {
             if (clusterSnpFut != null) {
-                if (endFail.isEmpty() && snpReq.error() == null) {
-                    if (!F.isEmpty(snpReq.warnings())) {
-                        String wrnsLst = U.nl() + "\t- " + String.join(U.nl() + "\t- ", snpReq.warnings());
+                if (endFail.isEmpty() && snpOp.error() == null) {
+                    if (!F.isEmpty(snpOp.warnings())) {
+                        String wrnsLst = U.nl() + "\t- " + String.join(U.nl() + "\t- ", snpOp.warnings());
 
                         SnapshotWarningException wrn = new SnapshotWarningException(
                             "Snapshot create operation completed with warnings [name=" + snpReq.snapshotName() +
@@ -1384,15 +1401,15 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                             log.info(SNAPSHOT_FINISHED_MSG + snpReq);
                     }
                 }
-                else if (snpReq.error() == null) {
-                    log.warning("Snapshot error: ", snpReq.error());
+                else if (snpOp.error() == null) {
+                    log.warning("Snapshot error: ", snpOp.error());
 
                     clusterSnpFut.onDone(new IgniteCheckedException("Snapshot creation has been finished with an error. " +
                         "Local snapshot tasks may not finished completely or finalizing results fails " +
                         "[fail=" + endFail + ", err=" + err + ']'));
                 }
                 else
-                    clusterSnpFut.onDone(snpReq.error());
+                    clusterSnpFut.onDone(snpOp.error());
 
                 clusterSnpFut = null;
             }
@@ -1403,11 +1420,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @return {@code True} if snapshot operation is in progress.
      */
     public boolean isSnapshotCreating() {
-        if (clusterSnpReq != null)
+        if (curSnpOp != null)
             return true;
 
         synchronized (snpOpMux) {
-            return clusterSnpReq != null || clusterSnpFut != null;
+            return curSnpOp != null || clusterSnpFut != null;
         }
     }
 
@@ -1422,15 +1439,17 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * Sets the streamer warning flag to current snapshot process if it is active.
      */
     public void streamerWarning() {
-        SnapshotOperationRequest snpTask = currentCreateRequest();
+        SnapshotOperation snpOp = curSnpOp;
 
-        if (snpTask != null && !snpTask.streamerWarning())
-            snpTask.streamerWarning(true);
+        if (snpOp != null && !snpOp.streamerWarning())
+            snpOp.streamerWarning(true);
     }
 
     /** @return Current create snapshot request. {@code Null} if there is no create snapshot operation in progress. */
     @Nullable public SnapshotOperationRequest currentCreateRequest() {
-        return clusterSnpReq;
+        SnapshotOperation snpOp = curSnpOp;
+
+        return snpOp == null ? null : snpOp.request();
     }
 
     /**
@@ -1995,7 +2014,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                     );
                 }
 
-                if (clusterSnpReq != null)
+                if (curSnpOp != null)
                     throw new IgniteException("Create snapshot request has been rejected. Parallel snapshot processes are not allowed.");
 
                 boolean snpExists = localSnapshotNames(snpPath).contains(name);
@@ -2258,10 +2277,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public void onDoneBeforeTopologyUnlock(GridDhtPartitionsExchangeFuture fut, @Nullable Throwable err) {
-        if (clusterSnpReq == null || cctx.kernalContext().clientNode() || !isSnapshotOperation(fut.firstEvent()))
+        SnapshotOperation snpOp = curSnpOp;
+
+        if (snpOp == null || cctx.kernalContext().clientNode() || !isSnapshotOperation(fut.firstEvent()))
             return;
 
-        SnapshotOperationRequest snpReq = clusterSnpReq;
+        SnapshotOperationRequest snpReq = snpOp.request();
 
         if (snpReq.incremental())
             return;
@@ -2476,12 +2497,12 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
 
     /** @return Current snapshot task. */
     public <T extends AbstractSnapshotFutureTask<?>> T currentSnapshotTask(Class<T> snpTaskCls) {
-        SnapshotOperationRequest req = clusterSnpReq;
+        SnapshotOperation snpOp = curSnpOp;
 
-        if (req == null)
+        if (snpOp == null)
             return null;
 
-        AbstractSnapshotFutureTask<?> task = locSnpTasks.get(req.snapshotName());
+        AbstractSnapshotFutureTask<?> task = locSnpTasks.get(snpOp.request().snapshotName());
 
         if (task == null || task.getClass() != snpTaskCls)
             return null;
