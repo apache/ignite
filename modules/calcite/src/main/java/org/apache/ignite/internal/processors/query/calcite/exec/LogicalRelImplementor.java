@@ -957,7 +957,7 @@ public class LogicalRelImplementor<Row> implements IgniteRelVisitor<Node<Row>> {
         @Nullable ImmutableBitSet requiredColumns,
         @Nullable ImmutableBitSet filterColumns
     ) {
-        int fieldsCnt = outputRowType.getFieldCount();
+        int fieldsCnt = inputRowType.getFieldCount();
 
         if (filter == null || filterColumns == null || filterColumns.cardinality() == fieldsCnt
             || !(rowsIter instanceof TableRowIterable))

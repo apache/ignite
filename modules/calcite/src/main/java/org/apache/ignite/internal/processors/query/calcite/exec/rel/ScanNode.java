@@ -149,7 +149,7 @@ public class ScanNode<Row> extends AbstractNode<Row> implements SingleNode<Row> 
     /**
      * @return Next row, or {@code null} if row was filtered out.
      */
-    protected Row processNextRow() {
+    protected @Nullable Row processNextRow() {
         Row r = (Row)it.next();
 
         if (filter == null || filter.test(r)) {

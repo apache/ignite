@@ -27,7 +27,8 @@ import org.apache.ignite.internal.processors.query.calcite.exec.TableRowIterable
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Scan table rows node.
+ * Scan table rows node. With ability to request part of table row columns for filtering
+ * ({@code ScanStorageNode} can only request full set of requred table row columns).
  */
 public class ScanTableRowNode<TableRow, Row> extends ScanStorageNode<Row> {
     /** */
@@ -85,7 +86,7 @@ public class ScanTableRowNode<TableRow, Row> extends ScanStorageNode<Row> {
     }
 
     /** {@inheritDoc} */
-    @Override protected Row processNextRow() {
+    @Override protected @Nullable Row processNextRow() {
         Row row = curRow == null ? factory.create() : curRow;
 
         TableRow tableRow = (TableRow)it.next();
