@@ -488,8 +488,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
 
-        if (dsCfg != null)
-            ctx.addNodeAttribute(ATTR_WAL_MODE, dsCfg.getWalMode());
+        if (CU.isPersistenceEnabled(dsCfg))
+            ctx.addNodeAttribute(ATTR_WAL_MODE, dsCfg.getWalMode().ordinal());
 
         DiscoverySpi spi = getSpi();
 
@@ -1286,7 +1286,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Boolean locSecurityCompatibilityEnabled = locNode.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
 
-        WALMode locWalMode = locNode.attribute(ATTR_WAL_MODE);
+        WALMode locWalMode = locNode.attribute(ATTR_WAL_MODE) == null ? null :
+            WALMode.fromOrdinal(locNode.attribute(ATTR_WAL_MODE));
 
         for (ClusterNode n : nodes) {
             int rmtJvmMajVer = nodeJavaMajorVersion(n);
@@ -1393,9 +1394,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
             }
 
-            WALMode rmtWalMode = n.attribute(ATTR_WAL_MODE);
+            WALMode rmtWalMode = locNode.attribute(ATTR_WAL_MODE) == null ? null :
+                WALMode.fromOrdinal(locNode.attribute(ATTR_WAL_MODE));
 
-            if (locWalMode != rmtWalMode) {
+            if (!Objects.equals(locWalMode, rmtWalMode)) {
                 throw new IgniteCheckedException("Remote node has WAL mode different from local " +
                     "[locId8=" + U.id8(locNode.id()) + ", locWalMode=" + locWalMode +
                     ", rmtId8=" + U.id8(n.id()) + ", rmtWalMode=" + rmtWalMode +

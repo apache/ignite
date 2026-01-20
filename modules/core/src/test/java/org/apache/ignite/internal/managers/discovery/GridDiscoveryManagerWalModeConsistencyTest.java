@@ -24,22 +24,17 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.ListeningTestLogger;
-import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /** Tests for WAL mode consistency validation when nodes join cluster. */
 public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstractTest {
     /** */
-    private final ListeningTestLogger testLog = new ListeningTestLogger(log);
-
-    /** */
     private WALMode walMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName).setGridLogger(testLog);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
         dsCfg.setWalMode(walMode).getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
@@ -93,15 +88,12 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
 
         walMode = WALMode.FSYNC;
 
-        LogListener walModeErrorLsnr = LogListener.matches("Remote node has WAL mode different from local")
-            .andMatches("LOG_ONLY")
-            .andMatches("FSYNC")
-            .build();
-        testLog.registerListener(walModeErrorLsnr);
+        String errMsg = GridTestUtils.assertThrowsWithCause(() -> startGrid(1), IgniteCheckedException.class)
+                .getCause().getMessage();
 
-        GridTestUtils.assertThrowsWithCause(() -> startGrid(1), IgniteCheckedException.class);
+        assertTrue(errMsg.startsWith("Remote node has WAL mode different from local") &&
+                errMsg.contains("locWalMode=FSYNC") && errMsg.contains("rmtWalMode=LOG_ONLY"));
 
-        assertTrue(walModeErrorLsnr.check());
         assertEquals(1, ignite0.cluster().nodes().size());
     }
 }
