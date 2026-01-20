@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.distributed.InitMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.DiscoveryMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIoSession;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -220,7 +221,7 @@ public class IncrementalSnapshotJoiningClientTest extends AbstractIncrementalSna
         /** {@inheritDoc} */
         @Override protected void writeMessage(
             TcpDiscoveryIoSession ses,
-            TcpDiscoveryAbstractMessage msg,
+            DiscoveryMessage msg,
             long timeout
         ) throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryJoinRequestMessage && blockClientJoinReq != null) {

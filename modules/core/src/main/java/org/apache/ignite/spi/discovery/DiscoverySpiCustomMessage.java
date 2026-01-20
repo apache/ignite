@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @see GridDiscoveryManager#sendCustomEvent(DiscoveryCustomMessage)
  */
-public interface DiscoverySpiCustomMessage extends Serializable {
+public interface DiscoverySpiCustomMessage extends Serializable, DiscoveryMessage {
     /**
      * Called when custom message has been handled by all nodes.
      *

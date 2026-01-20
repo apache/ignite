@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.discovery.DiscoveryMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIoSession;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -76,10 +77,10 @@ public class CacheClientsConcurrentStartTest extends GridCommonAbstractTest {
         TcpDiscoverySpi testSpi = new TcpDiscoverySpi() {
             @Override protected void writeMessage(
                 TcpDiscoveryIoSession ses,
-                TcpDiscoveryAbstractMessage msg,
+                DiscoveryMessage msg,
                 long timeout
             ) throws IOException, IgniteCheckedException {
-                if (msg instanceof TcpDiscoveryCustomEventMessage && msg.verified()) {
+                if (msg instanceof TcpDiscoveryCustomEventMessage && ((TcpDiscoveryAbstractMessage)msg).verified()) {
                     try {
                         System.out.println(Thread.currentThread().getName() + " delay custom message");
 

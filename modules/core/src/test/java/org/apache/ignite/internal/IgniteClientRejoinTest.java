@@ -44,6 +44,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
+import org.apache.ignite.spi.discovery.DiscoveryMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIoSession;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -363,7 +364,7 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, DiscoveryMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (blockAll || block && ses.socket().getPort() == 47500)
                 throw new SocketException("Test discovery exception");

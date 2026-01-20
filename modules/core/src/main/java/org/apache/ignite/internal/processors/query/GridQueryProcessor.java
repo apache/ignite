@@ -909,9 +909,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
             }
 
-            // Propose message will be used from exchange thread to
-            msg.proposeMessage(proposeMsg);
-
             if (exchangeReady) {
                 SchemaOperation op = schemaOps.get(proposeMsg.schemaName());
 

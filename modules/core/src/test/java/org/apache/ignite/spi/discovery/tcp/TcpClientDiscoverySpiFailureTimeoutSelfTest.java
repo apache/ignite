@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.DiscoveryMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -473,7 +474,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
 
         /**  */
         @Override protected void writeMessage(TcpDiscoveryIoSession ses,
-            TcpDiscoveryAbstractMessage msg,
+            DiscoveryMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             if (writeToSocketDelay > 0) {
                 try {

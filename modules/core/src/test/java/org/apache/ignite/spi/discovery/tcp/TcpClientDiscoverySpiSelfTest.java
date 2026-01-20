@@ -65,6 +65,7 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoveryMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -155,7 +156,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     protected long clientFailureDetectionTimeout = 5000;
 
     /** */
-    private IgniteInClosure2X<TcpDiscoveryAbstractMessage, Socket> afterWrite;
+    private IgniteInClosure2X<DiscoveryMessage, Socket> afterWrite;
 
     /** */
     private boolean reconnectDisabled;
@@ -1470,10 +1471,10 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange(true, true, null);
 
-        afterWrite = new CIX2<TcpDiscoveryAbstractMessage, Socket>() {
+        afterWrite = new CIX2<DiscoveryMessage, Socket>() {
             private boolean first = true;
 
-            @Override public void applyx(TcpDiscoveryAbstractMessage msg, Socket sock) throws IgniteCheckedException {
+            @Override public void applyx(DiscoveryMessage msg, Socket sock) throws IgniteCheckedException {
                 if (first && (msg instanceof TcpDiscoveryJoinRequestMessage)) {
                     first = false;
 
@@ -2495,7 +2496,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         private AtomicInteger failClientReconnect = new AtomicInteger();
 
         /** */
-        private IgniteInClosure2X<TcpDiscoveryAbstractMessage, Socket> afterWrite;
+        private IgniteInClosure2X<DiscoveryMessage, Socket> afterWrite;
 
         /** */
         private volatile boolean invalidRes;
@@ -2526,7 +2527,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         /**
          * @param afterWrite After write callback.
          */
-        void afterWrite(IgniteInClosure2X<TcpDiscoveryAbstractMessage, Socket> afterWrite) {
+        void afterWrite(IgniteInClosure2X<DiscoveryMessage, Socket> afterWrite) {
             this.afterWrite = afterWrite;
         }
 
@@ -2573,7 +2574,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected void writeMessage(TcpDiscoveryIoSession ses,
-            TcpDiscoveryAbstractMessage msg,
+            DiscoveryMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             waitFor(writeLock);
 
@@ -2606,7 +2607,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
          * @return {@code False} if should not further process message.
          * @throws IOException If failed.
          */
-        private boolean onMessage(Socket sock, TcpDiscoveryAbstractMessage msg) throws IOException {
+        private boolean onMessage(Socket sock, DiscoveryMessage msg) throws IOException {
             boolean fail = false;
 
             if (skipNodeAdded &&

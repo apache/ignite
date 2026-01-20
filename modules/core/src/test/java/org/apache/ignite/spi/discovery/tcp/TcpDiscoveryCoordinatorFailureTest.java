@@ -32,6 +32,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
+import org.apache.ignite.spi.discovery.DiscoveryMessage;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
@@ -303,7 +304,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected void writeMessage(
             TcpDiscoveryIoSession ses,
-            TcpDiscoveryAbstractMessage msg,
+            DiscoveryMessage msg,
             long timeout
         ) throws IOException, IgniteCheckedException {
             if (isDrop(msg)) {
@@ -334,7 +335,7 @@ public class TcpDiscoveryCoordinatorFailureTest extends GridCommonAbstractTest {
         /**
          *
          */
-        private boolean isDrop(TcpDiscoveryAbstractMessage msg) {
+        private boolean isDrop(DiscoveryMessage msg) {
             if (!drop) {
                 if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
                     TcpDiscoveryNodeAddFinishedMessage finishMsg = (TcpDiscoveryNodeAddFinishedMessage)msg;

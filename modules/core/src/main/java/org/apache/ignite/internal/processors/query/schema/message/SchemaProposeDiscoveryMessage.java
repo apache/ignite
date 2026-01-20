@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.schema.message;
 
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -32,13 +32,18 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
     private static final long serialVersionUID = 0L;
 
     /** Cache deployment ID. */
+    @Order(value = 4, method = "deploymentId")
     private IgniteUuid depId;
 
-    /** Error. */
-    private SchemaOperationException err;
-
     /** Whether to perform exchange. */
-    private transient boolean exchange;
+    private boolean exchange;
+
+    /**
+     * Constructor.
+     */
+    public SchemaProposeDiscoveryMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -94,30 +99,6 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
     }
 
     /**
-     * Set error.
-     *
-     * @param err Error.
-     */
-    public void onError(SchemaOperationException err) {
-        if (!hasError())
-            this.err = err;
-    }
-
-    /**
-     * @return {@code True} if error was reported during init.
-     */
-    public boolean hasError() {
-        return err != null;
-    }
-
-    /**
-     * @return Error message (if any).
-     */
-    @Nullable public SchemaOperationException error() {
-        return err;
-    }
-
-    /**
      * @return Schema name.
      */
     public String schemaName() {
@@ -127,5 +108,10 @@ public class SchemaProposeDiscoveryMessage extends SchemaAbstractDiscoveryMessag
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SchemaProposeDiscoveryMessage.class, this, "parent", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 500;
     }
 }

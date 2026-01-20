@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoveryMessage;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
@@ -211,11 +212,11 @@ public class IgniteClientConnectTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected void writeMessage(
             TcpDiscoveryIoSession ses,
-            TcpDiscoveryAbstractMessage msg,
+            DiscoveryMessage msg,
             long timeout
         ) throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryNodeAddFinishedMessage) {
-                if (msg.senderNodeId() != null && clientJustStarted.get())
+                if (((TcpDiscoveryAbstractMessage)msg).senderNodeId() != null && clientJustStarted.get())
                     try {
                         latch.await();
 

@@ -19,6 +19,8 @@ package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.internal.codegen.InetAddressMessageSerializer;
 import org.apache.ignite.internal.codegen.InetSocketAddressMessageSerializer;
+import org.apache.ignite.internal.codegen.SchemaFinishDiscoveryMessageSerializer;
+import org.apache.ignite.internal.codegen.SchemaProposeDiscoveryMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryAuthFailedMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryCheckFailedMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryClientMetricsUpdateMessageSerializer;
@@ -30,10 +32,13 @@ import org.apache.ignite.internal.codegen.TcpDiscoveryDuplicateIdMessageSerializ
 import org.apache.ignite.internal.codegen.TcpDiscoveryHandshakeRequestSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryHandshakeResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryLoopbackProblemMessageSerializer;
+import org.apache.ignite.internal.codegen.TcpDiscoveryNodeLeftMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryNodeMetricsMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryPingRequestSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryPingResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryRingLatencyCheckMessageSerializer;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
+import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
@@ -49,6 +54,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeLeftMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMetricsMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
@@ -62,6 +68,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)-101, InetSocketAddressMessage::new, new InetSocketAddressMessageSerializer());
         factory.register((short)-100, InetAddressMessage::new, new InetAddressMessageSerializer());
 
+        // TcpDiscoveryAbstractMessage
         factory.register((short)0, TcpDiscoveryCheckFailedMessage::new, new TcpDiscoveryCheckFailedMessageSerializer());
         factory.register((short)1, TcpDiscoveryPingRequest::new, new TcpDiscoveryPingRequestSerializer());
         factory.register((short)2, TcpDiscoveryPingResponse::new, new TcpDiscoveryPingResponseSerializer());
@@ -76,5 +83,10 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)11, TcpDiscoveryAuthFailedMessage::new, new TcpDiscoveryAuthFailedMessageSerializer());
         factory.register((short)12, TcpDiscoveryDuplicateIdMessage::new, new TcpDiscoveryDuplicateIdMessageSerializer());
         factory.register((short)13, TcpDiscoveryClientMetricsUpdateMessage::new, new TcpDiscoveryClientMetricsUpdateMessageSerializer());
+        factory.register((short)14, TcpDiscoveryNodeLeftMessage::new, new TcpDiscoveryNodeLeftMessageSerializer());
+
+        // DiscoveryCustomMessage
+        factory.register((short)500, SchemaProposeDiscoveryMessage::new, new SchemaProposeDiscoveryMessageSerializer());
+        factory.register((short)501, SchemaFinishDiscoveryMessage::new, new SchemaFinishDiscoveryMessageSerializer());
     }
 }

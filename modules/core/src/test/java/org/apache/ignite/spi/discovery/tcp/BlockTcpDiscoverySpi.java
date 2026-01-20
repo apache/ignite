@@ -25,6 +25,7 @@ import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
+import org.apache.ignite.spi.discovery.DiscoveryMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
@@ -49,7 +50,7 @@ public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
      * @param addr Address.
      * @param msg Message.
      */
-    private synchronized void apply(ClusterNode addr, TcpDiscoveryAbstractMessage msg) {
+    private synchronized void apply(ClusterNode addr, DiscoveryMessage msg) {
         if (!(msg instanceof TcpDiscoveryCustomEventMessage))
             return;
 
@@ -88,7 +89,7 @@ public class BlockTcpDiscoverySpi extends TestTcpDiscoverySpi {
 
     /** {@inheritDoc} */
     @Override protected void writeMessage(TcpDiscoveryIoSession ses,
-        TcpDiscoveryAbstractMessage msg,
+        DiscoveryMessage msg,
         long timeout) throws IOException, IgniteCheckedException {
         if (spiCtx != null)
             apply(spiCtx.localNode(), msg);
