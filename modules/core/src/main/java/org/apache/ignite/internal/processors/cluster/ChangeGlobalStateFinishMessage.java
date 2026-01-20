@@ -19,45 +19,58 @@ package org.apache.ignite.internal.processors.cluster;
 
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterState;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
  *
  */
-public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
+public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Custom message ID. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    @Order(0)
+    IgniteUuid id;
 
     /** State change request ID. */
-    private final UUID reqId;
+    @Order(1)
+    UUID reqId;
 
     /** New cluster state. */
-    private final ClusterState state;
+    @Order(2)
+    ClusterState state;
 
     /** State change error. */
-    private Boolean transitionRes;
+    @Order(3)
+    boolean transitionRes;
+
+    /** Constructor. */
+    public ChangeGlobalStateFinishMessage() {
+        // No-op.
+    }
 
     /**
      * @param reqId State change request ID.
      * @param state New cluster state.
+     * @param transitionRes State change error.
      */
     public ChangeGlobalStateFinishMessage(
         UUID reqId,
         ClusterState state,
-        Boolean transitionRes
+        boolean transitionRes
     ) {
         assert reqId != null;
         assert state != null;
 
+        id = IgniteUuid.randomUuid();
         this.reqId = reqId;
         this.state = state;
         this.transitionRes = transitionRes;
@@ -83,7 +96,7 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
      * @return Transition success status.
      */
     public boolean success() {
-        return transitionRes == null ? state.active() : transitionRes;
+        return transitionRes;
     }
 
     /**
@@ -117,5 +130,10 @@ public class ChangeGlobalStateFinishMessage implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ChangeGlobalStateFinishMessage.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 501;
     }
 }
