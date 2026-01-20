@@ -27,12 +27,13 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.DiscoveryMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Base class to implement discovery messages.
  */
-public abstract class TcpDiscoveryAbstractMessage implements Serializable {
+public abstract class TcpDiscoveryAbstractMessage implements Serializable, DiscoveryMessage {
     /** */
     private static final long serialVersionUID = 0L;
 

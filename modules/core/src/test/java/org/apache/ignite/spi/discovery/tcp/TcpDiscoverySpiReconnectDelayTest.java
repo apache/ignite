@@ -31,6 +31,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.DiscoveryMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
@@ -399,7 +400,7 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
         private final AtomicInteger failReconReq = new AtomicInteger();
 
         /** {@inheritDoc} */
-        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, DiscoveryMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
 
             if (!onMessage(ses.socket(), msg))
@@ -424,7 +425,7 @@ public class TcpDiscoverySpiReconnectDelayTest extends GridCommonAbstractTest {
          * @return {@code False} if should not further process message.
          * @throws IOException If failed.
          */
-        private boolean onMessage(Socket sock, TcpDiscoveryAbstractMessage msg) throws IOException {
+        private boolean onMessage(Socket sock, DiscoveryMessage msg) throws IOException {
             boolean fail = false;
 
             if (msg instanceof TcpDiscoveryJoinRequestMessage)

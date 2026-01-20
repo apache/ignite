@@ -37,6 +37,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
+import org.apache.ignite.spi.discovery.DiscoveryMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIoSession;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -229,7 +230,7 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
 
         /** {@inheritDoc} */
         @Override protected void writeMessage(TcpDiscoveryIoSession ses,
-            TcpDiscoveryAbstractMessage msg,
+            DiscoveryMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             checkSegmented((InetSocketAddress)ses.socket().getRemoteSocketAddress(), timeout);
 

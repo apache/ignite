@@ -147,8 +147,8 @@ public class LongClientConnectToClusterTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected void writeMessage(TcpDiscoveryIoSession ses,
-            TcpDiscoveryAbstractMessage msg, long timeout) throws IOException, IgniteCheckedException {
-            if (msg instanceof TcpDiscoveryNodeAddFinishedMessage && msg.topologyVersion() == 3) {
+            DiscoveryMessage msg, long timeout) throws IOException, IgniteCheckedException {
+            if (msg instanceof TcpDiscoveryNodeAddFinishedMessage && ((TcpDiscoveryAbstractMessage)msg).topologyVersion() == 3) {
                 log.info("Catched discovery message: " + msg);
 
                 try {

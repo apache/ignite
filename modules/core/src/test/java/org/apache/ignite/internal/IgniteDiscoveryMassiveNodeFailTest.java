@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.spi.discovery.DiscoveryMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoveryIoSession;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
@@ -313,7 +314,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeMessage(TcpDiscoveryIoSession ses, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeMessage(TcpDiscoveryIoSession ses, DiscoveryMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             assertNotFailedNode(ses.socket());
 
@@ -326,7 +327,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
         /**
          *
          */
-        private boolean isDrop(TcpDiscoveryAbstractMessage msg) {
+        private boolean isDrop(DiscoveryMessage msg) {
             boolean drop = failNodes && forceFailConnectivity && failedNodes.contains(ignite.cluster().localNode());
 
             if (drop)
