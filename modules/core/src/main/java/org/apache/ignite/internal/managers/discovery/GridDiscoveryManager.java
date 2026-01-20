@@ -1394,8 +1394,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
             }
 
-            WALMode rmtWalMode = locNode.attribute(ATTR_WAL_MODE) == null ? null :
-                WALMode.fromOrdinal(locNode.attribute(ATTR_WAL_MODE));
+            WALMode rmtWalMode = n.attribute(ATTR_WAL_MODE) == null ? null :
+                WALMode.fromOrdinal(n.attribute(ATTR_WAL_MODE));
 
             if (!Objects.equals(locWalMode, rmtWalMode)) {
                 throw new IgniteCheckedException("Remote node has WAL mode different from local " +

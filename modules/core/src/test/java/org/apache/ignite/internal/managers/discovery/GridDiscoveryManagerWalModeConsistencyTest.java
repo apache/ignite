@@ -89,10 +89,10 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
         walMode = WALMode.FSYNC;
 
         String errMsg = GridTestUtils.assertThrowsWithCause(() -> startGrid(1), IgniteCheckedException.class)
-                .getCause().getMessage();
+            .getCause().getMessage();
 
         assertTrue(errMsg.startsWith("Remote node has WAL mode different from local") &&
-                errMsg.contains("locWalMode=FSYNC") && errMsg.contains("rmtWalMode=LOG_ONLY"));
+            errMsg.contains("locWalMode=FSYNC") && errMsg.contains("rmtWalMode=LOG_ONLY"));
 
         assertEquals(1, ignite0.cluster().nodes().size());
     }
