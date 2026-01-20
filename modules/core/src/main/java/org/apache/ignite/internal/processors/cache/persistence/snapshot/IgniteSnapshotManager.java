@@ -1297,11 +1297,11 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
 
                 if (log.isInfoEnabled())
-                    log.info("Finishing local snapshot operation [req=" + snpStartReq + ']');
+                    log.info("Finishing local snapshot operation [req=" + snpOp + ']');
             }
             catch (Exception e) {
                 log.error("Finishing local snapshot operation failed " +
-                    "[req=" + snpStartReq + ", err=" + e + ']');
+                    "[req=" + snpOp + ", err=" + e + ']');
 
                 throw F.wrap(e);
             }
