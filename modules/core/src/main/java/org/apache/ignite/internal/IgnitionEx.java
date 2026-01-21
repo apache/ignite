@@ -522,7 +522,7 @@ public class IgnitionEx {
         URL url = U.resolveIgniteUrl(DFLT_CFG);
 
         if (url != null)
-            return start(DFLT_CFG, null, springCtx, null);
+            return start(url, null, springCtx, null);
 
         U.warn(null, "Default Spring XML file not found (is IGNITE_HOME set?): " + DFLT_CFG);
 
