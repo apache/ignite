@@ -3393,8 +3393,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             msgBytes = clientMsgWorker.ses.serializeMessage(msg);
                         }
                         catch (IgniteCheckedException | IOException e) {
-                            U.error(log, "Failed to serialize message to a client: " + msg + ", client id: "
-                                + clientMsgWorker.clientNodeId, e);
+                            U.error(log, "Failed to serialize message to a client: " + msg + ", recepient " +
+                                "client id: " + clientMsgWorker.clientNodeId, e);
 
                             break;
                         }
@@ -6068,7 +6068,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     // Message is on its second ring.
                     msg.removeServerMetrics(locNodeId);
 
-                    Collection<UUID> clientNodeIds = msg.clientNodeIds() == null
+                    Collection<UUID> clientNodeIds = F.isEmpty(msg.clientNodeIds())
                         ? Collections.emptySet()
                         : msg.clientNodeIds();
 

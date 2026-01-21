@@ -55,7 +55,7 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
     /** Connected clients metrics: server id -> client id -> clients metrics. */
     @GridToStringExclude
     @Order(value = 5, method = "connectedClientsMetricsMessages")
-    private Map<UUID, TcpDiscoveryNodesMetricsMapMessage> connectedClientsMetricsMsgs;
+    private Map<UUID, TcpDiscoveryClientNodesMetricsMessage> connectedClientsMetricsMsgs;
 
     /** Servers full metrics: server id -> server metrics + metrics of server's caches. */
     @GridToStringExclude
@@ -155,7 +155,7 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
 
         connectedClientsMetricsMsgs.compute(srvrId, (srvrId0, clientsMetricsMsg) -> {
             if (clientsMetricsMsg == null) {
-                clientsMetricsMsg = new TcpDiscoveryNodesMetricsMapMessage();
+                clientsMetricsMsg = new TcpDiscoveryClientNodesMetricsMessage();
                 clientsMetricsMsg.nodesMetricsMessages(new HashMap<>());
             }
 
@@ -188,12 +188,12 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
     }
 
     /** @return Map of nodes metrics messages. */
-    public @Nullable Map<UUID, TcpDiscoveryNodesMetricsMapMessage> connectedClientsMetricsMessages() {
+    public @Nullable Map<UUID, TcpDiscoveryClientNodesMetricsMessage> connectedClientsMetricsMessages() {
         return connectedClientsMetricsMsgs;
     }
 
     /** @param connectedClientsMetricsMsgs Map of nodes metrics messages. */
-    public void connectedClientsMetricsMessages(Map<UUID, TcpDiscoveryNodesMetricsMapMessage> connectedClientsMetricsMsgs) {
+    public void connectedClientsMetricsMessages(Map<UUID, TcpDiscoveryClientNodesMetricsMessage> connectedClientsMetricsMsgs) {
         this.connectedClientsMetricsMsgs = connectedClientsMetricsMsgs;
     }
 

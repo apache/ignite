@@ -25,13 +25,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Holds map of thick client or server metrics messages per node id. */
-public class TcpDiscoveryNodesMetricsMapMessage implements Message {
+public class TcpDiscoveryClientNodesMetricsMessage implements Message {
     /** Map of nodes metrics messages per node id. */
     @Order(value = 0, method = "nodesMetricsMessages")
     private Map<UUID, TcpDiscoveryNodeMetricsMessage> nodesMetricsMsgs;
 
     /** Constructor for {@link DiscoveryMessageFactory}. */
-    public TcpDiscoveryNodesMetricsMapMessage() {
+    public TcpDiscoveryClientNodesMetricsMessage() {
         // No-op.
     }
 
@@ -52,6 +52,6 @@ public class TcpDiscoveryNodesMetricsMapMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TcpDiscoveryNodesMetricsMapMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryClientNodesMetricsMessage.class, this, "super", super.toString());
     }
 }
