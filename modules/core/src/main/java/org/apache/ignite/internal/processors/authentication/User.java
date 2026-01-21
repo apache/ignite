@@ -19,15 +19,17 @@ package org.apache.ignite.internal.processors.authentication;
 
 import java.io.Serializable;
 import java.util.Objects;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 import org.mindrot.BCrypt;
 
 /**
  */
-public class User implements Serializable {
+public class User implements Serializable, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,9 +45,11 @@ public class User implements Serializable {
     private static int bCryptGensaltLog2Rounds = 10;
 
     /** User name. */
+    @Order(0)
     private String name;
 
     /** Hashed password. */
+    @Order(value = 1, method = "hashedPassword")
     @GridToStringExclude
     private String hashedPasswd;
 
@@ -69,6 +73,27 @@ public class User implements Serializable {
      */
     public String name() {
         return name;
+    }
+
+    /**
+     * @param name User name.
+     */
+    public void name(String name) {
+        this.name = name;
+    }
+
+    /**
+     * @return Hashed password.
+     */
+    public String hashedPassword() {
+        return hashedPasswd;
+    }
+
+    /**
+     * @param hashedPasswd Hashed password.
+     */
+    public void hashedPassword(String hashedPasswd) {
+        this.hashedPasswd = hashedPasswd;
     }
 
     /**
@@ -141,12 +166,16 @@ public class User implements Serializable {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = Objects.hash(name, hashedPasswd);
-        return result;
+        return Objects.hash(name, hashedPasswd);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(User.class, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return -104;
     }
 }
