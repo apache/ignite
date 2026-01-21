@@ -17,34 +17,41 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import org.apache.ignite.cluster.ClusterMetrics;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
-import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
-/**
- * We cannot directly reuse {@link NodeMetricsMessage} in Discovery as it is registered in a message factory of
- * Communication component and thus is unavailable in Discovery. We have to extend {@link NodeMetricsMessage} and
- * register this subclass in message factory of Discovery component.
- */
-public class TcpDiscoveryNodeMetricsMessage extends NodeMetricsMessage {
+/** Holds map of thick client or server metrics messages per node id. */
+public class TcpDiscoveryClientNodesMetricsMessage implements Message {
+    /** Map of nodes metrics messages per node id. */
+    @Order(value = 0, method = "nodesMetricsMessages")
+    private Map<UUID, TcpDiscoveryNodeMetricsMessage> nodesMetricsMsgs;
+
     /** Constructor for {@link DiscoveryMessageFactory}. */
-    public TcpDiscoveryNodeMetricsMessage() {
+    public TcpDiscoveryClientNodesMetricsMessage() {
         // No-op.
     }
 
-    /** @param nodeMetrics Node metrics. */
-    public TcpDiscoveryNodeMetricsMessage(ClusterMetrics nodeMetrics) {
-        super(nodeMetrics);
+    /** @return Map of nodes metrics messages per node id. */
+    public Map<UUID, TcpDiscoveryNodeMetricsMessage> nodesMetricsMessages() {
+        return nodesMetricsMsgs;
+    }
+
+    /** @param nodesMetricsMsgs Map of nodes metrics messages per node id. */
+    public void nodesMetricsMessages(Map<UUID, TcpDiscoveryNodeMetricsMessage> nodesMetricsMsgs) {
+        this.nodesMetricsMsgs = nodesMetricsMsgs;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -102;
+        return -104;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TcpDiscoveryNodeMetricsMessage.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryClientNodesMetricsMessage.class, this, "super", super.toString());
     }
 }
