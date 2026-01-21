@@ -53,7 +53,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
-    protected static IgniteLogger log;
+    protected IgniteLogger log;
 
     /** */
     private static final Object NULL = new Object();
@@ -63,15 +63,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
     /** */
     protected final GridCacheQueryBean qry;
-
-    /** */
-    private int capacity;
-
-    /** */
-    private boolean limitDisabled;
-
-    /** */
-    private int cnt;
 
     /** */
     private final IgniteUuid timeoutId = IgniteUuid.randomUuid();
@@ -106,8 +97,6 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         long startTime = U.currentTimeMillis();
 
         long timeout = qry.query().timeout();
-        capacity = query().query().limit();
-        limitDisabled = capacity <= 0;
 
         if (timeout > 0) {
             endTime = startTime + timeout;
@@ -142,26 +131,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /** {@inheritDoc} */
     @Override public R next() {
         try {
-            if (!limitDisabled && cnt == capacity)
-                return null;
-
             checkError();
 
-            R next = null;
-
-            if (reducer.hasNextX()) {
-                next = unmaskNull(unwrapIfNeeded(reducer.nextX()));
-
-                if (!limitDisabled) {
-                    cnt++;
-
-                    // Exceed limit, stop page loading and cancel queries.
-                    if (cnt == capacity)
-                        cancel();
-                }
-            }
-
-            return next;
+            return reducer.hasNextX() ? unmaskNull(unwrapIfNeeded(reducer.nextX())) : null;
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);

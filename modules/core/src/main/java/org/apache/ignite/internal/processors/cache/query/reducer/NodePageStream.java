@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.query.reducer;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This class provides an interface {@link #headPage()} that returns a future will be completed with {@link NodePage}
@@ -36,21 +38,38 @@ public class NodePageStream<R> {
     private final Runnable cancelPages;
 
     /** Flags shows whether there are available pages on a query node. */
-    private boolean hasRemotePages = true;
+    private boolean hasRemotePages;
 
     /** Promise to notify the stream consumer about delivering new page. */
     private CompletableFuture<NodePage<R>> head = new CompletableFuture<>();
 
-    /** */
+    /** Count of loaded entries. */
+    private final AtomicInteger rcvdDataSize = new AtomicInteger();
+
+    /** Local page stream. */
+    public NodePageStream(UUID nodeId) {
+        this.nodeId = nodeId;
+        reqPages = null;
+        cancelPages = null;
+        hasRemotePages = false;
+    }
+
+    /** Remote page stream. */
     public NodePageStream(UUID nodeId, Runnable reqPages, Runnable cancelPages) {
         this.nodeId = nodeId;
         this.reqPages = reqPages;
         this.cancelPages = cancelPages;
+        hasRemotePages = true;
     }
 
     /** */
     public UUID nodeId() {
         return nodeId;
+    }
+
+    /** */
+    public int dataSize() {
+        return rcvdDataSize.get();
     }
 
     /**
@@ -69,6 +88,8 @@ public class NodePageStream<R> {
      * @param last Whether it is the last page from this node.
      */
     public synchronized void addPage(Collection<R> data, boolean last) {
+        rcvdDataSize.addAndGet(data.size());
+
         head.complete(new NodePage<R>(nodeId, data) {
             /** Flag shows whether the request for new page was triggered. */
             private boolean reqNext;
@@ -99,16 +120,25 @@ public class NodePageStream<R> {
 
     /**
      * Cancel query on all nodes.
+     *
+     * @param err {@code null} for soft cancellation (query limit was reached), or {@code Throwable} if a query failed.
      */
-    public synchronized void cancel(Throwable err) {
+    public synchronized void cancel(@Nullable Throwable err) {
         if (closed())
             return;
 
-        head.completeExceptionally(err);
+        if (err != null)
+            head.completeExceptionally(err);
+        else {
+            if (!head.isDone())
+                head = null;
+        }
 
-        cancelPages.run();
+        if (hasRemotePages) {
+            cancelPages.run();
 
-        hasRemotePages = false;
+            hasRemotePages = false;
+        }
     }
 
     /**
