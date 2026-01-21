@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Snapshot operation start request for {@link DistributedProcess} initiate message.
+ * Snapshot operation end request for {@link DistributedProcess.DistributedProcessType#START_SNAPSHOT} initiate message.
  */
 public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
     /** Serial version uid. */
