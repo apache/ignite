@@ -220,9 +220,12 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
                 failedToBind = true;
 
-                for (Object obj : ((MultiException)e).getThrowables())
-                    if (!(obj instanceof SocketException))
+                for (Object obj : ((MultiException)e).getThrowables()) {
+                    if (!(obj instanceof SocketException)) {
                         failedToBind = false;
+                        break;
+                    }
+                }
             }
 
             if (e instanceof IOException && X.hasCause(e, SocketException.class))
