@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.communication;
 
 import java.util.UUID;
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
@@ -37,6 +38,9 @@ public class IgniteIoCommunicationMessageSerializationTest extends AbstractMessa
     @Override protected Message initializeMessage(Message msg) throws Exception {
         if (msg instanceof NodeIdMessage)
             FieldUtils.writeField(msg, "nodeId", UUID.randomUUID(), true);
+
+        if (msg instanceof PartitionUpdateCountersMessage)
+            FieldUtils.writeField(msg, "data", new byte[0], true);
 
         return msg;
     }
