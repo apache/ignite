@@ -71,6 +71,9 @@ abstract class TcpDiscoveryImpl {
     /** Response OK. */
     protected static final int RES_OK = 1;
 
+    /** Response OK but sender not is in ring. */
+    protected static final int RES_OK_NOT_IN_RING = 10;
+
     /** Response CONTINUE JOIN. */
     protected static final int RES_CONTINUE_JOIN = 100;
 
