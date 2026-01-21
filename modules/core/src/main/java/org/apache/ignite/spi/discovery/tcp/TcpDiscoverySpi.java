@@ -62,6 +62,7 @@ import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -306,6 +307,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     private static Pattern sslMsgPattern = Pattern.compile("invalid stream header: 150\\d0\\d00");
 
     /** Local address. */
+    @GridToStringInclude
     protected String locAddr;
 
     /** Address resolver. */
@@ -324,6 +326,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     private long ackTimeout; // Must be initialized in the constructor of child class.
 
     /** Network timeout. */
+    @GridToStringInclude
     protected long netTimeout = DFLT_NETWORK_TIMEOUT;
 
     /**
@@ -334,12 +337,18 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     protected long joinTimeout = DFLT_JOIN_TIMEOUT;
 
     /** Thread priority for all threads started by SPI. */
+    @GridToStringInclude
     protected int threadPri = DFLT_THREAD_PRI;
 
+
+    /** Heartbeat messages issuing frequency. */
+    @GridToStringInclude
+    protected long hbFreq = DFLT_HEARTBEAT_FREQ;
     /** Metrics update messages issuing frequency. */
     protected long metricsUpdateFreq;
 
     /** Size of topology snapshots history. */
+    @GridToStringInclude
     protected int topHistSize = DFLT_TOP_HISTORY_SIZE;
 
     /** Default connection recovery timeout in ms. */
@@ -382,9 +391,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
 
     /** Local port which node uses. */
+    @GridToStringInclude
     protected int locPort = DFLT_PORT;
 
     /** Local port range. */
+    @GridToStringInclude
     protected int locPortRange = DFLT_PORT_RANGE;
 
     /** Reconnect attempts count. */
