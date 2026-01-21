@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.resources.CacheStoreSessionResource;
@@ -96,6 +97,9 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     /** Default load entry query (value is <tt>select * from ENTRIES where akey=?</tt>). */
     public static final String DFLT_LOAD_QRY = "select * from ENTRIES where akey=?";
 
+    /** Default load whole cache query. Used for cache loading without passing all keys (Value is <tt>select * from ENTRIES</tt>)*/
+    public static final String DFLT_LOAD_CACHE_QRY = "select * from ENTRIES";
+
     /** Default update entry query (value is <tt>select * from ENTRIES where akey=?</tt>). */
     public static final String DFLT_UPDATE_QRY = "update ENTRIES set val=? where akey=?";
 
@@ -119,6 +123,9 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
 
     /** Query to load entry. */
     private String loadQry = DFLT_LOAD_QRY;
+
+    /** Query to load whole cache */
+    private String loadCacheQry = DFLT_LOAD_CACHE_QRY;
 
     /** Query to update entry. */
     private String updateQry = DFLT_UPDATE_QRY;
@@ -204,6 +211,38 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
 
         if (log.isDebugEnabled())
             log.debug("Transaction ended [xid=" + tx.xid() + ", commit=" + commit + ']');
+    }
+
+    /** {@inheritDoc} */
+    @Override public void loadCache(IgniteBiInClosure<K, V> clo, Object... args) {
+        init();
+
+        Transaction tx = transaction();
+
+        if (log.isDebugEnabled())
+            log.debug("Store load cache");
+
+        Connection conn = null;
+
+        PreparedStatement stmt = null;
+
+        try {
+            conn = connection(tx);
+
+            stmt = conn.prepareStatement(loadCacheQry);
+
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                clo.apply(fromBytes(rs.getBytes(1)), fromBytes(rs.getBytes(2)));
+            }
+
+
+        } catch (IgniteCheckedException | SQLException e) {
+            throw new CacheLoaderException("Failed to load cache: ", e);
+        } finally {
+            end(tx, conn, stmt);
+        }
     }
 
     /** {@inheritDoc} */
@@ -489,6 +528,16 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     public void setLoadQuery(String loadQry) {
         this.loadQry = loadQry;
     }
+
+    /**
+     * Sets load whole cache query.
+     *
+     * @param loadCacheQry Load whole cache query
+     */
+    public void setLoadCacheQuery(String loadCacheQry) {
+        this.loadCacheQry = loadCacheQry;
+    }
+
 
     /**
      * Sets update entry query.
