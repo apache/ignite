@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
@@ -122,6 +123,13 @@ public interface GridQueryTypeDescriptor {
      * @return Key class.
      */
     public Class<?> keyClass();
+
+    /**
+     * Gets key component classes if key is a collection.
+     *
+     * @return Key component classes if key is a collection. Empty otherwise.
+     */
+    public List<Class<?>> keyComponentClasses();
 
     /**
      * Gets key type name.

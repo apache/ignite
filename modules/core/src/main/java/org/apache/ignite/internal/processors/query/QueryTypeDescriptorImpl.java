@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryIndexType;
@@ -96,8 +97,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** */
     private QueryIndexDescriptorImpl fullTextIdx;
 
-    /** */
-    private Class<?> keyCls;
+    /** Key type with compinent types if key is a collection. Single value if key is not a collection. */
+    private List<Class<?>> keyCls;
 
     /** */
     private Class<?> valCls;
@@ -441,15 +442,20 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** {@inheritDoc} */
     @Override public Class<?> keyClass() {
-        return keyCls;
+        return keyCls.get(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Class<?>> keyComponentClasses() {
+        return keyCls.size() > 1 ? Collections.unmodifiableList(keyCls.subList(1, keyCls.size())) : Collections.emptyList();
     }
 
     /**
-     * Set key class.
+     * Set key class with compinent types if key is a collection. Single value if key is not a collection.
      *
      * @param keyCls Key class.
      */
-    public void keyClass(Class<?> keyCls) {
+    public void keyClass(List<Class<?>> keyCls) {
         this.keyCls = keyCls;
     }
 
@@ -670,6 +676,25 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         validateIndexes(key, val);
     }
 
+    /** */
+    private void throwWrongColumnValueType(
+        String colName,
+        Object val,
+        Class<?> type,
+        @Nullable List<Class<?>> componentTypes
+    ) throws IgniteSQLException {
+        if (F.isEmpty(componentTypes)) {
+            throw new IgniteSQLException("Type for a column '" + colName + "' is not compatible with the definition." +
+                " Expected '" + type + "', actual type '" + typeName(val) + "'");
+        }
+        else {
+            throw new IgniteSQLException("Type for a column '" + colName + "' is not compatible with the definition." +
+                " Expected collection type: " + type.getSimpleName() + ", expected component types: " +
+                componentTypes.stream().map(t -> t == null ? "null" : t.getSimpleName()).collect(Collectors.joining(":")) + '.'
+            );
+        }
+    }
+
     /** Validate properties. */
     private void validateProps(Object key, Object val) throws IgniteCheckedException {
         if (F.isEmpty(validateProps))
@@ -698,10 +723,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                     isKey ? NULL_KEY : NULL_VALUE);
             }
 
-            if (validateTypes && propVal != null && !isCompatibleWithPropertyType(propVal, prop.type())) {
-                throw new IgniteSQLException("Type for a column '" + prop.name() + "' is not compatible with table definition." +
-                    " Expected '" + prop.type().getSimpleName() + "', actual type '" + typeName(propVal) + "'");
-            }
+            if (validateTypes && propVal != null && !isCompatibleWithPropertyType(propVal, prop.type(), prop.componentTypes()))
+                throwWrongColumnValueType(prop.name(), propVal, prop.type(), prop.componentTypes());
 
             if (propVal == null || prop.precision() == -1)
                 continue;
@@ -742,6 +765,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         for (GridQueryProperty prop : validateIdxProps) {
             Object propVal;
             Class<?> propType = prop.type();
+            List<Class<?>> componentTypes = null;
 
             if (propType == Object.class)
                 continue;
@@ -750,16 +774,16 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 propVal = unwrap(key);
             else if (Objects.equals(prop.name(), valueFieldAlias()) || Objects.equals(prop.name(), VAL_FIELD_NAME))
                 propVal = unwrap(val);
-            else
+            else {
                 propVal = prop.value(key, val);
+                componentTypes = prop.componentTypes();
+            }
 
             if (propVal == null)
                 continue;
 
-            if (!isCompatibleWithPropertyType(propVal, propType)) {
-                throw new IgniteSQLException("Type for a column '" + prop.name() + "' is not compatible with index definition." +
-                    " Expected '" + propType.getSimpleName() + "', actual type '" + typeName(propVal) + "'");
-            }
+            if (!isCompatibleWithPropertyType(propVal, propType, componentTypes))
+                throwWrongColumnValueType(prop.name(), propVal, propType, componentTypes);
         }
     }
 
@@ -778,8 +802,46 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      *
      * @param val Object to check.
      * @param expColType Type of the column based on Query Property info.
+     * @param componentTypes Expected component types if the expected type is a collection or a map.
      */
-    private boolean isCompatibleWithPropertyType(Object val, Class<?> expColType) {
+    private boolean isCompatibleWithPropertyType(Object val, Class<?> expColType, @Nullable List<Class<?>> componentTypes) {
+        if (expColType == null)
+            return false;
+
+        if (!checkValueType(val, expColType))
+            return false;
+
+        boolean collectionType = Collection.class.isAssignableFrom(expColType);
+        boolean mapType = Map.class.isAssignableFrom(expColType);
+
+        if (collectionType && val != null && !(val instanceof Collection))
+            return false;
+        if (mapType && val != null && !(val instanceof Map))
+            return false;
+
+        // Map is not currently supported.
+        if (collectionType && componentTypes != null) {
+            if (componentTypes.isEmpty())
+                return false;
+
+            Collection<Object> coll = (Collection<Object>)val;
+            expColType = componentTypes.get(0);
+            componentTypes = componentTypes.subList(1, componentTypes.size());
+
+            for (Object val0 : coll) {
+                if (val0 == null)
+                    continue;
+
+                if (!isCompatibleWithPropertyType(val0, expColType, componentTypes))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** */
+    private boolean checkValueType(Object val, Class<?> expColType) {
         if (!(val instanceof BinaryObject) || BinaryUtils.isBinaryArray(val)) {
             if (U.box(expColType).isAssignableFrom(U.box(val.getClass())))
                 return true;
