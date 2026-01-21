@@ -712,7 +712,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public TcpDiscoverySpi setReconnectDelay(int reconDelay) {
+    public TcpDiscoverySpi setReconnectDelay(long reconDelay) {
         this.reconDelay = reconDelay;
 
         return this;
