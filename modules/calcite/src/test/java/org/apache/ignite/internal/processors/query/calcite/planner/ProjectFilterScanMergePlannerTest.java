@@ -153,7 +153,7 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
                 .and(scan -> scan.projects() != null)
                 .and(scan -> "[+(+($t0, 1), 2)]".equals(scan.projects().toString()))
                 .and(scan -> scan.condition() != null)
-                .and(scan -> "=($t1, $cor0.C)".equals(scan.condition().toString()))
+                .and(scan -> "=($t1, $cor1.C)".equals(scan.condition().toString()))
                 .and(scan -> ImmutableBitSet.of(0, 2).equals(scan.requiredColumns()))
             ))));
     }
@@ -169,7 +169,7 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
             .and(input(isInstanceOf(IgniteTableScan.class)
                 .and(scan -> scan.projects() == null)
                 .and(scan -> scan.condition() != null)
-                .and(scan -> "=($t0, $cor0.A)".equals(scan.condition().toString()))
+                .and(scan -> "=($t0, $cor1.A)".equals(scan.condition().toString()))
                 .and(scan -> ImmutableBitSet.of(0).equals(scan.requiredColumns()))
             ))), "ProjectFilterTransposeRule");
 
@@ -181,7 +181,7 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
                 .and(scan -> scan.projects() != null)
                 .and(scan -> "[+($t0, 1)]".equals(scan.projects().toString()))
                 .and(scan -> scan.condition() != null)
-                .and(scan -> "=(+($t0, 1), $cor0.A)".equals(scan.condition().toString()))
+                .and(scan -> "=(+($t0, 1), $cor1.A)".equals(scan.condition().toString()))
                 .and(scan -> ImmutableBitSet.of(0).equals(scan.requiredColumns()))
             ))), "ProjectFilterTransposeRule");
     }
@@ -198,7 +198,7 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
                 .and(scan -> scan.projects() != null)
                 .and(scan -> "[+($t0, 2)]".equals(scan.projects().toString()))
                 .and(scan -> scan.condition() != null)
-                .and(scan -> "=($t1, $cor0.C)".equals(scan.condition().toString()))
+                .and(scan -> "=($t1, $cor1.C)".equals(scan.condition().toString()))
                 .and(scan -> ImmutableBitSet.of(0, 2).equals(scan.requiredColumns()))
             ))));
     }
@@ -214,7 +214,7 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
             .and(input(isInstanceOf(IgniteTableScan.class)
                 .and(scan -> scan.projects() == null)
                 .and(scan -> scan.condition() != null)
-                .and(scan -> "=($t0, $cor0.C)".equals(scan.condition().toString()))
+                .and(scan -> "=($t0, $cor1.C)".equals(scan.condition().toString()))
                 .and(scan -> ImmutableBitSet.of(0).equals(scan.requiredColumns()))
             ))));
     }
