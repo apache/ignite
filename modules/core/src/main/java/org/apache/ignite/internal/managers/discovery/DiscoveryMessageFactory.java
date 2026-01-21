@@ -35,7 +35,13 @@ import org.apache.ignite.internal.codegen.TcpDiscoveryPingRequestSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryPingResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryRingLatencyCheckMessageSerializer;
 import org.apache.ignite.internal.codegen.UserAcceptedMessageSerializer;
+import org.apache.ignite.internal.codegen.UserManagementOperationSerializer;
+import org.apache.ignite.internal.codegen.UserProposedMessageSerializer;
+import org.apache.ignite.internal.codegen.UserSerializer;
+import org.apache.ignite.internal.processors.authentication.User;
 import org.apache.ignite.internal.processors.authentication.UserAcceptedMessage;
+import org.apache.ignite.internal.processors.authentication.UserManagementOperation;
+import org.apache.ignite.internal.processors.authentication.UserProposedMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
@@ -60,6 +66,8 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheck
 public class DiscoveryMessageFactory implements MessageFactoryProvider {
     /** {@inheritDoc} */
     @Override public void registerAll(MessageFactory factory) {
+        factory.register((short)-104, User::new, new UserSerializer());
+        factory.register((short)-103, UserManagementOperation::new, new UserManagementOperationSerializer());
         factory.register((short)-102, TcpDiscoveryNodeMetricsMessage::new, new TcpDiscoveryNodeMetricsMessageSerializer());
         factory.register((short)-101, InetSocketAddressMessage::new, new InetSocketAddressMessageSerializer());
         factory.register((short)-100, InetAddressMessage::new, new InetAddressMessageSerializer());
@@ -82,5 +90,6 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
 
         // DiscoveryCustomMessage
         factory.register((short)500, UserAcceptedMessage::new, new UserAcceptedMessageSerializer());
+        factory.register((short)501, UserProposedMessage::new, new UserProposedMessageSerializer());
     }
 }
