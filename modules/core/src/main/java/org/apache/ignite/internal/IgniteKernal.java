@@ -491,7 +491,7 @@ public class IgniteKernal implements IgniteEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public ExecutorService executorService() {
-        return ctx.cluster().get().executorService();
+        return ((ClusterGroupAdapter)ctx.cluster().get().forServers()).executorService();
     }
 
     /** {@inheritDoc} */
