@@ -15,6 +15,7 @@
 = Thin Clients Overview
 
 == Overview
+
 A thin client is a lightweight Ignite client that connects to the cluster via a standard socket connection.
 It does not become a part of the cluster topology, never holds any data, and is not used as a destination for compute grid calculations.
 What it does is simply establish a socket connection to a standard Ignite node and perform all operations through that node.
@@ -26,7 +27,7 @@ Ignite provides the following thin clients:
 * link:thin-clients/java-thin-client[Java Thin Client]
 * link:thin-clients/dotnet-thin-client[.NET/C# Thin Client]
 * link:thin-clients/cpp-thin-client[C++ Thin Client]
-* link:thin-clients/python-thin-client[Python Thin Client]
+* link:https://apache-ignite-binary-protocol-client.readthedocs.io/en/stable/[Python Thin Client,window=_blank]
 * link:thin-clients/nodejs-thin-client[Node.js Thin Client]
 * link:thin-clients/php-thin-client[PHP Thin Client]
 
