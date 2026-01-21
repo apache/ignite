@@ -131,7 +131,16 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="key"></param>
         /// <returns></returns>
+        [Obsolete("MapKeyToPrimaryAndBackups is deprecated, please use MapKeyToPrimaryAndBackupsList instead.")]
         IList<IClusterNode> MapKeyToPrimaryAndBackups<TK>(TK key);
+
+        /// <summary>
+        /// Gets primary and backup nodes for the key. Note that primary node is always
+        /// first in the returned collection.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        IList<IClusterNode> MapKeyToPrimaryAndBackupsList<TK>(TK key);
 
         /// <summary>
         /// Gets primary node for the given partition.
@@ -153,6 +162,15 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="part">Partition to get affinity nodes for.</param>
         /// <returns>Collection of primary and backup nodes for partition with primary node always first</returns>
+        [Obsolete("MapPartitionToPrimaryAndBackups is deprecated, please use MapPartitionToPrimaryAndBackupsList instead.")]
         IList<IClusterNode> MapPartitionToPrimaryAndBackups(int part);
+
+        /// <summary>
+        /// Gets primary and backup nodes for partition. Note that primary node is always
+        /// first in the returned collection.
+        /// </summary>
+        /// <param name="part">Partition to get affinity nodes for.</param>
+        /// <returns>Collection of primary and backup nodes for partition with primary node always first</returns>
+        IList<IClusterNode> MapPartitionToPrimaryAndBackupsList(int part);
     }
 }

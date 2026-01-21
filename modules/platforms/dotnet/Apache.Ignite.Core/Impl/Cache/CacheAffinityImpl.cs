@@ -189,6 +189,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IList<IClusterNode> MapKeyToPrimaryAndBackups<TK>(TK key)
         {
+            return MapKeyToPrimaryAndBackupsList(key);
+        }
+
+          /** <inheritDoc /> */
+        public IList<IClusterNode> MapKeyToPrimaryAndBackupsList<TK>(TK key)
+        {
             IgniteArgumentCheck.NotNull(key, "key");
 
             return DoOutInOp(OpMapKeyToPrimaryAndBackups, w => w.WriteObject(key), r => ReadNodes(r));
@@ -212,6 +218,12 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         /** <inheritDoc /> */
         public IList<IClusterNode> MapPartitionToPrimaryAndBackups(int part)
+        {
+            return MapPartitionToPrimaryAndBackupsList(part);
+        }
+
+          /** <inheritDoc /> */
+        public IList<IClusterNode> MapPartitionToPrimaryAndBackupsList(int part)
         {
             return DoOutInOp(OpMapPartitionToPrimaryAndBackups, w => w.WriteObject(part), r => ReadNodes(r));
         }
