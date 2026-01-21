@@ -21,19 +21,16 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
-import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.DeploymentModeMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Deployment info bean.
@@ -43,25 +40,29 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     private static final long serialVersionUID = 0L;
 
     /** */
+    @Order(value = 0, method = "classLoaderId")
     private IgniteUuid clsLdrId;
 
     /** */
-    private DeploymentMode depMode;
+    @Order(value = 1, method = "deployModeMessage")
+    private DeploymentModeMessage depModeMsg;
 
     /** */
+    @Order(value = 2, method = "userVersion")
     private String userVer;
 
     /** */
     @Deprecated // Left for backward compatibility only.
+    @Order(value = 3, method = "localDeploymentOwner")
     private boolean locDepOwner;
 
     /** Node class loader participant map. */
     @GridToStringInclude
-    @GridDirectMap(keyType = UUID.class, valueType = IgniteUuid.class)
+    @Order(value = 4)
     private Map<UUID, IgniteUuid> participants;
 
     /**
-     * Required by {@link Externalizable}.
+     * Required for serializations.
      */
     public GridDeploymentInfoBean() {
         /* No-op. */
@@ -80,7 +81,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         Map<UUID, IgniteUuid> participants
     ) {
         this.clsLdrId = clsLdrId;
-        this.depMode = depMode;
+        this.depModeMsg = new DeploymentModeMessage(depMode);
         this.userVer = userVer;
         this.participants = participants;
     }
@@ -90,7 +91,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
      */
     public GridDeploymentInfoBean(GridDeploymentInfo dep) {
         clsLdrId = dep.classLoaderId();
-        depMode = dep.deployMode();
+        this.depModeMsg = new DeploymentModeMessage(dep.deployMode());
         userVer = dep.userVersion();
         participants = dep.participants();
     }
@@ -100,14 +101,34 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         return clsLdrId;
     }
 
+    /** */
+    public void classLoaderId(IgniteUuid clsLdrId) {
+        this.clsLdrId = clsLdrId;
+    }
+
     /** {@inheritDoc} */
     @Override public DeploymentMode deployMode() {
-        return depMode;
+        return depModeMsg.value();
+    }
+
+    /** */
+    public DeploymentModeMessage deployModeMessage() {
+        return depModeMsg;
+    }
+
+    /** */
+    public void deployModeMessage(DeploymentModeMessage depMode) {
+        this.depModeMsg = depMode;
     }
 
     /** {@inheritDoc} */
     @Override public String userVersion() {
         return userVer;
+    }
+
+    /** */
+    public void userVersion(String userVer) {
+        this.userVer = userVer;
     }
 
     /** {@inheritDoc} */
@@ -120,9 +141,19 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
         return locDepOwner;
     }
 
+    /** */
+    public void localDeploymentOwner(boolean locDepOwner) {
+        this.locDepOwner = locDepOwner;
+    }
+
     /** {@inheritDoc} */
     @Override public Map<UUID, IgniteUuid> participants() {
         return participants;
+    }
+
+    /** */
+    public void participants(Map<UUID, IgniteUuid> participants) {
+        this.participants = participants;
     }
 
     /** {@inheritDoc} */
@@ -137,107 +168,6 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeIgniteUuid(clsLdrId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByte(depMode != null ? (byte)depMode.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeBoolean(locDepOwner))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeMap(participants, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeString(userVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                clsLdrId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                byte depModeOrd;
-
-                depModeOrd = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                depMode = DeploymentMode.fromOrdinal(depModeOrd);
-
-                reader.incrementState();
-
-            case 2:
-                locDepOwner = reader.readBoolean();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                participants = reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                userVer = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public short directType() {
         return 10;
     }
@@ -245,7 +175,7 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeIgniteUuid(out, clsLdrId);
-        U.writeEnum(out, depMode);
+        out.writeByte(depModeMsg.code());
         U.writeString(out, userVer);
         out.writeBoolean(locDepOwner);
         U.writeMap(out, participants);
@@ -254,7 +184,10 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         clsLdrId = U.readIgniteUuid(in);
-        depMode = DeploymentMode.fromOrdinal(in.readByte());
+
+        depModeMsg = new DeploymentModeMessage();
+        depModeMsg.code(in.readByte());
+
         userVer = U.readString(in);
         locDepOwner = in.readBoolean();
         participants = U.readMap(in);
