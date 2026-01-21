@@ -1969,7 +1969,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /**
      * Gets addresses registered in the IP finder, initializes addresses having no
-     * port (or 0 port) with {@link #DFLT_PORT}.
+     * port (or 0 port) with range of ports from {@link #setLocalPort(int)}
+     * to {@link #setLocalPort(int)}} + {@link #getLocalPortRange()}.
      *
      * @return Registered addresses.
      * @throws org.apache.ignite.spi.IgniteSpiException If an error occurs.
@@ -1979,14 +1980,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
         for (InetSocketAddress addr : ipFinder.getRegisteredAddresses()) {
             if (addr.getPort() == 0) {
-                // TcpDiscoveryNode.discoveryPort() returns an correct port for a server node and 0 for client node.
-                int port = locNode.discoveryPort() != 0 ? locNode.discoveryPort() : DFLT_PORT;
+                int firstPort = locPort;
+                int lastPort = locPortRange == 0 ? firstPort : firstPort + locPortRange;
 
-                addr = addr.isUnresolved() ? new InetSocketAddress(addr.getHostName(), port) :
-                    new InetSocketAddress(addr.getAddress(), port);
-            }
-
-            res.add(addr);
+                for (int port = firstPort; port <= lastPort; port++) {
+                    addr = addr.isUnresolved() ? new InetSocketAddress(addr.getHostName(), port) :
+                            new InetSocketAddress(addr.getAddress(), port);
+                    res.add(addr);
+                }
+            } else
+                res.add(addr);
         }
 
         return res;
