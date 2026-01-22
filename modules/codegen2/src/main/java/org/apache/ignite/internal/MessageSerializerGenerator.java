@@ -60,15 +60,15 @@ import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
  * Generates serializer class for given {@code Message} class. The generated serializer follows the naming convention:
  * {@code org.apache.ignite.internal.codegen.[MessageClassName]Serializer}.
  */
-class MessageSerializerGenerator {
+public class MessageSerializerGenerator {
     /** */
-    private static final String EMPTY = "";
+    public static final String EMPTY = "";
 
     /** */
-    private static final String TAB = "    ";
+    public static final String TAB = "    ";
 
     /** */
-    private static final String NL = System.lineSeparator();
+    public static final String NL = System.lineSeparator();
 
     /** */
     private static final String PKG_NAME = "org.apache.ignite.internal.codegen";
@@ -81,7 +81,7 @@ class MessageSerializerGenerator {
         " */";
 
     /** */
-    private static final String METHOD_JAVADOC = "/** */";
+    public static final String METHOD_JAVADOC = "/** */";
 
     /** */
     private static final String RETURN_FALSE_STMT = "return false;";
@@ -403,7 +403,7 @@ class MessageSerializerGenerator {
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
 
-            else if (enumType(type)) {
+            else if (enumType(env, type)) {
                 Element element = env.getTypeUtils().asElement(type);
                 imports.add(element.toString());
 
@@ -609,8 +609,7 @@ class MessageSerializerGenerator {
                 returnFalseIfReadFailed(name, collectionReader,
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
-
-            else if (enumType(type)) {
+            else if (enumType(env, type)) {
                 String fieldPrefix = typeNameToFieldName(env.getTypeUtils().asElement(type).getSimpleName().toString());
 
                 boolean hasCustMapperAnn = field.getAnnotation(CustomMapper.class) != null;
@@ -856,7 +855,7 @@ class MessageSerializerGenerator {
     }
 
     /** */
-    private boolean enumType(TypeMirror type) {
+    public static boolean enumType(ProcessingEnvironment env, TypeMirror type) {
         Element element = env.getTypeUtils().asElement(type);
 
         return element != null && element.getKind() == ElementKind.ENUM;
