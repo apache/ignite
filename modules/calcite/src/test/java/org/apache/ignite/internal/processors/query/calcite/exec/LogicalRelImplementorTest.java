@@ -392,12 +392,14 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
 
         List<RexNode> project = F.asList(rexBuilder.makeLocalRef(sqlTypeVarchar, 1));
 
-        RexNode filterOneField = rexBuilder.makeCall(SqlStdOperatorTable.EQUALS,
+        RexNode filterOneField = rexBuilder.makeCall(
+            SqlStdOperatorTable.EQUALS,
             rexBuilder.makeLocalRef(sqlTypeInt, 0),
             rexBuilder.makeLiteral(1, sqlTypeInt)
         );
 
-        RexNode filterTwoFields = rexBuilder.makeCall(SqlStdOperatorTable.EQUALS,
+        RexNode filterTwoFields = rexBuilder.makeCall(
+            SqlStdOperatorTable.EQUALS,
             rexBuilder.makeCast(sqlTypeVarchar, rexBuilder.makeLocalRef(sqlTypeInt, 0)),
             rexBuilder.makeLocalRef(sqlTypeVarchar, 1)
         );
