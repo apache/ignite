@@ -1200,8 +1200,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
      * @param res Results.
      * @return Future that will be completed when the handlers are finished executing.
      */
-    private IgniteInternalFuture<Void> completeHandlersAsyncIfNeeded(SnapshotOperation snpOp,
-        Collection<SnapshotOperationResponse> res) {
+    private IgniteInternalFuture<Void> completeHandlersAsyncIfNeeded(
+        SnapshotOperation snpOp,
+        Collection<SnapshotOperationResponse> res
+    ) {
         if (snpOp.error() != null)
             return new GridFinishedFuture<>();
 
@@ -1297,11 +1299,10 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
                 }
 
                 if (log.isInfoEnabled())
-                    log.info("Finishing local snapshot operation [req=" + snpOp + ']');
+                    log.info("Finishing local snapshot operation [op=" + snpOp + ']');
             }
             catch (Exception e) {
-                log.error("Finishing local snapshot operation failed " +
-                    "[req=" + snpOp + ", err=" + e + ']');
+                log.error("Finishing local snapshot operation failed [op=" + snpOp + ", err=" + e + ']');
 
                 throw F.wrap(e);
             }
