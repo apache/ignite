@@ -35,10 +35,14 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
+import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
+import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
 import org.apache.ignite.internal.processors.tracing.Tracing;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -48,7 +52,9 @@ import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetricsMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFullMetricsMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.jetbrains.annotations.Nullable;
 
@@ -415,27 +421,45 @@ abstract class TcpDiscoveryImpl {
     }
 
     /** */
-    public void processMsgCacheMetrics(TcpDiscoveryMetricsUpdateMessage msg, long tsNanos) {
-        for (Map.Entry<UUID, TcpDiscoveryMetricsUpdateMessage.MetricsSet> e : msg.metrics().entrySet()) {
-            UUID nodeId = e.getKey();
+    public void processCacheMetricsMessage(TcpDiscoveryMetricsUpdateMessage msg, long tsNanos) {
+        for (Map.Entry<UUID, TcpDiscoveryNodeFullMetricsMessage> e : msg.serversFullMetricsMessages().entrySet()) {
+            UUID srvrId = e.getKey();
+            Map<Integer, CacheMetricsMessage> cacheMetricsMsgs = e.getValue().cachesMetricsMessages();
+            NodeMetricsMessage srvrMetricsMsg = e.getValue().nodeMetricsMessage();
 
-            TcpDiscoveryMetricsUpdateMessage.MetricsSet metricsSet = e.getValue();
+            assert srvrMetricsMsg != null;
 
-            Map<Integer, CacheMetrics> cacheMetrics = msg.hasCacheMetrics(nodeId) ?
-                msg.cacheMetrics().get(nodeId) : Collections.emptyMap();
+            Map<Integer, CacheMetrics> cacheMetrics;
 
-            if (endTimeMetricsSizeProcessWait <= U.currentTimeMillis()
-                && cacheMetrics.size() >= METRICS_QNT_WARN) {
+            if (!F.isEmpty(cacheMetricsMsgs)) {
+                cacheMetrics = U.newHashMap(cacheMetricsMsgs.size());
+
+                cacheMetricsMsgs.forEach((cacheId, cacheMetricsMsg) ->
+                    cacheMetrics.put(cacheId, new CacheMetricsSnapshot(cacheMetricsMsg)));
+            }
+            else
+                cacheMetrics = Collections.emptyMap();
+
+            if (endTimeMetricsSizeProcessWait <= U.currentTimeMillis() && cacheMetrics.size() >= METRICS_QNT_WARN) {
                 log.warning("The Discovery message has metrics for " + cacheMetrics.size() + " caches.\n" +
                     "To prevent Discovery blocking use -DIGNITE_DISCOVERY_DISABLE_CACHE_METRICS_UPDATE=true option.");
 
                 endTimeMetricsSizeProcessWait = U.currentTimeMillis() + LOG_WARN_MSG_TIMEOUT;
             }
 
-            updateMetrics(nodeId, metricsSet.metrics(), cacheMetrics, tsNanos);
+            updateMetrics(srvrId, new ClusterMetricsSnapshot(srvrMetricsMsg), cacheMetrics, tsNanos);
 
-            for (T2<UUID, ClusterMetrics> t : metricsSet.clientMetrics())
-                updateMetrics(t.get1(), t.get2(), cacheMetrics, tsNanos);
+            TcpDiscoveryClientNodesMetricsMessage clientsMetricsMsg = F.isEmpty(msg.connectedClientsMetricsMessages())
+                ? null
+                : msg.connectedClientsMetricsMessages().get(srvrId);
+
+            if (clientsMetricsMsg == null)
+                continue;
+
+            assert clientsMetricsMsg.nodesMetricsMessages() != null;
+
+            clientsMetricsMsg.nodesMetricsMessages().forEach((clientId, clientNodeMetricsMsg) ->
+                updateMetrics(clientId, new ClusterMetricsSnapshot(clientNodeMetricsMsg), cacheMetrics, tsNanos));
         }
     }
 

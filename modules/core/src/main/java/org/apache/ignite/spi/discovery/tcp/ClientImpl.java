@@ -2526,8 +2526,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                     log.debug("Received metrics response: " + msg);
             }
             else {
-                if (msg.hasMetrics())
-                    processMsgCacheMetrics(msg, System.nanoTime());
+                if (!F.isEmpty(msg.serversFullMetricsMessages()))
+                    processCacheMetricsMessage(msg, System.nanoTime());
             }
         }
 

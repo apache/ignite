@@ -17,25 +17,21 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
-import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryMessageFactory;
+import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Metrics update message.
@@ -52,20 +48,28 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * second pass).
  */
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Map to store nodes metrics. */
+    /** Connected clients metrics: server id -> client id -> clients metrics. */
     @GridToStringExclude
-    private final Map<UUID, MetricsSet> metrics = new HashMap<>();
+    @Order(value = 5, method = "connectedClientsMetricsMessages")
+    private Map<UUID, TcpDiscoveryClientNodesMetricsMessage> connectedClientsMetricsMsgs;
+
+    /** Servers full metrics: server id -> server metrics + metrics of server's caches. */
+    @GridToStringExclude
+    @Order(value = 6, method = "serversFullMetricsMessages")
+    private @Nullable Map<UUID, TcpDiscoveryNodeFullMetricsMessage> serversFullMetricsMsgs;
 
     /** Client node IDs. */
-    private final Collection<UUID> clientNodeIds = new HashSet<>();
+    @Order(value = 7)
+    private @Nullable Set<UUID> clientNodeIds;
 
-    /** Cahce metrics by node. */
-    @GridToStringExclude
-    private final Map<UUID, Map<Integer, CacheMetrics>> cacheMetrics = new HashMap<>();
+    /** Constructor for {@link DiscoveryMessageFactory}. */
+    public TcpDiscoveryMetricsUpdateMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -79,130 +83,136 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
     /**
      * Sets metrics for particular node.
      *
-     * @param nodeId Node ID.
-     * @param metrics Node metrics.
+     * @param srvrId Server ID.
+     * @param newMetrics New server metrics to add.
      */
-    public void setMetrics(UUID nodeId, ClusterMetrics metrics) {
-        assert nodeId != null;
-        assert metrics != null;
-        assert !this.metrics.containsKey(nodeId);
+    public void addServerMetrics(UUID srvrId, ClusterMetrics newMetrics) {
+        assert srvrId != null;
+        assert newMetrics != null;
 
-        this.metrics.put(nodeId, new MetricsSet(metrics));
+        if (serversFullMetricsMsgs == null)
+            serversFullMetricsMsgs = new HashMap<>();
+
+        assert !serversFullMetricsMsgs.containsKey(srvrId);
+
+        serversFullMetricsMsgs.compute(srvrId, (srvrId0, srvrFullMetrics) -> {
+            if (srvrFullMetrics == null)
+                srvrFullMetrics = new TcpDiscoveryNodeFullMetricsMessage();
+
+            srvrFullMetrics.nodeMetricsMessage(new TcpDiscoveryNodeMetricsMessage(newMetrics));
+
+            return srvrFullMetrics;
+        });
     }
 
     /**
      * Sets cache metrics for particular node.
      *
-     * @param nodeId Node ID.
-     * @param metrics Node cache metrics.
+     * @param srvrId Server ID.
+     * @param newCachesMetrics News server's caches metrics to add.
      */
-    public void setCacheMetrics(UUID nodeId, Map<Integer, CacheMetrics> metrics) {
-        assert nodeId != null;
-        assert metrics != null;
-        assert !this.cacheMetrics.containsKey(nodeId);
+    public void addServerCacheMetrics(UUID srvrId, Map<Integer, CacheMetrics> newCachesMetrics) {
+        assert srvrId != null;
+        assert newCachesMetrics != null;
 
-        if (!F.isEmpty(metrics))
-            this.cacheMetrics.put(nodeId, metrics);
+        if (serversFullMetricsMsgs == null)
+            serversFullMetricsMsgs = new HashMap<>();
+
+        assert serversFullMetricsMsgs.containsKey(srvrId) && serversFullMetricsMsgs.get(srvrId).cachesMetricsMessages() == null;
+
+        serversFullMetricsMsgs.compute(srvrId, (srvrId0, srvrFullMetrics) -> {
+            if (srvrFullMetrics == null)
+                srvrFullMetrics = new TcpDiscoveryNodeFullMetricsMessage();
+
+            Map<Integer, CacheMetricsMessage> newCachesMsgsMap = U.newHashMap(newCachesMetrics.size());
+
+            newCachesMetrics.forEach((cacheId, cacheMetrics) ->
+                newCachesMsgsMap.put(cacheId, new TcpDiscoveryCacheMetricsMessage(cacheMetrics)));
+
+            srvrFullMetrics.cachesMetricsMessages(newCachesMsgsMap);
+
+            return srvrFullMetrics;
+        });
     }
 
     /**
-     * Sets metrics for a client node.
+     * Adds metrics for a connected client node.
      *
-     * @param nodeId Server node ID.
-     * @param clientNodeId Client node ID.
-     * @param metrics Node metrics.
+     * @param srvrId Server node ID.
+     * @param clientNodeId Connected client node ID.
+     * @param clientMetrics Client metrics.
      */
-    public void setClientMetrics(UUID nodeId, UUID clientNodeId, ClusterMetrics metrics) {
-        assert nodeId != null;
+    public void addClientMetrics(UUID srvrId, UUID clientNodeId, ClusterMetrics clientMetrics) {
+        assert srvrId != null;
         assert clientNodeId != null;
-        assert metrics != null;
-        assert this.metrics.containsKey(nodeId);
+        assert clientMetrics != null;
 
-        this.metrics.get(nodeId).addClientMetrics(clientNodeId, metrics);
+        if (connectedClientsMetricsMsgs == null)
+            connectedClientsMetricsMsgs = new HashMap<>();
+
+        assert !connectedClientsMetricsMsgs.containsKey(srvrId)
+            || connectedClientsMetricsMsgs.get(srvrId).nodesMetricsMessages().get(clientNodeId) == null;
+
+        connectedClientsMetricsMsgs.compute(srvrId, (srvrId0, clientsMetricsMsg) -> {
+            if (clientsMetricsMsg == null) {
+                clientsMetricsMsg = new TcpDiscoveryClientNodesMetricsMessage();
+                clientsMetricsMsg.nodesMetricsMessages(new HashMap<>());
+            }
+
+            clientsMetricsMsg.nodesMetricsMessages().put(clientNodeId, new TcpDiscoveryNodeMetricsMessage(clientMetrics));
+
+            return clientsMetricsMsg;
+        });
     }
 
     /**
-     * Removes metrics for particular node from the message.
+     * Removes metrics for particular server node from the message.
      *
-     * @param nodeId Node ID.
+     * @param srvrId Server ID.
      */
-    public void removeMetrics(UUID nodeId) {
-        assert nodeId != null;
+    public void removeServerMetrics(UUID srvrId) {
+        assert srvrId != null;
+        assert serversFullMetricsMsgs != null;
 
-        metrics.remove(nodeId);
+        serversFullMetricsMsgs.remove(srvrId);
+    }
+
+    /** @return Map of server full metrics messages. */
+    public Map<UUID, TcpDiscoveryNodeFullMetricsMessage> serversFullMetricsMessages() {
+        return serversFullMetricsMsgs;
+    }
+
+    /** @param serversFullMetricsMsgs Map of server full metrics messages. */
+    public void serversFullMetricsMessages(Map<UUID, TcpDiscoveryNodeFullMetricsMessage> serversFullMetricsMsgs) {
+        this.serversFullMetricsMsgs = serversFullMetricsMsgs;
+    }
+
+    /** @return Map of nodes metrics messages. */
+    public @Nullable Map<UUID, TcpDiscoveryClientNodesMetricsMessage> connectedClientsMetricsMessages() {
+        return connectedClientsMetricsMsgs;
+    }
+
+    /** @param connectedClientsMetricsMsgs Map of nodes metrics messages. */
+    public void connectedClientsMetricsMessages(Map<UUID, TcpDiscoveryClientNodesMetricsMessage> connectedClientsMetricsMsgs) {
+        this.connectedClientsMetricsMsgs = connectedClientsMetricsMsgs;
     }
 
     /**
-     * Removes cache metrics for particular node from the message.
-     *
-     * @param nodeId Node ID.
-     */
-    public void removeCacheMetrics(UUID nodeId) {
-        assert nodeId != null;
-
-        cacheMetrics.remove(nodeId);
-    }
-
-    /**
-     * Gets metrics map.
-     *
-     * @return Metrics map.
-     */
-    public Map<UUID, MetricsSet> metrics() {
-        return metrics;
-    }
-
-    /**
-     * Gets cache metrics map.
-     *
-     * @return Cache metrics map.
-     */
-    public Map<UUID, Map<Integer, CacheMetrics>> cacheMetrics() {
-        return cacheMetrics;
-    }
-
-    /**
-     * @return {@code True} if this message contains metrics.
-     */
-    public boolean hasMetrics() {
-        return !metrics.isEmpty();
-    }
-
-    /**
-     * @return {@code True} this message contains cache metrics.
-     */
-    public boolean hasCacheMetrics() {
-        return !cacheMetrics.isEmpty();
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @return {@code True} if this message contains metrics.
-     */
-    public boolean hasMetrics(UUID nodeId) {
-        assert nodeId != null;
-
-        return metrics.get(nodeId) != null;
-    }
-
-    /**
-     * @param nodeId Node ID.
-     *
-     * @return {@code True} if this message contains cache metrics for particular node.
-     */
-    public boolean hasCacheMetrics(UUID nodeId) {
-        assert nodeId != null;
-
-        return cacheMetrics.get(nodeId) != null;
-    }
-
-    /**
-     * Gets client node IDs for  particular node.
+     * Gets client node IDs.
      *
      * @return Client node IDs.
      */
-    public Collection<UUID> clientNodeIds() {
+    public @Nullable Set<UUID> clientNodeIds() {
         return clientNodeIds;
+    }
+
+    /**
+     * Sets client node IDs.
+     *
+     * @param clientNodeIds Client node IDs.
+     */
+    public void clientNodeIds(@Nullable Set<UUID> clientNodeIds) {
+        this.clientNodeIds = clientNodeIds;
     }
 
     /**
@@ -211,6 +221,9 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
      * @param clientNodeId Client node ID.
      */
     public void addClientNodeId(UUID clientNodeId) {
+        if (clientNodeIds == null)
+            clientNodeIds = new HashSet<>();
+
         clientNodeIds.add(clientNodeId);
     }
 
@@ -220,115 +233,12 @@ public class TcpDiscoveryMetricsUpdateMessage extends TcpDiscoveryAbstractMessag
     }
 
     /** {@inheritDoc} */
+    @Override public short directType() {
+        return 14;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryMetricsUpdateMessage.class, this, "super", super.toString());
-    }
-
-    /**
-     * @param nodeId Node ID.
-     * @param metrics Metrics.
-     * @return Serialized metrics.
-     */
-    private static byte[] serializeMetrics(UUID nodeId, ClusterMetrics metrics) {
-        assert nodeId != null;
-        assert metrics != null;
-
-        byte[] buf = new byte[16 + ClusterMetricsSnapshot.METRICS_SIZE];
-
-        U.longToBytes(nodeId.getMostSignificantBits(), buf, 0);
-        U.longToBytes(nodeId.getLeastSignificantBits(), buf, 8);
-
-        ClusterMetricsSnapshot.serialize(buf, 16, metrics);
-
-        return buf;
-    }
-
-    /**
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class MetricsSet implements Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Metrics. */
-        private byte[] metrics;
-
-        /** Client metrics. */
-        private Collection<byte[]> clientMetrics;
-
-        /**
-         */
-        public MetricsSet() {
-            // No-op.
-        }
-
-        /**
-         * @param metrics Metrics.
-         */
-        public MetricsSet(ClusterMetrics metrics) {
-            assert metrics != null;
-
-            this.metrics = ClusterMetricsSnapshot.serialize(metrics);
-        }
-
-        /**
-         * @return Deserialized metrics.
-         */
-        public ClusterMetrics metrics() {
-            return ClusterMetricsSnapshot.deserialize(metrics, 0);
-        }
-
-        /**
-         * @return Client metrics.
-         */
-        public Collection<T2<UUID, ClusterMetrics>> clientMetrics() {
-            return F.viewReadOnly(clientMetrics, new C1<byte[], T2<UUID, ClusterMetrics>>() {
-                @Override public T2<UUID, ClusterMetrics> apply(byte[] bytes) {
-                    UUID nodeId = new UUID(U.bytesToLong(bytes, 0), U.bytesToLong(bytes, 8));
-
-                    return new T2<>(nodeId, ClusterMetricsSnapshot.deserialize(bytes, 16));
-                }
-            });
-        }
-
-        /**
-         * @param nodeId Client node ID.
-         * @param metrics Client metrics.
-         */
-        private void addClientMetrics(UUID nodeId, ClusterMetrics metrics) {
-            assert nodeId != null;
-            assert metrics != null;
-
-            if (clientMetrics == null)
-                clientMetrics = new ArrayList<>();
-
-            clientMetrics.add(serializeMetrics(nodeId, metrics));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeByteArray(out, metrics);
-
-            out.writeInt(clientMetrics != null ? clientMetrics.size() : -1);
-
-            if (clientMetrics != null) {
-                for (byte[] arr : clientMetrics)
-                    U.writeByteArray(out, arr);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            metrics = U.readByteArray(in);
-
-            int clientMetricsSize = in.readInt();
-
-            if (clientMetricsSize >= 0) {
-                clientMetrics = new ArrayList<>(clientMetricsSize);
-
-                for (int i = 0; i < clientMetricsSize; i++)
-                    clientMetrics.add(U.readByteArray(in));
-            }
-        }
     }
 }
