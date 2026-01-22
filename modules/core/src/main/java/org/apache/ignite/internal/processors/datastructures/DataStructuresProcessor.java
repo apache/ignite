@@ -1091,6 +1091,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         ccfg.setAffinity(cfg.getAffinity());
         ccfg.setDataRegionName(dataRegionName);
 
+        if (cfg.getCacheStoreFactory() != null) {
+            ccfg.setCacheStoreFactory(cfg.getCacheStoreFactory());
+            ccfg.setReadThrough(true);
+            ccfg.setWriteThrough(true);
+        }
+
         if (cfg.getCacheMode() == PARTITIONED)
             ccfg.setBackups(cfg.getBackups());
 
