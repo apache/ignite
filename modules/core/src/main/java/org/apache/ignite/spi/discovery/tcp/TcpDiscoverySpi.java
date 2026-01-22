@@ -1036,7 +1036,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * Sets size of topology snapshots history. Specified size should be greater than or equal to default size
+     * Sets size of topology snapshots history. Specified size recommended greater than or equal to default size
      * {@link #DFLT_TOP_HISTORY_SIZE}.
      *
      * @param topHistSize Size of topology snapshots history.
@@ -1044,16 +1044,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      */
     @IgniteSpiConfiguration(optional = true)
     public TcpDiscoverySpi setTopHistorySize(int topHistSize) {
-        if (topHistSize < DFLT_TOP_HISTORY_SIZE) {
-            U.warn(log, "Topology history size should be greater than or equal to default size. " +
-                "Specified size will not be set [curSize=" + this.topHistSize + ", specifiedSize=" + topHistSize +
-                ", defaultSize=" + DFLT_TOP_HISTORY_SIZE + ']');
-
-            return this;
-        }
-
-        this.topHistSize = topHistSize;
-
+        if (topHistSize < DFLT_TOP_HISTORY_SIZE) 
+            U.warn(log, "Topology history size is too low (at least " + DFLT_TOP_HISTORY_SIZE + " recommended ): " + topHistSize);
+        
+        this.topHistSize = topHistSize > 0 ? topHistSize : DFLT_TOP_HISTORY_SIZE;
+        
         return this;
     }
 
