@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,7 +30,6 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @ArgumentGroup(value = {"nodeIds", "allNodes", "nodeId"}, onlyOneOf = true, optional = true)
@@ -78,26 +74,6 @@ public class CacheScheduleIndexesRebuildCommandArg extends IgniteDataTransferObj
 
     /** Cache name -> indexes. */
     private Map<String, Set<String>> cacheToIndexes;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeUuid(out, nodeId);
-        U.writeString(out, cacheNames);
-        U.writeArray(out, groupNames);
-        U.writeMap(out, cacheToIndexes);
-        U.writeArray(out, nodeIds);
-        out.writeBoolean(allNodes);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeId = U.readUuid(in);
-        cacheNames = U.readString(in);
-        groupNames = U.readArray(in, String.class);
-        cacheToIndexes = U.readMap(in);
-        nodeIds = U.readArray(in, UUID.class);
-        allNodes = in.readBoolean();
-    }
 
     /** */
     private void parse() {

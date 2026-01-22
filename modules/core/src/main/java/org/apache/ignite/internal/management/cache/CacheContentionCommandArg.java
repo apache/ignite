@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class CacheContentionCommandArg extends IgniteDataTransferObject {
@@ -45,20 +41,6 @@ public class CacheContentionCommandArg extends IgniteDataTransferObject {
     @Positional
     @Argument(optional = true, example = "maxPrint")
     private int maxPrint = 10;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeInt(minQueueSize);
-        U.writeUuid(out, nodeId);
-        out.writeInt(maxPrint);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        minQueueSize = in.readInt();
-        nodeId = U.readUuid(in);
-        maxPrint = in.readInt();
-    }
 
     /** */
     public UUID nodeId() {

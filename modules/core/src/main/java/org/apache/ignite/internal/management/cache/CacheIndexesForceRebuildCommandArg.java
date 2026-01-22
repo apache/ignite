@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @ArgumentGroup(value = {"nodeIds", "allNodes", "nodeId"}, onlyOneOf = true, optional = false)
@@ -58,24 +54,6 @@ public class CacheIndexesForceRebuildCommandArg extends IgniteDataTransferObject
     @Argument(description = "Comma-separated list of cache group names for which indexes should be rebuilt",
         example = "groupName1,...groupNameN")
     private String[] groupNames;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeUuid(out, nodeId);
-        U.writeArray(out, cacheNames);
-        U.writeArray(out, groupNames);
-        U.writeArray(out, nodeIds);
-        out.writeBoolean(allNodes);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeId = U.readUuid(in);
-        cacheNames = U.readArray(in, String.class);
-        groupNames = U.readArray(in, String.class);
-        nodeIds = U.readArray(in, UUID.class);
-        allNodes = in.readBoolean();
-    }
 
     /** */
     public UUID nodeId() {

@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.management.defragmentation;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.defragmentation.DefragmentationCommand.DefragmentationStatusCommandArg;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class DefragmentationScheduleCommandArg extends DefragmentationStatusCommandArg {
@@ -36,22 +32,6 @@ public class DefragmentationScheduleCommandArg extends DefragmentationStatusComm
     /** */
     @Argument(example = "cache1,cache2,cache3", optional = true)
     private String[] caches;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
-        U.writeArray(out, nodes);
-        U.writeArray(out, caches);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(in);
-
-        nodes = U.readArray(in, String.class);
-        caches = U.readArray(in, String.class);
-    }
 
     /** */
     public String[] nodes() {

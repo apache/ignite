@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.management.tx;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
 /** */
@@ -45,20 +41,6 @@ public class TxInfoCommandArg extends TxCommand.AbstractTxCommandArg {
 
     /** */
     private GridCacheVersion gridCacheVersion;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, value);
-        U.writeIgniteUuid(out, uuid);
-        out.writeObject(gridCacheVersion);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        value = U.readString(in);
-        uuid = U.readIgniteUuid(in);
-        gridCacheVersion = (GridCacheVersion)in.readObject();
-    }
 
     /** */
     public void uuid(IgniteUuid uuid) {

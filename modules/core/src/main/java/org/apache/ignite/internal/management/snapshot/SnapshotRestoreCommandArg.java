@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.management.snapshot;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  */
@@ -87,32 +83,6 @@ public class SnapshotRestoreCommandArg extends IgniteDataTransferObject {
 
         if (status)
             throw new IllegalArgumentException("--sync and --status can't be used together");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, snapshotName);
-        out.writeInt(increment);
-        U.writeArray(out, groups);
-        U.writeString(out, src);
-        out.writeBoolean(sync);
-        out.writeBoolean(check);
-        out.writeBoolean(status);
-        out.writeBoolean(cancel);
-        out.writeBoolean(start);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        snapshotName = U.readString(in);
-        increment = in.readInt();
-        groups = U.readArray(in, String.class);
-        src = U.readString(in);
-        sync = in.readBoolean();
-        check = in.readBoolean();
-        status = in.readBoolean();
-        cancel = in.readBoolean();
-        start = in.readBoolean();
     }
 
     /** */

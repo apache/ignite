@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class CacheClearCommandArg extends IgniteDataTransferObject {
@@ -32,16 +28,6 @@ public class CacheClearCommandArg extends IgniteDataTransferObject {
     /** */
     @Argument(description = "specifies a comma-separated list of cache names to be cleared")
     private String[] caches;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeArray(out, caches);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        caches = U.readArray(in, String.class);
-    }
 
     /** */
     public String[] caches() {

@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.management.cdc;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @CliConfirmArgument
@@ -36,16 +32,6 @@ public class CdcDeleteLostSegmentLinksCommandArg extends IgniteDataTransferObjec
     @Argument(optional = true, description = "ID of the node to delete lost segment links from. " +
         "If not set, the command will affect all server nodes")
     private UUID nodeId;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeUuid(out, nodeId);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeId = U.readUuid(in);
-    }
 
     /** */
     public UUID nodeId() {

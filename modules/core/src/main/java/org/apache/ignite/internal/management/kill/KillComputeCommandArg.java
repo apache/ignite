@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.management.kill;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
 /** */
@@ -35,16 +31,6 @@ public class KillComputeCommandArg extends IgniteDataTransferObject {
     @Positional
     @Argument(description = "Session identifier")
     private IgniteUuid sessionId;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeIgniteUuid(out, sessionId);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        sessionId = U.readIgniteUuid(in);
-    }
 
     /** */
     public IgniteUuid sessionId() {

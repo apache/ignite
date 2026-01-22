@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @ArgumentGroup(value = {"destroyAllCaches", "caches"}, onlyOneOf = true, optional = false)
@@ -39,18 +35,6 @@ public class CacheDestroyCommandArg extends IgniteDataTransferObject {
     /** */
     @Argument(description = "permanently destroy all user-created caches")
     private boolean destroyAllCaches;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeArray(out, caches);
-        out.writeBoolean(destroyAllCaches);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        caches = U.readArray(in, String.class);
-        destroyAllCaches = in.readBoolean();
-    }
 
     /** */
     public boolean destroyAllCaches() {

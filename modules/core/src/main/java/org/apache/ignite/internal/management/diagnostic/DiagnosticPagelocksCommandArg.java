@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.management.diagnostic;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.management.diagnostic.Operation.DUMP_LOG;
 
@@ -69,22 +65,6 @@ public class DiagnosticPagelocksCommandArg extends IgniteDataTransferObject {
     private void ensureOperationAndPath(Operation op, String path) {
         if (path != null && op == DUMP_LOG)
             throw new IllegalArgumentException("Path can be specified only in DUMP mode.");
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeEnum(out, operation);
-        U.writeString(out, path);
-        out.writeBoolean(all);
-        U.writeArray(out, nodes);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        operation = U.readEnum(in, Operation.class);
-        path = U.readString(in);
-        all = in.readBoolean();
-        nodes = U.readArray(in, String.class);
     }
 
     /** */

@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.management.cdc;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class CdcResendCommandArg extends IgniteDataTransferObject {
@@ -35,16 +31,6 @@ public class CdcResendCommandArg extends IgniteDataTransferObject {
         example = "cache1,...,cacheN"
     )
     private String[] caches;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeArray(out, caches);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        caches = U.readArray(in, String.class);
-    }
 
     /** */
     public String[] caches() {

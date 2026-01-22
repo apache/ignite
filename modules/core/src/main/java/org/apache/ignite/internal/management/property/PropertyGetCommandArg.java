@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.management.property;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class PropertyGetCommandArg extends IgniteDataTransferObject {
@@ -32,16 +28,6 @@ public class PropertyGetCommandArg extends IgniteDataTransferObject {
     /** */
     @Argument(example = "<property_name>")
     private String name;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, name);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        name = U.readString(in);
-    }
 
     /** */
     public String name() {

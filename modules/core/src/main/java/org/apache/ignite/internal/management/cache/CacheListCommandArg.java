@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @ArgumentGroup(value = {"groups", "seq"}, onlyOneOf = true, optional = true)
@@ -60,26 +56,6 @@ public class CacheListCommandArg extends IgniteDataTransferObject {
     /** */
     @Argument(description = "print information about sequences")
     private boolean seq;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, regex);
-        out.writeBoolean(config);
-        U.writeUuid(out, nodeId);
-        U.writeString(out, outputFormat);
-        out.writeBoolean(groups);
-        out.writeBoolean(seq);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        regex = U.readString(in);
-        config = in.readBoolean();
-        nodeId = U.readUuid(in);
-        outputFormat = U.readString(in);
-        groups = in.readBoolean();
-        seq = in.readBoolean();
-    }
 
     /** */
     public String regex() {

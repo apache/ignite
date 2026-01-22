@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class CacheIndexesListCommandArg extends IgniteDataTransferObject {
@@ -73,22 +69,6 @@ public class CacheIndexesListCommandArg extends IgniteDataTransferObject {
         catch (PatternSyntaxException e) {
             throw new IllegalArgumentException("Invalid " + name + " name regex: " + regex);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeUuid(out, nodeId);
-        U.writeString(out, groupName);
-        U.writeString(out, cacheName);
-        U.writeString(out, indexName);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeId = U.readUuid(in);
-        groupName = U.readString(in);
-        cacheName = U.readString(in);
-        indexName = U.readString(in);
     }
 
     /** */

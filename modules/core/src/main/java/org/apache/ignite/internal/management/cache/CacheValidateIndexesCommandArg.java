@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CommandUtils;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class CacheValidateIndexesCommandArg extends IgniteDataTransferObject {
@@ -82,30 +78,6 @@ public class CacheValidateIndexesCommandArg extends IgniteDataTransferObject {
         }
 
         caches = CommandUtils.parseVal(value, String[].class);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, value);
-        U.writeString(out, value2);
-        U.writeArray(out, caches);
-        U.writeArray(out, nodeIds);
-        out.writeInt(checkFirst);
-        out.writeInt(checkThrough);
-        out.writeBoolean(checkCrc);
-        out.writeBoolean(checkSizes);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        value = U.readString(in);
-        value2 = U.readString(in);
-        caches = U.readArray(in, String.class);
-        nodeIds = U.readArray(in, UUID.class);
-        checkFirst = in.readInt();
-        checkThrough = in.readInt();
-        checkCrc = in.readBoolean();
-        checkSizes = in.readBoolean();
     }
 
     /** */

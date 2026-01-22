@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.IgniteException;
@@ -27,7 +24,6 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.lang.String.format;
 
@@ -88,24 +84,6 @@ public class CacheIdleVerifyCommandArg extends IgniteDataTransferObject {
                 throw new IgniteException(format("Invalid cache name regexp '%s': %s", s, e.getMessage()));
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeArray(out, caches);
-        out.writeBoolean(skipZeros);
-        out.writeBoolean(checkCrc);
-        U.writeArray(out, excludeCaches);
-        U.writeEnum(out, cacheFilter);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        caches = U.readArray(in, String.class);
-        skipZeros = in.readBoolean();
-        checkCrc = in.readBoolean();
-        excludeCaches = U.readArray(in, String.class);
-        cacheFilter = U.readEnum(in, CacheFilterEnum.class);
     }
 
     /** */

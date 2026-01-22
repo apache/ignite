@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @ArgumentGroup(value = {"caches", "allCaches"}, onlyOneOf = true, optional = false)
@@ -58,20 +54,6 @@ public class CacheMetricsCommandArg extends IgniteDataTransferObject {
     /** */
     @Argument(description = "applies operation to all user caches")
     private boolean allCaches;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeEnum(out, operation);
-        U.writeArray(out, caches);
-        out.writeBoolean(allCaches);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        operation = U.readEnum(in, CacheMetricsOperation.class);
-        caches = U.readArray(in, String.class);
-        allCaches = in.readBoolean();
-    }
 
     /** */
     public CacheMetricsOperation operation() {

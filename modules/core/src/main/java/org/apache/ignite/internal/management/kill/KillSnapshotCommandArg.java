@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.management.kill;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.kill.SnapshotCancelTask.CancelSnapshotArg;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class KillSnapshotCommandArg extends CancelSnapshotArg {
@@ -38,18 +34,6 @@ public class KillSnapshotCommandArg extends CancelSnapshotArg {
 
     /** */
     private String snapshotName;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeUuid(out, requestId);
-        U.writeString(out, snapshotName);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        requestId = U.readUuid(in);
-        snapshotName = U.readString(in);
-    }
 
     /** {@inheritDoc} */
     @Override public UUID requestId() {

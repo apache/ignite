@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.management.consistency;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.cache.ReadRepairStrategy;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.EnumDescription;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class ConsistencyRepairCommandArg extends IgniteDataTransferObject {
@@ -70,22 +66,6 @@ public class ConsistencyRepairCommandArg extends IgniteDataTransferObject {
             throw new UnsupportedOperationException(
                 "Parallel mode currently allowed only when CHECK_ONLY strategy is chosen.");
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, cache);
-        U.writeIntArray(out, partitions);
-        U.writeEnum(out, strategy);
-        out.writeBoolean(parallel);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        cache = U.readString(in);
-        partitions = U.readIntArray(in);
-        strategy = U.readEnum(in, ReadRepairStrategy.class);
-        parallel = in.readBoolean();
     }
 
     /** */

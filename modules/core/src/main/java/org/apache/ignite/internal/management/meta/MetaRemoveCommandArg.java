@@ -18,15 +18,12 @@
 package org.apache.ignite.internal.management.meta;
 
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.io.OutputStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @ArgumentGroup(value = {"typeId", "typeName"}, onlyOneOf = true, optional = false)
@@ -37,20 +34,6 @@ public class MetaRemoveCommandArg extends MetaDetailsCommandArg {
     /** */
     @Argument(optional = true, example = "<fileName>")
     private String out;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
-        U.writeString(out, this.out);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(in);
-
-        out = U.readString(in);
-    }
 
     /** */
     public String out() {

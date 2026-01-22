@@ -17,16 +17,12 @@
 
 package org.apache.ignite.internal.management.baseline;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.baseline.BaselineCommand.BaselineTaskArg;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @CliConfirmArgument
@@ -61,22 +57,6 @@ public class BaselineAutoAdjustCommandArg extends BaselineTaskArg {
 
         /** */
         ENABLE
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
-        U.writeEnum(out, enabled);
-        out.writeObject(timeout);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(in);
-
-        enabled = U.readEnum(in, Enabled.class);
-        timeout = (Long)in.readObject();
     }
 
     /** */

@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.management;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @CliConfirmArgument
@@ -37,16 +33,6 @@ public class ChangeTagCommandArg extends IgniteDataTransferObject {
     @Positional
     @Argument(example = "newTagValue")
     private String newTagValue;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, newTagValue);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        newTagValue = U.readString(in);
-    }
 
     /** */
     public String newTagValue() {

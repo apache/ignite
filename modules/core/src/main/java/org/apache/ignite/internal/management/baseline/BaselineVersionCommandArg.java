@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.baseline;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.management.api.Positional;
@@ -35,20 +32,6 @@ public class BaselineVersionCommandArg extends BaselineTaskArg {
     @Positional
     @Argument(example = "topologyVersion")
     private long topologyVersion;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
-        out.writeLong(topologyVersion);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(in);
-
-        topologyVersion = in.readLong();
-    }
 
     /** */
     public long topologyVersion() {

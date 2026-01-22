@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.management.tracing;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.tracing.Scope;
+
 import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_ALWAYS;
 import static org.apache.ignite.spi.tracing.TracingConfigurationParameters.SAMPLING_RATE_NEVER;
 
@@ -39,22 +36,6 @@ public class TracingConfigurationSetCommandArg extends TracingConfigurationGetCo
     /** */
     @Argument(optional = true, example = "Set of scopes with comma as separator  DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL")
     private Scope[] includedScopes;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
-        out.writeDouble(samplingRate);
-        U.writeArray(out, includedScopes);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(in);
-
-        samplingRate = in.readDouble();
-        includedScopes = U.readArray(in, Scope.class);
-    }
 
     /** */
     public double samplingRate() {
