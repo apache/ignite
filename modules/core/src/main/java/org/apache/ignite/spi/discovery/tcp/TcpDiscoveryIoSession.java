@@ -89,7 +89,7 @@ public class TcpDiscoveryIoSession {
     private final OutputStream out;
 
     /** Buffered socket input stream. */
-    private final PrefixedBufferedInputStream in;
+    private final CompositeInputStream in;
 
     /** Intermediate buffer for serializing discovery messages. */
     private final ByteBuffer msgBuf;
@@ -117,7 +117,7 @@ public class TcpDiscoveryIoSession {
             int rcvBufSize = sock.getReceiveBufferSize() > 0 ? sock.getReceiveBufferSize() : DFLT_SOCK_BUFFER_SIZE;
 
             out = new BufferedOutputStream(sock.getOutputStream(), sendBufSize);
-            in = new PrefixedBufferedInputStream(new BufferedInputStream(sock.getInputStream(), rcvBufSize));
+            in = new CompositeInputStream(new BufferedInputStream(sock.getInputStream(), rcvBufSize));
         }
         catch (IOException e) {
             throw new IgniteException(e);
@@ -207,7 +207,7 @@ public class TcpDiscoveryIoSession {
 
                     msgBuf.get(unprocessedReadTail, 0, msgBuf.remaining());
 
-                    in.acceptPrefixBuffer(unprocessedReadTail);
+                    in.attachByteArray(unprocessedReadTail);
                 }
             }
             while (!finished);
@@ -308,29 +308,30 @@ public class TcpDiscoveryIoSession {
     }
 
     /**
-     * Input stream allowing to read some data first as a prefix of an original input stream.
+     * Input stream implementation that combines a byte array and a regular InputStream allowing to read bytes
+     * from the array first and then proceed with reading from InputStream.
      * Supports only basic read methods.
      */
-    private static class PrefixedBufferedInputStream extends BufferedInputStream {
+    private static class CompositeInputStream extends BufferedInputStream {
         /** Prefix data input stream to read before the original input stream. */
-        @Nullable private ByteArrayInputStream prefixIs;
+        @Nullable private ByteArrayInputStream attachedBytesIs;
 
-        /** @param srcIs Original input stream to read when {@link #prefixIs} is empty. */
-        private PrefixedBufferedInputStream(InputStream srcIs) {
+        /** @param srcIs Original input stream to read when {@link #attachedBytesIs} is empty. */
+        private CompositeInputStream(InputStream srcIs) {
             super(srcIs);
         }
 
         /** @param prefixData Prefix data to read before the original input stream. */
-        private void acceptPrefixBuffer(byte[] prefixData) {
+        private void attachByteArray(byte[] prefixData) {
             assert prefixBytesLeft() == 0;
 
-            prefixIs = new ByteArrayInputStream(prefixData);
+            attachedBytesIs = new ByteArrayInputStream(prefixData);
         }
 
         /** {@inheritDoc} */
         @Override public int read() throws IOException {
             if (prefixBytesLeft() > 0) {
-                int res = prefixIs.read();
+                int res = attachedBytesIs.read();
 
                 checkPrefixBufferExhausted();
 
@@ -375,10 +376,10 @@ public class TcpDiscoveryIoSession {
 
         /** {@inheritDoc} */
         @Override public void close() throws IOException {
-            if (prefixIs != null) {
-                prefixIs.close();
+            if (attachedBytesIs != null) {
+                attachedBytesIs.close();
 
-                prefixIs = null;
+                attachedBytesIs = null;
             }
 
             super.close();
@@ -394,7 +395,7 @@ public class TcpDiscoveryIoSession {
                 if (len > b.length - off)
                     len = b.length - off;
 
-                res = prefixIs.read(b, off, Math.min(len, prefixBytesLeft));
+                res = attachedBytesIs.read(b, off, Math.min(len, prefixBytesLeft));
 
                 checkPrefixBufferExhausted();
             }
@@ -404,13 +405,13 @@ public class TcpDiscoveryIoSession {
 
         /** */
         private int prefixBytesLeft() {
-            return prefixIs == null ? 0 : prefixIs.available();
+            return attachedBytesIs == null ? 0 : attachedBytesIs.available();
         }
 
         /** */
         private void checkPrefixBufferExhausted() {
-            if (prefixIs != null && prefixIs.available() == 0)
-                prefixIs = null;
+            if (attachedBytesIs != null && attachedBytesIs.available() == 0)
+                attachedBytesIs = null;
         }
 
         /** {@inheritDoc} */
