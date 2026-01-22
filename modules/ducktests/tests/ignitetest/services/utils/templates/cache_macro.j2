@@ -44,27 +44,25 @@
                         {{ misc_utils.bean(cache.affinity_mapper) }}
                     </property>
                     {% endif %}
-                    <property name="copyOnRead" value="true"/>
-                    <property name="eagerTtl" value="true"/>
-                    <property name="readFromBackup" value="true"/>
 
-                    <property name="sqlEscapeAll" value="true"/>
-                    <property name="storeKeepBinary" value="true"/>
-                    <property name="maxConcurrentAsyncOperations" value="500"/>
-                    <property name="maxQueryIteratorsCount" value="1025"/>
-                    <property name="rebalanceMode" value="ASYNC"/>
-                    <property name="rebalanceOrder" value="0"/>
-                    <property name="rebalanceTimeout" value="1000"/>
+                    {% if cache.keep_binary %}
+                        <property name="storeKeepBinary" value="true"/>
+                    {% endif %}
 
                     <property name="expiryPolicyFactory">
                         <bean class="javax.cache.expiry.EternalExpiryPolicy" factory-method="factoryOf"/>
                     </property>
 
-                    <property name="cacheStoreFactory">
-                        <bean class="org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy.MapStoreFactory"/>
-                    </property>
-                    <property name="readThrough" value="true"/>
-                    <property name="writeThrough" value="true"/>
+                    {% if cache.external_storage %}
+                        <property name="cacheStoreFactory">
+                            <!--bean class="org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy.MapStoreFactory"/-->
+                            <bean class="org.apache.ignite.internal.ducktest.utils.TestCacheStore.IgniteCacheStoreFactory"/>
+                        </property>
+                        <property name="readThrough" value="true"/>
+                        <property name="writeThrough" value="true"/>
+                    {% endif %}
+
+
 
 {#                    <property name="writeBehindBatchSize" value="1"/>#}
 {#                    <property name="writeBehindCoalescing" value="false"/>#}

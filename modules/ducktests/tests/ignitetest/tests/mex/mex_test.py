@@ -29,21 +29,23 @@ from ignitetest.services.ignite_app import IgniteApplicationService
 from ignitetest.services.utils.control_utility import ControlUtility
 from ignitetest.services.utils.ignite_aware import node_failed_event_pattern
 from ignitetest.services.utils.ignite_configuration import IgniteConfiguration, DataStorageConfiguration, \
-    IgniteThinJdbcConfiguration, TransactionConfiguration
+    IgniteThinJdbcConfiguration, TransactionConfiguration, DiscoverySpi, CommunicationSpi
 from ignitetest.services.utils.ignite_configuration.cache import CacheConfiguration
 from ignitetest.services.utils.ignite_configuration.data_storage import DataRegionConfiguration
 from ignitetest.services.utils.ssl.client_connector_configuration import ClientConnectorConfiguration
 from ignitetest.utils import cluster
 from ignitetest.utils.bean import Bean
 from ignitetest.utils.ignite_test import IgniteTest
+from ignitetest.services.utils.ignite_configuration.discovery import TcpDiscoverySpi, TcpDiscoveryVmIpFinder
+from ignitetest.services.utils.ignite_configuration.communication import TcpCommunicationSpi
 from ignitetest.utils.version import LATEST_2_17, DEV_BRANCH
 
 # Run: clear; ./docker/clean_up.sh; rm -drf ../../../results/*;  ./docker/run_tests.sh -t ./ignitetest/tests/mex
 class MexTest(IgniteTest):
-    FORCE_STOP = False
+    FORCE_STOP = True
     TRANSACTION = False
-    WAIT_AFTER_LOAD_SEC = 5
-    PRELOAD_SECONDS = 40
+    WAIT_AFTER_LOAD_SEC = 0
+    PRELOAD_SECONDS = 15
     LOAD_SECONDS = PRELOAD_SECONDS / 3
     LOAD_THREADS = 12
     SERVERS = 3
@@ -52,8 +54,11 @@ class MexTest(IgniteTest):
     CACHE_NAME = "TEST_CACHE"
     TABLE_NAME = "TEST_TABLE"
 
-    @cluster(num_nodes=SERVERS * 2)
+    @cluster(num_nodes=SERVERS * 2 + 1)
     def mex_test(self):
+        # Start the external storage
+        es = self.start_ext_storage()
+
         # Start the servers.
         servers, control_utility, ignite_config = self.launch_cluster()
 
@@ -71,11 +76,17 @@ class MexTest(IgniteTest):
         self.logger.debug("TEST | Stopping the load application ...")
         app.stop()
         app.await_stopped()
+        self.logger.info("TEST | The load application has stopped.")
 
         if self.WAIT_AFTER_LOAD_SEC > 0:
             self.logger.info(f"TEST | waiting after load for {self.WAIT_AFTER_LOAD_SEC} seconds...")
             time.sleep(self.WAIT_AFTER_LOAD_SEC)
 
+        # Run the idle verify.
+        output = control_utility.idle_verify(self.CACHE_NAME)
+        self.logger.info(f"TEST | Idle verify finished: {output}")
+
+        # Count and compare table size from dirrefent nodes.
         records_cnt = set()
 
         for node in self.alive_servers(servers.nodes):
@@ -89,16 +100,11 @@ class MexTest(IgniteTest):
             app.stop()
             app.await_stopped()
 
-        # Run the idle verify.
-        self.logger.info("TEST | The load application has stopped.")
-        output = control_utility.idle_verify(self.CACHE_NAME)
-        self.logger.info(f"TEST | Idle verify finished: {output}")
-
-        # Compare the rows cnt results.
         assert len(records_cnt) == 1;
 
         # Finish the test.
         servers.stop()
+        es.stop()
 
     def kill_node(self, servers):
         failedNode = servers.nodes[self.SERVER_IDX_TO_DROP]
@@ -181,8 +187,41 @@ class MexTest(IgniteTest):
 
         return app
 
+    def start_ext_storage(self):
+        ignite_config = IgniteConfiguration(
+            version=self.IGNITE_VERSION,
+            metrics_log_frequency = 0,
+            caches=[CacheConfiguration(
+                name='EXT_STORAGE_CACHE',
+                keep_binary = True
+            )],
+            data_storage=DataStorageConfiguration(
+                default=DataRegionConfiguration(
+                    persistence_enabled = True,
+                    initial_size = 2048 * 1024 * 1024,
+                    max_size = 4096 * 1024 * 1024,
+                )
+            ),
+            cluster_state = 'ACTIVE',
+            discovery_spi = TcpDiscoverySpi(port=45000),
+            communication_spi = TcpCommunicationSpi(local_port=46000),
+            client_mode = False
+        )
+
+        ext_store, _ = start_servers(self.test_context, 1, ignite_config)
+
+        ext_store.await_event("Topology snapshot \\[ver=1", 10, from_the_beginning=True, nodes=ext_store.nodes)
+
+        control_utility = ControlUtility(ext_store)
+        control_utility.activate()
+
+        return ext_store
+
     def launch_cluster(self):
         cacheAffinity = Bean("org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction", partitions=512)
+
+        ip_finder = TcpDiscoveryVmIpFinder()
+        ip_finder.addresses = ["ducker03","ducker04","ducker05","ducker06","ducker07"]
 
         ignite_config = IgniteConfiguration(
             version=self.IGNITE_VERSION,
@@ -191,7 +230,9 @@ class MexTest(IgniteTest):
                 name=self.CACHE_NAME,
                 atomicity_mode='TRANSACTIONAL',
                 affinity = cacheAffinity,
-                cache_mode = 'REPLICATED'
+                cache_mode = 'REPLICATED',
+                external_storage = True,
+                keep_binary = True
             )],
             data_storage=DataStorageConfiguration(
                 default=DataRegionConfiguration(
@@ -213,6 +254,10 @@ class MexTest(IgniteTest):
                 default_tx_timeout=300000,
                 default_tx_isolation="READ_COMMITTED",
                 tx_timeout_on_partition_map_exchange=120000),
+            discovery_spi = TcpDiscoverySpi(
+                ip_finder=ip_finder
+            ),
+            client_mode = False
         )
 
         servers, start_servers_sec = start_servers(self.test_context, self.SERVERS, ignite_config)
