@@ -48,7 +48,7 @@ public class TcpDiscoveryNodeLeftMessage extends TcpDiscoveryAbstractTraceableMe
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 14;
+        return 16;
     }
 
     /** {@inheritDoc} */
