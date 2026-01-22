@@ -20,8 +20,8 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.io.IOException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientReconnectMessage;
@@ -73,7 +73,7 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi implements IgniteDiscov
     }
 
     /** {@inheritDoc} */
-    @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
+    @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
         IgniteDiscoverySpiInternalListener internalLsnr = this.internalLsnr;
 
         if (internalLsnr != null) {
