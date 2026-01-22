@@ -32,7 +32,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataResponseMessage;
 import org.apache.ignite.internal.processors.cache.persistence.filename.SharedFileTree;
@@ -43,7 +42,6 @@ import org.apache.ignite.internal.processors.marshaller.MissingMappingResponseMe
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -163,25 +161,23 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
                 @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
                     if (msg instanceof TcpDiscoveryCustomEventMessage) {
                         try {
-                            DiscoverySpiCustomMessage custom =
-                                ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(), U.gridClassLoader());
+                            TcpDiscoveryCustomEventMessage msg0 = (TcpDiscoveryCustomEventMessage)msg;
+                            msg0.finishUnmarhal(marshaller(), U.gridClassLoader());
 
-                            if (custom instanceof CustomMessageWrapper) {
-                                DiscoveryCustomMessage delegate = ((CustomMessageWrapper)custom).delegate();
+                            DiscoveryCustomMessage customMsg = GridTestUtils.unwrap(msg0.message());
 
-                                if (delegate instanceof MappingAcceptedMessage) {
-                                    MarshallerMappingItem item = GridTestUtils.getFieldValue(delegate, "item");
+                            if (customMsg instanceof MappingAcceptedMessage) {
+                                MarshallerMappingItem item = GridTestUtils.getFieldValue(customMsg, "item");
 
-                                    if (item.className().equals(PERSON_CLASS_NAME) ||
-                                        item.className().equals(ORGANIZATION_CLASS_NAME) ||
-                                        item.className().equals(ADDRESS_CLASS_NAME)
-                                    ) {
-                                        try {
-                                            U.await(delayMappingLatch, AWAIT_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-                                        }
-                                        catch (Exception e) {
-                                            fail("Mapping proposed message must be released.");
-                                        }
+                                if (item.className().equals(PERSON_CLASS_NAME) ||
+                                    item.className().equals(ORGANIZATION_CLASS_NAME) ||
+                                    item.className().equals(ADDRESS_CLASS_NAME)
+                                ) {
+                                    try {
+                                        U.await(delayMappingLatch, AWAIT_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                                    }
+                                    catch (Exception e) {
+                                        fail("Mapping proposed message must be released.");
                                     }
                                 }
                             }
@@ -240,22 +236,20 @@ public class IgniteMarshallerCacheClientRequestsMappingTest extends GridCommonAb
                 @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
                     if (msg instanceof TcpDiscoveryCustomEventMessage) {
                         try {
-                            DiscoverySpiCustomMessage custom =
-                                ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(), U.gridClassLoader());
+                            TcpDiscoveryCustomEventMessage msg0 = (TcpDiscoveryCustomEventMessage)msg;
+                            msg0.finishUnmarhal(marshaller(), U.gridClassLoader());
 
-                            if (custom instanceof CustomMessageWrapper) {
-                                DiscoveryCustomMessage delegate = ((CustomMessageWrapper)custom).delegate();
+                            DiscoveryCustomMessage customMsg = GridTestUtils.unwrap(msg0.message());
 
-                                if (delegate instanceof MappingProposedMessage) {
-                                    MarshallerMappingItem item = GridTestUtils.getFieldValue(delegate, "mappingItem");
+                            if (customMsg instanceof MappingProposedMessage) {
+                                MarshallerMappingItem item = GridTestUtils.getFieldValue(customMsg, "mappingItem");
 
-                                    if (item.className().contains(JOB_RESULT_CLASS_NAME_PREFIX)) {
-                                        try {
-                                            U.await(latch, AWAIT_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-                                        }
-                                        catch (Exception e) {
-                                            fail("Exception must never be thrown: " + e.getMessage());
-                                        }
+                                if (item.className().contains(JOB_RESULT_CLASS_NAME_PREFIX)) {
+                                    try {
+                                        U.await(latch, AWAIT_PROCESSING_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                                    }
+                                    catch (Exception e) {
+                                        fail("Exception must never be thrown: " + e.getMessage());
                                     }
                                 }
                             }

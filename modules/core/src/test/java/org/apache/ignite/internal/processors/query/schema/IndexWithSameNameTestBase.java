@@ -40,7 +40,6 @@ import org.apache.ignite.configuration.QueryEngineConfiguration;
 import org.apache.ignite.configuration.SqlConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.schema.management.IndexDescriptor;
@@ -50,10 +49,10 @@ import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexC
 import org.apache.ignite.internal.util.lang.ConsumerX;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -313,10 +312,10 @@ public abstract class IndexWithSameNameTestBase extends GridCommonAbstractTest {
         @Override protected void startMessageProcess(TcpDiscoveryAbstractMessage msg) {
             if (msg instanceof TcpDiscoveryCustomEventMessage) {
                 try {
-                    DiscoverySpiCustomMessage spiCustomMsg = ((TcpDiscoveryCustomEventMessage)msg).message(marshaller(),
-                        U.resolveClassLoader(ignite().configuration()));
+                    TcpDiscoveryCustomEventMessage msg0 = (TcpDiscoveryCustomEventMessage)msg;
+                    msg0.finishUnmarhal(marshaller(), U.gridClassLoader());
 
-                    DiscoveryCustomMessage discoCustomMsg = ((CustomMessageWrapper)spiCustomMsg).delegate();
+                    DiscoveryCustomMessage discoCustomMsg = GridTestUtils.unwrap(msg0.message());
 
                     if (discoCustomMsg instanceof SchemaFinishDiscoveryMessage) {
                         SchemaFinishDiscoveryMessage finishMsg = (SchemaFinishDiscoveryMessage)discoCustomMsg;

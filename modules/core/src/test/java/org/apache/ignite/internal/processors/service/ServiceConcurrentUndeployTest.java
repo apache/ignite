@@ -26,11 +26,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.DiscoverySpiTestListener;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.service.inner.LongInitializedTestService;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -50,13 +50,14 @@ public class ServiceConcurrentUndeployTest extends GridCommonAbstractTest {
         TestTcpDiscoverySpi disco = new TestTcpDiscoverySpi();
 
         disco.setInternalListener(new DiscoverySpiTestListener() {
-            @Override public boolean beforeSendCustomEvent(DiscoverySpi spi, IgniteLogger log, DiscoverySpiCustomMessage msg) {
+            @Override public boolean beforeSendCustomEvent(DiscoverySpi spi, IgniteLogger log, DiscoveryCustomMessage msg) {
                 if (spi.isClientMode()) {
-                    boolean isUndeployMsg = msg instanceof CustomMessageWrapper
-                        && ((CustomMessageWrapper)msg).delegate() instanceof ServiceChangeBatchRequest;
+                    DiscoveryCustomMessage realMsg = GridTestUtils.unwrap(msg);
+
+                    boolean isUndeployMsg = realMsg instanceof ServiceChangeBatchRequest;
 
                     if (isUndeployMsg) {
-                        ServiceChangeBatchRequest batch = (ServiceChangeBatchRequest)((CustomMessageWrapper)msg).delegate();
+                        ServiceChangeBatchRequest batch = (ServiceChangeBatchRequest)realMsg;
 
                         long undeployReqCnt = batch.requests().stream()
                             .filter(r -> r instanceof ServiceUndeploymentRequest)

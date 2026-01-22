@@ -27,10 +27,10 @@ import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposedMessage;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
@@ -48,10 +48,11 @@ public class BinaryTypeRegistrationTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
-            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-                if (msg instanceof CustomMessageWrapper
-                    && ((CustomMessageWrapper)msg).delegate() instanceof MetadataUpdateProposedMessage)
-                    metadataUpdateProposedMessages.add(((CustomMessageWrapper)msg).delegate());
+            @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
+                DiscoveryCustomMessage msg0 = GridTestUtils.unwrap(msg);
+
+                if (msg0 instanceof MetadataUpdateProposedMessage)
+                    metadataUpdateProposedMessages.add(msg0);
 
                 super.sendCustomEvent(msg);
             }
