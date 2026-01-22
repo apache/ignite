@@ -19,32 +19,53 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.marshaller.Marshallers.jdk;
 
 /**
  * Sent by coordinator across the ring to finish node add process.
  */
 @TcpDiscoveryEnsureDelivery
 @TcpDiscoveryRedirectToClient
-public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTraceableMessage {
+public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTraceableMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Added node ID. */
-    private final UUID nodeId;
+    @Order(6)
+    private UUID nodeId;
 
     /**
      * Client node can not get discovery data from TcpDiscoveryNodeAddedMessage, we have to pass discovery data in
-     * TcpDiscoveryNodeAddFinishedMessage
+     * TcpDiscoveryNodeAddFinishedMessage.
      */
+    @Order(7)
     @GridToStringExclude
     private DiscoveryDataPacket clientDiscoData;
 
     /** */
     @GridToStringExclude
     private Map<String, Object> clientNodeAttrs;
+
+    /** Serialized client node attributes. */
+    @Order(value = 8, method = "clientNodeAttributesBytes")
+    @SuppressWarnings("unused")
+    private @Nullable byte[] clientNodeAttrsBytesHolder;
+
+    /** Constructor. */
+    public TcpDiscoveryNodeAddFinishedMessage() {
+        // No-op.
+    }
 
     /**
      * Constructor.
@@ -79,6 +100,13 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
     }
 
     /**
+     * @param nodeId ID of the node added.
+     */
+    public void nodeId(UUID nodeId) {
+        this.nodeId = nodeId;
+    }
+
+    /**
      * @return Discovery data for joined client.
      */
     public DiscoveryDataPacket clientDiscoData() {
@@ -108,8 +136,44 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractTrac
         this.clientNodeAttrs = clientNodeAttrs;
     }
 
+    /**
+     * @return Serialized client node attributes.
+     */
+    public byte[] clientNodeAttributesBytes() {
+        if (clientNodeAttrs == null)
+            return null;
+
+        try {
+            return U.marshal(jdk(), clientNodeAttrs);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * @param clientNodeAttrsBytes Serialized client node attributes.
+     */
+    public void clientNodeAttributesBytes(byte[] clientNodeAttrsBytes) {
+        if (F.isEmpty(clientNodeAttrsBytes))
+            clientNodeAttrs = null;
+        else {
+            try {
+                clientNodeAttrs = U.unmarshal(jdk(), clientNodeAttrsBytes, U.gridClassLoader());
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryNodeAddFinishedMessage.class, this, "super", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 17;
     }
 }
