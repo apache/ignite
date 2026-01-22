@@ -17,37 +17,26 @@
 
 package org.apache.ignite.spi.discovery;
 
-import java.io.Serializable;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Message to send across ring.
  *
  * @see GridDiscoveryManager#sendCustomEvent(DiscoveryCustomMessage)
  */
-public interface DiscoverySpiCustomMessage extends Serializable {
-    /**
-     * Called when custom message has been handled by all nodes.
-     *
-     * @return Ack message or {@code null} if ack is not required.
-     */
-    @Nullable public DiscoverySpiCustomMessage ackMessage();
+public abstract class DiscoverySpiCustomMessage implements DiscoveryCustomMessage {
+    /** {@inheritDoc} */
+    @Override public IgniteUuid id() {
+        return null;
+    }
 
-    /**
-     * @return {@code True} if message can be modified during listener notification. Changes will be send to next nodes.
-     */
-    public boolean isMutable();
-
-    /**
-     * Called on discovery coordinator node after listener is notified. If returns {@code true}
-     * then message is not passed to others nodes, if after this method {@link #ackMessage()} returns non-null ack
-     * message, it is sent to all nodes.
-     *
-     * Note: this method is used then and only then the zookeeper discovery is configured.
-     *
-     * @return {@code True} if message should not be sent to all nodes.
-     */
-    public boolean stopProcess();
+    /** {@inheritDoc} */
+    @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
+        DiscoCache discoCache) {
+        return null;
+    }
 }

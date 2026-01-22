@@ -49,7 +49,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.client.thin.io.ClientConnectionMultiplexer;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
@@ -60,8 +59,8 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.logging.log4j.Level;
@@ -646,13 +645,14 @@ public class ServiceAwarenessTest extends AbstractThinClientTest {
         private final Set<Class<? extends DiscoveryCustomMessage>> toBlock = new HashSet<>();
 
         /** */
-        private final List<CustomMessageWrapper> blocked = new CopyOnWriteArrayList<>();
+        private final List<DiscoveryCustomMessage> blocked = new CopyOnWriteArrayList<>();
 
         /** {@inheritDoc} */
-        @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-            if (msg instanceof CustomMessageWrapper
-                && toBlock.stream().anyMatch(mt -> mt.isAssignableFrom(((CustomMessageWrapper)msg).delegate().getClass()))) {
-                blocked.add((CustomMessageWrapper)msg);
+        @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
+            DiscoveryCustomMessage realMsg = GridTestUtils.unwrap(msg);
+
+            if (toBlock.stream().anyMatch(mt -> mt.isAssignableFrom(realMsg.getClass()))) {
+                blocked.add(msg);
 
                 return;
             }
