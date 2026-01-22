@@ -24,6 +24,7 @@ import java.io.InputStreamReader;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,6 +45,7 @@ import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -51,6 +53,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import static org.apache.ignite.internal.MessageSerializerGenerator.NL;
 import static org.apache.ignite.internal.MessageSerializerGenerator.TAB;
 import static org.apache.ignite.internal.MessageSerializerGenerator.enumType;
+import static org.apache.ignite.internal.MessageSerializerGenerator.identicalFileIsAlreadyGenerated;
 
 /**
  * Generates serializer class for given {@code IgniteDataTransferObject} class.
@@ -146,7 +149,41 @@ public class IDTOSerializerGenerator {
     }
 
     /** */
-    public void generate() throws Exception {
+    public boolean generate() throws Exception {
+        String serClsName = type.getSimpleName() + "Serializer";
+        String serCode = generateSerializerCode();
+
+        try {
+            JavaFileObject file = env.getFiler().createSourceFile(PKG_NAME + "." + serClsName);
+
+            try (Writer writer = file.openWriter()) {
+                writer.append(serCode);
+                writer.flush();
+            }
+
+            return true;
+        }
+        catch (FilerException e) {
+            // IntelliJ IDEA parses Ignite's pom.xml and configures itself to use this annotation processor on each Run.
+            // During a Run, it invokes the processor and may fail when attempting to generate sources that already exist.
+            // There is no a setting to disable this invocation. The IntelliJ community suggests a workaround — delegating
+            // all Run commands to Maven. However, this significantly slows down test startup time.
+            // This hack checks whether the content of a generating file is identical to already existed file, and skips
+            // handling this class if it is.
+            if (!identicalFileIsAlreadyGenerated(env, serCode, PKG_NAME, serClsName)) {
+                env.getMessager().printMessage(
+                    Diagnostic.Kind.ERROR,
+                    serClsName + " is already generated. Try 'mvn clean install' to fix the issue.");
+
+                throw e;
+            }
+
+            return false;
+        }
+    }
+
+    /** */
+    private String generateSerializerCode() throws IOException {
         imports.add("org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer");
         imports.add(type.getQualifiedName().toString());
         imports.add(ObjectOutput.class.getName());
@@ -161,49 +198,26 @@ public class IDTOSerializerGenerator {
         List<String> write = generateWrite(clsName, flds);
         List<String> read = generateRead(clsName, flds);
 
-        try {
-            JavaFileObject file = env.getFiler().createSourceFile(serializerFQN());
+        try (Writer writer = new StringWriter()) {
+            writeClassHeader(writer, clsName);
 
-            try (Writer writer = file.openWriter()) {
-                writeClassHeader(writer, clsName);
-
-                for (String line : write) {
-                    writer.write(TAB);
-                    writer.write(line);
-                    writer.write(NL);
-                }
-
+            for (String line : write) {
+                writer.write(TAB);
+                writer.write(line);
                 writer.write(NL);
-                for (String line : read) {
-                    writer.write(TAB);
-                    writer.write(line);
-                    writer.write(NL);
-                }
+            }
 
-                writer.write("}");
+            writer.write(NL);
+            for (String line : read) {
+                writer.write(TAB);
+                writer.write(line);
                 writer.write(NL);
-
-                writer.flush();
             }
-        }
-        catch (FilerException e) {
-            // IntelliJ IDEA parses Ignite's pom.xml and configures itself to use this annotation processor on each Run.
-            // During a Run, it invokes the processor and may fail when attempting to generate sources that already exist.
-            // There is no a setting to disable this invocation. The IntelliJ community suggests a workaround — delegating
-            // all Run commands to Maven. However, this significantly slows down test startup time.
-            // This hack checks whether the content of a generating file is identical to already existed file, and skips
-            // handling this class if it is.
-/*
-            if (!identicalFileIsAlreadyGenerated(serCode, serClsName)) {
-                env.getMessager().printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "MessageSerializer " + serClsName + " is already generated. Try 'mvn clean install' to fix the issue."
-                );
 
-                throw e;
-            }
-*/
-            throw e;
+            writer.write("}");
+            writer.write(NL);
+
+            return writer.toString();
         }
     }
 

@@ -22,11 +22,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.FilerException;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
@@ -42,6 +44,7 @@ import javax.tools.JavaFileObject;
 
 import static org.apache.ignite.internal.MessageSerializerGenerator.NL;
 import static org.apache.ignite.internal.MessageSerializerGenerator.TAB;
+import static org.apache.ignite.internal.MessageSerializerGenerator.identicalFileIsAlreadyGenerated;
 import static org.apache.ignite.internal.idto.IDTOSerializerGenerator.CLS_JAVADOC;
 import static org.apache.ignite.internal.idto.IDTOSerializerGenerator.DTO_SERDES_INTERFACE;
 import static org.apache.ignite.internal.idto.IDTOSerializerGenerator.PKG_NAME;
@@ -92,9 +95,8 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
             try {
                 IDTOSerializerGenerator gen = new IDTOSerializerGenerator(processingEnv, clazz);
 
-                gen.generate();
-
-                genSerDes.put(clazz, gen.serializerFQN());
+                if (gen.generate())
+                    genSerDes.put(clazz, gen.serializerFQN());
             }
             catch (Exception e) {
                 processingEnv.getMessager().printMessage(
@@ -105,21 +107,47 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
             }
         }
 
+        if (genSerDes.isEmpty())
+            return true;
+
         try {
-            generateFactory(genSerDes);
+            String factoryFQN = PKG_NAME + "." + FACTORY_CLASS;
+            String factoryCode = generateFactory(genSerDes);
+
+            try {
+                JavaFileObject file = processingEnv.getFiler().createSourceFile(factoryFQN);
+
+                try (Writer writer = file.openWriter()) {
+                    writer.append(factoryCode);
+                    writer.flush();
+                }
+            }
+            catch (FilerException e) {
+                // IntelliJ IDEA parses Ignite's pom.xml and configures itself to use this annotation processor on each Run.
+                // During a Run, it invokes the processor and may fail when attempting to generate sources that already exist.
+                // There is no a setting to disable this invocation. The IntelliJ community suggests a workaround — delegating
+                // all Run commands to Maven. However, this significantly slows down test startup time.
+                // This hack checks whether the content of a generating file is identical to already existed file, and skips
+                // handling this class if it is.
+                if (!identicalFileIsAlreadyGenerated(processingEnv, factoryCode, PKG_NAME, FACTORY_CLASS)) {
+                    processingEnv.getMessager().printMessage(
+                        Diagnostic.Kind.ERROR,
+                        FACTORY_CLASS + " is already generated. Try 'mvn clean install' to fix the issue.");
+
+                    throw e;
+                }
+            }
         }
-        catch (IOException e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to generate a serializer factory:" + e.getMessage());
+        catch (Exception e) {
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to generate a dto factory:" + e.getMessage());
         }
 
-        return false;
+        return true;
     }
 
     /** */
-    private void generateFactory(Map<TypeElement, String> genSerDes) throws IOException {
-        JavaFileObject file = processingEnv.getFiler().createSourceFile(PKG_NAME + "." + FACTORY_CLASS);
-
-        try (Writer writer = file.openWriter()) {
+    private String generateFactory(Map<TypeElement, String> genSerDes) throws IOException {
+        try (Writer writer = new StringWriter()) {
             writeClassHeader(writer, genSerDes.keySet());
 
             writer.write(TAB);
@@ -149,7 +177,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
             writer.write("}");
             writer.write(NL);
 
-            writer.flush();
+            return writer.toString();
         }
     }
 

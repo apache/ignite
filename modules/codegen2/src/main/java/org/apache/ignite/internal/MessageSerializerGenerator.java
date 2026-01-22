@@ -136,7 +136,7 @@ public class MessageSerializerGenerator {
             // all Run commands to Maven. However, this significantly slows down test startup time.
             // This hack checks whether the content of a generating file is identical to already existed file, and skips
             // handling this class if it is.
-            if (!identicalFileIsAlreadyGenerated(serCode, serClsName)) {
+            if (!identicalFileIsAlreadyGenerated(env, serCode, PKG_NAME, serClsName)) {
                 env.getMessager().printMessage(
                     Diagnostic.Kind.ERROR,
                     "MessageSerializer " + serClsName + " is already generated. Try 'mvn clean install' to fix the issue.");
@@ -881,9 +881,9 @@ public class MessageSerializerGenerator {
     }
 
     /** @return {@code true} if trying to generate file with the same content. */
-    private boolean identicalFileIsAlreadyGenerated(String srcCode, String clsName) {
+    public static boolean identicalFileIsAlreadyGenerated(ProcessingEnvironment env, String srcCode, String pkg, String clsName) {
         try {
-            String fileName = PKG_NAME.replace('.', '/') + '/' + clsName + ".java";
+            String fileName = pkg.replace('.', '/') + '/' + clsName + ".java";
             FileObject prevFile = env.getFiler().getResource(StandardLocation.SOURCE_OUTPUT, "", fileName);
 
             String prevFileContent;
@@ -903,7 +903,7 @@ public class MessageSerializerGenerator {
     }
 
     /** */
-    private String content(Reader reader) throws IOException {
+    private static String content(Reader reader) throws IOException {
         BufferedReader br = new BufferedReader(reader);
         StringBuilder sb = new StringBuilder();
         String line;
