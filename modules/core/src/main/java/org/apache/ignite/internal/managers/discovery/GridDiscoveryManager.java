@@ -132,7 +132,6 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
@@ -593,8 +592,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 ClusterNode node = notification.getNode();
                 long topVer = notification.getTopVer();
 
-                DiscoveryCustomMessage customMsg = notification.getCustomMsgData() == null ? null
-                    : ((CustomMessageWrapper)notification.getCustomMsgData()).delegate();
+                DiscoveryCustomMessage customData = notification.getCustomMsgData() == null ? null :
+                    notification.getCustomMsgData();
+
+                DiscoveryCustomMessage customMsg = customData instanceof SecurityAwareCustomMessageWrapper ?
+                    ((SecurityAwareCustomMessageWrapper)customData).delegate() : customData;
 
                 if (skipMessage(notification.type(), customMsg))
                     return;
@@ -933,7 +935,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 /** */
                 @Override public void run() {
-                    DiscoverySpiCustomMessage customMsg = notification.getCustomMsgData();
+                    DiscoveryCustomMessage customMsg = notification.getCustomMsgData();
 
                     if (customMsg instanceof SecurityAwareCustomMessageWrapper) {
                         UUID secSubjId = ((SecurityAwareCustomMessageWrapper)customMsg).securitySubjectId();
@@ -2336,7 +2338,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             getSpi().sendCustomEvent(security.enabled()
                 ? new SecurityAwareCustomMessageWrapper(msg, security.securityContext().subject().id())
-                : new CustomMessageWrapper(msg));
+                : msg);
         }
         catch (IgniteClientDisconnectedException e) {
             IgniteFuture<?> reconnectFut = ctx.cluster().clientReconnectFuture();

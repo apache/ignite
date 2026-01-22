@@ -62,6 +62,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -82,7 +83,6 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
@@ -649,7 +649,7 @@ public class ZookeeperDiscoveryImpl {
     /**
      * @param msg Message.
      */
-    public void sendCustomMessage(DiscoverySpiCustomMessage msg) {
+    public void sendCustomMessage(DiscoveryCustomMessage msg) {
         assert msg != null;
 
         List<ClusterNode> nodes = rtState.top.topologySnapshot();
@@ -2469,7 +2469,7 @@ public class ZookeeperDiscoveryImpl {
             if (sndNode != null) {
                 byte[] evtBytes = readCustomEventData(zkClient, evtPath, sndNodeId);
 
-                DiscoverySpiCustomMessage msg;
+                DiscoveryCustomMessage msg;
 
                 try {
                     msg = unmarshalZip(evtBytes);
@@ -2500,7 +2500,7 @@ public class ZookeeperDiscoveryImpl {
      */
     private void generateAndProcessCustomEventOnCoordinator(String evtPath,
         ZookeeperClusterNode sndNode,
-        DiscoverySpiCustomMessage msg
+        DiscoveryCustomMessage msg
     ) throws Exception {
         ZookeeperClient zkClient = rtState.zkClient;
         ZkDiscoveryEventsData evtsData = rtState.evtsData;
@@ -2585,7 +2585,7 @@ public class ZookeeperDiscoveryImpl {
 
                 evtsData.evtIdGen--;
 
-                DiscoverySpiCustomMessage ack = msg.ackMessage();
+                DiscoveryCustomMessage ack = msg.ackMessage();
 
                 if (ack != null) {
                     evtData = createAckEvent(ack, evtData);
@@ -2746,7 +2746,7 @@ public class ZookeeperDiscoveryImpl {
                         if (evtData0.ackEvent() && evtData0.topologyVersion() < locNode.order())
                             break;
 
-                        DiscoverySpiCustomMessage msg;
+                        DiscoveryCustomMessage msg;
 
                         if (rtState.crd) {
                             assert evtData0.resolvedMsg != null : evtData0;
@@ -3508,7 +3508,7 @@ public class ZookeeperDiscoveryImpl {
      * @param evtData Event data.
      * @param msg Custom message.
      */
-    private void notifyCustomEvent(final ZkDiscoveryCustomEventData evtData, final DiscoverySpiCustomMessage msg) {
+    private void notifyCustomEvent(final ZkDiscoveryCustomEventData evtData, final DiscoveryCustomMessage msg) {
         assert !(msg instanceof ZkInternalMessage) : msg;
 
         if (log.isDebugEnabled())
@@ -3714,7 +3714,7 @@ public class ZookeeperDiscoveryImpl {
                     }
 
                     case ZkDiscoveryEventData.ZK_EVT_CUSTOM_EVT: {
-                        DiscoverySpiCustomMessage ack = handleProcessedCustomEvent(ctx,
+                        DiscoveryCustomMessage ack = handleProcessedCustomEvent(ctx,
                             (ZkDiscoveryCustomEventData)evtData);
 
                         if (ack != null) {
@@ -3762,7 +3762,7 @@ public class ZookeeperDiscoveryImpl {
      * @throws Exception If failed.
      */
     private ZkDiscoveryCustomEventData createAckEvent(
-        DiscoverySpiCustomMessage ack,
+        DiscoveryCustomMessage ack,
         ZkDiscoveryCustomEventData origEvt) throws Exception {
         assert ack != null;
 
@@ -3885,7 +3885,7 @@ public class ZookeeperDiscoveryImpl {
      * @return Ack message.
      * @throws Exception If failed.
      */
-    @Nullable private DiscoverySpiCustomMessage handleProcessedCustomEvent(String ctx, ZkDiscoveryCustomEventData evtData)
+    @Nullable private DiscoveryCustomMessage handleProcessedCustomEvent(String ctx, ZkDiscoveryCustomEventData evtData)
         throws Exception {
         if (log.isDebugEnabled())
             log.debug("All nodes processed custom event [ctx=" + ctx + ", evtData=" + evtData + ']');

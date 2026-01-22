@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.UUID;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
@@ -25,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-class ZkCommunicationErrorResolveFinishMessage implements DiscoverySpiCustomMessage, ZkInternalMessage {
+class ZkCommunicationErrorResolveFinishMessage extends DiscoverySpiCustomMessage implements ZkInternalMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -48,7 +49,7 @@ class ZkCommunicationErrorResolveFinishMessage implements DiscoverySpiCustomMess
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
     }
 
