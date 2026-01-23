@@ -150,6 +150,7 @@ import org.apache.ignite.internal.codegen.NodeFullMetricsMessageSerializer;
 import org.apache.ignite.internal.codegen.NodeIdMessageSerializer;
 import org.apache.ignite.internal.codegen.NodeMetricsMessageSerializer;
 import org.apache.ignite.internal.codegen.PartitionReservationsMapSerializer;
+import org.apache.ignite.internal.codegen.PartitionUpdateCountersMessageSerializer;
 import org.apache.ignite.internal.codegen.PartitionsToReloadSerializer;
 import org.apache.ignite.internal.codegen.RecoveryLastReceivedMessageSerializer;
 import org.apache.ignite.internal.codegen.SchemaOperationStatusMessageSerializer;
@@ -464,7 +465,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(CacheMetricsMessage.TYPE_CODE, CacheMetricsMessage::new, new CacheMetricsMessageSerializer());
         factory.register(NodeMetricsMessage.TYPE_CODE, NodeMetricsMessage::new, new NodeMetricsMessageSerializer());
         factory.register(NodeFullMetricsMessage.TYPE_CODE, NodeFullMetricsMessage::new, new NodeFullMetricsMessageSerializer());
-        factory.register((short)157, PartitionUpdateCountersMessage::new);
+        factory.register((short)157, PartitionUpdateCountersMessage::new, new PartitionUpdateCountersMessageSerializer());
         factory.register((short)162, GenerateEncryptionKeyRequest::new, new GenerateEncryptionKeyRequestSerializer());
         factory.register((short)163, GenerateEncryptionKeyResponse::new);
         factory.register((short)167, ServiceDeploymentProcessId::new, new ServiceDeploymentProcessIdSerializer());
