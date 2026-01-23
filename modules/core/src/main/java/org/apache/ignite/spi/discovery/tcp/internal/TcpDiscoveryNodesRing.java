@@ -47,6 +47,7 @@ import org.jetbrains.annotations.Nullable;
  * Convenient way to represent topology for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}
  */
 public class TcpDiscoveryNodesRing {
+    /** */
     private static final boolean mdcAwareRing = IgniteSystemProperties.getBoolean("MDC_AWARE_RING", true);
 
     /** Visible nodes filter. */
