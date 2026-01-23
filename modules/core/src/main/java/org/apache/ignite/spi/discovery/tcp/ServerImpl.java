@@ -2081,29 +2081,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     /**
      * <strong>FOR TEST ONLY!!!</strong>
      * <p>
-     * Simulates situation when next node is still alive but is bypassed
-     * since it has been excluded from the ring, possibly, due to short time
-     * network problems.
-     * <p>
-     * This method is intended for test purposes only.
-     */
-    void forceNextNodeFailure() {
-        U.warn(log, "Next node will be forcibly failed (if any).");
-
-        TcpDiscoveryNode next;
-
-        synchronized (mux) {
-            next = ring.nextNode(failedNodes.keySet());
-        }
-
-        if (next != null)
-            msgWorker.addMessage(new TcpDiscoveryNodeFailedMessage(getLocalNodeId(), next.id(),
-                next.internalOrder()));
-    }
-
-    /**
-     * <strong>FOR TEST ONLY!!!</strong>
-     * <p>
      * This method is intended for test purposes only.
      *
      * @return Nodes ring.
