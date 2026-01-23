@@ -35,7 +35,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
 /** */
-public class MultiDataCenterRignTest extends GridCommonAbstractTest {
+public class MultiDataCenterRingTest extends GridCommonAbstractTest {
     /** */
     private static final String DC_ID_0 = "DC0";
 
