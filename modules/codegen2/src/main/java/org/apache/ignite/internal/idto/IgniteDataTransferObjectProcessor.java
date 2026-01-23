@@ -98,7 +98,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
             try {
                 IDTOSerializerGenerator gen = new IDTOSerializerGenerator(processingEnv, clazz);
 
-                if (gen.generate() && !clazz.toString().contains("SystemView"))
+                if (gen.generate())
                     genSerDes.put(clazz, gen.serializerFQN());
             }
             catch (Exception e) {
