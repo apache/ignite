@@ -276,7 +276,7 @@ public class IDTOSerializerGenerator {
                     .replaceAll("\\$\\{c}", className(comp == null ? type : comp)));
             }
             else
-                code.add("// Unsupported type: " + typeName(type) + " " + fld.getSimpleName() + " " + type.getClass().getName());
+                throw new IllegalStateException("Unsupported type: " + type);
         }
 
         return code;
