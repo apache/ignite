@@ -121,7 +121,6 @@ public class VisorTaskArgument<A> extends IgniteDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        // TODO: FIXME - NOT IDTO METHODS!
         U.writeCollection(out, nodes);
         out.writeObject(arg);
         out.writeBoolean(debug);
