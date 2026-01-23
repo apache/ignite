@@ -43,9 +43,9 @@ from ignitetest.utils.version import LATEST_2_17, DEV_BRANCH
 # Run: clear; ./docker/clean_up.sh; rm -drf ../../../results/*;  ./docker/run_tests.sh -t ./ignitetest/tests/mex
 class MexTest(IgniteTest):
     FORCE_STOP = True
-    TRANSACTION = False
+    TRANSACTION = True
     WAIT_AFTER_LOAD_SEC = 0
-    PRELOAD_SECONDS = 50
+    PRELOAD_SECONDS = 25
     LOAD_SECONDS = PRELOAD_SECONDS / 3
     LOAD_THREADS = 20
     SERVERS = 3

@@ -3,9 +3,7 @@ package org.apache.ignite.internal.ducktest.utils;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
@@ -15,7 +13,6 @@ import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -37,6 +34,8 @@ public class TestCacheStore implements CacheStore<Object, Object> {
 
     private final AtomicReference<BinaryObjectImpl> binObjRef = new AtomicReference<>();
 
+    private final ThreadLocal<Map<Object, Object>> curUpdates = new ThreadLocal<>();
+
     public TestCacheStore() {
         System.err.println("TEST | Starting ExtCacheStore");
 
@@ -56,13 +55,13 @@ public class TestCacheStore implements CacheStore<Object, Object> {
 
         ignite = Ignition.start(cfg);
 
-        System.err.println("TEST | Started ExtCacheStore");
+//        System.err.println("TEST | Started ExtCacheStore");
 
         cache = ignite.cache("EXT_STORAGE_CACHE");
 
         assert cache != null;
 
-        System.err.println("TEST | cache: " + cache);
+//        System.err.println("TEST | cache: " + cache);
     }
 
     @Override public void loadCache(IgniteBiInClosure clo, @Nullable Object... args) throws CacheLoaderException {
@@ -70,36 +69,46 @@ public class TestCacheStore implements CacheStore<Object, Object> {
     }
 
     @Override public void sessionEnd(boolean commit) throws CacheWriterException {
-        // No-op.
+        Map<Object, Object> updateMap = curUpdates.get();
+
+        if (updateMap == null)
+            return;
+
+        if (commit)
+            cache.putAll(updateMap);
+
+        curUpdates.set(null);
     }
 
     @Override public Object load(Object key) throws CacheLoaderException {
-        System.err.println("TEST | ExternalStorage: load, key=" + key);
+        // System.err.println("TEST | ExternalStorage: load, key=" + key);
 
-        DTO val = (DTO)cache.get(key);
-
-        System.err.println("TEST | ExternalStorage: load, value=" + val);
+        Object val = cache.get(key);
 
         if (val == null)
             return null;
 
-        BinaryObjectImpl bo = binObjRef.get();
+        if (val instanceof DTO) {
+            DTO dto = (DTO)cache.get(key);
+
+            // System.err.println("TEST | ExternalStorage: load, value=" + val);
+
+            BinaryObjectImpl bo = binObjRef.get();
+
+            assert bo != null;
 
 //        BinaryObjectBuilder bob = BinaryObjectBuilders.builder(bo);
 
-        BinaryObjectBuilder bob = BinaryObjectBuilders.builder(bo.context(),
-            bo.context().metadata0(bo.typeId()).typeName());
+            BinaryObjectBuilder bob = BinaryObjectBuilders.builder(bo.context(),
+                bo.context().metadata0(bo.typeId()).typeName());
 
-        assert bo != null;
+            bob.setField("STRVAL", dto.strVal);
+            bob.setField("DECVAL", dto.decVal);
 
-        bob.setField("STRVAL", val.strVal);
-        bob.setField("DECVAL", val.decVal);
+            val = bob.build();
+        }
 
-        BinaryObject newBo = bob.build();
-
-        System.err.println("TEST | ExternalStorage: load, key=" + key + ", bo=" + bo + ", newBo=" + newBo);
-
-        return newBo;
+        return val;
     }
 
     @Override public Map<Object, Object> loadAll(Iterable<?> keys) throws CacheLoaderException {
@@ -113,23 +122,20 @@ public class TestCacheStore implements CacheStore<Object, Object> {
     }
 
     @Override public void write(Cache.Entry entry) throws CacheWriterException {
-        // System.err.println("TEST | ExternalStorage: write, keyClass=" + entry.getValue().getClass().getSimpleName());
         Object val = entry.getValue();
-
-        if (val instanceof BinaryObjectImpl && !registerScheme.get()) {
-            synchronized (registerScheme) {
-                if (!registerScheme.get()) {
-                    BinaryObjectImpl bo = (BinaryObjectImpl)val;
-
-                    binObjRef.set(bo);
-
-                    registerScheme.set(true);
-                }
-            }
-        }
 
         if (val instanceof BinaryObjectImpl) {
             BinaryObjectImpl bo = (BinaryObjectImpl)val;
+
+            if (!registerScheme.get()) {
+                synchronized (registerScheme) {
+                    if (!registerScheme.get()) {
+                        binObjRef.set(bo);
+
+                        registerScheme.set(true);
+                    }
+                }
+            }
 
             DTO dto = new DTO();
 
@@ -140,21 +146,24 @@ public class TestCacheStore implements CacheStore<Object, Object> {
             val = dto;
         }
 
-        cache.put(entry.getKey(), val);
+        Map<Object, Object> updateMap = curUpdates.get();
+
+        if (updateMap == null)
+            curUpdates.set(updateMap = new HashMap<>());
+
+        updateMap.put(entry.getKey(), val);
     }
 
     @Override public void writeAll(Collection<Cache.Entry<?, ?>> entries) throws CacheWriterException {
-        entries.forEach(e -> cache.put(e.getKey(), e.getValue()));
+        entries.forEach(e -> write(e));
     }
 
     @Override public void delete(Object key) throws CacheWriterException {
-        cache.remove(key);
+        throw new UnsupportedOperationException();
     }
 
     @Override public void deleteAll(Collection<?> keys) throws CacheWriterException {
-        Set<Object> keys0 = keys instanceof Set ? (Set<Object>)keys : new HashSet<>(keys);
-
-        cache.removeAll(keys0);
+        throw new UnsupportedOperationException();
     }
 
     public static final class DTO {
