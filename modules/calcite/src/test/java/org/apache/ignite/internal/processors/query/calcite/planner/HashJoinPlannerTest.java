@@ -111,17 +111,6 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
     }
 
     /** */
-    private static @Nullable IgniteSort sortOnTopOfJoin(IgniteRel root) {
-        List<IgniteSort> sortNodes = findNodes(root, byClass(IgniteSort.class)
-            .and(node -> node.getInputs().size() == 1 && node.getInput(0) instanceof Join));
-
-        if (sortNodes.size() > 1)
-            throw new IllegalStateException("Incorrect sort nodes number: expected 1, actual " + sortNodes.size());
-
-        return sortNodes.isEmpty() ? null : sortNodes.get(0);
-    }
-
-    /** */
     @Test
     public void testHashJoinApplied() throws Exception {
         // Parms: request, can be planned, only INNER or SEMI join.

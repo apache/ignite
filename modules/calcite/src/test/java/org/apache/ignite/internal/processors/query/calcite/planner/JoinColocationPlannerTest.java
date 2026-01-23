@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
-import java.util.List;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Join;
@@ -34,9 +33,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Test;
 
-import static org.apache.ignite.internal.processors.query.calcite.TestUtils.hasSize;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -100,16 +96,11 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
             "join TEST_TBL t2 on t1.id1 = t2.id1 and t1.id2 = t2.id2";
 
         for (String disabledRule : DISABLED_RULES) {
-            RelNode phys = physicalPlan(sql, schema, "NestedLoopJoinConverter", "CorrelatedNestedLoopJoin", disabledRule);
-
-            AbstractIgniteJoin join = findFirstNode(phys, byClass(AbstractIgniteJoin.class));
-
-            String invalidPlanMsg = "Invalid plan:\n" + RelOptUtil.toString(phys);
-
-            assertThat(invalidPlanMsg, join, notNullValue());
-            assertThat(invalidPlanMsg, join.distribution().function().affinity(), is(true));
-            assertThat(invalidPlanMsg, join.getLeft(), instanceOf(IgniteIndexScan.class));
-            assertThat(invalidPlanMsg, join.getRight(), instanceOf(IgniteIndexScan.class));
+            assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class)
+                    .and(join -> join.distribution().function().affinity())
+                    .and(input(0, isInstanceOf(IgniteIndexScan.class)))
+                    .and(input(1, isInstanceOf(IgniteIndexScan.class)))),
+                "NestedLoopJoinConverter", "CorrelatedNestedLoopJoin", disabledRule);
         }
     }
 
@@ -147,22 +138,12 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
             "join SIMPLE_TBL t2 on t1.id1 = t2.id";
 
         for (String disabledRule : DISABLED_RULES) {
-            RelNode phys = physicalPlan(sql, schema, "NestedLoopJoinConverter", "CorrelatedNestedLoopJoin", disabledRule);
-
-            AbstractIgniteJoin join = findFirstNode(phys, byClass(AbstractIgniteJoin.class));
-
-            String invalidPlanMsg = "Invalid plan:\n" + RelOptUtil.toString(phys);
-
-            assertThat(invalidPlanMsg, join, notNullValue());
-            assertThat(invalidPlanMsg, join.distribution().function().affinity(), is(true));
-
-            List<IgniteExchange> exchanges = findNodes(phys, node -> node instanceof IgniteExchange
-                && ((IgniteRel)node).distribution().function().affinity());
-
-            assertThat(invalidPlanMsg, exchanges, hasSize(1));
-            assertThat(invalidPlanMsg, exchanges.get(0).getInput(0), instanceOf(IgniteIndexScan.class));
-            assertThat(invalidPlanMsg, exchanges.get(0).getInput(0)
-                .getTable().unwrap(TestTable.class), equalTo(complexTbl));
+            assertPlan(sql, schema, count(isInstanceOf(IgniteExchange.class)
+                    .and(ex->ex.distribution().function().affinity()), 1)
+                    .and(nodeOrAnyChild(isInstanceOf(IgniteExchange.class)
+                        .and(input(0, isInstanceOf(IgniteIndexScan.class)))
+                        .and(input(0, i->i.getTable().unwrap(TestTable.class).equals(complexTbl))))),
+                "NestedLoopJoinConverter", "CorrelatedNestedLoopJoin", disabledRule);
         }
     }
 
