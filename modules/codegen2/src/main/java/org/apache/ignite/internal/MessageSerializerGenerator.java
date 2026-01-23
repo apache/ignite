@@ -62,7 +62,7 @@ import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
  */
 public class MessageSerializerGenerator {
     /** */
-    public static final String EMPTY = "";
+    private static final String EMPTY = "";
 
     /** */
     public static final String TAB = "    ";
