@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.rel.LimitExecuti
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.MergeJoinExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.MinusExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.NestedLoopJoinExecutionTest;
+import org.apache.ignite.internal.processors.query.calcite.exec.rel.ScanTableRowExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortAggregateExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.SortedIndexSpoolExecutionTest;
 import org.apache.ignite.internal.processors.query.calcite.exec.rel.TableSpoolExecutionTest;
@@ -38,7 +39,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Calcite tests.
+ * Calcite execution tests.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
@@ -59,6 +60,7 @@ import org.junit.runners.Suite;
     LimitExecutionTest.class,
     TimeCalculationExecutionTest.class,
     UncollectExecutionTest.class,
+    ScanTableRowExecutionTest.class,
 })
 public class ExecutionTestSuite {
 }
