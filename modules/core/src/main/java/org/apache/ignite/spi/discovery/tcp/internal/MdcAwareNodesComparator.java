@@ -23,10 +23,15 @@ import java.util.Comparator;
 public class MdcAwareNodesComparator implements Comparator<TcpDiscoveryNode> {
     /** */
     @Override public int compare(TcpDiscoveryNode n1, TcpDiscoveryNode n2) {
-        String n1DcId = n1.dataCenterId() == null ? "" : n1.dataCenterId();
-        String n2DcId = n2.dataCenterId() == null ? "" : n2.dataCenterId();
+        int res = 0;
 
-        int res = n1DcId.compareTo(n2DcId);
+        String n1DcId = n1.dataCenterId();
+        String n2DcId = n2.dataCenterId();
+
+        assert (n1DcId != null && n2DcId != null) || (n1DcId == null && n2DcId == null) : "[node1=" + n1 + ", node2=" + n2 + "]";
+
+        if (n1DcId != null)
+            res = n1DcId.compareTo(n2DcId);
 
         if (res == 0)
             res = n1.compareTo(n2);
