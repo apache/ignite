@@ -69,6 +69,9 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
      * Processes all classes extending the {@code IgniteDataTransferObject} and generates corresponding serializer code.
      */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+        if (roundEnv.errorRaised())
+            return true;
+
         TypeMirror dtoCls = processingEnv.getElementUtils().getTypeElement(DTO_CLASS).asType();
         TypeMirror argAnnotation = processingEnv.getElementUtils().getTypeElement(ARG_ANNOTATION).asType();
 
@@ -95,7 +98,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
             try {
                 IDTOSerializerGenerator gen = new IDTOSerializerGenerator(processingEnv, clazz);
 
-                if (gen.generate())
+                if (gen.generate() && !clazz.toString().contains("SystemView"))
                     genSerDes.put(clazz, gen.serializerFQN());
             }
             catch (Exception e) {
@@ -194,7 +197,32 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         writer.write(NL);
         writer.write(TAB);
         writer.write(TAB);
-        writer.write("return serdes.get(cls);");
+        writer.write("IgniteDataTransferObjectSerializer<T> res = (IgniteDataTransferObjectSerializer<T>)serdes.get(cls);");
+        writer.write(NL);
+        writer.write(NL);
+        writer.write(TAB);
+        writer.write(TAB);
+        writer.write("if (res == null && getClass().desiredAssertionStatus()) {");
+        writer.write(NL);
+        writer.write(TAB);
+        writer.write(TAB);
+        writer.write(TAB);
+        writer.write("res = U.loadSerializer(cls);");
+        writer.write(NL);
+        writer.write(NL);
+        writer.write(TAB);
+        writer.write(TAB);
+        writer.write(TAB);
+        writer.write("serdes.put(cls, res);");
+        writer.write(NL);
+        writer.write(TAB);
+        writer.write(TAB);
+        writer.write("}");
+        writer.write(NL);
+        writer.write(NL);
+        writer.write(TAB);
+        writer.write(TAB);
+        writer.write("return res;");
         writer.write(NL);
         writer.write(TAB);
         writer.write("}");
@@ -262,6 +290,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         writer.write("import " + HashMap.class.getName() + ";" + NL);
         writer.write("import " + DTO_SERDES_INTERFACE + ";" + NL);
         writer.write("import " + DTO_CLASS + ";" + NL);
+        writer.write("import org.apache.ignite.internal.util.typedef.internal.U;" + NL);
 
         writer.write(NL);
         writer.write(CLS_JAVADOC);

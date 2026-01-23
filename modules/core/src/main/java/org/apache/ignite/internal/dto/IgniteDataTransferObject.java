@@ -27,6 +27,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.apache.ignite.internal.codegen.idto.IDTOSerializerFactory;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -80,7 +81,7 @@ public abstract class IgniteDataTransferObject implements Externalizable {
         try (IgniteDataTransferObjectOutput dtout = new IgniteDataTransferObjectOutput(out)) {
             IgniteDataTransferObjectSerializer serializer = IDTOSerializerFactory.getInstance().serializer(getClass());
 
-            if (serializer == null) {
+            if (serializer == IgniteUtils.EMPTY) {
                 writeExternalData(dtout);
 
                 return;
@@ -112,7 +113,7 @@ public abstract class IgniteDataTransferObject implements Externalizable {
         try (IgniteDataTransferObjectInput dtin = new IgniteDataTransferObjectInput(in)) {
             IgniteDataTransferObjectSerializer serializer = IDTOSerializerFactory.getInstance().serializer(getClass());
 
-            if (serializer == null) {
+            if (serializer == IgniteUtils.EMPTY) {
                 readExternalData(dtin);
 
                 return;
