@@ -28,9 +28,8 @@ public class MdcAwareNodesComparator implements Comparator<TcpDiscoveryNode> {
 
         int res = n1DcId.compareTo(n2DcId);
 
-        if (res == 0) {
+        if (res == 0)
             res = n1.compareTo(n2);
-        }
 
         return res;
     }
