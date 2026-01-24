@@ -314,11 +314,15 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         writer.write(NL);
         writer.write(TAB);
         writer.write(TAB);
-        writer.write("if (res == null && getClass().desiredAssertionStatus()) {");
+        writer.write("if (res == null) {");
         writer.write(NL);
         writer.write(TAB);
         writer.write(TAB);
         writer.write(TAB);
+        // IDE can invoke partial recompile during development.
+        // In this case there will be only part (one) of serdes in the map initially.
+        // We want to correctly initialize and trying to load serializer dynamically.
+        // Other case to do it custom commands.
         writer.write("res = U.loadSerializer(cls);");
         writer.write(NL);
         writer.write(NL);
