@@ -248,7 +248,8 @@ public class IDTOSerializerGenerator {
         writer.write(NL);
         writer.write(CLS_JAVADOC);
         writer.write(NL);
-        writer.write("public class " + serializerName() + " implements " + simpleName(DTO_SERDES_INTERFACE) + "<" + simpleClsName + "> {" + NL);
+        writer.write("public class " + serializerName() + " implements " + simpleName(DTO_SERDES_INTERFACE) +
+            "<" + simpleClsName + "> {" + NL);
     }
 
     /** @return Lines for generated {@code IgniteDataTransferObjectSerializer#writeExternal(T, ObjectOutput)} method. */
