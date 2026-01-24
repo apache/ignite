@@ -56,34 +56,25 @@ import static org.apache.ignite.internal.MessageSerializerGenerator.enumType;
 import static org.apache.ignite.internal.MessageSerializerGenerator.identicalFileIsAlreadyGenerated;
 
 /**
- * Generates serializer class for given {@code IgniteDataTransferObject} class.
+ * Generates serializer class for given {@code IgniteDataTransferObject} extension.
  * The generated serializer follows the naming convention:
  * {@code org.apache.ignite.internal.codegen.[IDTOClassName]Serializer}.
  */
 public class IDTOSerializerGenerator {
-    /** */
+    /** Package for serializers. */
     static final String PKG_NAME = "org.apache.ignite.internal.codegen.idto";
 
-    /** */
+    /** Serializer interface. */
     public static final String DTO_SERDES_INTERFACE = "org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer";
 
-    /** */
+    /** Class javadoc */
     static final String CLS_JAVADOC = "/** " + NL +
         " * This class is generated automatically." + NL +
         " *" + NL +
         " * @see org.apache.ignite.internal.dto.IgniteDataTransferObject" + NL +
         " */";
 
-    /** */
-    private final ProcessingEnvironment env;
-
-    /** */
-    private final TypeElement type;
-
-    /** */
-    private final Set<String> imports = new HashSet<>();
-
-    /** */
+    /** Type name to write/read code for the type. */
     private static final Map<String, IgniteBiTuple<String, String>> TYPE_SERDES = new HashMap<>();
 
     {
@@ -113,15 +104,15 @@ public class IDTOSerializerGenerator {
         TYPE_SERDES.put(Map.class.getName(), F.t("U.writeMap(out, obj.${f}());", "obj.${f}(U.readMap(in));"));
     }
 
-    /** */
+    /** Write/Read code for enum. */
     private static final IgniteBiTuple<String, String> ENUM_SERDES =
         F.t("U.writeEnum(out, obj.${f}());", "obj.${f}(U.readEnum(in, ${c}.class));");
 
-    /** */
+    /** Write/Read code for array. */
     private static final IgniteBiTuple<String, String> OBJ_ARRAY_SERDES =
         F.t("U.writeArray(out, obj.${f}());", "obj.${f}(U.readArray(in, ${c}.class));");
 
-    /** */
+    /** Type name to write/read code for the array of type. */
     private static final Map<String, IgniteBiTuple<String, String>> ARRAY_TYPE_SERDES = new HashMap<>();
 
     {
@@ -132,23 +123,33 @@ public class IDTOSerializerGenerator {
         ARRAY_TYPE_SERDES.put(UUID.class.getName(), OBJ_ARRAY_SERDES);
     }
 
-    /** */
+    /** Environment. */
+    private final ProcessingEnvironment env;
+
+    /** Type to generated serializer for. */
+    private final TypeElement type;
+
+    /** Serializer imports. */
+    private final Set<String> imports = new HashSet<>();
+
+    /**
+     * @param env Environment.
+     * @param type Type to generate serializer for.
+     */
     public IDTOSerializerGenerator(ProcessingEnvironment env, TypeElement type) {
         this.env = env;
         this.type = type;
     }
 
-    /** */
+    /** @return Fully qualified name for generated class. */
     public String serializerFQN() {
         return PKG_NAME + "." + serializerName();
     }
 
-    /** */
-    private String serializerName() {
-        return type.getSimpleName() + "Serializer";
-    }
-
-    /** */
+    /**
+     * @return {@code True} if generation succeed.
+     * @throws Exception in case of error.
+     */
     public boolean generate() throws Exception {
         String serClsName = type.getSimpleName() + "Serializer";
         String serCode = generateSerializerCode();
@@ -182,7 +183,7 @@ public class IDTOSerializerGenerator {
         }
     }
 
-    /** */
+    /** @return Code for the calss implementing {@code org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer}. */
     private String generateSerializerCode() throws IOException {
         imports.add("org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer");
         imports.add(type.getQualifiedName().toString());
@@ -191,15 +192,15 @@ public class IDTOSerializerGenerator {
         imports.add(IOException.class.getName());
         imports.add("org.apache.ignite.internal.util.typedef.internal.U");
 
-        String clsName = String.valueOf(type.getSimpleName());
+        String simpleClsName = String.valueOf(type.getSimpleName());
 
         List<VariableElement> flds = fields(type);
 
-        List<String> write = generateWrite(clsName, flds);
-        List<String> read = generateRead(clsName, flds);
+        List<String> write = generateWrite(simpleClsName, flds);
+        List<String> read = generateRead(simpleClsName, flds);
 
         try (Writer writer = new StringWriter()) {
-            writeClassHeader(writer, clsName);
+            writeClassHeader(writer, simpleClsName);
 
             for (String line : write) {
                 writer.write(TAB);
@@ -221,87 +222,12 @@ public class IDTOSerializerGenerator {
         }
     }
 
-    /** */
-    private List<String> generateRead(String clsName, List<VariableElement> flds) {
-        List<String> code = new ArrayList<>();
-
-        code.add("/** {@inheritDoc} */");
-        code.add("@Override public void readExternal(" + clsName + " obj, ObjectInput in) throws IOException, ClassNotFoundException {");
-        fieldsSerdes(flds, IgniteBiTuple::get2).forEach(line -> code.add(TAB + line));
-        code.add("}");
-
-        return code;
-    }
-
-    /** */
-    private List<String> generateWrite(String clsName, List<VariableElement> flds) {
-        List<String> code = new ArrayList<>();
-
-        code.add("/** {@inheritDoc} */");
-        code.add("@Override public void writeExternal(" + clsName + " obj, ObjectOutput out) throws IOException {");
-
-        fieldsSerdes(flds, IgniteBiTuple::get1).forEach(line -> code.add(TAB + line));
-
-        code.add("}");
-
-        return code;
-    }
-
-    /** */
-    private List<String> fieldsSerdes(
-        List<VariableElement> flds,
-        Function<IgniteBiTuple<String, String>, String> patternProvider
-    ) {
-        List<String> code = new ArrayList<>();
-
-        for (VariableElement fld : flds) {
-            TypeMirror type = fld.asType();
-            TypeMirror comp = null;
-
-            IgniteBiTuple<String, String> serDes;
-
-            if (type.getKind() == TypeKind.ARRAY) {
-                comp = ((ArrayType)type).getComponentType();
-
-                serDes = enumType(env, comp) ? OBJ_ARRAY_SERDES : ARRAY_TYPE_SERDES.get(typeName(comp));
-            }
-            else
-                serDes = enumType(env, type) ? ENUM_SERDES : TYPE_SERDES.get(typeName(type));
-
-            if (serDes != null) {
-                String pattern = patternProvider.apply(serDes);
-
-                code.add(pattern
-                    .replaceAll("\\$\\{f}", fld.getSimpleName().toString())
-                    .replaceAll("\\$\\{c}", className(comp == null ? type : comp)));
-            }
-            else
-                throw new IllegalStateException("Unsupported type: " + type);
-        }
-
-        return code;
-    }
-
-    /** */
-    private String className(TypeMirror type) {
-        if (type instanceof PrimitiveType)
-            return typeName(type);
-
-        String fqn = typeName(type);
-
-        if (!fqn.startsWith("java.lang"))
-            imports.add(fqn);
-
-        return simpleName(fqn);
-    }
-
-    /** */
-    public static String simpleName(String fqn) {
-        return fqn.substring(fqn.lastIndexOf('.') + 1);
-    }
-
-    /** */
-    private void writeClassHeader(Writer writer, String clsName) throws IOException {
+    /**
+     * @param writer Writer to write class to.
+     * @param simpleClsName Class name
+     * @throws IOException
+     */
+    private void writeClassHeader(Writer writer, String simpleClsName) throws IOException {
         try (InputStream in = getClass().getClassLoader().getResourceAsStream("license.txt");
              BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
 
@@ -322,10 +248,75 @@ public class IDTOSerializerGenerator {
         writer.write(NL);
         writer.write(CLS_JAVADOC);
         writer.write(NL);
-        writer.write("public class " + serializerName() + " implements " + simpleName(DTO_SERDES_INTERFACE) + "<" + clsName + "> {" + NL);
+        writer.write("public class " + serializerName() + " implements " + simpleName(DTO_SERDES_INTERFACE) + "<" + simpleClsName + "> {" + NL);
     }
 
-    /** */
+    /** @return Lines for generated {@code IgniteDataTransferObjectSerializer#writeExternal(T, ObjectOutput)} method. */
+    private List<String> generateWrite(String clsName, List<VariableElement> flds) {
+        List<String> code = new ArrayList<>();
+
+        code.add("/** {@inheritDoc} */");
+        code.add("@Override public void writeExternal(" + clsName + " obj, ObjectOutput out) throws IOException {");
+
+        fieldsSerdes(flds, IgniteBiTuple::get1).forEach(line -> code.add(TAB + line));
+
+        code.add("}");
+
+        return code;
+    }
+
+    /** @return Lines for generated {@code IgniteDataTransferObjectSerializer#readExternal(T, ObjectInput)} method. */
+    private List<String> generateRead(String clsName, List<VariableElement> flds) {
+        List<String> code = new ArrayList<>();
+
+        code.add("/** {@inheritDoc} */");
+        code.add("@Override public void readExternal(" + clsName + " obj, ObjectInput in) throws IOException, ClassNotFoundException {");
+        fieldsSerdes(flds, IgniteBiTuple::get2).forEach(line -> code.add(TAB + line));
+        code.add("}");
+
+        return code;
+    }
+
+    /**
+     * @param flds Fields to generated serdes for.
+     * @param lineProvider Function to generated serdes code for the field.
+     * @return Lines to serdes fields.
+     */
+    private List<String> fieldsSerdes(
+        List<VariableElement> flds,
+        Function<IgniteBiTuple<String, String>, String> lineProvider
+    ) {
+        List<String> code = new ArrayList<>();
+
+        for (VariableElement fld : flds) {
+            TypeMirror type = fld.asType();
+            TypeMirror comp = null;
+
+            IgniteBiTuple<String, String> serDes;
+
+            if (type.getKind() == TypeKind.ARRAY) {
+                comp = ((ArrayType)type).getComponentType();
+
+                serDes = enumType(env, comp) ? OBJ_ARRAY_SERDES : ARRAY_TYPE_SERDES.get(className(comp));
+            }
+            else
+                serDes = enumType(env, type) ? ENUM_SERDES : TYPE_SERDES.get(className(type));
+
+            if (serDes != null) {
+                String pattern = lineProvider.apply(serDes);
+
+                code.add(pattern
+                    .replaceAll("\\$\\{f}", fld.getSimpleName().toString())
+                    .replaceAll("\\$\\{c}", simpleClassName(comp == null ? type : comp)));
+            }
+            else
+                throw new IllegalStateException("Unsupported type: " + type);
+        }
+
+        return code;
+    }
+
+    /** @return List of non-static and non-transient field for given {@code type}. */
     private List<VariableElement> fields(TypeElement type) {
         List<VariableElement> res = new ArrayList<>();
 
@@ -334,7 +325,7 @@ public class IDTOSerializerGenerator {
                 if (el.getKind() != ElementKind.FIELD)
                     continue;
 
-                if (el.getModifiers().contains(Modifier.STATIC))
+                if (el.getModifiers().contains(Modifier.STATIC) || el.getModifiers().contains(Modifier.TRANSIENT))
                     continue;
 
                 res.add((VariableElement)el);
@@ -348,11 +339,38 @@ public class IDTOSerializerGenerator {
         return res;
     }
 
-    /** */
-    private static String typeName(TypeMirror comp) {
+    /** @return FQN of {@code comp}. */
+    private static String className(TypeMirror comp) {
         String n = comp.toString();
         int genIdx = n.indexOf('<');
 
         return genIdx == -1 ? n : n.substring(0, genIdx);
+    }
+
+    /** @return Serializer class name. */
+    private String serializerName() {
+        return type.getSimpleName() + "Serializer";
+    }
+
+    /**
+     * Adds to imports if class need to be imported explicitly.
+     *
+     * @return Simple class name.
+     */
+    private String simpleClassName(TypeMirror type) {
+        if (type instanceof PrimitiveType)
+            return className(type);
+
+        String fqn = className(type);
+
+        if (!fqn.startsWith("java.lang"))
+            imports.add(fqn);
+
+        return simpleName(fqn);
+    }
+
+    /** @return Simple class name. */
+    public static String simpleName(String fqn) {
+        return fqn.substring(fqn.lastIndexOf('.') + 1);
     }
 }

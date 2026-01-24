@@ -51,15 +51,23 @@ import static org.apache.ignite.internal.idto.IDTOSerializerGenerator.PKG_NAME;
 import static org.apache.ignite.internal.idto.IDTOSerializerGenerator.simpleName;
 
 /**
- *
+ * Generates implementations of {@code IgniteDataTransferObjectSerializer} for all supported classes.
+ * Generates factory {@code IDTOSerializerFactory} to get instance of serializer for given class.
+ * See, {@code IgniteDataTransferObject#writeExternal(ObjectOutput)} and {@code IgniteDataTransferObject#writeExternal(ObjectInput)} to get
+ * insight of using serializers.
  */
 @SupportedAnnotationTypes("org.apache.ignite.internal.management.api.Argument")
 @SupportedSourceVersion(SourceVersion.RELEASE_11)
 public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
-    /** Base interface that every message must implement. */
+    /** Base class that every dto must extends. */
     private static final String DTO_CLASS = "org.apache.ignite.internal.dto.IgniteDataTransferObject";
 
-    /** Base interface that every message must implement. */
+    /**
+     * Annotation used in management commands.
+     * For now, we restrict set of generated serdes to all management commands argument classes.
+     * Because, they strictly follows Ignite codestyle convention.
+     * Providing support of all other inheritor of {@code IgniteDataTransferObject} is matter of following improvements.
+     */
     private static final String ARG_ANNOTATION = "org.apache.ignite.internal.management.api.Argument";
 
     /** Factory class name. */
@@ -110,12 +118,23 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
             }
         }
 
+        // IDE recompile only modified classes. Don't want to touch factory in the case no matching classes was recompiled.
         if (genSerDes.isEmpty())
             return true;
 
+        generateFactory(genSerDes);
+
+        return true;
+    }
+
+    /**
+     * Generates and writes factory.
+     * @param genSerDes Generated serdes classes.
+     */
+    private void generateFactory(Map<TypeElement, String> genSerDes) {
         try {
             String factoryFQN = PKG_NAME + "." + FACTORY_CLASS;
-            String factoryCode = generateFactory(genSerDes);
+            String factoryCode = factoryCode(genSerDes);
 
             try {
                 JavaFileObject file = processingEnv.getFiler().createSourceFile(factoryFQN);
@@ -144,12 +163,14 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         catch (Exception e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to generate a dto factory:" + e.getMessage());
         }
-
-        return true;
     }
 
-    /** */
-    private String generateFactory(Map<TypeElement, String> genSerDes) throws IOException {
+    /**
+     * @param genSerDes Generated serdes classes.
+     * @return Factory code.
+     * @throws IOException In case of error.
+     */
+    private String factoryCode(Map<TypeElement, String> genSerDes) throws IOException {
         try (Writer writer = new StringWriter()) {
             writeClassHeader(writer, genSerDes.keySet());
 
@@ -169,7 +190,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
             writer.write(NL);
             writer.write(NL);
 
-            constructor(genSerDes, writer);
+            constructor(writer, genSerDes);
             writer.write(NL);
 
             getInstance(writer);
@@ -184,7 +205,98 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         }
     }
 
-    /** */
+    /**
+     * Generates class header.
+     *
+     * @param writer Writer to write code to.
+     * @param dtoClss DTO classes to import.
+     * @throws IOException In case of error.
+     */
+    private void writeClassHeader(Writer writer, Set<TypeElement> dtoClss) throws IOException {
+        try (InputStream in = getClass().getClassLoader().getResourceAsStream("license.txt");
+             BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
+
+            PrintWriter out = new PrintWriter(writer);
+
+            String line;
+
+            while ((line = reader.readLine()) != null)
+                out.println(line);
+        }
+
+        writer.write(NL);
+        writer.write("package " + PKG_NAME + ";" + NL + NL);
+
+        for (TypeElement dtoCls : dtoClss)
+            writer.write("import " + dtoCls.getQualifiedName() + ";" + NL);
+
+        writer.write("import " + Map.class.getName() + ";" + NL);
+        writer.write("import " + HashMap.class.getName() + ";" + NL);
+        writer.write("import " + DTO_SERDES_INTERFACE + ";" + NL);
+        writer.write("import " + DTO_CLASS + ";" + NL);
+        writer.write("import org.apache.ignite.internal.util.typedef.internal.U;" + NL);
+
+        writer.write(NL);
+        writer.write(CLS_JAVADOC);
+        writer.write(NL);
+        writer.write("public class " + FACTORY_CLASS + " {" + NL);
+    }
+
+    /**
+     * Generates static {@code getInstance} method.
+     *
+     * @param writer Writer to write code to.
+     * @throws IOException In case of error.
+     */
+    private static void getInstance(Writer writer) throws IOException {
+        writer.write(TAB);
+        writer.write("/** */");
+        writer.write(NL);
+        writer.write(TAB);
+        writer.write("public static " + FACTORY_CLASS + " getInstance() {");
+        writer.write(NL);
+        writer.write(TAB);
+        writer.write(TAB);
+        writer.write("return instance;");
+        writer.write(NL);
+        writer.write(TAB);
+        writer.write("}");
+        writer.write(NL);
+    }
+
+    /**
+     * Generates private constructor.
+     *
+     * @param writer Writer to write code to.
+     * @param genSerDes Serdes to support in factory.
+     * @throws IOException In case of error.
+     */
+    private static void constructor(Writer writer, Map<TypeElement, String> genSerDes) throws IOException {
+        writer.write(TAB);
+        writer.write("/** */");
+        writer.write(NL);
+        writer.write(TAB);
+        writer.write("private " + FACTORY_CLASS + "() {");
+        writer.write(NL);
+
+        for (Map.Entry<TypeElement, String> e : genSerDes.entrySet()) {
+            writer.write(TAB);
+            writer.write(TAB);
+            writer.write("serdes.put(" + e.getKey().getSimpleName() + ".class, new " + simpleName(e.getValue()) + "());");
+            writer.write(NL);
+        }
+
+        writer.write(TAB);
+        writer.write("}");
+        writer.write(NL);
+    }
+
+    /**
+     * Generates method to get serializer from factory.
+     *
+     * @param writer Writer to write code to.
+     * @throws IOException In case of error.
+     */
     private void serializer(Writer writer) throws IOException {
         writer.write(TAB);
         writer.write("/** */");
@@ -229,76 +341,11 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         writer.write(NL);
     }
 
-    /** */
-    private static void getInstance(Writer writer) throws IOException {
-        writer.write(TAB);
-        writer.write("/** */");
-        writer.write(NL);
-        writer.write(TAB);
-        writer.write("public static " + FACTORY_CLASS + " getInstance() {");
-        writer.write(NL);
-        writer.write(TAB);
-        writer.write(TAB);
-        writer.write("return instance;");
-        writer.write(NL);
-        writer.write(TAB);
-        writer.write("}");
-        writer.write(NL);
-    }
-
-    /** */
-    private static void constructor(Map<TypeElement, String> genSerDes, Writer writer) throws IOException {
-        writer.write(TAB);
-        writer.write("/** */");
-        writer.write(NL);
-        writer.write(TAB);
-        writer.write("private " + FACTORY_CLASS + "() {");
-        writer.write(NL);
-
-        for (Map.Entry<TypeElement, String> e : genSerDes.entrySet()) {
-            writer.write(TAB);
-            writer.write(TAB);
-            writer.write("serdes.put(" + e.getKey().getSimpleName() + ".class, new " + simpleName(e.getValue()) + "());");
-            writer.write(NL);
-        }
-
-        writer.write(TAB);
-        writer.write("}");
-        writer.write(NL);
-    }
-
-    /** */
-    private void writeClassHeader(Writer writer, Set<TypeElement> dtoClss) throws IOException {
-        try (InputStream in = getClass().getClassLoader().getResourceAsStream("license.txt");
-             BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
-
-            PrintWriter out = new PrintWriter(writer);
-
-            String line;
-
-            while ((line = reader.readLine()) != null)
-                out.println(line);
-        }
-
-        writer.write(NL);
-        writer.write("package " + PKG_NAME + ";" + NL + NL);
-
-        for (TypeElement dtoCls : dtoClss)
-            writer.write("import " + dtoCls.getQualifiedName() + ";" + NL);
-
-        writer.write("import " + Map.class.getName() + ";" + NL);
-        writer.write("import " + HashMap.class.getName() + ";" + NL);
-        writer.write("import " + DTO_SERDES_INTERFACE + ";" + NL);
-        writer.write("import " + DTO_CLASS + ";" + NL);
-        writer.write("import org.apache.ignite.internal.util.typedef.internal.U;" + NL);
-
-        writer.write(NL);
-        writer.write(CLS_JAVADOC);
-        writer.write(NL);
-        writer.write("public class " + FACTORY_CLASS + " {" + NL);
-    }
-
-    /** */
+    /**
+     * @param type Type to analyze.
+     * @param argAnnotation Annotation to find.
+     * @return {@code True} if type has fields annotated with the {@code argAnnotation}, {@code false} otherwise.
+     */
     private boolean hasArgumentFields(TypeElement type, TypeMirror argAnnotation) {
         while (type != null) {
             for (Element el: type.getEnclosedElements()) {
@@ -311,8 +358,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
                 }
             }
 
-            Element superType = processingEnv.getTypeUtils().asElement(type.getSuperclass());
-            type = (TypeElement)superType;
+            type = (TypeElement)processingEnv.getTypeUtils().asElement(type.getSuperclass());
         }
 
         return false;
