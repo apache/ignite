@@ -68,6 +68,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -140,6 +141,8 @@ import static org.apache.ignite.internal.util.lang.ClusterNodeFunc.nodeIds;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_SSL_PROTOCOL;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -2036,7 +2039,7 @@ public final class GridTestUtils {
     /**
      * Waits for condition, polling in busy wait loop.
      *
-     * @param cond Condition to wait for.
+     * @param cond    Condition to wait for.
      * @param timeout Max time to wait in milliseconds.
      * @return {@code true} if condition was achieved, {@code false} otherwise.
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
@@ -2643,5 +2646,20 @@ public final class GridTestUtils {
      */
     public static void suppressException(RunnableX runnableX) {
         runnableX.run();
+    }
+
+    /** Check arrays equality as well as objects equality. */
+    public static void assertEqualsArraysAware(Object exp, Object actual) {
+        assertEqualsArraysAware(null, exp, actual);
+    }
+
+    /** Check arrays equality as well as objects equality. */
+    public static void assertEqualsArraysAware(String msg, Object exp, Object actual) {
+        if (exp instanceof Object[] && actual instanceof Object[])
+            assertArrayEquals((Object[])exp, (Object[])actual);
+        else if (U.isPrimitiveArray(exp) && U.isPrimitiveArray(actual))
+            assertArrayEquals(new Object[] {exp}, new Object[] {actual}); // Hack to compare primitive arrays.
+        else
+            assertEquals(exp, actual);
     }
 }

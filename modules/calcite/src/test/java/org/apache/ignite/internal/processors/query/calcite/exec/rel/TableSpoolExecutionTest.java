@@ -30,10 +30,13 @@ import org.apache.ignite.internal.processors.query.calcite.util.TypeUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.singletonList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -44,7 +47,7 @@ public class TableSpoolExecutionTest extends AbstractExecutionTest {
     /**
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     @Override public void setup() throws Exception {
         nodesCnt = 1;
         super.setup();
@@ -129,7 +132,7 @@ public class TableSpoolExecutionTest extends AbstractExecutionTest {
                 boolean first = true;
 
                 @Override public @NotNull Iterator<Object[]> iterator() {
-                    assertTrue("Rewind table", first);
+                    assertTrue(first, "Rewind table");
 
                     first = false;
                     return super.iterator();
@@ -152,10 +155,7 @@ public class TableSpoolExecutionTest extends AbstractExecutionTest {
                     cnt++;
                 }
 
-                assertEquals(
-                    "Invalid result size",
-                    size,
-                    cnt);
+                assertEquals(size, cnt, "Invalid result size");
 
                 root.rewind();
             }

@@ -18,8 +18,10 @@
 package org.apache.ignite.kubernetes.configuration;
 
 import org.apache.ignite.spi.IgniteSpiException;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /** Class checks required fields for {@link KubernetesConnectionConfiguration} */
 public class KubernetesConnectionConfigurationTest {
@@ -27,7 +29,7 @@ public class KubernetesConnectionConfigurationTest {
     private KubernetesConnectionConfiguration cfg;
 
     /** Fill all required fields. */
-    @Before
+    @BeforeEach
     public void setup() {
         cfg = new KubernetesConnectionConfiguration();
 
@@ -44,30 +46,30 @@ public class KubernetesConnectionConfigurationTest {
     }
 
     /** */
-    @Test(expected = IgniteSpiException.class)
+    @Test
     public void testAccountNameIsRequired() {
         cfg.setAccountToken(null);
-        cfg.verify();
+        assertThrows(IgniteSpiException.class, () -> cfg.verify());
     }
 
     /** */
-    @Test(expected = IgniteSpiException.class)
+    @Test
     public void testMasterUrlIsRequired() {
         cfg.setMasterUrl(null);
-        cfg.verify();
+        assertThrows(IgniteSpiException.class, () -> cfg.verify());
     }
 
     /** */
-    @Test(expected = IgniteSpiException.class)
+    @Test
     public void testNamespaceIsRequired() {
         cfg.setNamespace(null);
-        cfg.verify();
+        assertThrows(IgniteSpiException.class, () -> cfg.verify());
     }
 
     /** */
-    @Test(expected = IgniteSpiException.class)
+    @Test
     public void testServiceNameIsRequired() {
         cfg.setServiceName("");
-        cfg.verify();
+        assertThrows(IgniteSpiException.class, () -> cfg.verify());
     }
 }

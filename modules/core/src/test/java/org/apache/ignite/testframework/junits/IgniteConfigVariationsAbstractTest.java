@@ -42,7 +42,10 @@ import org.apache.ignite.testframework.configvariations.ConfigVariationsFactory;
 import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Common abstract test for Ignite tests based on configurations variations.
@@ -86,7 +89,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     }
 
     /** Check that test name is not null. */
-    @Before
+    @BeforeEach
     public void checkTestName() {
         assert getName() != null : "getName returned null";
     }
@@ -116,8 +119,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
         if (testsCfg.withClients()) {
             for (int i = 0; i < gridCount(); i++)
-                assertEquals("i: " + i, expectedClient(getTestIgniteInstanceName(i)),
-                    (boolean)grid(i).configuration().isClientMode());
+                assertEquals(grid(i).configuration().isClientMode(),
+                        expectedClient(getTestIgniteInstanceName(i)), "i: " + i);
         }
     }
 

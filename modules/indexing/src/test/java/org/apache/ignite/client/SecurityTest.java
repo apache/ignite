@@ -20,6 +20,7 @@ package org.apache.ignite.client;
 import java.nio.file.Paths;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.ignite.Ignite;
@@ -37,31 +38,28 @@ import org.apache.ignite.internal.processors.platform.client.IgniteClientExcepti
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Timeout;
 
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Thin client security test.
  */
+@Timeout(value = GridTestUtils.DFLT_TEST_TIMEOUT, unit = TimeUnit.MILLISECONDS)
 public class SecurityTest {
-    /** Per test timeout */
-    @Rule
-    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
-
     /** Ignite home. */
     private static final String IGNITE_HOME = U.getIgniteHome();
 
     /**
      * Setup before each test.
      */
-    @Before
+    @BeforeEach
     public void beforeEach() throws IgniteCheckedException {
         SharedFileTree sft = new SharedFileTree(U.defaultWorkDirectory());
 
@@ -134,7 +132,7 @@ public class SecurityTest {
                 failed = true;
             }
 
-            assertTrue("Client connection without SSL must fail", failed);
+            assertTrue(failed, "Client connection without SSL must fail");
 
             // Not using user-supplied SSL Context Factory:
             try (IgniteClient client = Ignition.startClient(clientCfg
@@ -200,8 +198,8 @@ public class SecurityTest {
             authError = e;
         }
 
-        assertNotNull("Authentication with invalid credentials succeeded", authError);
-        assertTrue("Invalid type of authentication error", authError instanceof ClientAuthenticationException);
+        assertNotNull(authError, "Authentication with invalid credentials succeeded");
+        assertInstanceOf(ClientAuthenticationException.class, authError, "Invalid type of authentication error");
     }
 
     /** Test valid user authentication. */
@@ -243,7 +241,7 @@ public class SecurityTest {
                 authError = e;
             }
 
-            assertNotNull("User created another user", authError);
+            assertNotNull(authError, "User created another user");
         }
     }
 
@@ -270,7 +268,7 @@ public class SecurityTest {
     /**
      * Create user.
      */
-    private static void createUser(String user, String pwd) throws Exception {
+    private static void createUser(String user, String pwd) {
         try (IgniteClient client = Ignition.startClient(new ClientConfiguration()
             .setAddresses(Config.SERVER)
             .setUserName("ignite")

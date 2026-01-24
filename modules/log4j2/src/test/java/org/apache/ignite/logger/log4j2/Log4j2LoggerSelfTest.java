@@ -30,12 +30,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Grid Log4j2 SPI test.
@@ -48,7 +48,7 @@ public class Log4j2LoggerSelfTest {
     private static final String LOG_PATH_MAIN = "config/ignite-log4j.xml";
 
     /** */
-    @Before
+    @BeforeEach
     public void setUp() {
         Log4J2Logger.cleanup();
     }
@@ -63,14 +63,14 @@ public class Log4j2LoggerSelfTest {
         assert xml != null;
         assert xml.exists();
 
-        IgniteLogger log = new Log4J2Logger(xml).getLogger(getClass());
+        IgniteLoggerEx log = new Log4J2Logger(xml).getLogger(getClass());
 
         System.out.println(log.toString());
 
         assertTrue(log.toString().contains("Log4J2Logger"));
         assertTrue(log.toString().contains(xml.getPath()));
 
-        ((IgniteLoggerEx)log).setApplicationAndNode(null, UUID.randomUUID());
+        log.setApplicationAndNode(null, UUID.randomUUID());
 
         checkLog(log);
     }
@@ -86,14 +86,14 @@ public class Log4j2LoggerSelfTest {
         assert xml.exists();
 
         URL url = xml.toURI().toURL();
-        IgniteLogger log = new Log4J2Logger(url).getLogger(getClass());
+        IgniteLoggerEx log = new Log4J2Logger(url).getLogger(getClass());
 
         System.out.println(log.toString());
 
         assertTrue(log.toString().contains("Log4J2Logger"));
         assertTrue(log.toString().contains(url.getPath()));
 
-        ((IgniteLoggerEx)log).setApplicationAndNode(null, UUID.randomUUID());
+        log.setApplicationAndNode(null, UUID.randomUUID());
 
         checkLog(log);
     }
@@ -103,14 +103,14 @@ public class Log4j2LoggerSelfTest {
      */
     @Test
     public void testPathConstructor() throws Exception {
-        IgniteLogger log = new Log4J2Logger(LOG_PATH_TEST).getLogger(getClass());
+        IgniteLoggerEx log = new Log4J2Logger(LOG_PATH_TEST).getLogger(getClass());
 
         System.out.println(log.toString());
 
         assertTrue(log.toString().contains("Log4J2Logger"));
         assertTrue(log.toString().contains(LOG_PATH_TEST));
 
-        ((IgniteLoggerEx)log).setApplicationAndNode(null, UUID.randomUUID());
+        log.setApplicationAndNode(null, UUID.randomUUID());
 
         checkLog(log);
     }
@@ -181,16 +181,16 @@ public class Log4j2LoggerSelfTest {
             String logPath = "work/log/ignite-" + id8 + ".log";
 
             logFile = U.resolveIgnitePath(logPath);
-            assertNotNull("Failed to resolve path: " + logPath, logFile);
-            assertTrue("Log file does not exist: " + logFile, logFile.exists());
+            assertNotNull(logFile, "Failed to resolve path: " + logPath);
+            assertTrue(logFile.exists(), "Log file does not exist: " + logFile);
 
             assertEquals(logFile.getAbsolutePath(), ignite.log().fileName());
         }
 
         String logContent = U.readFileToString(logFile.getAbsolutePath(), "UTF-8");
 
-        assertTrue("Log file does not contain it's node ID: " + logFile,
-            logContent.contains(">>> Local node [ID=" + id8.toUpperCase()));
+        assertTrue(logContent.contains(">>> Local node [ID=" + id8.toUpperCase()),
+            "Log file does not contain it's node ID: " + logFile);
 
     }
 

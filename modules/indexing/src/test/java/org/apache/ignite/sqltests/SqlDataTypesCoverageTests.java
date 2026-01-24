@@ -29,10 +29,13 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.AbstractDataTypesCoverageTest;
-import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Data types coverage for basic sql operations.
@@ -42,7 +45,7 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
     protected static final int TIMEOUT_FOR_KEY_RETRIEVAL_IN_FULL_ASYNC_MODE = 10_000;
 
     /** {@inheritDoc} */
-    @Before
+    @BeforeEach
     @Override public void init() throws Exception {
         super.init();
     }
@@ -78,7 +81,7 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12311")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-12311")
     @Test
     public void testTinyIntDataType() throws Exception {
         checkBasicSqlOperations(SqlDataType.TINYINT,
@@ -93,7 +96,7 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12311")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-12311")
     @Test
     public void testSmallIntDataType() throws Exception {
         checkBasicSqlOperations(SqlDataType.SMALLINT,
@@ -178,7 +181,7 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12312")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-12312")
     @Test
     public void testTimeDataType() throws Exception {
         checkBasicSqlOperations(SqlDataType.TIME,
@@ -191,7 +194,7 @@ public class SqlDataTypesCoverageTests extends AbstractDataTypesCoverageTest {
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8552")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-8552")
     @Test
     public void testDateDataType() throws Exception {
         checkBasicSqlOperations(SqlDataType.DATE,

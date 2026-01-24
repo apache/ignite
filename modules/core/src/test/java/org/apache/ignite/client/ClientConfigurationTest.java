@@ -26,6 +26,7 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -38,6 +39,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_KEY_ALGORITHM;
 import static org.apache.ignite.ssl.SslContextFactory.DFLT_STORE_TYPE;
@@ -47,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * {@link ClientConfiguration} unit tests.
  */
+@Timeout(value = GridTestUtils.DFLT_TEST_TIMEOUT, unit = TimeUnit.MILLISECONDS)
 public class ClientConfigurationTest {
     /** Serialization/deserialization. */
     @Test

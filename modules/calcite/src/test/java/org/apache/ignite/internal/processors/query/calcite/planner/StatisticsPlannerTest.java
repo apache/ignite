@@ -37,17 +37,20 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactor
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.query.stat.StatisticsUtils.toDecimal;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Statistic related simple tests.
  */
 public class StatisticsPlannerTest extends AbstractPlannerTest {
     /** */
-    private IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
+    private final IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
 
     /** */
     private static final Date MIN_DATE = Date.valueOf("1980-04-09");
@@ -86,7 +89,7 @@ public class StatisticsPlannerTest extends AbstractPlannerTest {
     private IgniteStatisticsImpl tbl1stat;
 
     /** {@inheritDoc} */
-    @Before
+    @BeforeEach
     @Override public void setup() {
         super.setup();
 

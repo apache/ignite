@@ -37,8 +37,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -49,7 +52,7 @@ public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
     /**
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     @Override public void setup() throws Exception {
         nodesCnt = 1;
         super.setup();
@@ -124,7 +127,7 @@ public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
                 boolean first = true;
 
                 @Override public @NotNull Iterator<Object[]> iterator() {
-                    assertTrue("Rewind right", first);
+                    assertTrue(first, "Rewind right");
 
                     first = false;
                     return super.iterator();
@@ -157,7 +160,7 @@ public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
                 System.arraycopy(bound.get2(), 0, lower, 0, lower.length);
                 System.arraycopy(bound.get3(), 0, upper, 0, upper.length);
 
-                assertEquals("Invalid result size", (int)bound.get4(), root.rowsCount());
+                assertEquals((int)bound.get4(), root.rowsCount(), "Invalid result size");
             }
 
             root.closeRewindableRoot();
@@ -219,7 +222,7 @@ public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
             System.arraycopy(bound.get1(), 0, lower, 0, lower.length);
             System.arraycopy(bound.get2(), 0, upper, 0, upper.length);
 
-            assertEquals("Invalid result size", (int)bound.get3(), root.rowsCount());
+            assertEquals((int)bound.get3(), root.rowsCount(), "Invalid result size");
         }
 
         root.closeRewindableRoot();
@@ -260,7 +263,7 @@ public class SortedIndexSpoolExecutionTest extends AbstractExecutionTest {
 
         /** {@inheritDoc} */
         @Override public Iterator<RangeCondition<Object[]>> iterator() {
-            RangeCondition<Object[]> range = new RangeCondition<Object[]>() {
+            RangeCondition<Object[]> range = new RangeCondition<>() {
                 @Override public Object[] lower() {
                     return lower;
                 }

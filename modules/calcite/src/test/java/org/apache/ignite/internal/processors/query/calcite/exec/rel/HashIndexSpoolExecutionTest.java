@@ -32,8 +32,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -43,7 +46,7 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
     /**
      * @throws Exception If failed.
      */
-    @Before
+    @BeforeEach
     @Override public void setup() throws Exception {
         nodesCnt = 1;
         super.setup();
@@ -105,7 +108,7 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
                     boolean first = true;
 
                     @Override public @NotNull Iterator<Object[]> iterator() {
-                        assertTrue("Rewind right", first);
+                        assertTrue(first, "Rewind right");
 
                         first = false;
                         return super.iterator();
@@ -136,7 +139,7 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
                     testFilter.delegate = bound.get1();
                     System.arraycopy(bound.get2(), 0, searchRow, 0, searchRow.length);
 
-                    assertEquals("Invalid result size", (int)bound.get3(), root.rowsCount());
+                    assertEquals((int)bound.get3(), root.rowsCount(), "Invalid result size");
                 }
 
                 root.closeRewindableRoot();
@@ -184,7 +187,7 @@ public class HashIndexSpoolExecutionTest extends AbstractExecutionTest {
         for (T2<Object[], Integer> bound : testBounds) {
             System.arraycopy(bound.get1(), 0, searchRow, 0, searchRow.length);
 
-            assertEquals("Invalid result size", (int)bound.get2(), root.rowsCount());
+            assertEquals((int)bound.get2(), root.rowsCount(), "Invalid result size");
         }
 
         root.closeRewindableRoot();

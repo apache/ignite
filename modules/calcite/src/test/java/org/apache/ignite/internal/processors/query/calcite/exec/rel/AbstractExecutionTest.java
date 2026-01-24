@@ -32,6 +32,8 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import com.google.common.collect.ImmutableMap;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -70,7 +72,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 
@@ -78,12 +81,7 @@ import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KE
  *
  */
 @ParameterizedClass(name = "Task executor = {0}, Execution strategy = {1}")
-@CsvSource({
-        "STRIPED, FIFO",
-        "STRIPED, LIFO",
-        "STRIPED, RANDOM",
-        "QUERY_BLOCKING, FIFO",
-})
+@MethodSource("allTypesArgs")
 public class AbstractExecutionTest extends GridCommonAbstractTest {
     /** Last parameter number. */
     protected static final int LAST_PARAM_NUM = 1;
@@ -108,6 +106,14 @@ public class AbstractExecutionTest extends GridCommonAbstractTest {
 
     /** */
     protected int nodesCnt = 3;
+
+    protected static List<Arguments> allTypesArgs() {
+        return List.of(
+                Arguments.of("STRIPED", "FIFO"),
+                Arguments.of("STRIPED", "LIFO"),
+                Arguments.of("STRIPED", "RANDOM"),
+                Arguments.of("QUERY_BLOCKING", "FIFO"));
+    }
 
     /** */
     enum TaskExecutorType {

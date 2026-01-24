@@ -40,22 +40,18 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Timeout;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Load, capacity and performance tests.
  */
+@Timeout(value = GridTestUtils.DFLT_TEST_TIMEOUT, unit = TimeUnit.MILLISECONDS)
 public class LoadTest {
-    /** Per test timeout */
-    @Rule
-    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
-
     /**
      * Test thin client in multi-thread environment.
      */
@@ -101,12 +97,12 @@ public class LoadTest {
                     try (QueryCursor<Cache.Entry<Integer, String>> cur = cache.query(qry)) {
                         List<Cache.Entry<Integer, String>> res = cur.getAll();
 
-                        assertEquals("Unexpected number of entries", data.size(), res.size());
+                        assertEquals(data.size(), res.size(), "Unexpected number of entries");
 
                         Map<Integer, String> act = res.stream()
                             .collect(Collectors.toMap(Cache.Entry::getKey, Cache.Entry::getValue));
 
-                        assertEquals("Unexpected entries", data, act);
+                        assertEquals(data, act, "Unexpected entries");
                     }
                 }
                 catch (Throwable ex) {
@@ -127,11 +123,11 @@ public class LoadTest {
 
             IntStream.range(0, THREAD_CNT).forEach(t -> threadPool.submit(manyAssertions));
 
-            assertTrue("Timeout", complete.await(180, TimeUnit.SECONDS));
+            assertTrue(complete.await(180, TimeUnit.SECONDS), "Timeout");
 
             String errMsg = error.get() == null ? "" : error.get().getMessage();
 
-            assertNull(errMsg, error.get());
+            assertNull(error.get(), errMsg);
         }
     }
 }

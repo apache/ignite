@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -27,20 +29,16 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Timeout;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
  */
+@Timeout(value = GridTestUtils.DFLT_TEST_TIMEOUT, unit = TimeUnit.MILLISECONDS)
 public class FullPageIdTableTest {
-    /** Per test timeout */
-    @Rule
-    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
-
     /** */
     private static final int CACHE_ID_RANGE = 1;
 
@@ -179,8 +177,8 @@ public class FullPageIdTableTest {
                         Long checkVal = check.get(fullId);
 
                         if (checkVal != null) {
-                            assertEquals("Ret " + val + "Check " + checkVal,
-                                checkVal.longValue(), val);
+                            assertEquals(checkVal.longValue(), val,
+                                "Ret " + val + "Check " + checkVal);
                         }
                     }
 
@@ -257,18 +255,17 @@ public class FullPageIdTableTest {
         HashMap<FullPageId, Long> cp = new HashMap<>(tblSnapshot);
         check.keySet().forEach(cp::remove);
 
-        assertEquals("Size check failed, check map size " +
+        assertEquals(chkSize, foundTblSize, "Size check failed, check map size " +
             chkSize + " but found in table " + foundTblSize + " elements," +
             " table size " + tbl.size() +
-            "\n Difference: " + cp, chkSize, foundTblSize);
+            "\n Difference: " + cp);
 
         for (Map.Entry<FullPageId, Long> entry : check.entrySet()) {
             Long valCheck = entry.getValue();
             Long actual = tblSnapshot.get(entry.getKey());
 
             if (!valCheck.equals(actual))
-                assertEquals("Mapping comparison failed for key: " + entry.getKey(),
-                    valCheck, actual);
+                assertEquals(valCheck, actual, "Mapping comparison failed for key: " + entry.getKey());
         }
     }
 }

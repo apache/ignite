@@ -28,8 +28,6 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.jupiter.api.Test;
 
 import static junit.framework.TestCase.assertTrue;
@@ -73,7 +71,7 @@ public class IgniteLaunchInModularEnvTest {
     }
 
 
-    @Before
+    @BeforeEach
     public void cleanPersistenceDir() throws Exception {
         assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
 

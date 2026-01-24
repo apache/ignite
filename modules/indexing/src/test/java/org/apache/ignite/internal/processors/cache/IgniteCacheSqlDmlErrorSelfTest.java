@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.dml.UpdatePlanBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -65,7 +65,7 @@ public class IgniteCacheSqlDmlErrorSelfTest extends AbstractIndexingCommonTest {
     /**
      * Create test tables.
      */
-    @Before
+    @BeforeEach
     public void dropAdnCreateTables() {
         execute("DROP TABLE IF EXISTS COMPOSITE;");
         execute("DROP TABLE IF EXISTS SIMPLE");

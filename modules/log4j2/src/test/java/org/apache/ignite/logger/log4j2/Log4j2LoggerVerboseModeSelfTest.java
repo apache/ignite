@@ -28,10 +28,11 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.logging.log4j.Level;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Grid Log4j2 SPI test.
@@ -41,7 +42,7 @@ public class Log4j2LoggerVerboseModeSelfTest {
     private static final String LOG_PATH_VERBOSE_TEST = "modules/core/src/test/config/log4j2-verbose-test.xml";
 
     /** */
-    @Before
+    @BeforeEach
     public void setUp() {
         Log4J2Logger.cleanup();
     }
@@ -106,7 +107,7 @@ public class Log4j2LoggerVerboseModeSelfTest {
 
         assertTrue(consoleErr.contains(testMsg + Level.ERROR));
         assertTrue(consoleErr.contains(testMsg + Level.WARN));
-        assertTrue(!consoleErr.contains(testMsg + Level.INFO));
+        assertFalse(consoleErr.contains(testMsg + Level.INFO));
         assertTrue(consoleErr.contains(testMsg + Level.DEBUG));
         assertTrue(consoleErr.contains(testMsg + Level.TRACE));
     }
