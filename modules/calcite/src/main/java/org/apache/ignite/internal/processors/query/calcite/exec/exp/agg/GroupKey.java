@@ -26,6 +26,7 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.processors.query.calcite.exec.ArrayRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -38,7 +39,7 @@ public class GroupKey<Row> implements Binarylizable {
     private RowHandler<Row> hnd;
 
     /** */
-    public GroupKey(Row row, RowHandler<Row> hnd) {
+    private GroupKey(Row row, RowHandler<Row> hnd) {
         this.row = row;
         this.hnd = hnd;
     }
@@ -95,18 +96,10 @@ public class GroupKey<Row> implements Binarylizable {
             return false;
 
         for (int i = 0; i < colCnt; i++) {
-            Object o1 = hnd.get(i, row);
-            Object o2 = other.hnd.get(i, other.row);
-
-            if (!columnValuesEquals(i, o1, o2) || !Objects.equals(o1, o2))
+            if (!Objects.equals(hnd.get(i, row), other.hnd.get(i, other.row)))
                 return false;
         }
 
-        return true;
-    }
-
-    /** */
-    protected boolean columnValuesEquals(int colIdx, Object val1, Object val2) {
         return true;
     }
 
@@ -118,5 +111,25 @@ public class GroupKey<Row> implements Binarylizable {
             hashCode = hashCode * 31 + Objects.hashCode(hnd.get(i, row));
 
         return hashCode;
+    }
+
+    /**
+     * @return Group key for provided row. Can be {@code null} if key fields of row contain NULL values and nulls are
+     * not allowed.
+     */
+    public static <Row> @Nullable GroupKey<Row> of(Row r, RowHandler<Row> hnd, boolean allowNulls) {
+        if (!allowNulls) {
+            for (int i = 0; i < hnd.columnCount(r); i++) {
+                if (hnd.get(i, r) == null)
+                    return null;
+            }
+        }
+
+        return new GroupKey<>(r, hnd);
+    }
+
+    /** */
+    public static <Row> @Nullable GroupKey<Row> of(Row r, RowHandler<Row> hnd) {
+        return of(r, hnd, true);
     }
 }

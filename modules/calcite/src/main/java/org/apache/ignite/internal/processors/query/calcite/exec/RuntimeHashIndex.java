@@ -17,17 +17,15 @@
 package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.List;
 import java.util.function.Supplier;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
+import org.apache.ignite.internal.util.typedef.F;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -41,51 +39,26 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     private final RowHandler<Row> keysRowHnd;
 
     /** Rows. */
-    private final Map<GroupKey<Row>, Collection<Row>> rows;
+    private final HashMap<GroupKey<Row>, List<Row>> rows;
 
-    /** */
-    private final Supplier<Collection<Row>> collectionFactory;
+    /** Allow NULL values. */
+    private final boolean allowNulls;
 
-    /** If {@code null}, rows with null values aren't allowed. */
-    @Nullable private final ImmutableBitSet nullsMatch;
-
-    /** Creates hash index with the default collection supplier. */
-    public RuntimeHashIndex(ExecutionContext<Row> ectx, ImmutableBitSet keys, ImmutableBitSet nullsMatch) {
-        this(ectx, keys.toArray(), nullsMatch, -1, null);
-    }
-
-    /** */
+    /**
+     *
+     */
     public RuntimeHashIndex(
         ExecutionContext<Row> ectx,
-        int[] keys,
-        @Nullable ImmutableBitSet nullsMatch,
-        int initCapacity,
-        @Nullable Supplier<Collection<Row>> collectionFactory
-    ) {
-        this(
-            ectx,
-            nullsMatch,
-            new MappingRowHandler<>(ectx.rowHandler(), keys),
-            initCapacity >= 0 ? new HashMap<>(initCapacity) : new HashMap<>(),
-            collectionFactory
-        );
-    }
-
-    /** Fields setting constructor. */
-    private RuntimeHashIndex(
-        ExecutionContext<Row> ectx,
-        @Nullable ImmutableBitSet nullsMatch,
-        RowHandler<Row> keysRowHnd,
-        Map<GroupKey<Row>, Collection<Row>> rows,
-        @Nullable Supplier<Collection<Row>> collectionFactory
+        ImmutableBitSet keys,
+        boolean allowNulls
     ) {
         this.ectx = ectx;
-        this.nullsMatch = nullsMatch;
+        this.allowNulls = allowNulls;
 
-        this.keysRowHnd = keysRowHnd;
-        this.rows = rows;
+        assert !F.isEmpty(keys);
 
-        this.collectionFactory = collectionFactory == null ? ArrayList::new : collectionFactory;
+        keysRowHnd = new MappingRowHandler<>(ectx.rowHandler(), keys);
+        rows = new HashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -95,7 +68,7 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
         if (key == null)
             return;
 
-        Collection<Row> eqRows = rows.computeIfAbsent(key, k -> collectionFactory.get());
+        List<Row> eqRows = rows.computeIfAbsent(key, k -> new ArrayList<>());
 
         eqRows.add(r);
     }
@@ -106,12 +79,7 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     }
 
     /** */
-    public Collection<Collection<Row>> rowSets() {
-        return Collections.unmodifiableCollection(rows.values());
-    }
-
-    /** */
-    public IndexScan scan(Supplier<Row> searchRow) {
+    public Iterable<Row> scan(Supplier<Row> searchRow) {
         return new IndexScan(searchRow);
     }
 
@@ -121,99 +89,33 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
      * IS NOT DISTINCT FROM condition).
      */
     private @Nullable GroupKey<Row> key(Row r) {
-        // Check when rows with null values aren't allowed.
-        if (nullsMatch == null) {
-            for (int i = 0; i < keysRowHnd.columnCount(r); i++) {
-                if (keysRowHnd.get(i, r) == null)
-                    return null;
-            }
-        }
-
-        return new NullsCheckingGroupKey<>(r, keysRowHnd);
-    }
-
-    /** */
-    public RuntimeHashIndex<Row> remappedSearcher(int[] remappedKeys) {
-        return new RemappedSearcher<>(this, remappedKeys);
-    }
-
-    /** */
-    private class NullsCheckingGroupKey<Row> extends GroupKey<Row> {
-        /** */
-        private NullsCheckingGroupKey(Row row, RowHandler<Row> hnd) {
-            super(row, hnd);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean columnValuesEquals(int colIdx, Object v1, Object v2) {
-            if (v1 == null && v2 == null) {
-                assert nullsMatch.cardinality() > 0;
-
-                return nullsMatch.get(colIdx);
-            }
-
-            return super.columnValuesEquals(colIdx, v1, v2);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            throw new UnsupportedOperationException("Serialization of row keys is not supported.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            throw new UnsupportedOperationException("Deserialization of row keys is not supported.");
-        }
-    }
-
-    /** */
-    private static class RemappedSearcher<Row> extends RuntimeHashIndex<Row> {
-        /** */
-        private final RuntimeHashIndex<Row> origin;
-
-        /** */
-        private RemappedSearcher(RuntimeHashIndex<Row> o, int[] remappedKeys) {
-            super(o.ectx, o.nullsMatch, new MappingRowHandler<>(o.ectx.rowHandler(), remappedKeys), o.rows,
-                o.collectionFactory);
-
-            origin = o;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void push(Row r) {
-            origin.push(r);
-        }
+        return GroupKey.of(r, keysRowHnd, allowNulls);
     }
 
     /**
      *
      */
-    public class IndexScan implements Iterable<Row> {
+    private class IndexScan implements Iterable<Row> {
         /** Search row. */
         private final Supplier<Row> searchRow;
 
         /**
          * @param searchRow Search row.
          */
-        private IndexScan(Supplier<Row> searchRow) {
+        IndexScan(Supplier<Row> searchRow) {
             this.searchRow = searchRow;
         }
 
-        /**  */
-        public @Nullable Collection<Row> get() {
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<Row> iterator() {
             GroupKey<Row> key = key(searchRow.get());
 
             if (key == null)
-                return null;
+                return Collections.emptyIterator();
 
-            return rows.get(key);
-        }
+            List<Row> eqRows = rows.get(key);
 
-        /** {@inheritDoc} */
-        @Override public Iterator<Row> iterator() {
-            Collection<Row> collection = get();
-
-            return collection == null ? Collections.emptyIterator() : collection.iterator();
+            return eqRows == null ? Collections.emptyIterator() : eqRows.iterator();
         }
     }
 }

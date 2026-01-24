@@ -20,13 +20,16 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.function.BiPredicate;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
+import org.apache.ignite.internal.processors.query.calcite.exec.MappingRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
-import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeHashIndex;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.agg.GroupKey;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoinInfo;
 import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
 import org.apache.ignite.internal.util.typedef.F;
@@ -38,19 +41,19 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
     private static final int INITIAL_CAPACITY = 128;
 
     /** */
-    private final int[] leftKeys;
+    private final RowHandler<Row> leftRowHnd;
 
     /** */
-    private final int[] rightKeys;
+    private final RowHandler<Row> rightRowHnd;
+
+    /** */
+    private final boolean keepRowsWithNull;
 
     /** Output row handler. */
     protected final RowHandler<Row> outRowHnd;
 
     /** Right rows storage. */
-    protected final RuntimeHashIndex<Row> rightHashStore;
-
-    /** Uses keys of right hand to find matching left rows. */
-    protected final RuntimeHashIndex<Row> remappedLeftSearcher;
+    protected Map<GroupKey<Row>, TouchedArrayList<Row>> hashStore = new HashMap<>(INITIAL_CAPACITY);
 
     /** */
     protected Iterator<Row> rightIt = Collections.emptyIterator();
@@ -80,23 +83,14 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
     ) {
         super(ctx, rowType);
 
-        // For IS NOT DISTINCT we have to keep rows with null values.
-        if (!keepRowsWithNull && info.allowNulls().cardinality() > 0)
-            keepRowsWithNull = true;
+        this.keepRowsWithNull = keepRowsWithNull;
 
-        leftKeys = info.leftKeys.toIntArray();
-        rightKeys = info.rightKeys.toIntArray();
-
-        assert leftKeys.length == rightKeys.length;
+        leftRowHnd = new MappingRowHandler<>(ctx.rowHandler(), info.leftKeys.toIntArray());
+        rightRowHnd = new MappingRowHandler<>(ctx.rowHandler(), info.rightKeys.toIntArray());
 
         this.outRowHnd = outRowHnd;
 
         this.nonEqCond = nonEqCond;
-
-        rightHashStore = new RuntimeHashIndex<>(ctx, rightKeys, keepRowsWithNull ? info.allowNulls() : null,
-            INITIAL_CAPACITY, TouchedArrayList::new);
-
-        remappedLeftSearcher = rightHashStore.remappedSearcher(leftKeys);
     }
 
     /** {@inheritDoc} */
@@ -105,7 +99,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
         rightIt = Collections.emptyIterator();
 
-        rightHashStore.close();
+        hashStore.clear();
     }
 
     /** Creates certain join node. */
@@ -152,21 +146,24 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
     /** */
     protected Collection<Row> lookup(Row row) {
-        Collection<Row> res = remappedLeftSearcher.scan(() -> row).get();
+        GroupKey<Row> key = GroupKey.of(row, leftRowHnd, false);
+
+        if (key == null)
+            return Collections.emptyList();
+
+        TouchedArrayList<Row> res = hashStore.get(key);
 
         if (res == null)
             return Collections.emptyList();
 
-        assert res instanceof TouchedArrayList;
-
-        ((TouchedArrayList<?>)res).touched = true;
+        res.touched = true;
 
         return res;
     }
 
     /** */
     protected Iterator<Row> untouched() {
-        return F.flat(F.iterator(rightHashStore.rowSets(), c0 -> c0, true, c1 -> !((TouchedArrayList<Row>)c1).touched));
+        return F.flat(F.iterator(hashStore.values(), c0 -> c0, true, c1 -> !c1.touched));
     }
 
     /** {@inheritDoc} */
@@ -178,7 +175,10 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
         waitingRight--;
 
-        rightHashStore.push(row);
+        GroupKey<Row> key = GroupKey.of(row, rightRowHnd, keepRowsWithNull);
+
+        if (key != null)
+            hashStore.computeIfAbsent(key, k -> new TouchedArrayList<>()).add(row);
 
         if (waitingRight == 0)
             rightSource().request(waitingRight = IN_BUFFER_SIZE);
@@ -199,7 +199,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         if (requested > 0 && leftFinished() && rightFinished()) {
             requested = 0;
 
-            rightHashStore.close();
+            hashStore.clear();
 
             downstream().end();
 

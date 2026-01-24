@@ -55,6 +55,10 @@ public class HashJoinConverterRule extends AbstractIgniteJoinConverterRule {
         if (joinInfo.pairs().isEmpty())
             return false;
 
+        // IS NOT DISTINCT is currently not supported by HashJoin
+        if (joinInfo.allowNulls().cardinality() > 0)
+            return false;
+
         // Current limitation: unmatched products on left or right part requires special handling of non-equi condition
         // on execution level.
         return joinInfo.isEqui() || NON_EQ_CONDITIONS_SUPPORT.contains(join.getJoinType());

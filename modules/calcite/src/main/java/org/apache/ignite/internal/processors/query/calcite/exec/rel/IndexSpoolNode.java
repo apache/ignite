@@ -191,9 +191,7 @@ public class IndexSpoolNode<Row> extends MemoryTrackingNode<Row> implements Sing
         Supplier<Row> searchRow,
         boolean allowNulls
     ) {
-        ImmutableBitSet allowNulls0 = allowNulls ? ImmutableBitSet.range(keys.cardinality()) : ImmutableBitSet.of();
-
-        RuntimeHashIndex<Row> idx = new RuntimeHashIndex<>(ctx, keys, allowNulls0);
+        RuntimeHashIndex<Row> idx = new RuntimeHashIndex<>(ctx, keys, allowNulls);
 
         ScanNode<Row> scan = new ScanNode<>(
             ctx,
