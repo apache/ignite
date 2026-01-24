@@ -54,7 +54,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.util.Arrays.asList;
@@ -64,7 +64,12 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.hist
 import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metricName;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
 public class MetricsSelfTest extends GridCommonAbstractTest {
@@ -72,7 +77,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
     private MetricRegistryImpl mreg;
 
     /** */
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         mreg = new MetricRegistryImpl("group", name -> null, name -> null, name -> null, null);
     }
@@ -237,7 +242,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testBooleanGauges() throws Exception {
+    public void testBooleanGauges() {
         BooleanMetricImpl bg = mreg.booleanMetric("bg", "test");
 
         bg.value(true);
@@ -474,7 +479,7 @@ public class MetricsSelfTest extends GridCommonAbstractTest {
 
             @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
                 registry.addMetricRegistryCreationListener(mreg -> {
-                    assertFalse(mreg.name() + " should be unique", names.contains(mreg.name()));
+                    assertFalse(names.contains(mreg.name()), mreg.name() + " should be unique");
 
                     names.add(mreg.name());
                 });

@@ -95,7 +95,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -110,7 +110,12 @@ import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
  * Cluster-wide snapshot check procedure tests.
@@ -126,7 +131,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     private static final String OPTIONAL_CACHE_NAME = "CacheName";
 
     /** Cleanup data of task execution results if need. */
-    @Before
+    @BeforeEach
     public void beforeCheck() {
         jobResults.clear();
     }
@@ -160,7 +165,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         File part0 = snapshotFileTree(ignite, SNAPSHOT_NAME).partitionFile(dfltCacheCfg, 0);
 
         assertNotNull(part0);
-        assertTrue(part0.toString(), part0.exists());
+        assertTrue(part0.exists(), part0.toString());
         assertTrue(part0.delete());
 
         IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
@@ -181,7 +186,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         File dir = snapshotFileTree(ignite, SNAPSHOT_NAME).defaultCacheStorage(dfltCacheCfg);
 
-        assertTrue(dir.toString(), dir.exists());
+        assertTrue(dir.exists(), dir.toString());
         assertTrue(U.delete(dir));
 
         IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
@@ -203,7 +208,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         File smf = snapshotFileTree(ignite, SNAPSHOT_NAME).meta();
 
         assertNotNull(smf);
-        assertTrue(smf.toString(), smf.exists());
+        assertTrue(smf.exists(), smf.toString());
         assertTrue(U.delete(smf));
 
         assertThrowsAnyCause(
@@ -239,7 +244,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckPartitionCounters() throws Exception {
-        assumeFalse("One copy of partiton created in only primary mode", onlyPrimary);
+        assumeFalse(onlyPrimary, "One copy of partiton created in only primary mode");
 
         IgniteEx ignite = startGridsWithCache(3, dfltCacheCfg.
             setAffinity(new RendezvousAffinityFunction(false, 1)),
@@ -250,7 +255,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         File part0 = snapshotFileTree(ignite, SNAPSHOT_NAME).partitionFile(dfltCacheCfg, PART_ID);
 
         assertNotNull(part0);
-        assertTrue(part0.toString(), part0.exists());
+        assertTrue(part0.exists(), part0.toString());
 
         int grpId = CU.cacheId(dfltCacheCfg.getName());
 
@@ -283,7 +288,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             if (shouldCompress) {
                 CacheGroupContext grpCtx = ignite.context().cache().cacheGroup(grpId);
 
-                assertNotNull("Group context for grpId:" + grpId, grpCtx);
+                assertNotNull(grpCtx, "Group context for grpId:" + grpId);
 
                 ByteBuffer compressedPageBuf = grpCtx.compressionHandler().compressPage(buff, pageStore);
 
@@ -357,8 +362,9 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         res.print(b::append, true);
 
         // GridJobExecuteRequest is not send to the local node.
-        assertTrue("Number of distributed process single messages must be equal to the cluster size: "
-            + assigns + ", count: " + assigns.size(), waitForCondition(() -> assigns.size() == 2, 5_000L));
+        assertTrue(waitForCondition(() -> assigns.size() == 2, 5_000L),
+            "Number of distributed process single messages must be equal to the cluster size: "
+                    + assigns + ", count: " + assigns.size());
 
         assertTrue(F.isEmpty(res.exceptions()));
         assertPartitionsSame(res);
@@ -377,7 +383,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, null, false, -1, false).get().idleVerifyResult();
 
-        assertEquals("Check must be disabled", 0, res.exceptions().size());
+        assertEquals(0, res.exceptions().size(), "Check must be disabled");
 
         res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null, null, false, -1, true).get().idleVerifyResult();
 
@@ -394,7 +400,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
     /** @throws Exception If fails. */
     @Test
     public void testClusterSnapshotCheckFailsOnPartitionDataDiffers() throws Exception {
-        assumeFalse("One copy of partiton created in only primary mode", onlyPrimary);
+        assumeFalse(onlyPrimary, "One copy of partiton created in only primary mode");
 
         CacheConfiguration<Integer, Value> ccfg = txCacheConfig(new CacheConfiguration<Integer, Value>(DEFAULT_CACHE_NAME))
             .setAffinity(new RendezvousAffinityFunction(false, 1));
@@ -480,7 +486,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
         File part0 = snapshotFileTree(ignite, SNAPSHOT_NAME).partitionFile(ccfg, PART_ID);
 
         assertNotNull(part0);
-        assertTrue(part0.toString(), part0.exists());
+        assertTrue(part0.exists(), part0.toString());
 
         IdleVerifyResult res = snp(ignite).checkSnapshot(SNAPSHOT_NAME, null).get().idleVerifyResult();
 
@@ -631,7 +637,7 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
 
         int createdThreads = Thread.activeCount() - activeThreadsCntBefore;
 
-        assertTrue("Threads created: " + createdThreads, createdThreads < iterations);
+        assertTrue(createdThreads < iterations, "Threads created: " + createdThreads);
     }
 
     /** Tests that concurrent snapshot full checks are declined for the same snapshot. */
@@ -1332,8 +1338,8 @@ public class IgniteClusterSnapshotCheckTest extends AbstractSnapshotSelfTest {
             final IgniteEx g = grid(i);
 
             assertTrue(
-                "Node " + i + " hasn't stopped the check",
-                waitForCondition(() -> !snp(g).isSnapshotChecking(SNAPSHOT_NAME), 10_000)
+                waitForCondition(() -> !snp(g).isSnapshotChecking(SNAPSHOT_NAME), 10_000),
+                "Node " + i + " hasn't stopped the check"
             );
         }
     }

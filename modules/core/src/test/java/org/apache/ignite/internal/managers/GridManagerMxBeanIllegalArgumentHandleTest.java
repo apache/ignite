@@ -27,13 +27,13 @@ import org.apache.ignite.internal.processors.metric.GridMetricManager;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.spi.metric.noop.NoopMetricExporterSpi;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
 /**
@@ -46,7 +46,7 @@ public class GridManagerMxBeanIllegalArgumentHandleTest {
     private GridMetricManager mgr;
 
     /** Changes field to always failing mock. */
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
         cfg.setMetricExporterSpi(new NoopMetricExporterSpi());

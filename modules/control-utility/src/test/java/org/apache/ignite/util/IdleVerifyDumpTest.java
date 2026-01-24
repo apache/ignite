@@ -30,6 +30,8 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.util.GridCommandHandlerClusterByClassTest.dumpFileNameMatcher;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
 public class IdleVerifyDumpTest extends GridCommandHandlerClusterByClassAbstractTest {

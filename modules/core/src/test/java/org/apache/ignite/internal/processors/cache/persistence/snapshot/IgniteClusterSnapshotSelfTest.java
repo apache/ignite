@@ -88,7 +88,7 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -105,7 +105,12 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
  * Cluster-wide snapshot test.
@@ -132,7 +137,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     }
 
     /** @throws Exception If fails. */
-    @Before
+    @BeforeEach
     @Override public void beforeTestSnapshot() throws Exception {
         super.beforeTestSnapshot();
 
@@ -184,7 +189,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
                 // First discovery custom event will be a snapshot operation.
                 assertTrue(isSnapshotOperation(fut.firstEvent()));
-                assertTrue("Snapshot must use pme-free exchange", fut.context().exchangeFreeSwitch());
+                assertTrue(fut.context().exchangeFreeSwitch(), "Snapshot must use pme-free exchange");
             }
 
             /** {@inheritDoc} */
@@ -242,24 +247,26 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         // Cluster can be deactivated but we must test snapshot restore when binary recovery also occurred.
         stopAllGrids();
 
-        assertTrue("Snapshot directory must be empty for node not in baseline topology: " + sft.folderName(),
-            !searchDirectoryRecursively(sft.root().toPath(), sft.folderName()).isPresent());
+        assertTrue(!searchDirectoryRecursively(sft.root().toPath(), sft.folderName()).isPresent(),
+            "Snapshot directory must be empty for node not in baseline topology: " + sft.folderName());
 
         IgniteEx snpIg0 = startGridsFromSnapshot(grids, snpName);
 
-        assertEquals("The number of all (primary + backup) cache keys mismatch for cache: " + DEFAULT_CACHE_NAME,
-            CACHE_KEYS_RANGE, snpIg0.cache(DEFAULT_CACHE_NAME).size());
+        assertEquals(CACHE_KEYS_RANGE, snpIg0.cache(DEFAULT_CACHE_NAME).size(),
+            "The number of all (primary + backup) cache keys mismatch for cache: " + DEFAULT_CACHE_NAME);
 
-        assertEquals("The number of all (primary + backup) cache keys mismatch for cache: " + atomicCcfg.getName(),
-            CACHE_KEYS_RANGE, snpIg0.cache(atomicCcfg.getName()).size());
+        assertEquals(CACHE_KEYS_RANGE, snpIg0.cache(atomicCcfg.getName()).size(),
+            "The number of all (primary + backup) cache keys mismatch for cache: " + atomicCcfg.getName());
 
         snpIg0.cache(DEFAULT_CACHE_NAME).query(new ScanQuery<>(null))
-            .forEach(e -> assertTrue("Snapshot must contains only negative values " +
-                "[cache=" + DEFAULT_CACHE_NAME + ", entry=" + e + ']', (Integer)e.getValue() < 0));
+            .forEach(e -> assertTrue((Integer)e.getValue() < 0,
+                "Snapshot must contains only negative values " +
+                            "[cache=" + DEFAULT_CACHE_NAME + ", entry=" + e + ']'));
 
         snpIg0.cache(atomicCcfg.getName()).query(new ScanQuery<>(null))
-            .forEach(e -> assertTrue("Snapshot must contains only negative values " +
-                "[cache=" + atomicCcfg.getName() + ", entry=" + e + ']', (Integer)e.getValue() < 0));
+            .forEach(e -> assertTrue((Integer)e.getValue() < 0,
+                "Snapshot must contains only negative values " +
+                            "[cache=" + atomicCcfg.getName() + ", entry=" + e + ']'));
     }
 
     /** @throws Exception If fails. */
@@ -319,7 +326,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
             snpIg0.cluster().state(ACTIVE);
 
-            assertFalse("Primary and backup in snapshot must have the same counters. Rebalance must not happen.",
+            assertFalse(
                 GridTestUtils.waitForCondition(() -> {
                     boolean hasMsgs = false;
 
@@ -327,7 +334,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                         hasMsgs |= TestRecordingCommunicationSpi.spi(g).hasBlockedMessages();
 
                     return hasMsgs;
-                }, REBALANCE_AWAIT_TIME));
+                }, REBALANCE_AWAIT_TIME), "Primary and backup in snapshot must have the same counters. Rebalance must not happen.");
 
             TestRecordingCommunicationSpi.stopBlockAll();
         }
@@ -358,8 +365,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         Ignite client = startClientGrid(grids);
 
-        assertEquals("The initial summary value in all caches is not correct.",
-            total, sumAllCacheValues(client, clientsCnt, eastCcfg.getName(), westCcfg.getName()));
+        assertEquals(total, sumAllCacheValues(client, clientsCnt, eastCcfg.getName(), westCcfg.getName()),
+            "The initial summary value in all caches is not correct.");
 
         forceCheckpoint();
 
@@ -413,15 +420,15 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         txLoadFut.get();
 
-        assertEquals("The summary value should not changed during tx transfers.",
-            total, sumAllCacheValues(client, clientsCnt, eastCcfg.getName(), westCcfg.getName()));
+        assertEquals(total, sumAllCacheValues(client, clientsCnt, eastCcfg.getName(), westCcfg.getName()),
+            "The summary value should not changed during tx transfers.");
 
         stopAllGrids();
 
         IgniteEx snpIg0 = startGridsFromSnapshot(grids, SNAPSHOT_NAME);
 
-        assertEquals("The total amount of all cache values must not changed in snapshot.",
-            total, sumAllCacheValues(snpIg0, clientsCnt, eastCcfg.getName(), westCcfg.getName()));
+        assertEquals(total, sumAllCacheValues(snpIg0, clientsCnt, eastCcfg.getName(), westCcfg.getName()),
+            "The total amount of all cache values must not changed in snapshot.");
     }
 
     /** @throws Exception If fails. */
@@ -470,10 +477,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             if (msg instanceof FullMessage) {
                 FullMessage<?> msg0 = (FullMessage<?>)msg;
 
-                assertEquals("Snapshot distributed process must be used",
-                    DistributedProcess.DistributedProcessType.START_SNAPSHOT.ordinal(), msg0.type());
+                assertEquals(DistributedProcess.DistributedProcessType.START_SNAPSHOT.ordinal(), msg0.type(),
+                    "Snapshot distributed process must be used");
 
-                assertTrue("Snapshot has to be finished successfully on all nodes", msg0.error().isEmpty());
+                assertTrue(msg0.error().isEmpty(), "Snapshot has to be finished successfully on all nodes");
 
                 return true;
             }
@@ -537,8 +544,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         fut.get();
 
-        assertTrue("Snapshot directory must be empty for node 0 due to snapshot future fail: " + grid4Dir,
-            !searchDirectoryRecursively(snapshotFileTree(ignite, SNAPSHOT_NAME).root().toPath(), grid4Dir).isPresent());
+        assertTrue(searchDirectoryRecursively(snapshotFileTree(ignite, SNAPSHOT_NAME).root().toPath(), grid4Dir).isEmpty(),
+            "Snapshot directory must be empty for node 0 due to snapshot future fail: " + grid4Dir);
     }
 
     /** @throws Exception If fails. */
@@ -548,7 +555,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             IgniteEx ignite = startGridsWithCache(2, dfltCacheCfg, CACHE_KEYS_RANGE);
 
             if (inc) {
-                assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+                assumeFalse(encryption, "https://issues.apache.org/jira/browse/IGNITE-17819");
 
                 createAndCheckSnapshot(ignite, SNAPSHOT_NAME, null, TIMEOUT);
             }
@@ -649,21 +656,20 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         waitForEvents(EVT_CLUSTER_SNAPSHOT_STARTED, EVT_CLUSTER_SNAPSHOT_FAILED);
 
-        assertTrue("Snapshot directory must be empty for node 0 due to snapshot future fail: " + dirNameIgnite0,
-            !searchDirectoryRecursively(sft.root().toPath(), dirNameIgnite0).isPresent());
+        assertTrue(searchDirectoryRecursively(sft.root().toPath(), dirNameIgnite0).isEmpty(),
+            "Snapshot directory must be empty for node 0 due to snapshot future fail: " + dirNameIgnite0);
 
         startGrid(1);
 
         awaitPartitionMapExchange();
 
         // Snapshot directory must be cleaned.
-        assertTrue("Snapshot directory must be empty for node 1 due to snapshot future fail: " + dirNameIgnite1,
-            !searchDirectoryRecursively(sft.root().toPath(), dirNameIgnite1).isPresent());
+        assertTrue(!searchDirectoryRecursively(sft.root().toPath(), dirNameIgnite1).isPresent(),
+            "Snapshot directory must be empty for node 1 due to snapshot future fail: " + dirNameIgnite1);
 
         List<String> allSnapshots = snp(ignite).localSnapshotNames(null);
 
-        assertTrue("Snapshot directory must be empty due to snapshot fail: " + allSnapshots,
-            allSnapshots.isEmpty());
+        assertTrue(allSnapshots.isEmpty(), "Snapshot directory must be empty due to snapshot fail: " + allSnapshots);
     }
 
     /** @throws Exception If fails. */
@@ -702,25 +708,25 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             ClusterTopologyException.class,
             "Snapshot operation interrupted, because baseline node left the cluster");
 
-        assertTrue("Snapshot directory must be empty: " + grid0Dir,
-            !searchDirectoryRecursively(sft.root().toPath(), grid0Dir).isPresent());
+        assertTrue(searchDirectoryRecursively(sft.root().toPath(), grid0Dir).isEmpty(),
+                "Snapshot directory must be empty: " + grid0Dir);
 
-        assertTrue("Snapshot directory must be empty: " + grid1Dir,
-            !searchDirectoryRecursively(sft.root().toPath(), grid1Dir).isPresent());
+        assertTrue(searchDirectoryRecursively(sft.root().toPath(), grid1Dir).isEmpty(),
+            "Snapshot directory must be empty: " + grid1Dir);
 
-        assertTrue("Snapshot directory must exist due to grid2 has been halted and cleanup not fully performed: " + grid2Dir,
-            searchDirectoryRecursively(sft.root().toPath(), grid2Dir).isPresent());
+        assertTrue(searchDirectoryRecursively(sft.root().toPath(), grid2Dir).isPresent(),
+            "Snapshot directory must exist due to grid2 has been halted and cleanup not fully performed: " + grid2Dir);
 
         IgniteEx grid2 = startGrid(2);
 
-        assertTrue("Snapshot directory must be empty after recovery: " + grid2Dir,
-            !searchDirectoryRecursively(sft.root().toPath(), grid2Dir).isPresent());
+        assertTrue(searchDirectoryRecursively(sft.root().toPath(), grid2Dir).isEmpty(),
+            "Snapshot directory must be empty after recovery: " + grid2Dir);
 
         awaitPartitionMapExchange();
 
         assertTrue(
-            "Snapshot directory must be empty",
-            grid2.context().cache().context().snapshotMgr().localSnapshotNames(null).isEmpty()
+            grid2.context().cache().context().snapshotMgr().localSnapshotNames(null).isEmpty(),
+            "Snapshot directory must be empty"
         );
 
         createAndCheckSnapshot(ignite, SNAPSHOT_NAME);
@@ -778,7 +784,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
     private void doTestClusterSnapshotWithExplicitPath(boolean cfgPath) throws Exception {
         File snpDir = U.resolveWorkDirectory(U.defaultWorkDirectory(), "ex_snapshots", true);
 
-        assertTrue("Target directory is not empty: " + snpDir, F.isEmpty(snpDir.list()));
+        assertTrue(F.isEmpty(snpDir.list()), "Target directory is not empty: " + snpDir);
 
         try {
             IgniteEx ignite = null;
@@ -866,13 +872,13 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         snp(ignite).localSnapshotSenderFactory(
             blockingLocalSnapshotSender(ignite, deltaApply, deltaBlock));
 
-        assertEquals("Snapshot start time must be undefined prior to snapshot operation started.",
-            0, startTime.value());
-        assertEquals("Snapshot end time must be undefined to snapshot operation started.",
-            0, endTime.value());
-        assertTrue("Snapshot name must not exist prior to snapshot operation started.", snpName.value().isEmpty());
-        assertTrue("Snapshot error message must null prior to snapshot operation started.", errMsg.value().isEmpty());
-        assertTrue("Snapshots on local node must not exist", snpList.value().isEmpty());
+        assertEquals(0, startTime.value(),
+            "Snapshot start time must be undefined prior to snapshot operation started.");
+        assertEquals(0, endTime.value(),
+            "Snapshot end time must be undefined to snapshot operation started.");
+        assertTrue(snpName.value().isEmpty(), "Snapshot name must not exist prior to snapshot operation started.");
+        assertTrue(errMsg.value().isEmpty(), "Snapshot error message must null prior to snapshot operation started.");
+        assertTrue(snpList.value().isEmpty(), "Snapshots on local node must not exist");
 
         long cutoffStartTime = U.currentTimeMillis();
 
@@ -880,15 +886,15 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         U.await(deltaApply);
 
-        assertTrue("Snapshot start time must be set prior to snapshot operation started " +
-            "[startTime=" + startTime.value() + ", cutoffTime=" + cutoffStartTime + ']',
-            startTime.value() >= cutoffStartTime);
-        assertEquals("Snapshot end time must be zero prior to snapshot operation started.",
-            0, endTime.value());
-        assertEquals("Snapshot name must be set prior to snapshot operation started.",
-            SNAPSHOT_NAME, snpName.value());
-        assertTrue("Snapshot error message must null prior to snapshot operation started.",
-            errMsg.value().isEmpty());
+        assertTrue(startTime.value() >= cutoffStartTime,
+            "Snapshot start time must be set prior to snapshot operation started " +
+                "[startTime=" + startTime.value() + ", cutoffTime=" + cutoffStartTime + ']');
+        assertEquals(0, endTime.value(),
+            "Snapshot end time must be zero prior to snapshot operation started.");
+        assertEquals(SNAPSHOT_NAME, snpName.value(),
+            "Snapshot name must be set prior to snapshot operation started.");
+        assertTrue(errMsg.value().isEmpty(),
+            "Snapshot error message must null prior to snapshot operation started.");
 
         IgniteFuture<Void> fut1 = snp(grid(1)).createSnapshot(newSnapshotName, null, false, onlyPrimary);
 
@@ -901,29 +907,28 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         ObjectGauge<String> snpName1 = mreg1.findMetric("LastSnapshotName");
         ObjectGauge<String> errMsg1 = mreg1.findMetric("LastSnapshotErrorMessage");
 
-        assertTrue("Snapshot start time must be greater than zero for finished snapshot.",
-            startTime1.value() > 0);
-        assertEquals("Snapshot end time must zero for failed on start snapshots.",
-            0, endTime1.value());
+        assertTrue(startTime1.value() > 0,
+            "Snapshot start time must be greater than zero for finished snapshot.");
+        assertEquals(0, endTime1.value(),
+            "Snapshot end time must zero for failed on start snapshots.");
         assertEquals("Snapshot name must be set when snapshot operation already finished.",
             newSnapshotName, snpName1.value());
-        assertNotNull("Concurrent snapshot operation must failed.",
-            errMsg1.value());
+        assertNotNull(errMsg1.value(), "Concurrent snapshot operation must failed.");
 
         deltaBlock.countDown();
 
         fut0.get();
 
-        assertTrue("Snapshot start time must be greater than zero for finished snapshot.",
-            startTime.value() > 0);
-        assertTrue("Snapshot end time must be greater than zero for finished snapshot.",
-            endTime.value() > 0);
+        assertTrue(startTime.value() > 0,
+            "Snapshot start time must be greater than zero for finished snapshot.");
+        assertTrue(endTime.value() > 0,
+            "Snapshot end time must be greater than zero for finished snapshot.");
         assertEquals("Snapshot name must be set when snapshot operation already finished.",
             SNAPSHOT_NAME, snpName.value());
-        assertTrue("Concurrent snapshot operation must finished successfully.",
-            errMsg.value().isEmpty());
-        assertEquals("Only the first snapshot must be created and stored on disk.",
-            Collections.singletonList(SNAPSHOT_NAME), snpList.value());
+        assertTrue(errMsg.value().isEmpty(),
+            "Concurrent snapshot operation must finished successfully.");
+        assertEquals(Collections.singletonList(SNAPSHOT_NAME), snpList.value(),
+            "Only the first snapshot must be created and stored on disk.");
     }
 
     /** @throws Exception If fails. */
@@ -1024,7 +1029,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         // There are two exchanges happen: snapshot, node left (with pme-free).
         // Both of them are not require for sending messages.
-        assertFalse("Pme-free switch doesn't expect messaging exchanging between nodes",
+        assertFalse(
             GridTestUtils.waitForCondition(() -> {
                 boolean hasMsgs = false;
 
@@ -1032,19 +1037,19 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                     hasMsgs |= TestRecordingCommunicationSpi.spi(g).hasBlockedMessages();
 
                 return hasMsgs;
-            }, 5_000));
+            }, 5_000), "Pme-free switch doesn't expect messaging exchanging between nodes");
 
         assertThrowsWithCause((Callable<Object>)fut::get, IgniteException.class);
 
         List<GridDhtPartitionsExchangeFuture> exchFuts =
             grid(1).context().cache().context().exchange().exchangeFutures();
 
-        assertFalse("Exchanges cannot be empty due to snapshot and node left happened",
-            exchFuts.isEmpty());
+        assertFalse(exchFuts.isEmpty(),
+            "Exchanges cannot be empty due to snapshot and node left happened");
 
         for (GridDhtPartitionsExchangeFuture exch : exchFuts) {
-            assertTrue("Snapshot and node left events must keep `rebalanced` state" + exch,
-                exch.rebalanced());
+            assertTrue(exch.rebalanced(),
+                "Snapshot and node left events must keep `rebalanced` state" + exch);
         }
     }
 
@@ -1109,10 +1114,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
             ClusterTopologyException.class,
             "Snapshot operation interrupted, because baseline node left the cluster.");
 
-        assertEquals("Snapshot futures expected: " + exchFuts, 3, exchFuts.size());
+        assertEquals(3, exchFuts.size(), "Snapshot futures expected: " + exchFuts);
 
         for (T2<GridDhtPartitionExchangeId, Boolean> exch : exchFuts)
-            assertFalse("Snapshot `rebalanced` must be false with moving partitions: " + exch.get1(), exch.get2());
+            assertFalse(exch.get2(), "Snapshot `rebalanced` must be false with moving partitions: " + exch.get1());
     }
 
     /** @throws Exception If fails. */
@@ -1130,22 +1135,22 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
                     private final AtomicInteger order = new AtomicInteger();
 
                     @Override public void onInitBeforeTopologyLock(GridDhtPartitionsExchangeFuture fut) {
-                        assertEquals("Exchange order violated: " + fut.firstEvent(), 0, order.getAndIncrement());
+                        assertEquals(0, order.getAndIncrement(), "Exchange order violated: " + fut.firstEvent());
                     }
 
                     @Override public void onInitAfterTopologyLock(GridDhtPartitionsExchangeFuture fut) {
-                        assertEquals("Exchange order violated: " + fut.firstEvent(), 1, order.getAndIncrement());
+                        assertEquals(1, order.getAndIncrement(), "Exchange order violated: " + fut.firstEvent());
                     }
 
                     @Override public void onDoneBeforeTopologyUnlock(
                         GridDhtPartitionsExchangeFuture fut,
                         @Nullable Throwable err
                     ) {
-                        assertEquals("Exchange order violated: " + fut.firstEvent(), 2, order.getAndIncrement());
+                        assertEquals(2, order.getAndIncrement(), "Exchange order violated: " + fut.firstEvent());
                     }
 
                     @Override public void onDoneAfterTopologyUnlock(GridDhtPartitionsExchangeFuture fut) {
-                        assertEquals("Exchange order violated: " + fut.firstEvent(), 3, order.getAndSet(0));
+                        assertEquals(3, order.getAndSet(0), "Exchange order violated: " + fut.firstEvent());
                     }
                 });
 
@@ -1161,7 +1166,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
 
         awaitPartitionMapExchange();
 
-        assertEquals("Some of ignite instances failed during snapshot", 3, G.allGrids().size());
+        assertEquals(3, G.allGrids().size(), "Some of ignite instances failed during snapshot");
 
         stopAllGrids();
 
@@ -1318,7 +1323,7 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
      */
     @Test
     public void testIncrementalSnapshotOperationLogging() throws Exception {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+        assumeFalse(encryption, "https://issues.apache.org/jira/browse/IGNITE-17819");
 
         int gridsCnt = 2;
         ListeningTestLogger[] listeningLogs = new ListeningTestLogger[gridsCnt];
@@ -1357,10 +1362,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         ignite.snapshot().createSnapshot(SNAPSHOT_NAME).get(getTestTimeout());
 
         for (int i = 0; i < gridsCnt; i++) {
-            assertTrue("Full snapshot start log not found on node " + i,
-                fullStartListeners[i].check());
-            assertTrue("Full snapshot end log not found on node " + i,
-                fullEndListeners[i].check());
+            assertTrue(fullStartListeners[i].check(),
+                "Full snapshot start log not found on node " + i);
+            assertTrue(fullEndListeners[i].check(),
+                "Full snapshot end log not found on node " + i);
         }
 
         LogListener[] incStartListeners = new LogListener[gridsCnt];
@@ -1385,10 +1390,10 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         ignite.snapshot().createIncrementalSnapshot(SNAPSHOT_NAME).get(getTestTimeout());
 
         for (int i = 0; i < gridsCnt; i++) {
-            assertTrue("Incremental snapshot start log not found on node " + i,
-                incStartListeners[i].check());
-            assertTrue("Incremental snapshot end log not found on node " + i,
-                incEndListeners[i].check());
+            assertTrue(incStartListeners[i].check(),
+                "Incremental snapshot start log not found on node " + i);
+            assertTrue(incEndListeners[i].check(),
+                "Incremental snapshot end log not found on node " + i);
         }
 
         LogListener[] failureListeners = new LogListener[gridsCnt];
@@ -1418,8 +1423,8 @@ public class IgniteClusterSnapshotSelfTest extends AbstractSnapshotSelfTest {
         stopAllGrids();
 
         for (int i = 0; i < gridsCnt; i++) {
-            assertTrue("Failure snapshot log not found on node " + i,
-                failureListeners[i].check());
+            assertTrue(failureListeners[i].check(),
+                "Failure snapshot log not found on node " + i);
         }
     }
 

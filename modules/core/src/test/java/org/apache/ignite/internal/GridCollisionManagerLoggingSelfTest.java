@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.spi.collision.noop.NoopCollisionSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -41,7 +41,7 @@ public class GridCollisionManagerLoggingSelfTest {
      * Inits logger mock to make it behave nicely (like return a non-null logger from
      * <tt>IgniteLogger#getLogger()</tt> method).
      */
-    @Before
+    @BeforeEach
     public void initLoggerMock() {
         doReturn(logger).when(logger).getLogger(any());
     }

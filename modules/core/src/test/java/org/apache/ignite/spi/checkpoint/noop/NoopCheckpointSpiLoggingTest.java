@@ -25,10 +25,10 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for logging concerns of {@link NoopCheckpointSpi}: how and when it logs or does not log.
@@ -51,7 +51,7 @@ public class NoopCheckpointSpiLoggingTest {
      *
      * @throws Exception if something goes wrong
      */
-    @Before
+    @BeforeEach
     public void injectLogger() throws Exception {
         for (Field field : NoopCheckpointSpi.class.getDeclaredFields()) {
             if (!Modifier.isStatic(field.getModifiers()) && field.getType() == IgniteLogger.class) {
