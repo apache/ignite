@@ -24,7 +24,6 @@ import java.util.Iterator;
 import java.util.function.BiPredicate;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RuntimeHashIndex;
@@ -94,7 +93,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
         this.nonEqCond = nonEqCond;
 
-        rightHashStore = new RuntimeHashIndex<>(ctx, rightKeys, keepRowsWithNull ? info.allowNulls() : ImmutableBitSet.of(),
+        rightHashStore = new RuntimeHashIndex<>(ctx, rightKeys, keepRowsWithNull ? info.allowNulls() : null,
             INITIAL_CAPACITY, TouchedArrayList::new);
 
         remappedLeftSearcher = rightHashStore.remappedSearcher(leftKeys);

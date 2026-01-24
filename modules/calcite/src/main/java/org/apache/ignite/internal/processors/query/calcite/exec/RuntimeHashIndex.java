@@ -46,8 +46,8 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     /** */
     private final Supplier<Collection<Row>> collectionFactory;
 
-    /** */
-    private final ImmutableBitSet nullsMatch;
+    /** If {@code null}, rows with null values aren't allowed. */
+    @Nullable private final ImmutableBitSet nullsMatch;
 
     /** Creates hash index with the default collection supplier. */
     public RuntimeHashIndex(ExecutionContext<Row> ectx, ImmutableBitSet keys, ImmutableBitSet nullsMatch) {
@@ -58,7 +58,7 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     public RuntimeHashIndex(
         ExecutionContext<Row> ectx,
         int[] keys,
-        ImmutableBitSet nullsMatch,
+        @Nullable ImmutableBitSet nullsMatch,
         int initCapacity,
         @Nullable Supplier<Collection<Row>> collectionFactory
     ) {
@@ -74,7 +74,7 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
     /** Fields setting constructor. */
     private RuntimeHashIndex(
         ExecutionContext<Row> ectx,
-        ImmutableBitSet nullsMatch,
+        @Nullable ImmutableBitSet nullsMatch,
         RowHandler<Row> keysRowHnd,
         Map<GroupKey<Row>, Collection<Row>> rows,
         @Nullable Supplier<Collection<Row>> collectionFactory
@@ -121,20 +121,12 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
      * IS NOT DISTINCT FROM condition).
      */
     private @Nullable GroupKey<Row> key(Row r) {
-
-
-        if (nullsMatch.isEmpty()) {
+        // Check when rows with null values aren't allowed.
+        if (nullsMatch == null) {
             for (int i = 0; i < keysRowHnd.columnCount(r); i++) {
                 if (keysRowHnd.get(i, r) == null)
-                    return allowNulls ? NON_MATCHING_NULLS_KEY : null;
+                    return null;
             }
-        }
-
-        return new GroupKey<>(r, keysRowHnd);
-
-        for (int i = 0; i < keysRowHnd.columnCount(r); i++) {
-            if (keysRowHnd.get(i, r) == null && !nullsMatch.get(i))
-                return allowNulls ? NON_MATCHING_NULLS_KEY : null;
         }
 
         return new NullsCheckingGroupKey<>(r, keysRowHnd);
@@ -155,8 +147,7 @@ public class RuntimeHashIndex<Row> implements RuntimeIndex<Row> {
         /** {@inheritDoc} */
         @Override protected boolean columnValuesEquals(int colIdx, Object v1, Object v2) {
             if (v1 == null && v2 == null) {
-                if (nullsMatch.cardinality() == 0)
-                    return false;
+                assert nullsMatch.cardinality() > 0;
 
                 return nullsMatch.get(colIdx);
             }
