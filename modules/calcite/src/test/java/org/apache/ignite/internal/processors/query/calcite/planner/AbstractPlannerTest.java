@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import com.google.common.collect.ImmutableSet;
@@ -596,32 +595,6 @@ public abstract class AbstractPlannerTest extends GridCommonAbstractTest {
      */
     protected Predicate<RelNode> nodeOrAnyChild(Predicate<? extends RelNode> predicate) {
         return (Predicate<RelNode>)predicate.or(hasChildThat(predicate));
-    }
-
-    /** */
-    protected <T extends RelNode> Predicate<RelNode> count(Predicate<T> predicate, int expectedCnt) {
-        return new Predicate<RelNode>() {
-            final AtomicInteger foundCnt = new AtomicInteger(0);
-
-            public void findRecursively(T node) {
-                if (predicate.test(node))
-                    foundCnt.incrementAndGet();
-
-                for (RelNode input : node.getInputs())
-                    findRecursively((T)input);
-            }
-
-            @Override public boolean test(RelNode node) {
-                findRecursively((T)node);
-
-                if (foundCnt.get() == expectedCnt)
-                    return true;
-
-                lastErrorMsg = "Not found enough nodes for the condition. Expected: " + foundCnt + ", found: " + foundCnt.get() + '.';
-
-                return false;
-            }
-        };
     }
 
     /**

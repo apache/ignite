@@ -33,8 +33,6 @@ import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribut
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
@@ -138,11 +136,11 @@ public class JoinColocationPlannerTest extends AbstractPlannerTest {
             "join SIMPLE_TBL t2 on t1.id1 = t2.id";
 
         for (String disabledRule : DISABLED_RULES) {
-            assertPlan(sql, schema, count(isInstanceOf(IgniteExchange.class)
-                    .and(ex->ex.distribution().function().affinity()), 1)
-                    .and(nodeOrAnyChild(isInstanceOf(IgniteExchange.class)
+            assertPlan(sql, schema, nodeOrAnyChild(isInstanceOf(AbstractIgniteJoin.class)
+                    .and(hasChildThat(isInstanceOf(IgniteExchange.class)
+                        .and(ex -> ex.distribution().function().affinity())
                         .and(input(0, isInstanceOf(IgniteIndexScan.class)))
-                        .and(input(0, i->i.getTable().unwrap(TestTable.class).equals(complexTbl))))),
+                        .and(input(0, i -> i.getTable().unwrap(TestTable.class).equals(complexTbl)))))),
                 "NestedLoopJoinConverter", "CorrelatedNestedLoopJoin", disabledRule);
         }
     }
