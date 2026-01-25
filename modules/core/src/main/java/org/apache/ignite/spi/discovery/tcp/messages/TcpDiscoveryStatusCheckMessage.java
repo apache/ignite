@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -43,14 +42,11 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
     /** Status RECONNECT. */
     public static final int STATUS_RECON = 2;
 
-    /** Creator node. */
-    private final TcpDiscoveryNode creatorNode;
-
     /** Creator node addresses. */
-    private final Collection<InetSocketAddress> creatorNodeAddrs;
+    @Nullable private final Collection<InetSocketAddress> creatorNodeAddrs;
 
     /** Failed node id. */
-    private final UUID failedNodeId;
+    @Nullable private final UUID failedNodeId;
 
     /** Creator node status (initialized by coordinator). */
     private int status;
@@ -62,21 +58,15 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
      * @param creatorNodeId Creator node ID.
      * @param failedNodeId Failed node id.
      */
-    public TcpDiscoveryStatusCheckMessage(UUID creatorNodeId, Collection<InetSocketAddress> creatorNodeAddrs, UUID failedNodeId) {
+    public TcpDiscoveryStatusCheckMessage(
+        UUID creatorNodeId,
+        @Nullable Collection<InetSocketAddress> creatorNodeAddrs,
+        @Nullable UUID failedNodeId
+    ) {
         super(creatorNodeId);
 
         this.creatorNodeAddrs = creatorNodeAddrs;
-        this.creatorNode = null;
         this.failedNodeId = failedNodeId;
-    }
-
-    /**
-     * Gets creator node.
-     *
-     * @return Creator node.
-     */
-    public @Nullable TcpDiscoveryNode creatorNode() {
-        return creatorNode;
     }
 
     /**
@@ -84,7 +74,7 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
      *
      * @return Creator node addresses.
      */
-    public Collection<InetSocketAddress> creatorNodeAddrs() {
+    public @Nullable Collection<InetSocketAddress> creatorNodeAddrs() {
         return creatorNodeAddrs;
     }
 
@@ -93,7 +83,7 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
      *
      * @return Failed node id.
      */
-    public UUID failedNodeId() {
+    public @Nullable UUID failedNodeId() {
         return failedNodeId;
     }
 
