@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.thread.context;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents a key to access and modify Context records.
@@ -37,10 +38,10 @@ public class ContextAttribute<T> {
     private final int bitmask;
 
     /** */
-    private final T initVal;
+    @Nullable private final T initVal;
 
     /** */
-    private ContextAttribute(int bitmask, T initVal) {
+    private ContextAttribute(int bitmask, @Nullable T initVal) {
         this.bitmask = bitmask;
         this.initVal = initVal;
     }
@@ -50,7 +51,7 @@ public class ContextAttribute<T> {
      * {@link Context#get} method if Attribute's value has not been previously set.
      * @see Context#get(ContextAttribute)
      */
-    public T initialValue() {
+    @Nullable public T initialValue() {
         return initVal;
     }
 
