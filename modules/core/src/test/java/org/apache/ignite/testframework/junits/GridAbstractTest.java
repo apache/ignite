@@ -24,7 +24,6 @@ import java.lang.annotation.Annotation;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -59,6 +58,8 @@ import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
+
+import org.aopalliance.intercept.Invocation;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -138,6 +139,9 @@ import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
@@ -167,15 +171,20 @@ import static org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger.
 import static org.apache.logging.log4j.Level.DEBUG;
 import static org.apache.logging.log4j.Level.WARN;
 import static org.apache.logging.log4j.core.appender.ConsoleAppender.Target.SYSTEM_ERR;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Common abstract test for Ignite tests.
  */
 @SuppressWarnings({
-    "ExtendsUtilityClass",
     "ProhibitedExceptionDeclared",
-    "TransientFieldInNonSerializableClass"
 })
+@ExtendWith(GridTestInvocationInterceptor.class)
+@ExtendWith(TestEnvironmentExtension.class)
 public abstract class GridAbstractTest extends JUnitAssertAware {
     /**************************************************************
      * DO NOT REMOVE TRANSIENT - THIS OBJECT MIGHT BE TRANSFERRED *
@@ -237,9 +246,9 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      *
      * @return Name of the currently executed test case.
      */
-//    public String getName() {
-//        return nameRule.getMethodName();
-//    }
+    public String getName() {
+        return testDisplayName;
+    }
 
     /**
      * Provides the order of JUnit TestRules. Because of JUnit framework specifics {@link #nameRule} must be invoked
@@ -268,6 +277,8 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /** Lazily initialized current test method. */
     private volatile Method currTestMtd;
 
+    private String testDisplayName;
+
     /** */
     static {
         System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
@@ -288,6 +299,11 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
             timer.start();
         }
+    }
+
+    @BeforeEach
+    void init(TestInfo testInfo) {
+        testDisplayName = testInfo.getDisplayName();
     }
 
     /** */
@@ -319,7 +335,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /**
      * Called before execution of every test method in class.
      * <p>
-     * Do not annotate with {@link BeforeEach} in overriding methods.</p>
+     * Do not annotate with {@link org.junit.jupiter.api.BeforeEach} in overriding methods.</p>
      *
      * @throws Exception If failed. {@link #afterTest()} will be called anyway.
      */
@@ -331,7 +347,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Called after execution of every test method in class or if {@link #beforeTest()} failed without test method
      * execution.
      * <p>
-     * Do not annotate with {@link AfterEach} in overriding methods.</p>
+     * Do not annotate with {@link org.junit.jupiter.api.AfterEach} in overriding methods.</p>
      *
      * @throws Exception If failed.
      */
@@ -347,7 +363,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     /**
      * Called before execution of all test methods in class.
      * <p>
-     * Do not annotate with {@link BeforeAll} in overriding methods.</p>
+     * Do not annotate with {@link org.junit.jupiter.api.BeforeAll} in overriding methods.</p>
      *
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
      */
@@ -360,7 +376,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * Called after execution of all test methods in class or if {@link #beforeTestsStarted()} failed without
      * execution of any test methods.
      * <p>
-     * Do not annotate with {@link AfterAll} in overriding methods.</p>
+     * Do not annotate with {@link org.junit.jupiter.api.AfterAll} in overriding methods.</p>
      *
      * @throws Exception If failed.
      */
@@ -457,7 +473,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
 
         LoggerConfig logCfg = LoggerContext.getContext(false).getConfiguration().getLoggerConfig(logName);
 
-        assertNull(logCfg + " level: " + Level.DEBUG, changedLevels.put(logName, logCfg.getLevel()));
+        assertNull(changedLevels.put(logName, logCfg.getLevel()), logCfg + " level: " + Level.DEBUG);
 
         Configurator.setLevel(logName, DEBUG);
     }
@@ -2185,7 +2201,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /** */
-    private void afterLastTest() throws Exception {
+    void afterLastTest() throws Exception {
         U.quietAndInfo(log(), ">>> Stopping test class: " + testClassDescription() + " <<<");
 
         Exception err = null;
@@ -2454,12 +2470,12 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @return Test resources.
      * @throws IgniteCheckedException In case of error.
      */
-    private synchronized IgniteTestResources getIgniteTestResources(IgniteConfiguration cfg) throws IgniteCheckedException {
+    private synchronized IgniteTestResources getIgniteTestResources(IgniteConfiguration cfg) {
         return new IgniteTestResources(cfg);
     }
 
     /** Runs test with the provided scenario. */
-    private void runTest(Statement testRoutine) throws Throwable {
+/*    private void runTest(Statement testRoutine) throws Throwable {
         prepareTestEnviroment();
 
         try {
@@ -2525,7 +2541,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
                 log.error("Failed to execute tear down after test (will ignore)", e);
             }
         }
-    }
+    }*/
 
     /**
      * Dumps threads both to the console and log.
@@ -2804,7 +2820,7 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     protected static boolean tcpDiscovery() {
         List<Ignite> nodes = G.allGrids();
 
-        assertFalse("There are no nodes", nodes.isEmpty());
+        assertFalse(nodes.isEmpty(), "There are no nodes");
 
         return nodes.get(0).configuration().getDiscoverySpi() instanceof TcpDiscoverySpi;
     }
@@ -2976,29 +2992,6 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
     }
 
     /**
-     *  Calls {@link #beforeFirstTest()} and {@link #afterLastTest()} methods
-     *  in order to support {@link #beforeTestsStarted()} and {@link #afterTestsStopped()}.
-     *  <p>
-     *  Processes {@link WithSystemProperty} annotations as well.
-     */
-    private static class BeforeFirstAndAfterLastTestRule implements TestRule {
-        /** {@inheritDoc} */
-        @Override public Statement apply(Statement base, Description desc) {
-            return new Statement() {
-                @Override public void evaluate() throws Throwable {
-                    Constructor<?> testConstructor = desc.getTestClass().getDeclaredConstructor();
-
-                    testConstructor.setAccessible(true);
-
-                    GridAbstractTest fixtureInstance = (GridAbstractTest)testConstructor.newInstance();
-
-                    fixtureInstance.evaluateInsideFixture(base);
-                }
-            };
-        }
-    }
-
-    /**
      * Executes a statement inside a fixture calling GridAbstractTest specific methods which
      * should be executed before and after a test class execution.
      *
@@ -3006,13 +2999,13 @@ public abstract class GridAbstractTest extends JUnitAssertAware {
      * @throws Throwable In case of failure.
      */
     @SuppressWarnings("ThrowFromFinallyBlock")
-    private void evaluateInsideFixture(Statement stmt) throws Throwable {
+    void evaluateInsideFixture(Invocation stmt) throws Throwable {
         Throwable suppressed = null;
 
         try {
             beforeFirstTest();
 
-            stmt.evaluate();
+            stmt.proceed();
         }
         catch (Throwable t) {
             suppressed = t;

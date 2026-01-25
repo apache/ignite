@@ -23,7 +23,7 @@ import java.util.Map;
 import org.apache.ignite.configuration.IgniteReflectionFactory;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests for {@link IgniteReflectionFactory} class.

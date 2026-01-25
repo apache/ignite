@@ -20,7 +20,7 @@ package org.apache.ignite.util;
 import org.apache.ignite.internal.util.GridIntList;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *

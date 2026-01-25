@@ -57,7 +57,12 @@ import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Ignite {@link BinaryObject} API system tests.
@@ -412,7 +417,7 @@ public class IgniteBinaryTest extends GridCommonAbstractTest {
      * be correctly unmarshalled.
      */
     @Test
-    public void testBinaryTypeWithIdOfMarshallerHeader() throws Exception {
+    public void testBinaryTypeWithIdOfMarshallerHeader() {
         try (Ignite ignite = Ignition.start(Config.getServerConfiguration())) {
             try (IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER))) {
                 int typeId = GridBinaryMarshaller.OBJ;

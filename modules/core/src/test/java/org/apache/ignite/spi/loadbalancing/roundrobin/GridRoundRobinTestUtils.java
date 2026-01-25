@@ -23,8 +23,8 @@ import org.apache.ignite.GridTestJob;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTaskSession;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Helper class for balancer tests.
@@ -51,7 +51,7 @@ class GridRoundRobinTestUtils {
 
             ClusterNode nextNode = spi.getBalancedNode(ses, allNodes, new GridTestJob());
 
-            assertEquals("Balancer returns node out of order", nextNode.id(), orderedNodes.get(actualIdx));
+            assertEquals(nextNode.id(), orderedNodes.get(actualIdx), "Balancer returns node out of order");
         }
     }
 
@@ -78,7 +78,7 @@ class GridRoundRobinTestUtils {
 
             ClusterNode nextNode = spi.getBalancedNode(i % 2 == 0 ? ses1 : ses2, allNodes, new GridTestJob());
 
-            assertEquals("Balancer returns node out of order", nextNode.id(), orderedNodes.get(actualIdx));
+            assertEquals(nextNode.id(), orderedNodes.get(actualIdx), "Balancer returns node out of order");
         }
     }
 
@@ -95,7 +95,7 @@ class GridRoundRobinTestUtils {
                 startIdx = i;
         }
 
-        assertTrue("Can't find position of first balanced node", startIdx >= 0);
+        assertTrue(startIdx >= 0, "Can't find position of first balanced node");
 
         return startIdx;
     }
