@@ -76,6 +76,9 @@ public class CacheIdleVerifyCommandArg extends IgniteDataTransferObject {
      * @param string To validate that given name is valed regex.
      */
     private void validateRegexes(String[] string) {
+        if (string == null)
+            return;
+
         for (String s : string) {
             try {
                 Pattern.compile(s);
