@@ -39,7 +39,8 @@ public class HashJoinConverterRule extends AbstractIgniteJoinConverterRule {
     public static final RelOptRule INSTANCE = new HashJoinConverterRule();
 
     /** */
-    private static final EnumSet<JoinRelType> NON_EQ_CONDITIONS_SUPPORT = EnumSet.of(JoinRelType.INNER, JoinRelType.SEMI);
+    private static final EnumSet<JoinRelType> NON_EQ_CONDITIONS_SUPPORT = EnumSet.of(JoinRelType.INNER, JoinRelType.SEMI,
+        JoinRelType.LEFT);
 
     /** Ctor. */
     private HashJoinConverterRule() {

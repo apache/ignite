@@ -113,7 +113,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         @Nullable BiPredicate<RowT, RowT> nonEqCond
     ) {
         assert !info.pairs().isEmpty() && (info.isEqui() || type == JoinRelType.INNER || type == JoinRelType.SEMI);
-        assert nonEqCond == null || type == JoinRelType.INNER || type == JoinRelType.SEMI;
+        assert nonEqCond == null || type == JoinRelType.INNER || type == JoinRelType.SEMI || type == JoinRelType.LEFT;
 
         IgniteTypeFactory typeFactory = ctx.getTypeFactory();
         RowHandler<RowT> rowHnd = ctx.rowHandler();
@@ -123,7 +123,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 return new InnerHashJoin<>(ctx, rowType, info, rowHnd, nonEqCond);
 
             case LEFT:
-                return new LeftHashJoin<>(ctx, rowType, info, rowHnd, rowHnd.factory(typeFactory, rightRowType));
+                return new LeftHashJoin<>(ctx, rowType, info, rowHnd, rowHnd.factory(typeFactory, rightRowType), nonEqCond);
 
             case RIGHT:
                 return new RightHashJoin<>(ctx, rowType, info, rowHnd, rowHnd.factory(typeFactory, leftRowType));
@@ -291,17 +291,17 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
          * @param rowType Out row type.
          * @param outRowHnd Output row handler.
          * @param rightRowFactory Right row factory.
+         * @param nonEqCond Non-equi conditions.
          */
         private LeftHashJoin(
             ExecutionContext<RowT> ctx,
             RelDataType rowType,
             IgniteJoinInfo info,
             RowHandler<RowT> outRowHnd,
-            RowHandler.RowFactory<RowT> rightRowFactory
+            RowHandler.RowFactory<RowT> rightRowFactory,
+            @Nullable BiPredicate<RowT, RowT> nonEqCond
         ) {
-            super(ctx, rowType, info, outRowHnd, false, null);
-
-            assert nonEqCond == null : "Non equi condition is not supported in LEFT join";
+            super(ctx, rowType, info, outRowHnd, false, nonEqCond);
 
             this.rightRowFactory = rightRowFactory;
         }
@@ -336,7 +336,10 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
                                 RowT right = rightIt.next();
 
-                                --requested;
+                                if (nonEqCond != null && !nonEqCond.test(left, right))
+                                    continue;
+
+                                 --requested;
 
                                 downstream().push(outRowHnd.concat(left, right));
                             }
