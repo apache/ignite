@@ -59,7 +59,7 @@ public class Context {
      * @param attr Context Attribute.
      * @return Context Attribute Value.
      */
-    public static @Nullable <T> T get(ContextAttribute<T> attr) {
+    @Nullable public static <T> T get(ContextAttribute<T> attr) {
         AttributeValueHolder<T> valHolder = INSTANCE.get().attributeValue(attr);
 
         return valHolder == null ? attr.initialValue() : valHolder.value();
@@ -69,11 +69,15 @@ public class Context {
      * Updates the value of the specified attribute for the Context bound to the thread this method is called from.
      *
      * @param attr Context Attribute.
-     * @return Scope instance that, when closed, undoes the applied update. Note, updates must be undone in the same
-     * order they were applied. It is highly encouraged to use try-with-resource block to close a Scope.
+     * @return Scope instance that, when closed, undoes the applied update. It is crucial to undo all applied Context
+     * updates to free up thread-bound resources and avoid memory leaks, so it is highly encouraged to use a
+     * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order they were applied.
      */
     public static <T> Scope set(ContextAttribute<T> attr, T val) {
-        return UpdateHelper.create().set(attr, val).apply();
+        if (get(attr) == val)
+            return Scope.NOOP_SCOPE;
+
+        return INSTANCE.get().applyUpdates(new AttributeValueHolder<>(attr, val));
     }
 
     /**
@@ -83,14 +87,15 @@ public class Context {
      * @param val1 Values associated with first Context Attribute.
      * @param attr2 Second Context Attribute.
      * @param val2 Values associated with second Context Attribute.
-     * @return Scope instance that, when closed, undoes the applied update. Note, updates must be undone in the same
-     * order they were applied. It is highly encouraged to use try-with-resource block to close a Scope.
+     * @return Scope instance that, when closed, undoes the applied update. It is crucial to undo all applied Context
+     * updates to free up thread-bound resources and avoid memory leaks, so it is highly encouraged to use a
+     * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order they were applied.
      */
     public static <T1, T2> Scope set(
         ContextAttribute<T1> attr1, T1 val1,
         ContextAttribute<T2> attr2, T2 val2
     ) {
-        return UpdateHelper.create().set(attr1, val1).set(attr2, val2).apply();
+        return ContextUpdater.create().set(attr1, val1).set(attr2, val2).apply();
     }
 
     /**
@@ -102,15 +107,16 @@ public class Context {
      * @param val2 Values associated with second Context Attribute.
      * @param attr3 Third Context Attribute.
      * @param val3 Values associated with third Context Attribute.
-     * @return Scope instance that, when closed, undoes the applied update. Note, updates must be undone in the same
-     * order they were applied. It is highly encouraged to use try-with-resource block to close a Scope.
+     * @return Scope instance that, when closed, undoes the applied update. It is crucial to undo all applied Context
+     * updates to free up thread-bound resources and avoid memory leaks, so it is highly encouraged to use a
+     * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order they were applied.
      */
     public static <T1, T2, T3> Scope set(
         ContextAttribute<T1> attr1, T1 val1,
         ContextAttribute<T2> attr2, T2 val2,
         ContextAttribute<T3> attr3, T3 val3
     ) {
-        return UpdateHelper.create().set(attr1, val1).set(attr2, val2).set(attr3, val3).apply();
+        return ContextUpdater.create().set(attr1, val1).set(attr2, val2).set(attr3, val3).apply();
     }
 
     /**
@@ -127,8 +133,9 @@ public class Context {
      * Restores values of all attributes for Context bound to the thread this method is called from.
      *
      * @param snp Context Snapshot.
-     * @return Scope instance that, when closed, undoes the applied update. Note, updates must be undone in the same
-     * order they were applied. It is highly encouraged to use try-with-resource block to close a Scope.
+     * @return Scope instance that, when closed, undoes the applied operation. It is crucial to undo all applied Context
+     * updates to free up thread-bound resources and avoid memory leaks, so it is highly encouraged to use a
+     * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order they were applied.
      */
     public static Scope restoreSnapshot(ContextSnapshot snp) {
         return INSTANCE.get().restoreSnapshotInternal(snp);
@@ -148,7 +155,7 @@ public class Context {
     }
 
     /** Updates the current context with the specified attributes and their corresponding values. */
-    private Scope applyUpdates(AttributeValueHolder<?>[] atrVals) {
+    private Scope applyUpdates(AttributeValueHolder<?>... atrVals) {
         lastUpd = new Update(atrVals, lastUpd);
 
         return lastUpd;
@@ -245,7 +252,11 @@ public class Context {
          * specified Attribute was not changed by this update.
          */
         @Nullable <T> AttributeValueHolder<T> value(ContextAttribute<T> attr) {
-            for (AttributeValueHolder<?> valHolder : attrVals) {
+            // We iterate in reverse order to correctly handle the case when the value for the same attribute is
+            // specified multiple times.
+            for (int i = attrVals.length - 1; i >= 0; i--) {
+                AttributeValueHolder<?> valHolder = attrVals[i];
+
                 if (valHolder.attribute().equals(attr))
                     return ((AttributeValueHolder<T>)valHolder);
             }
@@ -269,9 +280,8 @@ public class Context {
         }
     }
 
-    /**
-     * Helps to change multiple Attribute values in a single update and to skip updates that changes nothing. */
-    private static class UpdateHelper {
+    /** Allows to change multiple attribute values in a single update operation and skip updates that changes nothing. */
+    private static class ContextUpdater {
         /** */
         private static final int INIT_UPDATES_CAPACITY = 3;
 
@@ -279,14 +289,14 @@ public class Context {
         private List<AttributeValueHolder<?>> updates;
 
         /** */  
-        <T> UpdateHelper set(ContextAttribute<T> attr, T val) {
+        <T> ContextUpdater set(ContextAttribute<T> attr, T val) {
             if (get(attr) == val)
                 return this;
 
             if (updates == null)
                 updates = new ArrayList<>(INIT_UPDATES_CAPACITY);
 
-            enlistUpdate(new AttributeValueHolder<>(attr, val));
+            updates.add(new AttributeValueHolder<>(attr, val));
 
             return this;
         }
@@ -304,23 +314,8 @@ public class Context {
         }
 
         /** */
-        static UpdateHelper create() {
-            return new UpdateHelper();
-        }
-
-        /** */
-        private <T> void enlistUpdate(AttributeValueHolder<?> valHolder) {
-            for (int i = 0; i < updates.size(); i++) {
-                AttributeValueHolder<?> upd = updates.get(i);
-
-                if (upd.attribute().equals(valHolder.attribute())) {
-                    updates.set(i, valHolder);
-
-                    return;
-                }
-            }
-
-            updates.add(valHolder);
+        static ContextUpdater create() {
+            return new ContextUpdater();
         }
     }
 }
