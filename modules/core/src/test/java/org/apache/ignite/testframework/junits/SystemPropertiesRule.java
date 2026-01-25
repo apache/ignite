@@ -23,19 +23,12 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 
 /**
  * JUnit rule that manages usage of {@link WithSystemProperty} annotations.<br/>
  * Can be used as both {@link Rule} and {@link ClassRule}.
  *
  * @see WithSystemProperty
- * @see Rule
- * @see ClassRule
  */
 public class SystemPropertiesRule implements TestRule {
     /**

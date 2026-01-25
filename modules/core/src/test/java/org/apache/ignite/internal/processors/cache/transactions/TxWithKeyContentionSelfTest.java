@@ -39,22 +39,20 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.TestInfo;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_TX_COLLISIONS_INTERVAL;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /** Tests tx key contention detection functional. */
 public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
-    /** */
-    @Rule
-    public TestName testName = new TestName();
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
@@ -106,8 +104,8 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      */
     @Test
     @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "30000")
-    public void testPessimisticRepeatableReadCheckContentionTxMetric() throws Exception {
-        runKeyCollisionsMetric(PESSIMISTIC, REPEATABLE_READ, false);
+    public void testPessimisticRepeatableReadCheckContentionTxMetric(TestInfo testInfo) throws Exception {
+        runKeyCollisionsMetric(PESSIMISTIC, REPEATABLE_READ, false, testInfo.getDisplayName());
     }
 
     /**
@@ -117,8 +115,8 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      */
     @Test
     @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "30000")
-    public void testPessimisticRepeatableReadCheckContentionTxMetricNear() throws Exception {
-        runKeyCollisionsMetric(PESSIMISTIC, REPEATABLE_READ, true);
+    public void testPessimisticRepeatableReadCheckContentionTxMetricNear(TestInfo testInfo) throws Exception {
+        runKeyCollisionsMetric(PESSIMISTIC, REPEATABLE_READ, true, testInfo.getDisplayName());
     }
 
     /**
@@ -126,8 +124,8 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      */
     @Test
     @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "30000")
-    public void testPessimisticReadCommitedCheckContentionTxMetric() throws Exception {
-        runKeyCollisionsMetric(PESSIMISTIC, READ_COMMITTED, false);
+    public void testPessimisticReadCommitedCheckContentionTxMetric(TestInfo testInfo) throws Exception {
+        runKeyCollisionsMetric(PESSIMISTIC, READ_COMMITTED, false, testInfo.getDisplayName());
     }
 
     /**
@@ -135,8 +133,8 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      */
     @Test
     @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "30000")
-    public void testPessimisticReadCommitedCheckContentionTxMetricNear() throws Exception {
-        runKeyCollisionsMetric(PESSIMISTIC, READ_COMMITTED, true);
+    public void testPessimisticReadCommitedCheckContentionTxMetricNear(TestInfo testInfo) throws Exception {
+        runKeyCollisionsMetric(PESSIMISTIC, READ_COMMITTED, true, testInfo.getDisplayName());
     }
 
     /**
@@ -144,8 +142,8 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      */
     @Test
     @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "30000")
-    public void testOptimisticReadCommittedCheckContentionTxMetric() throws Exception {
-        runKeyCollisionsMetric(OPTIMISTIC, READ_COMMITTED, false);
+    public void testOptimisticReadCommittedCheckContentionTxMetric(TestInfo testInfo) throws Exception {
+        runKeyCollisionsMetric(OPTIMISTIC, READ_COMMITTED, false, testInfo.getDisplayName());
     }
 
     /**
@@ -153,8 +151,8 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      */
     @Test
     @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "30000")
-    public void testOptimisticReadCommittedCheckContentionTxMetricNear() throws Exception {
-        runKeyCollisionsMetric(OPTIMISTIC, READ_COMMITTED, true);
+    public void testOptimisticReadCommittedCheckContentionTxMetricNear(TestInfo testInfo) throws Exception {
+        runKeyCollisionsMetric(OPTIMISTIC, READ_COMMITTED, true, testInfo.getDisplayName());
     }
 
     /**
@@ -162,8 +160,8 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      */
     @Test
     @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "30000")
-    public void testOptimisticRepeatableReadCheckContentionTxMetric() throws Exception {
-        runKeyCollisionsMetric(OPTIMISTIC, REPEATABLE_READ, false);
+    public void testOptimisticRepeatableReadCheckContentionTxMetric(TestInfo testInfo) throws Exception {
+        runKeyCollisionsMetric(OPTIMISTIC, REPEATABLE_READ, false, testInfo.getDisplayName());
     }
 
     /**
@@ -171,17 +169,23 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
      */
     @Test
     @WithSystemProperty(key = IGNITE_DUMP_TX_COLLISIONS_INTERVAL, value = "30000")
-    public void testOptimisticRepeatableReadCheckContentionTxMetricNear() throws Exception {
-        runKeyCollisionsMetric(OPTIMISTIC, REPEATABLE_READ, true);
+    public void testOptimisticRepeatableReadCheckContentionTxMetricNear(TestInfo testInfo) throws Exception {
+        runKeyCollisionsMetric(OPTIMISTIC, REPEATABLE_READ, true, testInfo.getDisplayName());
     }
 
     /** Tests metric correct results while tx collisions occured.
      *
      * @param concurrency Concurrency level.
      * @param isolation Isolation level.
+     * @param testName Test name.
      * @throws Exception If failed.
      */
-    private void runKeyCollisionsMetric(TransactionConcurrency concurrency, TransactionIsolation isolation, boolean nearCache)
+    private void runKeyCollisionsMetric(
+            TransactionConcurrency concurrency,
+            TransactionIsolation isolation,
+            boolean nearCache,
+            String testName
+    )
             throws Exception {
         Ignite ig = startGridsMultiThreaded(3);
 
@@ -210,7 +214,7 @@ public class TxWithKeyContentionSelfTest extends GridCommonAbstractTest {
                 }
             },
             contCnt,
-            "txThread-" + testName.getMethodName());
+            "txThread-" + testName);
 
         try {
             assertTrue(GridTestUtils.waitForCondition(

@@ -40,7 +40,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Rule;
 
 import static org.apache.ignite.compatibility.testframework.junits.Dependency.APACHE_IGNITE_GROUP_ID;
 

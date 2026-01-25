@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.cache.Cache;
@@ -40,22 +41,18 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Timeout;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Thin client functional tests.
  */
+@Timeout(value = GridTestUtils.DFLT_TEST_TIMEOUT, unit = TimeUnit.MILLISECONDS)
 public class FunctionalQueryTest {
-    /** Per test timeout */
-    @Rule
-    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
-
     /**
      * Tested API:
      * <ul>
@@ -103,14 +100,14 @@ public class FunctionalQueryTest {
                     List<Cache.Entry<Integer, Person>> res = cur.getAll();
 
                     assertEquals(
-                        String.format("Unexpected number of rows from %s", qry.getClass().getSimpleName()),
-                        expSize, res.size()
+                        expSize, res.size(),
+                        String.format("Unexpected number of rows from %s", qry.getClass().getSimpleName())
                     );
 
                     Map<Integer, Person> act = res.stream()
                         .collect(Collectors.toMap(Cache.Entry::getKey, Cache.Entry::getValue));
 
-                    assertEquals(String.format("unexpected rows from %s", qry.getClass().getSimpleName()), exp, act);
+                    assertEquals(exp, act, String.format("unexpected rows from %s", qry.getClass().getSimpleName()));
                 }
             }
 
@@ -244,7 +241,7 @@ public class FunctionalQueryTest {
 
     /** */
     @Test
-    public void testMixedQueryAndCacheApiOperations() throws Exception {
+    public void testMixedQueryAndCacheApiOperations() {
         try (Ignite ignored = Ignition.start(Config.getServerConfiguration());
              IgniteClient client = Ignition.startClient(
                  new ClientConfiguration().setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(true))

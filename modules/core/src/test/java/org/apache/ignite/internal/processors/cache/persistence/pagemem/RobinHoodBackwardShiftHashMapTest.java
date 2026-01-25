@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -28,23 +29,20 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.Timeout;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit tests of {@link RobinHoodBackwardShiftHashMap} implementation.
  */
+@Timeout(value = GridTestUtils.DFLT_TEST_TIMEOUT, unit = TimeUnit.MILLISECONDS)
 public class RobinHoodBackwardShiftHashMapTest {
-    /** Per test timeout */
-    @Rule
-    public Timeout globalTimeout = new Timeout((int)GridTestUtils.DFLT_TEST_TIMEOUT);
-
     /**
      * @param tester map test code
      * @param cap required map capacity.
@@ -72,7 +70,7 @@ public class RobinHoodBackwardShiftHashMapTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testShortSize() throws Exception {
+    public void testShortSize() {
         withMap(map -> {
             map.put(1, 1, 0, 0);
             map.put(2, 0, 1, 1);
@@ -84,7 +82,7 @@ public class RobinHoodBackwardShiftHashMapTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testSimplestPutGet() throws Exception {
+    public void testSimplestPutGet() {
         int cnt = 100;
         withMap(map -> {
             for (int i = 0; i < cnt; i++) {
@@ -105,24 +103,26 @@ public class RobinHoodBackwardShiftHashMapTest {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    @Test(expected = IgniteOutOfMemoryException.class)
-    public void testSimplestOverflow() throws Exception {
-        withMap(map -> {
-            for (int i = 0; i < 10; i++) {
-                int grpId = i + 1;
-                int val = grpId * grpId;
-                assertSizeChanged("Unique put should be successful [" + grpId + "]", map, () -> map.put(grpId, 1, val, 1));
+    @Test
+    public void testSimplestOverflow() {
+        assertThrows(IgniteOutOfMemoryException.class, () -> {
+            withMap(map -> {
+                for (int i = 0; i < 10; i++) {
+                    int grpId = i + 1;
+                    int val = grpId * grpId;
+                    assertSizeChanged("Unique put should be successful [" + grpId + "]", map, () -> map.put(grpId, 1, val, 1));
 
-                assertEquals(val, map.get(grpId, 1, 0, -1, -2));
+                    assertEquals(val, map.get(grpId, 1, 0, -1, -2));
 
-                assertSizeNotChanged("Duplicate put for " + grpId, map, () -> map.put(grpId, 1, 1, 1));
-                assertEquals(1, map.get(grpId, 1, 0, -1, -2));
-            }
+                    assertSizeNotChanged("Duplicate put for " + grpId, map, () -> map.put(grpId, 1, 1, 1));
+                    assertEquals(1, map.get(grpId, 1, 0, -1, -2));
+                }
 
-            map.put(11, 1, 11, 1);
-        }, 10);
+                map.put(11, 1, 11, 1);
+            }, 10);
+        });
     }
 
     /**
@@ -135,7 +135,7 @@ public class RobinHoodBackwardShiftHashMapTest {
         act.run();
         int newSize = map.size();
 
-        assertNotEquals(msg, size, newSize);
+        assertNotEquals(size, newSize, msg);
     }
 
     /**
@@ -148,7 +148,7 @@ public class RobinHoodBackwardShiftHashMapTest {
         act.run();
         int newSize = map.size();
 
-        assertEquals(msg, size, newSize);
+        assertEquals(size, newSize, msg);
     }
 
     /**
@@ -263,10 +263,8 @@ public class RobinHoodBackwardShiftHashMapTest {
                         Long checkVal = check.get(fullId);
 
                         if (checkVal != null) {
-                            assertEquals("Ret." +
-                                    getPageString(fullId) +
-                                    " tbl: " + val + " Check " + checkVal,
-                                checkVal.longValue(), val);
+                            assertEquals(checkVal.longValue(), val,
+                                "Ret." + getPageString(fullId) + " tbl: " + val + " Check " + checkVal);
                         }
                     }
                 }
@@ -310,10 +308,10 @@ public class RobinHoodBackwardShiftHashMapTest {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
     @Test
-    public void testPutAndCantGetOutdatedValue() throws Exception {
+    public void testPutAndCantGetOutdatedValue() {
         withMap(map -> {
             //fill with 1 space left;
             for (int i = 0; i < 99; i++) {
@@ -330,10 +328,10 @@ public class RobinHoodBackwardShiftHashMapTest {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
     @Test
-    public void testPutAndRefreshValue() throws Exception {
+    public void testPutAndRefreshValue() {
         withMap(map -> {
             //fill with 1 space left;
             for (int i = 0; i < 99; i++) {
@@ -357,7 +355,7 @@ public class RobinHoodBackwardShiftHashMapTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testClearAtWithControlMap3() throws Exception {
+    public void testClearAtWithControlMap3() {
         int cap = 100;
 
         doRemovalTests(cap, (grpId, pageId) -> {
@@ -371,7 +369,7 @@ public class RobinHoodBackwardShiftHashMapTest {
      * @throws Exception If failed.
      */
     @Test
-    public void testClearAtWithControlMap7() throws Exception {
+    public void testClearAtWithControlMap7() {
         int cap = 100;
 
         doRemovalTests(cap, (grpId, pageId) -> {
@@ -385,7 +383,7 @@ public class RobinHoodBackwardShiftHashMapTest {
      * @throws Exception  If failed.
      */
     @Test
-    public void testClearAllWithControlMap() throws Exception {
+    public void testClearAllWithControlMap() {
         int cap = 100;
 
         doRemovalTests(cap, (grpId, pageId) -> true);

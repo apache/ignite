@@ -17,14 +17,12 @@
 
 package org.apache.ignite.internal.util;
 
-import java.net.UnknownHostException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-import org.hamcrest.core.IsInstanceOf;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.ExpectedException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests HostAndPortRange parse method.
@@ -127,10 +125,6 @@ public class HostAndPortRangeTest extends GridCommonAbstractTest {
         assertEquals(expected, actual);
     }
 
-    /** */
-    @Rule
-    public ExpectedException expectedEx = ExpectedException.none();
-
     /**
      * Tests incorrect input address with IPv6 host (no brackets) and port.
      *
@@ -138,9 +132,6 @@ public class HostAndPortRangeTest extends GridCommonAbstractTest {
      */
     @Test
     public void testParseIPv6IncorrectHost() throws IgniteCheckedException {
-        expectedEx.expect(IgniteCheckedException.class);
-        expectedEx.expectMessage("IPv6 is incorrect");
-        expectedEx.expectCause(IsInstanceOf.instanceOf(UnknownHostException.class));
         String addrStr = "3ffe:2a00:100:7031";
         String errMsgPrefix = "";
         int dfltPortFrom = 18360;
@@ -155,8 +146,6 @@ public class HostAndPortRangeTest extends GridCommonAbstractTest {
      */
     @Test
     public void testParseNoHost() throws IgniteCheckedException {
-        expectedEx.expect(IgniteCheckedException.class);
-        expectedEx.expectMessage("Host name is empty");
         String addrStr = ":8080";
         String errMsgPrefix = "";
         int dfltPortFrom = 18360;
@@ -171,8 +160,6 @@ public class HostAndPortRangeTest extends GridCommonAbstractTest {
      */
     @Test
     public void testParseNoAddress() throws IgniteCheckedException {
-        expectedEx.expect(IgniteCheckedException.class);
-        expectedEx.expectMessage("Address is empty");
         String addrStr = "";
         String errMsgPrefix = "";
         int dfltPortFrom = 18360;

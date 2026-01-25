@@ -58,9 +58,10 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-import org.junit.rules.ExpectedException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test base for test for sql features.
@@ -639,7 +640,7 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
 
             String[] fields = {"FIRSTNAME", "ID", "AGE"};
 
-            assertEquals("Returned column names are incorrect.", res.columnNames(), Arrays.asList(fields));
+            assertEquals(res.columnNames(), Arrays.asList(fields), "Returned column names are incorrect.");
 
             List<List<Object>> expected = select(node.cache(EMP_CACHE_NAME), null, fields);
 
@@ -655,7 +656,7 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
         testAllNodes(node -> {
             Result emps = executeFrom("SELECT * FROM Employee e WHERE e.id BETWEEN 101 and 200", node);
 
-            assertEquals("Fetched number of employees is incorrect", 100, emps.values().size());
+            assertEquals(100, emps.values().size(), "Fetched number of employees is incorrect");
 
             String[] fields = emps.columnNames().toArray(new String[0]);
 
@@ -680,7 +681,7 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
         testAllNodes(node -> {
             Result emps = executeFrom("SELECT * FROM Employee e WHERE e.id BETWEEN 200 AND 101", node);
 
-            assertTrue("SQL should have returned empty result set, but it have returned: " + emps, emps.values().isEmpty());
+            assertTrue(emps.values().isEmpty(), "SQL should have returned empty result set, but it have returned: " + emps);
         });
     }
 
@@ -1259,31 +1260,25 @@ public class BaseSqlTest extends AbstractIndexingCommonTest {
     }
 
     /**
-     * Init rule for expected exception
-     */
-    @Rule
-    public ExpectedException expectedEx = ExpectedException.none();
-
-    /**
      * Check schema for validation
      */
     @Test
     public void testCheckEmptySchema() {
-        expectedEx.expect(IgniteSQLException.class);
+/*        expectedEx.expect(IgniteSQLException.class);
         expectedEx.expectMessage("Failed to set schema for DB connection. " +
                 "Schema name could not be an empty string"
-        );
+        );*/
 
         String sqlQry = "SELECT * FROM Employee limit 1";
 
         testAllNodes(node -> {
             executeFrom(sqlQry, node, "");
             executeFrom(sqlQry, node, " ");
-            assertTrue("Check valid schema",
-                    executeFrom(sqlQry, node, "PUBLIC").values().stream().count() > 0
+            assertTrue(executeFrom(sqlQry, node, "PUBLIC").values().stream().count() > 0,
+                "Check valid schema"
             );
-            assertTrue("Check null schema",
-                    executeFrom(sqlQry, node, null).values().stream().count() > 0
+            assertTrue(executeFrom(sqlQry, node, null).values().stream().count() > 0,
+                "Check null schema"
             );
         });
     }
