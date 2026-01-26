@@ -45,15 +45,18 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
      */
     public QueryPlanCacheImpl(GridKernalContext ctx) {
         super(ctx);
+
+        ctx.internalSubscriptionProcessor().registerSchemaChangeListener(new SchemaListener());
+
+        clear(); // Create cache with default size.
     }
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
         distrCfg = queryProcessor(ctx).distributedConfiguration();
 
-        ctx.internalSubscriptionProcessor().registerSchemaChangeListener(new SchemaListener());
-
-        clear();
+        if (distrCfg.planCacheSize() != DistributedCalciteConfiguration.DFLT_PLAN_CACHE_SIZE)
+            clear(); // Recreate cache with configured size.
     }
 
     /** {@inheritDoc} */
@@ -71,7 +74,9 @@ public class QueryPlanCacheImpl extends AbstractService implements QueryPlanCach
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        cache = new GridBoundedConcurrentLinkedHashMap<>(distrCfg.planCacheSize());
+        cache = new GridBoundedConcurrentLinkedHashMap<>(distrCfg == null
+            ? DistributedCalciteConfiguration.DFLT_PLAN_CACHE_SIZE
+            : distrCfg.planCacheSize());
     }
 
     /** Schema change listener. */
