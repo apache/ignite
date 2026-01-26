@@ -23,13 +23,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheInterceptor;
+import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -43,43 +45,47 @@ import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
+import static org.apache.ignite.internal.TestRecordingCommunicationSpi.spi;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.cacheId;
 import static org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction.IDX_ATTR;
 
 /** */
 public class IgniteCacheAtomicFullSyncPartialUpdateAllTest extends GridCommonAbstractTest {
+    /** */
+    public static final int NODE_1_FIRST_KEY = 1;
+
+    /** */
+    public static final int NODE_1_SECOND_KEY = 4;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
+            .setCommunicationSpi(new TestRecordingCommunicationSpi())
             .setUserAttributes(singletonMap(IDX_ATTR, getTestIgniteInstanceIndex(igniteInstanceName)));
     }
 
-    /** */
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
+
+    /**
+     * In the following scenario primary node fails to send {@link GridNearAtomicUpdateResponse) to `near node` during
+     * shutdown. As a result entries, belonging to the left primary node, are remmapped to new topology version by the `near node`.
+     */
     @Test
-    public void test() throws Exception {
-        startGrid(0);
-        startGrid(1);
-        startGrid(2);
+    public void testCacheEntriesProcessingFailureCausedByNodeStop() throws Exception {
+        startGridsMultiThreaded(3);
 
         TestInterceptor.putStartedLatch = new CountDownLatch(1);
         TestInterceptor.putUnblockedLatch = new CountDownLatch(1);
 
-        IgniteCache<Integer, Integer> cache = grid(0).createCache(new CacheConfiguration<Integer, Integer>()
-            .setName(DEFAULT_CACHE_NAME)
-            .setAtomicityMode(ATOMIC)
-            .setWriteSynchronizationMode(FULL_SYNC)
-            .setBackups(2)
-            .setAffinity(new GridCacheModuloAffinityFunction(3, 2))
-            .setInterceptor(new TestInterceptor())
-        );
+        IgniteCache<Integer, Integer> cache = grid(0).createCache(createTestCacheConfiguration(false));
 
-        Map<Integer, Integer> data = new TreeMap<>();
-
-        data.put(0, 0); // node 0 entry
-        data.put(1, 1); // node 1 entry
-        data.put(4, 4); // node 1 entry
-
-        IgniteInternalFuture<Object> putFut = GridTestUtils.runAsync(() -> cache.putAll(data));
+        IgniteInternalFuture<Object> putFut = GridTestUtils.runAsync(() -> cache.putAll(createTestData()));
 
         assertTrue(TestInterceptor.putStartedLatch.await(getTestTimeout(), MILLISECONDS));
 
@@ -88,38 +94,108 @@ public class IgniteCacheAtomicFullSyncPartialUpdateAllTest extends GridCommonAbs
         IgniteInternalFuture<Object> stopFut = GridTestUtils.runAsync(() -> stopGrid(1));
 
         try {
-            GridTestUtils.waitForCondition(() ->
+            assertTrue(GridTestUtils.waitForCondition(() ->
                 U.<AtomicBoolean>field(stoppingNode.context().cache().cacheGroup(cacheId(DEFAULT_CACHE_NAME)).offheap(), "stopping").get(),
                 getTestTimeout()
-            );
+            ));
 
             TestInterceptor.putUnblockedLatch.countDown();
 
-            putFut.get();
+            putFut.get(getTestTimeout(), MILLISECONDS);
 
             assertNotNull(cache.get(0));
-            assertNotNull(cache.get(1));
-            assertNotNull(cache.get(4));
+            assertNotNull(cache.get(NODE_1_FIRST_KEY));
+            assertNotNull(cache.get(NODE_1_SECOND_KEY));
         }
-        catch (IgniteCheckedException e) {
+        catch (CachePartialUpdateException e) {
             assertTrue(e.getMessage().contains("Failed to update keys (retry update if possible)"));
         }
         finally {
-            stopFut.get();
+            stopFut.get(getTestTimeout(), MILLISECONDS);
         }
+    }
+
+    /**
+     * In the following scenario `near node` does not complete putAll until {@link GridNearAtomicUpdateResponse),
+     * contatining cache entry processing errors from the primary node, is received. Even when `near node` receives all
+     * responces from backup nodes.
+     */
+    @Test
+    public void testCacheEntriesProcessingFailureCausedByInterceptorException() throws Exception {
+        startGridsMultiThreaded(3);
+
+        IgniteCache<Integer, Integer> cache = grid(0).createCache(createTestCacheConfiguration(true));
+
+        CountDownLatch backupResponsesReceivedLatch = new CountDownLatch(3);
+
+        grid(0).context().io().addMessageListener(TOPIC_CACHE, (n, m, p) -> {
+            if (m instanceof GridDhtAtomicNearResponse)
+                backupResponsesReceivedLatch.countDown();
+        });
+
+        spi(grid(1)).blockMessages((n, m) -> m instanceof GridNearAtomicUpdateResponse);
+
+        IgniteInternalFuture<Object> putFut = GridTestUtils.runAsync(() -> cache.putAll(createTestData()));
+
+        spi(grid(1)).waitForBlocked();
+
+        assertTrue(backupResponsesReceivedLatch.await(getTestTimeout(), MILLISECONDS));
+
+        spi(grid(1)).stopBlock();
+
+        GridTestUtils.assertThrowsAnyCause(
+            log,
+            () -> {
+                putFut.get(getTestTimeout(), MILLISECONDS);
+
+                return null;
+            },
+            CachePartialUpdateCheckedException.class,
+            "Failed to update keys (retry update if possible).: [" + NODE_1_SECOND_KEY + ']'
+        );
+    }
+
+    /** */
+    private CacheConfiguration<Integer, Integer> createTestCacheConfiguration(boolean forceCacheEntryProcessingError) {
+        return new CacheConfiguration<Integer, Integer>()
+            .setName(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(ATOMIC)
+            .setWriteSynchronizationMode(FULL_SYNC)
+            .setBackups(2)
+            .setAffinity(new GridCacheModuloAffinityFunction(3, 2))
+            .setInterceptor(new TestInterceptor(forceCacheEntryProcessingError));
+    }
+
+    /** */
+    private Map<Integer, Integer> createTestData() {
+        Map<Integer, Integer> data = new TreeMap<>();
+
+        data.put(0, 0); // node0 entry
+        data.put(NODE_1_FIRST_KEY, 1); // node1 entry
+        data.put(NODE_1_SECOND_KEY, 4); // node1 entry
+
+        return data;
     }
 
     /** */
     public static final class TestInterceptor implements CacheInterceptor<Integer, Integer> {
         /** */
-        @IgniteInstanceResource
-        private IgniteEx ignite;
-
-        /** */
         public static CountDownLatch putStartedLatch;
 
         /** */
         public static CountDownLatch putUnblockedLatch;
+
+        /** */
+        private final boolean forceCacheEntryProcessingError;
+
+        /** */
+        @IgniteInstanceResource
+        private IgniteEx ignite;
+
+        /** */
+        public TestInterceptor(boolean forceCacheEntryProcessingError) {
+            this.forceCacheEntryProcessingError = forceCacheEntryProcessingError;
+        }
 
         /** {@inheritDoc} */
         @Override public @Nullable Integer onGet(Integer key, @Nullable Integer val) {
@@ -128,8 +204,14 @@ public class IgniteCacheAtomicFullSyncPartialUpdateAllTest extends GridCommonAbs
 
         /** {@inheritDoc} */
         @Override public @Nullable Integer onBeforePut(Cache.Entry<Integer, Integer> entry, Integer newVal) {
-            // Node with index 1 is primary for key 1
-            if (newVal == 1 && ignite.localNode().<Integer>attribute(IDX_ATTR) == 1) {
+            if (ignite.localNode().<Integer>attribute(IDX_ATTR) != 1)
+                return newVal;
+
+            if (forceCacheEntryProcessingError) {
+                if (entry.getKey() == NODE_1_SECOND_KEY)
+                    throw new RuntimeException("expected");
+            }
+            else if (entry.getKey() == NODE_1_FIRST_KEY) {
                 putStartedLatch.countDown();
 
                 try {
