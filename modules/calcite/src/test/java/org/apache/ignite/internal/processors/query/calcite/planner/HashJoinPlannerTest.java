@@ -21,13 +21,16 @@ import java.util.List;
 import org.apache.calcite.plan.RelOptPlanner.CannotPlanException;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
+import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import static org.apache.calcite.rel.RelFieldCollation.Direction.ASCENDING;
@@ -110,7 +113,7 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
     /** */
     @Test
     public void testHashJoinApplied() throws Exception {
-        // Parms: request, can be planned, only INNER, LEFT or SEMI join.
+        // Parms: request, can be planned, only INNER or SEMI join.
         List<List<Object>> testParams = F.asList(
             F.asList("select t1.c1 from t1 %s join t2 on t1.id = t2.id", true, false),
             F.asList("select t1.c1 from t1 %s join t2 on t1.id = t2.id and t1.c1=t2.c1", true, false),
@@ -141,7 +144,7 @@ public class HashJoinPlannerTest extends AbstractPlannerTest {
             IgniteSchema schema = createSchema(tbl1, tbl2);
 
             for (String joinType : JOIN_TYPES) {
-                if (onlyInnerOrSemi && !joinType.equals("INNER") && !joinType.equals("LEFT") && !joinType.equals("SEMI"))
+                if (onlyInnerOrSemi && !joinType.equals("INNER") && !joinType.equals("SEMI"))
                     continue;
 
                 String sql0 = String.format(sql, joinType);
