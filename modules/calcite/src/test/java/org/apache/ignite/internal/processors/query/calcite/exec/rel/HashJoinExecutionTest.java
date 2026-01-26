@@ -194,31 +194,18 @@ public class HashJoinExecutionTest extends AbstractExecutionTest {
     }
 
     /** */
-    @Test
-    public void testInnerJoinWithPostFiltration() {
-        Object[][] persons = {
-            new Object[] {0, "Igor", 1},
-            new Object[] {1, "Roman", 2},
-            new Object[] {2, "Ivan", 5},
-            new Object[] {3, "Alexey", 1}
-        };
-
-        Object[][] deps = {
-            new Object[] {1, "Core"},
-            new Object[] {2, "SQL"},
-            new Object[] {3, "QA"}
-        };
-
-        BiPredicate<Object[], Object[]> condition = (l, r) -> ((CharSequence)r[1]).length() > 3 && ((CharSequence)l[1]).length() > 4;
-
-        Object[][] expected = {{3, "Alexey", 1, 1, "Core"}};
-
-        validate(INNER, Stream.of(persons)::iterator, Stream.of(deps)::iterator, expected, -1, condition);
+    @Test public void testInnerJoinWithPostFiltration() {
+        doTestJoinWithPostFiltration(INNER, new Object[][] {{3, "Alexey", 1, 1, "Core"}});
     }
 
     /** */
     @Test
     public void testSemiJoinWithPostFiltration() {
+        doTestJoinWithPostFiltration(SEMI, new Object[][] {{3, "Alexey", 1}});
+    }
+
+    /** */
+    private void doTestJoinWithPostFiltration(JoinRelType joinType, Object[][] expected) {
         Object[][] persons = {
             new Object[] {0, "Igor", 1},
             new Object[] {1, "Roman", 2},
@@ -234,9 +221,7 @@ public class HashJoinExecutionTest extends AbstractExecutionTest {
 
         BiPredicate<Object[], Object[]> condition = (l, r) -> ((CharSequence)r[1]).length() > 3 && ((CharSequence)l[1]).length() > 4;
 
-        Object[][] expected = {{3, "Alexey", 1}};
-
-        validate(SEMI, Stream.of(persons)::iterator, Stream.of(deps)::iterator, expected, -1, condition);
+        validate(joinType, Stream.of(persons)::iterator, Stream.of(deps)::iterator, expected, -1, condition);
     }
 
     /** */

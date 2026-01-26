@@ -319,6 +319,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
                             Collection<RowT> rightRows = lookup(left);
 
+                            // Emit unmatched left row.
                             if (rightRows.isEmpty()) {
                                 requested--;
 
@@ -329,7 +330,6 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                         }
 
                         if (rightIt.hasNext()) {
-                            // Emit unmatched left row.
                             while (requested > 0 && rightIt.hasNext()) {
                                 if (rescheduleJoin())
                                     return;
