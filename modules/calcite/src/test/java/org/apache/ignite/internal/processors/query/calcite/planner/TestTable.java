@@ -61,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
-import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
 import org.apache.ignite.internal.processors.query.calcite.rel.logical.IgniteLogicalTableScan;
@@ -411,8 +410,12 @@ public class TestTable implements IgniteCacheTable, Wrapper {
         }
 
         /** {@inheritDoc} */
-        @Override public <Row> Row toRow(ExecutionContext<Row> ectx, CacheDataRow row, RowHandler.RowFactory<Row> factory,
-            @Nullable ImmutableBitSet requiredColumns) {
+        @Override public <Row> Row toRow(
+            ExecutionContext<Row> ectx,
+            CacheDataRow cacheDataRow,
+            Row outputRow,
+            int[] fieldColMapping
+        ) {
             throw new AssertionError();
         }
 

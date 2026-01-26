@@ -27,6 +27,7 @@ import java.util.Queue;
 import java.util.function.Function;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -40,7 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /** */
-public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
+public class TableScan<Row> extends AbstractCacheColumnsScan<CacheDataRow, Row> {
     /** */
     protected volatile List<GridDhtLocalPartition> reservedParts;
 
@@ -56,7 +57,23 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
 
     /** {@inheritDoc} */
     @Override protected Iterator<Row> createIterator() {
+        return F.iterator((Iterator<CacheDataRow>)new IteratorImpl(),
+            row -> enrichRow(row, factory.create(), fieldColMapping), true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Iterator<CacheDataRow> createTableRowIterator() {
         return new IteratorImpl();
+    }
+
+    /** */
+    @Override public Row enrichRow(CacheDataRow cacheDataRow, Row row, int[] fieldColMapping) {
+        try {
+            return desc.toRow(ectx, cacheDataRow, row, fieldColMapping);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -72,7 +89,7 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
     /**
      * Table scan iterator.
      */
-    private class IteratorImpl extends GridIteratorAdapter<Row> {
+    private class IteratorImpl extends GridIteratorAdapter<CacheDataRow> {
         /** */
         private final Queue<GridDhtLocalPartition> parts;
 
@@ -86,7 +103,7 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
         private Iterator<CacheDataRow> txIter = Collections.emptyIterator();
 
         /** */
-        private Row next;
+        private CacheDataRow next;
 
         /** */
         private IteratorImpl() {
@@ -114,13 +131,13 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
         }
 
         /** {@inheritDoc} */
-        @Override public Row nextX() throws IgniteCheckedException {
+        @Override public CacheDataRow nextX() throws IgniteCheckedException {
             advance();
 
             if (next == null)
                 throw new NoSuchElementException();
 
-            Row next = this.next;
+            CacheDataRow next = this.next;
 
             this.next = null;
 
@@ -170,7 +187,7 @@ public class TableScan<Row> extends AbstractCacheColumnsScan<Row> {
                     if (!desc.match(row))
                         continue;
 
-                    next = desc.toRow(ectx, row, factory, requiredColumns);
+                    next = row;
 
                     break;
                 }

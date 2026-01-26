@@ -1836,7 +1836,7 @@ public final class IgniteSystemProperties extends IgniteCommonsSystemProperties 
      * Default is {@code 0} (do not print warning).
      */
     @SystemProperty(value = "When set to positive number warning will be produced when outgoing message queue size of " +
-        "TCP communication SPI exeeds provided value. Default is 0 (do not print warning).", type = Integer.class)
+        "TCP communication SPI exeeds provided value. Default is 0 (do not print warning)", type = Integer.class)
     public static final String IGNITE_TCP_COMM_MSG_QUEUE_WARN_SIZE = "IGNITE_TCP_COMM_MSG_QUEUE_WARN_SIZE";
 
     /**

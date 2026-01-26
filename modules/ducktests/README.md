@@ -58,7 +58,7 @@ For development process requirements are `python` >= 3.7.
 ```
 
 # Real environment run
-[Ducktape](https://ducktape-docs.readthedocs.io/en/latest/index.html) allow runs on 
+[Ducktape](https://ducktape.readthedocs.io/en/latest/index.html) allow runs on 
 Custom cluster, Vagrant, K8s, Mesos, Docker, cloud providers, etc.
 
 ## Requirements
@@ -69,7 +69,7 @@ Custom cluster, Vagrant, K8s, Mesos, Docker, cloud providers, etc.
 - Change a current directory to`${IGNITE_HOME}`
 - Build Apache IGNITE invoking `${IGNITE_HOME}/scripts/build-module.sh ducktests`
 - (Optionally) Build the needed extension modules in the `${IGNITE_HOME}\..\ignite-extensions` directory
-- Run tests using [Ducktape](https://ducktape-docs.readthedocs.io/en/latest/run_tests.html). \
+- Run tests using [Ducktape](https://ducktape.readthedocs.io/en/latest/run_tests.html). \
   For example:
   ```
   ducktape --results-root=./results --cluster-file=./cluster.json --repeat 1 --max-parallel 16 ./modules/ducktests/tests/ignitetest

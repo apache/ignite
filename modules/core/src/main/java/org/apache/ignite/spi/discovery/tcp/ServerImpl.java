@@ -2220,15 +2220,6 @@ class ServerImpl extends TcpDiscoveryImpl {
             !(msg instanceof TcpDiscoveryConnectionCheckMessage);
     }
 
-    /**
-     * @param msg Message.
-     * @param nodeId Node ID.
-     */
-    private static void removeMetrics(TcpDiscoveryMetricsUpdateMessage msg, UUID nodeId) {
-        msg.removeMetrics(nodeId);
-        msg.removeCacheMetrics(nodeId);
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ServerImpl.class, this);
@@ -3399,10 +3390,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
                     if (msgBytes == null) {
                         try {
-                            msgBytes = U.marshal(spi.marshaller(), msg);
+                            msgBytes = clientMsgWorker.ses.serializeMessage(msg);
                         }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to marshal message: " + msg, e);
+                        catch (IgniteCheckedException | IOException e) {
+                            U.error(log, "Failed to serialize message to a client: " + msg + ", recepient " +
+                                "client id: " + clientMsgWorker.clientNodeId, e);
 
                             break;
                         }
@@ -3418,6 +3410,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (clientMsgWorker.clientNodeId.equals(node.id())) {
                             try {
+                                // TODO: https://issues.apache.org/jira/browse/IGNITE-27556 refactor serialization.
                                 msg0 = U.unmarshal(spi.marshaller(), msgBytes,
                                     U.resolveClassLoader(spi.ignite().configuration()));
 
@@ -6052,30 +6045,32 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             long tsNanos = System.nanoTime();
 
-            if (spiStateCopy() == CONNECTED && msg.hasMetrics())
-                processMsgCacheMetrics(msg, tsNanos);
+            if (spiStateCopy() == CONNECTED && !F.isEmpty(msg.serversFullMetricsMessages()))
+                processCacheMetricsMessage(msg, tsNanos);
 
             if (sendMessageToRemotes(msg)) {
                 if (laps == 0 && spiStateCopy() == CONNECTED) {
                     // Message is on its first ring or just created on coordinator.
-                    msg.setMetrics(locNodeId, spi.metricsProvider.metrics());
-                    msg.setCacheMetrics(locNodeId, spi.metricsProvider.cacheMetrics());
+                    msg.addServerMetrics(locNodeId, spi.metricsProvider.metrics());
+                    msg.addServerCacheMetrics(locNodeId, spi.metricsProvider.cacheMetrics());
 
                     for (Map.Entry<UUID, ClientMessageWorker> e : clientMsgWorkers.entrySet()) {
                         UUID nodeId = e.getKey();
                         ClusterMetrics metrics = e.getValue().metrics();
 
                         if (metrics != null)
-                            msg.setClientMetrics(locNodeId, nodeId, metrics);
+                            msg.addClientMetrics(locNodeId, nodeId, metrics);
 
                         msg.addClientNodeId(nodeId);
                     }
                 }
                 else {
                     // Message is on its second ring.
-                    removeMetrics(msg, locNodeId);
+                    msg.removeServerMetrics(locNodeId);
 
-                    Collection<UUID> clientNodeIds = msg.clientNodeIds();
+                    Collection<UUID> clientNodeIds = F.isEmpty(msg.clientNodeIds())
+                        ? Collections.emptySet()
+                        : msg.clientNodeIds();
 
                     for (TcpDiscoveryNode clientNode : ring.clientNodes()) {
                         if (clientNode.visible()) {
@@ -8436,7 +8431,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         private int passedLaps(TcpDiscoveryMetricsUpdateMessage msg) {
             UUID locNodeId = getLocalNodeId();
 
-            boolean hasLocMetrics = hasMetrics(msg, locNodeId);
+            boolean hasLocMetrics = !F.isEmpty(msg.serversFullMetricsMessages())
+                && msg.serversFullMetricsMessages().get(locNodeId) != null;
 
             if (locNodeId.equals(msg.creatorNodeId()) && !hasLocMetrics && msg.senderNodeId() != null)
                 return 2;
@@ -8444,16 +8440,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 return 0;
             else
                 return 1;
-        }
-
-        /**
-         * @param msg Metrics update message to check.
-         * @param nodeId Node ID for which the check should be performed.
-         * @return {@code True} is the message contains metrics of the node with the provided ID.
-         * {@code False} otherwise.
-         */
-        private boolean hasMetrics(TcpDiscoveryMetricsUpdateMessage msg, UUID nodeId) {
-            return msg.hasMetrics(nodeId) || msg.hasCacheMetrics(nodeId);
         }
     }
 }
