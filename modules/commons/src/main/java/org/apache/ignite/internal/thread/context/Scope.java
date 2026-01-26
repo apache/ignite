@@ -15,32 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.security;
+package org.apache.ignite.internal.thread.context;
 
 /**
- *
+ * Represents an arbitrary Scope. A Scope is active from the moment it is created until the {@link #close()} method is
+ * called on the {@link Scope} instance. It is strongly encouraged to use a try-with-resources block to close a Scope.
  */
-public class OperationSecurityContext implements AutoCloseable {
-    /** Ignite Security. */
-    private final IgniteSecurity proc;
+public interface Scope extends AutoCloseable {
+    /** Scope instance that does nothing when closed. */
+    Scope NOOP_SCOPE = () -> {};
 
-    /** Security context. */
-    private final SecurityContext secCtx;
-
-    /**
-     * @param proc Ignite Security.
-     * @param secCtx Security context.
-     */
-    OperationSecurityContext(IgniteSecurity proc, SecurityContext secCtx) {
-        this.proc = proc;
-        this.secCtx = secCtx;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        if (secCtx == null)
-            ((IgniteSecurityProcessor)proc).restoreDefaultContext();
-        else
-            proc.withContext(secCtx);
-    }
+    /** Closes the scope. This operation cannot fail. */
+    @Override void close();
 }
