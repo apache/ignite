@@ -94,6 +94,15 @@ public class TcpDiscoveryIoSession {
     /** Intermediate buffer for serializing discovery messages. */
     private final ByteBuffer msgBuf;
 
+    /** */
+    private final DiscoveryMessageReader checkedReader;
+
+    /** */
+    private final DiscoveryMessageReader fastReader;
+
+    /** */
+    private DiscoveryMessageReader reader;
+
     /**
      * Creates a new discovery I/O session bound to the given socket.
      *
@@ -111,6 +120,10 @@ public class TcpDiscoveryIoSession {
 
         msgWriter = new DirectMessageWriter(spi.messageFactory());
         msgReader = new DirectMessageReader(spi.messageFactory(), null);
+
+        checkedReader = new CheckedDiscoveryMessageReader();
+        fastReader = new FastDiscoveryMessageReader();
+        reader = checkedReader;
 
         try {
             int sendBufSize = sock.getSendBufferSize() > 0 ? sock.getSendBufferSize() : DFLT_SOCK_BUFFER_SIZE;
@@ -163,20 +176,100 @@ public class TcpDiscoveryIoSession {
      * @throws IgniteCheckedException If deserialization fails.
      */
     <T> T readMessage() throws IgniteCheckedException, IOException {
-        byte serMode = (byte)in.read();
+        return reader.readMessage();
+    }
 
-        if (JAVA_SERIALIZATION == serMode)
-            return U.unmarshal(spi.marshaller(), in, clsLdr);
+    /** Switches reader to fast mode after initial validated read. */
+    public void switchToFastReader() {
+        reader = fastReader;
+    }
 
-        try {
+    /** Base discovery message reader. */
+    private abstract class DiscoveryMessageReader {
+        /**
+         * Reads the next discovery message from the socket input stream.
+         *
+         * @param <T> Type of the expected message.
+         * @return Deserialized message instance.
+         * @throws IgniteCheckedException If deserialization fails.
+         */
+        abstract <T> T readMessage() throws IgniteCheckedException, IOException;
+
+        /** Reads serialized discovery message body when {@link #MESSAGE_SERIALIZATION} is used. */
+        protected <T> T readDiscoveryMessageBody() throws IgniteCheckedException {
+            try {
+                Message msg = spi.messageFactory().create(makeMessageType((byte)in.read(), (byte)in.read()));
+
+                msgReader.reset();
+                msgReader.setBuffer(msgBuf);
+
+                MessageSerializer msgSer = spi.messageFactory().serializer(msg.directType());
+
+                boolean finished;
+
+                do {
+                    msgBuf.clear();
+
+                    int read = in.read(msgBuf.array(), msgBuf.position(), msgBuf.remaining());
+
+                    if (read == -1)
+                        throw new EOFException("Connection closed before message was fully read.");
+
+                    msgBuf.limit(read);
+
+                    finished = msgSer.readFrom(msg, msgReader);
+
+                    // Server Discovery only sends next message to next Server upon receiving a receipt for the previous one.
+                    // This behaviour guarantees that we never read a next message from the buffer right after the end of
+                    // the previous message. But it is not guaranteed with Client Discovery where messages aren't acknowledged.
+                    // Thus, we have to keep the uprocessed bytes read from the socket. It won't return them again.
+                    if (msgBuf.hasRemaining()) {
+                        byte[] unprocessedReadTail = new byte[msgBuf.remaining()];
+
+                        msgBuf.get(unprocessedReadTail, 0, msgBuf.remaining());
+
+                        in.attachByteArray(unprocessedReadTail);
+                    }
+                }
+                while (!finished);
+
+                return (T)msg;
+            }
+            catch (Exception e) {
+                // Keep logic similar to `U.marshal(...)`.
+                if (e instanceof IgniteCheckedException)
+                    throw (IgniteCheckedException)e;
+
+                throw new IgniteCheckedException(e);
+            }
+        }
+
+        /** Reads 4-byte header for diagnostics. */
+        protected byte[] readHeader(byte serMode) throws IOException {
+            byte[] hdr = new byte[4];
+            hdr[0] = serMode;
+
+            int read = in.readNBytes(hdr, 1, 3);
+
+            if (read < 3)
+                throw new EOFException();
+
+            return hdr;
+        }
+
+    }
+
+    /** Reader that checks serialization mode. */
+    private class CheckedDiscoveryMessageReader extends DiscoveryMessageReader {
+        /** {@inheritDoc} */
+        @Override <T> T readMessage() throws IgniteCheckedException, IOException {
+            byte serMode = (byte)in.read();
+
+            if (JAVA_SERIALIZATION == serMode)
+                return U.unmarshal(spi.marshaller(), in, clsLdr);
+
             if (MESSAGE_SERIALIZATION != serMode) {
-                byte[] hdr = new byte[4];
-                hdr[0] = serMode;
-
-                int read = in.readNBytes(hdr, 1, 3);
-
-                if (read < 3)
-                    throw new EOFException();
+                byte[] hdr = readHeader(serMode);
 
                 detectSslAlert(hdr);
                 detectJavaObjectStreamHeader(hdr);
@@ -186,49 +279,20 @@ public class TcpDiscoveryIoSession {
                 throw new IOException("Received unexpected byte while reading discovery message: " + serMode);
             }
 
-            Message msg = spi.messageFactory().create(makeMessageType((byte)in.read(), (byte)in.read()));
-
-            msgReader.reset();
-            msgReader.setBuffer(msgBuf);
-
-            MessageSerializer msgSer = spi.messageFactory().serializer(msg.directType());
-
-            boolean finished;
-
-            do {
-                msgBuf.clear();
-
-                int read = in.read(msgBuf.array(), msgBuf.position(), msgBuf.remaining());
-
-                if (read == -1)
-                    throw new EOFException("Connection closed before message was fully read.");
-
-                msgBuf.limit(read);
-
-                finished = msgSer.readFrom(msg, msgReader);
-
-                // Server Discovery only sends next message to next Server upon receiving a receipt for the previous one.
-                // This behaviour guarantees that we never read a next message from the buffer right after the end of
-                // the previous message. But it is not guaranteed with Client Discovery where messages aren't acknowledged.
-                // Thus, we have to keep the uprocessed bytes read from the socket. It won't return them again.
-                if (msgBuf.hasRemaining()) {
-                    byte[] unprocessedReadTail = new byte[msgBuf.remaining()];
-
-                    msgBuf.get(unprocessedReadTail, 0, msgBuf.remaining());
-
-                    in.attachByteArray(unprocessedReadTail);
-                }
-            }
-            while (!finished);
-
-            return (T)msg;
+            return readDiscoveryMessageBody();
         }
-        catch (Exception e) {
-            // Keep logic similar to `U.marshal(...)`.
-            if (e instanceof IgniteCheckedException)
-                throw (IgniteCheckedException)e;
+    }
 
-            throw new IgniteCheckedException(e);
+    /** Reader that does not check serialization mode. */
+    private class FastDiscoveryMessageReader extends DiscoveryMessageReader {
+        /** {@inheritDoc} */
+        @Override <T> T readMessage() throws IgniteCheckedException, IOException {
+            byte serMode = (byte)in.read();
+
+            if (JAVA_SERIALIZATION == serMode)
+                return U.unmarshal(spi.marshaller(), in, clsLdr);
+
+            return readDiscoveryMessageBody();
         }
     }
 
