@@ -37,6 +37,7 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.NestingKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
@@ -75,6 +76,9 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
     /** Factory class name. */
     public static final String FACTORY_CLASS = "IDTOSerializerFactory";
 
+    /** Generated classes. */
+    private final Map<TypeElement, String> genSerDes = new HashMap<>();
+
     /**
      * Processes all classes extending the {@code IgniteDataTransferObject} and generates corresponding serializer code.
      */
@@ -82,43 +86,9 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         if (roundEnv.errorRaised())
             return true;
 
-        TypeMirror dtoCls = processingEnv.getElementUtils().getTypeElement(DTO_CLASS).asType();
-        TypeMirror argAnnotation = processingEnv.getElementUtils().getTypeElement(ARG_ANNOTATION).asType();
+        genSerDes.clear();
 
-        Map<TypeElement, String> genSerDes = new HashMap<>();
-
-        for (Element el: roundEnv.getRootElements()) {
-            if (el.getKind() != ElementKind.CLASS)
-                continue;
-
-            TypeElement clazz = (TypeElement)el;
-
-            if (!processingEnv.getTypeUtils().isAssignable(clazz.asType(), dtoCls))
-                continue;
-
-            if (clazz.getModifiers().contains(Modifier.ABSTRACT))
-                continue;
-
-            if (!clazz.getModifiers().contains(Modifier.PUBLIC))
-                continue;
-
-            if (!hasArgumentFields(clazz, argAnnotation))
-                continue;
-
-            try {
-                IDTOSerializerGenerator gen = new IDTOSerializerGenerator(processingEnv, clazz);
-
-                if (gen.generate())
-                    genSerDes.put(clazz, gen.serializerFQN());
-            }
-            catch (Exception e) {
-                processingEnv.getMessager().printMessage(
-                    Diagnostic.Kind.ERROR,
-                    "Failed to generate a dto serializer:" + e.getMessage(),
-                    clazz
-                );
-            }
-        }
+        roundEnv.getRootElements().forEach(this::generateSingle);
 
         // IDE recompile only modified classes. Don't want to touch factory in the case no matching classes was recompiled.
         if (genSerDes.isEmpty())
@@ -127,6 +97,51 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         generateFactory(genSerDes);
 
         return true;
+    }
+
+    /**
+     * @param el Element to generate code for.
+     */
+    private void generateSingle(Element el) {
+        if (el.getKind() != ElementKind.CLASS)
+            return;
+
+        TypeMirror dtoCls = processingEnv.getElementUtils().getTypeElement(DTO_CLASS).asType();
+        TypeMirror argAnnotation = processingEnv.getElementUtils().getTypeElement(ARG_ANNOTATION).asType();
+
+        TypeElement clazz = (TypeElement)el;
+
+        // Generate code for inner classes.
+        clazz.getEnclosedElements().forEach(this::generateSingle);
+
+        if (!processingEnv.getTypeUtils().isAssignable(clazz.asType(), dtoCls))
+            return;
+
+        if (clazz.getModifiers().contains(Modifier.ABSTRACT))
+            return;
+
+        if (!clazz.getModifiers().contains(Modifier.PUBLIC))
+            return;
+
+        if (clazz.getNestingKind() != NestingKind.TOP_LEVEL && clazz.getNestingKind() != NestingKind.MEMBER)
+            return;
+
+        if (!hasArgumentFields(clazz, argAnnotation))
+            return;
+
+        try {
+            IDTOSerializerGenerator gen = new IDTOSerializerGenerator(processingEnv, clazz);
+
+            if (gen.generate())
+                genSerDes.put(clazz, gen.serializerFQN());
+        }
+        catch (Exception e) {
+            processingEnv.getMessager().printMessage(
+                Diagnostic.Kind.ERROR,
+                "Failed to generate a dto serializer:" + e.getMessage(),
+                clazz
+            );
+        }
     }
 
     /**

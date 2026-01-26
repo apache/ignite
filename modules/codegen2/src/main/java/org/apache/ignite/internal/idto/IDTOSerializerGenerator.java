@@ -39,6 +39,8 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.NestingKind;
+import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
@@ -140,7 +142,14 @@ public class IDTOSerializerGenerator {
 
     /** @return Fully qualified name for generated class. */
     public String serializerFQN() {
-        return type.getQualifiedName() + "Serializer";
+        TypeElement topLevelCls = type;
+
+        while (topLevelCls.getNestingKind() != NestingKind.TOP_LEVEL)
+            topLevelCls = (TypeElement)topLevelCls.getEnclosingElement();
+
+        PackageElement pkg = (PackageElement)topLevelCls.getEnclosingElement();
+
+        return pkg.getQualifiedName().toString() + "." + serializerName();
     }
 
     /**
@@ -187,6 +196,9 @@ public class IDTOSerializerGenerator {
         imports.add(ObjectInput.class.getName());
         imports.add(IOException.class.getName());
         imports.add("org.apache.ignite.internal.util.typedef.internal.U");
+
+        if (type.getNestingKind() != NestingKind.TOP_LEVEL)
+            imports.add(type.getQualifiedName().toString());
 
         String simpleClsName = String.valueOf(type.getSimpleName());
 

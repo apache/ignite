@@ -71,7 +71,8 @@ public abstract class IgniteDataTransferObject implements Externalizable {
      * @throws IOException If I/O errors occur.
      */
     protected void writeExternalData(ObjectOutput out) throws IOException {
-        throw new UnsupportedOperationException("Please, implement custom method or provide support in IDTOSerializerGenerator");
+        throw new UnsupportedOperationException("Please, implement custom method or provide support in " +
+            "IDTOSerializerGenerator for " + getClass());
     }
 
     /** {@inheritDoc} */
@@ -99,7 +100,8 @@ public abstract class IgniteDataTransferObject implements Externalizable {
      * @throws ClassNotFoundException If the class for an object being restored cannot be found.
      */
     protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        throw new UnsupportedOperationException("Please, implement custom method or provide support in IDTOSerializerGenerator");
+        throw new UnsupportedOperationException("Please, implement custom method or provide support in " +
+            "IDTOSerializerGenerator for " + getClass());
     }
 
     /** {@inheritDoc} */
