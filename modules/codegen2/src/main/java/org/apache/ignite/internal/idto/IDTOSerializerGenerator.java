@@ -61,9 +61,6 @@ import static org.apache.ignite.internal.MessageSerializerGenerator.identicalFil
  * {@code org.apache.ignite.internal.codegen.[IDTOClassName]Serializer}.
  */
 public class IDTOSerializerGenerator {
-    /** Package for serializers. */
-    static final String PKG_NAME = "org.apache.ignite.internal.codegen.idto";
-
     /** Serializer interface. */
     public static final String DTO_SERDES_INTERFACE = "org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer";
 
@@ -78,15 +75,15 @@ public class IDTOSerializerGenerator {
     private static final Map<String, IgniteBiTuple<String, String>> TYPE_SERDES = new HashMap<>();
 
     {
-        TYPE_SERDES.put(boolean.class.getName(), F.t("out.writeBoolean(obj.${f}());", "obj.${f}(in.readBoolean());"));
-        TYPE_SERDES.put(byte.class.getName(), F.t("out.write(obj.${f}());", "obj.${f}(in.read());"));
-        TYPE_SERDES.put(short.class.getName(), F.t("out.writeShort(obj.${f}());", "obj.${f}(in.readShort());"));
-        TYPE_SERDES.put(int.class.getName(), F.t("out.writeInt(obj.${f}());", "obj.${f}(in.readInt());"));
-        TYPE_SERDES.put(long.class.getName(), F.t("out.writeLong(obj.${f}());", "obj.${f}(in.readLong());"));
-        TYPE_SERDES.put(float.class.getName(), F.t("out.writeFloat(obj.${f}());", "obj.${f}(in.readFloat());"));
-        TYPE_SERDES.put(double.class.getName(), F.t("out.writeDouble(obj.${f}());", "obj.${f}(in.readDouble());"));
+        TYPE_SERDES.put(boolean.class.getName(), F.t("out.writeBoolean(obj.${f});", "obj.${f} = in.readBoolean();"));
+        TYPE_SERDES.put(byte.class.getName(), F.t("out.write(obj.${f});", "obj.${f} = in.read();"));
+        TYPE_SERDES.put(short.class.getName(), F.t("out.writeShort(obj.${f});", "obj.${f} = in.readShort();"));
+        TYPE_SERDES.put(int.class.getName(), F.t("out.writeInt(obj.${f});", "obj.${f} = in.readInt();"));
+        TYPE_SERDES.put(long.class.getName(), F.t("out.writeLong(obj.${f});", "obj.${f} = in.readLong();"));
+        TYPE_SERDES.put(float.class.getName(), F.t("out.writeFloat(obj.${f});", "obj.${f} = in.readFloat();"));
+        TYPE_SERDES.put(double.class.getName(), F.t("out.writeDouble(obj.${f});", "obj.${f} = in.readDouble();"));
 
-        IgniteBiTuple<String, String> objSerdes = F.t("out.writeObject(obj.${f}());", "obj.${f}((${c})in.readObject());");
+        IgniteBiTuple<String, String> objSerdes = F.t("out.writeObject(obj.${f});", "obj.${f} = (${c})in.readObject();");
 
         TYPE_SERDES.put(Boolean.class.getName(), objSerdes);
         TYPE_SERDES.put(Byte.class.getName(), objSerdes);
@@ -96,29 +93,29 @@ public class IDTOSerializerGenerator {
         TYPE_SERDES.put(Float.class.getName(), objSerdes);
         TYPE_SERDES.put(Double.class.getName(), objSerdes);
 
-        TYPE_SERDES.put(String.class.getName(), F.t("U.writeString(out, obj.${f}());", "obj.${f}(U.readString(in));"));
-        TYPE_SERDES.put(UUID.class.getName(), F.t("U.writeUuid(out, obj.${f}());", "obj.${f}(U.readUuid(in));"));
-        TYPE_SERDES.put("org.apache.ignite.lang.IgniteUuid", F.t("U.writeIgniteUuid(out, obj.${f}());", "obj.${f}(U.readIgniteUuid(in));"));
+        TYPE_SERDES.put(String.class.getName(), F.t("U.writeString(out, obj.${f});", "obj.${f} = U.readString(in);"));
+        TYPE_SERDES.put(UUID.class.getName(), F.t("U.writeUuid(out, obj.${f});", "obj.${f} = U.readUuid(in);"));
+        TYPE_SERDES.put("org.apache.ignite.lang.IgniteUuid", F.t("U.writeIgniteUuid(out, obj.${f});", "obj.${f} = U.readIgniteUuid(in);"));
         TYPE_SERDES.put("org.apache.ignite.internal.processors.cache.version.GridCacheVersion", objSerdes);
 
-        TYPE_SERDES.put(Map.class.getName(), F.t("U.writeMap(out, obj.${f}());", "obj.${f}(U.readMap(in));"));
+        TYPE_SERDES.put(Map.class.getName(), F.t("U.writeMap(out, obj.${f});", "obj.${f} = U.readMap(in);"));
     }
 
     /** Write/Read code for enum. */
     private static final IgniteBiTuple<String, String> ENUM_SERDES =
-        F.t("U.writeEnum(out, obj.${f}());", "obj.${f}(U.readEnum(in, ${c}.class));");
+        F.t("U.writeEnum(out, obj.${f});", "obj.${f} = U.readEnum(in, ${c}.class);");
 
     /** Write/Read code for array. */
     private static final IgniteBiTuple<String, String> OBJ_ARRAY_SERDES =
-        F.t("U.writeArray(out, obj.${f}());", "obj.${f}(U.readArray(in, ${c}.class));");
+        F.t("U.writeArray(out, obj.${f});", "obj.${f} = U.readArray(in, ${c}.class);");
 
     /** Type name to write/read code for the array of type. */
     private static final Map<String, IgniteBiTuple<String, String>> ARRAY_TYPE_SERDES = new HashMap<>();
 
     {
-        ARRAY_TYPE_SERDES.put(byte.class.getName(), F.t("U.writeByteArray(out, obj.${f}());", "obj.${f}(U.readByteArray(in));"));
-        ARRAY_TYPE_SERDES.put(int.class.getName(), F.t("U.writeIntArray(out, obj.${f}());", "obj.${f}(U.readIntArray(in));"));
-        ARRAY_TYPE_SERDES.put(long.class.getName(), F.t("U.writeLongArray(out, obj.${f}());", "obj.${f}(U.readLongArray(in));"));
+        ARRAY_TYPE_SERDES.put(byte.class.getName(), F.t("U.writeByteArray(out, obj.${f});", "obj.${f} = U.readByteArray(in);"));
+        ARRAY_TYPE_SERDES.put(int.class.getName(), F.t("U.writeIntArray(out, obj.${f});", "obj.${f} = U.readIntArray(in);"));
+        ARRAY_TYPE_SERDES.put(long.class.getName(), F.t("U.writeLongArray(out, obj.${f});", "obj.${f} = U.readLongArray(in);"));
         ARRAY_TYPE_SERDES.put(String.class.getName(), OBJ_ARRAY_SERDES);
         ARRAY_TYPE_SERDES.put(UUID.class.getName(), OBJ_ARRAY_SERDES);
     }
@@ -143,7 +140,7 @@ public class IDTOSerializerGenerator {
 
     /** @return Fully qualified name for generated class. */
     public String serializerFQN() {
-        return PKG_NAME + "." + serializerName();
+        return type.getQualifiedName() + "Serializer";
     }
 
     /**
@@ -151,11 +148,11 @@ public class IDTOSerializerGenerator {
      * @throws Exception in case of error.
      */
     public boolean generate() throws Exception {
-        String serClsName = type.getSimpleName() + "Serializer";
+        String fqnClsName = serializerFQN();
         String serCode = generateSerializerCode();
 
         try {
-            JavaFileObject file = env.getFiler().createSourceFile(PKG_NAME + "." + serClsName);
+            JavaFileObject file = env.getFiler().createSourceFile(fqnClsName);
 
             try (Writer writer = file.openWriter()) {
                 writer.append(serCode);
@@ -171,10 +168,10 @@ public class IDTOSerializerGenerator {
             // all Run commands to Maven. However, this significantly slows down test startup time.
             // This hack checks whether the content of a generating file is identical to already existed file, and skips
             // handling this class if it is.
-            if (!identicalFileIsAlreadyGenerated(env, serCode, PKG_NAME, serClsName)) {
+            if (!identicalFileIsAlreadyGenerated(env, serCode, fqnClsName)) {
                 env.getMessager().printMessage(
                     Diagnostic.Kind.ERROR,
-                    serClsName + " is already generated. Try 'mvn clean install' to fix the issue.");
+                    fqnClsName + " is already generated. Try 'mvn clean install' to fix the issue.");
 
                 throw e;
             }
@@ -186,7 +183,6 @@ public class IDTOSerializerGenerator {
     /** @return Code for the calss implementing {@code org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer}. */
     private String generateSerializerCode() throws IOException {
         imports.add("org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer");
-        imports.add(type.getQualifiedName().toString());
         imports.add(ObjectOutput.class.getName());
         imports.add(ObjectInput.class.getName());
         imports.add(IOException.class.getName());
@@ -240,7 +236,7 @@ public class IDTOSerializerGenerator {
         }
 
         writer.write(NL);
-        writer.write("package " + PKG_NAME + ";" + NL + NL);
+        writer.write("package " + env.getElementUtils().getPackageOf(type).toString() + ";" + NL + NL);
 
         for (String regularImport: imports)
             writer.write("import " + regularImport + ";" + NL);

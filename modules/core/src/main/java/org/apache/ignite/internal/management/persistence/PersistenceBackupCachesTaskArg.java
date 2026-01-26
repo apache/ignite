@@ -28,7 +28,7 @@ public class PersistenceBackupCachesTaskArg extends PersistenceCommand.Persisten
     /** */
     @Positional
     @Argument(example = "cache1,cache2,cache3")
-    private String[] caches;
+    String[] caches;
 
     /** */
     public String[] caches() {

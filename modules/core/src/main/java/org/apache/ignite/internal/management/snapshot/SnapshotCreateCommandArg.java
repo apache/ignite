@@ -30,24 +30,24 @@ public class SnapshotCreateCommandArg extends IgniteDataTransferObject {
     @Positional
     @Argument(description = "Snapshot name. " +
         "In the case of incremental snapshot (--incremental) full snapshot name must be provided")
-    private String snapshotName;
+    String snapshotName;
 
     /** */
     @Argument(example = "path", optional = true,
         description = "Path to the directory where the snapshot will be saved. " +
         "If not specified, the default configured snapshot directory will be used")
-    private String dest;
+    String dest;
 
     /** */
     @Argument(optional = true, description = "Run the operation synchronously, " +
         "the command will wait for the entire operation to complete. " +
         "Otherwise, it will be performed in the background, and the command will immediately return control")
-    private boolean sync;
+    boolean sync;
 
     /** */
     @Argument(optional = true, description = "Create an incremental snapshot for previously created full snapshot. " +
         "Full snapshot must be accessible via --dest and snapshot_name")
-    private boolean incremental;
+    boolean incremental;
 
     /** */
     public String snapshotName() {

@@ -35,20 +35,20 @@ public class CacheIdleVerifyCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(optional = true, example = "cacheName1,...,cacheNameN")
-    private String[] caches;
+    String[] caches;
 
     /** */
     @Argument(optional = true)
-    private boolean skipZeros;
+    boolean skipZeros;
 
     /** */
     @Argument(description = "check the CRC-sum of pages stored on disk before verifying data consistency " +
         "in partitions between primary and backup nodes", optional = true)
-    private boolean checkCrc;
+    boolean checkCrc;
 
     /** */
     @Argument(optional = true, example = "cacheName1,...,cacheNameN")
-    private String[] excludeCaches;
+    String[] excludeCaches;
 
     /** */
     @Argument(optional = true, description = "Type of cache(s)")
@@ -70,7 +70,7 @@ public class CacheIdleVerifyCommandArg extends IgniteDataTransferObject {
             "All"
         }
     )
-    private CacheFilterEnum cacheFilter = CacheFilterEnum.DEFAULT;
+    CacheFilterEnum cacheFilter = CacheFilterEnum.DEFAULT;
 
     /**
      * @param string To validate that given name is valed regex.

@@ -27,7 +27,7 @@ public class PropertyGetCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(example = "<property_name>")
-    private String name;
+    String name;
 
     /** */
     public String name() {

@@ -45,14 +45,14 @@ public class SetStateCommandArg extends IgniteDataTransferObject {
             "Activate cluster. Cache updates are denied"
         }
     )
-    private ClusterState state;
+    ClusterState state;
 
     /** */
     @Argument(optional = true, description = "If true, cluster deactivation will be forced")
-    private boolean force;
+    boolean force;
 
     /** */
-    private String clusterName;
+    String clusterName;
 
     /** */
     public ClusterState state() {

@@ -30,11 +30,11 @@ public class KillClientCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(description = "Connection identifier or ALL")
-    private String connectionId;
+    String connectionId;
 
     /** */
     @Argument(description = "Node id to drop connection from", optional = true)
-    private UUID nodeId;
+    UUID nodeId;
 
     /** */
     public String connectionId() {

@@ -31,22 +31,22 @@ public class CacheFindGarbageCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(optional = true, example = "groupName1,...,groupNameN")
-    private String value;
+    String value;
 
     /** */
     @Positional
     @Argument(optional = true, example = "nodeId")
-    private String value2;
+    String value2;
 
     /** */
-    private String[] groups;
+    String[] groups;
 
     /** */
-    private UUID[] nodeIds;
+    UUID[] nodeIds;
 
     /** */
     @Argument(optional = true)
-    private boolean delete;
+    boolean delete;
 
     /** */
     private void parse(String value) {

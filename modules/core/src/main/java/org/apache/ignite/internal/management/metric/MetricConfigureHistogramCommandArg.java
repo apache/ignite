@@ -29,7 +29,7 @@ public class MetricConfigureHistogramCommandArg extends MetricCommandArg {
     /** */
     @Argument(description = "Comma-separated list of longs to configure histogram", example = "newBounds")
     @Positional
-    private long[] newBounds;
+    long[] newBounds;
 
     /** */
     public long[] newBounds() {

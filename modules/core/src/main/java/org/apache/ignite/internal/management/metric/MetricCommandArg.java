@@ -30,11 +30,11 @@ public class MetricCommandArg extends IgniteDataTransferObject {
     /** */
     @Argument(description = "Name of the metric")
     @Positional
-    private String name;
+    String name;
 
     /** */
     @Argument(description = "Node id", optional = true)
-    private UUID nodeId;
+    UUID nodeId;
 
     /** */
     public UUID nodeId() {

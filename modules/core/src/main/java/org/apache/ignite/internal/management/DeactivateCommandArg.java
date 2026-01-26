@@ -29,10 +29,10 @@ public class DeactivateCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(optional = true)
-    private boolean force;
+    boolean force;
 
     /** */
-    private String clusterName;
+    String clusterName;
 
     /** */
     public boolean force() {

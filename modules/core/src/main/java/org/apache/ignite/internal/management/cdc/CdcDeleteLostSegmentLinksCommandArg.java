@@ -31,7 +31,7 @@ public class CdcDeleteLostSegmentLinksCommandArg extends IgniteDataTransferObjec
     /** */
     @Argument(optional = true, description = "ID of the node to delete lost segment links from. " +
         "If not set, the command will affect all server nodes")
-    private UUID nodeId;
+    UUID nodeId;
 
     /** */
     public UUID nodeId() {

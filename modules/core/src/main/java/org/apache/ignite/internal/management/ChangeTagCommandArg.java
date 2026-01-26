@@ -32,7 +32,7 @@ public class ChangeTagCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(example = "newTagValue")
-    private String newTagValue;
+    String newTagValue;
 
     /** */
     public String newTagValue() {

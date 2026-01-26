@@ -28,7 +28,7 @@ public class MetricConfigureHitrateCommandArg extends MetricCommandArg {
     /** */
     @Argument(description = "Rate time interval of hitrate", example = "newRateTimeInterval")
     @Positional
-    private long newRateTimeInterval;
+    long newRateTimeInterval;
 
     /** */
     public long newRateTimeInterval() {

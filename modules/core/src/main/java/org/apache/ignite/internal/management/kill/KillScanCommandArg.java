@@ -30,17 +30,17 @@ public class KillScanCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(description = "Originating node id")
-    private UUID originNodeId;
+    UUID originNodeId;
 
     /** */
     @Positional
     @Argument(description = "Cache name")
-    private String cacheName;
+    String cacheName;
 
     /** */
     @Positional
     @Argument(description = "Query identifier")
-    private long queryId;
+    long queryId;
 
     /** */
     public UUID originNodeId() {

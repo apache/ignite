@@ -44,22 +44,22 @@ public class DiagnosticPagelocksCommandArg extends IgniteDataTransferObject {
             "Print page locks dump to console"
         }
     )
-    private Operation operation = DUMP_LOG;
+    Operation operation = DUMP_LOG;
 
     /** */
     @Argument(optional = true)
-    private String path;
+    String path;
 
     /** Run command for all nodes. */
     @Argument(description = "Run for all nodes")
-    private boolean all;
+    boolean all;
 
     /** */
     @Argument(
         description = "Comma separated list of node ids or consistent ids",
         example = "node_id1[,node_id2....node_idN]|consistend_id1[,consistent_id2,....,consistent_idN]"
     )
-    private String[] nodes;
+    String[] nodes;
 
     /** */
     private void ensureOperationAndPath(Operation op, String path) {

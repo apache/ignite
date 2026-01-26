@@ -41,7 +41,7 @@ public class ShutdownPolicyCommandArg extends IgniteDataTransferObject {
             "Node will stop if and only if it does not store any unique partitions, that don't have another copies in the cluster"
         }
     )
-    private ShutdownPolicy shutdownPolicy;
+    ShutdownPolicy shutdownPolicy;
 
     /** */
     public ShutdownPolicy shutdownPolicy() {

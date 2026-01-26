@@ -32,15 +32,15 @@ public class CacheScanCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(example = "cacheName")
-    private String cacheName;
+    String cacheName;
 
     /** */
     @Argument(description = "Pluggable output format. 'default', 'table' exists by default", example = "table", optional = true)
-    private String outputFormat;
+    String outputFormat;
 
     /** */
     @Argument(description = "limit count of entries to scan (" + DFLT_LIMIT + " by default)", example = "N", optional = true)
-    private int limit = DFLT_LIMIT;
+    int limit = DFLT_LIMIT;
 
     /** */
     public String outputFormat() {

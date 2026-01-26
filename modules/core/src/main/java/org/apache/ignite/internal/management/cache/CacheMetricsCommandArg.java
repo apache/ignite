@@ -44,16 +44,16 @@ public class CacheMetricsCommandArg extends IgniteDataTransferObject {
             "Status"
         }
     )
-    private CacheMetricsOperation operation;
+    CacheMetricsOperation operation;
 
     /** */
     @Argument(description = "specifies a comma-separated list of cache names to which operation should be applied",
         example = "cache1[,...,cacheN]")
-    private String[] caches;
+    String[] caches;
 
     /** */
     @Argument(description = "applies operation to all user caches")
-    private boolean allCaches;
+    boolean allCaches;
 
     /** */
     public CacheMetricsOperation operation() {

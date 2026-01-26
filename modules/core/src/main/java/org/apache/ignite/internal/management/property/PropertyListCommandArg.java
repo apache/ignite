@@ -27,7 +27,7 @@ public class PropertyListCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(optional = true, description = "Print detailed information: name, value, description")
-    private boolean info;
+    boolean info;
 
     /** */
     public boolean info() {

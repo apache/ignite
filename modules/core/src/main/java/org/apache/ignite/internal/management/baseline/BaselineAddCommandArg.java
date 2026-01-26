@@ -31,7 +31,7 @@ public class BaselineAddCommandArg extends BaselineTaskArg {
     /** */
     @Positional
     @Argument(example = "consistentId1[,consistentId2,....,consistentIdN]")
-    private String[] consistentIDs;
+    String[] consistentIDs;
 
     /** */
     public String[] consistentIDs() {

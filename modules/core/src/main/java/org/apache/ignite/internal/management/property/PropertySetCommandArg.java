@@ -26,7 +26,7 @@ public class PropertySetCommandArg extends PropertyGetCommandArg {
 
     /** */
     @Argument(example = "<property_value>")
-    private String val;
+    String val;
 
     /** */
     public String val() {

@@ -30,7 +30,7 @@ public class KillComputeCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(description = "Session identifier")
-    private IgniteUuid sessionId;
+    IgniteUuid sessionId;
 
     /** */
     public IgniteUuid sessionId() {

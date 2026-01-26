@@ -30,12 +30,12 @@ public class KillContinuousCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(description = "Originating node id")
-    private UUID originNodeId;
+    UUID originNodeId;
 
     /** */
     @Positional
     @Argument(description = "Routine identifier")
-    private UUID routineId;
+    UUID routineId;
 
     /** */
     public UUID originNodeId() {

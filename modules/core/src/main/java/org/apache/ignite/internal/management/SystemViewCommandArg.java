@@ -34,14 +34,14 @@ public class SystemViewCommandArg extends IgniteDataTransferObject {
     @Argument(description = "Name of the system view which content should be printed." +
         " Both \"SQL\" and \"Java\" styles of system view name are supported" +
         " (e.g. SQL_TABLES and sql.tables will be handled similarly)")
-    private String systemViewName;
+    String systemViewName;
 
     /** */
     @Argument(
         description = "ID of the node to get the system view from (deprecated. Use --node-ids instead). " +
             "If not set, random node will be chosen"
     )
-    private UUID nodeId;
+    UUID nodeId;
 
     /** ID of the nodes to get the system view content from. */
     @Argument(
@@ -49,11 +49,11 @@ public class SystemViewCommandArg extends IgniteDataTransferObject {
         "If not set, random node will be chosen",
         example = "nodeId1,nodeId2,.."
     )
-    private UUID[] nodeIds;
+    UUID[] nodeIds;
 
     /** Flag to get the system view from all nodes. */
     @Argument(description = "Get the system view from all nodes. If not set, random node will be chosen")
-    private boolean allNodes;
+    boolean allNodes;
 
     /** */
     public String systemViewName() {

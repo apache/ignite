@@ -30,19 +30,19 @@ public class SnapshotCheckCommandArg extends IgniteDataTransferObject {
     @Positional
     @Argument(description = "Snapshot name. " +
         "In case incremental snapshot (--incremental) full snapshot name must be provided")
-    private String snapshotName;
+    String snapshotName;
 
     /** */
     @Argument(example = "path", optional = true,
         description = "Path to the directory where the snapshot files are located. " +
             "If not specified, the default configured snapshot directory will be used")
-    private String src;
+    String src;
 
     /** */
     @Argument(example = "incrementIndex", optional = true,
         description = "Incremental snapshot index. " +
             "The command will check incremental snapshots sequentially from 1 to the specified index")
-    private int increment;
+    int increment;
 
     /** */
     public String snapshotName() {

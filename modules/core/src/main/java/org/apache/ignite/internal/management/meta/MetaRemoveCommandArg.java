@@ -33,7 +33,7 @@ public class MetaRemoveCommandArg extends MetaDetailsCommandArg {
 
     /** */
     @Argument(optional = true, example = "<fileName>")
-    private String out;
+    String out;
 
     /** */
     public String out() {

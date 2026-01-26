@@ -45,11 +45,11 @@ public class TracingConfigurationGetCommandArg extends TracingConfigurationComma
             "SQL scope"
         }
     )
-    private Scope scope;
+    Scope scope;
 
     /** */
     @Argument(optional = true)
-    private String label;
+    String label;
 
     /** */
     public Scope scope() {

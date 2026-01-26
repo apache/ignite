@@ -31,11 +31,11 @@ public class TracingConfigurationSetCommandArg extends TracingConfigurationGetCo
     /** */
     @Argument(optional = true, example = "Decimal value between 0 and 1, where 0 means never and 1 means always. " +
         "More or less reflects the probability of sampling specific trace.")
-    private double samplingRate;
+    double samplingRate;
 
     /** */
     @Argument(optional = true, example = "Set of scopes with comma as separator  DISCOVERY|EXCHANGE|COMMUNICATION|TX|SQL")
-    private Scope[] includedScopes;
+    Scope[] includedScopes;
 
     /** */
     public double samplingRate() {

@@ -30,17 +30,17 @@ public class CacheContentionCommandArg extends IgniteDataTransferObject {
     /** Min queue size. */
     @Positional
     @Argument(example = "minQueueSize")
-    private int minQueueSize;
+    int minQueueSize;
 
     /** Node id. */
     @Positional
     @Argument(optional = true, example = "nodeId")
-    private UUID nodeId;
+    UUID nodeId;
 
     /** Max print. */
     @Positional
     @Argument(optional = true, example = "maxPrint")
-    private int maxPrint = 10;
+    int maxPrint = 10;
 
     /** */
     public UUID nodeId() {

@@ -27,15 +27,15 @@ public class CheckpointCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(description = "Reason (visible in logs)", optional = true)
-    private String reason;
+    String reason;
 
     /** */
     @Argument(description = "Wait for checkpoint to finish", optional = true)
-    private boolean waitForFinish;
+    boolean waitForFinish;
 
     /** */
     @Argument(description = "Timeout in milliseconds", optional = true)
-    private long timeout = -1;
+    long timeout = -1;
 
     /** */
     public String reason() {

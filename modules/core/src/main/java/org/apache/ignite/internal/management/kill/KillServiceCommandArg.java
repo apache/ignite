@@ -29,7 +29,7 @@ public class KillServiceCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(description = "Service name")
-    private String name;
+    String name;
 
     /** */
     public String name() {

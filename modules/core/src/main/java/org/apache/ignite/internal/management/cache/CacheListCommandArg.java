@@ -32,30 +32,30 @@ public class CacheListCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(example = "regexPattern")
-    private String regex;
+    String regex;
 
     /** */
     @Argument(description = "print all configuration parameters for each cache", optional = true)
-    private boolean config;
+    boolean config;
 
     /** */
     @Positional
     @Argument(optional = true, example = "nodeId")
-    private UUID nodeId;
+    UUID nodeId;
 
     /** */
     @Argument(description = "print configuration parameters per line. " +
         "This option has effect only when used with --config and without [--groups|--seq]",
         example = "multi-line", optional = true)
-    private String outputFormat;
+    String outputFormat;
 
     /** */
     @Argument(description = "print information about groups")
-    private boolean groups;
+    boolean groups;
 
     /** */
     @Argument(description = "print information about sequences")
-    private boolean seq;
+    boolean seq;
 
     /** */
     public String regex() {

@@ -33,28 +33,28 @@ public class CacheIndexesListCommandArg extends IgniteDataTransferObject {
         example = "nodeId",
         optional = true,
         description = "Specify node for job execution. If not specified explicitly, node will be chosen by grid")
-    private UUID nodeId;
+    UUID nodeId;
 
     /** */
     @Argument(
         example = "grpRegExp",
         optional = true,
         description = "Regular expression allowing filtering by cache group name")
-    private String groupName;
+    String groupName;
 
     /** */
     @Argument(
         example = "cacheRegExp",
         optional = true,
         description = "Regular expression allowing filtering by cache name")
-    private String cacheName;
+    String cacheName;
 
     /** */
     @Argument(
         example = "idxNameRegExp",
         optional = true,
         description = "Regular expression allowing filtering by index name")
-    private String indexName;
+    String indexName;
 
     /**
      * @param regex Regex to validate

@@ -31,7 +31,7 @@ public class BaselineVersionCommandArg extends BaselineTaskArg {
     /** */
     @Positional
     @Argument(example = "topologyVersion")
-    private long topologyVersion;
+    long topologyVersion;
 
     /** */
     public long topologyVersion() {

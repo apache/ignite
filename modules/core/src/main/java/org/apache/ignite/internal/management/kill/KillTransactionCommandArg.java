@@ -29,7 +29,7 @@ public class KillTransactionCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(description = "Transaction identifier")
-    private String xid;
+    String xid;
 
     /** */
     public String xid() {

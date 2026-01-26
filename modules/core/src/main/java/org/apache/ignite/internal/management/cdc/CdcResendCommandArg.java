@@ -30,7 +30,7 @@ public class CdcResendCommandArg extends IgniteDataTransferObject {
         description = "specifies a comma-separated list of cache names",
         example = "cache1,...,cacheN"
     )
-    private String[] caches;
+    String[] caches;
 
     /** */
     public String[] caches() {

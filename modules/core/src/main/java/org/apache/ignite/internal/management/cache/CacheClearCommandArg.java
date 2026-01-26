@@ -27,7 +27,7 @@ public class CacheClearCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(description = "specifies a comma-separated list of cache names to be cleared")
-    private String[] caches;
+    String[] caches;
 
     /** */
     public String[] caches() {

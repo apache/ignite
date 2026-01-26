@@ -31,7 +31,7 @@ public class CacheIndexesRebuildStatusCommandArg extends IgniteDataTransferObjec
         description = "Specify node for job execution. If not specified explicitly, info will be gathered from all nodes",
         example = "nodeId",
         optional = true)
-    private UUID nodeId;
+    UUID nodeId;
 
     /** */
     public UUID nodeId() {

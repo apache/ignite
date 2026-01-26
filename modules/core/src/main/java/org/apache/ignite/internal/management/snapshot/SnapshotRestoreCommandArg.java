@@ -33,45 +33,45 @@ public class SnapshotRestoreCommandArg extends IgniteDataTransferObject {
     @Positional
     @Argument(description = "Snapshot name. " +
         "In the case of incremental snapshot (--incremental) full snapshot name must be provided")
-    private String snapshotName;
+    String snapshotName;
 
     /** */
     @Argument(optional = true, example = "incrementIndex", description = "Incremental snapshot index. " +
         "The command will restore snapshot and after that all its increments sequentially from 1 to the specified index")
-    private int increment;
+    int increment;
 
     /** */
     @Argument(optional = true, description = "Cache group names", example = "group1,...groupN")
-    private String[] groups;
+    String[] groups;
 
     /** */
     @Argument(example = "path", optional = true,
         description = "Path to the directory where the snapshot files are located. " +
             "If not specified, the default configured snapshot directory will be used")
-    private String src;
+    String src;
 
     /** */
     @Argument(optional = true, description = "Run the operation synchronously, " +
         "the command will wait for the entire operation to complete. " +
         "Otherwise, it will be performed in the background, and the command will immediately return control")
-    private boolean sync;
+    boolean sync;
 
     /** */
     @Argument(optional = true,
         description = "Check snapshot data integrity before restore (slow!). Similar to the \"check\" command")
-    private boolean check;
+    boolean check;
 
     /** */
     @Argument(description = "Snapshot restore operation status (Command deprecated. Use '--snapshot status' instead)")
-    private boolean status;
+    boolean status;
 
     /** */
     @Argument(description = "Cancel snapshot restore operation (Command deprecated. Use '--snapshot cancel' instead)")
-    private boolean cancel;
+    boolean cancel;
 
     /** */
     @Argument(description = "Start snapshot restore operation (Default action)")
-    private boolean start;
+    boolean start;
 
     /** */
     public void ensureOptions() {

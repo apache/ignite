@@ -29,7 +29,7 @@ public class EncryptionCacheGroupArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(example = "cacheGroupName")
-    private String cacheGroupName;
+    String cacheGroupName;
 
     /** */
     public String cacheGroupName() {

@@ -31,19 +31,19 @@ public class CacheDistributionCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(example = "nodeId|null")
-    private String nodeIdOrNull;
+    String nodeIdOrNull;
 
     /** */
     @Positional
     @Argument(optional = true, example = "cacheName1,...,cacheNameN")
-    private String[] caches;
+    String[] caches;
 
     /** */
-    private UUID nodeId;
+    UUID nodeId;
 
     /** */
     @Argument(optional = true, example = "attrName1,...,attrNameN")
-    private String[] userAttributes;
+    String[] userAttributes;
 
     /** */
     private void parse(String value) {

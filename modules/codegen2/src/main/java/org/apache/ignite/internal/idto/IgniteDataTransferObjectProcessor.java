@@ -47,7 +47,6 @@ import static org.apache.ignite.internal.MessageSerializerGenerator.TAB;
 import static org.apache.ignite.internal.MessageSerializerGenerator.identicalFileIsAlreadyGenerated;
 import static org.apache.ignite.internal.idto.IDTOSerializerGenerator.CLS_JAVADOC;
 import static org.apache.ignite.internal.idto.IDTOSerializerGenerator.DTO_SERDES_INTERFACE;
-import static org.apache.ignite.internal.idto.IDTOSerializerGenerator.PKG_NAME;
 import static org.apache.ignite.internal.idto.IDTOSerializerGenerator.simpleName;
 
 /**
@@ -59,6 +58,9 @@ import static org.apache.ignite.internal.idto.IDTOSerializerGenerator.simpleName
 @SupportedAnnotationTypes("org.apache.ignite.internal.management.api.Argument")
 @SupportedSourceVersion(SourceVersion.RELEASE_11)
 public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
+    /** Package for serializers. */
+    private static final String FACTORY_PKG_NAME = "org.apache.ignite.internal.codegen.idto";
+
     /** Base class that every dto must extends. */
     private static final String DTO_CLASS = "org.apache.ignite.internal.dto.IgniteDataTransferObject";
 
@@ -133,7 +135,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
      */
     private void generateFactory(Map<TypeElement, String> genSerDes) {
         try {
-            String factoryFQN = PKG_NAME + "." + FACTORY_CLASS;
+            String factoryFQN = FACTORY_PKG_NAME + "." + FACTORY_CLASS;
             String factoryCode = factoryCode(genSerDes);
 
             try {
@@ -151,7 +153,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
                 // all Run commands to Maven. However, this significantly slows down test startup time.
                 // This hack checks whether the content of a generating file is identical to already existed file, and skips
                 // handling this class if it is.
-                if (!identicalFileIsAlreadyGenerated(processingEnv, factoryCode, PKG_NAME, FACTORY_CLASS)) {
+                if (!identicalFileIsAlreadyGenerated(processingEnv, factoryCode, FACTORY_PKG_NAME + "." + FACTORY_CLASS)) {
                     processingEnv.getMessager().printMessage(
                         Diagnostic.Kind.ERROR,
                         FACTORY_CLASS + " is already generated. Try 'mvn clean install' to fix the issue.");
@@ -172,7 +174,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
      */
     private String factoryCode(Map<TypeElement, String> genSerDes) throws IOException {
         try (Writer writer = new StringWriter()) {
-            writeClassHeader(writer, genSerDes.keySet());
+            writeClassHeader(writer, genSerDes);
 
             writer.write(TAB);
             writer.write("/** */");
@@ -212,7 +214,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
      * @param dtoClss DTO classes to import.
      * @throws IOException In case of error.
      */
-    private void writeClassHeader(Writer writer, Set<TypeElement> dtoClss) throws IOException {
+    private void writeClassHeader(Writer writer, Map<TypeElement, String> dtoClss) throws IOException {
         try (InputStream in = getClass().getClassLoader().getResourceAsStream("license.txt");
              BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
 
@@ -225,10 +227,12 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         }
 
         writer.write(NL);
-        writer.write("package " + PKG_NAME + ";" + NL + NL);
+        writer.write("package " + FACTORY_PKG_NAME + ";" + NL + NL);
 
-        for (TypeElement dtoCls : dtoClss)
-            writer.write("import " + dtoCls.getQualifiedName() + ";" + NL);
+        for (Map.Entry<TypeElement, String> e : dtoClss.entrySet()) {
+            writer.write("import " + e.getKey().getQualifiedName() + ";" + NL);
+            writer.write("import " + e.getValue() + ";" + NL);
+        }
 
         writer.write("import " + Map.class.getName() + ";" + NL);
         writer.write("import " + HashMap.class.getName() + ";" + NL);

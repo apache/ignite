@@ -32,28 +32,28 @@ public class CacheIndexesForceRebuildCommandArg extends IgniteDataTransferObject
     /** */
     @Argument(description = "Specify node for indexes rebuild (deprecated. Use --node-ids or --all-nodes instead)",
         example = "nodeId")
-    private UUID nodeId;
+    UUID nodeId;
 
     /** */
     @Argument(
         description = "Comma-separated list of nodes ids to run index rebuild on",
         example = "nodeId1,...nodeIdN"
     )
-    private UUID[] nodeIds;
+    UUID[] nodeIds;
 
     /** Flag to launch index rebuild on all nodes. */
     @Argument(description = "Rebuild index on all nodes")
-    private boolean allNodes;
+    boolean allNodes;
 
     /** */
     @Argument(description = "Comma-separated list of cache names for which indexes should be rebuilt",
         example = "cacheName1,...cacheNameN")
-    private String[] cacheNames;
+    String[] cacheNames;
 
     /** */
     @Argument(description = "Comma-separated list of cache group names for which indexes should be rebuilt",
         example = "groupName1,...groupNameN")
-    private String[] groupNames;
+    String[] groupNames;
 
     /** */
     public UUID nodeId() {

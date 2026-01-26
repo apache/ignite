@@ -31,7 +31,7 @@ public class WalDeleteCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(optional = true, example = "consistentId1,consistentId2,....,consistentIdN")
-    private String[] consistentIds;
+    String[] consistentIds;
 
     /** */
     public String[] consistentIds() {

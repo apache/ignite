@@ -30,11 +30,11 @@ public class CacheDestroyCommandArg extends IgniteDataTransferObject {
     /** */
     @Argument(description = "specifies a comma-separated list of cache names to be destroyed",
         example = "cache1,...,cacheN")
-    private String[] caches;
+    String[] caches;
 
     /** */
     @Argument(description = "permanently destroy all user-created caches")
-    private boolean destroyAllCaches;
+    boolean destroyAllCaches;
 
     /** */
     public boolean destroyAllCaches() {

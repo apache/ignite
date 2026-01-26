@@ -45,7 +45,7 @@ public class TracingConfigurationGetAllCommandArg extends TracingConfigurationCo
             "SQL scope"
         }
     )
-    private Scope scope;
+    Scope scope;
 
     /** */
     public Scope scope() {

@@ -29,7 +29,7 @@ public class CacheResetLostPartitionsCommandArg extends IgniteDataTransferObject
     /** */
     @Positional
     @Argument(example = "cacheName1,...,cacheNameN")
-    private String[] caches;
+    String[] caches;
 
     /** */
     public String[] caches() {

@@ -34,13 +34,13 @@ public class TxInfoCommandArg extends TxCommand.AbstractTxCommandArg {
     @Argument(
         example = "<TX identifier as GridCacheVersion [topVer=..., order=..., nodeOrder=...] (can be found in logs)>|" +
             "<TX identifier as UUID (can be retrieved via --tx command)>")
-    private String value;
+    String value;
 
     /** */
-    private IgniteUuid uuid;
+    IgniteUuid uuid;
 
     /** */
-    private GridCacheVersion gridCacheVersion;
+    GridCacheVersion gridCacheVersion;
 
     /** */
     public void uuid(IgniteUuid uuid) {

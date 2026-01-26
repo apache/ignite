@@ -29,7 +29,7 @@ public class EncryptionReencryptionRateLimitCommandArg extends IgniteDataTransfe
     /** */
     @Positional
     @Argument(optional = true, description = "Decimal value to change re-encryption rate limit (MB/s)")
-    private Double newLimit;
+    Double newLimit;
 
     /** */
     public Double newLimit() {

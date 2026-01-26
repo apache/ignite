@@ -44,11 +44,11 @@ public class BaselineAutoAdjustCommandArg extends BaselineTaskArg {
             "Disable baseline auto adjust"
         }
     )
-    private Enabled enabled;
+    Enabled enabled;
 
     /** */
     @Argument(optional = true, example = "<timeoutMillis>", withoutPrefix = true)
-    private Long timeout;
+    Long timeout;
 
     /** */
     public enum Enabled {

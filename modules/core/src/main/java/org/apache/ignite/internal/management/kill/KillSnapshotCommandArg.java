@@ -30,10 +30,10 @@ public class KillSnapshotCommandArg extends CancelSnapshotArg {
     /** */
     @Positional
     @Argument(description = "Request id")
-    private UUID requestId;
+    UUID requestId;
 
     /** */
-    private String snapshotName;
+    String snapshotName;
 
     /** {@inheritDoc} */
     @Override public UUID requestId() {

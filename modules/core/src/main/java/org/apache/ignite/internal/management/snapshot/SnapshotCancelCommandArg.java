@@ -30,11 +30,11 @@ public class SnapshotCancelCommandArg extends CancelSnapshotArg {
 
     /** */
     @Argument(description = "Snapshot operation request ID", optional = true)
-    private UUID id;
+    UUID id;
 
     /** */
     @Argument(description = "Snapshot name (deprecated)", optional = true)
-    private String name;
+    String name;
 
     /** */
     public UUID id() {

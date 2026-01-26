@@ -34,35 +34,35 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
 
     /** */
     @Argument(example = "XID", optional = true)
-    private String xid;
+    String xid;
 
     /** */
     @Argument(example = "SECONDS", optional = true)
-    private Long minDuration;
+    Long minDuration;
 
     /** */
     @Argument(example = "SIZE", optional = true)
-    private Integer minSize;
+    Integer minSize;
 
     /** */
     @Argument(example = "PATTERN_REGEX", optional = true)
-    private String label;
+    String label;
 
     /** */
     @Argument
-    private boolean servers;
+    boolean servers;
 
     /** */
     @Argument
-    private boolean clients;
+    boolean clients;
 
     /** */
     @Argument(example = "consistentId1[,consistentId2,....,consistentIdN]")
-    private String[] nodes;
+    String[] nodes;
 
     /** */
     @Argument(optional = true, example = "NUMBER")
-    private Integer limit;
+    Integer limit;
 
     /** */
     @Argument(optional = true, description = "Output order")
@@ -78,11 +78,11 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
             "Sort by start time"
         }
     )
-    private TxSortOrder order;
+    TxSortOrder order;
 
     /** */
     @Argument(optional = true)
-    private boolean kill;
+    boolean kill;
 
     /** */
     public String xid() {

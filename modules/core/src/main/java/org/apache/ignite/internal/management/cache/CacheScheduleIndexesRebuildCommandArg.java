@@ -46,34 +46,34 @@ public class CacheScheduleIndexesRebuildCommandArg extends IgniteDataTransferObj
         description = "(Optional) Specify node for indexes rebuild. If not specified, schedules rebuild on all nodes " +
             "(deprecated. Use --node-ids or --all-nodes instead)",
         example = "nodeId")
-    private UUID nodeId;
+    UUID nodeId;
 
     /** */
     @Argument(
         description = "Comma-separated list of nodes ids to schedule index rebuild on",
         example = "nodeId1,...nodeIdN"
     )
-    private UUID[] nodeIds;
+    UUID[] nodeIds;
 
     /** Flag to launch index rebuild on all nodes. */
     @Argument(description = "Rebuild index on all nodes")
-    private boolean allNodes;
+    boolean allNodes;
 
     /** */
     @Argument(description = "Comma-separated list of cache names with optionally specified indexes. " +
         "If indexes are not specified then all indexes of the cache will be scheduled for the rebuild operation. " +
         "Can be used simultaneously with cache group names",
         example = "cacheName[index1,...indexN],cacheName2,cacheName3[index1]")
-    private String cacheNames;
+    String cacheNames;
 
     /** */
     @Argument(description = "Comma-separated list of cache group names for which indexes should be scheduled for the "
         + "rebuild. Can be used simultaneously with cache names",
         example = "groupName1,groupName2,...groupNameN")
-    private String[] groupNames;
+    String[] groupNames;
 
     /** Cache name -> indexes. */
-    private Map<String, Set<String>> cacheToIndexes;
+    Map<String, Set<String>> cacheToIndexes;
 
     /** */
     private void parse() {

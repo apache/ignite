@@ -34,13 +34,13 @@ public class KillSqlCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(description = "Query identifier")
-    private String queryId;
+    String queryId;
 
     /** */
-    private UUID nodeId;
+    UUID nodeId;
 
     /** */
-    private long qryId;
+    long qryId;
 
     /** */
     public UUID nodeId() {

@@ -34,10 +34,10 @@ public class MetaUpdateCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(example = "<fileName>")
-    private String in;
+    String in;
 
     /** Marshaled metadata. */
-    private byte[] metaMarshalled;
+    byte[] metaMarshalled;
 
     /** */
     public byte[] metaMarshalled() {

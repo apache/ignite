@@ -119,10 +119,11 @@ public class MessageSerializerGenerator {
         imports.add(type.getQualifiedName().toString());
 
         String serClsName = type.getSimpleName() + "Serializer";
+        String serFqnClsName = PKG_NAME + "." + serClsName;
         String serCode = generateSerializerCode(serClsName);
 
         try {
-            JavaFileObject file = env.getFiler().createSourceFile(PKG_NAME + "." + serClsName);
+            JavaFileObject file = env.getFiler().createSourceFile(serFqnClsName);
 
             try (Writer writer = file.openWriter()) {
                 writer.append(serCode);
@@ -136,7 +137,7 @@ public class MessageSerializerGenerator {
             // all Run commands to Maven. However, this significantly slows down test startup time.
             // This hack checks whether the content of a generating file is identical to already existed file, and skips
             // handling this class if it is.
-            if (!identicalFileIsAlreadyGenerated(env, serCode, PKG_NAME, serClsName)) {
+            if (!identicalFileIsAlreadyGenerated(env, serCode, serFqnClsName)) {
                 env.getMessager().printMessage(
                     Diagnostic.Kind.ERROR,
                     "MessageSerializer " + serClsName + " is already generated. Try 'mvn clean install' to fix the issue.");
@@ -881,9 +882,9 @@ public class MessageSerializerGenerator {
     }
 
     /** @return {@code true} if trying to generate file with the same content. */
-    public static boolean identicalFileIsAlreadyGenerated(ProcessingEnvironment env, String srcCode, String pkg, String clsName) {
+    public static boolean identicalFileIsAlreadyGenerated(ProcessingEnvironment env, String srcCode, String fqnClsName) {
         try {
-            String fileName = pkg.replace('.', '/') + '/' + clsName + ".java";
+            String fileName = fqnClsName.replace('.', '/') + ".java";
             FileObject prevFile = env.getFiler().getResource(StandardLocation.SOURCE_OUTPUT, "", fileName);
 
             String prevFileContent;

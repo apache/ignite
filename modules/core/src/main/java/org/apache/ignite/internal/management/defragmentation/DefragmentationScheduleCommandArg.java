@@ -27,11 +27,11 @@ public class DefragmentationScheduleCommandArg extends DefragmentationStatusComm
 
     /** */
     @Argument(example = "consistentId0,consistentId1")
-    private String[] nodes;
+    String[] nodes;
 
     /** */
     @Argument(example = "cache1,cache2,cache3", optional = true)
-    private String[] caches;
+    String[] caches;
 
     /** */
     public String[] nodes() {

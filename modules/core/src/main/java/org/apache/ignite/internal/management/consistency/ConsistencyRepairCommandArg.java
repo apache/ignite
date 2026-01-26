@@ -29,11 +29,11 @@ public class ConsistencyRepairCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(description = "Cache to be checked/repaired")
-    private String cache;
+    String cache;
 
     /** */
     @Argument(description = "Cache's partition to be checked/repaired", example = "partition")
-    private int[] partitions;
+    int[] partitions;
 
     /** Strategy. */
     @Argument(description = "Repair strategy")
@@ -57,7 +57,7 @@ public class ConsistencyRepairCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(description = "Run concurrently on each node", optional = true)
-    private boolean parallel;
+    boolean parallel;
 
     /** */
     public void ensureParams() {

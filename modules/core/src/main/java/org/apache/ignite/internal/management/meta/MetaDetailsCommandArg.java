@@ -31,11 +31,11 @@ public class MetaDetailsCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(optional = true, example = "<typeId>", javaStyleName = true)
-    private int typeId;
+    int typeId;
 
     /** */
     @Argument(optional = true, example = "<typeName>", javaStyleName = true)
-    private String typeName;
+    String typeName;
 
     /** */
     public int typeId() {

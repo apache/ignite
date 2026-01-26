@@ -31,34 +31,34 @@ public class CacheValidateIndexesCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(example = "cacheName1,...,cacheNameN", optional = true)
-    private String value;
+    String value;
 
     /** */
     @Positional
     @Argument(example = "nodeId", optional = true)
-    private String value2;
+    String value2;
 
     /** */
-    private String[] caches;
+    String[] caches;
 
     /** */
-    private UUID[] nodeIds;
+    UUID[] nodeIds;
 
     /** */
     @Argument(example = "N", description = "validate only the first N keys", optional = true)
-    private int checkFirst = -1;
+    int checkFirst = -1;
 
     /** */
     @Argument(example = "K", description = "validate every Kth key", optional = true)
-    private int checkThrough = -1;
+    int checkThrough = -1;
 
     /** */
     @Argument(description = "check the CRC-sum of pages stored on disk", optional = true)
-    private boolean checkCrc;
+    boolean checkCrc;
 
     /** */
     @Argument(description = "check that index size and cache size are the same", optional = true)
-    private boolean checkSizes;
+    boolean checkSizes;
 
     /** */
     private static void ensurePositive(int numVal, String arg) {
