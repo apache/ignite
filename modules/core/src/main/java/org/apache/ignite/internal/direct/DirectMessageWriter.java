@@ -435,35 +435,52 @@ public class DirectMessageWriter implements MessageWriter {
     /** */
     private void writeCompressedMessage(Consumer<DirectMessageWriter> consumer, boolean empty, DirectByteBufferStream stream) {
         if (empty) {
-            stream.writeMessage(CompressedMessage.empty(), this);
+            stream.writeMessage(CompressedMessage.EMPTY, this);
 
             return;
         }
 
-        ByteBuffer tmpBuf = ByteBuffer.allocateDirect(TMP_BUF_CAPACITY);
+        if (!stream.serializeFinished()) {
+            ByteBuffer tmpBuf = ByteBuffer.allocateDirect(TMP_BUF_CAPACITY);
 
-        DirectMessageWriter tmpWriter = new DirectMessageWriter(msgFactory);
+            DirectMessageWriter tmpWriter = new DirectMessageWriter(msgFactory);
 
-        tmpWriter.setBuffer(tmpBuf);
+            tmpWriter.setBuffer(tmpBuf);
 
-        boolean finished;
+            boolean finished;
 
-        do {
-            if (!tmpBuf.hasRemaining()) {
-                tmpBuf = ByteBuffer.allocateDirect(tmpBuf.capacity() * 2);
+            do {
+                if (!tmpBuf.hasRemaining()) {
+                    byte[] bytes = new byte[tmpBuf.position()];
 
-                tmpWriter.setBuffer(tmpBuf);
+                    tmpBuf.flip();
+                    tmpBuf.get(bytes);
 
-                tmpWriter.reset();
+                    tmpBuf = ByteBuffer.allocateDirect(tmpBuf.capacity() * 2);
+
+                    tmpBuf.put(bytes);
+
+                    tmpWriter.setBuffer(tmpBuf);
+                }
+
+                consumer.accept(tmpWriter);
+
+                finished = tmpWriter.state.item().stream.lastFinished();
             }
+            while (!finished);
 
-            consumer.accept(tmpWriter);
+            tmpBuf.flip();
 
-            finished = tmpWriter.state.item().stream.lastFinished();
+            stream.compressedMessage(new CompressedMessage(tmpBuf));
+            stream.serializeFinished(true);
         }
-        while (!finished);
 
-        stream.writeMessage(new CompressedMessage(tmpBuf), this);
+        stream.writeMessage(stream.compressedMessage(), this);
+
+        if (stream.lastFinished()) {
+            stream.compressedMessage(null);
+            stream.serializeFinished(false);
+        }
     }
 
     /**

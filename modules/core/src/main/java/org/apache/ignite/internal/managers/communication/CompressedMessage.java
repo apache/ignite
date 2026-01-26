@@ -36,6 +36,9 @@ public class CompressedMessage implements Message {
     /** Type code. */
     public static final short TYPE_CODE = 517;
 
+    /** Instance of empty compressed message. */
+    public static final CompressedMessage EMPTY = empty();
+
     /** */
     private static final int CHUNK_SIZE = 1024 * 1024;
 
@@ -66,15 +69,15 @@ public class CompressedMessage implements Message {
      * @param buf Source buffer with seralized data.
      */
     public CompressedMessage(ByteBuffer buf) {
-        dataSize = buf.position();
+        dataSize = buf.remaining();
         chunkedReader = new ChunkedByteReader(compress(buf), CHUNK_SIZE);
     }
 
     /** */
-    public static CompressedMessage empty() {
+    private static CompressedMessage empty() {
         CompressedMessage msg = new CompressedMessage();
 
-        msg.dataSize = 0;
+        msg.dataSize = -1;
         msg.finalChunk = true;
         msg.chunk = null;
 
@@ -90,12 +93,7 @@ public class CompressedMessage implements Message {
     public byte[] uncompressed() {
         assert finalChunk;
 
-        byte[] uncompress = uncompress();
-
-        assert uncompress != null;
-        assert uncompress.length == dataSize : "Expected=" + dataSize + ", actual=" + uncompress.length;
-
-        return uncompress;
+        return uncompress();
     }
 
     /** {@inheritDoc} */
@@ -124,7 +122,7 @@ public class CompressedMessage implements Message {
 
                     writer.incrementState();
 
-                    if (dataSize == 0)
+                    if (dataSize == -1)
                         return true;
 
                 case 1:
@@ -165,7 +163,7 @@ public class CompressedMessage implements Message {
                     if (!reader.isLastRead())
                         return false;
 
-                    if (dataSize == 0)
+                    if (dataSize == -1)
                         return true;
 
                     reader.incrementState();
@@ -176,10 +174,10 @@ public class CompressedMessage implements Message {
                     if (!reader.isLastRead())
                         return false;
 
-                    reader.incrementState();
-
                     if (finalChunk)
                         return true;
+
+                    reader.incrementState();
 
                 case 2:
                     chunk = reader.readByteArray();
@@ -215,9 +213,8 @@ public class CompressedMessage implements Message {
      * @param buf Buffer.
      */
     private byte[] compress(ByteBuffer buf) {
-        byte[] data = new byte[buf.position()];
+        byte[] data = new byte[dataSize];
 
-        buf.flip();
         buf.get(data);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length);
@@ -255,6 +252,9 @@ public class CompressedMessage implements Message {
         finally {
             inflater.end();
         }
+
+        assert uncompressedData != null;
+        assert uncompressedData.length == dataSize : "Expected=" + dataSize + ", actual=" + uncompressedData.length;
 
         tmpBuf = null;
 

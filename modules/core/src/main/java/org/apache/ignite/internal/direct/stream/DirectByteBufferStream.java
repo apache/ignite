@@ -340,6 +340,12 @@ public class DirectByteBufferStream {
     /** */
     private byte cacheObjType;
 
+    /** */
+    private CompressedMessage compressedMsg;
+
+    /** */
+    private boolean serializeFinished;
+
     /**
      * Constructror for stream used for writing messages.
      *
@@ -389,6 +395,36 @@ public class DirectByteBufferStream {
      */
     public boolean lastFinished() {
         return lastFinished;
+    }
+
+    /**
+     * @return Compressed message.
+     */
+    public CompressedMessage compressedMessage() {
+        assert compressedMsg != null;
+
+        return compressedMsg;
+    }
+
+    /**
+     * @param compressedMsg Compressed message.
+     */
+    public void compressedMessage(CompressedMessage compressedMsg) {
+        this.compressedMsg = compressedMsg;
+    }
+
+    /**
+     * @return Whether last object was fully serialized.
+     */
+    public boolean serializeFinished() {
+        return serializeFinished;
+    }
+
+    /**
+     * @param serializeFinished {@code True} if last object was fully serialized.
+     */
+    public void serializeFinished(boolean serializeFinished) {
+        this.serializeFinished = serializeFinished;
     }
 
     /**
