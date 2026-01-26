@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.function.BiPredicate;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.exec.ExecutionContext;
 import org.apache.ignite.internal.processors.query.calcite.exec.MappingRowHandler;
 import org.apache.ignite.internal.processors.query.calcite.exec.RowHandler;
@@ -48,6 +49,9 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
     /** */
     private final boolean keepRowsWithNull;
+
+    /** */
+    private final ImmutableBitSet allowNulls;
 
     /** Output row handler. */
     protected final RowHandler<Row> outRowHnd;
@@ -83,6 +87,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
     ) {
         super(ctx, rowType);
 
+        allowNulls = info.allowNulls();
         this.keepRowsWithNull = keepRowsWithNull;
 
         leftRowHnd = new MappingRowHandler<>(ctx.rowHandler(), info.leftKeys.toIntArray());
@@ -146,7 +151,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
 
     /** */
     protected Collection<Row> lookup(Row row) {
-        GroupKey<Row> key = GroupKey.of(row, leftRowHnd, false);
+        GroupKey<Row> key = GroupKey.of(row, leftRowHnd, allowNulls);
 
         if (key == null)
             return Collections.emptyList();
@@ -171,14 +176,15 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         assert downstream() != null;
         assert waitingRight > 0;
 
-        nodeMemoryTracker.onRowAdded(row);
-
         waitingRight--;
 
-        GroupKey<Row> key = GroupKey.of(row, rightRowHnd, keepRowsWithNull);
+        GroupKey<Row> key = keepRowsWithNull ? GroupKey.of(row, rightRowHnd) : GroupKey.of(row, rightRowHnd, allowNulls);
 
-        if (key != null)
+        if (key != null) {
+            nodeMemoryTracker.onRowAdded(row);
+
             hashStore.computeIfAbsent(key, k -> new TouchedArrayList<>()).add(row);
+        }
 
         if (waitingRight == 0)
             rightSource().request(waitingRight = IN_BUFFER_SIZE);
