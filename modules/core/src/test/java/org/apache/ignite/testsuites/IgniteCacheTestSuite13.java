@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheIoManagerRetryTest;
 import org.apache.ignite.internal.processors.cache.GridCacheLongRunningTransactionDiagnosticsTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionGenerationWithCacheStorageTest;
 import org.apache.ignite.internal.processors.cache.distributed.FailBackupOnAtomicOperationTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCacheAtomicFullSyncPartialUpdateAllTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.RebalanceStatisticsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxAsyncOpsSemaphorePermitsExceededTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRecoveryOnCoordniatorFailTest;
@@ -126,6 +127,8 @@ public class IgniteCacheTestSuite13 {
         GridTestUtils.addTestIfNeeded(suite, EntriesRemoveOnShutdownTest.class, ignoredTests);
 
         GridTestUtils.addTestIfNeeded(suite, GridCacheIoManagerRetryTest.class, ignoredTests);
+
+        GridTestUtils.addTestIfNeeded(suite, IgniteCacheAtomicFullSyncPartialUpdateAllTest.class, ignoredTests);
 
         return suite;
     }
