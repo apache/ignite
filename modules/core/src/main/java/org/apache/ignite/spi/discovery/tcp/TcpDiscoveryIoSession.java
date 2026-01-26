@@ -109,8 +109,8 @@ public class TcpDiscoveryIoSession {
 
         msgBuf = ByteBuffer.allocate(MSG_BUFFER_SIZE);
 
-        msgWriter = new DirectMessageWriter(spi.messageFactory());
-        msgReader = new DirectMessageReader(spi.messageFactory(), null);
+        msgWriter = new DirectMessageWriter(spi.messageFactory(), null);
+        msgReader = new DirectMessageReader(spi.messageFactory(), null, null);
 
         try {
             int sendBufSize = sock.getSendBufferSize() > 0 ? sock.getSendBufferSize() : DFLT_SOCK_BUFFER_SIZE;

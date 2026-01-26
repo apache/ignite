@@ -433,11 +433,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Object>> 
         else {
             formatter = new MessageFormatter() {
                 @Override public MessageWriter writer(MessageFactory msgFactory) {
-                    return new DirectMessageWriter(msgFactory);
+                    return new DirectMessageWriter(msgFactory, ctx.marshaller());
                 }
 
                 @Override public MessageReader reader(MessageFactory msgFactory) {
-                    return new DirectMessageReader(msgFactory, ctx.cacheObjects());
+                    return new DirectMessageReader(msgFactory, ctx.marshaller(), ctx.cacheObjects());
                 }
             };
         }
