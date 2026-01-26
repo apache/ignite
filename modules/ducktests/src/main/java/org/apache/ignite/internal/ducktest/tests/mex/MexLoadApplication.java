@@ -64,9 +64,20 @@ public class MexLoadApplication extends MexCntApplication {
                         }
 
                         PreparedStatement ps = conn.prepareStatement("INSERT INTO " + tableName + " values(?,?,?)");
+                        PreparedStatement delPs = conn.prepareStatement("DELETE FROM " + tableName + " WHERE id = ?");
 
                         while (active()) {
                             for (int t = 0; t < (transaction ? 3 + rnd.nextInt(8) : 1); ++t) {
+                                if (rnd.nextInt(1000) > 950) {
+                                    delPs.setInt(1, rnd.nextInt(1 + (int)counter.get()));
+
+                                    // System.err.println("TEST | ask to delete");
+
+                                    delPs.executeUpdate();
+
+                                    continue;
+                                }
+
                                 long id = counter.incrementAndGet();
 
                                 ps.setLong(1, id);

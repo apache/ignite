@@ -26,6 +26,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.jetbrains.annotations.Nullable;
 
 public class TestCacheStore implements CacheStore<Object, Object> {
+    private static final Object TOMB_STONE = new Object();
+
     private final Ignite ignite;
 
     private final IgniteCache<Object, Object> cache;
@@ -74,8 +76,18 @@ public class TestCacheStore implements CacheStore<Object, Object> {
         if (updateMap == null)
             return;
 
-        if (commit)
-            cache.putAll(updateMap);
+        if (commit) {
+            updateMap.forEach((k, v) -> {
+                if (v != TOMB_STONE)
+                    cache.put(k, v);
+                else {
+                    // System.err.println("TEST | cache.remove(k)");
+
+                    cache.remove(k);
+                }
+            });
+        }
+        cache.putAll(updateMap);
 
         curUpdates.set(null);
     }
@@ -146,12 +158,18 @@ public class TestCacheStore implements CacheStore<Object, Object> {
             val = dto;
         }
 
+        Map<Object, Object> updateMap = updateMap();
+
+        updateMap.put(entry.getKey(), val);
+    }
+
+    private Map<Object, Object> updateMap() {
         Map<Object, Object> updateMap = curUpdates.get();
 
         if (updateMap == null)
             curUpdates.set(updateMap = new HashMap<>());
 
-        updateMap.put(entry.getKey(), val);
+        return updateMap;
     }
 
     @Override public void writeAll(Collection<Cache.Entry<?, ?>> entries) throws CacheWriterException {
@@ -159,7 +177,9 @@ public class TestCacheStore implements CacheStore<Object, Object> {
     }
 
     @Override public void delete(Object key) throws CacheWriterException {
-        throw new UnsupportedOperationException();
+        Map<Object, Object> updateMap = updateMap();
+
+        updateMap.put(key, TOMB_STONE);
     }
 
     @Override public void deleteAll(Collection<?> keys) throws CacheWriterException {
