@@ -30,7 +30,7 @@ import org.apache.ignite.compatibility.persistence.MigratingToWalV2SerializerWit
 import org.apache.ignite.compatibility.persistence.MoveBinaryMetadataCompatibility;
 import org.apache.ignite.compatibility.persistence.PersistenceBasicCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.SnapshotCompatibilityTest;
-import org.apache.ignite.compatibility.spi.discovery.TcpDiscoveryOldClientSerModeCompatibilityTest;
+import org.apache.ignite.compatibility.spi.discovery.TcpDiscoveryDifferentClusterVersionsTest;
 import org.apache.ignite.compatibility.testframework.util.MavenUtilsTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -54,7 +54,7 @@ import org.junit.runners.Suite;
     IgnitePKIndexesMigrationToUnwrapPkTest.class,
     CompoundIndexCompatibilityTest.class,
     SnapshotCompatibilityTest.class,
-    TcpDiscoveryOldClientSerModeCompatibilityTest.class
+    TcpDiscoveryDifferentClusterVersionsTest.class
 })
 public class IgniteCompatibilityBasicTestSuite {
 }

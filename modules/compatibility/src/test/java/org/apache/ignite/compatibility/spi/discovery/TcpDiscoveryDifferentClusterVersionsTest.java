@@ -25,12 +25,8 @@ import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
 
-
-/**
- * Compatibility test that ensures previous-version client fails to connect to the current server
- * and the server reports the missing serMode byte.
- */
-public class TcpDiscoveryOldClientSerModeCompatibilityTest extends IgniteCompatibilityAbstractTest {
+/** */
+public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilityAbstractTest {
     /** */
     private static final String SER_MODE_MSG = "serMode byte is expected";
 
@@ -40,6 +36,7 @@ public class TcpDiscoveryOldClientSerModeCompatibilityTest extends IgniteCompati
     /** */
     private ListeningTestLogger listeningLog;
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
@@ -56,9 +53,12 @@ public class TcpDiscoveryOldClientSerModeCompatibilityTest extends IgniteCompati
         return cfg;
     }
 
-    /** */
+    /**
+     * Compatibility test that ensures previous-version client fails to connect to current server
+     * and server reports missing serMode byte.
+     */
     @Test
-    public void testOldClientRejectedOnSerMode() throws Exception {
+    public void testOldClientRejected() throws Exception {
         setLoggerDebugLevel();
 
         listeningLog = new ListeningTestLogger(log);
