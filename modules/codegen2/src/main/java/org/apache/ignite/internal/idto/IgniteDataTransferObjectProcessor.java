@@ -200,7 +200,8 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
             writer.write("/** */");
             writer.write(NL);
             writer.write(TAB);
-            writer.write("private final Map<Class<?>, " + simpleName(DTO_SERDES_INTERFACE) + "> serdes = new HashMap<>();");
+            writer.write("private final Map<Class<? extends IgniteDataTransferObject>, " + simpleName(DTO_SERDES_INTERFACE) + "> serdes " +
+                "= new HashMap<>();");
             writer.write(NL);
             writer.write(NL);
 
