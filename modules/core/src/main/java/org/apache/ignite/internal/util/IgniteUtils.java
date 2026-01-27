@@ -178,7 +178,6 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderEx;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.codegen.idto.IDTOSerializerFactory;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -8262,7 +8261,7 @@ public abstract class IgniteUtils extends CommonUtils {
     public static <T extends IgniteDataTransferObject> IgniteDataTransferObjectSerializer<T> loadSerializer(Class<T> cls) {
         try {
             Class cls0 = IgniteUtils.class.getClassLoader()
-                .loadClass(IDTOSerializerFactory.class.getPackage().getName() + "." + cls.getSimpleName() + "Serializer");
+                .loadClass(cls.getPackage().getName() + "." + cls.getSimpleName() + "Serializer");
 
             return (IgniteDataTransferObjectSerializer<T>)cls0.getDeclaredConstructor().newInstance();
         }
