@@ -29,6 +29,10 @@ import java.io.StreamCorruptedException;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import org.apache.ignite.IgniteCheckedException;
@@ -94,6 +98,12 @@ public class TcpDiscoveryIoSession {
     /** Intermediate buffer for serializing discovery messages. */
     private final ByteBuffer msgBuf;
 
+    /** */
+    private volatile Thread ownerThread;
+
+    /** */
+    private final ReentrantLock lock = new ReentrantLock();
+
     /**
      * Creates a new discovery I/O session bound to the given socket.
      *
@@ -131,28 +141,62 @@ public class TcpDiscoveryIoSession {
      * @throws IgniteCheckedException If serialization fails.
      */
     void writeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
-        if (!(msg instanceof Message)) {
-            out.write(JAVA_SERIALIZATION);
-
-            U.marshal(spi.marshaller(), msg, out);
-
-            return;
-        }
+        boolean locked = false;
 
         try {
-            out.write(MESSAGE_SERIALIZATION);
+            locked = tryLock();
 
-            serializeMessage((Message)msg, out);
+            if (!(msg instanceof Message)) {
+                out.write(JAVA_SERIALIZATION);
 
-            out.flush();
+                U.marshal(spi.marshaller(), msg, out);
+
+                return;
+            }
+
+            try {
+                out.write(MESSAGE_SERIALIZATION);
+
+                serializeMessage((Message)msg, out);
+
+                out.flush();
+            }
+            catch (Exception e) {
+                // Keep logic similar to `U.marshal(...)`.
+                if (e instanceof IgniteCheckedException)
+                    throw (IgniteCheckedException)e;
+
+                throw new IgniteCheckedException(e);
+            }
         }
-        catch (Exception e) {
-            // Keep logic similar to `U.marshal(...)`.
-            if (e instanceof IgniteCheckedException)
-                throw (IgniteCheckedException)e;
-
-            throw new IgniteCheckedException(e);
+        finally {
+            if (locked) {
+                ownerThread = null;
+                lock.unlock();
+            }
         }
+    }
+
+    /** */
+    private boolean tryLock() {
+        Thread curThread = Thread.currentThread();
+
+        Thread ownerThread0 = ownerThread;
+
+        assert lock.tryLock() : "Concurrent session usage [curThread=" + curThread.getName() + "," + U.nl() +
+            "ownerThread=" + treadInfo(ownerThread0) + "]";
+
+        ownerThread = curThread;
+
+        return true;
+    }
+
+    /** */
+    private static String treadInfo(Thread thread) {
+        return "[thread=" + thread.getName() + ", stacktrace=" + U.nl() +
+            Arrays.stream(thread.getStackTrace())
+                .map(Objects::toString)
+                .collect(Collectors.joining(U.nl())) + "]";
     }
 
     /**
@@ -247,13 +291,25 @@ public class TcpDiscoveryIoSession {
      * @throws IOException If serialization fails.
      */
     byte[] serializeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
-        if (!(msg instanceof Message))
-            return U.marshal(spi.marshaller(), msg);
+        boolean locked = false;
 
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            serializeMessage((Message)msg, out);
+        try {
+            locked = tryLock();
 
-            return out.toByteArray();
+            if (!(msg instanceof Message))
+                return U.marshal(spi.marshaller(), msg);
+
+            try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                serializeMessage((Message)msg, out);
+
+                return out.toByteArray();
+            }
+        }
+        finally {
+            if (locked) {
+                ownerThread = null;
+                lock.unlock();
+            }
         }
     }
 
@@ -270,22 +326,34 @@ public class TcpDiscoveryIoSession {
      * @throws IOException If serialization fails.
      */
     private void serializeMessage(Message m, OutputStream out) throws IOException {
-        MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
+        boolean locked = false;
 
-        msgWriter.reset();
-        msgWriter.setBuffer(msgBuf);
+        try {
+            locked = tryLock();
 
-        boolean finished;
+            MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
 
-        do {
-            // Should be cleared before first operation.
-            msgBuf.clear();
+            msgWriter.reset();
+            msgWriter.setBuffer(msgBuf);
 
-            finished = msgSer.writeTo(m, msgWriter);
+            boolean finished;
 
-            out.write(msgBuf.array(), 0, msgBuf.position());
+            do {
+                // Should be cleared before first operation.
+                msgBuf.clear();
+
+                finished = msgSer.writeTo(m, msgWriter);
+
+                out.write(msgBuf.array(), 0, msgBuf.position());
+            }
+            while (!finished);
         }
-        while (!finished);
+        finally {
+            if (locked) {
+                ownerThread = null;
+                lock.unlock();
+            }
+        }
     }
 
     /**
