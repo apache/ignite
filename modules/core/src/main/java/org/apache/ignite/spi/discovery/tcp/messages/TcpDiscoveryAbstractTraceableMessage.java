@@ -81,10 +81,10 @@ public abstract class TcpDiscoveryAbstractTraceableMessage extends TcpDiscoveryA
 
     /** @param spanBytes {@link #spanContainer}'s bytes. */
     public void spanBytes(@Nullable byte[] spanBytes) {
+        readResolve();
+
         if (spanBytes == null)
             return;
-
-        readResolve();
 
         spanContainer.serializedSpanBytes(spanBytes);
     }
