@@ -5745,7 +5745,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 if (F.contains(msg.failedNodes(), msg.creatorNodeId())) {
                                     msg0 = createTcpDiscoveryStatusCheckMessage(
-                                        msg.creatorNode(),
+                                        null,
                                         msg.creatorNodeId(),
                                         msg.failedNodeId());
 
@@ -5764,7 +5764,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 }
 
                                 try {
-                                    trySendMessageDirectly(msg0.creatorNodeAddrs(), msg0.creatorNodeId(), msg0);
+                                    trySendMessageDirectly(msg0.creatorNodeAddresses(), msg0.creatorNodeId(), msg0);
 
                                     if (log.isDebugEnabled())
                                         log.debug("Responded to status check message " +
