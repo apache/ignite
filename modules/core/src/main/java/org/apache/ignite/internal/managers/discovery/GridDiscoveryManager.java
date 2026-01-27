@@ -486,11 +486,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ctx.addNodeAttribute(ATTR_OFFHEAP_SIZE, requiredOffheap());
         ctx.addNodeAttribute(ATTR_DATA_REGIONS_OFFHEAP_SIZE, configuredOffheap());
 
-        DataStorageConfiguration dsCfg = ctx.config().getDataStorageConfiguration();
-
-        if (CU.isPersistenceEnabled(dsCfg))
-            ctx.addNodeAttribute(ATTR_WAL_MODE, dsCfg.getWalMode().ordinal());
-
         DiscoverySpi spi = getSpi();
 
         discoOrdered = discoOrdered();
