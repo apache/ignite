@@ -34,7 +34,7 @@ public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilit
     private static final IgniteReleasedVersion OLD_VERSION = IgniteReleasedVersion.VER_2_17_0;
 
     /** */
-    private LogListener serModeListener;
+    private ListeningTestLogger listeningLog;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -45,15 +45,12 @@ public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilit
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        setLoggerDebugLevel();
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        serModeListener = LogListener.matches(SER_MODE_MSG).build();
+        if (listeningLog != null)
+            cfg.setGridLogger(listeningLog);
 
-        ListeningTestLogger listeningLog = new ListeningTestLogger(log);
-
-        listeningLog.registerListener(serModeListener);
-
-        return super.getConfiguration(igniteInstanceName).setGridLogger(listeningLog);
+        return cfg;
     }
 
     /**
@@ -62,11 +59,19 @@ public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilit
      */
     @Test
     public void testOldClientRejected() throws Exception {
+        setLoggerDebugLevel();
+
+        listeningLog = new ListeningTestLogger(log);
+
+        LogListener serModeListener = LogListener.matches(SER_MODE_MSG).build();
+
+        listeningLog.registerListener(serModeListener);
+
         startGrid(0);
 
         GridTestUtils.assertThrows(
             log,
-            () -> startGrid("old-client", OLD_VERSION.toString(), null),
+            () -> startGrid("old-client", OLD_VERSION.toString(), cfg -> cfg.setClientMode(true)),
             AssertionError.class,
             null
         );

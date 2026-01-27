@@ -385,7 +385,6 @@ public class TcpDiscoveryIoSession {
                     + "All nodes must run compatible Ignite versions."
             );
     }
-}
 
     /**
      * Input stream implementation that combines a byte array and a regular InputStream allowing to read bytes
