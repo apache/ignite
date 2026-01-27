@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.baseline;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -37,7 +34,6 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Result for {@link BaselineTask}.
@@ -243,28 +239,6 @@ public class BaselineTaskResult extends IgniteDataTransferObject {
      */
     public boolean isBaselineAdjustInProgress() {
         return baselineAdjustInProgress;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeLong(topVer);
-        U.writeMap(out, baseline);
-        U.writeMap(out, servers);
-        out.writeObject(autoAdjustSettings);
-        out.writeLong(remainingTimeToBaselineAdjust);
-        out.writeBoolean(baselineAdjustInProgress);
-        U.writeEnum(out, clusterState);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        topVer = in.readLong();
-        baseline = U.readTreeMap(in);
-        servers = U.readTreeMap(in);
-        autoAdjustSettings = (BaselineAutoAdjustSettings)in.readObject();
-        remainingTimeToBaselineAdjust = in.readLong();
-        baselineAdjustInProgress = in.readBoolean();
-        clusterState = U.readEnum(in, ClusterState.class);
     }
 
     /** {@inheritDoc} */

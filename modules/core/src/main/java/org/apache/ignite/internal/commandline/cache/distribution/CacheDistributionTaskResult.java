@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.commandline.cache.distribution;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -74,18 +71,6 @@ public class CacheDistributionTaskResult extends IgniteDataTransferObject {
      */
     public Map<UUID, Exception> exceptions() {
         return exceptions;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, nodeResList);
-        U.writeMap(out, exceptions);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeResList = U.readList(in);
-        exceptions = U.readMap(in);
     }
 
     /** {@inheritDoc} */

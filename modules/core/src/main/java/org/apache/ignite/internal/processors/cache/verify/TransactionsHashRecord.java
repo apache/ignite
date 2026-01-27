@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.verify;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -66,20 +63,6 @@ public class TransactionsHashRecord extends IgniteDataTransferObject {
     /** @return Consistent ID of local node. */
     public Object localConsistentId() {
         return locConsistentId;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeObject(locConsistentId);
-        out.writeObject(rmtConsistentId);
-        out.writeInt(txHash);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        locConsistentId = in.readObject();
-        rmtConsistentId = in.readObject();
-        txHash = in.readInt();
     }
 
     /** {@inheritDoc} */

@@ -16,9 +16,6 @@
 */
 package org.apache.ignite.internal.processors.cache.verify;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Objects;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -28,7 +25,6 @@ import org.apache.ignite.internal.processors.cache.verify.IdleVerifyUtility.Veri
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -222,40 +218,6 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
     /** */
     public void hasExpiringEntries(boolean hasExpiringEntries) {
         this.hasExpiringEntries = hasExpiringEntries;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeObject(partKey);
-        out.writeBoolean(isPrimary);
-        out.writeObject(consistentId);
-        out.writeInt(partHash);
-        out.writeInt(partVerHash);
-        out.writeObject(updateCntr);
-        out.writeLong(size);
-        U.writeEnum(out, partitionState);
-        out.writeInt(cfKeys);
-        out.writeInt(noCfKeys);
-        out.writeInt(binKeys);
-        out.writeInt(regKeys);
-        out.writeBoolean(hasExpiringEntries);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        partKey = (PartitionKey)in.readObject();
-        isPrimary = in.readBoolean();
-        consistentId = in.readObject();
-        partHash = in.readInt();
-        partVerHash = in.readInt();
-        updateCntr = in.readObject();
-        size = in.readLong();
-        partitionState = PartitionState.fromOrdinal(in.readByte());
-        cfKeys = in.readInt();
-        noCfKeys = in.readInt();
-        binKeys = in.readInt();
-        regKeys = in.readInt();
-        hasExpiringEntries = in.readBoolean();
     }
 
     /** {@inheritDoc} */

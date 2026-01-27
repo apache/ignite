@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.management.cache;
 
 import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,7 +27,6 @@ import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -85,18 +81,6 @@ public class ValidateIndexesTaskResult extends IgniteDataTransferObject {
      */
     public Map<NodeInfo, Exception> exceptions() {
         return exceptions == null ? Collections.emptyMap() : exceptions;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, exceptions);
-        U.writeMap(out, results);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        exceptions = U.readMap(in);
-        results = U.readMap(in);
     }
 
     /** {@inheritDoc} */

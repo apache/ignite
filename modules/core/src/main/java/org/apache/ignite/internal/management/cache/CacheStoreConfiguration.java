@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.jdbc.CacheAbstractJdbcStore;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -27,7 +24,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
@@ -201,38 +197,6 @@ public class CacheStoreConfiguration extends IgniteDataTransferObject {
      */
     public boolean getWriteBehindCoalescing() {
         return writeBehindCoalescing;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(jdbcStore);
-        U.writeString(out, store);
-        U.writeString(out, storeFactory);
-        out.writeBoolean(readThrough);
-        out.writeBoolean(writeThrough);
-        out.writeBoolean(writeBehindEnabled);
-        out.writeInt(batchSz);
-        out.writeLong(flushFreq);
-        out.writeInt(flushSz);
-        out.writeInt(flushThreadCnt);
-        out.writeBoolean(storeKeepBinary);
-        out.writeBoolean(writeBehindCoalescing);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        jdbcStore = in.readBoolean();
-        store = U.readString(in);
-        storeFactory = U.readString(in);
-        readThrough = in.readBoolean();
-        writeThrough = in.readBoolean();
-        writeBehindEnabled = in.readBoolean();
-        batchSz = in.readInt();
-        flushFreq = in.readLong();
-        flushSz = in.readInt();
-        flushThreadCnt = in.readInt();
-        storeKeepBinary = in.readBoolean();
-        writeBehindCoalescing = in.readBoolean();
     }
 
     /** {@inheritDoc} */

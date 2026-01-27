@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.management.diagnostic;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class DiagnosticConnectivityCommandArg extends IgniteDataTransferObject {
@@ -31,16 +27,6 @@ public class DiagnosticConnectivityCommandArg extends IgniteDataTransferObject {
 
     /** */
     UUID[] nodes;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeArray(out, nodes);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodes = U.readArray(in, UUID.class);
-    }
 
     /** */
     public void nodes(UUID[] nodes) {

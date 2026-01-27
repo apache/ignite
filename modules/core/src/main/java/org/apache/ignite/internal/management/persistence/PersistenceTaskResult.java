@@ -17,14 +17,9 @@
 
 package org.apache.ignite.internal.management.persistence;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Map;
-
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 /** */
@@ -57,24 +52,6 @@ public class PersistenceTaskResult extends IgniteDataTransferObject {
      */
     public PersistenceTaskResult(boolean inMaintenanceMode) {
         this.inMaintenanceMode = inMaintenanceMode;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(inMaintenanceMode);
-        out.writeBoolean(maintenanceTaskCompleted);
-        U.writeCollection(out, handledCaches);
-        U.writeCollection(out, failedToHandleCaches);
-        U.writeMap(out, cachesInfo);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        inMaintenanceMode = in.readBoolean();
-        maintenanceTaskCompleted = in.readBoolean();
-        handledCaches = U.readCollection(in);
-        failedToHandleCaches = U.readCollection(in);
-        cachesInfo = U.readMap(in);
     }
 
     /** */

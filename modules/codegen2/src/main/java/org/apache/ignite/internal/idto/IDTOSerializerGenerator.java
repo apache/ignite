@@ -102,7 +102,6 @@ public class IDTOSerializerGenerator {
         TYPE_SERDES.put(Exception.class.getName(), OBJECT_SERDES);
         TYPE_SERDES.put(Object.class.getName(), OBJECT_SERDES);
 
-
         TYPE_SERDES.put(String.class.getName(), F.t("U.writeString(out, obj.${f});", "obj.${f} = U.readString(in);"));
         TYPE_SERDES.put(UUID.class.getName(), F.t("U.writeUuid(out, obj.${f});", "obj.${f} = U.readUuid(in);"));
         TYPE_SERDES.put("org.apache.ignite.lang.IgniteUuid", F.t("U.writeIgniteUuid(out, obj.${f});", "obj.${f} = U.readIgniteUuid(in);"));

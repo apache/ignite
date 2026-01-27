@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.management.wal;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *  Result of {@link WalTask}.
@@ -90,20 +86,6 @@ public class WalTaskResult extends IgniteDataTransferObject {
      */
     public Map<String, ClusterNode> getNodesInfo() {
         return nodesInfo;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, exceptions);
-        U.writeMap(out, results);
-        U.writeMap(out, nodesInfo);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        exceptions = U.readMap(in);
-        results = U.readMap(in);
-        nodesInfo = U.readMap(in);
     }
 
     /** {@inheritDoc} */

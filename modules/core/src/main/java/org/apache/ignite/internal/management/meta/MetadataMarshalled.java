@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.management.meta;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Represents information about cluster metadata.
@@ -53,18 +49,6 @@ public class MetadataMarshalled extends IgniteDataTransferObject {
     public MetadataMarshalled(byte[] metaMarshalled, BinaryMetadata meta) {
         this.metaMarshalled = metaMarshalled;
         this.meta = meta;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeByteArray(out, metaMarshalled);
-        out.writeObject(meta);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        metaMarshalled = U.readByteArray(in);
-        meta = (BinaryMetadata)in.readObject();
     }
 
     /**

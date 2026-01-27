@@ -158,19 +158,6 @@ public class BaselineNode extends IgniteDataTransferObject {
         public ResolvedAddresses() {
         }
 
-        /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-            U.writeString(out, hostname);
-            U.writeString(out, addr);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void readExternalData(ObjectInput in)
-            throws IOException, ClassNotFoundException {
-            hostname = U.readString(in);
-            addr = U.readString(in);
-        }
-
         /**
          * @return Hostname.
          */

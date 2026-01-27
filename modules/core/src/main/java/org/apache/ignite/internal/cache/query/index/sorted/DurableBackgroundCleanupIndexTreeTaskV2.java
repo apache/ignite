@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.cache.query.index.sorted;
 
 import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -151,28 +148,6 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
      */
     public DurableBackgroundCleanupIndexTreeTaskV2() {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeLongString(out, uid);
-        U.writeLongString(out, grpName);
-        U.writeLongString(out, cacheName);
-        U.writeLongString(out, idxName);
-        U.writeLongString(out, oldTreeName);
-        U.writeLongString(out, newTreeName);
-        out.writeInt(segments);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        uid = U.readLongString(in);
-        grpName = U.readLongString(in);
-        cacheName = U.readLongString(in);
-        idxName = U.readLongString(in);
-        oldTreeName = U.readLongString(in);
-        newTreeName = U.readLongString(in);
-        segments = in.readInt();
     }
 
     /** {@inheritDoc} */

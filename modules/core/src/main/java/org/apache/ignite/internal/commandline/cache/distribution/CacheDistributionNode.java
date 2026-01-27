@@ -16,14 +16,10 @@
  */
 package org.apache.ignite.internal.commandline.cache.distribution;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * DTO for CacheDistributionTask, contains information about node
@@ -106,21 +102,4 @@ public class CacheDistributionNode extends IgniteDataTransferObject {
     public void setGroups(List<CacheDistributionGroup> groups) {
         this.groups = groups;
     }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeUuid(out, nodeId);
-        U.writeString(out, addrs);
-        U.writeMap(out, userAttrs);
-        U.writeCollection(out, groups);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeId = U.readUuid(in);
-        addrs = U.readString(in);
-        userAttrs = U.readMap(in);
-        groups = U.readList(in);
-    }
-
 }

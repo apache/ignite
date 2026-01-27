@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.commandline.cache.distribution;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * DTO for CacheDistributionTask, contains information about partition
@@ -114,23 +110,5 @@ public class CacheDistributionPartition extends IgniteDataTransferObject {
     /** */
     public void setSize(long size) {
         this.size = size;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeInt(partId);
-        out.writeBoolean(primary);
-        U.writeEnum(out, state);
-        out.writeLong(updateCntr);
-        out.writeLong(size);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException {
-        partId = in.readInt();
-        primary = in.readBoolean();
-        state = GridDhtPartitionState.fromOrdinal(in.readByte());
-        updateCntr = in.readLong();
-        size = in.readLong();
     }
 }

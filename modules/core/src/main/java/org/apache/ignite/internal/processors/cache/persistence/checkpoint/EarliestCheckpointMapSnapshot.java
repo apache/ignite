@@ -17,16 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -96,18 +92,6 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
         return checkpointIds.contains(checkpointId);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, data);
-        U.writeCollection(out, checkpointIds);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        data = U.readMap(in);
-        checkpointIds = U.readSet(in);
-    }
-
     /** {@link CheckpointEntry.GroupState} snapshot. */
     static class GroupStateSnapshot extends IgniteDataTransferObject {
         /** Serial version UUID. */
@@ -158,20 +142,6 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
          */
         public int size() {
             return size;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-            U.writeIntArray(out, parts);
-            U.writeLongArray(out, cnts);
-            out.writeInt(size);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-            parts = U.readIntArray(in);
-            cnts = U.readLongArray(in);
-            size = in.readInt();
         }
     }
 }

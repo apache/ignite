@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Result of the ScheduleIndexRebuildJob.
@@ -69,22 +65,6 @@ public class ScheduleIndexRebuildJobRes extends IgniteDataTransferObject {
         this.notFoundIndexes = notFoundIndexes;
         this.notFoundCacheNames = notFoundCacheNames;
         this.notFoundGroupNames = notFoundGroupNames;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, cacheToIndexes);
-        U.writeMap(out, notFoundIndexes);
-        U.writeCollection(out, notFoundCacheNames);
-        U.writeCollection(out, notFoundGroupNames);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheToIndexes = U.readMap(in);
-        notFoundIndexes = U.readMap(in);
-        notFoundCacheNames = U.readSet(in);
-        notFoundGroupNames = U.readSet(in);
     }
 
     /**

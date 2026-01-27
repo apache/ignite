@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.List;
 import javax.cache.configuration.Factory;
@@ -159,26 +156,6 @@ public class CacheJdbcType extends IgniteDataTransferObject {
      */
     public List<CacheJdbcTypeField> getValueFields() {
         return valFields;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, dbSchema);
-        U.writeString(out, dbTbl);
-        U.writeString(out, keyType);
-        U.writeString(out, valType);
-        U.writeCollection(out, keyFields);
-        U.writeCollection(out, valFields);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        dbSchema = U.readString(in);
-        dbTbl = U.readString(in);
-        keyType = U.readString(in);
-        valType = U.readString(in);
-        keyFields = U.readList(in);
-        valFields = U.readList(in);
     }
 
     /** {@inheritDoc} */

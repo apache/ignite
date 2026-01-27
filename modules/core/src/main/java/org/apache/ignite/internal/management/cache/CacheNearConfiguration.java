@@ -17,16 +17,12 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
@@ -103,22 +99,6 @@ public class CacheNearConfiguration extends IgniteDataTransferObject {
      */
     @Nullable public Integer getNearEvictMaxSize() {
         return nearEvictMaxSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(nearEnabled);
-        out.writeInt(nearStartSize);
-        U.writeString(out, nearEvictPlc);
-        out.writeObject(nearEvictMaxSize);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        nearEnabled = in.readBoolean();
-        nearStartSize = in.readInt();
-        nearEvictPlc = U.readString(in);
-        nearEvictMaxSize = (Integer)in.readObject();
     }
 
     /** {@inheritDoc} */

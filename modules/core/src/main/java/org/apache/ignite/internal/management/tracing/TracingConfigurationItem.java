@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.management.tracing;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Set;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.tracing.Span;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.tracing.Scope;
 
 /**
@@ -122,33 +118,6 @@ public class TracingConfigurationItem extends IgniteDataTransferObject {
      */
     public Set<Scope> includedScopes() {
         return includedScopes;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(scope != null);
-
-        if (scope != null)
-            out.writeShort(scope.idx());
-
-        U.writeString(out, label());
-
-        out.writeObject(samplingRate);
-
-        U.writeCollection(out, includedScopes);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-
-        if (in.readBoolean())
-            scope = Scope.fromIndex(in.readShort());
-
-        lb = U.readString(in);
-
-        samplingRate = (Double)in.readObject();
-
-        includedScopes = U.readSet(in);
     }
 
     /** {@inheritDoc} */

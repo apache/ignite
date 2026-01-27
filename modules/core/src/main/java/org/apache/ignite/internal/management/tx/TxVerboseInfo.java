@@ -16,16 +16,12 @@
 */
 package org.apache.ignite.internal.management.tx;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Encapsulates all verbose info about transaction needed for --tx --info output.
@@ -69,38 +65,6 @@ public class TxVerboseInfo extends IgniteDataTransferObject {
 
     /** Near only tx keys. */
     List<TxVerboseKey> nearOnlyTxKeys;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeObject(nearXidVer);
-        U.writeUuid(out, locNodeId);
-        out.writeObject(locNodeConsistentId);
-        U.writeUuid(out, nearNodeId);
-        out.writeObject(nearNodeConsistentId);
-        U.writeEnum(out, txMappingType);
-        U.writeUuid(out, dhtNodeId);
-        out.writeObject(dhtNodeConsistentId);
-        U.writeMap(out, usedCaches);
-        U.writeMap(out, usedCacheGroups);
-        U.writeCollection(out, locTxKeys);
-        U.writeCollection(out, nearOnlyTxKeys);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        nearXidVer = (GridCacheVersion)in.readObject();
-        locNodeId = U.readUuid(in);
-        locNodeConsistentId = in.readObject();
-        nearNodeId = U.readUuid(in);
-        nearNodeConsistentId = in.readObject();
-        txMappingType = TxMappingType.fromOrdinal(in.readByte());
-        dhtNodeId = U.readUuid(in);
-        dhtNodeConsistentId = in.readObject();
-        usedCaches = U.readHashMap(in);
-        usedCacheGroups = U.readHashMap(in);
-        locTxKeys = U.readList(in);
-        nearOnlyTxKeys = U.readList(in);
-    }
 
     /**
      * @return Near xid version.

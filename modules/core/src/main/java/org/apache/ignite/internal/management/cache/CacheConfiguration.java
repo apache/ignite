@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.List;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -30,9 +27,9 @@ import org.apache.ignite.configuration.DiskPageCompression;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactIterable;
 
@@ -536,98 +533,6 @@ public class CacheConfiguration extends IgniteDataTransferObject {
      */
     public Integer getDiskPageCompressionLevel() {
         return diskPageCompressionLevel;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, name);
-        U.writeString(out, grpName);
-        out.writeByte(CacheMode.toCode(mode));
-        U.writeEnum(out, atomicityMode);
-        out.writeBoolean(eagerTtl);
-        U.writeEnum(out, writeSynchronizationMode);
-        out.writeBoolean(invalidate);
-        out.writeInt(maxConcurrentAsyncOps);
-        U.writeString(out, interceptor);
-        out.writeLong(dfltLockTimeout);
-        out.writeObject(affinityCfg);
-        out.writeObject(rebalanceCfg);
-        out.writeObject(evictCfg);
-        out.writeObject(nearCfg);
-        out.writeObject(storeCfg);
-        U.writeCollection(out, qryEntities);
-        U.writeCollection(out, jdbcTypes);
-        out.writeBoolean(statisticsEnabled);
-        out.writeBoolean(mgmtEnabled);
-        U.writeString(out, ldrFactory);
-        U.writeString(out, writerFactory);
-        U.writeString(out, expiryPlcFactory);
-        out.writeObject(qryCfg);
-        out.writeBoolean(sys);
-        out.writeBoolean(storeKeepBinary);
-        out.writeBoolean(onheapCache);
-        U.writeEnum(out, partLossPlc);
-        out.writeInt(qryParallelism);
-        out.writeBoolean(cpOnRead);
-        U.writeString(out, evictFilter);
-        U.writeString(out, lsnrConfigurations);
-        out.writeBoolean(loadPrevVal);
-        U.writeString(out, dataRegName);
-        out.writeInt(sqlIdxMaxInlineSize);
-        U.writeString(out, nodeFilter);
-        out.writeInt(qryDetailMetricsSz);
-        out.writeBoolean(readFromBackup);
-        U.writeString(out, tmLookupClsName);
-        U.writeString(out, topValidator);
-        U.writeIgniteUuid(out, dynamicDeploymentId);
-        U.writeEnum(out, diskPageCompression);
-        out.writeObject(diskPageCompressionLevel);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        name = U.readString(in);
-        grpName = U.readString(in);
-        mode = CacheMode.fromCode(in.readByte());
-        atomicityMode = CacheAtomicityMode.fromOrdinal(in.readByte());
-        eagerTtl = in.readBoolean();
-        writeSynchronizationMode = CacheWriteSynchronizationMode.fromOrdinal(in.readByte());
-        invalidate = in.readBoolean();
-        maxConcurrentAsyncOps = in.readInt();
-        interceptor = U.readString(in);
-        dfltLockTimeout = in.readLong();
-        affinityCfg = (CacheAffinityConfiguration)in.readObject();
-        rebalanceCfg = (CacheRebalanceConfiguration)in.readObject();
-        evictCfg = (CacheEvictionConfiguration)in.readObject();
-        nearCfg = (CacheNearConfiguration)in.readObject();
-        storeCfg = (CacheStoreConfiguration)in.readObject();
-        qryEntities = U.readList(in);
-        jdbcTypes = U.readList(in);
-        statisticsEnabled = in.readBoolean();
-        mgmtEnabled = in.readBoolean();
-        ldrFactory = U.readString(in);
-        writerFactory = U.readString(in);
-        expiryPlcFactory = U.readString(in);
-        qryCfg = (QueryConfiguration)in.readObject();
-        sys = in.readBoolean();
-        storeKeepBinary = in.readBoolean();
-        onheapCache = in.readBoolean();
-        partLossPlc = PartitionLossPolicy.fromOrdinal(in.readByte());
-        qryParallelism = in.readInt();
-        cpOnRead = in.readBoolean();
-        evictFilter = U.readString(in);
-        lsnrConfigurations = U.readString(in);
-        loadPrevVal = in.readBoolean();
-        dataRegName = U.readString(in);
-        sqlIdxMaxInlineSize = in.readInt();
-        nodeFilter = U.readString(in);
-        qryDetailMetricsSz = in.readInt();
-        readFromBackup = in.readBoolean();
-        tmLookupClsName = U.readString(in);
-        topValidator = U.readString(in);
-        dynamicDeploymentId = U.readIgniteUuid(in);
-        diskPageCompression = DiskPageCompression.fromOrdinal(in.readByte());
-        diskPageCompressionLevel = (Integer)in.readObject();
     }
 
     /** {@inheritDoc} */

@@ -17,16 +17,12 @@
 
 package org.apache.ignite.internal.visor;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Visor tasks argument.
@@ -117,20 +113,6 @@ public class VisorTaskArgument<A> extends IgniteDataTransferObject {
      */
     public boolean isDebug() {
         return debug;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, nodes);
-        out.writeObject(arg);
-        out.writeBoolean(debug);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodes = U.readList(in);
-        arg = (A)in.readObject();
-        debug = in.readBoolean();
     }
 
     /** {@inheritDoc} */
