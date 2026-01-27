@@ -31,13 +31,13 @@ public class ConsistencyTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Result. */
-    private String msg;
+    String msg;
 
     /** Failed. */
-    private boolean failed;
+    boolean failed;
 
     /** Cancelled. */
-    private boolean cancelled;
+    boolean cancelled;
 
     /**
      * {@inheritDoc}

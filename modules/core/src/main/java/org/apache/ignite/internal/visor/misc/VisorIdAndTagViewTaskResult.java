@@ -31,13 +31,13 @@ public class VisorIdAndTagViewTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private UUID id;
+    UUID id;
 
     /** */
-    private String tag;
+    String tag;
 
     /** */
-    private String clusterName;
+    String clusterName;
 
     /** Default constructor. */
     public VisorIdAndTagViewTaskResult() {

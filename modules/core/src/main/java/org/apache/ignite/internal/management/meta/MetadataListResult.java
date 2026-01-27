@@ -36,7 +36,7 @@ public class MetadataListResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cluster metadata. */
-    private Collection<BinaryMetadata> meta = Collections.emptyList();
+    Collection<BinaryMetadata> meta = Collections.emptyList();
 
     /**
      * Constructor for optimized marshaller.

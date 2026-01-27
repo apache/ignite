@@ -33,16 +33,16 @@ public class CacheJdbcTypeField extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Column name in database. */
-    private String dbName;
+    String dbName;
 
     /** Column JDBC type in database. */
-    private int dbType;
+    int dbType;
 
     /** Field name in java object. */
-    private String javaName;
+    String javaName;
 
     /** Corresponding java type. */
-    private String javaType;
+    String javaType;
 
     /**
      * Empty constructor.

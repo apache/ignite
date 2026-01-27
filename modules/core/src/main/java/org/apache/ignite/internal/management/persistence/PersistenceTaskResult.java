@@ -33,19 +33,19 @@ public class PersistenceTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private boolean inMaintenanceMode;
+    boolean inMaintenanceMode;
 
     /** */
-    private boolean maintenanceTaskCompleted;
+    boolean maintenanceTaskCompleted;
 
     /** */
-    private Collection<String> handledCaches;
+    Collection<String> handledCaches;
 
     /** */
-    private Collection<String> failedToHandleCaches;
+    Collection<String> failedToHandleCaches;
 
     /** */
-    private Map<String, IgniteBiTuple<Boolean, Boolean>> cachesInfo;
+    Map<String, IgniteBiTuple<Boolean, Boolean>> cachesInfo;
 
     /** */
     public PersistenceTaskResult() {

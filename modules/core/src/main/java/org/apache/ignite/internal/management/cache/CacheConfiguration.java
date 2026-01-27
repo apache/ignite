@@ -44,130 +44,130 @@ public class CacheConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache name. */
-    private String name;
+    String name;
 
     /** Cache group name. */
-    private String grpName;
+    String grpName;
 
     /** Cache mode. */
-    private CacheMode mode;
+    CacheMode mode;
 
     /** Cache atomicity mode. */
-    private CacheAtomicityMode atomicityMode;
+    CacheAtomicityMode atomicityMode;
 
     /** Eager ttl flag. */
-    private boolean eagerTtl;
+    boolean eagerTtl;
 
     /** Write synchronization mode. */
-    private CacheWriteSynchronizationMode writeSynchronizationMode;
+    CacheWriteSynchronizationMode writeSynchronizationMode;
 
     /** Invalidate. */
-    private boolean invalidate;
+    boolean invalidate;
 
     /** Max concurrent async operations. */
-    private int maxConcurrentAsyncOps;
+    int maxConcurrentAsyncOps;
 
     /** Cache interceptor. */
-    private String interceptor;
+    String interceptor;
 
     /** Default lock acquisition timeout. */
-    private long dfltLockTimeout;
+    long dfltLockTimeout;
 
     /** Cache affinity config. */
-    private CacheAffinityConfiguration affinityCfg;
+    CacheAffinityConfiguration affinityCfg;
 
     /** Preload config. */
-    private CacheRebalanceConfiguration rebalanceCfg;
+    CacheRebalanceConfiguration rebalanceCfg;
 
     /** Eviction config. */
-    private CacheEvictionConfiguration evictCfg;
+    CacheEvictionConfiguration evictCfg;
 
     /** Near cache config. */
-    private CacheNearConfiguration nearCfg;
+    CacheNearConfiguration nearCfg;
 
     /** Store config. */
-    private CacheStoreConfiguration storeCfg;
+    CacheStoreConfiguration storeCfg;
 
     /** Collection of query entities. */
-    private List<QueryEntity> qryEntities;
+    List<QueryEntity> qryEntities;
 
     /** Collection of type metadata. */
-    private List<CacheJdbcType> jdbcTypes;
+    List<CacheJdbcType> jdbcTypes;
 
     /** Whether statistics collection is enabled. */
-    private boolean statisticsEnabled;
+    boolean statisticsEnabled;
 
     /** Whether management is enabled. */
-    private boolean mgmtEnabled;
+    boolean mgmtEnabled;
 
     /** Class name of cache loader factory. */
-    private String ldrFactory;
+    String ldrFactory;
 
     /** Class name of cache writer factory. */
-    private String writerFactory;
+    String writerFactory;
 
     /** Class name of expiry policy factory. */
-    private String expiryPlcFactory;
+    String expiryPlcFactory;
 
     /** Query configuration. */
-    private QueryConfiguration qryCfg;
+    QueryConfiguration qryCfg;
 
     /** System cache flag. */
-    private boolean sys;
+    boolean sys;
 
     /** Keep binary in store flag. */
-    private boolean storeKeepBinary;
+    boolean storeKeepBinary;
 
     /** On-heap cache enabled flag. */
-    private boolean onheapCache;
+    boolean onheapCache;
 
     /** Partition loss policy. */
-    private PartitionLossPolicy partLossPlc;
+    PartitionLossPolicy partLossPlc;
 
     /** Query parallelism. */
-    private int qryParallelism;
+    int qryParallelism;
 
     /** Copy on read flag. */
-    private boolean cpOnRead;
+    boolean cpOnRead;
 
     /** Eviction filter. */
-    private String evictFilter;
+    String evictFilter;
 
     /** Listener configurations. */
-    private String lsnrConfigurations;
+    String lsnrConfigurations;
 
     /** */
-    private boolean loadPrevVal;
+    boolean loadPrevVal;
 
     /** Name of {@link DataRegionConfiguration} for this cache */
-    private String dataRegName;
+    String dataRegName;
 
     /** Maximum inline size for sql indexes. */
-    private int sqlIdxMaxInlineSize;
+    int sqlIdxMaxInlineSize;
 
     /** Node filter specifying nodes on which this cache should be deployed. */
-    private String nodeFilter;
+    String nodeFilter;
 
     /** */
-    private int qryDetailMetricsSz;
+    int qryDetailMetricsSz;
 
     /** Flag indicating whether data can be read from backup. */
-    private boolean readFromBackup;
+    boolean readFromBackup;
 
     /** Name of class implementing GridCacheTmLookup. */
-    private String tmLookupClsName;
+    String tmLookupClsName;
 
     /** Cache topology validator. */
-    private String topValidator;
+    String topValidator;
 
     /** Dynamic deployment ID. */
-    private IgniteUuid dynamicDeploymentId;
+    IgniteUuid dynamicDeploymentId;
 
     /** Disk page compression algorithm. */
-    private DiskPageCompression diskPageCompression;
+    DiskPageCompression diskPageCompression;
 
     /** Algorithm specific disk page compression level. */
-    private Integer diskPageCompressionLevel;
+    Integer diskPageCompressionLevel;
 
     /**
      * Default constructor.

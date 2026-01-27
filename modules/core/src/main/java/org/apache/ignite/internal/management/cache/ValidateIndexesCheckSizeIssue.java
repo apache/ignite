@@ -36,14 +36,14 @@ public class ValidateIndexesCheckSizeIssue extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Index name. */
-    private String idxName;
+    String idxName;
 
     /** Index size. */
-    private long idxSize;
+    long idxSize;
 
     /** Error. */
     @GridToStringExclude
-    private Throwable t;
+    Throwable t;
 
     /**
      * Default constructor.

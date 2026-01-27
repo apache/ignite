@@ -37,10 +37,10 @@ public class QueryIndexField extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Index field name. */
-    private String name;
+    String name;
 
     /** Index field sort order. */
-    private boolean sort;
+    boolean sort;
 
     /**
      * Create data transfer object for given cache type metadata.

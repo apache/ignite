@@ -34,10 +34,10 @@ public class MetadataMarshalled extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Marshaled metadata. */
-    private byte[] metaMarshalled;
+    byte[] metaMarshalled;
 
     /** Metadata. */
-    private BinaryMetadata meta;
+    BinaryMetadata meta;
 
     /**
      * Constructor for optimized marshaller.

@@ -43,62 +43,62 @@ public class PartitionHashRecord extends IgniteDataTransferObject {
 
     /** Partition key. */
     @GridToStringExclude
-    private PartitionKey partKey;
+    PartitionKey partKey;
 
     /** Is primary flag. */
-    private boolean isPrimary;
+    boolean isPrimary;
 
     /** Consistent id. */
     @GridToStringInclude
-    private Object consistentId;
+    Object consistentId;
 
     /** Partition entries content hash. */
     @GridToStringExclude
-    private int partHash;
+    int partHash;
 
     /** Partition entries versions hash. */
     @GridToStringExclude
-    private int partVerHash;
+    int partVerHash;
 
     /** Update counter's state. */
     @GridToStringInclude
-    private Object updateCntr;
+    Object updateCntr;
 
     /** Size. */
     @GridToStringExclude
-    private long size;
+    long size;
 
     /** Partition state. */
-    private PartitionState partitionState;
+    PartitionState partitionState;
 
     /**
      * Count of keys with compact footer.
      * @see BinaryConfiguration#isCompactFooter()
      */
     @GridToStringExclude
-    private int cfKeys;
+    int cfKeys;
 
     /**
      * Count of keys without compact footer.
      * @see BinaryConfiguration#isCompactFooter()
      */
     @GridToStringExclude
-    private int noCfKeys;
+    int noCfKeys;
 
     /**
      * Count of {@link org.apache.ignite.binary.BinaryObject} keys.
      * @see GridBinaryMarshaller#BINARY_OBJ
      */
     @GridToStringExclude
-    private int binKeys;
+    int binKeys;
 
     /** Count of type supported by Ignite out of the box (numbers, strings, etc). */
     @GridToStringExclude
-    private int regKeys;
+    int regKeys;
 
     /** If partition has entries to expire. */
     @GridToStringExclude
-    private boolean hasExpiringEntries;
+    boolean hasExpiringEntries;
 
     /**
      * @param partKey Partition key.

@@ -43,10 +43,10 @@ public class SnapshotPartitionsVerifyResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Map of snapshot metadata information found on each cluster node. */
-    private Map<ClusterNode, List<SnapshotMetadata>> metas;
+    Map<ClusterNode, List<SnapshotMetadata>> metas;
 
     /** Result of cluster nodes partitions comparison. */
-    @Nullable private IdleVerifyResult idleRes;
+    @Nullable IdleVerifyResult idleRes;
 
     /** Default constructor. */
     public SnapshotPartitionsVerifyResult() {

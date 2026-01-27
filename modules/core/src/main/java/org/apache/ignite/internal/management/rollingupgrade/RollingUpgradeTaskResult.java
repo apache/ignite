@@ -32,16 +32,16 @@ public class RollingUpgradeTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private IgniteProductVersion curVer;
+    IgniteProductVersion curVer;
 
     /** */
-    private IgniteProductVersion targetVer;
+    IgniteProductVersion targetVer;
 
     /** */
-    private String errMsg;
+    String errMsg;
 
     /** */
-    private List<RollingUpgradeStatusNode> nodes;
+    List<RollingUpgradeStatusNode> nodes;
 
     /** */
     public RollingUpgradeTaskResult(IgniteProductVersion curVer, IgniteProductVersion targetVer, String errMsg) {

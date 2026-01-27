@@ -33,16 +33,16 @@ public class CacheDistributionNode extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Node identifier. */
-    private UUID nodeId;
+    UUID nodeId;
 
     /** Network addresses. */
-    private String addrs;
+    String addrs;
 
     /** User attribute in result. */
-    private Map<String, String> userAttrs;
+    Map<String, String> userAttrs;
 
     /** Information about groups. */
-    private List<CacheDistributionGroup> groups;
+    List<CacheDistributionGroup> groups;
 
     /** Default constructor. */
     public CacheDistributionNode() {

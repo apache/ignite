@@ -43,19 +43,19 @@ public class ValidateIndexesJobResult extends IgniteDataTransferObject {
 
     /** Results of indexes validation from node. */
     @GridToStringInclude
-    private Map<PartitionKey, ValidateIndexesPartitionResult> partRes;
+    Map<PartitionKey, ValidateIndexesPartitionResult> partRes;
 
     /** Results of reverse indexes validation from node. */
     @GridToStringInclude
-    private Map<String, ValidateIndexesPartitionResult> idxRes;
+    Map<String, ValidateIndexesPartitionResult> idxRes;
 
     /** Integrity check issues. */
     @GridToStringInclude
-    private Collection<IndexIntegrityCheckIssue> integrityCheckFailures;
+    Collection<IndexIntegrityCheckIssue> integrityCheckFailures;
 
     /** Results of checking size cache and index. */
     @GridToStringInclude
-    private Map<String, ValidateIndexesCheckSizeResult> checkSizeRes;
+    Map<String, ValidateIndexesCheckSizeResult> checkSizeRes;
 
     /**
      * Constructor.

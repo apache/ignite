@@ -32,16 +32,16 @@ public class TxVerboseKey extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Tx key. */
-    private String txKey;
+    String txKey;
 
     /** Lock type. */
-    private TxKeyLockType lockType;
+    TxKeyLockType lockType;
 
     /** Owner version. */
-    private GridCacheVersion ownerVer;
+    GridCacheVersion ownerVer;
 
     /** Is read entry. */
-    private boolean read;
+    boolean read;
 
     /**
      * Default constructor.

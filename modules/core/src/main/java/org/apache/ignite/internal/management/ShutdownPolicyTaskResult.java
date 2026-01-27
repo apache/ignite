@@ -31,7 +31,7 @@ public class ShutdownPolicyTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Shutdown policy on result. */
-    private ShutdownPolicy shutdown;
+    ShutdownPolicy shutdown;
 
     /**
      * Get policy.

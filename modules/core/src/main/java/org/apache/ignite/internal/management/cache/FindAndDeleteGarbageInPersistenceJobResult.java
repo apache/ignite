@@ -36,7 +36,7 @@ public class FindAndDeleteGarbageInPersistenceJobResult extends IgniteDataTransf
 
     /** Results of indexes validation from node. */
     @GridToStringInclude
-    private Map<Integer, Map<Integer, Long>> result;
+    Map<Integer, Map<Integer, Long>> result;
 
     /**
      * @param result Results with founded garbage (GroupId -> (CacheId, Count of keys)).

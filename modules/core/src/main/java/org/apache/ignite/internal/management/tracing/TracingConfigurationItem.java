@@ -39,18 +39,18 @@ public class TracingConfigurationItem extends IgniteDataTransferObject {
      * Specifies the {@link Scope} of a trace's root span to which some specific tracing configuration will be applied.
      * It's a mandatory attribute.
      */
-    private Scope scope;
+    Scope scope;
 
     /**
      * Specifies the label of a traced operation. It's an optional attribute.
      */
-    private String lb;
+    String lb;
 
     /**
      * Number between 0 and 1 that more or less reflects the probability of sampling specific trace. 0 and 1 have
      * special meaning here, 0 means never 1 means always. Default value is 0 (never).
      */
-    private Double samplingRate;
+    Double samplingRate;
 
     /**
      * Set of {@link Scope} that defines which sub-traces will be included in given trace. In other words, if child's
@@ -58,7 +58,7 @@ public class TracingConfigurationItem extends IgniteDataTransferObject {
      * will be attached to the current trace, otherwise it'll be skipped. See {@link
      * Span#isChainable(Scope)} for more details.
      */
-    private Set<Scope> includedScopes;
+    Set<Scope> includedScopes;
 
     /**
      * Default constructor.

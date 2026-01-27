@@ -30,7 +30,7 @@ public class DiagnosticConnectivityCommandArg extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0;
 
     /** */
-    private UUID[] nodes;
+    UUID[] nodes;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {

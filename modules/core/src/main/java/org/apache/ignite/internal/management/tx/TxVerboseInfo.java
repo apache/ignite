@@ -35,40 +35,40 @@ public class TxVerboseInfo extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Near xid version. */
-    private GridCacheVersion nearXidVer;
+    GridCacheVersion nearXidVer;
 
     /** Local node id. */
-    private UUID locNodeId;
+    UUID locNodeId;
 
     /** Local node consistent id. */
-    private Object locNodeConsistentId;
+    Object locNodeConsistentId;
 
     /** Near node id. */
-    private UUID nearNodeId;
+    UUID nearNodeId;
 
     /** Near node consistent id. */
-    private Object nearNodeConsistentId;
+    Object nearNodeConsistentId;
 
     /** Tx mapping type. */
-    private TxMappingType txMappingType;
+    TxMappingType txMappingType;
 
     /** Dht node id. */
-    private UUID dhtNodeId;
+    UUID dhtNodeId;
 
     /** Dht node consistent id. */
-    private Object dhtNodeConsistentId;
+    Object dhtNodeConsistentId;
 
     /** Used caches. */
-    private Map<Integer, String> usedCaches;
+    Map<Integer, String> usedCaches;
 
     /** Used cache groups. */
-    private Map<Integer, String> usedCacheGroups;
+    Map<Integer, String> usedCacheGroups;
 
     /** Local tx keys. */
-    private List<TxVerboseKey> locTxKeys;
+    List<TxVerboseKey> locTxKeys;
 
     /** Near only tx keys. */
-    private List<TxVerboseKey> nearOnlyTxKeys;
+    List<TxVerboseKey> nearOnlyTxKeys;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {

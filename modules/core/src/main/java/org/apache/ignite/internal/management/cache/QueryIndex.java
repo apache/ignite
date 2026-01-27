@@ -34,13 +34,13 @@ public class QueryIndex extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Name of index. */
-    private String name;
+    String name;
 
     /** Type of index. */
-    private QueryIndexType type;
+    QueryIndexType type;
 
     /** Fields to create group indexes for. */
-    private List<QueryIndexField> fields;
+    List<QueryIndexField> fields;
 
     /**
      * Create data transfer object for given cache type metadata.

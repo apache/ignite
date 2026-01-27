@@ -29,10 +29,10 @@ public class DefragmentationTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private boolean success;
+    boolean success;
 
     /** */
-    private String msg;
+    String msg;
 
     /** Empty constructor for serialization. */
     public DefragmentationTaskResult() {

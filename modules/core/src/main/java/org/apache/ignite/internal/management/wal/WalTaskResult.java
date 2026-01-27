@@ -36,15 +36,15 @@ public class WalTaskResult extends IgniteDataTransferObject {
 
     /** Exceptions by node consistent id. */
     @GridToStringInclude
-    private Map<String, Exception> exceptions;
+    Map<String, Exception> exceptions;
 
     /** Archived wal segments path search results by node consistent id. */
     @GridToStringInclude
-    private Map<String, Collection<String>> results;
+    Map<String, Collection<String>> results;
 
     /** Nodes info by node consistent id. */
     @GridToStringInclude
-    private Map<String, ClusterNode> nodesInfo;
+    Map<String, ClusterNode> nodesInfo;
 
     /**
      * Default constructor.

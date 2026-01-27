@@ -34,7 +34,7 @@ public class ConnectivityResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Nullable private Map<ClusterNode, Boolean> nodeStatuses;
+    @Nullable Map<ClusterNode, Boolean> nodeStatuses;
 
     /**
      * Default constructor.

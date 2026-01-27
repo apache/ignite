@@ -34,7 +34,7 @@ public class VisorComputeCancelSessionsTaskArg extends IgniteDataTransferObject 
     private static final long serialVersionUID = 0L;
 
     /** Session IDs to cancel. */
-    private Set<IgniteUuid> sesIds;
+    Set<IgniteUuid> sesIds;
 
     /**
      * Default constructor.

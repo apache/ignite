@@ -41,10 +41,10 @@ public class CacheDistributionTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Job results. */
-    private List<CacheDistributionNode> nodeResList;
+    List<CacheDistributionNode> nodeResList;
 
     /** Exceptions. */
-    private Map<UUID, Exception> exceptions;
+    Map<UUID, Exception> exceptions;
 
     /**
      * @param nodeResList Cluster infos.

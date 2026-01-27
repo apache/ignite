@@ -39,20 +39,20 @@ public class IndexListInfoContainer extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Group name. */
-    private String grpName;
+    String grpName;
 
     /** Cache name. */
-    private String cacheName;
+    String cacheName;
 
     /** Index name. */
-    private String idxName;
+    String idxName;
 
     /** Columns names. */
     @GridToStringInclude
-    private Collection<String> colsNames;
+    Collection<String> colsNames;
 
     /** Table name. */
-    private String tblName;
+    String tblName;
 
     /**
      * Empty constructor required for Serializable.

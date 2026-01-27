@@ -36,18 +36,18 @@ public class ClusterNode extends IgniteDataTransferObject {
 
     /** Cluster node consistent id. */
     @GridToStringInclude
-    private String consistentId;
+    String consistentId;
 
     /** Cluster node attributes. */
-    private Map<String, Object> attrs;
+    Map<String, Object> attrs;
 
     /** Cluster node addresses. */
     @GridToStringInclude
-    private Collection<String> addrs;
+    Collection<String> addrs;
 
     /** Cluster node host names. */
     @GridToStringInclude
-    private Collection<String> hostNames;
+    Collection<String> hostNames;
 
     /**
      * Default constructor.

@@ -33,7 +33,7 @@ public class PropertyOperationResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Property value. */
-    private String val;
+    String val;
 
     /**
      * Constructor for optimized marshaller.

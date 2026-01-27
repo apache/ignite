@@ -39,7 +39,7 @@ public class ValidateIndexesPartitionResult extends IgniteDataTransferObject {
 
     /** Issues. */
     @GridToStringExclude
-    private List<IndexValidationIssue> issues = new ArrayList<>(MAX_ISSUES);
+    List<IndexValidationIssue> issues = new ArrayList<>(MAX_ISSUES);
 
     /**
      *

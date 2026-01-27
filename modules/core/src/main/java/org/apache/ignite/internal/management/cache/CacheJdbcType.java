@@ -39,22 +39,22 @@ public class CacheJdbcType extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Schema name in database. */
-    private String dbSchema;
+    String dbSchema;
 
     /** Table name in database. */
-    private String dbTbl;
+    String dbTbl;
 
     /** Key class used to store key in cache. */
-    private String keyType;
+    String keyType;
 
     /** Value class used to store value in cache. */
-    private String valType;
+    String valType;
 
     /** Key fields. */
-    private List<CacheJdbcTypeField> keyFields;
+    List<CacheJdbcTypeField> keyFields;
 
     /** Value fields. */
-    private List<CacheJdbcTypeField> valFields;
+    List<CacheJdbcTypeField> valFields;
 
     /**
      * @param factory Store factory to extract JDBC types info.

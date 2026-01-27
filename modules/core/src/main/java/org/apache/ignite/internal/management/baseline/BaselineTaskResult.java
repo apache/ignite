@@ -47,25 +47,25 @@ public class BaselineTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cluster state. */
-    private ClusterState clusterState;
+    ClusterState clusterState;
 
     /** Current topology version. */
-    private long topVer;
+    long topVer;
 
     /** Current baseline nodes. */
-    private Map<String, BaselineNode> baseline;
+    Map<String, BaselineNode> baseline;
 
     /** Current server nodes. */
-    private Map<String, BaselineNode> servers;
+    Map<String, BaselineNode> servers;
 
     /** Baseline autoadjustment settings. */
-    private BaselineAutoAdjustSettings autoAdjustSettings;
+    BaselineAutoAdjustSettings autoAdjustSettings;
 
     /** Time to next baseline adjust. */
-    private long remainingTimeToBaselineAdjust = -1;
+    long remainingTimeToBaselineAdjust = -1;
 
     /** Is baseline adjust in progress? */
-    private boolean baselineAdjustInProgress = false;
+    boolean baselineAdjustInProgress = false;
 
     /**
      * Default constructor.

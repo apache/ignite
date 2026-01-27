@@ -31,13 +31,13 @@ public class CacheDistributionGroup extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Group identifier. */
-    private int grpId;
+    int grpId;
 
     /** Group name. */
-    private String grpName;
+    String grpName;
 
     /** List of partitions. */
-    private List<CacheDistributionPartition> partitions;
+    List<CacheDistributionPartition> partitions;
 
     /** Default constructor. */
     public CacheDistributionGroup() {

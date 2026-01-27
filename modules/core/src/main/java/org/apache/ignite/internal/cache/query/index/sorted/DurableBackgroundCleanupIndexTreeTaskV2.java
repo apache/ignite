@@ -76,25 +76,25 @@ public class DurableBackgroundCleanupIndexTreeTaskV2 extends IgniteDataTransferO
     @Nullable private transient volatile IgniteLogger log;
 
     /** Unique id. */
-    private String uid;
+    String uid;
 
     /** Cache group name. */
-    @Nullable private String grpName;
+    @Nullable String grpName;
 
     /** Cache name. */
-    private String cacheName;
+    String cacheName;
 
     /** Index name. */
-    private String idxName;
+    String idxName;
 
     /** Old name of underlying index tree name. */
-    private String oldTreeName;
+    String oldTreeName;
 
     /** New name of underlying index tree name. */
-    private String newTreeName;
+    String newTreeName;
 
     /** Number of segments. */
-    private int segments;
+    int segments;
 
     /** Need to rename index root pages. */
     private transient volatile boolean needToRen;

@@ -33,7 +33,7 @@ public class ScheduleIndexRebuildTaskRes extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Map node id -> rebuild command result. */
-    private Map<UUID, ScheduleIndexRebuildJobRes> results;
+    Map<UUID, ScheduleIndexRebuildJobRes> results;
 
     /**
      * Empty constructor required for Serializable.

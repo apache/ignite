@@ -41,11 +41,11 @@ public class CacheGroupEncryptionTaskResult<T> extends IgniteDataTransferObject 
 
     /** Per node job result. */
     @GridToStringInclude
-    private Map<UUID, T> results;
+    Map<UUID, T> results;
 
     /** Per node execution problems. */
     @GridToStringInclude
-    private Map<UUID, IgniteException> exceptions;
+    Map<UUID, IgniteException> exceptions;
 
     /**
      * @param results Per node job result.

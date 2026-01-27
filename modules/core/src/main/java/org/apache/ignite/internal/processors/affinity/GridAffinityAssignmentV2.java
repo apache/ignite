@@ -49,19 +49,19 @@ public class GridAffinityAssignmentV2 extends IgniteDataTransferObject implement
     private static final long serialVersionUID = 0L;
 
     /** Topology version. */
-    private AffinityTopologyVersion topVer;
+    AffinityTopologyVersion topVer;
 
     /** Collection of calculated affinity nodes. */
-    private List<List<ClusterNode>> assignment;
+    List<List<ClusterNode>> assignment;
 
     /** Map of primary node partitions. */
-    private Map<UUID, Set<Integer>> primary;
+    Map<UUID, Set<Integer>> primary;
 
     /** Map of backup node partitions. */
-    private Map<UUID, Set<Integer>> backup;
+    Map<UUID, Set<Integer>> backup;
 
     /** Set of partitions which primary is different than in ideal assignment. */
-    private Set<Integer> primariesDifferentToIdeal;
+    Set<Integer> primariesDifferentToIdeal;
 
     /** Assignment node IDs */
     private transient volatile List<Collection<UUID>> assignmentIds;

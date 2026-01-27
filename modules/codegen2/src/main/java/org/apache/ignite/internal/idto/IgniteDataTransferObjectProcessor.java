@@ -63,21 +63,19 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
     private static final String FACTORY_PKG_NAME = "org.apache.ignite.internal.codegen.idto";
 
     /** Base class that every dto must extends. */
-    private static final String DTO_CLASS = "org.apache.ignite.internal.dto.IgniteDataTransferObject";
-
-    /**
-     * Annotation used in management commands.
-     * For now, we restrict set of generated serdes to all management commands argument classes.
-     * Because, they strictly follows Ignite codestyle convention.
-     * Providing support of all other inheritor of {@code IgniteDataTransferObject} is matter of following improvements.
-     */
-    private static final String ARG_ANNOTATION = "org.apache.ignite.internal.management.api.Argument";
+    static final String DTO_CLASS = "org.apache.ignite.internal.dto.IgniteDataTransferObject";
 
     /** Factory class name. */
     public static final String FACTORY_CLASS = "IDTOSerializerFactory";
 
     /** Generated classes. */
     private final Map<TypeElement, String> genSerDes = new HashMap<>();
+
+    /** Currently unsupported classes. */
+    private final Set<String> unsupported = Set.of(
+        "org.apache.ignite.internal.management.cache.ContentionJobResult",
+        "org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot"
+    );
 
     /**
      * Processes all classes extending the {@code IgniteDataTransferObject} and generates corresponding serializer code.
@@ -107,12 +105,14 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
             return;
 
         TypeMirror dtoCls = processingEnv.getElementUtils().getTypeElement(DTO_CLASS).asType();
-        TypeMirror argAnnotation = processingEnv.getElementUtils().getTypeElement(ARG_ANNOTATION).asType();
 
         TypeElement clazz = (TypeElement)el;
 
         // Generate code for inner classes.
         clazz.getEnclosedElements().forEach(this::generateSingle);
+
+        if (unsupported.contains(clazz.getQualifiedName().toString()))
+            return;
 
         if (!processingEnv.getTypeUtils().isAssignable(clazz.asType(), dtoCls))
             return;
@@ -124,9 +124,6 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
             return;
 
         if (clazz.getNestingKind() != NestingKind.TOP_LEVEL && clazz.getNestingKind() != NestingKind.MEMBER)
-            return;
-
-        if (!hasArgumentFields(clazz, argAnnotation))
             return;
 
         try {

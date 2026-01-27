@@ -54,31 +54,31 @@ public class IdleVerifyResult extends IgniteDataTransferObject {
 
     /** Counter conflicts. */
     @GridToStringInclude
-    private Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts;
+    Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts;
 
     /** Hash conflicts. */
     @GridToStringInclude
-    private Map<PartitionKey, List<PartitionHashRecord>> hashConflicts;
+    Map<PartitionKey, List<PartitionHashRecord>> hashConflicts;
 
     /** Moving partitions. */
     @GridToStringInclude
-    private Map<PartitionKey, List<PartitionHashRecord>> movingPartitions;
+    Map<PartitionKey, List<PartitionHashRecord>> movingPartitions;
 
     /** Lost partitions. */
     @GridToStringInclude
-    private Map<PartitionKey, List<PartitionHashRecord>> lostPartitions;
+    Map<PartitionKey, List<PartitionHashRecord>> lostPartitions;
 
     /** Transaction hashes conflicts. */
     @GridToStringInclude
-    private @Nullable List<List<TransactionsHashRecord>> txHashConflicts;
+    @Nullable List<List<TransactionsHashRecord>> txHashConflicts;
 
     /** Partial committed transactions. */
     @GridToStringInclude
-    private @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs;
+    @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs;
 
     /** Exceptions. */
     @GridToStringInclude
-    private Map<ClusterNode, Exception> exceptions;
+    Map<ClusterNode, Exception> exceptions;
 
     /**
      * Default constructor for Externalizable.

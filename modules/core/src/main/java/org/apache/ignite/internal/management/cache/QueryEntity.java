@@ -40,31 +40,31 @@ public class QueryEntity extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Key class used to store key in cache. */
-    private String keyType;
+    String keyType;
 
     /** Value class used to store value in cache. */
-    private String valType;
+    String valType;
 
     /** Fields to be queried, in addition to indexed fields. */
-    private Map<String, String> qryFlds;
+    Map<String, String> qryFlds;
 
     /** Key fields. */
-    private List<String> keyFields;
+    List<String> keyFields;
 
     /** Aliases. */
-    private Map<String, String> aliases;
+    Map<String, String> aliases;
 
     /** Table name. */
-    private String tblName;
+    String tblName;
 
     /** Key name. Can be used in field list to denote the key as a whole. */
-    private String keyFieldName;
+    String keyFieldName;
 
     /** Value name. Can be used in field list to denote the entire value. */
-    private String valFieldName;
+    String valFieldName;
 
     /** Fields to create group indexes for. */
-    private List<QueryIndex> grps;
+    List<QueryIndex> grps;
 
     /**
      * @param qryEntities Collection of query entities.

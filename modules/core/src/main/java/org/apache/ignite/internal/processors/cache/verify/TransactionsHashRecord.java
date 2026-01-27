@@ -31,15 +31,15 @@ public class TransactionsHashRecord extends IgniteDataTransferObject {
 
     /** Consistent ID of local node that participated in the transaction. This node produces this record. */
     @GridToStringInclude
-    private Object locConsistentId;
+    Object locConsistentId;
 
     /** Consistent ID of remote node that participated in the transactions. */
     @GridToStringInclude
-    private Object rmtConsistentId;
+    Object rmtConsistentId;
 
     /** Committed transactions IDs hash. */
     @GridToStringInclude
-    private int txHash;
+    int txHash;
 
     /** */
     public TransactionsHashRecord() {

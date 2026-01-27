@@ -40,40 +40,40 @@ public class CacheStoreConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Whether cache has JDBC store. */
-    private boolean jdbcStore;
+    boolean jdbcStore;
 
     /** Cache store class name. */
-    private String store;
+    String store;
 
     /** Cache store factory class name. */
-    private String storeFactory;
+    String storeFactory;
 
     /** Whether cache should operate in read-through mode. */
-    private boolean readThrough;
+    boolean readThrough;
 
     /** Whether cache should operate in write-through mode. */
-    private boolean writeThrough;
+    boolean writeThrough;
 
     /** Flag indicating whether write-behind behaviour should be used for the cache store. */
-    private boolean writeBehindEnabled;
+    boolean writeBehindEnabled;
 
     /** Maximum batch size for write-behind cache store operations. */
-    private int batchSz;
+    int batchSz;
 
     /** Frequency with which write-behind cache is flushed to the cache store in milliseconds. */
-    private long flushFreq;
+    long flushFreq;
 
     /** Maximum object count in write-behind cache. */
-    private int flushSz;
+    int flushSz;
 
     /** Number of threads that will perform cache flushing. */
-    private int flushThreadCnt;
+    int flushThreadCnt;
 
     /** Keep binary in store flag. */
-    private boolean storeKeepBinary;
+    boolean storeKeepBinary;
 
     /** Write coalescing flag for write-behind cache store */
-    private boolean writeBehindCoalescing;
+    boolean writeBehindCoalescing;
 
     /**
      * Default constructor.

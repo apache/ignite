@@ -30,10 +30,10 @@ public class ClearCachesTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** List of cleared caches. */
-    private List<String> clearedCaches;
+    List<String> clearedCaches;
 
     /** List of non-existent caches. */
-    private List<String> nonExistentCaches;
+    List<String> nonExistentCaches;
 
     /** */
     public ClearCachesTaskResult(List<String> clearedCaches, List<String> nonExistentCaches) {

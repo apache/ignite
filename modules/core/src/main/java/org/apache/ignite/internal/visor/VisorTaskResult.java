@@ -31,10 +31,10 @@ public class VisorTaskResult<R> extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Task result. */
-    private @Nullable R res;
+    @Nullable R res;
 
     /** Error. */
-    private @Nullable Exception err;
+    @Nullable Exception err;
 
     /** */
     public VisorTaskResult() {

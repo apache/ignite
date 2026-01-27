@@ -33,16 +33,16 @@ public class ScheduleIndexRebuildJobRes extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Map cache names -> indexes scheduled for the rebuild. */
-    private Map<String, Set<String>> cacheToIndexes;
+    Map<String, Set<String>> cacheToIndexes;
 
     /** Names of cache indexes that were not found (cache -> set of indexes). */
-    private Map<String, Set<String>> notFoundIndexes;
+    Map<String, Set<String>> notFoundIndexes;
 
     /** Names of caches that were not found. */
-    private Set<String> notFoundCacheNames;
+    Set<String> notFoundCacheNames;
 
     /** Names of cache groups that were not found. */
-    private Set<String> notFoundGroupNames;
+    Set<String> notFoundGroupNames;
 
     /**
      * Empty constructor required for Serializable.

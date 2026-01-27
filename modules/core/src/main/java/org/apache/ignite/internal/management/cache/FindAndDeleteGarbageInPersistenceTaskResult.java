@@ -37,11 +37,11 @@ public class FindAndDeleteGarbageInPersistenceTaskResult extends IgniteDataTrans
 
     /** Results of indexes validation from node. */
     @GridToStringInclude
-    private Map<UUID, FindAndDeleteGarbageInPersistenceJobResult> result;
+    Map<UUID, FindAndDeleteGarbageInPersistenceJobResult> result;
 
     /** Exceptions while indexes validation from node. */
     @GridToStringInclude
-    private Map<UUID, Exception> exceptions;
+    Map<UUID, Exception> exceptions;
 
     /**
      *

@@ -38,16 +38,16 @@ public class IndexRebuildStatusInfoContainer extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Group name. */
-    private String groupName;
+    String groupName;
 
     /** Cache name. */
-    private String cacheName;
+    String cacheName;
 
     /** */
-    private int indexBuildPartitionsLeftCount;
+    int indexBuildPartitionsLeftCount;
 
     /** Local partitions count. */
-    private int totalPartitionsCount;
+    int totalPartitionsCount;
 
     /**
      * Empty constructor required for Serializable.

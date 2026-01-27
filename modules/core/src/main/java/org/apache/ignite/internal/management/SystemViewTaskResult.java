@@ -33,10 +33,10 @@ public class SystemViewTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Attribute values for each row of the system view per node ID. */
-    private Map<UUID, List<List<?>>> rows;
+    Map<UUID, List<List<?>>> rows;
 
     /** Names of the system view attributes. */
-    private List<String> attrs;
+    List<String> attrs;
 
     /** Types of the system view attributes. */
     List<SimpleType> types;

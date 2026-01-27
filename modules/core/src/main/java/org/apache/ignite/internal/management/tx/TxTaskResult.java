@@ -33,7 +33,7 @@ public class TxTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private List<TxInfo> infos;
+    List<TxInfo> infos;
 
     /**
      * Default constructor.

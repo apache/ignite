@@ -34,10 +34,10 @@ public class CacheConfigurationCollectorTaskArg extends IgniteDataTransferObject
     private static final long serialVersionUID = 0L;
 
     /** Collection of cache names. */
-    private Collection<String> cacheNames;
+    Collection<String> cacheNames;
 
     /** Cache name regexp. */
-    private String regex;
+    String regex;
 
     /**
      * Default constructor.

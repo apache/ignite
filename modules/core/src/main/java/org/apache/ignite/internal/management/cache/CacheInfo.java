@@ -37,46 +37,46 @@ public class CacheInfo extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Sequence name. */
-    private String seqName;
+    String seqName;
 
     /** Sequence value. */
-    private long seqVal;
+    long seqVal;
 
     /** Cache name. */
-    private String cacheName;
+    String cacheName;
 
     /** Cache id. */
-    private int cacheId;
+    int cacheId;
 
     /** Group name. */
-    private String grpName;
+    String grpName;
 
     /** Group id. */
-    private int grpId;
+    int grpId;
 
     /** Caches count. */
-    private int cachesCnt;
+    int cachesCnt;
 
     /** Partitions. */
-    private int partitions;
+    int partitions;
 
     /** Mapped. */
-    private int mapped;
+    int mapped;
 
     /** Topology version. */
     public AffinityTopologyVersion topVer;
 
     /** Mode. */
-    private CacheMode mode;
+    CacheMode mode;
 
     /** Atomicity mode. */
-    private CacheAtomicityMode atomicityMode;
+    CacheAtomicityMode atomicityMode;
 
     /** Backups count. */
-    private int backupsCnt;
+    int backupsCnt;
 
     /** Affinity class name. */
-    private String affinityClsName;
+    String affinityClsName;
 
     /** */
     public String getSeqName() {

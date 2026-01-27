@@ -31,7 +31,7 @@ public class PageLocksResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private String payload;
+    String payload;
 
     /**
      *

@@ -35,7 +35,7 @@ public class PropertiesListResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Properties info: name, value, description. */
-    private Collection<T3<String, String, String>> props;
+    Collection<T3<String, String, String>> props;
 
     /**
      * Constructor for optimized marshaller.

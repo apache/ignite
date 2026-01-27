@@ -38,10 +38,10 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Last snapshot's checkpoint timestamp. */
-    private Map</*Checkpoint id */ UUID, Map</* Group id */ Integer, GroupStateSnapshot>> data = new HashMap<>();
+    Map</*Checkpoint id */ UUID, Map</* Group id */ Integer, GroupStateSnapshot>> data = new HashMap<>();
 
     /** Ids of checkpoints present at the time of the snapshot capture. */
-    private Set<UUID> checkpointIds;
+    Set<UUID> checkpointIds;
 
     /** Constructor. */
     public EarliestCheckpointMapSnapshot(
