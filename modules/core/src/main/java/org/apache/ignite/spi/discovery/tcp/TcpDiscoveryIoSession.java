@@ -140,7 +140,7 @@ public class TcpDiscoveryIoSession {
      * @param msg Message to send to the remote node.
      * @throws IgniteCheckedException If serialization fails.
      */
-    void writeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
+    synchronized void writeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
         boolean locked = false;
 
         try {
@@ -207,63 +207,75 @@ public class TcpDiscoveryIoSession {
      * @throws IgniteCheckedException If deserialization fails.
      */
     <T> T readMessage() throws IgniteCheckedException, IOException {
-        byte serMode = (byte)in.read();
-
-        if (JAVA_SERIALIZATION == serMode)
-            return U.unmarshal(spi.marshaller(), in, clsLdr);
+        boolean locked = false;
 
         try {
-            if (MESSAGE_SERIALIZATION != serMode) {
-                detectSslAlert(serMode, in);
+            locked = tryLock();
 
-                // IOException type is important for ServerImpl. It may search the cause (X.hasCause).
-                // The connection error processing behavior depends on it.
-                throw new IOException("Received unexpected byte while reading discovery message: " + serMode);
-            }
+            byte serMode = (byte)in.read();
 
-            Message msg = spi.messageFactory().create(makeMessageType((byte)in.read(), (byte)in.read()));
+            if (JAVA_SERIALIZATION == serMode)
+                return U.unmarshal(spi.marshaller(), in, clsLdr);
 
-            msgReader.reset();
-            msgReader.setBuffer(msgBuf);
+            try {
+                if (MESSAGE_SERIALIZATION != serMode) {
+                    detectSslAlert(serMode, in);
 
-            MessageSerializer msgSer = spi.messageFactory().serializer(msg.directType());
-
-            boolean finished;
-
-            do {
-                msgBuf.clear();
-
-                int read = in.read(msgBuf.array(), msgBuf.position(), msgBuf.remaining());
-
-                if (read == -1)
-                    throw new EOFException("Connection closed before message was fully read.");
-
-                msgBuf.limit(read);
-
-                finished = msgSer.readFrom(msg, msgReader);
-
-                // Server Discovery only sends next message to next Server upon receiving a receipt for the previous one.
-                // This behaviour guarantees that we never read a next message from the buffer right after the end of
-                // the previous message. But it is not guaranteed with Client Discovery where messages aren't acknowledged.
-                // Thus, we have to keep the uprocessed bytes read from the socket. It won't return them again.
-                if (msgBuf.hasRemaining()) {
-                    byte[] unprocessedReadTail = new byte[msgBuf.remaining()];
-
-                    msgBuf.get(unprocessedReadTail, 0, msgBuf.remaining());
-
-                    in.attachByteArray(unprocessedReadTail);
+                    // IOException type is important for ServerImpl. It may search the cause (X.hasCause).
+                    // The connection error processing behavior depends on it.
+                    throw new IOException("Received unexpected byte while reading discovery message: " + serMode);
                 }
+
+                Message msg = spi.messageFactory().create(makeMessageType((byte)in.read(), (byte)in.read()));
+
+                msgReader.reset();
+                msgReader.setBuffer(msgBuf);
+
+                MessageSerializer msgSer = spi.messageFactory().serializer(msg.directType());
+
+                boolean finished;
+
+                do {
+                    msgBuf.clear();
+
+                    int read = in.read(msgBuf.array(), msgBuf.position(), msgBuf.remaining());
+
+                    if (read == -1)
+                        throw new EOFException("Connection closed before message was fully read.");
+
+                    msgBuf.limit(read);
+
+                    finished = msgSer.readFrom(msg, msgReader);
+
+                    // Server Discovery only sends next message to next Server upon receiving a receipt for the previous one.
+                    // This behaviour guarantees that we never read a next message from the buffer right after the end of
+                    // the previous message. But it is not guaranteed with Client Discovery where messages aren't acknowledged.
+                    // Thus, we have to keep the uprocessed bytes read from the socket. It won't return them again.
+                    if (msgBuf.hasRemaining()) {
+                        byte[] unprocessedReadTail = new byte[msgBuf.remaining()];
+
+                        msgBuf.get(unprocessedReadTail, 0, msgBuf.remaining());
+
+                        in.attachByteArray(unprocessedReadTail);
+                    }
+                }
+                while (!finished);
+
+                return (T)msg;
             }
-            while (!finished);
+            catch (Exception e) {
+                // Keep logic similar to `U.marshal(...)`.
+                if (e instanceof IgniteCheckedException)
+                    throw (IgniteCheckedException)e;
 
-            return (T)msg;
+                throw new IgniteCheckedException(e);
+            }
         }
-        catch (Exception e) {
-            // Keep logic similar to `U.marshal(...)`.
-            if (e instanceof IgniteCheckedException)
-                throw (IgniteCheckedException)e;
-
-            throw new IgniteCheckedException(e);
+        finally {
+            if (locked) {
+                ownerThread = null;
+                lock.unlock();
+            }
         }
     }
 
@@ -290,7 +302,7 @@ public class TcpDiscoveryIoSession {
      * @throws IgniteCheckedException If serialization fails.
      * @throws IOException If serialization fails.
      */
-    byte[] serializeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
+    synchronized byte[] serializeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
         boolean locked = false;
 
         try {
@@ -325,7 +337,7 @@ public class TcpDiscoveryIoSession {
      * @param out Output stream to write serialized message.
      * @throws IOException If serialization fails.
      */
-    private void serializeMessage(Message m, OutputStream out) throws IOException {
+    private synchronized void serializeMessage(Message m, OutputStream out) throws IOException {
         boolean locked = false;
 
         try {
