@@ -21,18 +21,12 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
 /**
- * Annotation to set walk order for a {@link SystemViewRowAttributeWalker}.
- * Walker traverse attributes from low to high value.
- *
- * @see SystemViewRowAttributeWalker
- * @see CacheViewWalker
+ * Annotation to mark view row attribute for a {@code SystemViewRowAttributeWalker} as filterable.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface Order {
-    /** */
-    public int value() default 0;
+public @interface Filtrable {
+    // No-op.
 }

@@ -1,1 +1,2 @@
 org.apache.ignite.internal.MessageProcessor
+org.apache.ignite.internal.managers.systemview.walker.SystemViewRowAttributeWalkerProcessor

@@ -386,6 +386,7 @@
                     <generatedSourcesDirectory>${ignite.generated.source.path}</generatedSourcesDirectory>
                     <annotationProcessors>
                         <annotationProcessor>org.apache.ignite.internal.MessageProcessor</annotationProcessor>
+                        <annotationProcessor>org.apache.ignite.internal.managers.systemview.walker.SystemViewRowAttributeWalkerProcessor</annotationProcessor>
                     </annotationProcessors>
                     <compilerArgs combine.children="append">
                         <arg>-Xmaxerrs</arg>
