@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.systemview.view.sql;
 
 import java.util.Objects;
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.schema.management.TableDescriptor;
@@ -27,7 +28,7 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 /**
  * Sql table column representation for a {@link SystemView}.
  */
-public class SqlTableColumnView {
+public class SqlTableColumnView implements SystemViewDescriptor {
     /** Table. */
     private final TableDescriptor tbl;
 

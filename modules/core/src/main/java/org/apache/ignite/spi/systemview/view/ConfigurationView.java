@@ -17,12 +17,13 @@
 
 package org.apache.ignite.spi.systemview.view;
 
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 
 /**
  * Configuration value representation for a {@link SystemView}.
  */
-public class ConfigurationView {
+public class ConfigurationView implements SystemViewDescriptor {
     /** Name of the configuration property. */
     private final String name;
 

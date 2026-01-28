@@ -62,7 +62,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.managers.systemview.walker.MetastorageViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.codegen.MetastorageViewWalker;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.metric.IoStatisticsHolderNoOp;

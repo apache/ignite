@@ -20,6 +20,7 @@ package org.apache.ignite.spi.systemview.view;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.service.ServiceInfo;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -31,7 +32,7 @@ import org.apache.ignite.services.ServiceDescriptor;
  *
  * @see ServiceDescriptor
  */
-public class ServiceView {
+public class ServiceView implements SystemViewDescriptor {
     /** Service descriptor. */
     private final ServiceInfo serviceInfo;
 

@@ -47,7 +47,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.managers.systemview.walker.MetastorageViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.codegen.MetastorageViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;

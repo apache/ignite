@@ -59,11 +59,7 @@ public class SystemViewRowAttributeWalkerGenerator {
     /** Processing environment. */
     private final ProcessingEnvironment env;
 
-    /**
-     * Constructor.
-     *
-     * @param env Processing environment.
-     */
+    /** @param env Processing environment. */
     public SystemViewRowAttributeWalkerGenerator(ProcessingEnvironment env) {
         this.env = env;
     }
@@ -82,19 +78,18 @@ public class SystemViewRowAttributeWalkerGenerator {
         JavaFileObject file = env.getFiler().createSourceFile(walkerQualified);
 
         try (PrintWriter w = new PrintWriter(file.openWriter())) {
-            for (String s : generate0(cls)) {
-                w.println(s);
-            }
+            for (String ln : generateWalker(cls))
+                w.println(ln);
         }
     }
 
     /**
      * Generates {@code SystemViewRowAttributeWalker} implementation.
      *
-     * @param clazz Class to generate {@code SystemViewRowAttributeWalker} for.
+     * @param clazz Class type to generate {@code SystemViewRowAttributeWalker} for.
      * @return Java source code of the {@code SystemViewRowAttributeWalker} implementation.
      */
-    private Collection<String> generate0(TypeElement clazz) {
+    private Collection<String> generateWalker(TypeElement clazz) {
         final List<String> code = new ArrayList<>();
         final Set<String> imports = new TreeSet<>(Comparator.comparing(s -> s.replace(";", "")));
 
@@ -154,8 +149,8 @@ public class SystemViewRowAttributeWalkerGenerator {
 
             String line = TAB + TAB;
 
-            if (!retClazz.getKind().isPrimitive() && !retClazz.toString().startsWith("java.lang"))
-                imports.add("import " + retClazz + ";");
+            if (!retClazz.getKind().isPrimitive() && !qualifiedName(retClazz).startsWith("java.lang"))
+                imports.add("import " + qualifiedName(retClazz) + ";");
 
             line += "v.accept(" + i + ", \"" + name + "\", " + simpleName(retClazz) + ".class);";
 
@@ -258,24 +253,30 @@ public class SystemViewRowAttributeWalkerGenerator {
         List<ExecutableElement> notOrdered = new ArrayList<>();
         List<ExecutableElement> ordered = new ArrayList<>();
 
-        for (Element el : clazz.getEnclosedElements()) {
-            if (el.getKind() != ElementKind.METHOD)
-                continue;
+        while (clazz != null) {
+            for (Element el : clazz.getEnclosedElements()) {
+                if (el.getKind() != ElementKind.METHOD)
+                    continue;
 
-            ExecutableElement m = (ExecutableElement)el;
+                ExecutableElement m = (ExecutableElement)el;
 
-            if (m.getModifiers().contains(Modifier.STATIC)
-                || !m.getModifiers().contains(Modifier.PUBLIC)
-                || m.getReturnType().getKind() == TypeKind.VOID)
-                continue;
+                if (m.getModifiers().contains(Modifier.STATIC)
+                    || !m.getModifiers().contains(Modifier.PUBLIC)
+                    || m.getReturnType().getKind() == TypeKind.VOID)
+                    continue;
 
-            if (SYS_METHODS.contains(m.getSimpleName().toString()))
-                continue;
+                if (SYS_METHODS.contains(m.getSimpleName().toString()))
+                    continue;
 
-            if (el.getAnnotation(Order.class) != null)
-                ordered.add(m);
-            else
-                notOrdered.add(m);
+                if (el.getAnnotation(Order.class) != null)
+                    ordered.add(m);
+                else
+                    notOrdered.add(m);
+            }
+
+            Element superType = env.getTypeUtils().asElement(clazz.getSuperclass());
+
+            clazz = (TypeElement)superType;
         }
 
         ordered.sort(Comparator.comparingInt(m -> m.getAnnotation(Order.class).value()));
@@ -294,6 +295,18 @@ public class SystemViewRowAttributeWalkerGenerator {
             DeclaredType declaredType = (DeclaredType)type;
 
             return declaredType.asElement().getSimpleName().toString();
+        }
+
+        return type.toString();
+    }
+
+    /** */
+    private String qualifiedName(TypeMirror type) {
+        if (type.getKind() == TypeKind.DECLARED) {
+            DeclaredType declaredType = (DeclaredType)type;
+            TypeElement el = (TypeElement) declaredType.asElement();
+
+            return el.getQualifiedName().toString();
         }
 
         return type.toString();

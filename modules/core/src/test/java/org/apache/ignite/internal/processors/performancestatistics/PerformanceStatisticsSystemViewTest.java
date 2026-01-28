@@ -30,7 +30,7 @@ import java.util.UUID;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
-import org.apache.ignite.internal.managers.systemview.walker.MetastorageViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.codegen.MetastorageViewWalker;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.internal.U;

@@ -34,7 +34,7 @@
 
     <properties>
         <ignite.update.notifier.product>apache-ignite</ignite.update.notifier.product>
-        <ignite.generated.source.path>${project.build.directory}/generated-sources/communication</ignite.generated.source.path>
+        <ignite.generated.source.path>${project.build.directory}/generated-sources/codegen</ignite.generated.source.path>
     </properties>
 
     <dependencies>

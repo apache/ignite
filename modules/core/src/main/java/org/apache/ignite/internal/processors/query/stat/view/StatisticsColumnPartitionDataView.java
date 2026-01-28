@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.stat.view;
 
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.stat.ObjectPartitionStatisticsImpl;
@@ -25,7 +26,7 @@ import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 /**
  * Statistics partition data view.
  */
-public class StatisticsColumnPartitionDataView {
+public class StatisticsColumnPartitionDataView implements SystemViewDescriptor {
     /** Statistics key */
     private final StatisticsKey key;
 

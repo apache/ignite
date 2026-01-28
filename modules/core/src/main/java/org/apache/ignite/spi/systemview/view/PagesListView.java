@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.systemview.view;
 
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
@@ -24,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesLis
 /**
  * Pages-list representation for a {@link SystemView}.
  */
-public class PagesListView {
+public class PagesListView implements SystemViewDescriptor {
     /** Pages list. */
     PagesList pagesList;
 

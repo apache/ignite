@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.internal.managers.systemview.walker.StatisticsColumnPartitionDataViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.codegen.StatisticsColumnPartitionDataViewWalker;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.IgniteStatisticsStore;
 import org.apache.ignite.internal.processors.query.stat.ObjectPartitionStatisticsImpl;

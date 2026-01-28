@@ -17,13 +17,14 @@
 
 package org.apache.ignite.spi.systemview.view.datastructures;
 
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.datastructures.AtomicDataStructureProxy;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.systemview.view.SystemView;
 
 /** Abstract class for a {@link SystemView} representation of data structures. */
-abstract class AbstractDataStructureView<T extends AtomicDataStructureProxy> {
+abstract class AbstractDataStructureView<T extends AtomicDataStructureProxy> implements SystemViewDescriptor {
     /** Data structure instance. */
     protected final T ds;
 

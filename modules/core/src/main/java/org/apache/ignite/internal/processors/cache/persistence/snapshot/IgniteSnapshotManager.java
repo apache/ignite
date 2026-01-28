@@ -104,7 +104,7 @@ import org.apache.ignite.internal.managers.communication.TransmissionPolicy;
 import org.apache.ignite.internal.managers.encryption.GroupKey;
 import org.apache.ignite.internal.managers.encryption.GroupKeyEncrypted;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
-import org.apache.ignite.internal.managers.systemview.walker.SnapshotViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.codegen.SnapshotViewWalker;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;

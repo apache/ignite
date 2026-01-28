@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.systemview.view;
 
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
@@ -24,7 +25,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 /**
  * Baseline topology node representation for a {@link SystemView}.
  */
-public class BaselineNodeView {
+public class BaselineNodeView implements SystemViewDescriptor {
     /** Consistent id. */
     private final Object consistentId;
 

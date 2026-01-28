@@ -65,7 +65,7 @@ import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryStreams;
-import org.apache.ignite.internal.managers.systemview.walker.BinaryMetadataViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.codegen.BinaryMetadataViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheDefaultBinaryAffinityKeyMapper;
 import org.apache.ignite.internal.processors.cache.CacheObject;

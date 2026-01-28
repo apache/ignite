@@ -17,13 +17,14 @@
 
 package org.apache.ignite.spi.systemview.view;
 
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.spi.metric.Metric;
 
 /**
  * Metrics representation for a {@link SystemView}.
  */
-public class MetricsView {
+public class MetricsView implements SystemViewDescriptor {
     /** Metric. */
     private final Metric metric;
 

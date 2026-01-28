@@ -40,7 +40,7 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.managers.systemview.walker.StripedExecutorTaskViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.codegen.StripedExecutorTaskViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;

@@ -17,12 +17,13 @@
 
 package org.apache.ignite.spi.systemview.view;
 
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 
 /**
  * Metastorage key representation for a {@link SystemView}.
  */
-public class MetastorageView {
+public class MetastorageView implements SystemViewDescriptor {
     /** */
     private final String name;
 

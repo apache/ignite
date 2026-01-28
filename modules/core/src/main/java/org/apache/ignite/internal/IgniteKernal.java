@@ -110,7 +110,7 @@ import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.systemview.GridSystemViewManager;
 import org.apache.ignite.internal.managers.systemview.IgniteConfigurationIterable;
-import org.apache.ignite.internal.managers.systemview.walker.ConfigurationViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.codegen.ConfigurationViewWalker;
 import org.apache.ignite.internal.managers.tracing.GridTracingManager;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProvider;
 import org.apache.ignite.internal.plugin.IgniteLogInfoProviderImpl;

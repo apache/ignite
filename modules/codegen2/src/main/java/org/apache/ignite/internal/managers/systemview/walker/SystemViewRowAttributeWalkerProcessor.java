@@ -25,6 +25,7 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
@@ -32,7 +33,7 @@ import javax.tools.Diagnostic;
 /**
  * Generates {@code SystemViewRowAttributeWalker} implementations
  * for view classes marked by {@code SystemViewDescriptor} interface.
- *
+ * <p>
  * The generated walker follows the naming convention:
  * {@code org.apache.ignite.internal.managers.systemview.walker.codegen.[ViewClassName]Walker}.
  */
@@ -55,6 +56,9 @@ public class SystemViewRowAttributeWalkerProcessor extends AbstractProcessor {
             TypeElement clazz = (TypeElement)el;
 
             if (!processingEnv.getTypeUtils().isAssignable(clazz.asType(), viewType))
+                continue;
+
+            if (clazz.getModifiers().contains(Modifier.ABSTRACT))
                 continue;
 
             try {
