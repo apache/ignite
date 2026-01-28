@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.calcite.exec.exp.agg;
 
 import java.util.Objects;
+import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
@@ -118,11 +119,20 @@ public class GroupKey<Row> implements Binarylizable {
      * not allowed.
      */
     public static <Row> @Nullable GroupKey<Row> of(Row r, RowHandler<Row> hnd, boolean allowNulls) {
-        if (!allowNulls) {
-            for (int i = 0; i < hnd.columnCount(r); i++) {
-                if (hnd.get(i, r) == null)
-                    return null;
-            }
+        if (!allowNulls)
+            return of(r, hnd, ImmutableBitSet.of());
+
+        return new GroupKey<>(r, hnd);
+    }
+
+    /**
+     * @return Group key for provided row. Can be {@code null} if key fields of row contain NULL values and nulls are
+     * not allowed for these columns.
+     */
+    public static <Row> @Nullable GroupKey<Row> of(Row r, RowHandler<Row> hnd, ImmutableBitSet allowNulls) {
+        for (int i = 0; i < hnd.columnCount(r); i++) {
+            if (hnd.get(i, r) == null && !allowNulls.get(i))
+                return null;
         }
 
         return new GroupKey<>(r, hnd);
