@@ -30,6 +30,8 @@ import org.apache.ignite.spi.metric.ReadOnlyMetricRegistry;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.INSERTED_BYTES;
+import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.REMOVED_BYTES;
 import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.HASH_PK_IDX_NAME;
 import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.LOGICAL_READS_INNER;
 import static org.apache.ignite.internal.metric.IoStatisticsHolderIndex.LOGICAL_READS_LEAF;
@@ -62,10 +64,13 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
+    @Override protected void beforeTest() throws Exception {
         ignite = startGrid(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopGrid(0);
     }
 
     /**
@@ -128,6 +133,33 @@ public class IoStatisticsMetricsLocalMXBeanImplSelfTest extends GridCommonAbstra
         long cachePhysicalReadsCnt = mreg.<LongMetric>findMetric(PHYSICAL_READS).value();
 
         assertEquals(0, cachePhysicalReadsCnt);
+    }
+
+    /** */
+    @Test
+    public void testInsertedDeletedBytes() throws Exception {
+        int cnt = 100;
+
+        MetricRegistry mreg = ignite.context().metric()
+            .registry(metricName(CACHE_GROUP.metricGroupName(), DEFAULT_CACHE_NAME));
+
+        LongMetric insertedBytes = mreg.findMetric(INSERTED_BYTES);
+        LongMetric removedBytes = mreg.findMetric(REMOVED_BYTES);
+
+        assertEquals(0, insertedBytes.value());
+        assertEquals(0, removedBytes.value());
+
+        populateCache(cnt);
+
+        clearCache(cnt);
+
+        int minEntrySize = 20; // Size of key, size of val, entry headers, data page payload headers, etc.
+        int maxEntrySize = 100;
+
+        assertTrue(insertedBytes.value() > cnt * minEntrySize);
+        assertTrue(insertedBytes.value() < cnt * maxEntrySize);
+
+        assertEquals(insertedBytes.value(), removedBytes.value());
     }
 
     /**

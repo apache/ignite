@@ -33,6 +33,8 @@ public class CacheGroupIoViewWalker implements SystemViewRowAttributeWalker<Cach
         v.accept(1, "cacheGroupName", String.class);
         v.accept(2, "physicalReads", long.class);
         v.accept(3, "logicalReads", long.class);
+        v.accept(4, "insertedBytes", long.class);
+        v.accept(5, "removedBytes", long.class);
     }
 
     /** {@inheritDoc} */
@@ -41,10 +43,12 @@ public class CacheGroupIoViewWalker implements SystemViewRowAttributeWalker<Cach
         v.accept(1, "cacheGroupName", String.class, row.cacheGroupName());
         v.acceptLong(2, "physicalReads", row.physicalReads());
         v.acceptLong(3, "logicalReads", row.logicalReads());
+        v.acceptLong(4, "insertedBytes", row.insertedBytes());
+        v.acceptLong(5, "removedBytes", row.removedBytes());
     }
 
     /** {@inheritDoc} */
     @Override public int count() {
-        return 4;
+        return 6;
     }
 }
