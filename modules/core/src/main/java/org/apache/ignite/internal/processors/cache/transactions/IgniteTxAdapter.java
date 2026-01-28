@@ -628,7 +628,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @return Finalization status.
      */
-    @Override @Nullable public FinalizationStatus finalizationStatus() {
+    @Override public FinalizationStatus finalizationStatus() {
         return finalizing;
     }
 

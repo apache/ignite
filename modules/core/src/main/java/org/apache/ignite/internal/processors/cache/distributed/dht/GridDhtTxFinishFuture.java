@@ -473,7 +473,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 if (isNull(cctx.discovery().getAlive(n.id()))) {
                     log.error("Unable to send message (node left topology): " + n);
 
-                    fut.onNodeLeft();
+                    fut.onNodeLeft(n.id());
                 }
                 else {
                     cctx.tm().sendTransactionMessage(n, req, tx, tx.ioPolicy());
@@ -685,6 +685,40 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
 
             // Fail.
             onDone(e);
+        }
+
+        /** */
+        private void onNodeLeft(UUID nodeId) {
+            // Cause in common case #onNodeLeft() completes with no error it`s necessary to send salvage message.
+            if (tx.storeWriteThrough()) {
+                Map<UUID, Collection<UUID>> txNodes = tx.transactionNodes();
+
+                if (txNodes != null) {
+                    Collection<UUID> backups = txNodes.get(nodeId);
+
+                    if (!F.isEmpty(backups)) {
+                        GridDhtTxSalvageMessage salvageReq = null;
+
+                        for (UUID backupId : backups) {
+                            ClusterNode backup = cctx.discovery().node(backupId);
+
+                            if (!backup.isLocal()) {
+                                if (salvageReq == null)
+                                    salvageReq = new GridDhtTxSalvageMessage(tx.nearXidVersion());
+
+                                try {
+                                    cctx.io().send(backup, salvageReq, tx.ioPolicy());
+                                }
+                                catch (IgniteCheckedException e) {
+                                    U.error(log, "Failed to send " + GridDhtTxSalvageMessage.class.getName() + " message.", e);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            onNodeLeft();
         }
 
         /**

@@ -125,6 +125,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequestSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponseSerializer;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxSalvageMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxSalvageMessageSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequestSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.PartitionUpdateCountersMessage;
@@ -489,6 +491,7 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register(116, GridNearSingleGetRequest::new, new GridNearSingleGetRequestSerializer());
         factory.register(117, GridNearSingleGetResponse::new, new GridNearSingleGetResponseSerializer());
         factory.register(118, CacheContinuousQueryBatchAck::new, new CacheContinuousQueryBatchAckSerializer());
+        factory.register(119, GridDhtTxSalvageMessage::new, new GridDhtTxSalvageMessageSerializer());
 
         // [120..123] - DR
         factory.register(125, GridNearAtomicSingleUpdateRequest::new, new GridNearAtomicSingleUpdateRequestSerializer());
