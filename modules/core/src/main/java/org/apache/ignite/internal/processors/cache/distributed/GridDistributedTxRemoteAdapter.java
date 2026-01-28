@@ -85,6 +85,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REL
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH_WT;
 import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx.addConflictVersion;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
@@ -529,6 +530,14 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
 
                             while (true) {
                                 try {
+                                    boolean masterNodeInvolved = masterNodeIds().contains(cctx.localNodeId());
+                                    if (isSystemInvalidate() && !masterNodeInvolved
+                                        && finalizationStatus() == RECOVERY_FINISH_WT) {
+                                        cctx.tm().hackMap.put(nearXidVersion(), this);
+
+                                        break;
+                                    }
+
                                     GridCacheEntryEx cached = txEntry.cached();
                                     DataEntry dataEntry = null;
 
@@ -815,9 +824,17 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                     }
                 }
 
-                cctx.tm().commitTx(this);
+                boolean masterNodeInvolved = masterNodeIds().contains(cctx.localNodeId());
 
-                state(COMMITTED);
+                if (isSystemInvalidate() && storeWriteThrough() &&
+                    !masterNodeInvolved && finalizationStatus() == RECOVERY_FINISH_WT) {
+                    systemInvalidate(false);
+                    COMMIT_ALLOWED_UPD.compareAndSet(this, 1, 0);
+                }
+                else {
+                    cctx.tm().commitTx(this);
+                    state(COMMITTED);
+                }
             }
         }
     }
@@ -827,7 +844,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
         if (optimistic())
             state(PREPARED);
 
-        if (!state(COMMITTING)) {
+        if (!state(COMMITTING) && finalizationStatus() != RECOVERY_FINISH_WT) {
             TransactionState state = state();
 
             // If other thread is doing commit, then no-op.
