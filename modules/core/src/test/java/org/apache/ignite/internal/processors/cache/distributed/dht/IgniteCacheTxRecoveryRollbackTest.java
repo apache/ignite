@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheLoaderException;
@@ -36,12 +37,14 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -86,9 +89,14 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         try {
             for (Ignite node : G.allGrids()) {
-                Collection<IgniteInternalTx> txs = ((IgniteKernal)node).context().cache().context().tm().activeTransactions();
+                IgniteTxManager tm = ((IgniteEx)node).context().cache().context().tm();
+                Collection<IgniteInternalTx> txs = tm.activeTransactions();
+
+                ConcurrentMap<GridCacheVersion, Object> uncommited =
+                    GridTestUtils.getFieldValue(tm, IgniteTxManager.class, "uncommitedSalvageTx");
 
                 assertTrue("Unfinished txs [node=" + node.name() + ", txs=" + txs + ']', txs.isEmpty());
+                assertTrue("Unfinished uncommited [node=" + node.name() + ']', uncommited.isEmpty());
             }
         }
         finally {
@@ -379,7 +387,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
         final IgniteCache<Integer, Integer> clientCache = client.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
+            @Override public Void call() {
                 log.info("Start put");
 
                 clientCache.put(key, 2);

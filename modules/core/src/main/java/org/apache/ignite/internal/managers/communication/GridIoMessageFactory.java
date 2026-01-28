@@ -123,6 +123,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFini
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequestSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponseSerializer;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishSalvagedWriteThroughRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishSalvagedWriteThroughRequestSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxOnePhaseCommitAckRequestSerializer;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -474,6 +476,8 @@ public class GridIoMessageFactory implements MessageFactoryProvider {
         factory.register((short)116, GridNearSingleGetRequest::new, new GridNearSingleGetRequestSerializer());
         factory.register((short)117, GridNearSingleGetResponse::new, new GridNearSingleGetResponseSerializer());
         factory.register((short)118, CacheContinuousQueryBatchAck::new, new CacheContinuousQueryBatchAckSerializer());
+        factory.register((short)119, GridDhtTxFinishSalvagedWriteThroughRequest::new,
+            new GridDhtTxFinishSalvagedWriteThroughRequestSerializer());
 
         // [120..123] - DR
         factory.register((short)125, GridNearAtomicSingleUpdateRequest::new, new GridNearAtomicSingleUpdateRequestSerializer());

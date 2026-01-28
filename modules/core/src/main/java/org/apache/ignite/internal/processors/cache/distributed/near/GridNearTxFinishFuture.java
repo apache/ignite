@@ -33,6 +33,7 @@ import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheCompoundIdentityFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -40,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishSalvagedWriteThroughRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.tracing.MTC;
@@ -52,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
 import static java.util.Collections.emptySet;
@@ -996,6 +999,23 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                                     else {
                                         try {
                                             cctx.io().send(backup, req, tx.ioPolicy());
+
+                                            boolean needRecoverSalvaged = tx.storeWriteThrough() &&
+                                                !tx.masterNodeIds().contains(backup.id()) &&
+                                                !tx.eventNodeId().equals(nodeId) &&
+                                                tx.isolation() == TransactionIsolation.READ_COMMITTED;
+
+                                            if (needRecoverSalvaged) {
+                                                boolean fullSyncedOp = tx.writeEntries().stream().map(e ->
+                                                    cctx.cacheContext(e.cacheId())).allMatch(GridCacheContext::syncCommit);
+
+                                                if (fullSyncedOp) {
+                                                    GridDhtTxFinishSalvagedWriteThroughRequest salvageReq =
+                                                        new GridDhtTxFinishSalvagedWriteThroughRequest(tx.xidVersion());
+
+                                                    cctx.io().send(backup, salvageReq, tx.ioPolicy());
+                                                }
+                                            }
                                         }
                                         catch (ClusterTopologyCheckedException ignored) {
                                             mini.onNodeLeft(backupId, discoThread);
