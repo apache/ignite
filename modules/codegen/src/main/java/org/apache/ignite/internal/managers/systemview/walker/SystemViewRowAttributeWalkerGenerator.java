@@ -169,8 +169,10 @@ public class SystemViewRowAttributeWalkerGenerator {
 
             String line = TAB + TAB;
 
-            if (!retClazz.getKind().isPrimitive())
-                line += "v.accept(" + i + ", \"" + name + "\", " + simpleName(retClazz) + ".class, row." + m.getSimpleName().toString() + "());";
+            if (!retClazz.getKind().isPrimitive()) {
+                line += "v.accept(" + i + ", \"" + name + "\", " + simpleName(retClazz) + ".class, row."
+                    + m.getSimpleName().toString() + "());";
+            }
             else if (retClazz.getKind() == TypeKind.BOOLEAN)
                 line += "v.acceptBoolean(" + i + ", \"" + name + "\", row." + m.getSimpleName().toString() + "());";
             else if (retClazz.getKind() == TypeKind.CHAR)
@@ -304,7 +306,7 @@ public class SystemViewRowAttributeWalkerGenerator {
     private String qualifiedName(TypeMirror type) {
         if (type.getKind() == TypeKind.DECLARED) {
             DeclaredType declaredType = (DeclaredType)type;
-            TypeElement el = (TypeElement) declaredType.asElement();
+            TypeElement el = (TypeElement)declaredType.asElement();
 
             return el.getQualifiedName().toString();
         }
