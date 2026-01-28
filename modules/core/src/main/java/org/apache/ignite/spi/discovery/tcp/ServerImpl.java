@@ -6610,7 +6610,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                     }
 
-                    if (!Arrays.equals(buf, U.IGNITE_HEADER)) {
+                    if (!Arrays.equals(buf, U.IGNITE_HEADER_V2)) {
+                        if (Arrays.equals(buf, U.IGNITE_HEADER_V1)) {
+                            if (log.isDebugEnabled())
+                                log.debug("Remote node uses legacy discovery protocol (V1), local expects V2 " +
+                                    "(check Ignite versions / rolling upgrade compatibility) [rmtAddr=" + rmtAddr +
+                                    ", locAddr=" + sock.getLocalSocketAddress() + "]");
+
+                            return;
+                        }
+
                         if (log.isDebugEnabled())
                             log.debug("Unknown connection detected (is some other software connecting to " +
                                 "this Ignite port?" +
