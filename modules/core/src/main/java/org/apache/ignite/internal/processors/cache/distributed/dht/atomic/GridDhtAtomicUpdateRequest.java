@@ -701,7 +701,7 @@ public class GridDhtAtomicUpdateRequest extends GridDhtAtomicAbstractUpdateReque
             if (!addDepInfo && ctx.deploymentEnabled())
                 addDepInfo = true;
 
-            if (invokeArgsBytes == null)
+            if (!F.isEmpty(invokeArgs) && invokeArgsBytes == null)
                 invokeArgsBytes = F.asList(marshalInvokeArguments(invokeArgs, cctx));
 
             if (entryProcessorsBytes == null)
