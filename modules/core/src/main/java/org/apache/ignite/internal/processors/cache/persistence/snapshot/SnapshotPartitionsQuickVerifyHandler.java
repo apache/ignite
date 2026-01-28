@@ -88,7 +88,8 @@ public class SnapshotPartitionsQuickVerifyHandler extends SnapshotPartitionsVeri
                 PartitionHashRecord other = total.putIfAbsent(part, val);
 
                 if ((other != null && !wrnGrps.contains(part.groupId()))
-                    && ((!val.hasExpiringEntries() && !other.hasExpiringEntries() && val.size() != other.size())
+                    && ((!val.hasExpiringEntries() && !other.hasExpiringEntries()
+                        && (val.metaSize() != other.metaSize() || val.realSize() != other.realSize()))
                         || !Objects.equals(val.updateCounter(), other.updateCounter())))
                     wrnGrps.add(part.groupId());
             });

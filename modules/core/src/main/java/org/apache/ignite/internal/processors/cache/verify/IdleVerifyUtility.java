@@ -298,6 +298,7 @@ public class IdleVerifyUtility {
                 updCntr,
                 state == GridDhtPartitionState.MOVING ?
                     PartitionHashRecord.MOVING_PARTITION_SIZE : 0,
+                0,
                 state == GridDhtPartitionState.MOVING ?
                     PartitionHashRecord.PartitionState.MOVING : PartitionHashRecord.PartitionState.LOST,
                 new VerifyPartitionContext()
@@ -327,6 +328,7 @@ public class IdleVerifyUtility {
             consId,
             updCntr,
             partSize,
+            ctx.entryCount,
             PartitionHashRecord.PartitionState.OWNING,
             ctx
         );
@@ -392,6 +394,9 @@ public class IdleVerifyUtility {
         public int regular;
 
         /** */
+        public int entryCount;
+
+        /** */
         public VerifyPartitionContext() {
             // No-op.
         }
@@ -410,6 +415,8 @@ public class IdleVerifyUtility {
             CacheObject val,
             CacheEntryVersion ver
         ) throws IgniteCheckedException {
+            entryCount++;
+
             partHash += key.hashCode();
 
             if (ver != null)

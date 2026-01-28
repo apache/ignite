@@ -254,6 +254,7 @@ public class IncrementalSnapshotVerify implements Supplier<IncrementalSnapshotVe
                         sft.consistentId(),
                         null,
                         0,
+                        0,
                         null,
                         new VerifyPartitionContext(e.getValue())
                     )
