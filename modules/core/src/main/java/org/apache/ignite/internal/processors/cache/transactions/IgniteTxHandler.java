@@ -84,6 +84,7 @@ import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -100,6 +101,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOO
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH_WT;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.processors.tracing.MTC.TraceSurroundings;
@@ -114,6 +116,7 @@ import static org.apache.ignite.internal.processors.tracing.SpanType.TX_PROCESS_
 import static org.apache.ignite.internal.processors.tracing.SpanType.TX_PROCESS_DHT_PREPARE_RESP;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
@@ -1351,11 +1354,44 @@ public class IgniteTxHandler {
             assert nodeId != null;
             assert req != null;
 
+            GridDhtTxRemote salvNotCommited = null;
+
+            GridDhtTxRemote removeMe = null;
+
+            if (req.commit() && req.checkCommitted()) {
+                Object obj = ctx.tm().hackMap1.putIfAbsent(req.version(), new Object());
+
+                System.err.println("!!! processDhtTxFinishRequest " + req.version() + " !! " + ctx.localNode().consistentId() + " " + obj + " " + req.checkCommitted());
+
+                if (obj instanceof GridDhtTxRemote || obj instanceof T2) {
+                    GridCacheVersion k = (GridCacheVersion) ((T2)obj).get1();
+
+                    @Nullable IgniteInternalTx tx0 = ctx.tm().tx(k);
+
+                    if (tx0 != null) {
+                        salvNotCommited = (GridDhtTxRemote) tx0;
+                        removeMe = salvNotCommited;
+                        salvNotCommited.megaFlag = true;
+                        assert salvNotCommited.finalizationStatus() == RECOVERY_FINISH_WT;
+                    }
+                }
+
+                if (salvNotCommited != null) {
+                    System.err.println("finish(salvNotCommited " + req.version() + " " + salvNotCommited.state());
+                    finish0(salvNotCommited);
+                }
+            }
+
+
+
+
+
             if (req.checkCommitted()) {
                 boolean committed = req.waitRemoteTransactions() || !ctx.tm().addRolledbackTx(null, req.version());
 
-                if (!committed || req.syncMode() != FULL_SYNC)
+                if (!committed || req.syncMode() != FULL_SYNC) {
                     sendReply(nodeId, req, committed, null);
+                }
                 else {
                     IgniteInternalFuture<?> fut = ctx.tm().remoteTxFinishFuture(req.version());
 
@@ -1372,6 +1408,9 @@ public class IgniteTxHandler {
             GridDhtTxRemote dhtTx = ctx.tm().tx(req.version());
             GridNearTxRemote nearTx = ctx.tm().nearTx(req.version());
 
+            if (removeMe != null && dhtTx != null)
+                assert false;
+
             IgniteInternalTx anyTx = U.<IgniteInternalTx>firstNotNull(dhtTx, nearTx);
 
             final GridCacheVersion nearTxId = anyTx != null ? anyTx.nearXidVersion() : null;
@@ -1383,8 +1422,9 @@ public class IgniteTxHandler {
             if (anyTx == null && req.commit())
                 ctx.tm().addCommittedTx(null, req.version(), null);
 
-            if (dhtTx != null)
+            if (dhtTx != null) {
                 finish(dhtTx, req);
+            }
             else {
                 try {
                     applyPartitionsUpdatesCounters(req.updateCounters(), !req.commit(), false);
@@ -1411,6 +1451,15 @@ public class IgniteTxHandler {
                 sendReply(nodeId, req, true, null);
 
             assert req.txState() != null || (dhtTx == null && nearTx == null) : req + " tx=" + dhtTx + " nearTx=" + nearTx;
+        }
+    }
+
+    protected void finish0(IgniteTxRemoteEx tx) {
+        try {
+            tx.commitRemoteTx();
+        }
+        catch (IgniteCheckedException e) {
+            assert false;
         }
     }
 

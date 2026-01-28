@@ -140,6 +140,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH_WT;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.securitySubjectId;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
@@ -237,7 +238,11 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentMap<GridCacheVersion, IgniteInternalTx> idMap = newMap();
 
     /** Per-ID map for near transactions. */
-    private final ConcurrentMap<GridCacheVersion, IgniteInternalTx> nearIdMap = newMap();
+    public final ConcurrentMap<GridCacheVersion, IgniteInternalTx> nearIdMap = newMap();
+
+    /** */
+    public final ConcurrentMap<GridCacheVersion, Object> hackMap1 = newMap();
+    public final AtomicInteger salvageNoCommit = new AtomicInteger();
 
     /** Deadlock detection futures. */
     private final ConcurrentMap<Long, TxDeadlockFuture> deadlockDetectFuts = new ConcurrentHashMap<>();
@@ -3137,10 +3142,24 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         ", failedNodeId=" + evtNodeId + ']');
 
                 for (final IgniteInternalTx tx : activeTransactions()) {
-                    if ((tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId))
-                        || (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId))) {
-                        // Invalidate transactions.
+                    boolean localInMaster = tx.masterNodeIds().contains(cctx.localNodeId());
+
+                    // Invalidate transactions.
+                    if ((tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId))) {
                         salvageTx(tx, RECOVERY_FINISH);
+                    }
+                    else if (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId)) {
+                        if (localInMaster)
+                            salvageTx(tx, RECOVERY_FINISH);
+                        else {
+                            boolean fullSyncedOp = tx.writeEntries().stream().map(e ->
+                                cctx.cacheContext(e.cacheId())).allMatch(GridCacheContext::syncCommit);
+
+                            if (fullSyncedOp)
+                                salvageTx(tx, RECOVERY_FINISH_WT);
+                            else
+                                salvageTx(tx, RECOVERY_FINISH);
+                        }
                     }
                     else {
                         // Check prepare only if originating node ID failed. Otherwise, parent node will finish this tx.

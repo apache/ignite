@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWra
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
@@ -67,6 +69,7 @@ import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -85,6 +88,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.REL
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.RENTING;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
+import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH_WT;
 import static org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx.addConflictVersion;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
@@ -414,6 +419,39 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
      * @throws IgniteCheckedException If commit failed.
      */
     private void commitIfLocked() throws IgniteCheckedException {
+        if (finalizationStatus() == RECOVERY_FINISH_WT) {
+            //System.err.println("!!!pre salvaged not commited: " + cctx.localNode().consistentId());
+            //System.err.println("!!!pre salvaged not commited: " + cctx.tm().hackMap1.get(nearXidVersion()));
+            cctx.tm().salvageNoCommit.incrementAndGet();
+        }
+
+        boolean writes = !writeEntries().isEmpty();
+
+        if (writes && finalizationStatus() == RECOVERY_FINISH_WT && state() == COMMITTING) {
+            Object res = cctx.tm().hackMap1.putIfAbsent(nearXidVersion(), new T2<>(xidVersion(), this));
+            if (res == null || res instanceof T2) {
+                // already known
+
+                if (res instanceof T2) {
+                    GridDhtTxRemote res0 = (GridDhtTxRemote) (((T2)res).get2());
+                    if (!res0.megaFlag) {
+                        //System.err.println("!!!salvaged not commited: " + nearXidVersion() + " " + xidVersion());
+                        cctx.tm().hackMap1.remove(nearXidVersion());
+                        return;
+                    }
+                    else {
+                        System.err.println("!found mega flag: " + nearXidVersion() + " " + state());
+                        cctx.tm().hackMap1.remove(nearXidVersion());
+                    }
+                }
+                else {
+                    System.err.println("!!!salvaged not commited: " + nearXidVersion() + " " + xidVersion());
+                    if (res == null)
+                        return;
+                }
+            }
+        }
+
         if (state() == COMMITTING) {
             for (IgniteTxEntry txEntry : writeEntries()) {
                 assert txEntry != null : "Missing transaction entry for tx: " + this;
@@ -827,7 +865,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
         if (optimistic())
             state(PREPARED);
 
-        if (!state(COMMITTING)) {
+        // Possible GridDhtTxFinishRequest with checkCommited flag
+        if (!state(COMMITTING) && finalizationStatus() != RECOVERY_FINISH_WT) {
             TransactionState state = state();
 
             // If other thread is doing commit, then no-op.
@@ -848,6 +887,10 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
         }
 
         try {
+            if (finalizationStatus() == RECOVERY_FINISH_WT && state() != COMMITTING)
+                return;
+                //assert state() == COMMITTING : state();
+
             commitIfLocked();
         }
         catch (IgniteTxHeuristicCheckedException e) {
