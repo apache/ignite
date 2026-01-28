@@ -338,34 +338,22 @@ public class TcpDiscoveryIoSession {
      * @throws IOException If serialization fails.
      */
     private synchronized void serializeMessage(Message m, OutputStream out) throws IOException {
-        boolean locked = false;
+        MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
 
-        try {
-            locked = tryLock();
+        msgWriter.reset();
+        msgWriter.setBuffer(msgBuf);
 
-            MessageSerializer msgSer = spi.messageFactory().serializer(m.directType());
+        boolean finished;
 
-            msgWriter.reset();
-            msgWriter.setBuffer(msgBuf);
+        do {
+            // Should be cleared before first operation.
+            msgBuf.clear();
 
-            boolean finished;
+            finished = msgSer.writeTo(m, msgWriter);
 
-            do {
-                // Should be cleared before first operation.
-                msgBuf.clear();
-
-                finished = msgSer.writeTo(m, msgWriter);
-
-                out.write(msgBuf.array(), 0, msgBuf.position());
-            }
-            while (!finished);
+            out.write(msgBuf.array(), 0, msgBuf.position());
         }
-        finally {
-            if (locked) {
-                ownerThread = null;
-                lock.unlock();
-            }
-        }
+        while (!finished);
     }
 
     /**
