@@ -954,7 +954,10 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
             failureHandlerAction.accept(e);
 
-            throw e;
+            if (!threwEx)
+                throw U.cast(e);
+            else
+                throw e;
         }
         catch (Exception e) {
             if (!threwEx)
