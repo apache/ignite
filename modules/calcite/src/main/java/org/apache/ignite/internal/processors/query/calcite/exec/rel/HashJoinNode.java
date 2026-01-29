@@ -334,11 +334,11 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                             leftMatched = true;
 
                             // Emit matched row.
-                            downstream().push(outRowFactory.apply(left, right));
+                            downstreamPush(left, right);
 
                             touchRight();
 
-                            if (--requested == 0)
+                            if (requested == 0)
                                 return;
                         }
 
@@ -347,9 +347,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                         // For LEFT/FULL join.
                         if (emptyRightRow != null && !leftMatched) {
                             // Emit unmatched left row.
-                            requested--;
-
-                            downstream().push(outRowFactory.apply(left, emptyRightRow));
+                            downstreamPush(left, emptyRightRow);
                         }
 
                         left = null;
@@ -374,11 +372,7 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                             if (touchedRight())
                                 continue;
 
-                            Row row = outRowFactory.apply(emptyLeftRow, right);
-
-                            --requested;
-
-                            downstream().push(row);
+                            downstreamPush(emptyLeftRow, right);
                         }
                     }
                 }
@@ -391,6 +385,13 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
                 return;
 
             tryToRequestInputs();
+        }
+
+        /** */
+        private void downstreamPush(Row left, Row right) throws Exception {
+            requested--;
+
+            downstream().push(outRowFactory.apply(left, right));;
         }
 
         /** {@inheritDoc} */
