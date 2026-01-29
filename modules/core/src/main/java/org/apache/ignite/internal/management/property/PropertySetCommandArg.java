@@ -17,11 +17,7 @@
 
 package org.apache.ignite.internal.management.property;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class PropertySetCommandArg extends PropertyGetCommandArg {
@@ -30,21 +26,7 @@ public class PropertySetCommandArg extends PropertyGetCommandArg {
 
     /** */
     @Argument(example = "<property_value>")
-    private String val;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
-        U.writeString(out, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(in);
-
-        val = U.readString(in);
-    }
+    String val;
 
     /** */
     public String val() {
