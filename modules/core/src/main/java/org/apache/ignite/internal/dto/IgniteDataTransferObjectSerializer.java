@@ -36,7 +36,7 @@ public interface IgniteDataTransferObjectSerializer<T> {
     /**
      *
      * @param instance
-     * @param in
+     * @param in Input stream to read object from.
      * @return
      * @throws IOException If read operation failed.
      * @throws ClassNotFoundException
