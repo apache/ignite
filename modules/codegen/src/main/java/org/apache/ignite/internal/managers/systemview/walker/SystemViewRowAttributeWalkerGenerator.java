@@ -112,10 +112,10 @@ public class SystemViewRowAttributeWalkerGenerator {
 
         forEachMethod(clazz, (m, i) -> {
             if (m.getAnnotation(Filtrable.class) != null) {
-                code.add(TAB + "/** Filter key for attribute \"" + m.getSimpleName().toString() + "\" */");
+                code.add(TAB + "/** Filter key for attribute \"" + m.getSimpleName() + "\" */");
                 code.add(TAB + "public static final String " + m.getSimpleName().toString()
                     .replaceAll("(\\p{Upper})", "_$1")
-                    .toUpperCase() + "_FILTER = \"" + m.getSimpleName().toString() + "\";");
+                    .toUpperCase() + "_FILTER = \"" + m.getSimpleName() + "\";");
                 code.add("");
 
                 filtrableAttrs.add(m.getSimpleName().toString());
@@ -171,24 +171,24 @@ public class SystemViewRowAttributeWalkerGenerator {
 
             if (!retClazz.getKind().isPrimitive()) {
                 line += "v.accept(" + i + ", \"" + name + "\", " + simpleName(retClazz) + ".class, row."
-                    + m.getSimpleName().toString() + "());";
+                    + m.getSimpleName() + "());";
             }
             else if (retClazz.getKind() == TypeKind.BOOLEAN)
-                line += "v.acceptBoolean(" + i + ", \"" + name + "\", row." + m.getSimpleName().toString() + "());";
+                line += "v.acceptBoolean(" + i + ", \"" + name + "\", row." + m.getSimpleName() + "());";
             else if (retClazz.getKind() == TypeKind.CHAR)
-                line += "v.acceptChar(" + i + ", \"" + name + "\", row." + m.getSimpleName().toString() + "());";
+                line += "v.acceptChar(" + i + ", \"" + name + "\", row." + m.getSimpleName() + "());";
             else if (retClazz.getKind() == TypeKind.BYTE)
-                line += "v.acceptByte(" + i + ", \"" + name + "\", row." + m.getSimpleName().toString() + "());";
+                line += "v.acceptByte(" + i + ", \"" + name + "\", row." + m.getSimpleName() + "());";
             else if (retClazz.getKind() == TypeKind.SHORT)
-                line += "v.acceptShort(" + i + ", \"" + name + "\", row." + m.getSimpleName().toString() + "());";
+                line += "v.acceptShort(" + i + ", \"" + name + "\", row." + m.getSimpleName() + "());";
             else if (retClazz.getKind() == TypeKind.INT)
-                line += "v.acceptInt(" + i + ", \"" + name + "\", row." + m.getSimpleName().toString() + "());";
+                line += "v.acceptInt(" + i + ", \"" + name + "\", row." + m.getSimpleName() + "());";
             else if (retClazz.getKind() == TypeKind.LONG)
-                line += "v.acceptLong(" + i + ", \"" + name + "\", row." + m.getSimpleName().toString() + "());";
+                line += "v.acceptLong(" + i + ", \"" + name + "\", row." + m.getSimpleName() + "());";
             else if (retClazz.getKind() == TypeKind.FLOAT)
-                line += "v.acceptFloat(" + i + ", \"" + name + "\", row." + m.getSimpleName().toString() + "());";
+                line += "v.acceptFloat(" + i + ", \"" + name + "\", row." + m.getSimpleName() + "());";
             else if (retClazz.getKind() == TypeKind.DOUBLE)
-                line += "v.acceptDouble(" + i + ", \"" + name + "\", row." + m.getSimpleName().toString() + "());";
+                line += "v.acceptDouble(" + i + ", \"" + name + "\", row." + m.getSimpleName() + "());";
 
             code.add(line);
         });
