@@ -27,7 +27,7 @@ import java.io.ObjectOutput;
 public interface IgniteDataTransferObjectSerializer<T> {
     /**
      *
-     * @param instance
+     * @param instance Instance of IgniteDataTransferObject to serialize.
      * @param out Output stream to write object to.
      * @throws IOException
      */
