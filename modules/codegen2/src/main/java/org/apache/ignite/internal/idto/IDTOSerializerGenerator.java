@@ -191,7 +191,7 @@ public class IDTOSerializerGenerator {
 
     /** @return Code for the calss implementing {@code org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer}. */
     private String generateSerializerCode() throws IOException {
-        imports.add("org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer");
+        imports.add(DTO_SERDES_INTERFACE);
         imports.add(ObjectOutput.class.getName());
         imports.add(ObjectInput.class.getName());
         imports.add(IOException.class.getName());
