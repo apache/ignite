@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.topolo
  */
 public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Externalizable, Message {
     /** Type code. */
-    public static final short TYPE_CODE = 519;
+    public static final short TYPE_CODE = 518;
 
     /** */
     private static final long serialVersionUID = 0L;

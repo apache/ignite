@@ -21,12 +21,12 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -34,16 +34,16 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /** */
 public class CompressedMessage implements Message {
     /** Type code. */
-    public static final short TYPE_CODE = 517;
+    public static final short TYPE_CODE = -101;
 
     /** Instance of empty compressed message. */
     public static final CompressedMessage EMPTY = empty();
 
     /** */
-    private static final int CHUNK_SIZE = 1024 * 1024;
+    private static final int CHUNK_SIZE = 1024 * 10;
 
     /** */
-    private static final int BUFFER_CAPACITY = 10 * 1024 * 1024;
+    private static final int BUFFER_CAPACITY = CHUNK_SIZE * 10;
 
     /** */
     private ByteBuffer tmpBuf;
@@ -151,7 +151,7 @@ public class CompressedMessage implements Message {
         reader.setBuffer(buf);
 
         if (tmpBuf == null)
-            tmpBuf = ByteBuffer.allocate(BUFFER_CAPACITY);
+            tmpBuf = ByteBuffer.allocateDirect(BUFFER_CAPACITY);
 
         assert chunk == null : chunk;
 
@@ -187,7 +187,9 @@ public class CompressedMessage implements Message {
 
                     if (chunk != null) {
                         if (tmpBuf.remaining() <= CHUNK_SIZE) {
-                            ByteBuffer newTmpBuf = ByteBuffer.allocate(tmpBuf.capacity() * 2);
+                            ByteBuffer newTmpBuf = ByteBuffer.allocateDirect(tmpBuf.capacity() * 2);
+
+                            tmpBuf.flip();
 
                             newTmpBuf.put(tmpBuf);
 
@@ -243,7 +245,12 @@ public class CompressedMessage implements Message {
 
         Inflater inflater = new Inflater(true);
 
-        try (InflaterInputStream iis = new InflaterInputStream(new ByteArrayInputStream(tmpBuf.array()), inflater)) {
+        byte[] bytes = new byte[tmpBuf.position()];
+
+        tmpBuf.flip();
+        tmpBuf.get(bytes);
+
+        try (InflaterInputStream iis = new InflaterInputStream(new ByteArrayInputStream(bytes), inflater)) {
             uncompressedData = iis.readAllBytes();
         }
         catch (IOException ex) {
@@ -263,13 +270,7 @@ public class CompressedMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "CompressedMessage{" +
-            "chunk=" + Arrays.toString(chunk) +
-            ", tmpBuf=" + tmpBuf +
-            ", dataSize=" + dataSize +
-            ", chunkedReader=" + chunkedReader +
-            ", finalChunk=" + finalChunk +
-            '}';
+        return S.toString(CompressedMessage.class, this);
     }
 
     /** */

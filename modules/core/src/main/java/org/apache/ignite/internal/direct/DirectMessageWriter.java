@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class DirectMessageWriter implements MessageWriter {
     /** */
-    private static final int TMP_BUF_CAPACITY = 1024 * 1024;
+    private static final int TMP_BUF_CAPACITY = 1024 * 10;
 
     /** State. */
     @GridToStringInclude
@@ -450,7 +450,7 @@ public class DirectMessageWriter implements MessageWriter {
             boolean finished;
 
             do {
-                if (!tmpBuf.hasRemaining()) {
+                if (tmpBuf.remaining() <= tmpBuf.capacity() / 10) {
                     byte[] bytes = new byte[tmpBuf.position()];
 
                     tmpBuf.flip();

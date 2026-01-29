@@ -38,7 +38,7 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
     public static final GridPartitionStateMap EMPTY = new GridPartitionStateMap(0);
 
     /** Type code. */
-    public static final short TYPE_CODE = 518;
+    public static final short TYPE_CODE = 517;
 
     /** */
     private static final long serialVersionUID = 0L;

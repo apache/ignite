@@ -53,10 +53,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     private static final byte REBALANCED_FLAG_MASK = 0x01;
 
     /** grpId -> FullMap */
-    @Order(value = 6, method = "localPartitions")
-    @Compress
     @GridToStringInclude
     private Map<Integer, GridDhtPartitionFullMap> parts;
+
+    /** Partitions without duplicated data. */
+    @Order(value = 6, method = "localPartitions")
+    @Compress
+    private Map<Integer, GridDhtPartitionFullMap> locParts;
 
     /** */
     @Order(value = 7, method = "duplicatedPartitionsData")
@@ -156,24 +159,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         GridDhtPartitionsFullMessage cp = (GridDhtPartitionsFullMessage)msg;
 
-        if (parts != null) {
-            cp.parts = new HashMap<>(parts.size());
-
-            for (Map.Entry<Integer, GridDhtPartitionFullMap> e : parts.entrySet()) {
-                GridDhtPartitionFullMap val = e.getValue();
-
-                cp.parts.put(e.getKey(), new GridDhtPartitionFullMap(
-                    val.nodeId(),
-                    val.nodeOrder(),
-                    val.updateSequence(),
-                    val,
-                    false));
-            }
-        }
-        else
-            cp.parts = null;
-
+        cp.parts = parts != null ? copyPartitionsMap(parts) : null;
         cp.dupPartsData = dupPartsData;
+        cp.locParts = locParts;
         cp.partCntrs = partCntrs;
         cp.partHistSuppliers = partHistSuppliers;
         cp.partsToReload = partsToReload;
@@ -251,17 +239,17 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     }
 
     /**
-     * @return Local partitions as is for serializer.
+     * @return Local partitions.
      */
     public Map<Integer, GridDhtPartitionFullMap> localPartitions() {
-        return parts;
+        return locParts;
     }
 
     /**
-     * @param parts Local partitions.
+     * @param locParts Local partitions.
      */
-    public void localPartitions(Map<Integer, GridDhtPartitionFullMap> parts) {
-        this.parts = parts;
+    public void localPartitions(Map<Integer, GridDhtPartitionFullMap> locParts) {
+        this.locParts = locParts;
     }
 
     /**
@@ -498,6 +486,14 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         this.lostParts = lostParts;
     }
 
+    /** {@inheritDoc} */
+    @Override public void prepareMarshal(GridCacheSharedContext<?, ?> ctx) throws IgniteCheckedException {
+        super.prepareMarshal(ctx);
+
+        if (!F.isEmpty(parts) && locParts == null)
+            locParts = copyPartitionsMap(parts);
+    }
+
     /**
      * @return Topology version.
      */
@@ -516,29 +512,31 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void finishUnmarshal(GridCacheSharedContext<?, ?> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (dupPartsData != null) {
-            assert parts != null;
+        if (locParts != null && parts == null) {
+            parts = copyPartitionsMap(locParts);
 
-            for (Map.Entry<Integer, Integer> e : dupPartsData.entrySet()) {
-                GridDhtPartitionFullMap map1 = parts.get(e.getKey());
-                GridDhtPartitionFullMap map2 = parts.get(e.getValue());
+            if (dupPartsData != null) {
+                for (Map.Entry<Integer, Integer> e : dupPartsData.entrySet()) {
+                    GridDhtPartitionFullMap map1 = parts.get(e.getKey());
+                    GridDhtPartitionFullMap map2 = parts.get(e.getValue());
 
-                assert map1 != null : e.getKey();
-                assert map2 != null : e.getValue();
-                assert map1.size() == map2.size();
+                    assert map1 != null : e.getKey();
+                    assert map2 != null : e.getValue();
+                    assert map1.size() == map2.size();
 
-                for (Map.Entry<UUID, GridDhtPartitionMap> e0 : map2.entrySet()) {
-                    GridDhtPartitionMap partMap1 = map1.get(e0.getKey());
+                    for (Map.Entry<UUID, GridDhtPartitionMap> e0 : map2.entrySet()) {
+                        GridDhtPartitionMap partMap1 = map1.get(e0.getKey());
 
-                    assert partMap1 != null && partMap1.map().isEmpty() : partMap1;
-                    assert !partMap1.hasMovingPartitions() : partMap1;
+                        assert partMap1 != null && partMap1.map().isEmpty() : partMap1;
+                        assert !partMap1.hasMovingPartitions() : partMap1;
 
-                    GridDhtPartitionMap partMap2 = e0.getValue();
+                        GridDhtPartitionMap partMap2 = e0.getValue();
 
-                    assert partMap2 != null;
+                        assert partMap2 != null;
 
-                    for (Map.Entry<Integer, GridDhtPartitionState> stateEntry : partMap2.entrySet())
-                        partMap1.put(stateEntry.getKey(), stateEntry.getValue());
+                        for (Map.Entry<Integer, GridDhtPartitionState> stateEntry : partMap2.entrySet())
+                            partMap1.put(stateEntry.getKey(), stateEntry.getValue());
+                    }
                 }
             }
         }
@@ -605,6 +603,23 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * Cleans up resources to avoid excessive memory usage.
      */
     public void cleanUp() {
+        locParts = null;
         partCntrs = null;
+    }
+
+    /** */
+    private Map<Integer, GridDhtPartitionFullMap> copyPartitionsMap(Map<Integer, GridDhtPartitionFullMap> src) {
+        Map<Integer, GridDhtPartitionFullMap> map = new HashMap<>(src.size());
+
+        for (Map.Entry<Integer, GridDhtPartitionFullMap> entry : src.entrySet()) {
+            GridDhtPartitionFullMap val = entry.getValue();
+
+            map.put(
+                entry.getKey(),
+                new GridDhtPartitionFullMap(val.nodeId(), val.nodeOrder(), val.updateSequence(), val, false)
+            );
+        }
+
+        return map;
     }
 }

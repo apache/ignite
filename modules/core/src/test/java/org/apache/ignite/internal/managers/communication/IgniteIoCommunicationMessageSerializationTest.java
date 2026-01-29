@@ -42,9 +42,6 @@ public class IgniteIoCommunicationMessageSerializationTest extends AbstractMessa
         if (msg instanceof PartitionUpdateCountersMessage)
             FieldUtils.writeField(msg, "data", new byte[0], true);
 
-        if (msg instanceof CompressedMessage)
-            FieldUtils.writeField(msg, "dataSize", 0, true);
-
         return msg;
     }
 
