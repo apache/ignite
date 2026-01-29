@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import com.google.common.collect.ImmutableMap;
 import org.apache.ignite.IgniteCheckedException;
@@ -176,8 +175,7 @@ public class ExchangeServiceImpl extends AbstractService implements ExchangeServ
 
     /** {@inheritDoc} */
     @Override public void onStart(GridKernalContext ctx) {
-        CalciteQueryProcessor proc =
-            Objects.requireNonNull(Commons.lookupComponent(ctx, CalciteQueryProcessor.class));
+        CalciteQueryProcessor proc = queryProcessor(ctx);
 
         taskExecutor(proc.taskExecutor());
         mailboxRegistry(proc.mailboxRegistry());

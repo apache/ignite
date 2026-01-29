@@ -36,6 +36,12 @@ public class MappingRowHandler<Row> implements RowHandler<Row> {
         mapping = requiredColumns.toArray();
     }
 
+    /** */
+    public MappingRowHandler(RowHandler<Row> delegate, int[] requiredColumns) {
+        this.delegate = delegate;
+        mapping = requiredColumns;
+    }
+
     /** {@inheritDoc} */
     @Override public Object get(int field, Row row) {
         return delegate.get(mapping[field], row);

@@ -59,7 +59,7 @@ public class CorrelatedNestedLoopJoinPlannerTest extends AbstractPlannerTest {
         IgniteRel phys = physicalPlan(
             sql,
             publicSchema,
-            "MergeJoinConverter", "NestedLoopJoinConverter"
+            "MergeJoinConverter", "NestedLoopJoinConverter", "HashJoinConverter"
         );
 
         System.out.println("+++ " + RelOptUtil.toString(phys));
