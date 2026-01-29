@@ -180,6 +180,8 @@ import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
+import org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.logger.IgniteLoggerEx;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -8239,6 +8241,33 @@ public abstract class IgniteUtils extends CommonUtils {
         public void clearAllListener() {
             if (listeners != null)
                 listeners.clear();
+        }
+    }
+
+    /** */
+    public static final IgniteDataTransferObjectSerializer<?> EMPTY_DTO_SERIALIZER = new IgniteDataTransferObjectSerializer() {
+        /** {@inheritDoc} */
+        @Override public void writeExternal(Object instance, ObjectOutput out) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(Object instance, ObjectInput in) {
+            // No-op.
+        }
+    };
+
+    /** */
+    public static <T extends IgniteDataTransferObject> IgniteDataTransferObjectSerializer<T> loadSerializer(Class<T> cls) {
+        try {
+            Class cls0 = IgniteUtils.class.getClassLoader()
+                .loadClass(cls.getPackage().getName() + "." + cls.getSimpleName() + "Serializer");
+
+            return (IgniteDataTransferObjectSerializer<T>)cls0.getDeclaredConstructor().newInstance();
+        }
+        catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
+               InvocationTargetException e) {
+            return (IgniteDataTransferObjectSerializer<T>)EMPTY_DTO_SERIALIZER;
         }
     }
 }

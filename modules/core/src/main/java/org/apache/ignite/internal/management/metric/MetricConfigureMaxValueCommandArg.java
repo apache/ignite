@@ -31,7 +31,7 @@ public class MetricConfigureMaxValueCommandArg extends MetricCommandArg {
     /** */
     @Argument(description = "Time interval of the metric", example = "newTimeInterval")
     @Positional
-    private long newTimeInterval;
+    long newTimeInterval;
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
