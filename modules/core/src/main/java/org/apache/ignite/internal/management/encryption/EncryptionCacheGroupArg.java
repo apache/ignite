@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.management.encryption;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class EncryptionCacheGroupArg extends IgniteDataTransferObject {
@@ -33,17 +29,7 @@ public class EncryptionCacheGroupArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(example = "cacheGroupName")
-    private String cacheGroupName;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, cacheGroupName);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheGroupName = U.readString(in);
-    }
+    String cacheGroupName;
 
     /** */
     public String cacheGroupName() {

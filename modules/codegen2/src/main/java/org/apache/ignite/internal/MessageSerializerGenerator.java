@@ -60,15 +60,15 @@ import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
  * Generates serializer class for given {@code Message} class. The generated serializer follows the naming convention:
  * {@code org.apache.ignite.internal.codegen.[MessageClassName]Serializer}.
  */
-class MessageSerializerGenerator {
+public class MessageSerializerGenerator {
     /** */
     private static final String EMPTY = "";
 
     /** */
-    private static final String TAB = "    ";
+    public static final String TAB = "    ";
 
     /** */
-    private static final String NL = System.lineSeparator();
+    public static final String NL = System.lineSeparator();
 
     /** */
     private static final String PKG_NAME = "org.apache.ignite.internal.codegen";
@@ -81,7 +81,7 @@ class MessageSerializerGenerator {
         " */";
 
     /** */
-    private static final String METHOD_JAVADOC = "/** */";
+    public static final String METHOD_JAVADOC = "/** */";
 
     /** */
     private static final String RETURN_FALSE_STMT = "return false;";
@@ -119,10 +119,11 @@ class MessageSerializerGenerator {
         imports.add(type.getQualifiedName().toString());
 
         String serClsName = type.getSimpleName() + "Serializer";
+        String serFqnClsName = PKG_NAME + "." + serClsName;
         String serCode = generateSerializerCode(serClsName);
 
         try {
-            JavaFileObject file = env.getFiler().createSourceFile(PKG_NAME + "." + serClsName);
+            JavaFileObject file = env.getFiler().createSourceFile(serFqnClsName);
 
             try (Writer writer = file.openWriter()) {
                 writer.append(serCode);
@@ -136,7 +137,7 @@ class MessageSerializerGenerator {
             // all Run commands to Maven. However, this significantly slows down test startup time.
             // This hack checks whether the content of a generating file is identical to already existed file, and skips
             // handling this class if it is.
-            if (!identicalFileIsAlreadyGenerated(serCode, serClsName)) {
+            if (!identicalFileIsAlreadyGenerated(env, serCode, serFqnClsName)) {
                 env.getMessager().printMessage(
                     Diagnostic.Kind.ERROR,
                     "MessageSerializer " + serClsName + " is already generated. Try 'mvn clean install' to fix the issue.");
@@ -415,7 +416,7 @@ class MessageSerializerGenerator {
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
 
-            else if (enumType(type)) {
+            else if (enumType(env, type)) {
                 Element element = env.getTypeUtils().asElement(type);
                 imports.add(element.toString());
 
@@ -633,8 +634,7 @@ class MessageSerializerGenerator {
                 returnFalseIfReadFailed(name, collectionReader,
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
             }
-
-            else if (enumType(type)) {
+            else if (enumType(env, type)) {
                 String fieldPrefix = typeNameToFieldName(env.getTypeUtils().asElement(type).getSimpleName().toString());
 
                 boolean hasCustMapperAnn = field.getAnnotation(CustomMapper.class) != null;
@@ -880,7 +880,7 @@ class MessageSerializerGenerator {
     }
 
     /** */
-    private boolean enumType(TypeMirror type) {
+    public static boolean enumType(ProcessingEnvironment env, TypeMirror type) {
         Element element = env.getTypeUtils().asElement(type);
 
         return element != null && element.getKind() == ElementKind.ENUM;
@@ -906,9 +906,9 @@ class MessageSerializerGenerator {
     }
 
     /** @return {@code true} if trying to generate file with the same content. */
-    private boolean identicalFileIsAlreadyGenerated(String srcCode, String clsName) {
+    public static boolean identicalFileIsAlreadyGenerated(ProcessingEnvironment env, String srcCode, String fqnClsName) {
         try {
-            String fileName = PKG_NAME.replace('.', '/') + '/' + clsName + ".java";
+            String fileName = fqnClsName.replace('.', '/') + ".java";
             FileObject prevFile = env.getFiler().getResource(StandardLocation.SOURCE_OUTPUT, "", fileName);
 
             String prevFileContent;
@@ -928,7 +928,7 @@ class MessageSerializerGenerator {
     }
 
     /** */
-    private String content(Reader reader) throws IOException {
+    private static String content(Reader reader) throws IOException {
         BufferedReader br = new BufferedReader(reader);
         StringBuilder sb = new StringBuilder();
         String line;

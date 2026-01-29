@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.management.wal;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @CliConfirmArgument
@@ -35,17 +31,7 @@ public class WalDeleteCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(optional = true, example = "consistentId1,consistentId2,....,consistentIdN")
-    private String[] consistentIds;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeArray(out, consistentIds);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        consistentIds = U.readArray(in, String.class);
-    }
+    String[] consistentIds;
 
     /** */
     public String[] consistentIds() {

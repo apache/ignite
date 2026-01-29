@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.management.checkpoint;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** Checkpoint command arguments. */
 public class CheckpointCommandArg extends IgniteDataTransferObject {
@@ -31,29 +27,15 @@ public class CheckpointCommandArg extends IgniteDataTransferObject {
 
     /** */
     @Argument(description = "Reason (visible in logs)", optional = true)
-    private String reason;
+    String reason;
 
     /** */
     @Argument(description = "Wait for checkpoint to finish", optional = true)
-    private boolean waitForFinish;
+    boolean waitForFinish;
 
     /** */
     @Argument(description = "Timeout in milliseconds", optional = true)
-    private long timeout = -1;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, reason);
-        out.writeBoolean(waitForFinish);
-        out.writeLong(timeout);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        reason = U.readString(in);
-        waitForFinish = in.readBoolean();
-        timeout = in.readLong();
-    }
+    long timeout = -1;
 
     /** */
     public String reason() {
