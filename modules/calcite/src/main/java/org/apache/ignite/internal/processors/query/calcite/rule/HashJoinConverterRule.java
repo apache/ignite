@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteConvention;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteHashJoin;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteJoinInfo;
+import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
 
 /** Hash join converter rule. */
 public class HashJoinConverterRule extends AbstractIgniteJoinConverterRule {
@@ -53,12 +54,11 @@ public class HashJoinConverterRule extends AbstractIgniteJoinConverterRule {
     /** {@inheritDoc} */
     @Override protected PhysicalNode convert(RelOptPlanner planner, RelMetadataQuery mq, LogicalJoin rel) {
         RelOptCluster cluster = rel.getCluster();
-        RelTraitSet outTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
-        RelTraitSet leftInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
-        RelTraitSet rightInTraits = cluster.traitSetOf(IgniteConvention.INSTANCE);
-        RelNode left = convert(rel.getLeft(), leftInTraits);
-        RelNode right = convert(rel.getRight(), rightInTraits);
+        RelTraitSet traits = cluster.traitSetOf(IgniteConvention.INSTANCE)
+            .replace(IgniteDistributions.single());
+        RelNode left = convert(rel.getLeft(), traits);
+        RelNode right = convert(rel.getRight(), traits);
 
-        return new IgniteHashJoin(cluster, outTraits, left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType());
+        return new IgniteHashJoin(cluster, traits, left, right, rel.getCondition(), rel.getVariablesSet(), rel.getJoinType());
     }
 }
