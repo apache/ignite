@@ -28,7 +28,7 @@ import org.junit.Test;
 /** */
 public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilityAbstractTest {
     /** */
-    private static final String SER_MODE_MSG = "Remote node uses legacy discovery protocol";
+    private static final String LEGACY_PROTOCOL_MSG = "Remote node uses legacy discovery protocol";
 
     /** */
     private static final IgniteReleasedVersion OLD_VERSION = IgniteReleasedVersion.VER_2_17_0;
@@ -55,7 +55,7 @@ public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilit
 
     /**
      * Compatibility test that ensures previous-version client fails to connect to current server
-     * and server reports missing serMode byte.
+     * and server reports different IGNITE_HEADER.
      */
     @Test
     public void testOldClientRejected() throws Exception {
@@ -63,9 +63,9 @@ public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilit
 
         listeningLog = new ListeningTestLogger(log);
 
-        LogListener serModeListener = LogListener.matches(SER_MODE_MSG).build();
+        LogListener logListener = LogListener.matches(LEGACY_PROTOCOL_MSG).build();
 
-        listeningLog.registerListener(serModeListener);
+        listeningLog.registerListener(logListener);
 
         startGrid(0);
 
@@ -76,6 +76,6 @@ public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilit
             null
         );
 
-        assertTrue("Expected  error in server log.", serModeListener.check(getTestTimeout()));
+        assertTrue("Expected log about different protocol.", logListener.check(getTestTimeout()));
     }
 }
