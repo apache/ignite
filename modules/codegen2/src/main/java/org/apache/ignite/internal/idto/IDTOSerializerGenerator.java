@@ -233,7 +233,7 @@ public class IDTOSerializerGenerator {
     /**
      * @param writer Writer to write class to.
      * @param simpleClsName Class name
-     * @throws IOException
+     * @throws IOException  In case of error.
      */
     private void writeClassHeader(Writer writer, String simpleClsName) throws IOException {
         try (InputStream in = getClass().getClassLoader().getResourceAsStream("license.txt");
