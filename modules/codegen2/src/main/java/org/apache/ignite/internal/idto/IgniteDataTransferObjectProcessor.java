@@ -62,7 +62,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
     /** Package for serializers. */
     private static final String FACTORY_PKG_NAME = "org.apache.ignite.internal.codegen.idto";
 
-    /** Base class that every dto must extends. */
+    /** Base class that every dto must extend. */
     private static final String DTO_CLASS = "org.apache.ignite.internal.dto.IgniteDataTransferObject";
 
     /**
