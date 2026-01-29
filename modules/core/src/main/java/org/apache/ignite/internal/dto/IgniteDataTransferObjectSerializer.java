@@ -28,7 +28,7 @@ public interface IgniteDataTransferObjectSerializer<T> {
     /**
      *
      * @param instance
-     * @param out
+     * @param out Output stream to write object to.
      * @throws IOException
      */
     void writeExternal(T instance, ObjectOutput out) throws IOException;
