@@ -178,7 +178,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
             }
         }
         catch (Exception e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to generate a dto factory:" + e.getMessage());
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to generate a dto factory: " + e.getMessage());
         }
     }
 
