@@ -8245,7 +8245,7 @@ public abstract class IgniteUtils extends CommonUtils {
     }
 
     /** */
-    public static final IgniteDataTransferObjectSerializer<?> EMPTY = new IgniteDataTransferObjectSerializer() {
+    public static final IgniteDataTransferObjectSerializer<?> EMPTY_DTO_SERIALIZER = new IgniteDataTransferObjectSerializer() {
         /** {@inheritDoc} */
         @Override public void writeExternal(Object instance, ObjectOutput out) {
             // No-op.
@@ -8267,7 +8267,7 @@ public abstract class IgniteUtils extends CommonUtils {
         }
         catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
                InvocationTargetException e) {
-            return (IgniteDataTransferObjectSerializer<T>)EMPTY;
+            return (IgniteDataTransferObjectSerializer<T>)EMPTY_DTO_SERIALIZER;
         }
     }
 }
