@@ -22,7 +22,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 /**
- * @param <T>
+ * @param <T> Type of specific IgniteDataTransferObject this serializer works with.
  */
 public interface IgniteDataTransferObjectSerializer<T> {
     /**
