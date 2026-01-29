@@ -38,7 +38,7 @@ public interface IgniteDataTransferObjectSerializer<T> {
      * @param instance
      * @param in
      * @return
-     * @throws IOException
+     * @throws IOException If read operation failed.
      * @throws ClassNotFoundException
      */
     void readExternal(T instance, ObjectInput in) throws IOException, ClassNotFoundException;
