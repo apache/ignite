@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.systemview.view;
 
 import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
+import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 
 /**
@@ -41,6 +42,7 @@ public class MetastorageView implements SystemViewDescriptor {
 
     /** @return Metastorage record name. */
     @Order
+    @Filtrable
     public String name() {
         return name;
     }

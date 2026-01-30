@@ -324,14 +324,21 @@ public class DistributedMetaStorageImpl extends GridProcessorAdapter
 
     /** */
     private void registerSystemView() {
-        ctx.systemView().registerView(DISTRIBUTED_METASTORE_VIEW, DISTRIBUTED_METASTORE_VIEW_DESC,
-            new MetastorageViewWalker(), () -> {
+        ctx.systemView().registerFiltrableView(DISTRIBUTED_METASTORE_VIEW, DISTRIBUTED_METASTORE_VIEW_DESC,
+            new MetastorageViewWalker(), filter -> {
+                String name = (String)filter.get(MetastorageViewWalker.NAME_FILTER);
+
                 try {
                     List<MetastorageView> data = new ArrayList<>();
 
-                    iterate("", (key, val) -> data.add(new MetastorageView(key, val == null || !val.getClass().isArray()
-                        ? IgniteUtils.toStringSafe(val)
-                        : S.arrayToString(val))));
+                    iterate(name == null ? "" : name, (key, val) -> {
+                        if (name != null && !name.equals(key))
+                            return;
+
+                        data.add(new MetastorageView(key, val == null || !val.getClass().isArray()
+                            ? IgniteUtils.toStringSafe(val)
+                            : S.arrayToString(val)));
+                    });
 
                     return data;
                 }
