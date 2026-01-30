@@ -859,14 +859,22 @@ public class CacheQuery<T> {
         if (part != null && part >= cctx.affinity().partitions())
             throw new IgniteCheckedException("Invalid partition number: " + part);
 
-        final Set<ClusterNode> owners =
-            part == null ? Collections.<ClusterNode>emptySet() : new HashSet<>(cctx.topology().owners(part, topVer));
+        final Set<ClusterNode> partHolders;
+
+        if (part != null) {
+            if (cctx.config().getCacheMode() == CacheMode.PARTITIONED)
+                partHolders = Collections.singleton(cctx.affinity().primaryByPartition(part, topVer));
+            else
+                partHolders = new HashSet<>(cctx.topology().owners(part, topVer));
+        }
+        else
+            partHolders = Collections.emptySet();
 
         return F.view(affNodes, new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {
                 return cctx.discovery().cacheAffinityNode(n, cctx.name()) &&
                     (prj == null || prj.node(n.id()) != null) &&
-                    (part == null || owners.contains(n));
+                    (part == null || partHolders.contains(n));
             }
         });
     }
