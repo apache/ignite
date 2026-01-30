@@ -83,7 +83,7 @@ public abstract class IgniteDataTransferObject implements Externalizable {
         try (IgniteDataTransferObjectOutput dtout = new IgniteDataTransferObjectOutput(out)) {
             IgniteDataTransferObjectSerializer serializer = IDTOSerializerFactory.getInstance().serializer(getClass());
 
-            if (serializer == IgniteUtils.EMPTY) {
+            if (serializer == IgniteUtils.EMPTY_DTO_SERIALIZER) {
                 writeExternalData(dtout);
 
                 return;
@@ -116,7 +116,7 @@ public abstract class IgniteDataTransferObject implements Externalizable {
         try (IgniteDataTransferObjectInput dtin = new IgniteDataTransferObjectInput(in)) {
             IgniteDataTransferObjectSerializer serializer = IDTOSerializerFactory.getInstance().serializer(getClass());
 
-            if (serializer == IgniteUtils.EMPTY) {
+            if (serializer == IgniteUtils.EMPTY_DTO_SERIALIZER) {
                 readExternalData(dtin);
 
                 return;
