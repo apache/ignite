@@ -110,12 +110,12 @@
         <surefire.version>3.1.2</surefire.version>
         <tomcat.version>9.0.63</tomcat.version>
         <yardstick.version>0.8.3</yardstick.version>
-        <zookeeper.version>3.9.4</zookeeper.version>
+        <zookeeper.version>3.8.4</zookeeper.version>
         <zstd.version>1.5.5-5</zstd.version>
         <opencensus.version>0.31.1</opencensus.version>
         <commons.lang3.version>3.18.0</commons.lang3.version>
         <ignite-kafka-ext.version>1.0.0</ignite-kafka-ext.version>
-        <xstream.version>1.4.21</xstream.version>
+        <xstream.version>1.4.17</xstream.version>
 
         <!-- Maven plugins versions -->
         <maven.javadoc.plugin.version>3.2.0</maven.javadoc.plugin.version>
