@@ -3243,7 +3243,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
                     if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                        if (clientMsgWorker.clientNodeId.equals(((TcpDiscoveryNodeAddedMessage)msg).node().id()))
+                        UUID id = ((TcpDiscoveryNodeAddedMessage)msg).node().id();
+
+                        if (clientMsgWorker.clientNodeId.equals(id))
                             prepareNodeAddedMessage(msg, clientMsgWorker.clientNodeId, null);
                     }
 
