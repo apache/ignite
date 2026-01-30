@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
@@ -226,12 +226,7 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<UUID> masterNodeIds() {
-        Collection<UUID> res = new ArrayList<>(2);
-
-        res.add(nearNodeId);
-        res.add(nodeId);
-
-        return res;
+        return nearNodeId != nodeId ? List.of(nearNodeId, nodeId) : List.of(nearNodeId);
     }
 
     /** {@inheritDoc} */
