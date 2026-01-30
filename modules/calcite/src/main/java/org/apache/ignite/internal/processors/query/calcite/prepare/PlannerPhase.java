@@ -108,6 +108,7 @@ public enum PlannerPhase {
         @Override public RuleSet getRules(PlanningContext ctx) {
             return ctx.rules(
                 RuleSets.ofList(
+                    CoreRules.FILTER_REDUCE_EXPRESSIONS,
                     FilterScanMergeRule.TABLE_SCAN_SKIP_CORRELATED,
 
                     CoreRules.FILTER_MERGE,

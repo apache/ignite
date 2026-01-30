@@ -250,6 +250,12 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
         RelDataType sqlTypeInt = rowType.getFieldList().get(2).getType();
         RelDataType sqlTypeVarchar = rowType.getFieldList().get(3).getType();
 
+        RelDataType projRowType = new RelDataTypeFactory.Builder(tf)
+            .add("A", sqlTypeVarchar)
+            .add("B", sqlTypeInt)
+            .add("C", sqlTypeInt)
+            .build();
+
         // Projects, filters and required columns.
         List<RexNode> project = F.asList(
             rexBuilder.makeLocalRef(sqlTypeVarchar, 1),
@@ -308,6 +314,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             cluster.traitSet(),
             qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")),
             "IDX",
+            projRowType,
             project,
             filter,
             RexUtils.buildSortedSearchBounds(cluster, idxCollation, filter, rowType, requiredColumns),
@@ -390,6 +397,10 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
         RelDataType sqlTypeInt = rowType.getFieldList().get(2).getType();
         RelDataType sqlTypeVarchar = rowType.getFieldList().get(3).getType();
 
+        RelDataType projRowType = new RelDataTypeFactory.Builder(tf)
+            .add("A", sqlTypeVarchar)
+            .build();
+
         List<RexNode> project = F.asList(rexBuilder.makeLocalRef(sqlTypeVarchar, 1));
 
         RexNode filterOneField = rexBuilder.makeCall(
@@ -411,6 +422,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             cluster.traitSet(),
             qctx.catalogReader().getTable(F.asList("PUBLIC", "TBL")),
             QueryUtils.PRIMARY_KEY_INDEX,
+            projRowType,
             project,
             filterOneField,
             RexUtils.buildSortedSearchBounds(cluster, idxCollation, filterOneField, rowType, requiredColumns),
@@ -440,6 +452,7 @@ public class LogicalRelImplementorTest extends GridCommonAbstractTest {
             templateScan.getTraitSet().replace(collation),
             templateScan.getTable(),
             templateScan.indexName(),
+            templateScan.getRowType(),
             projects,
             filters,
             templateScan.searchBounds(),

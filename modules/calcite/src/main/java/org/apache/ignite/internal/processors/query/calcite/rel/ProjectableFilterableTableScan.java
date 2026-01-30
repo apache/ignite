@@ -75,12 +75,16 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         RelTraitSet traitSet,
         List<RelHint> hints,
         RelOptTable table,
+        @Nullable RelDataType rowType,
         @Nullable List<RexNode> proj,
         @Nullable RexNode cond,
         @Nullable ImmutableBitSet reqColumns
     ) {
         super(cluster, traitSet, hints, table);
 
+        assert proj == null || rowType != null : "rowType should be provided if project != null";
+
+        this.rowType = rowType;
         projects = proj;
         condition = cond;
         requiredColumns = reqColumns;
@@ -90,6 +94,7 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
     protected ProjectableFilterableTableScan(RelInput input) {
         super(input);
         condition = input.getExpression("filters");
+        rowType = input.get("rowType") == null ? null : input.getRowType("rowType");
         projects = input.get("projects") == null ? null : input.getExpressionList("projects");
         requiredColumns = input.get("requiredColumns") == null ? null : input.getBitSet("requiredColumns");
     }
@@ -129,6 +134,7 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         }
 
         return pw
+            .itemIf("rowType", rowType, projects != null) // Intentional project check here.
             .itemIf("projects", projects, projects != null)
             .itemIf("requiredColumns", requiredColumns, requiredColumns != null);
     }
@@ -151,10 +157,9 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
 
     /** {@inheritDoc} */
     @Override public RelDataType deriveRowType() {
-        if (projects != null)
-            return RexUtil.createStructType(Commons.typeFactory(getCluster()), projects);
-        else
-            return table.unwrap(IgniteTable.class).getRowType(Commons.typeFactory(getCluster()), requiredColumns);
+        assert projects == null : "For merged projects rowType should be provided explicetely";
+
+        return table.unwrap(IgniteTable.class).getRowType(Commons.typeFactory(getCluster()), requiredColumns);
     }
 
     /** */
