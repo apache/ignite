@@ -175,7 +175,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
             }
         }
         catch (Exception e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to generate a dto factory:" + e.getMessage());
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to generate a dto factory: " + e.getMessage());
         }
     }
 
@@ -338,7 +338,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         writer.write(TAB);
         // IDE can invoke partial recompile during development.
         // In this case there will be only part (one) of serdes in the map initially.
-        // We want to correctly initialize and trying to load serializer dynamically.
+        // We want to be able to load serializer dynamically if it is missing in the map but class file itself is presented in classpath.
         // Other case to do it custom commands.
         writer.write("res = U.loadSerializer(cls);");
         writer.write(NL);

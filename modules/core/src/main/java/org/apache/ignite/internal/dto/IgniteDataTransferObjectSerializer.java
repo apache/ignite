@@ -22,24 +22,24 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 /**
- * @param <T>
+ * @param <T> Type of specific IgniteDataTransferObject this serializer works with.
  */
 public interface IgniteDataTransferObjectSerializer<T> {
     /**
      *
-     * @param instance
-     * @param out
-     * @throws IOException
+     * @param instance Instance of IgniteDataTransferObject to serialize.
+     * @param out Output stream to write object to.
+     * @throws IOException If write operation failed.
      */
     void writeExternal(T instance, ObjectOutput out) throws IOException;
 
     /**
      *
-     * @param instance
-     * @param in
+     * @param instance Instance of an IgniteDataTransferObject to read data to.
+     * @param in Input stream to read object from.
      * @return
-     * @throws IOException
-     * @throws ClassNotFoundException
+     * @throws IOException If read operation failed.
+     * @throws ClassNotFoundException If class not found.
      */
     void readExternal(T instance, ObjectInput in) throws IOException, ClassNotFoundException;
 }

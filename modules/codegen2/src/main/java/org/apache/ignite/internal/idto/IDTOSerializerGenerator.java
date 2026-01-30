@@ -205,7 +205,7 @@ public class IDTOSerializerGenerator {
 
     /** @return Code for the calss implementing {@code org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer}. */
     private String generateSerializerCode() throws IOException {
-        imports.add("org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer");
+        imports.add(DTO_SERDES_INTERFACE);
         imports.add(ObjectOutput.class.getName());
         imports.add(ObjectInput.class.getName());
         imports.add(IOException.class.getName());
@@ -247,7 +247,7 @@ public class IDTOSerializerGenerator {
     /**
      * @param writer Writer to write class to.
      * @param simpleClsName Class name
-     * @throws IOException
+     * @throws IOException  In case of error.
      */
     private void writeClassHeader(Writer writer, String simpleClsName) throws IOException {
         try (InputStream in = getClass().getClassLoader().getResourceAsStream("license.txt");
