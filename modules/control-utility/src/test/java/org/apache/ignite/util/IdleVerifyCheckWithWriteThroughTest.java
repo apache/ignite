@@ -115,7 +115,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
 
     /** {@inheritDoc} */
     @Override protected boolean persistenceEnable() {
-        return false;
+        return withPersistence;
     }
 
     /** {@inheritDoc} */
