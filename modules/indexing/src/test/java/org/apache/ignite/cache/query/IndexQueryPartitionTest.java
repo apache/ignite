@@ -78,6 +78,7 @@ public class IndexQueryPartitionTest extends GridCommonAbstractTest {
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setCacheMode(cacheMode)
             .setIndexedTypes(Integer.class, Person.class)
+            .setBackups(1)
             .setAffinity(new RendezvousAffinityFunction().setPartitions(100));
 
         cfg.setCacheConfiguration(ccfg);
@@ -136,7 +137,7 @@ public class IndexQueryPartitionTest extends GridCommonAbstractTest {
                 }
             }
 
-            assertEquals(sendReq, TestRecordingCommunicationSpi.spi(grid()).recordedMessages(true).size());
+            assertEquals("part=" + part, sendReq, TestRecordingCommunicationSpi.spi(grid()).recordedMessages(true).size());
         }
     }
 
