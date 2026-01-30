@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.systemview.view;
 
 import java.util.Collection;
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotMetadata;
@@ -27,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Snapshot representation for a {@link SystemView}.
  */
-public class SnapshotView {
+public class SnapshotView implements SystemViewDescriptor {
     /** Snapshot system view name. */
     public static final String SNAPSHOT_SYS_VIEW = "snapshot";
 

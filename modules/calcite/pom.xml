@@ -74,7 +74,7 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>ignite-codegen2</artifactId>
+            <artifactId>ignite-codegen</artifactId>
             <scope>provided</scope>
         </dependency>
 

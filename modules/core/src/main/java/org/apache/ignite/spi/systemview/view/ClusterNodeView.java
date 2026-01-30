@@ -19,6 +19,7 @@ package org.apache.ignite.spi.systemview.view;
 
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 
 import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
@@ -26,7 +27,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 /**
  * Cluster node representation for a {@link SystemView}.
  */
-public class ClusterNodeView {
+public class ClusterNodeView implements SystemViewDescriptor {
     /** Cluster node. */
     private final ClusterNode n;
 

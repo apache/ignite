@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.query.stat.view;
 
 import java.sql.Timestamp;
-
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.stat.ObjectStatisticsImpl;
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
 /**
  * Statistics local data view.
  */
-public class StatisticsColumnLocalDataView {
+public class StatisticsColumnLocalDataView implements SystemViewDescriptor {
     /** Statistics key */
     private final StatisticsKey key;
 

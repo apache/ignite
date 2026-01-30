@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.systemview.view;
 
 import java.util.UUID;
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 
@@ -26,7 +27,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 /**
  * Node attribute representation for a {@link SystemView}.
  */
-public class NodeAttributeView {
+public class NodeAttributeView implements SystemViewDescriptor {
     /** Node id. */
     private final UUID nodeId;
 

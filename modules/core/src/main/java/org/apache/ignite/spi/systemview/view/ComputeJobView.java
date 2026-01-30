@@ -20,6 +20,7 @@ package org.apache.ignite.spi.systemview.view;
 import java.util.StringJoiner;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
@@ -31,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Compute job representation for a {@link SystemView}.
  */
-public class ComputeJobView {
+public class ComputeJobView implements SystemViewDescriptor {
     /** Compute job state. */
     public enum ComputeJobState {
         /**

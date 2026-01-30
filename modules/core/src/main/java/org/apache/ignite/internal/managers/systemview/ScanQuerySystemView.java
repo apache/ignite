@@ -25,7 +25,7 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.managers.systemview.walker.ScanQueryViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.codegen.ScanQueryViewWalker;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.ScanQueryIterator;

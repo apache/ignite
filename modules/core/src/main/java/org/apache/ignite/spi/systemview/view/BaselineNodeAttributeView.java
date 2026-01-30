@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.systemview.view;
 
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 
@@ -25,7 +26,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 /**
  * Baseline node attribute representation for a {@link SystemView}.
  */
-public class BaselineNodeAttributeView {
+public class BaselineNodeAttributeView implements SystemViewDescriptor {
     /** Node consistent id. */
     private final Object consistentId;
 

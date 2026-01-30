@@ -20,6 +20,7 @@ package org.apache.ignite.spi.systemview.view;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.UUID;
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -35,7 +36,7 @@ import org.apache.ignite.transactions.TransactionState;
 /**
  * Transaction representation for a {@link SystemView}.
  */
-public class TransactionView {
+public class TransactionView implements SystemViewDescriptor {
     /** Transaction. */
     private final IgniteInternalTx tx;
 

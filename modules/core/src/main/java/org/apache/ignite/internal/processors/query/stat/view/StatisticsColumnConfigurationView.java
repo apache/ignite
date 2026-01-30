@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.stat.view;
 
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.stat.config.StatisticsColumnConfiguration;
@@ -26,7 +27,7 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 /**
  * Statistics column configuration representation for a {@link SystemView}.
  */
-public class StatisticsColumnConfigurationView {
+public class StatisticsColumnConfigurationView implements SystemViewDescriptor {
     /** Table object type. */
     public static final String TABLE_TYPE = "TABLE";
 

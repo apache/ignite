@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.systemview.view;
 
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.StripedExecutor.Stripe;
@@ -26,7 +27,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 /**
  * {@link StripedExecutor} task representation for a {@link SystemView}.
  */
-public class StripedExecutorTaskView {
+public class StripedExecutorTaskView implements SystemViewDescriptor {
     /** Stripe. */
     private final Stripe stripe;
 

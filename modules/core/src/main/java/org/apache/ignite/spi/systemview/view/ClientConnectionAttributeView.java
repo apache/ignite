@@ -17,13 +17,14 @@
 
 package org.apache.ignite.spi.systemview.view;
 
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 
 /**
  * Client connection attribute system view row.
  */
-public class ClientConnectionAttributeView {
+public class ClientConnectionAttributeView implements SystemViewDescriptor {
     /** Connection id. */
     private final long connId;
 

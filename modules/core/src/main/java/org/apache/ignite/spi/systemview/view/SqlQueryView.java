@@ -19,6 +19,7 @@ package org.apache.ignite.spi.systemview.view;
 
 import java.util.Date;
 import java.util.UUID;
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -27,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * SQL query representation for a {@link SystemView}.
  */
-public class SqlQueryView {
+public class SqlQueryView implements SystemViewDescriptor {
     /** Query. */
     private final GridRunningQueryInfo qry;
 

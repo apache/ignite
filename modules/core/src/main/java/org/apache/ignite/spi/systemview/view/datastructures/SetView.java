@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.systemview.view.datastructures;
 
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.lang.IgniteUuid;
@@ -25,7 +26,7 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 /**
  * Set representation for a {@link SystemView}.
  */
-public class SetView {
+public class SetView implements SystemViewDescriptor {
     /** Set. */
     private final GridCacheSetProxy<?> set;
 

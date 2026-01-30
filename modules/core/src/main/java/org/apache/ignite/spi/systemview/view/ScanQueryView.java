@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.systemview.view;
 
 import java.util.UUID;
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.query.ScanQueryIterator;
@@ -32,7 +33,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 /**
  * Scan query iterator representation for a {@link SystemView}.
  */
-public class ScanQueryView {
+public class ScanQueryView implements SystemViewDescriptor {
     /** Origin node id. */
     private final UUID nodeId;
 

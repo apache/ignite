@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.systemview.view;
 
 import java.net.InetSocketAddress;
+import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
@@ -33,7 +34,7 @@ import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListen
 /**
  * Client connection system view row.
  */
-public class ClientConnectionView {
+public class ClientConnectionView implements SystemViewDescriptor {
     /** Nio session. */
     private final GridNioSession ses;
 
@@ -104,4 +105,3 @@ public class ClientConnectionView {
         return ver == null ? null : ver.asString();
     }
 }
-
