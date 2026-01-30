@@ -392,13 +392,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 try {
                     String name = (String)filter.get(MetastorageViewWalker.NAME_FILTER);
 
-                    if (name == null)
-                        name = "";
-
                     List<MetastorageView> data = new ArrayList<>();
 
-                    metaStorage.iterate(name, (key, valBytes) -> {
+                    metaStorage.iterate(name == null ? "" : name, (key, valBytes) -> {
                         try {
+                            if (name != null && !name.equals(key))
+                                return;
+
                             Serializable val = metaStorage.marshaller().unmarshal((byte[])valBytes, U.gridClassLoader());
 
                             data.add(new MetastorageView(key, IgniteUtils.toStringSafe(val)));
