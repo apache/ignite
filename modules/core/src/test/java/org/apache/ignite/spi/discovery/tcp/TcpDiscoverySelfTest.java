@@ -79,6 +79,7 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.discovery.tcp.messages.NodeSpecificData;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
@@ -2518,7 +2519,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 DiscoveryDataPacket dataPacket = ((TcpDiscoveryNodeAddedMessage)msg).gridDiscoveryData();
 
                 if (dataPacket != null) {
-                    Map<UUID, Map<Integer, byte[]>> discoData = U.field(dataPacket, "nodeSpecificData");
+                    Map<UUID, NodeSpecificData> discoData = U.field(dataPacket, "nodeSpecificData");
 
                     checkDiscoData(discoData, msg);
                 }
@@ -2527,7 +2528,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 DiscoveryDataPacket dataPacket = ((TcpDiscoveryNodeAddFinishedMessage)msg).clientDiscoData();
 
                 if (dataPacket != null) {
-                    Map<UUID, Map<Integer, byte[]>> discoData = U.field(dataPacket, "nodeSpecificData");
+                    Map<UUID, NodeSpecificData> discoData = U.field(dataPacket, "nodeSpecificData");
 
                     checkDiscoData(discoData, msg);
                 }
@@ -2540,12 +2541,12 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
          * @param discoData Discovery data.
          * @param msg Message.
          */
-        private void checkDiscoData(Map<UUID, Map<Integer, byte[]>> discoData, TcpDiscoveryAbstractMessage msg) {
+        private void checkDiscoData(Map<UUID, NodeSpecificData> discoData, TcpDiscoveryAbstractMessage msg) {
             if (discoData != null && discoData.size() > 1) {
                 int cnt = 0;
 
-                for (Map<Integer, byte[]> map : discoData.values()) {
-                    if (map.containsKey(GridComponent.DiscoveryDataExchangeType.CACHE_PROC.ordinal()))
+                for (NodeSpecificData data : discoData.values()) {
+                    if (data.nodeSpecificData().containsKey(GridComponent.DiscoveryDataExchangeType.CACHE_PROC.ordinal()))
                         cnt++;
                 }
 
