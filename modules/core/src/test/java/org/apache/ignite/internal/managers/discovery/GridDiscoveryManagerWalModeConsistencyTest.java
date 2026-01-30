@@ -47,6 +47,8 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
 
         DataStorageConfiguration storageCfg = new DataStorageConfiguration();
 
+        storageCfg.setWalMode(walMode);
+
         if (mixedConfig) {
             storageCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setName("default_in_memory_region")
                 .setPersistenceEnabled(false));
@@ -55,20 +57,11 @@ public class GridDiscoveryManagerWalModeConsistencyTest extends GridCommonAbstra
                 DataRegionConfiguration persistentRegionCfg = new DataRegionConfiguration().setName(PERSISTENT_REGION_NAME)
                     .setPersistenceEnabled(true);
 
-                if (walMode != null)
-                    storageCfg.setWalMode(walMode);
-
                 storageCfg.setDataRegionConfigurations(persistentRegionCfg);
             }
         }
         else {
-            if (walMode != null) {
-                storageCfg.setWalMode(walMode);
-                storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
-            }
-            else {
-                storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(false);
-            }
+            storageCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(walMode != null);
         }
 
         cfg.setDataStorageConfiguration(storageCfg);

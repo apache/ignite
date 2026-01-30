@@ -1653,14 +1653,12 @@ public class IgniteKernal implements IgniteEx, Externalizable {
             add(ATTR_MEMORY_CONFIG, memCfg);
         }
 
-        // Save data storage configuration.
-        add(ATTR_DATA_STORAGE_CONFIG, ctx.marshallerContext().jdkMarshaller().marshal(cfg.getDataStorageConfiguration()));
-
         DataStorageConfiguration dsCfg = cfg.getDataStorageConfiguration();
 
-        if (dsCfg != null) {
-            ctx.addNodeAttribute(ATTR_WAL_MODE, dsCfg.getWalMode().ordinal());
-        }
+        // Save data storage configuration.
+        add(ATTR_DATA_STORAGE_CONFIG, ctx.marshallerContext().jdkMarshaller().marshal(dsCfg));
+
+        ctx.addNodeAttribute(ATTR_WAL_MODE, dsCfg == null ? null : dsCfg.getWalMode().ordinal());
     }
 
     /**
