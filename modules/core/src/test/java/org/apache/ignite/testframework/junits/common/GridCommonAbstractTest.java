@@ -103,6 +103,7 @@ import org.apache.ignite.internal.processors.cache.WalStateManager.WALDisableCon
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
@@ -2857,5 +2858,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /** @return Marshaller. */
     protected static Marshaller marshaller(Ignite ign) {
         return ((IgniteEx)ign).context().marshaller();
+    }
+
+    /**
+     * Wait for rebalance on current topology finished.
+     */
+    protected static void waitRebalanceFinished(IgniteEx ignite, String cacheName) throws Exception {
+        assertTrue(GridTestUtils.waitForCondition(() -> {
+            IgniteInternalFuture<Boolean> fut = ignite.cachex(cacheName).context().preloader().rebalanceFuture();
+
+            GridDhtPartitionDemander.RebalanceFuture rebFut = (GridDhtPartitionDemander.RebalanceFuture)fut;
+
+            return (!rebFut.isInitial() && rebFut.topologyVersion().topologyVersion() == ignite.cluster().topologyVersion());
+        }, 1000));
+
+        assertTrue(ignite.cachex(cacheName).context().preloader().rebalanceFuture().get());
     }
 }
