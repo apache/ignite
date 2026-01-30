@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.management.rollingupgrade;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
@@ -35,22 +31,22 @@ public class RollingUpgradeStatusNode extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private UUID uuid;
+    UUID uuid;
 
     /** */
-    private Object consistentId;
+    Object consistentId;
 
     /** */
-    private Collection<String> addresses;
+    Collection<String> addresses;
 
     /** */
-    private IgniteProductVersion ver;
+    IgniteProductVersion ver;
 
     /** */
-    private long order;
+    long order;
 
     /** */
-    private boolean client;
+    boolean client;
 
     /** */
     public RollingUpgradeStatusNode() {
@@ -65,26 +61,6 @@ public class RollingUpgradeStatusNode extends IgniteDataTransferObject {
         addresses = node.addresses();
         order = node.order();
         client = node.isClient();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeObject(ver);
-        U.writeUuid(out, uuid);
-        out.writeObject(consistentId);
-        U.writeCollection(out, addresses);
-        out.writeLong(order);
-        out.writeBoolean(client);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        ver = (IgniteProductVersion)in.readObject();
-        uuid = U.readUuid(in);
-        consistentId = in.readObject();
-        addresses = U.readCollection(in);
-        order = in.readLong();
-        client = in.readBoolean();
     }
 
     /** */

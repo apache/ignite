@@ -16,12 +16,8 @@
  */
 package org.apache.ignite.internal.commandline.cache.distribution;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.List;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * DTO for CacheDistributionTask, contains information about group
@@ -31,13 +27,13 @@ public class CacheDistributionGroup extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Group identifier. */
-    private int grpId;
+    int grpId;
 
     /** Group name. */
-    private String grpName;
+    String grpName;
 
     /** List of partitions. */
-    private List<CacheDistributionPartition> partitions;
+    List<CacheDistributionPartition> partitions;
 
     /** Default constructor. */
     public CacheDistributionGroup() {
@@ -83,19 +79,5 @@ public class CacheDistributionGroup extends IgniteDataTransferObject {
     public void setPartitions(
         List<CacheDistributionPartition> partitions) {
         this.partitions = partitions;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeInt(grpId);
-        U.writeString(out, grpName);
-        U.writeCollection(out, partitions);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        grpId = in.readInt();
-        grpName = U.readString(in);
-        partitions = U.readList(in);
     }
 }

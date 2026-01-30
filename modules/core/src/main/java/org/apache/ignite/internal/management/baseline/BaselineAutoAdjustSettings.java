@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.baseline;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 
 /** */
@@ -55,28 +52,5 @@ public class BaselineAutoAdjustSettings extends IgniteDataTransferObject {
      */
     public Long getSoftTimeout() {
         return softTimeout;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(enabled != null);
-
-        if (enabled != null)
-            out.writeBoolean(enabled);
-
-        out.writeBoolean(softTimeout != null);
-
-        if (softTimeout != null)
-            out.writeLong(softTimeout);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in)
-        throws IOException, ClassNotFoundException {
-        if (in.readBoolean())
-            enabled = in.readBoolean();
-
-        if (in.readBoolean())
-            softTimeout = in.readLong();
     }
 }

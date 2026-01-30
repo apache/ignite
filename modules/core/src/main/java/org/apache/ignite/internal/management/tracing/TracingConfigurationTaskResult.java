@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.tracing;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,7 +24,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.tracing.TracingConfigurationCoordinates;
 import org.apache.ignite.spi.tracing.TracingConfigurationParameters;
 
@@ -42,7 +38,7 @@ public class TracingConfigurationTaskResult extends IgniteDataTransferObject {
     private static final Character RES_PRINTER_SEPARATOR = ',';
 
     /** Retrieved reseted or updated tracing configuration. */
-    private List<TracingConfigurationItem> tracingConfigurations = new ArrayList<>();
+    List<TracingConfigurationItem> tracingConfigurations = new ArrayList<>();
 
     /**
      * Default constructor.
@@ -65,17 +61,6 @@ public class TracingConfigurationTaskResult extends IgniteDataTransferObject {
             parameters.samplingRate(),
             parameters.includedScopes()
         ));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, tracingConfigurations);
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked") @Override protected void readExternalData(ObjectInput in)
-        throws IOException, ClassNotFoundException {
-        tracingConfigurations = (List)U.readCollection(in);
     }
 
     /**

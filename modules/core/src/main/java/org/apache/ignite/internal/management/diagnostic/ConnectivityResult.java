@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.management.diagnostic;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Map;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -34,7 +30,7 @@ public class ConnectivityResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    @Nullable private Map<ClusterNode, Boolean> nodeStatuses;
+    @Nullable Map<ClusterNode, Boolean> nodeStatuses;
 
     /**
      * Default constructor.
@@ -47,16 +43,6 @@ public class ConnectivityResult extends IgniteDataTransferObject {
      */
     public ConnectivityResult(@Nullable Map<ClusterNode, Boolean> nodeStatuses) {
         this.nodeStatuses = nodeStatuses;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, nodeStatuses);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeStatuses = U.readMap(in);
     }
 
     /**

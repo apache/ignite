@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.management.property;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * List of the distributed properties names.
@@ -35,7 +31,7 @@ public class PropertiesListResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Properties info: name, value, description. */
-    private Collection<T3<String, String, String>> props;
+    Collection<T3<String, String, String>> props;
 
     /**
      * Constructor for optimized marshaller.
@@ -49,16 +45,6 @@ public class PropertiesListResult extends IgniteDataTransferObject {
      */
     public PropertiesListResult(Collection<T3<String, String, String>> props) {
         this.props = props;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, props);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        props = U.readCollection(in);
     }
 
     /**

@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.management.meta;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Collections;
 import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Represents information about cluster metadata.
@@ -36,7 +32,7 @@ public class MetadataListResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cluster metadata. */
-    private Collection<BinaryMetadata> meta = Collections.emptyList();
+    Collection<BinaryMetadata> meta = Collections.emptyList();
 
     /**
      * Constructor for optimized marshaller.
@@ -50,16 +46,6 @@ public class MetadataListResult extends IgniteDataTransferObject {
      */
     public MetadataListResult(Collection<BinaryMetadata> meta) {
         this.meta = meta;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, meta);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        meta = U.readCollection(in);
     }
 
     /**

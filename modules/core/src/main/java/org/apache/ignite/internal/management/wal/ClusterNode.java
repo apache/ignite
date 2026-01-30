@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.management.wal;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *  Data transfer object for {@link org.apache.ignite.cluster.ClusterNode}.
@@ -36,18 +32,18 @@ public class ClusterNode extends IgniteDataTransferObject {
 
     /** Cluster node consistent id. */
     @GridToStringInclude
-    private String consistentId;
+    String consistentId;
 
     /** Cluster node attributes. */
-    private Map<String, Object> attrs;
+    Map<String, Object> attrs;
 
     /** Cluster node addresses. */
     @GridToStringInclude
-    private Collection<String> addrs;
+    Collection<String> addrs;
 
     /** Cluster node host names. */
     @GridToStringInclude
-    private Collection<String> hostNames;
+    Collection<String> hostNames;
 
     /**
      * Default constructor.
@@ -103,23 +99,6 @@ public class ClusterNode extends IgniteDataTransferObject {
     public Collection<String> getHostNames() {
         return hostNames;
     }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, consistentId);
-        U.writeMap(out, attrs);
-        U.writeCollection(out, hostNames);
-        U.writeCollection(out, addrs);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        consistentId = U.readString(in);
-        attrs = U.readMap(in);
-        hostNames = U.readCollection(in);
-        addrs = U.readCollection(in);
-    }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

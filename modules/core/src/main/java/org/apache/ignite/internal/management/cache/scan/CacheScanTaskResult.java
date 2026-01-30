@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.management.cache.scan;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.List;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Result of running {@link CacheScanTask}.
@@ -34,10 +30,10 @@ public class CacheScanTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Column titles. */
-    private List<String> titles;
+    List<String> titles;
 
     /** Cache entries. */
-    private List<List<?>> entries;
+    List<List<?>> entries;
 
     /**
      *
@@ -65,18 +61,6 @@ public class CacheScanTaskResult extends IgniteDataTransferObject {
      */
     public List<List<?>> entries() {
         return entries;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, titles);
-        U.writeCollection(out, entries);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        titles = U.readList(in);
-        entries = U.readList(in);
     }
 
     /** {@inheritDoc} */

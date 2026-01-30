@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.metric;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
 
@@ -32,20 +29,6 @@ public class MetricConfigureMaxValueCommandArg extends MetricCommandArg {
     @Argument(description = "Time interval of the metric", example = "newTimeInterval")
     @Positional
     long newTimeInterval;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
-        out.writeLong(newTimeInterval);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(in);
-
-        newTimeInterval = in.readLong();
-    }
 
     /** */
     public long newTimeInterval() {

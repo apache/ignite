@@ -16,9 +16,6 @@
  */
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.IgniteUtils.nl;
@@ -54,31 +50,31 @@ public class IdleVerifyResult extends IgniteDataTransferObject {
 
     /** Counter conflicts. */
     @GridToStringInclude
-    private Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts;
+    Map<PartitionKey, List<PartitionHashRecord>> cntrConflicts;
 
     /** Hash conflicts. */
     @GridToStringInclude
-    private Map<PartitionKey, List<PartitionHashRecord>> hashConflicts;
+    Map<PartitionKey, List<PartitionHashRecord>> hashConflicts;
 
     /** Moving partitions. */
     @GridToStringInclude
-    private Map<PartitionKey, List<PartitionHashRecord>> movingPartitions;
+    Map<PartitionKey, List<PartitionHashRecord>> movingPartitions;
 
     /** Lost partitions. */
     @GridToStringInclude
-    private Map<PartitionKey, List<PartitionHashRecord>> lostPartitions;
+    Map<PartitionKey, List<PartitionHashRecord>> lostPartitions;
 
     /** Transaction hashes conflicts. */
     @GridToStringInclude
-    private @Nullable List<List<TransactionsHashRecord>> txHashConflicts;
+    @Nullable List<List<TransactionsHashRecord>> txHashConflicts;
 
     /** Partial committed transactions. */
     @GridToStringInclude
-    private @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs;
+    @Nullable Map<ClusterNode, Collection<GridCacheVersion>> partiallyCommittedTxs;
 
     /** Exceptions. */
     @GridToStringInclude
-    private Map<ClusterNode, Exception> exceptions;
+    Map<ClusterNode, Exception> exceptions;
 
     /**
      * Default constructor for Externalizable.
@@ -106,28 +102,6 @@ public class IdleVerifyResult extends IgniteDataTransferObject {
         this.partiallyCommittedTxs = partiallyCommittedTxs;
 
         this.exceptions = exceptions;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, cntrConflicts);
-        U.writeMap(out, hashConflicts);
-        U.writeMap(out, movingPartitions);
-        U.writeMap(out, exceptions);
-        U.writeMap(out, lostPartitions);
-        U.writeCollection(out, txHashConflicts);
-        U.writeMap(out, partiallyCommittedTxs);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        cntrConflicts = U.readMap(in);
-        hashConflicts = U.readMap(in);
-        movingPartitions = U.readMap(in);
-        exceptions = U.readMap(in);
-        lostPartitions = U.readMap(in);
-        txHashConflicts = (List)U.readCollection(in);
-        partiallyCommittedTxs = U.readMap(in);
     }
 
     /**

@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.regex.Pattern;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Argument for {@link CacheConfigurationCollectorTask}.
@@ -34,10 +30,10 @@ public class CacheConfigurationCollectorTaskArg extends IgniteDataTransferObject
     private static final long serialVersionUID = 0L;
 
     /** Collection of cache names. */
-    private Collection<String> cacheNames;
+    Collection<String> cacheNames;
 
     /** Cache name regexp. */
-    private String regex;
+    String regex;
 
     /**
      * Default constructor.
@@ -75,18 +71,6 @@ public class CacheConfigurationCollectorTaskArg extends IgniteDataTransferObject
      */
     public String getRegex() {
         return regex;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, cacheNames);
-        U.writeString(out, regex);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheNames = U.readCollection(in);
-        regex = U.readString(in);
     }
 
     /** {@inheritDoc} */

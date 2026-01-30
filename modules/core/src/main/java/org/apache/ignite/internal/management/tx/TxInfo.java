@@ -48,48 +48,48 @@ public class TxInfo extends IgniteDataTransferObject {
     private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
     /** */
-    private IgniteUuid xid;
+    IgniteUuid xid;
 
     /**
      * Transaction start time.
      */
-    private long startTime;
+    long startTime;
 
     /** */
-    private long duration;
+    long duration;
 
     /** */
-    private TransactionIsolation isolation;
+    TransactionIsolation isolation;
 
     /** */
-    private TransactionConcurrency concurrency;
+    TransactionConcurrency concurrency;
 
     /** */
-    private long timeout;
+    long timeout;
 
     /** */
-    private String lb;
+    String lb;
 
     /** */
-    private Collection<UUID> primaryNodes;
+    Collection<UUID> primaryNodes;
 
     /** */
-    private TransactionState state;
+    TransactionState state;
 
     /** */
-    private int size;
+    int size;
 
     /** */
-    private IgniteUuid nearXid;
+    IgniteUuid nearXid;
 
     /** */
-    private Collection<UUID> masterNodeIds;
+    Collection<UUID> masterNodeIds;
 
     /** */
-    private AffinityTopologyVersion topVer;
+    AffinityTopologyVersion topVer;
 
     /** Tx verbose info. */
-    private TxVerboseInfo txVerboseInfo;
+    TxVerboseInfo txVerboseInfo;
 
     /**
      * Default constructor.

@@ -16,13 +16,9 @@
 */
 package org.apache.ignite.internal.management.tx;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Encapsulates info about transaction key and its lock ownership for --tx --info output.
@@ -32,16 +28,16 @@ public class TxVerboseKey extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Tx key. */
-    private String txKey;
+    String txKey;
 
     /** Lock type. */
-    private TxKeyLockType lockType;
+    TxKeyLockType lockType;
 
     /** Owner version. */
-    private GridCacheVersion ownerVer;
+    GridCacheVersion ownerVer;
 
     /** Is read entry. */
-    private boolean read;
+    boolean read;
 
     /**
      * Default constructor.
@@ -90,23 +86,6 @@ public class TxVerboseKey extends IgniteDataTransferObject {
     public boolean read() {
         return read;
     }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, txKey);
-        U.writeEnum(out, lockType);
-        out.writeObject(ownerVer);
-        out.writeBoolean(read);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        txKey = U.readString(in);
-        lockType = TxKeyLockType.fromOrdinal(in.readByte());
-        ownerVer = (GridCacheVersion)in.readObject();
-        read = in.readBoolean();
-    }
-
 
     /** {@inheritDoc} */
     @Override public String toString() {

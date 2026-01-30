@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.List;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClasses;
 
@@ -36,19 +32,19 @@ public class QueryConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private List<String> sqlFuncClss;
+    List<String> sqlFuncClss;
 
     /** */
-    private long longQryWarnTimeout;
+    long longQryWarnTimeout;
 
     /** */
-    private boolean sqlEscapeAll;
+    boolean sqlEscapeAll;
 
     /** */
-    private List<String> indexedTypes;
+    List<String> indexedTypes;
 
     /** */
-    private String sqlSchema;
+    String sqlSchema;
 
     /**
      * Default constructor.
@@ -103,24 +99,6 @@ public class QueryConfiguration extends IgniteDataTransferObject {
      */
     public String getSqlSchema() {
         return sqlSchema;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, sqlFuncClss);
-        out.writeLong(longQryWarnTimeout);
-        out.writeBoolean(sqlEscapeAll);
-        U.writeCollection(out, indexedTypes);
-        U.writeString(out, sqlSchema);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        sqlFuncClss = U.readList(in);
-        longQryWarnTimeout = in.readLong();
-        sqlEscapeAll = in.readBoolean();
-        indexedTypes = U.readList(in);
-        sqlSchema = U.readString(in);
     }
 
     /** {@inheritDoc} */

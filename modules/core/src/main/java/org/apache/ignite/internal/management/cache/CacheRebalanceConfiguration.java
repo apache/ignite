@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Data transfer object for cache rebalance configuration properties.
@@ -34,25 +30,25 @@ public class CacheRebalanceConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache rebalance mode. */
-    private CacheRebalanceMode mode;
+    CacheRebalanceMode mode;
 
     /** Cache rebalance batch size. */
-    private int batchSize;
+    int batchSize;
 
     /** Rebalance partitioned delay. */
-    private long partitionedDelay;
+    long partitionedDelay;
 
     /** Time in milliseconds to wait between rebalance messages. */
-    private long throttle;
+    long throttle;
 
     /** Rebalance timeout. */
-    private long timeout;
+    long timeout;
 
     /** Rebalance batches prefetch count. */
-    private long batchesPrefetchCnt;
+    long batchesPrefetchCnt;
 
     /** Cache rebalance order. */
-    private int rebalanceOrder;
+    int rebalanceOrder;
 
     /**
      * Default constructor.
@@ -122,28 +118,6 @@ public class CacheRebalanceConfiguration extends IgniteDataTransferObject {
      */
     public int getRebalanceOrder() {
         return rebalanceOrder;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeEnum(out, mode);
-        out.writeInt(batchSize);
-        out.writeLong(partitionedDelay);
-        out.writeLong(throttle);
-        out.writeLong(timeout);
-        out.writeLong(batchesPrefetchCnt);
-        out.writeInt(rebalanceOrder);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        mode = CacheRebalanceMode.fromOrdinal(in.readByte());
-        batchSize = in.readInt();
-        partitionedDelay = in.readLong();
-        throttle = in.readLong();
-        timeout = in.readLong();
-        batchesPrefetchCnt = in.readLong();
-        rebalanceOrder = in.readInt();
     }
 
     /** {@inheritDoc} */

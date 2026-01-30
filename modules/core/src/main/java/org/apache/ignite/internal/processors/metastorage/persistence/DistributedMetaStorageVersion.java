@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.LongFunction;
@@ -157,18 +154,6 @@ final class DistributedMetaStorageVersion extends IgniteDataTransferObject {
      */
     public long hash() {
         return hash;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeLong(id);
-        out.writeLong(hash);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException {
-        id = in.readLong();
-        hash = in.readLong();
     }
 
     /** {@inheritDoc} */

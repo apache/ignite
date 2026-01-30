@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.encryption;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
@@ -27,7 +24,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Multinode cache group encryption task result.
@@ -41,11 +37,11 @@ public class CacheGroupEncryptionTaskResult<T> extends IgniteDataTransferObject 
 
     /** Per node job result. */
     @GridToStringInclude
-    private Map<UUID, T> results;
+    Map<UUID, T> results;
 
     /** Per node execution problems. */
     @GridToStringInclude
-    private Map<UUID, IgniteException> exceptions;
+    Map<UUID, IgniteException> exceptions;
 
     /**
      * @param results Per node job result.
@@ -69,18 +65,6 @@ public class CacheGroupEncryptionTaskResult<T> extends IgniteDataTransferObject 
     /** @return Per node execution problems. */
     public Map<UUID, IgniteException> exceptions() {
         return exceptions == null ? Collections.emptyMap() : exceptions;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, results);
-        U.writeMap(out, exceptions);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        results = U.readMap(in);
-        exceptions = U.readMap(in);
     }
 
     /** {@inheritDoc} */

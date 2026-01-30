@@ -36,7 +36,7 @@ public class CheckIndexInlineSizesResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Index info (index name, inline size) per node. */
-    private Map<UUID, Map<String, Integer>> nodeToIndexes = new HashMap<>();
+    Map<UUID, Map<String, Integer>> nodeToIndexes = new HashMap<>();
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {

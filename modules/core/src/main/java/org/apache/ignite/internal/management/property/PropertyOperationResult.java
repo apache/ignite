@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.management.property;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Result of an operation with property.
@@ -33,7 +29,7 @@ public class PropertyOperationResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Property value. */
-    private String val;
+    String val;
 
     /**
      * Constructor for optimized marshaller.
@@ -47,16 +43,6 @@ public class PropertyOperationResult extends IgniteDataTransferObject {
      */
     public PropertyOperationResult(String val) {
         this.val = val;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        val = U.readString(in);
     }
 
     /**
