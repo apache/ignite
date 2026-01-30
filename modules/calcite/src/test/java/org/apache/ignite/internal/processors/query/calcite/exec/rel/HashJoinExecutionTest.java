@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.calcite.exec.rel;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.function.BiPredicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -92,9 +91,9 @@ public class HashJoinExecutionTest extends AbstractExecutionTest {
 
         Object[][] expected = {
             {1, 1, "Igor"},
-            {1, 1, "Alexey"},
             {2, 2, "Roman"},
             {5, null, "Ivan"},
+            {1, 1, "Alexey"},
         };
 
         checkResults(expected, rows);
@@ -194,32 +193,331 @@ public class HashJoinExecutionTest extends AbstractExecutionTest {
     }
 
     /** */
-    @Test public void testInnerJoinWithPostFiltration() {
-        doTestJoinWithPostFiltration(INNER, new Object[][] {{3, "Alexey", 1, 1, "Core"}});
+    @Test
+    public void testInnerJoinWithPostFiltration() {
+        Object[][] expected = {
+            // No rows for cases 0, 1, 2, 10 - empty left side, no rows for cases, 0, 3, 6, 9 - empty right side.
+            {1, "Roman4", 4, 4, "SQL4"},
+            {1, "Roman5", 5, 5, "SQL5"},
+            {1, "Roman5", 5, 5, "QA5"},
+            {1, "Roman7", 7, 7, "SQL7"},
+            {2, "Ivan7", 7, 7, "SQL7"},
+            {1, "Roman8", 8, 8, "SQL8"},
+            {1, "Roman8", 8, 8, "QA8"},
+            {2, "Ivan8", 8, 8, "SQL8"},
+            {2, "Ivan8", 8, 8, "QA8"},
+        };
+
+        doTestJoinWithPostFiltration(INNER, expected);
+    }
+
+    /** */
+    @Test
+    public void testLeftJoinWithPostFiltration() {
+        Object[][] expected = {
+            // Case 0.
+            {0, "Igor0", 0, null, null},
+
+            // Case 1.
+            {0, "Igor1", 1, null, null},
+
+            // Case 2.
+            {0, "Igor2", 2, null, null},
+
+            // Case 3.
+            {0, "Igor3", 3, null, null},
+            {1, "Roman3", 3, null, null},
+
+            // Case 4.
+            {0, "Igor4", 4, null, null},
+            {1, "Roman4", 4, 4, "SQL4"},
+
+            // Case 5.
+            {0, "Igor5", 5, null, null},
+            {1, "Roman5", 5, 5, "SQL5"},
+            {1, "Roman5", 5, 5, "QA5"},
+
+            // Case 6.
+            {0, "Igor6", 6, null, null},
+            {1, "Roman6", 6, null, null},
+            {2, "Ivan6", 6, null, null},
+
+            // Case 7.
+            {0, "Igor7", 7, null, null},
+            {1, "Roman7", 7, 7, "SQL7"},
+            {2, "Ivan7", 7, 7, "SQL7"},
+
+            // Case 8.
+            {0, "Igor8", 8, null, null},
+            {1, "Roman8", 8, 8, "SQL8"},
+            {1, "Roman8", 8, 8, "QA8"},
+            {2, "Ivan8", 8, 8, "SQL8"},
+            {2, "Ivan8", 8, 8, "QA8"},
+
+            // Case 9.
+            {0, "Igor9", 9, null, null},
+            {1, "Roman9", 9, null, null},
+            {2, "Ivan9", 9, null, null},
+        };
+
+        doTestJoinWithPostFiltration(LEFT, expected);
+    }
+
+    /** */
+    @Test
+    public void testRightJoinWithPostFiltration() {
+        Object[][] expected = {
+            // Case 0.
+            {null, null, null, 0, "Core0"},
+
+            // Case 1.
+            {null, null, null, 1, "Core1"},
+            {null, null, null, 1, "SQL1"},
+
+            // Case 2.
+            {null, null, null, 2, "Core2"},
+            {null, null, null, 2, "SQL2"},
+            {null, null, null, 2, "QA2"},
+
+            // Case 3.
+            {null, null, null, 3, "Core3"},
+
+            // Case 4.
+            {1, "Roman4", 4, 4, "SQL4"},
+            {null, null, null, 4, "Core4"},
+
+            // Case 5.
+            {1, "Roman5", 5, 5, "SQL5"},
+            {1, "Roman5", 5, 5, "QA5"},
+            {null, null, null, 5, "Core5"},
+
+            // Case 6.
+            {null, null, null, 6, "Core6"},
+
+            // Case 7.
+            {1, "Roman7", 7, 7, "SQL7"},
+            {2, "Ivan7", 7, 7, "SQL7"},
+            {null, null, null, 7, "Core7"},
+
+            // Case 8.
+            {1, "Roman8", 8, 8, "SQL8"},
+            {1, "Roman8", 8, 8, "QA8"},
+            {2, "Ivan8", 8, 8, "SQL8"},
+            {2, "Ivan8", 8, 8, "QA8"},
+            {null, null, null, 8, "Core8"},
+
+            // Case 10.
+            {null, null, null, 10, "Core10"},
+            {null, null, null, 10, "SQL10"},
+            {null, null, null, 10, "QA10"},
+        };
+
+        doTestJoinWithPostFiltration(RIGHT, expected);
+    }
+
+    /** */
+    @Test
+    public void testFullJoinWithPostFiltration() {
+        Object[][] expected = {
+            // Case 0.
+            {0, "Igor0", 0, null, null},
+            {null, null, null, 0, "Core0"},
+
+            // Case 1.
+            {0, "Igor1", 1, null, null},
+            {null, null, null, 1, "Core1"},
+            {null, null, null, 1, "SQL1"},
+
+            // Case 2.
+            {0, "Igor2", 2, null, null},
+            {null, null, null, 2, "Core2"},
+            {null, null, null, 2, "SQL2"},
+            {null, null, null, 2, "QA2"},
+
+            // Case 3.
+            {0, "Igor3", 3, null, null},
+            {1, "Roman3", 3, null, null},
+            {null, null, null, 3, "Core3"},
+
+            // Case 4.
+            {0, "Igor4", 4, null, null},
+            {1, "Roman4", 4, 4, "SQL4"},
+            {null, null, null, 4, "Core4"},
+
+            // Case 5.
+            {0, "Igor5", 5, null, null},
+            {1, "Roman5", 5, 5, "SQL5"},
+            {1, "Roman5", 5, 5, "QA5"},
+            {null, null, null, 5, "Core5"},
+
+            // Case 6.
+            {0, "Igor6", 6, null, null},
+            {1, "Roman6", 6, null, null},
+            {2, "Ivan6", 6, null, null},
+            {null, null, null, 6, "Core6"},
+
+            // Case 7.
+            {0, "Igor7", 7, null, null},
+            {1, "Roman7", 7, 7, "SQL7"},
+            {2, "Ivan7", 7, 7, "SQL7"},
+            {null, null, null, 7, "Core7"},
+
+            // Case 8.
+            {0, "Igor8", 8, null, null},
+            {1, "Roman8", 8, 8, "SQL8"},
+            {1, "Roman8", 8, 8, "QA8"},
+            {2, "Ivan8", 8, 8, "SQL8"},
+            {2, "Ivan8", 8, 8, "QA8"},
+            {null, null, null, 8, "Core8"},
+
+            // Case 9.
+            {0, "Igor9", 9, null, null},
+            {1, "Roman9", 9, null, null},
+            {2, "Ivan9", 9, null, null},
+
+            // Case 10.
+            {null, null, null, 10, "Core10"},
+            {null, null, null, 10, "SQL10"},
+            {null, null, null, 10, "QA10"},
+        };
+
+        doTestJoinWithPostFiltration(FULL, expected);
     }
 
     /** */
     @Test
     public void testSemiJoinWithPostFiltration() {
-        doTestJoinWithPostFiltration(SEMI, new Object[][] {{3, "Alexey", 1}});
+        Object[][] expected = {
+            // No rows for cases 0, 1, 2, 10 - empty left side, no rows for cases, 0, 3, 6, 9 - empty right side.
+            {1, "Roman4", 4},
+            {1, "Roman5", 5},
+            {1, "Roman7", 7},
+            {2, "Ivan7", 7},
+            {1, "Roman8", 8},
+            {2, "Ivan8", 8},
+        };
+
+        doTestJoinWithPostFiltration(SEMI, expected);
+    }
+
+    /** */
+    @Test
+    public void testAntiJoinWithPostFiltration() {
+        Object[][] expected = {
+            {0, "Igor0", 0},
+            {0, "Igor1", 1},
+            {0, "Igor2", 2},
+            {0, "Igor3", 3},
+            {1, "Roman3", 3},
+            {0, "Igor4", 4},
+            {0, "Igor5", 5},
+            {0, "Igor6", 6},
+            {1, "Roman6", 6},
+            {2, "Ivan6", 6},
+            {0, "Igor7", 7},
+            {0, "Igor8", 8},
+            {0, "Igor9", 9},
+            {1, "Roman9", 9},
+            {2, "Ivan9", 9},
+        };
+
+        doTestJoinWithPostFiltration(ANTI, expected);
     }
 
     /** */
     private void doTestJoinWithPostFiltration(JoinRelType joinType, Object[][] expected) {
         Object[][] persons = {
-            new Object[] {0, "Igor", 1},
-            new Object[] {1, "Roman", 2},
-            new Object[] {2, "Ivan", 5},
-            new Object[] {3, "Alexey", 1}
+            // Case 0: 1 rows on left (-1 filtered) to 1 rows on right (-1 filtered).
+            {0, "Igor0", 0},
+
+            // Case 1: 1 rows on left (-1 filtered) to 2 rows on right (-1 filtered).
+            {0, "Igor1", 1},
+
+            // Case 2: 1 rows on left (-1 filtered) to 3 rows on right (-1 filtered).
+            {0, "Igor2", 2},
+
+            // Case 3: 2 rows on left (-1 filtered) to 1 rows on right (-1 filtered).
+            {0, "Igor3", 3},
+            {1, "Roman3", 3},
+
+            // Case 4: 2 rows on left (-1 filtered) to 2 rows on right (-1 filtered).
+            {0, "Igor4", 4},
+            {1, "Roman4", 4},
+
+            // Case 5: 2 rows on left (-1 filtered) to 3 rows on right (-1 filtered).
+            {0, "Igor5", 5},
+            {1, "Roman5", 5},
+
+            // Case 6: 3 rows on left (-1 filtered) to 1 rows on right (-1 filtered).
+            {0, "Igor6", 6},
+            {1, "Roman6", 6},
+            {2, "Ivan6", 6},
+
+            // Case 7: 3 rows on left (-1 filtered) to 2 rows on right (-1 filtered).
+            {0, "Igor7", 7},
+            {1, "Roman7", 7},
+            {2, "Ivan7", 7},
+
+            // Case 8: 3 rows on left (-1 filtered) to 3 rows on right (-1 filtered).
+            {0, "Igor8", 8},
+            {1, "Roman8", 8},
+            {2, "Ivan8", 8},
+
+            // Case 9: 3 rows on left (-1 filtered) to 0 rows on right.
+            {0, "Igor9", 9},
+            {1, "Roman9", 9},
+            {2, "Ivan9", 9},
+
+            // Case 10: 0 rows on left to 3 rows on right (-1 filtered).
         };
 
         Object[][] deps = {
-            new Object[] {1, "Core"},
-            new Object[] {2, "SQL"},
-            new Object[] {3, "QA"}
+            // Case 0: 1 rows on left (-1 filtered) to 1 rows on right (-1 filtered).
+            {0, "Core0"},
+
+            // Case 1: 1 rows on left (-1 filtered) to 2 rows on right (-1 filtered).
+            {1, "Core1"},
+            {1, "SQL1"},
+
+            // Case 2: 1 rows on left (-1 filtered) to 3 rows on right (-1 filtered).
+            {2, "Core2"},
+            {2, "SQL2"},
+            {2, "QA2"},
+
+            // Case 3: 2 rows on left (-1 filtered) to 1 rows on right (-1 filtered).
+            {3, "Core3"},
+
+            // Case 4: 2 rows on left (-1 filtered) to 2 rows on right (-1 filtered).
+            {4, "Core4"},
+            {4, "SQL4"},
+
+            // Case 5: 2 rows on left (-1 filtered) to 3 rows on right (-1 filtered).
+            {5, "Core5"},
+            {5, "SQL5"},
+            {5, "QA5"},
+
+            // Case 6: 3 rows on left (-1 filtered) to 1 rows on right (-1 filtered).
+            {6, "Core6"},
+
+            // Case 7: 3 rows on left (-1 filtered) to 2 rows on right (-1 filtered).
+            {7, "Core7"},
+            {7, "SQL7"},
+
+            // Case 8: 3 rows on left (-1 filtered) to 3 rows on right (-1 filtered).
+            {8, "Core8"},
+            {8, "SQL8"},
+            {8, "QA8"},
+
+            // Case 9: 3 rows on left (-1 filtered) to 0 rows on right.
+
+            // Case 10: 0 rows on left to 3 rows on right (-1 filtered).
+            {10, "Core10"},
+            {10, "SQL10"},
+            {10, "QA10"},
         };
 
-        BiPredicate<Object[], Object[]> condition = (l, r) -> ((CharSequence)r[1]).length() > 3 && ((CharSequence)l[1]).length() > 4;
+        BiPredicate<Object[], Object[]> condition =
+            (l, r) -> !((String)l[1]).startsWith("Igor") && !((String)r[1]).startsWith("Core");
 
         validate(joinType, Stream.of(persons)::iterator, Stream.of(deps)::iterator, expected, -1, condition);
     }
@@ -395,7 +693,8 @@ public class HashJoinExecutionTest extends AbstractExecutionTest {
     private static void checkResults(Object[][] expected, ArrayList<Object[]> actual) {
         assertEquals(expected.length, actual.size());
 
-        actual.sort(Comparator.comparing(r -> (int)r[0]));
+        actual.sort(F::compareArrays);
+        Arrays.sort(expected, F::compareArrays);
 
         int length = expected.length;
 
@@ -403,8 +702,7 @@ public class HashJoinExecutionTest extends AbstractExecutionTest {
             Object[] exp = expected[i];
             Object[] act = actual.get(i);
 
-            assertEquals(exp.length, act.length);
-            assertEquals(0, F.compareArrays(exp, act));
+            assertEqualsArraysAware(exp, act);
         }
     }
 }
