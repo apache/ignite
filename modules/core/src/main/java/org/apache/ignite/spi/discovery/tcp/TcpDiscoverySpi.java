@@ -1580,7 +1580,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * Connects to remote address sending {@code U.IGNITE_HEADER} when connection is established.
+     * Connects to remote address sending {@code U.IGNITE_HEADER_V2} when connection is established.
      *
      * @param sock Socket bound to a local host address.
      * @param remAddr Remote address.
@@ -1604,7 +1604,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             sock.connect(resolved, (int)timeoutHelper.nextTimeoutChunk(sockTimeout));
 
-            writeToSocket(sock, null, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
+            writeToSocket(sock, null, U.IGNITE_HEADER_V2, timeoutHelper.nextTimeoutChunk(sockTimeout));
 
             return sock;
         }
