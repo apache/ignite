@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests for {@link P2PClassLoadingIssues}.

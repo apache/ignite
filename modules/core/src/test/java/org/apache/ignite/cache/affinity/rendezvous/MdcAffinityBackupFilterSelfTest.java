@@ -38,10 +38,16 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Verifies behaviour of {@link MdcAffinityBackupFilter} - guarantees that each DC has at least one copy of every partition.
@@ -236,7 +242,7 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-26967")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-26967")
     public void testAffinityFilterConfigurationValidation() throws Exception {
         dcIds = new String[] {"DC_0", "DC_1"};
         backups = 3;
@@ -336,10 +342,8 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
 
         Map<Integer, Set<UUID>> newDistribution = affinityForPartitions(cache, dc1NodesFilter);
 
-        assertEquals(
-            String.format("Affinity distribution changed after server node %d was stopped", srvIdx),
-            oldDistribution,
-            newDistribution);
+        assertEquals(oldDistribution, newDistribution,
+            String.format("Affinity distribution changed after server node %d was stopped", srvIdx));
 
         return newDistribution;
     }
@@ -426,9 +430,8 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
     /** */
     private void verifyCopyInEachDcGuarantee(int partId, int expectedCopiesPerNode, int[] partCopiesPerDc) {
         for (int dcIdx = 0; dcIdx < dcIds.length; dcIdx++) {
-            assertEquals(String.format("Unexpected number of copies of partition %d in data center %s", partId, dcIds[dcIdx]),
-                expectedCopiesPerNode,
-                partCopiesPerDc[dcIdx]);
+            assertEquals(expectedCopiesPerNode, partCopiesPerDc[dcIdx],
+                String.format("Unexpected number of copies of partition %d in data center %s", partId, dcIds[dcIdx]));
         }
     }
 
@@ -445,14 +448,13 @@ public class MdcAffinityBackupFilterSelfTest extends GridCommonAbstractTest {
             for (int copiesOnNode : numOfCopiesPerNode) {
                 double deviation = (Math.abs(copiesOnNode - idealCopiesPerNode) / idealCopiesPerNode);
 
-                assertTrue(
+                assertTrue(deviation < 0.1,
                     String.format("Too big deviation from ideal distribution: partitions assigned = %d, " +
-                            "ideal partitions assigned = %d, deviation = %d",
-                        copiesOnNode,
-                        (int)idealCopiesPerNode,
-                        (int)(deviation * 100)
-                    ),
-                    deviation < 0.1);
+                                    "ideal partitions assigned = %d, deviation = %d",
+                            copiesOnNode,
+                            (int)idealCopiesPerNode,
+                            (int)(deviation * 100)
+                    ));
             }
         }
     }

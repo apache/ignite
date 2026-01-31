@@ -100,7 +100,7 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -121,6 +121,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Full API cache test.
@@ -258,7 +260,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      *
      * @throws Exception if something goes bad.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-4380")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-4380")
     @Test
     public void testInvokeAllMultithreaded() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();

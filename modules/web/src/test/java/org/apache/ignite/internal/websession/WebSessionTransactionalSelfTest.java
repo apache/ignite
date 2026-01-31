@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.websession;
 
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -30,21 +30,21 @@ public class WebSessionTransactionalSelfTest extends WebSessionSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-810")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-810")
     @Test
     @Override public void testRestarts() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-810")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-810")
     @Test
     @Override public void testInvalidatedSession() {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-810")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-810")
     @Test
     @Override public void testClientReconnectRequest() {
         // No-op.
