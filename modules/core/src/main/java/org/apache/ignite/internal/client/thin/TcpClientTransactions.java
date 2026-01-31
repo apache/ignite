@@ -99,7 +99,7 @@ class TcpClientTransactions implements ClientTransactions {
                         "protocol version %s, required version %s", protocolCtx.version(), TRANSACTIONS.verIntroduced()));
                 }
 
-                try (BinaryWriterEx writer = BinaryUtils.writer(marsh.context(), req.out(), null)) {
+                try (BinaryWriterEx writer = BinaryUtils.writerWithoutSchemaHolder(marsh.context(), req.out())) {
                     writer.writeByte((byte)(concurrency == null ? txCfg.getDefaultTxConcurrency() : concurrency).ordinal());
                     writer.writeByte((byte)(isolation == null ? txCfg.getDefaultTxIsolation() : isolation).ordinal());
                     writer.writeLong(timeout == null ? txCfg.getDefaultTxTimeout() : timeout);

@@ -272,7 +272,8 @@ public class JdbcThinTcpIo {
 
         marsh.setContext(new MarshallerContextImpl(null, null));
 
-        BinaryWriterEx writer = BinaryUtils.writer(U.binaryContext(marsh), BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE), null);
+        BinaryWriterEx writer =
+            BinaryUtils.writerWithoutSchemaHolder(U.binaryContext(marsh), BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE));
 
         writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
 
@@ -432,8 +433,7 @@ public class JdbcThinTcpIo {
      * @throws SQLException On connection reject.
      */
     private HandshakeResult handshake_2_1_0() throws IOException, SQLException {
-        BinaryWriterEx writer = BinaryUtils.writer(null, BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE),
-            null);
+        BinaryWriterEx writer = BinaryUtils.writerWithoutSchemaHolder(null, BinaryStreams.outputStream(HANDSHAKE_MSG_SIZE));
 
         writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
 
