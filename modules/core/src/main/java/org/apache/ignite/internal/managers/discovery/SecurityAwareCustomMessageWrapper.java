@@ -21,18 +21,27 @@ import java.util.UUID;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
 
-/** Extends {@link CustomMessageWrapper} with ID of security subject that initiated the current message. */
-public class SecurityAwareCustomMessageWrapper extends CustomMessageWrapper {
+/** Custom message wrapper with ID of security subject that initiated the current message. */
+public class SecurityAwareCustomMessageWrapper extends DiscoverySpiCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Security subject ID. */
-    private final UUID secSubjId;
+    private UUID secSubjId;
+
+    /** Original message. */
+    private DiscoveryCustomMessage delegate;
+
+    /**
+     * Default constructor.
+     */
+    public SecurityAwareCustomMessageWrapper() {
+        // No-op.
+    }
 
     /** */
     public SecurityAwareCustomMessageWrapper(DiscoveryCustomMessage delegate, UUID secSubjId) {
-        super(delegate);
-
+        this.delegate = delegate;
         this.secSubjId = secSubjId;
     }
 
@@ -42,8 +51,25 @@ public class SecurityAwareCustomMessageWrapper extends CustomMessageWrapper {
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable DiscoverySpiCustomMessage ackMessage() {
-        DiscoveryCustomMessage ack = delegate().ackMessage();
+    @Override public boolean isMutable() {
+        return delegate.isMutable();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean stopProcess() {
+        return delegate.stopProcess();
+    }
+
+    /**
+     * @return Delegate.
+     */
+    public DiscoveryCustomMessage delegate() {
+        return delegate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public @Nullable DiscoveryCustomMessage ackMessage() {
+        DiscoveryCustomMessage ack = delegate.ackMessage();
 
         return ack == null ? null : new SecurityAwareCustomMessageWrapper(ack, secSubjId);
     }

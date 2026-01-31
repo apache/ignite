@@ -78,8 +78,9 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
+import org.apache.ignite.internal.managers.discovery.SecurityAwareCustomMessageWrapper;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedBooleanProperty;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
@@ -121,7 +122,6 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryNotification;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
 import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
@@ -1018,22 +1018,25 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public void sendCustomEvent(DiscoverySpiCustomMessage evt) {
+    @Override public void sendCustomEvent(DiscoveryCustomMessage evt) {
         try {
             TcpDiscoveryCustomEventMessage msg;
 
-            if (((CustomMessageWrapper)evt).delegate() instanceof DiscoveryServerOnlyCustomMessage)
-                msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt,
-                    U.marshal(spi.marshaller(), evt));
+            DiscoveryCustomMessage customMsg = evt instanceof SecurityAwareCustomMessageWrapper ?
+                ((SecurityAwareCustomMessageWrapper)evt).delegate() : evt;
+
+            if (customMsg instanceof DiscoveryServerOnlyCustomMessage)
+                msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt);
             else
-                msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt,
-                    U.marshal(spi.marshaller(), evt));
+                msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt);
+
+            msg.prepareMarshal(spi.marshaller());
 
             Span rootSpan = tracing.create(TraceableMessagesTable.traceName(msg.getClass()))
                 .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.ID), () -> getLocalNodeId().toString())
                 .addTag(SpanTags.tag(SpanTags.EVENT_NODE, SpanTags.CONSISTENT_ID),
                     () -> locNode.consistentId().toString())
-                .addTag(SpanTags.MESSAGE_CLASS, () -> ((CustomMessageWrapper)evt).delegate().getClass().getSimpleName())
+                .addTag(SpanTags.MESSAGE_CLASS, () -> customMsg.getClass().getSimpleName())
                 .addLog(() -> "Created");
 
             // This root span will be parent both from local and remote nodes.
@@ -6064,30 +6067,32 @@ class ServerImpl extends TcpDiscoveryImpl {
                             processCustomMessage(msg, waitForNotification);
                         }
                     }
-
-                    msg.message(null, msg.messageBytes());
                 }
                 else {
                     addMessage(new TcpDiscoveryDiscardMessage(getLocalNodeId(), msg.id(), true));
 
-                    DiscoverySpiCustomMessage msgObj = null;
+                    DiscoveryCustomMessage msgObj = null;
 
                     try {
-                        msgObj = msg.message(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+                        msg.finishUnmarhal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+
+                        msgObj = msg.message();
                     }
                     catch (Throwable e) {
                         U.error(log, "Failed to unmarshal discovery custom message.", e);
                     }
 
                     if (msgObj != null) {
-                        DiscoverySpiCustomMessage nextMsg = msgObj.ackMessage();
+                        DiscoveryCustomMessage nextMsg = msgObj.ackMessage();
 
                         if (nextMsg != null) {
                             try {
                                 TcpDiscoveryCustomEventMessage ackMsg = new TcpDiscoveryCustomEventMessage(
-                                    getLocalNodeId(), nextMsg, U.marshal(spi.marshaller(), nextMsg));
+                                    getLocalNodeId(), nextMsg);
 
                                 ackMsg.topologyVersion(msg.topologyVersion());
+
+                                ackMsg.prepareMarshal(spi.marshaller());
 
                                 processCustomMessage(ackMsg, waitForNotification);
                             }
@@ -6118,9 +6123,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     notifyDiscoveryListener(msg, waitForNotification);
                 }
-
-                // Clear msg field to prevent possible memory leak.
-                msg.message(null, msg.messageBytes());
 
                 if (sendMessageToRemotes(msg))
                     sendMessageAcrossRing(msg);
@@ -6258,10 +6260,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (node == null)
                     return;
 
-                DiscoverySpiCustomMessage msgObj;
+                DiscoveryCustomMessage msgObj;
 
                 try {
-                    msgObj = msg.message(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+                    msg.finishUnmarhal(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+
+                    msgObj = msg.message();
                 }
                 catch (Throwable t) {
                     throw new IgniteException("Failed to unmarshal discovery custom message: " + msg, t);
@@ -6293,7 +6297,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (msgObj.isMutable()) {
                     try {
-                        msg.message(msgObj, U.marshal(spi.marshaller(), msgObj));
+                        msg.prepareMarshal(spi.marshaller());
                     }
                     catch (Throwable t) {
                         throw new IgniteException("Failed to marshal mutable discovery message: " + msgObj, t);

@@ -65,7 +65,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
@@ -81,7 +80,6 @@ import org.apache.ignite.internal.processors.query.running.GridRunningQueryInfo;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -195,26 +193,24 @@ public class KillQueryTest extends GridCommonAbstractTest {
             clientBlocker = commSpi;
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi() {
-            @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-                if (msg instanceof CustomMessageWrapper) {
-                    DiscoveryCustomMessage delegate = ((CustomMessageWrapper)msg).delegate();
+            @Override public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteException {
+                DiscoveryCustomMessage customMsg = GridTestUtils.unwrap(msg);
 
-                    if (delegate instanceof DynamicCacheChangeBatch) {
-                        try {
-                            awaitTimeout();
-                        }
-                        catch (Exception e) {
-                            log.error(e.getMessage(), e);
-                        }
-
+                if (customMsg instanceof DynamicCacheChangeBatch) {
+                    try {
+                        awaitTimeout();
                     }
-                    else if (delegate instanceof SchemaProposeDiscoveryMessage) {
-                        try {
-                            awaitTimeout();
-                        }
-                        catch (Exception e) {
-                            log.error(e.getMessage(), e);
-                        }
+                    catch (Exception e) {
+                        log.error(e.getMessage(), e);
+                    }
+
+                }
+                else if (customMsg instanceof SchemaProposeDiscoveryMessage) {
+                    try {
+                        awaitTimeout();
+                    }
+                    catch (Exception e) {
+                        log.error(e.getMessage(), e);
                     }
                 }
 

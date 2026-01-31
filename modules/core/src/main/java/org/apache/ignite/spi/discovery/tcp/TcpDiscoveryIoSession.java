@@ -79,19 +79,19 @@ public class TcpDiscoveryIoSession {
     /** */
     private final Socket sock;
 
-    /** */
+    /** Message writer. Access should be thread-safe. */
     private final DirectMessageWriter msgWriter;
 
-    /** */
+    /** Message reader. Access should be thread-safe. */
     private final DirectMessageReader msgReader;
 
-    /** Buffered socket output stream. */
+    /** Buffered socket output stream. Access should be thread-safe. */
     private final OutputStream out;
 
-    /** Buffered socket input stream. */
+    /** Buffered socket input stream. Access should be thread-safe. */
     private final CompositeInputStream in;
 
-    /** Intermediate buffer for serializing discovery messages. */
+    /** Intermediate buffer for serializing discovery messages. Access should be thread-safe. */
     private final ByteBuffer msgBuf;
 
     /**
@@ -130,7 +130,7 @@ public class TcpDiscoveryIoSession {
      * @param msg Message to send to the remote node.
      * @throws IgniteCheckedException If serialization fails.
      */
-    void writeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
+    synchronized void writeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
         if (!(msg instanceof Message)) {
             out.write(JAVA_SERIALIZATION);
 
@@ -246,7 +246,7 @@ public class TcpDiscoveryIoSession {
      * @throws IgniteCheckedException If serialization fails.
      * @throws IOException If serialization fails.
      */
-    byte[] serializeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
+    synchronized byte[] serializeMessage(TcpDiscoveryAbstractMessage msg) throws IgniteCheckedException, IOException {
         if (!(msg instanceof Message))
             return U.marshal(spi.marshaller(), msg);
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
@@ -24,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Zk Force Node Fail Message.
  */
-public class ZkForceNodeFailMessage implements DiscoverySpiCustomMessage, ZkInternalMessage {
+public class ZkForceNodeFailMessage extends DiscoverySpiCustomMessage implements ZkInternalMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,7 +45,7 @@ public class ZkForceNodeFailMessage implements DiscoverySpiCustomMessage, ZkInte
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoverySpiCustomMessage ackMessage() {
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
     }
 

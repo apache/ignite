@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
+import org.apache.ignite.internal.codegen.CacheStatisticsModeChangeMessageSerializer;
 import org.apache.ignite.internal.codegen.InetAddressMessageSerializer;
 import org.apache.ignite.internal.codegen.InetSocketAddressMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryAuthFailedMessageSerializer;
@@ -28,6 +29,7 @@ import org.apache.ignite.internal.codegen.TcpDiscoveryClientNodesMetricsMessageS
 import org.apache.ignite.internal.codegen.TcpDiscoveryClientPingRequestSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryClientPingResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryConnectionCheckMessageSerializer;
+import org.apache.ignite.internal.codegen.TcpDiscoveryCustomEventMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryDiscardMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryDuplicateIdMessageSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryHandshakeRequestSerializer;
@@ -40,6 +42,8 @@ import org.apache.ignite.internal.codegen.TcpDiscoveryNodeMetricsMessageSerializ
 import org.apache.ignite.internal.codegen.TcpDiscoveryPingRequestSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryPingResponseSerializer;
 import org.apache.ignite.internal.codegen.TcpDiscoveryRingLatencyCheckMessageSerializer;
+import org.apache.ignite.internal.codegen.TcpDiscoveryServerOnlyCustomEventMessageSerializer;
+import org.apache.ignite.internal.processors.cache.CacheStatisticsModeChangeMessage;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageFactoryProvider;
 import org.apache.ignite.spi.discovery.tcp.messages.InetAddressMessage;
@@ -53,6 +57,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientNodesMetri
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryClientPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDiscardMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryDuplicateIdMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRequest;
@@ -65,6 +70,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeMetricsMessa
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessage;
 
 /** Message factory for discovery messages. */
 public class DiscoveryMessageFactory implements MessageFactoryProvider {
@@ -78,6 +84,7 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)-101, InetSocketAddressMessage::new, new InetSocketAddressMessageSerializer());
         factory.register((short)-100, InetAddressMessage::new, new InetAddressMessageSerializer());
 
+        // TcpDiscoveryAbstractMessage
         factory.register((short)0, TcpDiscoveryCheckFailedMessage::new, new TcpDiscoveryCheckFailedMessageSerializer());
         factory.register((short)1, TcpDiscoveryPingRequest::new, new TcpDiscoveryPingRequestSerializer());
         factory.register((short)2, TcpDiscoveryPingResponse::new, new TcpDiscoveryPingResponseSerializer());
@@ -95,5 +102,11 @@ public class DiscoveryMessageFactory implements MessageFactoryProvider {
         factory.register((short)14, TcpDiscoveryMetricsUpdateMessage::new, new TcpDiscoveryMetricsUpdateMessageSerializer());
         factory.register((short)15, TcpDiscoveryClientAckResponse::new, new TcpDiscoveryClientAckResponseSerializer());
         factory.register((short)16, TcpDiscoveryNodeLeftMessage::new, new TcpDiscoveryNodeLeftMessageSerializer());
+        factory.register((short)17, TcpDiscoveryCustomEventMessage::new, new TcpDiscoveryCustomEventMessageSerializer());
+        factory.register((short)18, TcpDiscoveryServerOnlyCustomEventMessage::new,
+            new TcpDiscoveryServerOnlyCustomEventMessageSerializer());
+
+        // DiscoveryCustomMessage
+        factory.register((short)500, CacheStatisticsModeChangeMessage::new, new CacheStatisticsModeChangeMessageSerializer());
     }
 }

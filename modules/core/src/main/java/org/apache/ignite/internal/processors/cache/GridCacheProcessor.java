@@ -5221,7 +5221,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (globalCaches.isEmpty())
             return;
 
-        CacheStatisticsModeChangeMessage msg = new CacheStatisticsModeChangeMessage(UUID.randomUUID(), globalCaches, enabled);
+        CacheStatisticsModeChangeMessage msg = new CacheStatisticsModeChangeMessage(IgniteUuid.randomUuid(),
+            UUID.randomUUID(), globalCaches, enabled);
 
         EnableStatisticsFuture fut = new EnableStatisticsFuture(msg.requestId());
 

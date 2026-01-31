@@ -17,44 +17,60 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.IncompleteDeserializationException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Wrapped for custom message.
+ * Wrapper for custom message.
  */
 @TcpDiscoveryRedirectToClient
 @TcpDiscoveryEnsureDelivery
-public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceableMessage {
+public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceableMessage implements Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private transient volatile DiscoverySpiCustomMessage msg;
+    /** Original custom message. */
+    private volatile DiscoveryCustomMessage msg;
 
-    /** */
-    private byte[] msgBytes;
+    /**
+     * {@link Message} representation of original message.
+     */
+     //TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
+    @Order(value = 6, method = "serializedMessage")
+    private volatile @Nullable Message serMsg;
+
+    /**
+     * Serialized message bytes.
+     */
+     //TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
+    @Order(value = 7, method = "messageBytes")
+    private volatile @Nullable byte[] msgBytes;
+
+    /**
+     * Default constructor.
+     */
+    public TcpDiscoveryCustomEventMessage() {
+        //No-op.
+    }
 
     /**
      * @param creatorNodeId Creator node id.
      * @param msg Message.
-     * @param msgBytes Serialized message.
      */
-    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, @Nullable DiscoverySpiCustomMessage msg,
-        @NotNull byte[] msgBytes) {
+    public TcpDiscoveryCustomEventMessage(UUID creatorNodeId, DiscoveryCustomMessage msg) {
         super(creatorNodeId);
 
         this.msg = msg;
-        this.msgBytes = msgBytes;
     }
 
     /**
@@ -64,7 +80,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     public TcpDiscoveryCustomEventMessage(TcpDiscoveryCustomEventMessage msg) {
         super(msg);
 
-        this.msgBytes = msg.msgBytes;
+        msgBytes = msg.msgBytes;
         this.msg = msg.msg;
     }
 
@@ -73,47 +89,88 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
      */
     public void clearMessage() {
         msg = null;
+        serMsg = null;
     }
 
     /**
-     * @return Serialized message.
+     * @return Serialized message bytes.
      */
     public byte[] messageBytes() {
         return msgBytes;
     }
 
     /**
-     * @param msg Message.
-     * @param msgBytes Serialized message.
+     * @param msgBytes Serialized message bytes.
      */
-    public void message(@Nullable DiscoverySpiCustomMessage msg, @NotNull byte[] msgBytes) {
-        this.msg = msg;
+    public void messageBytes(@Nullable byte[] msgBytes) {
         this.msgBytes = msgBytes;
     }
 
     /**
-     * @param marsh Marshaller.
-     * @param ldr Classloader.
-     * @return Deserialized message,
-     * @throws java.lang.Throwable if unmarshal failed.
+     * @return {@link Message} representation of original message.
      */
-    @Nullable public DiscoverySpiCustomMessage message(@NotNull Marshaller marsh, ClassLoader ldr) throws Throwable {
-        if (msg == null) {
+    public @Nullable Message serializedMessage() {
+        return serMsg;
+    }
+
+    /**
+     * @param serMsg {@link Message} representation of original message.
+     */
+    public void serializedMessage(@Nullable Message serMsg) {
+        this.serMsg = serMsg;
+    }
+
+    /**
+     * @return Original message.
+     */
+    public DiscoveryCustomMessage message() {
+        return msg;
+    }
+
+    /**
+     * Prepare message for serialization.
+     *
+     * @param marsh Marshaller.
+     */
+    //TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
+    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
+        if (msg instanceof Message)
+            serMsg = (Message)msg;
+        else {
+            assert msgBytes == null || msg.isMutable() : "Message bytes are not null for immutable message: bytes=" +
+                Arrays.toString(msgBytes) + "]";
+
+            msgBytes = U.marshal(marsh, msg);
+        }
+    }
+
+    /**
+     * Finish deserialization.
+     *
+     * @param marsh Marshaller.
+     * @param ldr Class loader.
+     */
+    //TODO: Should be removed in https://issues.apache.org/jira/browse/IGNITE-27627
+    public void finishUnmarhal(Marshaller marsh, ClassLoader ldr) throws IgniteCheckedException {
+        if (msg != null)
+            return;
+
+        if (serMsg != null)
+            msg = (DiscoveryCustomMessage)serMsg;
+        else {
             try {
                 msg = U.unmarshal(marsh, msgBytes, ldr);
             }
             catch (IgniteCheckedException e) {
                 // Try to resurrect a message in a case of deserialization failure
                 if (e.getCause() instanceof IncompleteDeserializationException)
-                    return new CustomMessageWrapper(((IncompleteDeserializationException)e.getCause()).message());
+                    msg = ((IncompleteDeserializationException)e.getCause()).message();
 
                 throw e;
             }
-
-            assert msg != null;
         }
 
-        return msg;
+        assert msg != null;
     }
 
     /** {@inheritDoc} */
@@ -126,5 +183,10 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryCustomEventMessage.class, this, "super", super.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return 17;
     }
 }
