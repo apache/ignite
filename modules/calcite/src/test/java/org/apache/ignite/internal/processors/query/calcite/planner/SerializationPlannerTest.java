@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
+import java.util.List;
+import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.sql.SqlKind;
+import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteScalarFunction;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
@@ -89,5 +92,23 @@ public class SerializationPlannerTest extends AbstractPlannerTest {
                 )
             )
         );
+    }
+
+    /** */
+    @Test
+    public void testUdfWithSchemaSerialization() throws Exception {
+        IgniteSchema publicSchema = createSchema(createTable("ORDERS", single(), "ID", Integer.class));
+        IgniteSchema funcSchema = new IgniteSchema("FUNC");
+
+        funcSchema.addFunction("ECHO", IgniteScalarFunction.create(
+            Types.lookupMethod(SerializationPlannerTest.class, "echo", int.class)));
+
+        assertPlan("SELECT func.echo(id) FROM orders", List.of(publicSchema, funcSchema),
+            isTableScan("ORDERS"));
+    }
+
+    /** */
+    public static int echo(int val) {
+        return val;
     }
 }
