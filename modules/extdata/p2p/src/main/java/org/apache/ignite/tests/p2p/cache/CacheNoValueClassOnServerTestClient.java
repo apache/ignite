@@ -20,7 +20,7 @@ package org.apache.ignite.tests.p2p.cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.tests.p2p.NoValueClassOnServerAbstractClient;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
@@ -58,9 +58,8 @@ public class CacheNoValueClassOnServerTestClient extends NoValueClassOnServerAbs
 
     /**
      * @param args Arguments.
-     * @throws Exception If failed.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         try (CacheNoValueClassOnServerTestClient client = new CacheNoValueClassOnServerTestClient(args)) {
             client.runTest();
         }

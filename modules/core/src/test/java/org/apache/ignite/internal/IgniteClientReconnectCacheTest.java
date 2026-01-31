@@ -89,7 +89,14 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -1361,8 +1368,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                 catch (CacheException e) {
                     log.info("Expected exception: " + e);
 
-                    assertTrue("Unexpected cause: " + e.getCause(),
-                        e.getCause() instanceof IgniteClientDisconnectedException);
+                    assertInstanceOf(IgniteClientDisconnectedException.class, e.getCause(), "Unexpected cause: " + e.getCause());
 
                     e0 = (IgniteClientDisconnectedException)e.getCause();
                 }

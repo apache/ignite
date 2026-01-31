@@ -25,7 +25,7 @@ import org.apache.ignite.testframework.configvariations.ConfigParameter;
 import org.apache.ignite.testframework.configvariations.Parameters;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test.
@@ -35,10 +35,10 @@ public class ParametersTest {
     private static final String DEFAULT_CACHE_NAME = "default";
 
     /**
-     * @throws Exception If failed.
+     *
      */
     @Test
-    public void testEnumVariations() throws Exception {
+    public void testEnumVariations() {
         ConfigParameter<CacheConfiguration>[] modes = Parameters.enumParameters("setCacheMode", CacheMode.class);
 
         assertEquals(CacheMode.values().length, modes.length);
@@ -61,10 +61,10 @@ public class ParametersTest {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
     @Test
-    public void testEnumVariationsWithNull() throws Exception {
+    public void testEnumVariationsWithNull() {
         ConfigParameter<CacheConfiguration>[] cfgParam =
             Parameters.enumParameters(true, "setCacheMode", CacheMode.class);
 

@@ -48,8 +48,12 @@ import static org.apache.ignite.internal.processors.metric.impl.MetricUtils.metr
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.TASK_EXEC_TIME;
 import static org.apache.ignite.internal.processors.pool.PoolProcessor.THREAD_POOLS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Tests metrics configuration. */
 public class MetricsConfigurationTest extends GridCommonAbstractTest {

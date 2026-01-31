@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.HALF_MAX_WAL_ARCHIVE_SIZE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests assertions in DataStorageConfiguration.

@@ -45,10 +45,13 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests that check behaviour if none or only one partiton was extracted during partitioin pruning.
@@ -146,7 +149,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11019") // Fix explain plan for simple query.
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11019") // Fix explain plan for simple query.
     @Test
     public void testQueryWithMultiplePartitions() throws Exception {
         // This query considered to be simple, so merge table won't be created
@@ -243,7 +246,6 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
-    @SuppressWarnings("unchecked")
     @Test
     public void testQueryWithNonePartititons() throws Exception {
         TestCommunicationSpi commSpi =
@@ -271,7 +273,6 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     @Test
-    @SuppressWarnings("unchecked")
     public void testQueryWithNonePartititonsAndParams() throws Exception {
         TestCommunicationSpi commSpi =
             (TestCommunicationSpi)grid(NODES_COUNT).configuration().
@@ -309,7 +310,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11019") // Fix explain plan for simple query.
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11019") // Fix explain plan for simple query.
     @Test
     public void testQueryWithMultiplePartitionsAndParams() throws Exception {
         runQuery("select * from Organization org where org._KEY = ? or org._KEY = ? ",
@@ -381,7 +382,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11019") // Fix explain plan for simple query.
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11019") // Fix explain plan for simple query.
     @Test
     public void testSimpleQueryWithSubqueryWithinFromWithSingleMapQueryAndMultiplePartitons() throws Exception {
         runQuery("select _KEY from (select org._KEY, org.debtCapital from Organization org " +
@@ -407,7 +408,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11019") // Fix explain plan for simple query.
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11019") // Fix explain plan for simple query.
     @Test
     public void testSimpleQueryWithSubqueryWithinWhereClauseWithSingleMapQueryAndMultiplePartitons() throws Exception {
         runQuery("select _key from Organization where _key = (select MAX(org._KEY) from Organization org " +
@@ -439,7 +440,7 @@ public class NoneOrSinglePartitionsQueryOptimizationsTest extends GridCommonAbst
      * @param expOriginalQry Flag that signals that orignial sql query is expected as map query.
      * @throws Exception If failed.s
      */
-    @SuppressWarnings({"ThrowableNotThrown", "unchecked"})
+    @SuppressWarnings("unchecked")
     private void runQuery(String sqlQry, int expResCnt, boolean expMergeTbl, boolean expOriginalQry, int explainSize,
         Object... args)
         throws Exception {

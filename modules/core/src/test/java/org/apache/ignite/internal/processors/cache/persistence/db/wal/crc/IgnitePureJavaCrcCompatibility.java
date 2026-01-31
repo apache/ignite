@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.crc.FastCrc;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * PureJavaCrc32 previous crc algo realization vs java.util.zip.crc32 test.
@@ -31,10 +31,9 @@ import static org.junit.Assert.assertEquals;
 public class IgnitePureJavaCrcCompatibility {
     /**
      * Test crc algo equality results.
-     * @throws Exception
      */
     @Test
-    public void testAlgoEqual() throws Exception {
+    public void testAlgoEqual() {
         ByteBuffer buf = ByteBuffer.allocate(1024);
 
         ThreadLocalRandom curr = ThreadLocalRandom.current();

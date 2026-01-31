@@ -26,7 +26,8 @@ import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
 import org.apache.ignite.mxbean.MXBeanParametersNames;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Contains tests for {@link IgniteStandardMXBean} methods.
@@ -150,57 +151,47 @@ public class IgniteStandardMXBeanTest {
     /**
      * A test method that represents a situation in which the method has only old annotation.
      * An empty array is used as parameters in the annotation resulting in an AssertionError.
-     *
-     * @throws NoSuchMethodException if method is not found.
      */
-    @Test(expected = AssertionError.class)
-    public void getDescription_OldAnnotationEmptyValueArray() throws NoSuchMethodException {
-        getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_2, FIRST_INDEX);
+    @Test
+    public void getDescription_OldAnnotationEmptyValueArray() {
+        assertThrows(AssertionError.class, () -> getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_2, FIRST_INDEX));
     }
 
     /**
      * A test method that represents a situation in which the method has only old annotation.
      * An array whose length is less than transmitted parameter index is used as a parameter
      * resulting in an AssertionError.
-     *
-     * @throws NoSuchMethodException if method is not found.
      */
-    @Test(expected = AssertionError.class)
-    public void getDescription_OldAnnotationValueLengthLessThenParamIndex() throws NoSuchMethodException {
-        getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_3, FIRST_INDEX);
+    @Test
+    public void getDescription_OldAnnotationValueLengthLessThenParamIndex() {
+        assertThrows(AssertionError.class, () -> getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_3, FIRST_INDEX));
     }
 
     /**
      * A test method that represents a situation in which the method has only old annotation.
      * Empty description parameter value resulting in an AssertionError.
-     *
-     * @throws NoSuchMethodException if method is not found.
      */
-    @Test(expected = AssertionError.class)
+    @Test
     public void getDescription_OldAnnotationEmptyParamValue() throws NoSuchMethodException {
-        getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_4, ZERO_INDEX);
+        assertThrows(AssertionError.class, () -> getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_4, ZERO_INDEX));
     }
 
     /**
      * A test method that represents a situation in which the method has only old annotation.
      * Description parameter without a dot at the end of the sentence resulting in an AssertionError.
-     *
-     * @throws NoSuchMethodException if method is not found.
      */
-    @Test(expected = AssertionError.class)
+    @Test
     public void getDescription_OldAnnotationNoDotAtTheEndOfTheString() throws NoSuchMethodException {
-        getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_5, ZERO_INDEX);
+        assertThrows(AssertionError.class, () -> getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_5, ZERO_INDEX));
     }
 
     /**
      * A test method that represents a situation in which the method has only old annotation.
      * Description parameter starts with a lowercase letter resulting in an AssertionError.
-     *
-     * @throws NoSuchMethodException if method is not found.
      */
-    @Test(expected = AssertionError.class)
+    @Test
     public void getDescription_OldAnnotationFirstLowercaseLetter() throws NoSuchMethodException {
-        getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_5, FIRST_INDEX);
+        assertThrows(AssertionError.class, () -> getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_5, FIRST_INDEX));
     }
 
     /**
@@ -219,34 +210,28 @@ public class IgniteStandardMXBeanTest {
     /**
      * A test method that represents a situation in which the method has only new annotations.
      * Empty description parameter value resulting in an AssertionError.
-     *
-     * @throws NoSuchMethodException if method is not found.
      */
-    @Test(expected = AssertionError.class)
-    public void getDescription_NewAnnotationEmptyParamValue() throws NoSuchMethodException {
-        getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_7, ZERO_INDEX);
+    @Test
+    public void getDescription_NewAnnotationEmptyParamValue() {
+        assertThrows(AssertionError.class, () -> getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_7, ZERO_INDEX));
     }
 
     /**
      * A test method that represents a situation in which the method has only new annotation.
      * Description parameter without a dot at the end of the sentence resulting in an AssertionError.
-     *
-     * @throws NoSuchMethodException if method is not found.
      */
-    @Test(expected = AssertionError.class)
-    public void getDescription_NewAnnotationNoDotAtTheEndOfTheString() throws NoSuchMethodException {
-        getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_8, ZERO_INDEX);
+    @Test
+    public void getDescription_NewAnnotationNoDotAtTheEndOfTheString() {
+        assertThrows(AssertionError.class, () -> getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_8, ZERO_INDEX));
     }
 
     /**
      * A test method that represents a situation in which the method has only new annotations.
      * Description parameter starts with a lowercase letter resulting in an AssertionError.
-     *
-     * @throws NoSuchMethodException if method is not found.
      */
-    @Test(expected = AssertionError.class)
+    @Test
     public void getDescription_NewAnnotationFirstLowercaseLetter() throws NoSuchMethodException {
-        getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_8, FIRST_INDEX);
+        assertThrows(AssertionError.class, () -> getDescriptionWithMethodNameAndParamIndex(TEST_METHOD_8, FIRST_INDEX));
     }
 
     /**
@@ -290,35 +275,29 @@ public class IgniteStandardMXBeanTest {
     /**
      * A test method that represents a situation in which the method has only old annotation.
      * An empty array is used as parameters in the annotation resulting in an AssertionError.
-     *
-     * @throws NoSuchMethodException if method is not found.
      */
-    @Test(expected = AssertionError.class)
-    public void getParameterName_OldAnnotationEmptyValueArray() throws NoSuchMethodException {
-        getParameterNameWithMethodNameAndParamIndex(TEST_METHOD_2, FIRST_INDEX);
+    @Test
+    public void getParameterName_OldAnnotationEmptyValueArray() {
+        assertThrows(AssertionError.class, () -> getParameterNameWithMethodNameAndParamIndex(TEST_METHOD_2, FIRST_INDEX));
     }
 
     /**
      * A test method that represents a situation in which the method has only old annotation.
      * An array whose length is less than transmitted parameter index is used as a parameter
      * resulting in an AssertionError.
-     *
-     * @throws NoSuchMethodException if method is not found.
      */
-    @Test(expected = AssertionError.class)
+    @Test
     public void getParameterName_OldAnnotationValueLengthLessThenParamIndex() throws NoSuchMethodException {
-        getParameterNameWithMethodNameAndParamIndex(TEST_METHOD_3, FIRST_INDEX);
+        assertThrows(AssertionError.class, () -> getParameterNameWithMethodNameAndParamIndex(TEST_METHOD_3, FIRST_INDEX));
     }
 
     /**
      * A test method that represents a situation in which the method has only old annotation.
      * Empty parameter name value resulting in an AssertionError.
-     *
-     * @throws NoSuchMethodException if method is not found.
      */
-    @Test(expected = AssertionError.class)
-    public void getParameterName_OldAnnotationEmptyParamValue() throws NoSuchMethodException {
-        getParameterNameWithMethodNameAndParamIndex(TEST_METHOD_4, ZERO_INDEX);
+    @Test
+    public void getParameterName_OldAnnotationEmptyParamValue() {
+        assertThrows(AssertionError.class, () -> getParameterNameWithMethodNameAndParamIndex(TEST_METHOD_4, ZERO_INDEX));
     }
 
     /**
@@ -337,12 +316,10 @@ public class IgniteStandardMXBeanTest {
     /**
      * A test method that represents a situation in which the method has only new annotations.
      * Empty parameter name value resulting in an AssertionError.
-     *
-     * @throws NoSuchMethodException if method is not found.
      */
-    @Test(expected = AssertionError.class)
-    public void getParameterName_NewAnnotationEmptyParamValue() throws NoSuchMethodException {
-        getParameterNameWithMethodNameAndParamIndex(TEST_METHOD_7, ZERO_INDEX);
+    @Test
+    public void getParameterName_NewAnnotationEmptyParamValue() {
+        assertThrows(AssertionError.class, () -> getParameterNameWithMethodNameAndParamIndex(TEST_METHOD_7, ZERO_INDEX));
     }
 
     /**

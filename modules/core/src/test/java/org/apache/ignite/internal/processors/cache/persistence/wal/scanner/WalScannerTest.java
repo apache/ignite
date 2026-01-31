@@ -47,14 +47,14 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import static junit.framework.TestCase.assertTrue;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointStatus.NULL_PTR;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.reader.IgniteWalIteratorFactory.IteratorParametersBuilder.withIteratorParameters;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToFile;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.ScannerHandlers.printToLog;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.scanner.WalScanner.buildWalScanner;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
@@ -107,7 +107,7 @@ public class WalScannerTest {
             .forEach(recordCaptor);
 
         // then: Should be find only expected value.
-        assertEquals(holder.size(), 3);
+        assertEquals(3, holder.size());
 
         assertEquals(expPageSnapshot, holder.get(0));
         assertEquals(expCheckpoint, holder.get(1));
@@ -218,7 +218,7 @@ public class WalScannerTest {
      * @param oneOfExpected One of expected value.
      */
     private static void assertRecord(String actual, String... oneOfExpected) {
-        assertTrue(actual, Arrays.stream(oneOfExpected).anyMatch(actual::contains));
+        assertTrue(Arrays.stream(oneOfExpected).anyMatch(actual::contains), actual);
     }
 
     /**
@@ -262,9 +262,9 @@ public class WalScannerTest {
         // then: Should be find only expected value from file. PageSnapshot string representation is 11 lines long.
         assertEquals(13, actualRecords.size());
 
-        assertTrue(actualRecords.get(0), actualRecords.get(0).contains("PageSnapshot ["));
-        assertTrue(actualRecords.get(11), actualRecords.get(11).contains("CheckpointRecord ["));
-        assertTrue(actualRecords.get(12), actualRecords.get(12).contains("FixCountRecord ["));
+        assertTrue(actualRecords.get(0).contains("PageSnapshot ["), actualRecords.get(0));
+        assertTrue(actualRecords.get(11).contains("CheckpointRecord ["), actualRecords.get(11));
+        assertTrue(actualRecords.get(12).contains("FixCountRecord ["), actualRecords.get(12));
     }
 
     /**
@@ -319,18 +319,18 @@ public class WalScannerTest {
         // then: Should be find only expected value from file.
         assertEquals(actualFileRecords.size(), 3);
 
-        assertTrue(actualFileRecords.get(0), actualFileRecords.get(0).contains("PageSnapshot ["));
-        assertTrue(actualFileRecords.get(1), actualFileRecords.get(1).contains("CheckpointRecord ["));
-        assertTrue(actualFileRecords.get(2), actualFileRecords.get(2).contains("FixCountRecord ["));
+        assertTrue(actualFileRecords.get(0).contains("PageSnapshot ["), actualFileRecords.get(0));
+        assertTrue(actualFileRecords.get(1).contains("CheckpointRecord ["), actualFileRecords.get(1));
+        assertTrue(actualFileRecords.get(2).contains("FixCountRecord ["), actualFileRecords.get(2));
 
         // then: Should be find only expected value from log.
         List<String> actualLogRecords = valCapture.getAllValues();
 
         assertEquals(actualLogRecords.size(), 1);
 
-        assertTrue(actualLogRecords.get(0), actualLogRecords.get(0).contains("PageSnapshot ["));
-        assertTrue(actualLogRecords.get(0), actualLogRecords.get(0).contains("CheckpointRecord ["));
-        assertTrue(actualLogRecords.get(0), actualLogRecords.get(0).contains("FixCountRecord ["));
+        assertTrue(actualLogRecords.get(0).contains("PageSnapshot ["), actualLogRecords.get(0));
+        assertTrue(actualLogRecords.get(0).contains("CheckpointRecord ["), actualLogRecords.get(0));
+        assertTrue(actualLogRecords.get(0).contains("FixCountRecord ["), actualLogRecords.get(0));
     }
 
     /**

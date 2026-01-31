@@ -27,10 +27,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /** */
 public class JdbcBlobTest {

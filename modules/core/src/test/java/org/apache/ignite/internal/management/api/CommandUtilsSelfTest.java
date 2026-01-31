@@ -20,7 +20,7 @@ package org.apache.ignite.internal.management.api;
 import org.apache.ignite.internal.management.SystemViewCommand;
 import org.junit.jupiter.api.Test;
 import static org.apache.ignite.internal.management.api.CommandUtils.CMD_WORDS_DELIM;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** */
 public class CommandUtilsSelfTest {

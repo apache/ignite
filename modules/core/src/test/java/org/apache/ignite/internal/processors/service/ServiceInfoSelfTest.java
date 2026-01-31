@@ -34,8 +34,8 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 /**
  * Tests of {@link ServiceInfo} class.
@@ -167,12 +167,12 @@ public class ServiceInfoSelfTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void init(ServiceContext ctx) throws Exception {
+        @Override public void init(ServiceContext ctx) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void execute(ServiceContext ctx) throws Exception {
+        @Override public void execute(ServiceContext ctx) {
             // No-op.
         }
     }

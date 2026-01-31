@@ -23,8 +23,8 @@ import java.util.Set;
 import org.apache.ignite.testframework.configvariations.VariationsIterator;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test start iterator.
@@ -75,10 +75,10 @@ public class VariationsIteratorTest {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
     @Test
-    public void test4() throws Exception {
+    public void test4() {
         Object[][] arr = new Object[][]{
             {0, 1, 2},
             {0, 1},
@@ -105,10 +105,10 @@ public class VariationsIteratorTest {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
     @Test
-    public void testSimple2() throws Exception {
+    public void testSimple2() {
         Object[][] arr = new Object[][] {
             {0},
             {0},

@@ -48,15 +48,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
-import org.hamcrest.core.SubstringMatcher;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
 /**
  *  Query checker.

@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import static java.lang.Integer.MAX_VALUE;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** */
 public abstract class AbstractCommunicationMessageSerializationTest {
@@ -106,12 +106,12 @@ public abstract class AbstractCommunicationMessageSerializationTest {
             // No-op.
         }
 
-        assertEquals("The serialization and deserialization protocol is not consistent for the message [cls="
-            + msg.getClass().getName() + ']', writer.writtenFields, reader.readFields);
+        assertEquals(writer.writtenFields, reader.readFields, "The serialization and deserialization protocol is not " +
+                "consistent for the message [cls=" + msg.getClass().getName() + ']');
 
         if (!(msg instanceof HandshakeMessage)) {
-            assertEquals("Mismatch fields count for the message [cls="
-                + msg.getClass().getName() + ']', reader.readFields.size(), writer.writtenFields.size());
+            assertEquals(reader.readFields.size(), writer.writtenFields.size(), "Mismatch fields count for the message [cls="
+                    + msg.getClass().getName() + ']');
         }
     }
 

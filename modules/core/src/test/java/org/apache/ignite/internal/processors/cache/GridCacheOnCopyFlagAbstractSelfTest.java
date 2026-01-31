@@ -40,7 +40,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests that cache value is copied for get, interceptor and invoke closure.
@@ -319,7 +324,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
             for (Map.Entry<TestKey, TestValue> e : map.entrySet()) {
                 GridCacheEntryEx entry = cache0.peekEx(e.getKey());
 
-                assertNotNull("No entry for key: " + e.getKey(), entry);
+                assertNotNull(entry, "No entry for key: " + e.getKey());
 
                 TestKey key0 = entry.key().value(cctx.cacheObjectContext(), false);
 
@@ -371,7 +376,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
             for (Map.Entry<TestKey, byte[]> e : map.entrySet()) {
                 GridCacheEntryEx entry = cache0.peekEx(e.getKey());
 
-                assertNotNull("No entry for key: " + e.getKey(), entry);
+                assertNotNull(entry, "No entry for key: " + e.getKey());
 
                 TestKey key0 = entry.key().value(cctx.cacheObjectContext(), false);
 
@@ -423,7 +428,7 @@ public abstract class GridCacheOnCopyFlagAbstractSelfTest extends GridCommonAbst
             for (Map.Entry<String, Long> e : map.entrySet()) {
                 GridCacheEntryEx entry = cache0.peekEx(e.getKey());
 
-                assertNotNull("No entry for key: " + e.getKey(), entry);
+                assertNotNull(entry, "No entry for key: " + e.getKey());
 
                 String key0 = entry.key().value(cctx.cacheObjectContext(), false);
 

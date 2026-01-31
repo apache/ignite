@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.internal.jdbc2.JdbcBinaryBuffer.MIN_CAP;
 import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** */
 public class JdbcBinaryBufferTest {
@@ -40,10 +40,10 @@ public class JdbcBinaryBufferTest {
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
     @Test
-    public void testWriteTooMuchData() throws Exception {
+    public void testWriteTooMuchData() {
         JdbcBinaryBuffer buf = JdbcBinaryBuffer.createReadWrite(new byte[10]);
 
         assertThrows(null, () -> {

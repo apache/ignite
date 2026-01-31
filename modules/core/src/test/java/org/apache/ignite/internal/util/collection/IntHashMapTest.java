@@ -27,10 +27,10 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.internal.util.collection.IntHashMap.INITIAL_CAPACITY;
 import static org.apache.ignite.internal.util.collection.IntHashMap.MAXIMUM_CAPACITY;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test for the specific implementation of IntMap.

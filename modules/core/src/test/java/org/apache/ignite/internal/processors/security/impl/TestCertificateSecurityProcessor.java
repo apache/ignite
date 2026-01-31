@@ -44,9 +44,9 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SECURITY_CRED
 import static org.apache.ignite.internal.processors.security.impl.TestSecurityProcessor.contains;
 import static org.apache.ignite.plugin.security.SecurityPermissionSetBuilder.ALL_PERMISSIONS;
 import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_NODE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Security processor for test.

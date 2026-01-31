@@ -21,7 +21,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test for CacheComparators from ClusterCachesInfo

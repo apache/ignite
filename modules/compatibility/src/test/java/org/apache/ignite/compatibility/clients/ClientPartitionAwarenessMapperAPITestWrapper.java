@@ -33,7 +33,7 @@ import static org.apache.ignite.compatibility.clients.JavaThinCompatibilityTest.
 import static org.apache.ignite.compatibility.clients.JavaThinCompatibilityTest.CACHE_WITH_CUSTOM_AFFINITY;
 import static org.apache.ignite.internal.client.thin.ProtocolBitmaskFeature.ALL_AFFINITY_MAPPINGS;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * This class is used to test a new API for partition awareness mapper factory added since 2.14 release.

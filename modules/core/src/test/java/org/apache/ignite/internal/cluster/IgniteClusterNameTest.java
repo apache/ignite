@@ -24,23 +24,22 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 /**
  * Tests cluster name.
  */
+@ParameterizedClass(name = "isPersistenceEnabled={0}")
+@ValueSource(booleans = {true, false})
 public class IgniteClusterNameTest extends GridCommonAbstractTest {
     /** */
-    @Parameterized.Parameter
+    @Parameter
     public boolean isPersistenceEnabled;
-
-    /** */
-    @Parameterized.Parameters(name = "isPersistenceEnabled={0}")
-    public static Object[] parameters() {
-        return new Object[] {false, true};
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {

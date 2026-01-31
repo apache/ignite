@@ -31,7 +31,13 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests of {@link AffinityFunction} implementations with {@link ClusterNodeAttributeColocatedBackupFilter}.
@@ -92,7 +98,7 @@ public class ClusterNodeAttributeColocatedBackupFilterSelfTest extends AffinityF
     }
 
     /** {@inheritDoc} */
-    @Override protected void checkPartitions() throws Exception {
+    @Override protected void checkPartitions() {
         int iter = grid(0).cluster().nodes().size() / 2;
 
         AffinityFunction aff = cacheConfiguration(grid(0).configuration(), DEFAULT_CACHE_NAME).getAffinity();

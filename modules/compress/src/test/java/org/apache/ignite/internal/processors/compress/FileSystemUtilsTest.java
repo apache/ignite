@@ -34,8 +34,8 @@ import static org.apache.ignite.internal.processors.compress.FileSystemUtils.get
 import static org.apache.ignite.internal.processors.compress.FileSystemUtils.getSparseFileSize;
 import static org.apache.ignite.internal.processors.compress.FileSystemUtils.punchHole;
 import static org.apache.ignite.internal.util.GridUnsafe.NATIVE_BYTE_ORDER;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  */

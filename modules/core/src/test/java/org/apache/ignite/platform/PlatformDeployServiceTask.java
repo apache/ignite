@@ -76,9 +76,9 @@ import org.jetbrains.annotations.Nullable;
 import static java.util.Calendar.JANUARY;
 import static org.apache.ignite.internal.processors.service.GridServiceMetricsTest.sumHistogramEntries;
 import static org.apache.ignite.internal.processors.service.IgniteServiceProcessor.serviceMetricRegistryName;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.apache.ignite.platform.AbstractPlatformServiceCallTask.assertEquals;
+import static org.apache.ignite.platform.AbstractPlatformServiceCallTask.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Task that deploys a Java service on all or selected nodes.
