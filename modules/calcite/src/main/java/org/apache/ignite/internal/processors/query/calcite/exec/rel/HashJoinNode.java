@@ -180,8 +180,11 @@ public abstract class HashJoinNode<Row> extends AbstractRightMaterializedJoinNod
         if (key != null)
             hashStore.computeIfAbsent(key, k -> new TouchedArrayList<>()).add(row);
 
-        if (waitingRight == 0)
+        if (waitingRight == 0) {
+            checkState();
+
             rightSource().request(waitingRight = IN_BUFFER_SIZE);
+        }
     }
 
     /** */
