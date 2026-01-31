@@ -78,6 +78,9 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
     private int rightIdx;
 
     /** */
+    private int processed;
+
+    /** */
     private Row rightEmptyRow;
 
     /** */
@@ -128,8 +131,6 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
     @Override public void request(int rowsCnt) throws Exception {
         assert !F.isEmpty(sources()) && sources().size() == 2;
         assert rowsCnt > 0 && requested == 0 : "rowsCnt=" + rowsCnt + ", requested=" + requested;
-
-        checkState();
 
         requested = rowsCnt;
 
@@ -196,8 +197,6 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
         assert downstream() != null;
         assert waitingLeft > 0;
 
-        checkState();
-
         waitingLeft--;
 
         if (leftInBuf == null)
@@ -212,8 +211,6 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
     private void pushRight(Row row) throws Exception {
         assert downstream() != null;
         assert waitingRight > 0;
-
-        checkState();
 
         waitingRight--;
 
@@ -269,9 +266,8 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
                 assert F.isEmpty(rightInBuf);
 
                 context().execute(() -> {
-                    checkState();
-
                     state = State.FILLING_LEFT;
+
                     leftSource().request(waitingLeft = leftInBufferSize);
                 }, this::onError);
 
@@ -282,11 +278,7 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
                 assert waitingRight == -1 || waitingRight == 0 && rightInBuf.size() == rightInBufferSize;
                 assert waitingLeft == -1 || waitingLeft == 0 && leftInBuf.size() == leftInBufferSize;
 
-                context().execute(() -> {
-                    checkState();
-
-                    join();
-                }, this::onError);
+                context().execute(this::join0, this::onError);
 
                 break;
 
@@ -307,6 +299,8 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
         if (leftInBuf.size() == leftInBufferSize) {
             assert waitingLeft == 0;
+
+            checkState();
 
             prepareCorrelations();
 
@@ -384,7 +378,8 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
                     leftIdx = 0;
 
                 while (requested > 0 && leftIdx < leftInBuf.size()) {
-                    checkState();
+                    if (rescheduleJoin())
+                        return;
 
                     Row left = leftInBuf.get(leftIdx);
                     Row right = rightInBuf.get(rightIdx);
@@ -434,6 +429,9 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
                 try {
                     while (requested > 0 && notMatchedIdx < leftInBuf.size()) {
+                        if (rescheduleJoin())
+                            return;
+
                         requested--;
 
                         downstream().push(handler.concat(leftInBuf.get(notMatchedIdx), rightEmptyRow));
@@ -499,5 +497,25 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
             Row row = i < leftInBuf.size() ? leftInBuf.get(i) : F.first(leftInBuf);
             context().setCorrelated(row, correlationIds.get(i).getId());
         }
+    }
+
+    /** */
+    private void join0() throws Exception {
+        checkState();
+
+        processed = 0;
+
+        join();
+    }
+
+    /** */
+    protected boolean rescheduleJoin() {
+        if (processed++ > IN_BUFFER_SIZE) {
+            context().execute(this::join0, this::onError);
+
+            return true;
+        }
+
+        return false;
     }
 }
