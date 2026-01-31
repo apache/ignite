@@ -43,7 +43,6 @@ import org.apache.ignite.cdc.CdcConfiguration;
 import org.apache.ignite.cdc.CdcConsumer;
 import org.apache.ignite.cdc.CdcEvent;
 import org.apache.ignite.cdc.TypeMapping;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -351,8 +350,7 @@ public class CdcMain implements Runnable {
                     .map(data -> data.configuration().getName())
                     .collect(Collectors.toList());
 
-                consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")), ft.walCdc().toPath(),
-                    cacheNames);
+                consumer.start(mreg, kctx.metric().registry(metricName("cdc", "consumer")), cacheNames);
 
                 started = true;
 
