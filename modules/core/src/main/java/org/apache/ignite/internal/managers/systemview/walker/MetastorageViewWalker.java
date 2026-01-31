@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.managers.systemview.walker;
 
+import java.util.Collections;
+import java.util.List;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.systemview.view.MetastorageView;
 import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
 
@@ -27,6 +30,19 @@ import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
  * @see MetastorageView
  */
 public class MetastorageViewWalker implements SystemViewRowAttributeWalker<MetastorageView> {
+    /** Filter key for attribute "name" */
+    public static final String NAME_FILTER = "name";
+
+    /** List of filtrable attributes. */
+    private static final List<String> FILTRABLE_ATTRS = Collections.unmodifiableList(F.asList(
+        "name"
+    ));
+
+    /** {@inheritDoc} */
+    @Override public List<String> filtrableAttributes() {
+        return FILTRABLE_ATTRS;
+    }
+
     /** {@inheritDoc} */
     @Override public void visitAll(AttributeVisitor v) {
         v.accept(0, "name", String.class);

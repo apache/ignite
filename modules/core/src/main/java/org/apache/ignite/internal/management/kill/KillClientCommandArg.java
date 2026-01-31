@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.management.kill;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class KillClientCommandArg extends IgniteDataTransferObject {
@@ -34,23 +30,11 @@ public class KillClientCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(description = "Connection identifier or ALL")
-    private String connectionId;
+    String connectionId;
 
     /** */
     @Argument(description = "Node id to drop connection from", optional = true)
-    private UUID nodeId;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, connectionId);
-        U.writeUuid(out, nodeId);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        connectionId = U.readString(in);
-        nodeId = U.readUuid(in);
-    }
+    UUID nodeId;
 
     /** */
     public String connectionId() {

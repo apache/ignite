@@ -17,15 +17,11 @@
 
 package org.apache.ignite.internal.management;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.ShutdownPolicy;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class ShutdownPolicyCommandArg extends IgniteDataTransferObject {
@@ -45,17 +41,7 @@ public class ShutdownPolicyCommandArg extends IgniteDataTransferObject {
             "Node will stop if and only if it does not store any unique partitions, that don't have another copies in the cluster"
         }
     )
-    private ShutdownPolicy shutdownPolicy;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeEnum(out, shutdownPolicy);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        shutdownPolicy = U.readEnum(in, ShutdownPolicy.class);
-    }
+    ShutdownPolicy shutdownPolicy;
 
     /** */
     public ShutdownPolicy shutdownPolicy() {
