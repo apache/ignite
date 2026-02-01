@@ -25,15 +25,19 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.management.api.CommandMBean;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributedChangeableProperty;
+import org.apache.ignite.internal.processors.metric.MetricRegistryImpl;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.calcite.integration.AbstractBasicIntegrationTest;
 import org.apache.ignite.internal.processors.query.calcite.rule.logical.ExposeIndexRule;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.spi.metric.LongMetric;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
+import static org.apache.ignite.internal.processors.query.QueryParserMetricsHolder.QUERY_PARSER_METRIC_GROUP_NAME;
+import static org.apache.ignite.internal.processors.query.calcite.DistributedCalciteConfiguration.DFLT_PLAN_CACHE_SIZE;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsIndexScan;
 import static org.apache.ignite.internal.processors.query.calcite.QueryChecker.containsSubPlan;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
@@ -192,6 +196,41 @@ public class CalciteQueryProcessorPropertiesTest extends AbstractBasicIntegratio
             sql("drop table if exists test_tbl1");
             sql("drop table if exists test_tbl2");
         }
+    }
+
+    /** */
+    @Test
+    public void testPlanCacheSize() throws Exception {
+        checkPlanCacheSize(grid(0), DFLT_PLAN_CACHE_SIZE);
+        checkPlanCacheSize(grid(1), DFLT_PLAN_CACHE_SIZE);
+
+        String propName = DistributedCalciteConfiguration.PLAN_CACHE_SIZE_PROPERTY_NAME;
+
+        changeDistributedProperty(propName, "100", null);
+
+        checkPlanCacheSize(grid(0), 100);
+        checkPlanCacheSize(grid(1), 100);
+    }
+
+    /** */
+    private void checkPlanCacheSize(IgniteEx grid, int expectedCacheSize) {
+        MetricRegistryImpl mreg = grid.context().metric().registry(QUERY_PARSER_METRIC_GROUP_NAME);
+
+        mreg.reset();
+
+        LongMetric hits = mreg.findMetric("hits");
+        LongMetric misses = mreg.findMetric("misses");
+
+        int cnt = DFLT_PLAN_CACHE_SIZE + 1;
+
+        for (int i = 0; i < cnt; i++)
+            sql(grid, "SELECT " + i);
+
+        for (int i = cnt - 1; i >= 0; i--)
+            sql(grid, "SELECT " + i);
+
+        assertEquals(expectedCacheSize, hits.value());
+        assertEquals(cnt * 2 - expectedCacheSize, misses.value());
     }
 
     /** */

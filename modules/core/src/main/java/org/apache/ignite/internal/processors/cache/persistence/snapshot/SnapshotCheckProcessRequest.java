@@ -53,7 +53,7 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
      *
      * @param reqId Request ID.
      * @param snpName Snapshot name.
-     * @param nodes Baseline node IDs that must be alive to complete the operation..
+     * @param nodes Baseline node IDs that must be alive to complete the operation.
      * @param snpPath Snapshot directory path.
      * @param grps List of cache group names.
      * @param fullCheck If {@code true}, additionally calculates partition hashes. Otherwise, checks only snapshot integrity
@@ -73,7 +73,7 @@ public class SnapshotCheckProcessRequest extends AbstractSnapshotOperationReques
         int incIdx,
         boolean allRestoreHandlers
     ) {
-        super(reqId, snpName, snpPath, grps, 0, nodes);
+        super(reqId, snpName, snpPath, grps, nodes);
 
         assert !F.isEmpty(nodes);
 
