@@ -30,8 +30,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * A manual test for an unlikely situation with async key cancellation (see javadocs on the test method).
@@ -51,7 +53,7 @@ import org.junit.jupiter.api.Test;
  * The test sometimes fails because the client thinks the cluster is unaccessible. Such runs should be ignored
  * and test just rerun.
  */
-@Ignore("This is a manual test, see class javadoc")
+@Disabled("This is a manual test, see class javadoc")
 public class FastSessionMoveAndKeyCancellationTest extends GridCommonAbstractTest {
     /** Logger used to intersept log messages. */
     private final ListeningTestLogger logger = new ListeningTestLogger(log);
@@ -95,7 +97,7 @@ public class FastSessionMoveAndKeyCancellationTest extends GridCommonAbstractTes
             IgniteInternalFuture<?> clientJobsFut = multithreadedAsync(new ReconnectConstantly(), 2);
 
             try {
-                assertFalse("CancelledKeyException was thrown", failureLogMsgsLatch.await(1, TimeUnit.MINUTES));
+                assertFalse(failureLogMsgsLatch.await(1, TimeUnit.MINUTES), "CancelledKeyException was thrown");
             }
             finally {
                 clientJobsFut.cancel();
@@ -118,7 +120,7 @@ public class FastSessionMoveAndKeyCancellationTest extends GridCommonAbstractTes
     private static class ReconnectConstantly implements Callable<Object> {
         /** {@inheritDoc} */
         @SuppressWarnings("EmptyTryBlock")
-        @Override public Object call() throws Exception {
+        @Override public Object call() {
             while (!Thread.currentThread().isInterrupted()) {
                 try (IgniteClient ignored = startClient()) {
                     // do nothing, just let the client disconnect

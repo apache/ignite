@@ -21,7 +21,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -36,14 +36,14 @@ public class BinaryMetadataRegistrationEntryProcessorTest extends AbstractBinary
 
     /** {@inheritDoc} */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12675")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-12675")
     @Override public void testMetadataRegisteredOnceForUserClass() {
         // NO-OP
     }
 
     /** {@inheritDoc} */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12675")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-12675")
     @Override public void testMetadataRegisteredOnceForBinarylizable() {
         // NO-OP
     }

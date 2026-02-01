@@ -29,13 +29,17 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * TTL manager eviction self test.
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-10420")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-10420")
 public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int ENTRIES_TO_PUT = 10_100;
@@ -107,11 +111,11 @@ public class GridCacheTtlManagerEvictionSelfTest extends GridCommonAbstractTest 
             final String firstKey = "Some test entry key#1";
             final String lastKey = "Some test entry key#" + ENTRIES_TO_PUT;
 
-            assertNull("first key should be evicted", cache.localPeek(firstKey, CachePeekMode.ONHEAP));
+            assertNull(cache.localPeek(firstKey, CachePeekMode.ONHEAP), "first key should be evicted");
 
-            assertNotNull("last key should NOT be evicted", cache.localPeek(lastKey, CachePeekMode.ONHEAP));
+            assertNotNull(cache.localPeek(lastKey, CachePeekMode.ONHEAP), "last key should NOT be evicted");
 
-            assertEquals("Ttl Manager should NOT track evicted entries", ENTRIES_LIMIT, cctx.ttl().pendingSize());
+            assertEquals(ENTRIES_LIMIT, cctx.ttl().pendingSize(), "Ttl Manager should NOT track evicted entries");
         }
         finally {
             Ignition.stopAll(true);

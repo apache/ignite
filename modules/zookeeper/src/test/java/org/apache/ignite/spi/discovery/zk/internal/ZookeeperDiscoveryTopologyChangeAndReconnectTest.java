@@ -50,7 +50,7 @@ import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.apache.zookeeper.ZooKeeper;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -96,7 +96,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9138")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9138")
     @Test
     public void testTopologyChangeMultithreaded_RestartZk() throws Exception {
         try {
@@ -112,7 +112,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9138")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9138")
     @Test
     public void testTopologyChangeMultithreaded_RestartZk_CloseClients() throws Exception {
         try {
@@ -237,7 +237,7 @@ public class ZookeeperDiscoveryTopologyChangeAndReconnectTest extends ZookeeperD
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9138")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9138")
     @Test
     public void testRandomTopologyChanges_RestartZk() throws Exception {
         randomTopologyChanges(true, false);

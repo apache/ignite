@@ -58,7 +58,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static java.lang.Boolean.FALSE;
@@ -96,7 +96,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11998")
     public void testMultipleIndexedTypes() throws Exception {
         final String cacheName = "test_multi_type";
 
@@ -166,7 +166,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11998")
     public void testConcurrentUpdates() throws Exception {
         try {
             doTestConcurrentUpdates();
@@ -283,7 +283,7 @@ public class QueryDataPageScanTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11998")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11998")
     public void testDataPageScan() throws Exception {
         final String cacheName = "test";
 

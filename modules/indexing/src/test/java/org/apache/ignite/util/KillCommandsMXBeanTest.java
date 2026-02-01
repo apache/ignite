@@ -45,7 +45,7 @@ import org.apache.ignite.mxbean.SnapshotMXBean;
 import org.apache.ignite.mxbean.TransactionsMXBean;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
@@ -199,7 +199,7 @@ public class KillCommandsMXBeanTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-25021")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-25021")
     @Test
     public void testCancelClientConnection() {
         doTestCancelClientConnection(srvs, (nodeId, connId) -> {

@@ -57,6 +57,13 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.testframework.GridTestUtils.assertNotContains;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Checks compute grid functionality of thin client.
@@ -141,11 +148,11 @@ public class ComputeTaskTest extends AbstractThinClientTest {
     /**
      *
      */
-    @Test(expected = ClientException.class)
-    public void testComputeDisabled() throws Exception {
+    @Test
+    public void testComputeDisabled() {
         // Only grid(0) and grid(1) is allowed to execute thin client compute tasks.
         try (IgniteClient client = startClient(2)) {
-            client.compute().execute(TestTask.class.getName(), null);
+            assertThrows(ClientException.class, () -> client.compute().execute(TestTask.class.getName(), null));
         }
     }
 
@@ -272,7 +279,7 @@ public class ComputeTaskTest extends AbstractThinClientTest {
     /**
      *
      */
-    @Test(expected = CancellationException.class)
+    @Test
     public void testTaskCancellation() throws Exception {
         try (IgniteClient client = startClient(0)) {
             Future<T2<UUID, List<UUID>>> fut = client.compute().executeAsync(TestTask.class.getName(), TIMEOUT);
@@ -288,14 +295,14 @@ public class ComputeTaskTest extends AbstractThinClientTest {
             assertTrue(fut.isCancelled());
             assertTrue(fut.isDone());
 
-            fut.get();
+            assertThrows(CancellationException.class, () -> fut.get(getTestTimeout(), TimeUnit.MILLISECONDS));
         }
     }
 
     /**
      *
      */
-    @Test(expected = CancellationException.class)
+    @Test
     public void testTaskCancellation2() throws Exception {
         try (IgniteClient client = startClient(0)) {
             IgniteClientFuture<T2<UUID, List<UUID>>> fut = client.compute().executeAsync2(TestTask.class.getName(), TIMEOUT);
@@ -321,17 +328,17 @@ public class ComputeTaskTest extends AbstractThinClientTest {
             assertTrue(handledErr.get() instanceof CancellationException);
             assertNull(handledFut.toCompletableFuture().get());
 
-            fut.get();
+            assertThrows(CancellationException.class, () -> fut.get(getTestTimeout(), TimeUnit.MILLISECONDS));
         }
     }
 
     /**
      *
      */
-    @Test(expected = ClientException.class)
-    public void testTaskWithTimeout() throws Exception {
+    @Test
+    public void testTaskWithTimeout() {
         try (IgniteClient client = startClient(0)) {
-            client.compute().withTimeout(TIMEOUT / 5).execute(TestTask.class.getName(), TIMEOUT);
+            assertThrows(ClientException.class, () -> client.compute().withTimeout(TIMEOUT / 5).execute(TestTask.class.getName(), TIMEOUT));
         }
     }
 
@@ -397,12 +404,12 @@ public class ComputeTaskTest extends AbstractThinClientTest {
     /**
      *
      */
-    @Test(expected = ClientException.class)
-    public void testExecuteTaskOnEmptyClusterGroup() throws Exception {
+    @Test
+    public void testExecuteTaskOnEmptyClusterGroup() {
         try (IgniteClient client = startClient(0)) {
             ClientClusterGroup grp = client.cluster().forNodeIds(Collections.emptyList());
 
-            client.compute(grp).execute(TestTask.class.getName(), null);
+            assertThrows(ClientException.class, () -> client.compute(grp).execute(TestTask.class.getName(), null));
         }
     }
 
@@ -436,10 +443,10 @@ public class ComputeTaskTest extends AbstractThinClientTest {
     /**
      *
      */
-    @Test(expected = ClientException.class)
-    public void testExecuteUnknownTask() throws Exception {
+    @Test
+    public void testExecuteUnknownTask() {
         try (IgniteClient client = startClient(0)) {
-            client.compute().execute("NoSuchTask", null);
+            assertThrows(ClientException.class, () -> client.compute().execute("NoSuchTask", null));
         }
     }
 

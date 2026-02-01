@@ -33,7 +33,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES;
@@ -514,7 +514,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
 
     /** */
     @Test
-    @Ignore("This optimization is not implemented yet")
+    @Disabled("This optimization is not implemented yet")
     public void testVerFromDiscoveryClusterData() throws Exception {
         startGrid(0);
 

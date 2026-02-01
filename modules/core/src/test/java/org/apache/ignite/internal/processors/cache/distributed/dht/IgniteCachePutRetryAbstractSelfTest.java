@@ -51,10 +51,14 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -157,73 +161,73 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testPut() throws Exception {
-        checkRetry(Test.PUT, false, false);
+        checkRetry(InnerTest.PUT, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testGetAndPut() throws Exception {
-        checkRetry(Test.GET_AND_PUT, false, false);
+        checkRetry(InnerTest.GET_AND_PUT, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testPutStoreEnabled() throws Exception {
-        checkRetry(Test.PUT, false, true);
+        checkRetry(InnerTest.PUT, false, true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testPutAll() throws Exception {
-        checkRetry(Test.PUT_ALL, false, false);
+        checkRetry(InnerTest.PUT_ALL, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testPutAsync() throws Exception {
-        checkRetry(Test.PUT_ASYNC, false, false);
+        checkRetry(InnerTest.PUT_ASYNC, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testPutAsyncStoreEnabled() throws Exception {
-        checkRetry(Test.PUT_ASYNC, false, true);
+        checkRetry(InnerTest.PUT_ASYNC, false, true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testInvoke() throws Exception {
-        checkRetry(Test.INVOKE, false, false);
+        checkRetry(InnerTest.INVOKE, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testInvokeAll() throws Exception {
-        checkRetry(Test.INVOKE_ALL, false, false);
+        checkRetry(InnerTest.INVOKE_ALL, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testInvokeAllEvict() throws Exception {
-        checkRetry(Test.INVOKE_ALL, true, false);
+        checkRetry(InnerTest.INVOKE_ALL, true, false);
     }
 
     /**
@@ -232,7 +236,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
      * @param store If {@code true} uses cache with store.
      * @throws Exception If failed.
      */
-    protected final void checkRetry(Test test, boolean evict, boolean store) throws Exception {
+    protected final void checkRetry(InnerTest test, boolean evict, boolean store) throws Exception {
         ignite(0).createCache(cacheConfiguration(evict, store));
 
         final AtomicBoolean finished = new AtomicBoolean();
@@ -292,8 +296,8 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
                         for (int i = 0; i < keysCnt; i++) {
                             Integer old = cache.getAndPut(i, val);
 
-                            assertTrue("Unexpected old value [old=" + old + ", exp=" + expOld + ']',
-                                expOld.equals(old) || val.equals(old));
+                            assertTrue(expOld.equals(old) || val.equals(old),
+                                "Unexpected old value [old=" + old + ", exp=" + expOld + ']');
                         }
 
                         for (int i = 0; i < keysCnt; i++)
@@ -313,7 +317,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
                             final Integer key = i;
 
                             doInTransaction(ignite, new Callable<Void>() {
-                                @Override public Void call() throws Exception {
+                                @Override public Void call() {
                                     cache.put(key, val);
 
                                     return null;
@@ -458,14 +462,14 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
             Collection<?> futs = ignite.context().cache().context().mvcc().atomicFutures();
 
-            assertTrue("Unexpected atomic futures: " + futs, futs.isEmpty());
+            assertTrue(futs.isEmpty(), "Unexpected atomic futures: " + futs);
         }
     }
 
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testFailsWithNoRetries() throws Exception {
         checkFailsWithNoRetries(false);
     }
@@ -473,7 +477,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testFailsWithNoRetriesAsync() throws Exception {
         checkFailsWithNoRetries(true);
     }
@@ -519,8 +523,8 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
                             cache.put(i, i);
                     }
                     catch (Exception e) {
-                        assertTrue("Invalid exception: " + e,
-                            X.hasCause(e, ClusterTopologyCheckedException.class, CachePartialUpdateException.class));
+                        assertTrue(X.hasCause(e, ClusterTopologyCheckedException.class, CachePartialUpdateException.class),
+                            "Invalid exception: " + e);
 
                         eThrown = true;
 
@@ -551,7 +555,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
     /**
      *
      */
-    enum Test {
+    enum InnerTest {
         /** */
         PUT,
 

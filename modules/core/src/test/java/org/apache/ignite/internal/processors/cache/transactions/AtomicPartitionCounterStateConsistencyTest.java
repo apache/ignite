@@ -33,7 +33,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.util.typedef.X;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 
 import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;

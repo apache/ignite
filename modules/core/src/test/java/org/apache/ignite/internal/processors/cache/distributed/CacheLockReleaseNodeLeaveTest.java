@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -127,7 +127,7 @@ public class CacheLockReleaseNodeLeaveTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9213")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9213")
     @Test
     public void testLockTopologyChange() throws Exception {
         final int nodeCnt = 5;

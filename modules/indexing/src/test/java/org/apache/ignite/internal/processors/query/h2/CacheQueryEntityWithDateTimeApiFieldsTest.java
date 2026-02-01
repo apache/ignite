@@ -35,7 +35,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static java.time.temporal.ChronoUnit.MILLIS;
@@ -238,7 +238,7 @@ public class CacheQueryEntityWithDateTimeApiFieldsTest extends AbstractIndexingC
      * Tests updating of all Date and Time fields.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12009")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-12009")
     public void testUpdateAllFields() {
         EntityWithDateTimeFields expEntity = new EntityWithDateTimeFields(entity);
 

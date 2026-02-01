@@ -17,7 +17,7 @@
 package org.apache.ignite.spi.discovery.zk;
 
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerAtomicTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
  */
 public class IgniteCacheEntryListenerWithZkDiscoAtomicTest extends IgniteCacheEntryListenerAtomicTest {
     /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8109")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-8109")
     @Test
     @Override public void testConcurrentRegisterDeregister() throws Exception {
         // No-op.

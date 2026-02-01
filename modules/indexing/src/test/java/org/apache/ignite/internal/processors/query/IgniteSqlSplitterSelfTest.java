@@ -52,7 +52,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.StringUtils;
 
@@ -146,7 +146,7 @@ public class IgniteSqlSplitterSelfTest extends AbstractIndexingCommonTest {
 
     /**
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10199")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-10199")
     @Test
     public void testMergeJoin() {
         IgniteCache<Integer, Org> c = ignite(CLIENT).getOrCreateCache(cacheConfig("org", true,

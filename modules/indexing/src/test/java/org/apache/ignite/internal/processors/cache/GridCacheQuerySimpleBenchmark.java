@@ -37,14 +37,14 @@ import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
  *
  */
 // Benchmark.
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-13728")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-13728")
 public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
     /** */
     private Ignite ignite;

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.eviction.paged;
 
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -30,7 +30,7 @@ public class RandomLruNearEnabledPageEvictionMultinodeTest extends RandomLruPage
     }
 
     /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-18544")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-18544")
     @Test
     @Override public void testPageEviction() {
         // Ignored.

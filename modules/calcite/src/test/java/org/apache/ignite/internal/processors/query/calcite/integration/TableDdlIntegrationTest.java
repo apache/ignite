@@ -47,14 +47,14 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.hamcrest.CustomMatcher;
 import org.hamcrest.Matcher;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.TestUtils.hasSize;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /** */
 public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
@@ -884,7 +884,7 @@ public class TableDdlIntegrationTest extends AbstractDdlIntegrationTest {
      * Alter table from server and client nodes.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-16292")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-16292")
     public void alterTableServerAndClient() throws Exception {
         sql(grid(0), "create table my_table (id int primary key, val varchar)");
 

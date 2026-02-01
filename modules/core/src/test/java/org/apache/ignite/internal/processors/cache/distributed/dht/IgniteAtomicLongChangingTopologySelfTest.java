@@ -43,7 +43,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -159,7 +159,7 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9015")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9015")
     @Test
     public void testClientSetCreateCloseFailover() throws Exception {
         checkClientSetCreateCloseFailover(false);

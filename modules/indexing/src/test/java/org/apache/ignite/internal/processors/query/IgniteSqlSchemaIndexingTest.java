@@ -33,7 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.index.AbstractIndexingCommonTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -75,7 +75,7 @@ public class IgniteSqlSchemaIndexingTest extends AbstractIndexingCommonTest {
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10723")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-10723")
     @Test
     public void testCaseSensitive() throws Exception {
         //TODO rewrite with dynamic cache creation, and GRID start in #beforeTest after resolve of
@@ -104,7 +104,7 @@ public class IgniteSqlSchemaIndexingTest extends AbstractIndexingCommonTest {
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10723")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-10723")
     @Test
     public void testCustomSchemaMultipleCachesTablesCollision() throws Exception {
         //TODO: Rewrite with dynamic cache creation, and GRID start in #beforeTest after resolve of

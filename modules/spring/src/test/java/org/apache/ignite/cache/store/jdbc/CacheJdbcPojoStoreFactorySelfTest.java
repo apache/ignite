@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.jdbcx.JdbcDataSource;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -72,7 +72,7 @@ public class CacheJdbcPojoStoreFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10723")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-10723")
     @Test
     public void testIncorrectBeanConfiguration() throws Exception {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {

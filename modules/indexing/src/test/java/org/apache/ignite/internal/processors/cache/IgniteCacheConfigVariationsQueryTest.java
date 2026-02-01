@@ -40,7 +40,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -219,7 +219,7 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11886")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11886")
     @Test
     public void testLocalScanQuery() throws Exception {
         runInAllDataModes(new TestRunnable() {
@@ -258,7 +258,7 @@ public class IgniteCacheConfigVariationsQueryTest extends IgniteCacheConfigVaria
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11886")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11886")
     @Test
     public void testScanQueryLocalFilter() throws Exception {
         runInAllDataModes(new TestRunnable() {

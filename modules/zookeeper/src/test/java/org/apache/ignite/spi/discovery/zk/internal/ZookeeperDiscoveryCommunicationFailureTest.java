@@ -62,7 +62,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -431,7 +431,7 @@ public class ZookeeperDiscoveryCommunicationFailureTest extends ZookeeperDiscove
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10988")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-10988")
     @Test
     public void testCommunicationFailureResolve_KillRandom() throws Exception {
         sesTimeout = 2000;

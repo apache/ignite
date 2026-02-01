@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -27,7 +27,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 /**
  * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class GridCacheOnCopyFlagAtomicSelfTest extends GridCacheOnCopyFlagAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {

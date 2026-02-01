@@ -51,8 +51,11 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Job stealing test.
@@ -305,7 +308,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fatiled.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12629")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-12629")
     @Test
     public void testJobStealingMbeanValidity() throws Exception {
         String[] beansToValidate = new String[] {

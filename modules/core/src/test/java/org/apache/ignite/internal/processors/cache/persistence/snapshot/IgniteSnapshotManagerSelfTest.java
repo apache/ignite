@@ -79,7 +79,12 @@ import static org.apache.ignite.internal.processors.cache.persistence.snapshot.I
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNAPSHOT_RUNNER_THREAD_PREFIX;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
  * Default snapshot manager test.
@@ -240,8 +245,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx ig2 = startGridsFromSnapshot(1, SNAPSHOT_NAME);
 
         for (int i = 0; i < CACHE_KEYS_RANGE; i++) {
-            assertEquals("snapshot data consistency violation [key=" + i + ']',
-                i * valMultiplier, ((Account)ig2.cache(DEFAULT_CACHE_NAME).get(i)).balance);
+            assertEquals(i * valMultiplier, ((Account)ig2.cache(DEFAULT_CACHE_NAME).get(i)).balance,
+                "snapshot data consistency violation [key=" + i + ']');
         }
     }
 
@@ -330,7 +335,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
     }
 
     /** @throws Exception If fails. */
-    @Test(expected = IgniteCheckedException.class)
+    @Test
     public void testLocalSnapshotOnCacheStopped() throws Exception {
         IgniteEx ig = startGridWithCache(dfltCacheCfg, CACHE_KEYS_RANGE);
 
@@ -356,7 +361,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
                     try {
                         U.await(cpLatch);
 
-                        delegate.sendPart0(from, to, storagePath, pair, length);
+                        assertThrows(IgniteException.class, () ->  delegate.sendPart0(from, to, storagePath, pair, length));
                     }
                     catch (IgniteInterruptedCheckedException e) {
                         throw new IgniteException(e);
@@ -464,15 +469,16 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
                 CacheDataRow row = iter.next();
 
                 // Invariant for cache: cache key always equals to cache value.
-                assertEquals("Invalid key/value pair [key=" + row.key() + ", val=" + row.value() + ']',
+                assertEquals(
                     row.key().value(coctx, false, U.resolveClassLoader(ignite.configuration())),
-                    (Integer)row.value().value(coctx, false));
+                    (Integer)row.value().value(coctx, false),
+                    "Invalid key/value pair [key=" + row.key() + ", val=" + row.value() + ']');
 
                 rows++;
             }
         }
 
-        assertEquals("Invalid number of rows: " + rows, keys, rows);
+        assertEquals(keys, rows, "Invalid number of rows: " + rows);
     }
 
     /** @throws Exception If fails. */
@@ -517,7 +523,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
             }
         }
 
-        assertEquals("Invalid number of rows: " + rows, keys, rows);
+        assertEquals(keys, rows, "Invalid number of rows: " + rows);
     }
 
     /** @throws Exception If fails. */
@@ -534,8 +540,8 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
         IgniteEx ignite = startGridsWithCache(1, 4096, key -> new Account(key, key),
             new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
-        assertTrue("Test requires that only forced checkpoints were allowed.",
-            ignite.configuration().getDataStorageConfiguration().getCheckpointFrequency() >= TimeUnit.DAYS.toMillis(365));
+        assertTrue(ignite.configuration().getDataStorageConfiguration().getCheckpointFrequency() >= TimeUnit.DAYS.toMillis(365),
+            "Test requires that only forced checkpoints were allowed.");
 
         GridCacheDatabaseSharedManager dbMgr =
             ((GridCacheDatabaseSharedManager)ignite.context().cache().context().database());
@@ -605,7 +611,7 @@ public class IgniteSnapshotManagerSelfTest extends AbstractSnapshotSelfTest {
      * */
     @Test
     public void testFullSnapshotCreationLog() throws Exception {
-        assumeFalse("https://issues.apache.org/jira/browse/IGNITE-17819", encryption);
+        assumeFalse(encryption, "https://issues.apache.org/jira/browse/IGNITE-17819");
 
         listenLog = new ListeningTestLogger(log);
 

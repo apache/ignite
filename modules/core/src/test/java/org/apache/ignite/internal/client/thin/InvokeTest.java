@@ -35,11 +35,17 @@ import org.apache.ignite.client.IgniteClientFuture;
 import org.apache.ignite.client.Person;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
-import org.junit.Assume;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.ValueSource;
+
+import static org.apache.ignite.testframework.GridTestUtils.assertEqualsArraysAware;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
  * Checks entry processor invocation for thin client.
@@ -268,7 +274,7 @@ public class InvokeTest extends AbstractThinClientTest {
      */
     @Test
     public void testExplicitTx() {
-        Assume.assumeFalse(atomic);
+        assumeFalse(atomic);
 
         try (ClientTransaction tx = client.transactions().txStart()) {
             cache.invoke(0, new TestEntryProcessor(), 1, 2, 3);

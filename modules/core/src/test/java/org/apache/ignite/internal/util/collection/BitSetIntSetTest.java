@@ -26,7 +26,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -71,7 +76,7 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
     }
 
     /** */
-    @Test(expected = NoSuchElementException.class)
+    @Test
     public void shouldThrowExceptionIfHasNotNextElement() {
         IntSet intSet = new BitSetIntSet(2);
         intSet.add(1);
@@ -80,7 +85,7 @@ public class BitSetIntSetTest extends GridCommonAbstractTest {
 
         iter.next();
         iter.next();
-        iter.next();
+        assertThrows(NoSuchElementException.class, iter::next);
     }
 
     /** */

@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetrics
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMetrics;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /** */
 public class IndexPagesMetricsPersistentTest extends AbstractIndexPageMetricsTest {

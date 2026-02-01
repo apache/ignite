@@ -35,12 +35,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 
 /**
  *
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest {
     /** Condition id. */
     private int condId;

@@ -56,7 +56,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.GridTestUtils.SF;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.events.EventType.EVT_JOB_MAPPED;
@@ -64,6 +64,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_TASK_FAILED;
 import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test for {@link TcpDiscoverySpi}.
@@ -99,7 +101,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
-    public TcpDiscoveryMultiThreadedTest() throws Exception {
+    public TcpDiscoveryMultiThreadedTest() {
         super(false);
     }
 
@@ -214,7 +216,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1123")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-1123")
     @Test
     public void testMultiThreadedClientsServersRestart() throws Throwable {
         multiThreadedClientsServersRestart(GRID_CNT, CLIENT_GRID_CNT);
@@ -223,7 +225,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If any error occurs.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-1123")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-1123")
     @Test
     public void testMultiThreadedServersRestart() throws Throwable {
         multiThreadedClientsServersRestart(GRID_CNT * 2, 0);
@@ -493,7 +495,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10198")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-10198")
     @Test
     public void testCustomEventOnJoinCoordinatorStop() throws Exception {
         for (int k = 0; k < 10; k++) {
@@ -591,7 +593,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10198")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-10198")
     @Test
     public void testClientContinuousQueryCoordinatorStop() throws Exception {
         for (int k = 0; k < 10; k++) {
@@ -662,7 +664,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-10249")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-10249")
     @Test
     public void testCustomEventNodeRestart() throws Exception {
         clientFlagGlobal = false;

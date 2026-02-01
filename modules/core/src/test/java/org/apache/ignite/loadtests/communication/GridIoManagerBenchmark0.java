@@ -44,7 +44,7 @@ import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
@@ -53,7 +53,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUB
  *
  */
 // Benchmark.
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-13728")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-13728")
 public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
     /** */
     public static final int CONCUR_MSGS = 10 * 1024;

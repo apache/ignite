@@ -53,7 +53,7 @@ import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_
 import static org.apache.ignite.internal.processors.cache.IgniteCacheQueryH2IndexingLeakTest.STMT_CACHE_TTL;
 import static org.apache.ignite.internal.util.IgniteUtils.max;
 import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * Tests leaks at the IgniteH2Indexing

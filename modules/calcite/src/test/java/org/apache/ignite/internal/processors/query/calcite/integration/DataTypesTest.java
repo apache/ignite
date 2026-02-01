@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.query.calcite.exec.exp.IgniteSqlFun
 import org.apache.ignite.internal.processors.query.calcite.hint.HintDefinition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.SupplierX;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.query.calcite.CalciteQueryProcessor.FRAMEWORK_CONFIG;
@@ -679,7 +679,7 @@ public class DataTypesTest extends AbstractBasicIntegrationTransactionalTest {
     }
 
     /** */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-25749")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-25749")
     @Test
     public void testCharLiteralsInUnion() {
         assumeTrue(sqlTxMode == SqlTransactionMode.NONE);

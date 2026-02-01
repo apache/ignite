@@ -22,7 +22,7 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -96,7 +96,7 @@ public class CacheBlockOnSqlQueryTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9916")
     @Test
     @Override public void testStartServerAtomicPartitioned() {
         // No-op.
@@ -104,7 +104,7 @@ public class CacheBlockOnSqlQueryTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9916")
     @Test
     @Override public void testStartServerTransactionalPartitioned() {
         // No-op.
@@ -112,7 +112,7 @@ public class CacheBlockOnSqlQueryTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9916")
     @Test
     @Override public void testStopServerAtomicPartitioned() {
         // No-op.
@@ -120,7 +120,7 @@ public class CacheBlockOnSqlQueryTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9916")
     @Test
     @Override public void testStopServerTransactionalPartitioned() {
         // No-op.
@@ -128,7 +128,7 @@ public class CacheBlockOnSqlQueryTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9916")
     @Test
     @Override public void testStopBaselineAtomicPartitioned() {
         // No-op.
@@ -136,7 +136,7 @@ public class CacheBlockOnSqlQueryTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9916")
     @Test
     @Override public void testStopBaselineTransactionalPartitioned() {
         // No-op.
@@ -144,7 +144,7 @@ public class CacheBlockOnSqlQueryTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9916")
     @Test
     @Override public void testStartClientAtomicPartitioned() {
         // No-op.
@@ -152,7 +152,7 @@ public class CacheBlockOnSqlQueryTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9916")
     @Test
     @Override public void testStartClientTransactionalPartitioned() {
         // No-op.
@@ -160,7 +160,7 @@ public class CacheBlockOnSqlQueryTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = PARTITIONED)
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9916")
     @Test
     @Override public void testStopClientAtomicPartitioned() {
         // No-op.
@@ -168,7 +168,7 @@ public class CacheBlockOnSqlQueryTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = PARTITIONED)
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9916")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9916")
     @Test
     @Override public void testStopClientTransactionalPartitioned() {
         // No-op.

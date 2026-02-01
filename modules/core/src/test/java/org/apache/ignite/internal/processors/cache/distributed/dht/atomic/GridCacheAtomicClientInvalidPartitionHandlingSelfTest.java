@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -32,7 +32,7 @@ public class GridCacheAtomicClientInvalidPartitionHandlingSelfTest
 
     /** {@inheritDoc} */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-12332")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-12332")
     @Override public void testPrimaryFullAsync() throws Exception {
         super.testPrimaryFullAsync();
     }

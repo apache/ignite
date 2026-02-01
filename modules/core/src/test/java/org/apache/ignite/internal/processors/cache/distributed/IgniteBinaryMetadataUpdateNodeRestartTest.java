@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -47,7 +47,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  *
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-4768, https://issues.apache.org/jira/browse/IGNITE-9214")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-4768, https://issues.apache.org/jira/browse/IGNITE-9214")
 public class IgniteBinaryMetadataUpdateNodeRestartTest extends GridCommonAbstractTest {
     /** */
     private static final String ATOMIC_CACHE = "atomicCache";

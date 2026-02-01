@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.calcite.QueryChecker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -118,7 +118,7 @@ public class AggregatesIntegrationTest extends AbstractBasicIntegrationTransacti
     }
 
     /** */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-25765")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-25765")
     @Test
     public void testArrayConcatAgg() {
         sql("CREATE TABLE tarr(val INT, arrn INTEGER ARRAY, arrnn INTEGER ARRAY NOT NULL, arrn2 INTEGER ARRAY) WITH "

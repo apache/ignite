@@ -46,7 +46,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PREFER_WAL_REBALANCE;
@@ -221,7 +221,7 @@ public class CachePartitionLostAfterSupplierHasLeftTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13054")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-13054")
     public void testPartitionLostWhileClearing_Restart_2() throws Exception {
         lossPlc = PartitionLossPolicy.READ_WRITE_SAFE;
         persistence = true;

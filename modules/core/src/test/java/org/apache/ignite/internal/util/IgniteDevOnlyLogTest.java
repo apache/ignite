@@ -26,8 +26,11 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Testing logging via {@link IgniteUtils#warnDevOnly(IgniteLogger, Object)}.
@@ -57,7 +60,7 @@ public class IgniteDevOnlyLogTest extends GridCommonAbstractTest {
     }
 
     /** Check that dev-only messages appear in the log. */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9328")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9328")
     @Test
     public void testDevOnlyQuietMessage() throws Exception {
         additionalArgs = Collections.singletonList("-D" + IgniteSystemProperties.IGNITE_QUIET + "=true");

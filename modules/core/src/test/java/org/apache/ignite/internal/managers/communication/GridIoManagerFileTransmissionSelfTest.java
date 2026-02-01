@@ -73,6 +73,14 @@ import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.util.IgniteUtils.fileCount;
 import static org.apache.ignite.testframework.GridTestUtils.setFieldValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test file transmission manager operations.
@@ -186,7 +194,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             }
 
             @Override public Consumer<File> fileHandler(UUID nodeId, TransmissionMeta initMeta) {
-                return new Consumer<File>() {
+                return new Consumer<>() {
                     @Override public void accept(File file) {
                         assertTrue(fileSizes.containsKey(file.getName()));
                         // Save all params.
@@ -224,25 +232,25 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         for (File file : cacheParts) {
             // Check received file lengths.
-            assertEquals("Received the file length is incorrect: " + file.getName(),
-                fileSizes.get(file.getName()), new Long(file.length()));
+            assertEquals(fileSizes.get(file.getName()), new Long(file.length()),
+                "Received the file length is incorrect: " + file.getName());
 
             // Check received params.
-            assertEquals("File additional parameters are not fully transmitted",
-                fileParams.get(file.getName()), file.hashCode());
+            assertEquals(fileParams.get(file.getName()), file.hashCode(),
+                "File additional parameters are not fully transmitted");
         }
 
         // Check received file CRCs.
         for (File file : tempStore.listFiles(NodeFileTree::binFile)) {
-            assertEquals("Received file CRC-32 checksum is incorrect: " + file.getName(),
-                fileCrcs.get(file.getName()), new Integer(FastCrc.calcCrc(file)));
+            assertEquals(fileCrcs.get(file.getName()), new Integer(FastCrc.calcCrc(file)),
+                "Received file CRC-32 checksum is incorrect: " + file.getName());
         }
     }
 
     /**
      * @throws Exception If fails.
      */
-    @Test(expected = IgniteCheckedException.class)
+    @Test
     public void testFileHandlerFilePathThrowsEx() throws Exception {
         final String exTestMsg = "Test exception. Handler initialization failed at onBegin.";
 
@@ -276,14 +284,14 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         try (GridIoManager.TransmissionSender sender = snd.context()
             .io()
             .openTransmissionSender(rcv.localNode().id(), topic)) {
-            sender.send(fileToSend, TransmissionPolicy.FILE);
+            assertThrows(IgniteCheckedException.class, () -> sender.send(fileToSend, TransmissionPolicy.FILE));
         }
     }
 
     /**
      * @throws Exception If fails.
      */
-    @Test(expected = IgniteCheckedException.class)
+    @Test
     public void testFileHandlerOnReceiverLeft() throws Exception {
         final int fileSizeBytes = 5 * 1024 * 1024;
         final AtomicInteger chunksCnt = new AtomicInteger();
@@ -317,7 +325,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         try (GridIoManager.TransmissionSender sender = snd.context()
             .io()
             .openTransmissionSender(rcv.localNode().id(), topic)) {
-            sender.send(fileToSend, TransmissionPolicy.FILE);
+            assertThrows(IgniteCheckedException.class, () -> sender.send(fileToSend, TransmissionPolicy.FILE));
         }
     }
 
@@ -377,10 +385,9 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             U.warn(log, e);
         }
 
-        assertNotNull("Timeout exception not occurred", refErr.get());
-        assertEquals("Type of timeout exception incorrect: " + refErr.get(),
-            IgniteCheckedException.class,
-            refErr.get().getClass());
+        assertNotNull(refErr.get(), "Timeout exception not occurred");
+        assertEquals(IgniteCheckedException.class, refErr.get().getClass(),
+            "Type of timeout exception incorrect: " + refErr.get());
     }
 
     /**
@@ -433,15 +440,14 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         }
 
         assertEquals(NodeStoppingException.class, err.getClass());
-        assertEquals("Incomplete resources must be cleaned up on sender left",
-            0,
-            fileCount(downloadTo.toPath()));
+        assertEquals(0, fileCount(downloadTo.toPath()),
+            "Incomplete resources must be cleaned up on sender left");
     }
 
     /**
      * @throws Exception If fails.
      */
-    @Test(expected = IgniteCheckedException.class)
+    @Test
     public void testFileHandlerReconnectOnReadFail() throws Exception {
         final String chunkDownloadExMsg = "Test exception. Chunk processing error.";
 
@@ -478,14 +484,14 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         try (GridIoManager.TransmissionSender sender = snd.context()
             .io()
             .openTransmissionSender(rcv.localNode().id(), topic)) {
-            sender.send(fileToSend, TransmissionPolicy.FILE);
+            assertThrows(IgniteCheckedException.class, () -> sender.send(fileToSend, TransmissionPolicy.FILE));
         }
     }
 
     /**
      * @throws Exception If fails.
      */
-    @Test(expected = IgniteCheckedException.class)
+    @Test
     public void testFileHandlerSenderStoppedIfReceiverInitFail() throws Exception {
         final int fileSizeBytes = 5 * 1024 * 1024;
         final AtomicBoolean throwFirstTime = new AtomicBoolean();
@@ -508,7 +514,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         try (GridIoManager.TransmissionSender sender = snd.context()
             .io()
             .openTransmissionSender(rcv.localNode().id(), topic)) {
-            sender.send(fileToSend, TransmissionPolicy.FILE);
+            assertThrows(IgniteCheckedException.class, () -> sender.send(fileToSend, TransmissionPolicy.FILE));
         }
 
         assertEquals(fileToSend.length(), rcvFile.length());
@@ -531,7 +537,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         rcv.context().io().addTransmissionHandler(topic, new DefaultTransmissionHandler(rcv, fileToSend, tempStore) {
             @Override public void onException(UUID nodeId, Throwable err) {
-                assertEquals("Previous session is not closed properly", IgniteCheckedException.class, err.getClass());
+                assertEquals(IgniteCheckedException.class, err.getClass(), "Previous session is not closed properly");
             }
 
             @Override public String filePath(UUID nodeId, TransmissionMeta fileMeta) {
@@ -554,7 +560,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             expectedErr = e;
         }
 
-        assertNotNull("Transmission must ends with an exception", expectedErr);
+        assertNotNull(expectedErr, "Transmission must ends with an exception");
 
         // Open next session and complete successfull.
         try (GridIoManager.TransmissionSender sender = snd.context()
@@ -570,7 +576,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If fails.
      */
-    @Test(expected = IgniteException.class)
+    @Test
     public void testFileHandlerSendToNullTopic() throws Exception {
         snd = startGrid(0);
         rcv = startGrid(1);
@@ -582,14 +588,15 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         try (GridIoManager.TransmissionSender sender = snd.context()
             .io()
             .openTransmissionSender(rcv.localNode().id(), topic)) {
-            sender.send(createFileRandomData("File_1MB", 1024 * 1024), TransmissionPolicy.FILE);
+            assertThrows(IgniteException.class, () ->
+                    sender.send(createFileRandomData("File_1MB", 1024 * 1024), TransmissionPolicy.FILE));
         }
     }
 
     /**
      * @throws Exception If fails.
      */
-    @Test(expected = IgniteCheckedException.class)
+    @Test
     public void testFileHandlerChannelCloseIfAnotherOpened() throws Exception {
         final int fileSizeBytes = 5 * 1024 * 1024;
         final CountDownLatch waitLatch = new CountDownLatch(2);
@@ -645,12 +652,11 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             waitLatch.await(5, TimeUnit.SECONDS);
 
             // Expected that one of the writers will throw exception.
-            assertFalse("An error must be thrown if connected to the same topic during processing",
-                errs[0] == null);
+            assertFalse(errs[0] == null, "An error must be thrown if connected to the same topic during processing");
 
             completionWait.await(5, TimeUnit.SECONDS);
 
-            throw errs[0];
+            assertInstanceOf(IgniteCheckedException.class, errs[0]);
         }
     }
 
@@ -740,10 +746,9 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
             sender.send(fileToSend, TransmissionPolicy.CHUNK);
         }
 
-        assertEquals("Remote node must accept all chunks",
-            fileToSend.length() / rcv.configuration().getDataStorageConfiguration().getPageSize(),
-            acceptedChunks.get());
-        assertEquals("Received file and sent files have not the same lengtgh", fileToSend.length(), file.length());
+        assertEquals(fileToSend.length() / rcv.configuration().getDataStorageConfiguration().getPageSize(),
+            acceptedChunks.get(), "Remote node must accept all chunks");
+        assertEquals(fileToSend.length(), file.length(), "Received file and sent files have not the same lengtgh");
         assertCrcEquals(fileToSend, file);
         assertNull(fileIo[0]);
     }
@@ -751,7 +756,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If fails.
      */
-    @Test(expected = IgniteCheckedException.class)
+    @Test
     public void testChunkHandlerInitSizeFail() throws Exception {
         snd = startGrid(0);
         rcv = startGrid(1);
@@ -768,14 +773,14 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         try (GridIoManager.TransmissionSender sender = snd.context()
             .io()
             .openTransmissionSender(rcv.localNode().id(), topic)) {
-            sender.send(fileToSend, TransmissionPolicy.CHUNK);
+            assertThrows(IgniteCheckedException.class, () -> sender.send(fileToSend, TransmissionPolicy.CHUNK));
         }
     }
 
     /**
      * @throws Exception If fails.
      */
-    @Test(expected = TransmissionCancelledException.class)
+    @Test
     public void testChunkHandlerCancelTransmission() throws Exception {
         snd = startGrid(0);
         rcv = startGrid(1);
@@ -798,7 +803,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         try (GridIoManager.TransmissionSender sender = snd.context()
             .io()
             .openTransmissionSender(rcv.localNode().id(), topic)) {
-            sender.send(fileToSend, TransmissionPolicy.CHUNK);
+            assertThrows(TransmissionCancelledException.class, () -> sender.send(fileToSend, TransmissionPolicy.CHUNK));
         }
         catch (TransmissionCancelledException e) {
             log.warning("Transmission cancelled", e);
@@ -884,7 +889,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         touched.await(10_000L, TimeUnit.MILLISECONDS);
 
-        assertNull("Exception occurred during file sending: " + ex[0], ex[0]);
+        assertNull(ex[0], "Exception occurred during file sending: " + ex[0]);
     }
 
     /**
@@ -899,8 +904,8 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
         ConcurrentMap<Object, Object> ctxs = GridTestUtils.getFieldValue(io, "rcvCtxs");
         ConcurrentMap<T2<UUID, IgniteUuid>, AtomicBoolean> sndrFlags = GridTestUtils.getFieldValue(io, "senderStopFlags");
 
-        assertTrue("Receiver context map must be empty: " + ctxs, ctxs.isEmpty());
-        assertTrue("Sender stop flags must be empty: " + sndrFlags, sndrFlags.isEmpty());
+        assertTrue(ctxs.isEmpty(), "Receiver context map must be empty: " + ctxs);
+        assertTrue(sndrFlags.isEmpty(), "Sender stop flags must be empty: " + sndrFlags);
     }
 
     /**
@@ -985,7 +990,7 @@ public class GridIoManagerFileTransmissionSelfTest extends GridCommonAbstractTes
 
         /** {@inheritDoc} */
         @Override public Consumer<File> fileHandler(UUID nodeId, TransmissionMeta initMeta) {
-            return new Consumer<File>() {
+            return new Consumer<>() {
                 @Override public void accept(File file) {
                     assertEquals(fileToSend.length(), file.length());
                     assertCrcEquals(fileToSend, file);

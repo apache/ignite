@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridClientCache
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.CAS;
@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.processors.rest.client.message.GridClie
  * Tests basic performance of marshallers.
  */
 // Benchmark.
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-13728")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-13728")
 public class ClientMarshallerBenchmarkTest extends GridCommonAbstractTest {
     /** Marshallers to test. */
     private GridClientMarshaller[] marshallers;

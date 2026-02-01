@@ -44,7 +44,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -53,7 +53,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-14327")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-14327")
 public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTest {
     /**
      * The number of entries to put to the test cache.

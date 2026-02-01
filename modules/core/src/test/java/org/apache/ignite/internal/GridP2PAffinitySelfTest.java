@@ -34,15 +34,17 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Tests affinity and affinity mapper P2P loading.
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-13267")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-13267")
 public class GridP2PAffinitySelfTest extends GridCommonAbstractTest {
     /** */
     private static final String EXT_AFFINITY_MAPPER_CLS_NAME = "org.apache.ignite.tests.p2p.GridExternalAffinityKeyMapper";
@@ -173,7 +175,7 @@ public class GridP2PAffinitySelfTest extends GridCommonAbstractTest {
             Map<ClusterNode, Collection<Integer>> map = g1.<Integer>affinity(DEFAULT_CACHE_NAME).mapKeysToNodes(F.asList(0));
 
             assertNotNull(map);
-            assertEquals("Invalid map size: " + map.size(), 1, map.size());
+            assertEquals(1, map.size(), "Invalid map size: " + map.size());
             assertEquals(F.first(map.keySet()), first);
 
             ClusterNode n1 = g1.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(1);

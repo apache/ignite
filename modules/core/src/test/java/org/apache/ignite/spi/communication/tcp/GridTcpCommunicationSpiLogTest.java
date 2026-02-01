@@ -37,13 +37,15 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Class for {@link TcpCommunicationSpi} logging tests.
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-13723")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-13723")
 public class GridTcpCommunicationSpiLogTest extends GridCommonAbstractTest {
     /** Listener log messages. */
     private static ListeningTestLogger srvTestLog;
@@ -93,8 +95,8 @@ public class GridTcpCommunicationSpiLogTest extends GridCommonAbstractTest {
         srvTestLog.registerListener(logLsnr0);
         srvTestLog.registerListener(logLsnr1);
 
-        Ignite srv = startGrid(0);
-        Ignite client = startClientGrid(1);
+        startGrid(0);
+        startClientGrid(1);
 
         U.sleep(1000);
 
@@ -114,7 +116,7 @@ public class GridTcpCommunicationSpiLogTest extends GridCommonAbstractTest {
 
         srvTestLog.registerListener(logLsnr0);
 
-        Ignite srv = startGrid(0);
+        startGrid(0);
         Ignite client = startGrid(1);
 
         client.close();

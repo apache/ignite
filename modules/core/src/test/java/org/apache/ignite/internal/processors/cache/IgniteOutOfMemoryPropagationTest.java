@@ -37,14 +37,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
  *
  */
 // Now it takes too long.
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-6753, https://issues.apache.org/jira/browse/IGNITE-9218")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-6753, https://issues.apache.org/jira/browse/IGNITE-9218")
 public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
     /** */
     public static final int NODES = 3;

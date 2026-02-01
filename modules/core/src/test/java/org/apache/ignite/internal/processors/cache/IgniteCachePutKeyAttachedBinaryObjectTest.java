@@ -26,8 +26,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
@@ -84,7 +86,7 @@ public class IgniteCachePutKeyAttachedBinaryObjectTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-13080")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-13080")
     public void testKeyRefersToSubkeyInValue() throws Exception {
         startGrid(0);
 

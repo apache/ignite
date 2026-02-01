@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.standbycluster.join;
 
 import org.apache.ignite.internal.processors.cache.persistence.standbycluster.AbstractNodeJoinTemplate;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -199,7 +199,7 @@ public class JoinInActiveNodeToInActiveCluster extends AbstractNodeJoinTemplate 
     }
 
     /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5518")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-5518")
     @Test
     @Override public void testJoinClientStaticCacheConfigurationInCluster() throws Exception {
         joinClientStaticCacheConfigurationInClusterTemplate().execute();
@@ -212,7 +212,7 @@ public class JoinInActiveNodeToInActiveCluster extends AbstractNodeJoinTemplate 
     }
 
     /** {@inheritDoc} */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-5518")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-5518")
     @Test
     @Override public void testJoinClientStaticCacheConfigurationDifferentOnBoth() throws Exception {
         joinClientStaticCacheConfigurationDifferentOnBothTemplate().execute();

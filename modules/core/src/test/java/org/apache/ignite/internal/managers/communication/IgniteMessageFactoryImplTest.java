@@ -28,6 +28,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -49,13 +50,13 @@ public class IgniteMessageFactoryImplTest {
     /**
      * Tests that impossible register new message after initialization.
      */
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testReadOnly() {
         MessageFactoryProvider[] factories = {new TestMessageFactoryPovider(), new TestMessageFactory()};
 
         MessageFactory msgFactory = new IgniteMessageFactoryImpl(factories);
 
-        msgFactory.register((short)0, () -> null);
+        assertThrows(IllegalStateException.class, () -> msgFactory.register((short)0, () -> null));
     }
 
     /**
@@ -86,19 +87,19 @@ public class IgniteMessageFactoryImplTest {
     /**
      * Tests that exception will be thrown for unknown message direct type.
      */
-    @Test(expected = IgniteException.class)
+    @Test
     public void testCreate_UnknownMessageType() {
         MessageFactoryProvider[] factories = {new TestMessageFactoryPovider(), new TestMessageFactory()};
 
         MessageFactory msgFactory = new IgniteMessageFactoryImpl(factories);
 
-        msgFactory.create(UNKNOWN_MSG_TYPE);
+        assertThrows(IgniteException.class, () ->  msgFactory.create(UNKNOWN_MSG_TYPE));
     }
 
     /**
      * Tests attemption of registration message with already registered message type.
      */
-    @Test(expected = IgniteException.class)
+    @Test
     @SuppressWarnings("ResultOfObjectAllocationIgnored")
     public void testRegisterTheSameType() {
         MessageFactoryProvider[] factories = {
@@ -107,7 +108,7 @@ public class IgniteMessageFactoryImplTest {
             new TestMessageFactoryPoviderWithTheSameDirectType()
         };
 
-        new IgniteMessageFactoryImpl(factories);
+        assertThrows(IgniteException.class, () ->  new IgniteMessageFactoryImpl(factories));
     }
 
     /**

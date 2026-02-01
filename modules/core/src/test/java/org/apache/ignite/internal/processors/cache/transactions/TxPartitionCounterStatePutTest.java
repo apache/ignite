@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.cache.PartitionUpdateCounter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -141,14 +141,14 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11793")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11793")
     public void testPutAtomicConcurrentPersistentWithIsolatedMode() throws Exception {
         doTestPutConcurrent(ATOMIC_CACHE, false);
     }
 
     /** */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11793")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11793")
     public void testPutTxConcurrentPersistentWithIsolatedMode() throws Exception {
         doTestPutConcurrent(TX_CACHE, false);
     }
@@ -179,14 +179,14 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11793")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11793")
     public void testPutAtomicConcurrentVolatileWithIsolatedMode() throws Exception {
         doTestPutConcurrent(ATOMIC_CACHE_MEMORY, false);
     }
 
     /** */
     @Test
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11793")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11793")
     public void testPutTxConcurrentVolatileWithIsolatedMode() throws Exception {
         doTestPutConcurrent(TX_CACHE_MEMORY, false);
     }

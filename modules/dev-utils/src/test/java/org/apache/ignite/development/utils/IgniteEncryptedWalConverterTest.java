@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * Class that contains tests on interaction between the {@link IgniteWalConverter} and encrypted WALs.

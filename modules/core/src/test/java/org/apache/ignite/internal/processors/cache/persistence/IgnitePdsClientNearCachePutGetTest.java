@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.internal.processors.database.IgniteDbPutGetAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 
 /**
  *
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-7510")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-7510")
 public class IgnitePdsClientNearCachePutGetTest extends IgniteDbPutGetAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {

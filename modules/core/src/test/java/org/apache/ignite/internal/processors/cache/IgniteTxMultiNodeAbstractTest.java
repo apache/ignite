@@ -46,7 +46,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -442,7 +442,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11956")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11956")
     @Test
     public void testPutTwoEntriesInTx() throws Exception {
 //        resetLog4j(Level.INFO, true, GridCacheTxManager.class.getName());
@@ -508,7 +508,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11956")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11956")
     @Test
     public void testPutTwoEntryInTxMultiThreaded() throws Exception {
 //        resetLog4j(Level.INFO, true, GridCacheTxManager.class.getName());
@@ -550,7 +550,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11956")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11956")
     @Test
     public void testRemoveInTxQueried() throws Exception {
         //resetLog4j(Level.INFO, true, GridCacheTxManager.class.getPackage().getName());
@@ -594,7 +594,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11956")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11956")
     @Test
     public void testRemoveInTxSimple() throws Exception {
         startGrids(GRID_CNT);
@@ -642,7 +642,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-11956")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-11956")
     @Test
     public void testRemoveInTxQueriedMultiThreaded() throws Exception {
         //resetLog4j(Level.INFO, true, GridCacheTxManager.class.getPackage().getName());

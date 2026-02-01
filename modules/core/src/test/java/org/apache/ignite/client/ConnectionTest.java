@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.ClientConfiguration;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -44,15 +45,15 @@ public class ConnectionTest {
     }
 
     /** */
-    @Test(expected = org.apache.ignite.client.ClientException.class)
-    public void testNullNodeAddress() throws Exception {
-        testConnection(IPv4_HOST, null);
+    @Test
+    public void testNullNodeAddress() {
+        assertThrows(ClientException.class, () -> testConnection(IPv4_HOST, null));
     }
 
     /** */
-    @Test(expected = org.apache.ignite.client.ClientException.class)
-    public void testNullNodeAddresses() throws Exception {
-        testConnection(IPv4_HOST, null, null);
+    @Test
+    public void testNullNodeAddresses() {
+        assertThrows(ClientException.class, () -> testConnection(IPv4_HOST, null, null));
     }
 
     /** */
@@ -62,9 +63,10 @@ public class ConnectionTest {
     }
 
     /** */
-    @Test(expected = org.apache.ignite.client.ClientConnectionException.class)
+    @Test
     public void testInvalidNodeAddresses() throws Exception {
-        testConnection(IPv4_HOST, "127.0.0.1:47500", "127.0.0.1:10801");
+        assertThrows(ClientConnectionException.class, () ->
+                testConnection(IPv4_HOST, "127.0.0.1:47500", "127.0.0.1:10801"));
     }
 
     /** */
@@ -81,12 +83,12 @@ public class ConnectionTest {
     }
 
     /** */
-    @Test(expected = org.apache.ignite.client.ClientConnectionException.class)
-    public void testInvalidBigHandshakeMessage() throws Exception {
+    @Test
+    public void testInvalidBigHandshakeMessage() {
         char[] data = new char[1024 * 1024 * 128];
         String userName = new String(data);
 
-        testConnectionWithUsername(userName, Config.SERVER);
+        assertThrows(ClientConnectionException.class, () -> testConnectionWithUsername(userName, Config.SERVER));
     }
 
     /** */
@@ -147,7 +149,7 @@ public class ConnectionTest {
      * @param addrs Addresses to connect.
      * @param host LocalIgniteCluster host.
      */
-    private void testConnection(String host, String... addrs) throws Exception {
+    private void testConnection(String host, String... addrs) {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1, host);
              IgniteClient client = Ignition.startClient(new ClientConfiguration()
                      .setAddresses(addrs))) {
@@ -158,7 +160,7 @@ public class ConnectionTest {
      * @param userName User name.
      * @param addrs Addresses to connect.
      */
-    private void testConnectionWithUsername(String userName, String... addrs) throws Exception {
+    private void testConnectionWithUsername(String userName, String... addrs) {
         try (LocalIgniteCluster cluster = LocalIgniteCluster.start(1);
              IgniteClient client = Ignition.startClient(new ClientConfiguration()
                  .setAddresses(addrs)

@@ -21,7 +21,7 @@ import java.util.Objects;
 import java.util.Random;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -79,7 +79,7 @@ public class CacheBlockOnScanTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = REPLICATED)
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9987")
     @Test
     @Override public void testStartClientAtomicReplicated() {
         // No-op
@@ -87,7 +87,7 @@ public class CacheBlockOnScanTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9987")
     @Test
     @Override public void testStartClientTransactionalReplicated() {
         // No-op
@@ -95,7 +95,7 @@ public class CacheBlockOnScanTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = ATOMIC, cacheMode = REPLICATED)
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9987")
     @Test
     @Override public void testStopClientAtomicReplicated() {
         // No-op
@@ -103,7 +103,7 @@ public class CacheBlockOnScanTest extends CacheBlockOnReadAbstractTest {
 
     /** {@inheritDoc} */
     @Params(baseline = 1, atomicityMode = TRANSACTIONAL, cacheMode = REPLICATED)
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9987")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9987")
     @Test
     @Override public void testStopClientTransactionalReplicated() {
         // No-op

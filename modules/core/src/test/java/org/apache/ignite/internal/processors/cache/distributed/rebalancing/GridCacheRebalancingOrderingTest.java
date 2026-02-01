@@ -58,7 +58,7 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -103,7 +103,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *     </li>
  * </ol>
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-9218")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-9218")
 public class GridCacheRebalancingOrderingTest extends GridCommonAbstractTest {
     /** {@link Random} for test key generation. */
     private static final Random RANDOM = new Random();

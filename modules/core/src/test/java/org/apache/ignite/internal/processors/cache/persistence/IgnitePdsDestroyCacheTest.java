@@ -43,7 +43,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -97,7 +97,7 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8717")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-8717")
     @Test
     public void testDestroyCachesAbruptly() throws Exception {
         Ignite ignite = startGrids(NODES);
@@ -114,7 +114,7 @@ public class IgnitePdsDestroyCacheTest extends IgnitePdsDestroyCacheAbstractTest
      *
      * @throws Exception If failed.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-8717")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-8717")
     @Test
     public void testDestroyGroupCachesAbruptly() throws Exception {
         Ignite ignite = startGrids(NODES);

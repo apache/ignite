@@ -24,13 +24,13 @@ import java.util.Map;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.internal.IgniteEx;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
  * Test of creating and using secondary indexes for tables created through SQL.
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-13723")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-13723")
 @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
 public class ComplexSecondaryKeyUnwrapSelfTest extends AbstractIndexingCommonTest {
     /** Counter to generate unique table names. */

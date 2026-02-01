@@ -46,7 +46,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -205,7 +205,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     /**
      * @throws Exception On error.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9480")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9480")
     @Test
     public void testHeavyScanNonLazy() throws Exception {
         checkQueryExpectOOM("SELECT * from test", false);
@@ -215,7 +215,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      * OOM on reduce. See IGNITE-9933
      * @throws Exception On error.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9933")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9933")
     @Test
     public void testHeavySortByPkLazy() throws Exception {
         checkQueryExpectOOM("SELECT * from test ORDER BY id", true);
@@ -224,7 +224,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     /**
      * @throws Exception On error.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9480")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9480")
     @Test
     public void testHeavySortByPkNotLazy() throws Exception {
         checkQueryExpectOOM("SELECT * from test ORDER BY id", false);
@@ -234,7 +234,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
      * OOM on reduce. See IGNITE-9933
      * @throws Exception On error.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9933")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9933")
     @Test
     public void testHeavySortByIndexLazy() throws Exception {
         checkQueryExpectOOM("SELECT * from test ORDER BY indexed", true);
@@ -243,7 +243,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     /**
      * @throws Exception On error.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9480")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9480")
     @Test
     public void testHeavySortByIndexNotLazy() throws Exception {
         checkQueryExpectOOM("SELECT * from test ORDER BY indexed", false);
@@ -252,7 +252,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     /**
      * @throws Exception On error.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9480")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9480")
     @Test
     public void testHeavySortByNotIndexLazy() throws Exception {
         checkQueryExpectOOM("SELECT * from test ORDER BY STR", true);
@@ -261,7 +261,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     /**
      * @throws Exception On error.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9480")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9480")
     @Test
     public void testHeavySortByNotIndexNotLazy() throws Exception {
         checkQueryExpectOOM("SELECT * from test ORDER BY str", false);
@@ -278,7 +278,7 @@ public abstract class AbstractQueryOOMTest extends GridCommonAbstractTest {
     /**
      * @throws Exception On error.
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-9480")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-9480")
     @Test
     public void testHeavyGroupByPkNotLazy() throws Exception {
         checkQueryExpectOOM("SELECT id, sum(val) from test GROUP BY id", false, true);

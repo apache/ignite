@@ -26,13 +26,13 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.services.ServiceDescriptor;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
  *
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-9081")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-9081")
 public class IgniteChangeGlobalStateServiceTest extends IgniteChangeGlobalStateAbstractTest {
     /** {@inheritDoc} */
     @Override protected int backUpClientNodes() {
@@ -52,7 +52,7 @@ public class IgniteChangeGlobalStateServiceTest extends IgniteChangeGlobalStateA
     /**
      *
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-6629")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-6629")
     @Test
     public void testDeployService() throws Exception {
         Ignite ig1P = primary(0);

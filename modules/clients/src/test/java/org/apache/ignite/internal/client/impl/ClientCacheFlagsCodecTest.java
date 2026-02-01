@@ -25,7 +25,7 @@ import org.apache.ignite.internal.client.GridClientCacheFlag;
 import org.apache.ignite.internal.util.typedef.F;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests conversions between GridClientCacheFlag.

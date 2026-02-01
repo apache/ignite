@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.internal.processors.cache.distributed.IgniteNoClassOnServerAbstractTest;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 
 /**
  *
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class IgniteDataStructuresNoClassOnServerTest extends IgniteNoClassOnServerAbstractTest {
     /** {@inheritDoc} */
     @Override protected String clientClassName() {

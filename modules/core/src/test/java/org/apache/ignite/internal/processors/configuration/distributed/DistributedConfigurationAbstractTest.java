@@ -25,6 +25,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedLongProperty;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -100,13 +103,13 @@ public abstract class DistributedConfigurationAbstractTest extends GridCommonAbs
     }
 
     /**
-     * @throws Exception If failed.
+     *
      */
-    @Test(expected = DetachedPropertyException.class)
-    public void testNotAttachedProperty() throws Exception {
+    @Test
+    public void testNotAttachedProperty() {
         DistributedLongProperty long0 = detachedLongProperty(TEST_PROP, "");
 
-        long0.propagate(1L);
+        assertThrows(DetachedPropertyException.class, () ->  long0.propagate(1L));
     }
 
     /** */

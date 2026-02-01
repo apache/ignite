@@ -35,7 +35,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -43,11 +43,12 @@ import static org.apache.ignite.cache.CacheRebalanceMode.ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-9218")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-9218")
 public class IgniteCacheClientMultiNodeUpdateTopologyLockTest extends GridCommonAbstractTest {
     /** */
     private static final String TEST_CACHE = "testCache";

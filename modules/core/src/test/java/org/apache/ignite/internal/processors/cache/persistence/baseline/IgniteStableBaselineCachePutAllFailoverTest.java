@@ -27,13 +27,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.distributed.CachePutAllFailoverAbstractTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 
 /**
  * Failover cache test with putAll operations executed with presence of BaselineTopology
  * when one random node from BLT is constantly restarted during the load.
  */
-@Ignore("https://issues.apache.org/jira/browse/IGNITE-9214")
+@Disabled("https://issues.apache.org/jira/browse/IGNITE-9214")
 public class IgniteStableBaselineCachePutAllFailoverTest extends CachePutAllFailoverAbstractTest {
     /** */
     private static final int GRIDS_COUNT = 3;

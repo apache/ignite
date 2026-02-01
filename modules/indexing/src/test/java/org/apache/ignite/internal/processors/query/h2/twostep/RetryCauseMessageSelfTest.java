@@ -51,7 +51,7 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_RETRY_TIMEOUT;
@@ -179,7 +179,7 @@ public class RetryCauseMessageSelfTest extends AbstractIndexingCommonTest {
     /**
      * Failed to reserve partitions for query (partition of REPLICATED cache is not in OWNING state)
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-7039")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-7039")
     @Test
     public void testReplicatedCacheReserveFailureMessage() {
         GridMapQueryExecutor mapQryExec = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "mapQryExec");

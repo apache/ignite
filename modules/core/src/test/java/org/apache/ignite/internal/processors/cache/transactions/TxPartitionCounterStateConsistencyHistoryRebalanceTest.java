@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.testframework.junits.WithSystemProperty;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PREFER_WAL_REBALANCE;
 

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 
 /** */
 public class AtomicVolatilePartitionCounterStateConsistencyTest extends AtomicPartitionCounterStateConsistencyTest {

@@ -46,7 +46,7 @@ import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.util.IgniteUtils.MB;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * Test what interruptions of writing threads do not affect PDS.

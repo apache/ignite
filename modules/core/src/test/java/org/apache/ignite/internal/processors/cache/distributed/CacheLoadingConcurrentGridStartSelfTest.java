@@ -50,7 +50,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -163,7 +163,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
-    @Ignore("https://issues.apache.org/jira/browse/IGNITE-4210")
+    @Disabled("https://issues.apache.org/jira/browse/IGNITE-4210")
     @Test
     public void testLoadCacheFromStore() throws Exception {
         loadCache(new IgniteInClosure<Ignite>() {
