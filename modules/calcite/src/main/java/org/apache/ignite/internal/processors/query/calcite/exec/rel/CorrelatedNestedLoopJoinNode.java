@@ -406,6 +406,8 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
         }
 
         if (rightIdx == rightInBuf.size()) {
+            int preservedRightIdx = rightIdx;
+
             leftIdx = 0;
             rightIdx = 0;
 
@@ -429,8 +431,11 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
                 try {
                     while (requested > 0 && notMatchedIdx < leftInBuf.size()) {
-                        if (rescheduleJoin())
+                        if (rescheduleJoin()) {
+                            rightIdx = preservedRightIdx;
+
                             return;
+                        }
 
                         requested--;
 
