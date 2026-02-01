@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
@@ -15,6 +16,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.CacheStoreSession;
+import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilders;
@@ -87,14 +90,20 @@ public class TestCacheStore implements CacheStore<Object, Object> {
                 }
             });
         }
-        cache.putAll(updateMap);
+        else {
+            System.err.println("TEST | sessionEnd: rollback");
+
+            if (new Random().nextBoolean()) {
+                System.err.println("TEST | Rollback failure simulation.");
+
+                throw new RuntimeException("TEST | Rollback failure simulation.");
+            }
+        }
 
         curUpdates.set(null);
     }
 
     @Override public Object load(Object key) throws CacheLoaderException {
-        // System.err.println("TEST | ExternalStorage: load, key=" + key);
-
         Object val = cache.get(key);
 
         if (val == null)
@@ -207,6 +216,32 @@ public class TestCacheStore implements CacheStore<Object, Object> {
         /** {@inheritDoc} */
         @Override public CacheStore<Object, Object> create() {
             return new TestCacheStore();
+        }
+    }
+
+    public static final class TestCacheStoreListenerFactory implements Factory<CacheStoreSessionListener> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public CacheStoreSessionListener create() {
+            return new TestCacheStoreListener();
+        }
+    }
+
+    public static final class TestCacheStoreListener implements CacheStoreSessionListener {
+        @Override public void onSessionStart(CacheStoreSession ses) {
+
+        }
+
+        @Override public void onSessionEnd(CacheStoreSession ses, boolean commit) {
+            if (!commit) {
+                if (new Random().nextBoolean()) {
+                    System.err.println("TEST | Rollback failure simulation.");
+
+                    throw new RuntimeException("TEST | Rollback failure simulation.");
+                }
+            }
         }
     }
 }

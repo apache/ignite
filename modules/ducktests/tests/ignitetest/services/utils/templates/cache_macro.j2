@@ -60,6 +60,11 @@
                         </property>
                         <property name="readThrough" value="true"/>
                         <property name="writeThrough" value="true"/>
+                        <property name="cacheStoreSessionListenerFactories">
+                            <array>
+                                <bean class="org.apache.ignite.internal.ducktest.utils.TestCacheStore.TestCacheStoreListenerFactory"/>
+                            </array>
+                        </property>
                     {% endif %}
 
 
