@@ -47,6 +47,7 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -81,6 +82,10 @@ public class IDTOSerializerGenerator {
     private static final IgniteBiTuple<String, String> OBJECT_SERDES =
         F.t("out.writeObject(obj.${f});", "obj.${f} = (${c})in.readObject();");
 
+    /** */
+    private static final IgniteBiTuple<String, String> STR_STR_MAP =
+        F.t("U.writeStringMap(out, obj.${f});", "obj.${f} = U.readStringMap(in);");
+
     /** Type name to write/read code for the type. */
     private static final Map<String, IgniteBiTuple<String, String>> TYPE_SERDES = new HashMap<>();
 
@@ -114,9 +119,6 @@ public class IDTOSerializerGenerator {
         TYPE_SERDES.put("org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", OBJECT_SERDES);
         TYPE_SERDES.put("org.apache.ignite.cache.CacheMode",
             F.t("out.writeByte(CacheMode.toCode(obj.${f}));", "obj.${f} = CacheMode.fromCode(in.readByte());"));
-
-
-        // TODO: support string, string map
 
         TYPE_SERDES.put(TreeMap.class.getName(), F.t("U.writeMap(out, obj.${f});", "obj.${f} = U.readTreeMap(in);"));
         TYPE_SERDES.put(LinkedHashMap.class.getName(), F.t("U.writeMap(out, obj.${f});", "obj.${f} = U.readLinkedMap(in);"));
@@ -326,7 +328,7 @@ public class IDTOSerializerGenerator {
             TypeMirror type = fld.asType();
             TypeMirror comp = null;
 
-            IgniteBiTuple<String, String> serDes;
+            IgniteBiTuple<String, String> serDes = null;
 
             if (env.getTypeUtils().isAssignable(type, dtoCls))
                 serDes = OBJECT_SERDES;
@@ -341,10 +343,26 @@ public class IDTOSerializerGenerator {
                      serDes = OBJ_ARRAY_SERDES;
             }
             else {
-                serDes = TYPE_SERDES.get(className(type));
+                if (className(type).equals(Map.class.getName())) {
+                    TypeMirror strCls = env.getElementUtils().getTypeElement(String.class.getName()).asType();
 
-                if (serDes == null && enumType(env, type))
-                    serDes = ENUM_SERDES;
+                    DeclaredType dt = (DeclaredType)type;
+
+                    List<? extends TypeMirror> ta = dt.getTypeArguments();
+
+                    if (ta.size() == 2
+                        && env.getTypeUtils().isAssignable(ta.get(0), strCls)
+                        && env.getTypeUtils().isAssignable(ta.get(1), strCls)) {
+                        serDes = STR_STR_MAP;
+                    }
+                }
+
+                if (serDes == null) {
+                    serDes = TYPE_SERDES.get(className(type));
+
+                    if (serDes == null && enumType(env, type))
+                        serDes = ENUM_SERDES;
+                }
             }
 
             if (serDes != null) {
