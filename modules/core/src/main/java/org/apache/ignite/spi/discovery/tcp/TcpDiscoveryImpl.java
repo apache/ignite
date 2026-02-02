@@ -90,6 +90,9 @@ abstract class TcpDiscoveryImpl {
     /** */
     protected final TcpDiscoverySpi spi;
 
+    /** Session serializer. */
+    protected final TcpDiscoveryIoSessionSerializer serde;
+
     /** */
     protected final IgniteLogger log;
 
@@ -157,6 +160,8 @@ abstract class TcpDiscoveryImpl {
      */
     TcpDiscoveryImpl(TcpDiscoverySpi spi) {
         this.spi = spi;
+
+        serde = new TcpDiscoveryIoSessionSerializer(spi);
 
         log = spi.log;
 
@@ -481,10 +486,11 @@ abstract class TcpDiscoveryImpl {
      * Instantiates IO session for exchanging discovery messages with remote node.
      *
      * @param sock Socket to remote node.
+     * @param serde Session serializer.
      * @return IO session for writing and reading {@link TcpDiscoveryAbstractMessage}.
      */
-    TcpDiscoveryIoSession createSession(Socket sock) {
-        return new TcpDiscoveryIoSession(sock, spi);
+    TcpDiscoveryIoSession createSession(Socket sock, TcpDiscoveryIoSessionSerializer serde) {
+        return new TcpDiscoveryIoSession(sock, spi, serde);
     }
 
     /**

@@ -1696,7 +1696,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
             // Write Ignite header without leading byte.
             if (msg != null) {
-                byte mode = msg instanceof Message ? TcpDiscoveryIoSession.MESSAGE_SERIALIZATION : TcpDiscoveryIoSession.JAVA_SERIALIZATION;
+                byte mode = msg instanceof Message ? TcpDiscoveryIoSessionSerializer.MESSAGE_SERIALIZATION :
+                    TcpDiscoveryIoSessionSerializer.JAVA_SERIALIZATION;
 
                 out.write(mode);
             }
