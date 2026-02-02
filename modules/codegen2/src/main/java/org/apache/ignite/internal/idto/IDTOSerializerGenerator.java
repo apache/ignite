@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.function.Function;
 import javax.annotation.processing.FilerException;
@@ -111,6 +112,7 @@ public class IDTOSerializerGenerator {
         TYPE_SERDES.put("org.apache.ignite.internal.management.cache.PartitionKey", OBJECT_SERDES);
         TYPE_SERDES.put("org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", OBJECT_SERDES);
 
+        TYPE_SERDES.put(TreeMap.class.getName(), F.t("U.writeMap(out, obj.${f});", "obj.${f} = U.readTreeMap(in);"));
         TYPE_SERDES.put(Map.class.getName(), F.t("U.writeMap(out, obj.${f});", "obj.${f} = U.readMap(in);"));
         TYPE_SERDES.put(Collection.class.getName(), F.t("U.writeCollection(out, obj.${f});", "obj.${f} = U.readCollection(in);"));
         TYPE_SERDES.put(List.class.getName(), F.t("U.writeCollection(out, obj.${f});", "obj.${f} = U.readList(in);"));
