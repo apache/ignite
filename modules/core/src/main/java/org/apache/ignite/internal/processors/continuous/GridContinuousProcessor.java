@@ -2542,7 +2542,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             resCollect = new DiscoveryMessageResultsCollector<ContinuousRoutineStartResultMessage, RoutineRegisterResults>(ctx) {
                 @Override protected RoutineRegisterResults createResult(Map<UUID, NodeMessage<ContinuousRoutineStartResultMessage>> rcvd) {
-                    Map<UUID, Throwable> errs = null;
+                    Map<UUID, Exception> errs = null;
                     Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode = null;
 
                     for (Map.Entry<UUID, NodeMessage<ContinuousRoutineStartResultMessage>> entry : rcvd.entrySet()) {
@@ -2551,11 +2551,22 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         if (msg == null)
                             continue;
 
-                        Throwable err = msg.error();
+                        String errCls = msg.errorClass();
 
-                        if (err != null) {
+                        if (errCls != null) {
                             if (errs == null)
                                 errs = new HashMap<>();
+
+                            Exception err;
+
+                            try {
+                                err = (Exception)Class.forName(errCls).getConstructor(String.class).newInstance(msg.errorMessage());
+                            }
+                            catch (Exception e) {
+                                U.error(log, "Failed to instantiate exception class: " + errCls, e);
+
+                                err = new IgniteCheckedException(msg.errorMessage());
+                            }
 
                             errs.put(entry.getKey(), err);
                         }
@@ -2592,7 +2603,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          */
         private void onAllRemoteRegistered(
             AffinityTopologyVersion topVer,
-            @Nullable Map<UUID, ? extends Throwable> errs,
+            @Nullable Map<UUID, ? extends Exception> errs,
             Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode,
             Map<Integer, T2<Long, Long>> cntrs) {
             try {
@@ -2616,7 +2627,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     onRemoteRegistered();
                 }
                 else {
-                    Throwable firstEx = F.first(errs.values());
+                    Exception firstEx = F.first(errs.values());
 
                     onDone(firstEx);
 
@@ -2684,7 +2695,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         private final AffinityTopologyVersion topVer;
 
         /** */
-        private final Map<UUID, ? extends Throwable> errs;
+        private final Map<UUID, ? extends Exception> errs;
 
         /** */
         private final Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode;
@@ -2695,7 +2706,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @param cntrsPerNode Update counters.
          */
         RoutineRegisterResults(AffinityTopologyVersion topVer,
-            Map<UUID, ? extends Throwable> errs,
+            Map<UUID, ? extends Exception> errs,
             Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode) {
             this.topVer = topVer;
             this.errs = errs;
