@@ -24,17 +24,18 @@ import org.junit.jupiter.api.Test;
 import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP;
 import static org.apache.ignite.internal.IgniteVersionUtils.REV_HASH_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Versions test.
  */
 public class GridProductVersionSelfTest extends GridCommonAbstractTest {
     /**
-     * @throws Exception If failed.
+     *
      */
     @Test
-    public void testFromString() throws Exception {
+    public void testFromString() {
         IgniteProductVersion ver = IgniteProductVersion.fromString("1.2.3");
 
         assertEquals(1, ver.major());

@@ -40,7 +40,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_GLOBAL_METASTORAGE
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.META_STORAGE;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assume.assumeThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Test for {@link DistributedMetaStorageImpl} with enabled persistence.

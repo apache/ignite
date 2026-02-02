@@ -26,7 +26,8 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheAbstract
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Tests for byte array values in PARTITIONED-ONLY caches.
