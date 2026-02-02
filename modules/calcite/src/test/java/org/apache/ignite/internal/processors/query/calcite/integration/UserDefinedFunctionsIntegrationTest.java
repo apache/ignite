@@ -231,7 +231,7 @@ public class UserDefinedFunctionsIntegrationTest extends AbstractBasicIntegratio
 
     /** */
     @Test
-    public void testUdfAnotherSchema() throws Exception {
+    public void testUdfAnotherSchema() {
         client.getOrCreateCache(new CacheConfiguration<Integer, Object>("emp")
             .setSqlSchema("EMP")
             .setIndexedTypes(Integer.class, Employer.class));
