@@ -100,6 +100,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -3241,19 +3242,37 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (spi.ensured(msg))
                     msgHist.add(msg);
 
+                byte[] msgBytes = null;
+
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
+                    if (msgBytes == null) {
+                        try {
+                            msgBytes = serde.serializeMessage(msg);
+                        }
+                        catch (IgniteCheckedException | IOException e) {
+                            U.error(log, "Failed to serialize message to a client: " + msg + ", recepient " +
+                                "client id: " + clientMsgWorker.clientNodeId, e);
+
+                            break;
+                        }
+                    }
+
+                    TcpDiscoveryAbstractMessage msg0 = msg;
+                    byte[] msgBytes0 = msgBytes;
+
                     if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                         TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
                         if (clientMsgWorker.clientNodeId.equals(nodeAddedMsg.node().id())) {
-                            msg = new TcpDiscoveryNodeAddedMessage(nodeAddedMsg);
+                            msg0 = new TcpDiscoveryNodeAddedMessage(nodeAddedMsg);
 
-                            prepareNodeAddedMessage(msg, clientMsgWorker.clientNodeId, null);
+                            prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null);
+
+                            msgBytes0 = null;
                         }
                     }
 
-                    // TODO Investigate possible optimizations: https://issues.apache.org/jira/browse/IGNITE-27722
-                    clientMsgWorker.addMessage(msg);
+                    clientMsgWorker.addMessage(msg0, msgBytes0);
                 }
             }
         }
@@ -7582,7 +7601,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** */
-    private class ClientMessageWorker extends MessageWorker<TcpDiscoveryAbstractMessage> {
+    private class ClientMessageWorker extends MessageWorker<T2<TcpDiscoveryAbstractMessage, byte[]>> {
         /** Node ID. */
         private final UUID clientNodeId;
 
@@ -7649,10 +7668,20 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          */
         void addMessage(TcpDiscoveryAbstractMessage msg) {
+            addMessage(msg, null);
+        }
+
+        /**
+         * @param msg Message.
+         * @param msgBytes Optional message bytes.
+         */
+        void addMessage(TcpDiscoveryAbstractMessage msg, @Nullable byte[] msgBytes) {
+            T2<TcpDiscoveryAbstractMessage, byte[]> t = new T2<>(msg, msgBytes);
+
             if (msg.highPriority())
-                queue.addFirst(msg);
+                queue.addFirst(t);
             else
-                queue.add(msg);
+                queue.add(t);
 
             DebugLogger log = messageLogger(msg);
 
@@ -7661,13 +7690,13 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** {@inheritDoc} */
-        @Override protected void processMessage(TcpDiscoveryAbstractMessage msg) {
+        @Override protected void processMessage(T2<TcpDiscoveryAbstractMessage, byte[]> msgT) {
             boolean success = false;
+
+            TcpDiscoveryAbstractMessage msg = msgT.get1();
 
             try {
                 assert msg.verified() : msg;
-
-                byte[] msgBytes = ses.serializeMessage(msg);
 
                 DebugLogger msgLog = messageLogger(msg);
 
@@ -7690,8 +7719,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');
                         }
 
-                        spi.writeToSocket(sock, msg, msgBytes, spi.failureDetectionTimeoutEnabled() ?
-                            spi.clientFailureDetectionTimeout() : spi.getSocketTimeout());
+                        writeToSocket(msgT, spi.failureDetectionTimeoutEnabled() ? spi.clientFailureDetectionTimeout() :
+                            spi.getSocketTimeout());
                     }
                 }
                 else {
@@ -7702,7 +7731,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     assert topologyInitialized(msg) : msg;
 
-                    spi.writeToSocket(sock, msg, msgBytes, spi.getEffectiveSocketTimeout(false));
+                    writeToSocket(msgT, spi.getEffectiveSocketTimeout(false));
                 }
 
                 boolean clientFailed = msg instanceof TcpDiscoveryNodeFailedMessage &&
@@ -7729,6 +7758,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                     U.close(sock, log);
                 }
             }
+        }
+
+        /**
+         * @param msgT Message tuple.
+         * @param timeout Timeout.
+         */
+        private void writeToSocket(T2<TcpDiscoveryAbstractMessage, byte[]> msgT, long timeout) throws IgniteCheckedException, IOException {
+            byte[] msgBytes = msgT.get2() == null ? serde.serializeMessage(msgT.get1()) : msgT.get2();
+
+            spi.writeToSocket(sock, msgT.get1(), msgBytes, timeout);
         }
 
         /**
