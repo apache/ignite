@@ -16,6 +16,7 @@
 */
 package org.apache.ignite.internal.management.cache;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
@@ -30,12 +31,12 @@ public class IdleVerifyDumpResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cluster hashes. */
-    Map<PartitionKey, List<PartitionHashRecord>> clusterHashes;
+    LinkedHashMap<PartitionKey, List<PartitionHashRecord>> clusterHashes;
 
     /**
      * @param clusterHashes Cluster hashes.
      */
-    public IdleVerifyDumpResult(Map<PartitionKey, List<PartitionHashRecord>> clusterHashes) {
+    public IdleVerifyDumpResult(LinkedHashMap<PartitionKey, List<PartitionHashRecord>> clusterHashes) {
         this.clusterHashes = clusterHashes;
     }
 

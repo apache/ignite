@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -114,7 +115,11 @@ public class IDTOSerializerGenerator {
         TYPE_SERDES.put("org.apache.ignite.cache.CacheMode",
             F.t("out.writeByte(CacheMode.toCode(obj.${f}));", "obj.${f} = CacheMode.fromCode(in.readByte());"));
 
+
+        // TODO: support string, string map
+
         TYPE_SERDES.put(TreeMap.class.getName(), F.t("U.writeMap(out, obj.${f});", "obj.${f} = U.readTreeMap(in);"));
+        TYPE_SERDES.put(LinkedHashMap.class.getName(), F.t("U.writeMap(out, obj.${f});", "obj.${f} = U.readLinkedMap(in);"));
         TYPE_SERDES.put(Map.class.getName(), F.t("U.writeMap(out, obj.${f});", "obj.${f} = U.readMap(in);"));
         TYPE_SERDES.put(Collection.class.getName(), F.t("U.writeCollection(out, obj.${f});", "obj.${f} = U.readCollection(in);"));
         TYPE_SERDES.put(List.class.getName(), F.t("U.writeCollection(out, obj.${f});", "obj.${f} = U.readList(in);"));
