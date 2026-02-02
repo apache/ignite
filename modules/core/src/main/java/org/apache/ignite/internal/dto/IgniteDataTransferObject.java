@@ -71,7 +71,6 @@ public abstract class IgniteDataTransferObject implements Externalizable {
      * @throws IOException If I/O errors occur.
      */
     protected void writeExternalData(ObjectOutput out) throws IOException {
-        // TODO: remove me and check write/read External for custom code.
         throw new UnsupportedOperationException("Please, implement custom method or provide support in " +
             "IDTOSerializerGenerator for " + getClass());
     }
