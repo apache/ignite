@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiPredicate;
-
 import org.apache.calcite.rel.core.CorrelationId;
 import org.apache.calcite.rel.core.JoinRelType;
 import org.apache.calcite.rel.type.RelDataType;
@@ -378,8 +377,11 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
                     leftIdx = 0;
 
                 while (requested > 0 && leftIdx < leftInBuf.size()) {
-                    if (rescheduleJoin())
+                    if (processed++ > IN_BUFFER_SIZE) {
+                        context().execute(this::join0, this::onError);
+
                         return;
+                    }
 
                     Row left = leftInBuf.get(leftIdx);
                     Row right = rightInBuf.get(rightIdx);
@@ -431,8 +433,10 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
                 try {
                     while (requested > 0 && notMatchedIdx < leftInBuf.size()) {
-                        if (rescheduleJoin()) {
+                        if (processed++ > IN_BUFFER_SIZE) {
                             rightIdx = preservedRightIdx;
+
+                            context().execute(this::join0, this::onError);
 
                             return;
                         }
@@ -511,16 +515,5 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
         processed = 0;
 
         join();
-    }
-
-    /** */
-    protected boolean rescheduleJoin() {
-        if (processed++ > IN_BUFFER_SIZE) {
-            context().execute(this::join0, this::onError);
-
-            return true;
-        }
-
-        return false;
     }
 }
