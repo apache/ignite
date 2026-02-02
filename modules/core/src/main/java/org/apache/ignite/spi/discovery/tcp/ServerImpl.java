@@ -3246,7 +3246,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                         TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
                         if (clientMsgWorker.clientNodeId.equals(nodeAddedMsg.node().id())) {
-                            // Copy in order to avoid clearing in `RingMessageWorker.clearNodeAddedMessage`.
                             msg = new TcpDiscoveryNodeAddedMessage(nodeAddedMsg);
 
                             prepareNodeAddedMessage(msg, clientMsgWorker.clientNodeId, null);
