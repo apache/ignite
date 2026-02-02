@@ -49,10 +49,10 @@ public class BaselineTaskResult extends IgniteDataTransferObject {
     long topVer;
 
     /** Current baseline nodes. */
-    Map<String, BaselineNode> baseline;
+    TreeMap<String, BaselineNode> baseline;
 
     /** Current server nodes. */
-    Map<String, BaselineNode> servers;
+    TreeMap<String, BaselineNode> servers;
 
     /** Baseline autoadjustment settings. */
     BaselineAutoAdjustSettings autoAdjustSettings;
@@ -74,11 +74,11 @@ public class BaselineTaskResult extends IgniteDataTransferObject {
      * @param nodes Nodes to process.
      * @return Map of DTO objects.
      */
-    private static Map<String, BaselineNode> toMap(Collection<? extends org.apache.ignite.cluster.BaselineNode> nodes) {
+    private static TreeMap<String, BaselineNode> toMap(Collection<? extends org.apache.ignite.cluster.BaselineNode> nodes) {
         if (F.isEmpty(nodes))
             return null;
 
-        Map<String, BaselineNode> map = new TreeMap<>();
+        TreeMap<String, BaselineNode> map = new TreeMap<>();
 
         for (org.apache.ignite.cluster.BaselineNode node : nodes) {
             BaselineNode dto = new BaselineNode(node, Collections.emptyList());
@@ -93,13 +93,13 @@ public class BaselineTaskResult extends IgniteDataTransferObject {
      * @param nodes Nodes to process.
      * @return Map of DTO objects, with resolved ip->hostname pairs.
      */
-    private static Map<String, BaselineNode> toMapWithResolvedAddresses(
+    private static TreeMap<String, BaselineNode> toMapWithResolvedAddresses(
         Collection<? extends org.apache.ignite.cluster.BaselineNode> nodes
     ) {
         if (F.isEmpty(nodes))
             return null;
 
-        Map<String, BaselineNode> map = new TreeMap<>();
+        TreeMap<String, BaselineNode> map = new TreeMap<>();
 
         for (org.apache.ignite.cluster.BaselineNode node : nodes) {
             Collection<BaselineNode.ResolvedAddresses> addrs = new ArrayList<>();
