@@ -3243,14 +3243,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
                     if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                        // Copy in order to avoid clearing in `RingMessageWorker.clearNodeAddedMessage`.
-                        TcpDiscoveryNodeAddedMessage nodeAddedMsg =
-                            new TcpDiscoveryNodeAddedMessage((TcpDiscoveryNodeAddedMessage)msg);
+                        TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
-                        if (clientMsgWorker.clientNodeId.equals(nodeAddedMsg.node().id()))
-                            prepareNodeAddedMessage(nodeAddedMsg, clientMsgWorker.clientNodeId, null);
+                        if (clientMsgWorker.clientNodeId.equals(nodeAddedMsg.node().id())) {
+                            // Copy in order to avoid clearing in `RingMessageWorker.clearNodeAddedMessage`.
+                            msg = new TcpDiscoveryNodeAddedMessage(nodeAddedMsg);
 
-                        msg = nodeAddedMsg;
+                            prepareNodeAddedMessage(msg, clientMsgWorker.clientNodeId, null);
+                        }
                     }
 
                     clientMsgWorker.addMessage(msg);
@@ -7740,10 +7740,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryNodeAddedMessage addedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
                 if (clientNodeId.equals(addedMsg.node().id()))
-                    if (addedMsg.topology() != null)
-                        return true;
-                    else
-                        return false;
+                    return addedMsg.topology() != null;
             }
 
             return true;
