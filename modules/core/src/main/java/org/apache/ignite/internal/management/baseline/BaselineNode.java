@@ -39,19 +39,19 @@ public class BaselineNode extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    String consistentId;
+    private String consistentId;
 
     /** */
-    Map<String, Object> attrs;
+    private Map<String, Object> attrs;
 
     /** */
-    @Nullable Long order;
+    private @Nullable Long order;
 
     /**
      * Resolved list of (ip, hostname) pairs
      * (if ip has no resolved host, hostname will be the string representation of ip).
      */
-    @NotNull Collection<ResolvedAddresses> addrs = Collections.emptyList();
+    private @NotNull Collection<ResolvedAddresses> addrs = Collections.emptyList();
 
     /**
      * Default constructor.

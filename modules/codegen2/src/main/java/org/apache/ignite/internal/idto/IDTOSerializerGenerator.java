@@ -111,6 +111,8 @@ public class IDTOSerializerGenerator {
         TYPE_SERDES.put("org.apache.ignite.internal.binary.BinaryMetadata", OBJECT_SERDES);
         TYPE_SERDES.put("org.apache.ignite.internal.management.cache.PartitionKey", OBJECT_SERDES);
         TYPE_SERDES.put("org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", OBJECT_SERDES);
+        TYPE_SERDES.put("org.apache.ignite.cache.CacheMode",
+            F.t("out.writeByte(CacheMode.toCode(obj.${f}));", "obj.${f} = CacheMode.fromCode(in.readByte());"));
 
         TYPE_SERDES.put(TreeMap.class.getName(), F.t("U.writeMap(out, obj.${f});", "obj.${f} = U.readTreeMap(in);"));
         TYPE_SERDES.put(Map.class.getName(), F.t("U.writeMap(out, obj.${f});", "obj.${f} = U.readMap(in);"));
@@ -328,10 +330,17 @@ public class IDTOSerializerGenerator {
             else if (type.getKind() == TypeKind.ARRAY) {
                 comp = ((ArrayType)type).getComponentType();
 
-                serDes = enumType(env, comp) ? OBJ_ARRAY_SERDES : ARRAY_TYPE_SERDES.get(className(comp));
+                serDes = ARRAY_TYPE_SERDES.get(className(comp));
+
+                if (serDes == null && enumType(env, comp))
+                     serDes = OBJ_ARRAY_SERDES;
             }
-            else
-                serDes = enumType(env, type) ? ENUM_SERDES : TYPE_SERDES.get(className(type));
+            else {
+                serDes = TYPE_SERDES.get(className(type));
+
+                if (serDes == null && enumType(env, type))
+                    serDes = ENUM_SERDES;
+            }
 
             if (serDes != null) {
                 String pattern = lineProvider.apply(serDes);
