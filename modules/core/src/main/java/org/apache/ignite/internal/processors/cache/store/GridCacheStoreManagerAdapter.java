@@ -940,7 +940,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
         }
         catch (RuntimeException e) {
-            U.error(log, "Exception raised during sessionEnd: ", e);
+            U.error(log, "Exception raised during the notification of cache store session listeners: ", e);
 
             if (!threwEx)
                 throw U.cast(e);
