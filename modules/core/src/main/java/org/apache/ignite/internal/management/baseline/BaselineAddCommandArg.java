@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.management.baseline;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.management.api.Positional;
 import org.apache.ignite.internal.management.baseline.BaselineCommand.BaselineTaskArg;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @CliConfirmArgument
@@ -35,21 +31,7 @@ public class BaselineAddCommandArg extends BaselineTaskArg {
     /** */
     @Positional
     @Argument(example = "consistentId1[,consistentId2,....,consistentIdN]")
-    private String[] consistentIDs;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        super.writeExternalData(out);
-
-        U.writeArray(out, consistentIDs);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternalData(in);
-
-        consistentIDs = U.readArray(in, String.class);
-    }
+    String[] consistentIDs;
 
     /** */
     public String[] consistentIDs() {

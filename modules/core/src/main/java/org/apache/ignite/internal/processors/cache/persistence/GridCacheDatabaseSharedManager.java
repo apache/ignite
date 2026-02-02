@@ -98,6 +98,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GroupPartitionIdPair;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
@@ -386,13 +387,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** Registers system view. */
     private void registerSystemView() {
-        cctx.kernalContext().systemView().registerView(METASTORE_VIEW, METASTORE_VIEW_DESC,
-            new MetastorageViewWalker(), () -> {
+        cctx.kernalContext().systemView().registerFiltrableView(METASTORE_VIEW, METASTORE_VIEW_DESC,
+            new MetastorageViewWalker(), filter -> {
                 try {
+                    String name = (String)filter.get(MetastorageViewWalker.NAME_FILTER);
+
                     List<MetastorageView> data = new ArrayList<>();
 
-                    metaStorage.iterate("", (key, valBytes) -> {
+                    metaStorage.iterate(name == null ? "" : name, (key, valBytes) -> {
                         try {
+                            if (name != null && !name.equals(key))
+                                return;
+
                             Serializable val = metaStorage.marshaller().unmarshal((byte[])valBytes, U.gridClassLoader());
 
                             data.add(new MetastorageView(key, IgniteUtils.toStringSafe(val)));
@@ -1761,7 +1767,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public boolean reserveHistoryForPreloading(Map<T2<Integer, Integer>, Long> reservationMap) {
+    @Override public boolean reserveHistoryForPreloading(Map<GroupPartitionIdPair, Long> reservationMap) {
         Map<GroupPartitionId, CheckpointEntry> entries = checkpointHistory().searchCheckpointEntry(reservationMap);
 
         if (F.isEmpty(entries))

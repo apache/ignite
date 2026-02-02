@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.management.cache.scan;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class CacheScanCommandArg extends IgniteDataTransferObject {
@@ -36,29 +32,15 @@ public class CacheScanCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(example = "cacheName")
-    private String cacheName;
+    String cacheName;
 
     /** */
     @Argument(description = "Pluggable output format. 'default', 'table' exists by default", example = "table", optional = true)
-    private String outputFormat;
+    String outputFormat;
 
     /** */
     @Argument(description = "limit count of entries to scan (" + DFLT_LIMIT + " by default)", example = "N", optional = true)
-    private int limit = DFLT_LIMIT;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, cacheName);
-        U.writeString(out, outputFormat);
-        out.writeInt(limit);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheName = U.readString(in);
-        outputFormat = U.readString(in);
-        limit = in.readInt();
-    }
+    int limit = DFLT_LIMIT;
 
     /** */
     public String outputFormat() {

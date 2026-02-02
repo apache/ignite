@@ -63,6 +63,12 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
     /** Participating columns. */
     protected final ImmutableBitSet requiredColumns;
 
+    /** Columns used by condition. */
+    protected ImmutableBitSet conditionColumns;
+
+    /** Required columns from table row type (No need to be serialized, for caching only). */
+    protected RelDataType dataSourceRowType;
+
     /** */
     protected ProjectableFilterableTableScan(
         RelOptCluster cluster,
@@ -152,6 +158,16 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
     }
 
     /** */
+    public RelDataType getDataSourceRowType() {
+        if (dataSourceRowType == null) {
+            dataSourceRowType = table.unwrap(IgniteTable.class).getRowType(Commons.typeFactory(getCluster()),
+                requiredColumns);
+        }
+
+        return dataSourceRowType;
+    }
+
+    /** */
     public RexNode pushUpPredicate() {
         if (condition == null || projects == null)
             return replaceLocalRefs(condition);
@@ -194,5 +210,26 @@ public abstract class ProjectableFilterableTableScan extends TableScan {
         int originColIdx = (requiredColumns() == null) ? colIdx : requiredColumns().toArray()[colIdx];
 
         return new RelColumnOrigin(getTable(), originColIdx, false);
+    }
+
+    /** */
+    public @Nullable ImmutableBitSet conditionColumns() {
+        if (condition == null)
+            return null;
+
+        if (conditionColumns == null) {
+            ImmutableBitSet.Builder builder = ImmutableBitSet.builder();
+
+            new RexShuttle() {
+                @Override public RexNode visitLocalRef(RexLocalRef inputRef) {
+                    builder.set(inputRef.getIndex());
+                    return inputRef;
+                }
+            }.apply(condition);
+
+            conditionColumns = builder.build();
+        }
+
+        return conditionColumns;
     }
 }

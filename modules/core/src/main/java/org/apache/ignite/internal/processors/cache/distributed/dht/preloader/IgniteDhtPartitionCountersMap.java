@@ -18,18 +18,20 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.ignite.internal.Order;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  * Partition counters map.
  */
-public class IgniteDhtPartitionCountersMap implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
+public class IgniteDhtPartitionCountersMap implements Message {
+    /** Type code. */
+    public static final short TYPE_CODE = 507;
 
     /** */
+    @Order(value = 0, method = "partitionCounters")
     private Map<Integer, CachePartitionFullCountersMap> map;
 
     /**
@@ -65,5 +67,24 @@ public class IgniteDhtPartitionCountersMap implements Serializable {
             return null;
 
         return cntrMap;
+    }
+
+    /**
+     * @return Partition counters map.
+     */
+    public Map<Integer, CachePartitionFullCountersMap> partitionCounters() {
+        return map;
+    }
+
+    /**
+     * @param map Partition counters map.
+     */
+    public void partitionCounters(Map<Integer, CachePartitionFullCountersMap> map) {
+        this.map = map;
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return TYPE_CODE;
     }
 }

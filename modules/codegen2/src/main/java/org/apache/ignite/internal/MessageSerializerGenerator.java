@@ -60,15 +60,15 @@ import static org.apache.ignite.internal.MessageProcessor.MESSAGE_INTERFACE;
  * Generates serializer class for given {@code Message} class. The generated serializer follows the naming convention:
  * {@code org.apache.ignite.internal.codegen.[MessageClassName]Serializer}.
  */
-class MessageSerializerGenerator {
+public class MessageSerializerGenerator {
     /** */
     private static final String EMPTY = "";
 
     /** */
-    private static final String TAB = "    ";
+    public static final String TAB = "    ";
 
     /** */
-    private static final String NL = System.lineSeparator();
+    public static final String NL = System.lineSeparator();
 
     /** */
     private static final String PKG_NAME = "org.apache.ignite.internal.codegen";
@@ -81,7 +81,13 @@ class MessageSerializerGenerator {
         " */";
 
     /** */
-    private static final String METHOD_JAVADOC = "/** */";
+    public static final String METHOD_JAVADOC = "/** */";
+
+    /** */
+    private static final String RETURN_FALSE_STMT = "return false;";
+
+    /** */
+    static final String DLFT_ENUM_MAPPER_CLS = "org.apache.ignite.plugin.extensions.communication.mappers.DefaultEnumMapper";
 
     /** Collection of lines for {@code writeTo} method. */
     private final List<String> write = new ArrayList<>();
@@ -91,6 +97,9 @@ class MessageSerializerGenerator {
 
     /** Collection of message-specific imports. */
     private final Set<String> imports = new TreeSet<>();
+
+    /** Collection of Serializer class fields containing mappers for message enum fields. */
+    private final Set<String> fields = new TreeSet<>();
 
     /** */
     private final ProcessingEnvironment env;
@@ -110,10 +119,11 @@ class MessageSerializerGenerator {
         imports.add(type.getQualifiedName().toString());
 
         String serClsName = type.getSimpleName() + "Serializer";
+        String serFqnClsName = PKG_NAME + "." + serClsName;
         String serCode = generateSerializerCode(serClsName);
 
         try {
-            JavaFileObject file = env.getFiler().createSourceFile(PKG_NAME + "." + serClsName);
+            JavaFileObject file = env.getFiler().createSourceFile(serFqnClsName);
 
             try (Writer writer = file.openWriter()) {
                 writer.append(serCode);
@@ -127,7 +137,7 @@ class MessageSerializerGenerator {
             // all Run commands to Maven. However, this significantly slows down test startup time.
             // This hack checks whether the content of a generating file is identical to already existed file, and skips
             // handling this class if it is.
-            if (!identicalFileIsAlreadyGenerated(serCode, serClsName)) {
+            if (!identicalFileIsAlreadyGenerated(env, serCode, serFqnClsName)) {
                 env.getMessager().printMessage(
                     Diagnostic.Kind.ERROR,
                     "MessageSerializer " + serClsName + " is already generated. Try 'mvn clean install' to fix the issue.");
@@ -141,6 +151,8 @@ class MessageSerializerGenerator {
     private String generateSerializerCode(String serClsName) throws IOException {
         try (Writer writer = new StringWriter()) {
             writeClassHeader(writer, PKG_NAME, serClsName);
+
+            writeClassFields(writer);
 
             // Write #writeTo method.
             for (String w: write)
@@ -183,10 +195,8 @@ class MessageSerializerGenerator {
     /**
      * Generates start of write/read methods:
      * <pre>
-     *     public boolean writeTo(Message m, ByteBuffer buf, MessageWriter writer) {
+     *     public boolean writeTo(Message m, MessageWriter writer) {
      *         TestMessage msg = (TestMessage)m;
-     *
-     *         writer.setBuffer(buf);
      *
      *         if (!writer.isHeaderWritten()) {
      *             if (!writer.writeHeader(msg.directType()))
@@ -204,16 +214,13 @@ class MessageSerializerGenerator {
 
         code.add(line(METHOD_JAVADOC));
 
-        code.add(line("@Override public boolean %s(Message m, ByteBuffer buf, %s) {",
+        code.add(line("@Override public boolean %s(Message m, %s) {",
             write ? "writeTo" : "readFrom",
             write ? "MessageWriter writer" : "MessageReader reader"));
 
         indent++;
 
         code.add(line("%s msg = (%s)m;", type.getSimpleName().toString(), type.getSimpleName().toString()));
-        code.add(EMPTY);
-        code.add(line("%s.setBuffer(buf);", write ? "writer" : "reader"));
-
         code.add(EMPTY);
 
         if (write) {
@@ -242,10 +249,6 @@ class MessageSerializerGenerator {
     private void processField(VariableElement field, int opt) throws Exception {
         if (assignableFrom(field.asType(), type(Throwable.class.getName())))
             throw new UnsupportedOperationException("You should use ErrorMessage for serialization of throwables.");
-
-        if (enumType(erasedType(field.asType())))
-            throw new IllegalArgumentException("Unsupported enum type: " + field.asType() +
-                    ". The enum must be wrapped into a Message (see, for example, TransactionIsolationMessage).");
 
         writeField(field, opt);
         readField(field, opt);
@@ -393,8 +396,51 @@ class MessageSerializerGenerator {
 
                 imports.add("org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType");
 
-                returnFalseIfWriteFailed(write, "writer.writeCollection", getExpr,
+                String collectionWriter = assignableFrom(erasedType(type), type(Set.class.getName()))
+                    ? "writer.writeSet"
+                    : "writer.writeCollection";
+
+                returnFalseIfWriteFailed(write, collectionWriter, getExpr,
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
+            }
+
+            else if (enumType(env, type)) {
+                Element element = env.getTypeUtils().asElement(type);
+                imports.add(element.toString());
+
+                String enumName = element.getSimpleName().toString();
+                String enumFieldPrefix = typeNameToFieldName(enumName);
+
+                String mapperCallStmnt;
+
+                CustomMapper custMapperAnn = field.getAnnotation(CustomMapper.class);
+
+                if (custMapperAnn != null) {
+                    String fullMapperName = custMapperAnn.value();
+                    if (fullMapperName == null || fullMapperName.isEmpty())
+                        throw new IllegalArgumentException("Please specify a not-null not-empty EnumMapper class name");
+
+                    imports.add("org.apache.ignite.plugin.extensions.communication.mappers.EnumMapper");
+                    imports.add(fullMapperName);
+
+                    String simpleName = fullMapperName.substring(fullMapperName.lastIndexOf('.') + 1);
+
+                    String mapperFieldName = enumFieldPrefix + "Mapper";
+
+                    fields.add("private final EnumMapper<" + enumName + "> " + mapperFieldName + " = new " + simpleName + "();");
+
+                    mapperCallStmnt = mapperFieldName + ".encode";
+                }
+                else {
+                    imports.add(DLFT_ENUM_MAPPER_CLS);
+                    String enumValuesFieldName = enumFieldPrefix + "Vals";
+
+                    fields.add("private final " + enumName + "[] " + enumValuesFieldName + " = " + enumName + ".values();");
+
+                    mapperCallStmnt = "DefaultEnumMapper.INSTANCE.encode";
+                }
+
+                returnFalseIfEnumWriteFailed(write, "writer.writeByte", mapperCallStmnt, getExpr);
             }
 
             else
@@ -404,6 +450,15 @@ class MessageSerializerGenerator {
         }
 
         throw new IllegalArgumentException("Unsupported type kind: " + type.getKind());
+    }
+
+    /**
+     * Converts type name to camel case field name. Example: {@code "MyType"} -> {@code "myType"}.
+     */
+    private String typeNameToFieldName(String typeName) {
+        char[] typeNameChars = typeName.toCharArray();
+        typeNameChars[0] = Character.toLowerCase(typeNameChars[0]);
+        return new String(typeNameChars);
     }
 
     /**
@@ -420,7 +475,24 @@ class MessageSerializerGenerator {
 
         indent++;
 
-        code.add(line("return false;"));
+        code.add(line(RETURN_FALSE_STMT));
+
+        indent--;
+    }
+
+    /**
+     * Generate code of writing single enum field mapped with EnumMapper:
+     * <pre>
+     * if (!writer.writeByte(myEnumMapper.encode(msg.myEnum()))
+     *     return false;
+     * </pre>
+     */
+    private void returnFalseIfEnumWriteFailed(Collection<String> code, String writerCall, String mapperCall, String fieldGetterCall) {
+        code.add(line("if (!%s(%s(msg.%s)))", writerCall, mapperCall, fieldGetterCall));
+
+        indent++;
+
+        code.add(line(RETURN_FALSE_STMT));
 
         indent--;
     }
@@ -531,8 +603,22 @@ class MessageSerializerGenerator {
 
                 assert typeArgs.size() == 1;
 
-                returnFalseIfReadFailed(name, "reader.readCollection",
+                String collectionReader = assignableFrom(erasedType(type), type(Set.class.getName()))
+                    ? "reader.readSet"
+                    : "reader.readCollection";
+
+                returnFalseIfReadFailed(name, collectionReader,
                     "MessageCollectionItemType." + messageCollectionItemType(typeArgs.get(0)));
+            }
+            else if (enumType(env, type)) {
+                String fieldPrefix = typeNameToFieldName(env.getTypeUtils().asElement(type).getSimpleName().toString());
+
+                boolean hasCustMapperAnn = field.getAnnotation(CustomMapper.class) != null;
+
+                String mapperCallStmnt = hasCustMapperAnn ? fieldPrefix + "Mapper.decode" : "DefaultEnumMapper.INSTANCE.decode";
+                String enumValsFieldName = hasCustMapperAnn ? null : fieldPrefix + "Vals";
+
+                returnFalseIfEnumReadFailed(name, mapperCallStmnt, enumValsFieldName);
             }
 
             else
@@ -643,16 +729,46 @@ class MessageSerializerGenerator {
 
         indent++;
 
-        read.add(line("return false;"));
+        read.add(line(RETURN_FALSE_STMT));
+
+        indent--;
+    }
+
+    /**
+     * Generate code of reading single field:
+     * <pre>
+     * msg.id(reader.readInt());
+     *
+     * if (!reader.isLastRead())
+     *     return false;
+     * </pre>
+     *
+     * @param msgSetterName Variable name.
+     * @param mapperDecodeCallStmnt Method name.
+     */
+    private void returnFalseIfEnumReadFailed(String msgSetterName, String mapperDecodeCallStmnt, String enumValuesFieldName) {
+        if (enumValuesFieldName == null)
+            read.add(line("msg.%s(%s(reader.readByte()));", msgSetterName, mapperDecodeCallStmnt));
+        else
+            read.add(line("msg.%s(%s(%s, reader.readByte()));", msgSetterName, mapperDecodeCallStmnt, enumValuesFieldName));
+
+        read.add(EMPTY);
+
+        read.add(line("if (!reader.isLastRead())"));
+
+        indent++;
+
+        read.add(line(RETURN_FALSE_STMT));
 
         indent--;
     }
 
     /** */
     private void finish(List<String> code) {
-        // Remove the last empty line for the last "case".
-        String removed = code.remove(code.size() - 1);
-        assert EMPTY.equals(removed) : removed;
+        String lastLine = code.get(code.size() - 1);
+
+        if (EMPTY.equals(lastLine))
+            code.remove(code.size() - 1);
 
         code.add(line("}"));
         code.add(EMPTY);
@@ -676,6 +792,24 @@ class MessageSerializerGenerator {
         return sb.toString();
     }
 
+    /** Write serializer class fields: enum values, custom enum mappers. */
+    private void writeClassFields(Writer writer) throws IOException {
+        if (fields.isEmpty())
+            return;
+
+        indent = 1;
+
+        for (String field: fields) {
+            writer.write(line(METHOD_JAVADOC));
+            writer.write(NL);
+            writer.write(line(field));
+            writer.write(NL);
+        }
+        writer.write(NL);
+
+        indent = 0;
+    }
+
     /** Write header of serializer class: license, imports, class declaration. */
     private void writeClassHeader(Writer writer, String pkgName, String serClsName) throws IOException {
         try (InputStream in = getClass().getClassLoader().getResourceAsStream("license.txt");
@@ -692,14 +826,13 @@ class MessageSerializerGenerator {
         writer.write(NL);
         writer.write("package " + pkgName + ";" + NL + NL);
 
-        imports.add("java.nio.ByteBuffer");
         imports.add("org.apache.ignite.plugin.extensions.communication.Message");
         imports.add("org.apache.ignite.plugin.extensions.communication.MessageSerializer");
         imports.add("org.apache.ignite.plugin.extensions.communication.MessageWriter");
         imports.add("org.apache.ignite.plugin.extensions.communication.MessageReader");
 
-        for (String i: imports)
-            writer.write("import " + i + ";" + NL);
+        for (String regularImport: imports)
+            writer.write("import " + regularImport + ";" + NL);
 
         writer.write(NL);
         writer.write(CLS_JAVADOC);
@@ -723,14 +856,10 @@ class MessageSerializerGenerator {
     }
 
     /** */
-    private boolean enumType(TypeMirror type) {
-        if (type.getKind() == TypeKind.DECLARED) {
-            Element element = env.getTypeUtils().asElement(type);
+    public static boolean enumType(ProcessingEnvironment env, TypeMirror type) {
+        Element element = env.getTypeUtils().asElement(type);
 
-            return element != null && element.getKind() == ElementKind.ENUM;
-        }
-
-        return false;
+        return element != null && element.getKind() == ElementKind.ENUM;
     }
 
     /** */
@@ -753,9 +882,9 @@ class MessageSerializerGenerator {
     }
 
     /** @return {@code true} if trying to generate file with the same content. */
-    private boolean identicalFileIsAlreadyGenerated(String srcCode, String clsName) {
+    public static boolean identicalFileIsAlreadyGenerated(ProcessingEnvironment env, String srcCode, String fqnClsName) {
         try {
-            String fileName = PKG_NAME.replace('.', '/') + '/' + clsName + ".java";
+            String fileName = fqnClsName.replace('.', '/') + ".java";
             FileObject prevFile = env.getFiler().getResource(StandardLocation.SOURCE_OUTPUT, "", fileName);
 
             String prevFileContent;
@@ -775,7 +904,7 @@ class MessageSerializerGenerator {
     }
 
     /** */
-    private String content(Reader reader) throws IOException {
+    private static String content(Reader reader) throws IOException {
         BufferedReader br = new BufferedReader(reader);
         StringBuilder sb = new StringBuilder();
         String line;

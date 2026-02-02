@@ -80,6 +80,7 @@ import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.Marshallers;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -216,10 +217,23 @@ public class TcpIgniteClient implements IgniteClient {
     /** {@inheritDoc} */
     @Override public <K, V> ClientCache<K, V> getOrCreateCache(
         ClientCacheConfiguration cfg) throws ClientException {
+        return getOrCreateCache(cfg, false);
+    }
+
+    /**
+     * Gets the existing cache or creates a new cache if it does not exist.
+     *
+     * @param cfg Cache configuration. If the cache exists, this configuration is ignored.
+     * @param sql If {@code true} then cache will be treated as created with SQL DDL: {@code CREATE TABLE}.
+     * @param <K> Type of the cache key.
+     * @param <V> Type of the cache value.
+     * @return Client cache instance.
+     */
+    public <K, V> ClientCache<K, V> getOrCreateCache(ClientCacheConfiguration cfg, boolean sql) {
         ensureCacheConfiguration(cfg);
 
         ch.request(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION,
-            req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()));
+            req -> serDes.cacheConfiguration(cfg, sql, req.out(), req.clientChannel().protocolCtx()));
 
         return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry, log);
     }
@@ -231,7 +245,7 @@ public class TcpIgniteClient implements IgniteClient {
 
         return new IgniteClientFutureImpl<>(
                 ch.requestAsync(ClientOperation.CACHE_GET_OR_CREATE_WITH_CONFIGURATION,
-                        req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()))
+                        req -> serDes.cacheConfiguration(cfg, false, req.out(), req.clientChannel().protocolCtx()))
                         .thenApply(x -> new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry, log)));
     }
 
@@ -292,10 +306,23 @@ public class TcpIgniteClient implements IgniteClient {
 
     /** {@inheritDoc} */
     @Override public <K, V> ClientCache<K, V> createCache(ClientCacheConfiguration cfg) throws ClientException {
+        return createCache(cfg, false);
+    }
+
+    /**
+     * Creates a cache with the specified configuration.
+     *
+     * @param cfg Cache configuration.
+     * @param sql If {@code true} then cache will be treated as created with SQL DDL: {@code CREATE TABLE}.
+     * @param <K> Type of the cache key.
+     * @param <V> Type of the cache value.
+     * @return Resulting cache.
+     */
+    public <K, V> @NotNull TcpClientCache<K, V> createCache(ClientCacheConfiguration cfg, boolean sql) {
         ensureCacheConfiguration(cfg);
 
         ch.request(ClientOperation.CACHE_CREATE_WITH_CONFIGURATION,
-            req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()));
+            req -> serDes.cacheConfiguration(cfg, sql, req.out(), req.clientChannel().protocolCtx()));
 
         return new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry, log);
     }
@@ -307,7 +334,7 @@ public class TcpIgniteClient implements IgniteClient {
 
         return new IgniteClientFutureImpl<>(
                 ch.requestAsync(ClientOperation.CACHE_CREATE_WITH_CONFIGURATION,
-                        req -> serDes.cacheConfiguration(cfg, req.out(), req.clientChannel().protocolCtx()))
+                        req -> serDes.cacheConfiguration(cfg, false, req.out(), req.clientChannel().protocolCtx()))
                         .thenApply(x -> new TcpClientCache<>(cfg.getName(), ch, marsh, transactions, lsnrsRegistry, log)));
     }
 
@@ -345,7 +372,7 @@ public class TcpIgniteClient implements IgniteClient {
             else
                 out.writeByte(flags);
 
-            serDes.write(qry, out);
+            serDes.write(qry, out, payloadCh.clientChannel().protocolCtx());
         };
 
         return new ClientFieldsQueryCursor<>(new ClientFieldsQueryPager(

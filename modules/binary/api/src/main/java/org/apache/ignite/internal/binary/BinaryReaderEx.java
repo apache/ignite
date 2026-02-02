@@ -85,4 +85,11 @@ public interface BinaryReaderEx extends BinaryReader, BinaryRawReader, BinaryRea
      * @return Offset.
      */
     public boolean findFieldByName(String name);
+
+    /**
+     * Get or create object schema.
+     *
+     * @return Schema.
+     */
+    public BinarySchema getOrCreateSchema();
 }

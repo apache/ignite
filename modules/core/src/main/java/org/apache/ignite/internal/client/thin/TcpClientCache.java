@@ -71,6 +71,7 @@ import org.apache.ignite.internal.client.thin.TcpClientTransactions.TcpClientTra
 import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -1084,7 +1085,7 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
                     ? transactions.tx()
                     : null
             );
-            serDes.write(qry, payloadCh.out());
+            serDes.write(qry, payloadCh.out(), payloadCh.clientChannel().protocolCtx());
         };
 
         return new ClientFieldsQueryCursor<>(new ClientFieldsQueryPager(
@@ -1387,7 +1388,9 @@ public class TcpClientCache<K, V> implements ClientCache<K, V> {
             ClientOperation.QUERY_SQL_CURSOR_GET_PAGE,
             qryWriter,
             keepBinary,
-            marsh
+            marsh,
+            cacheId,
+            !F.isEmpty(qry.getPartitions()) ? qry.getPartitions()[0] : -1
         ));
     }
 

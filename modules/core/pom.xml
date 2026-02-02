@@ -386,7 +386,12 @@
                     <generatedSourcesDirectory>${ignite.generated.source.path}</generatedSourcesDirectory>
                     <annotationProcessors>
                         <annotationProcessor>org.apache.ignite.internal.MessageProcessor</annotationProcessor>
+                        <annotationProcessor>org.apache.ignite.internal.idto.IgniteDataTransferObjectProcessor</annotationProcessor>
                     </annotationProcessors>
+                    <compilerArgs combine.children="append">
+                        <arg>-Xmaxerrs</arg>
+                        <arg>1000</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
         </plugins>

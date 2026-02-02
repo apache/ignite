@@ -18,18 +18,14 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree;
 import org.apache.ignite.internal.util.distributed.DistributedProcess;
-import org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Snapshot operation start request for {@link DistributedProcess} initiate message.
+ * Snapshot operation end request for {@link DistributedProcess.DistributedProcessType#START_SNAPSHOT} initiate message.
  */
 public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
     /** Serial version uid. */
@@ -37,32 +33,6 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
 
     /** Operational node ID. */
     private final UUID opNodeId;
-
-    /** Exception occurred during snapshot operation processing. */
-    private volatile Throwable err;
-
-    /**
-     * Snapshot operation warnings. Warnings do not interrupt snapshot process but raise exception at the end to make
-     * the operation status 'not OK' if no other error occurred.
-     */
-    private volatile List<String> warnings;
-
-    /** Snapshot metadata. */
-    @GridToStringExclude
-    private transient SnapshotMetadata meta;
-
-    /** Snapshot file tree. */
-    @GridToStringExclude
-    private transient SnapshotFileTree sft;
-
-    /**
-     * Warning flag of concurrent inconsistent-by-nature streamer updates.
-     */
-    @GridToStringExclude
-    private transient volatile boolean streamerWrn;
-
-    /** Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed. */
-    private transient volatile boolean startStageEnded;
 
     /** If {@code true} then incremental snapshot requested. */
     private final boolean incremental;
@@ -82,6 +52,9 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
     /** If {@code true} then content of dump encrypted. */
     private final boolean encrypt;
 
+    /** If {@code true} then only cache config and metadata included in snapshot. */
+    private final boolean configOnly;
+
     /**
      * @param reqId Request ID.
      * @param opNodeId Operational node ID.
@@ -95,6 +68,7 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
      * @param dump If {@code true} then create dump.
      * @param compress If {@code true} then compress partition files.
      * @param encrypt If {@code true} then content of dump encrypted.
+     * @param configOnly If {@code true} then only cache config and metadata included in snapshot.
      */
     public SnapshotOperationRequest(
         UUID reqId,
@@ -108,9 +82,10 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
         boolean onlyPrimary,
         boolean dump,
         boolean compress,
-        boolean encrypt
+        boolean encrypt,
+        boolean configOnly
     ) {
-        super(reqId, snpName, snpPath, grps, incIdx, nodes);
+        super(reqId, snpName, snpPath, grps, nodes);
 
         this.opNodeId = opNodeId;
         this.incremental = incremental;
@@ -119,6 +94,7 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
         this.dump = dump;
         this.compress = compress;
         this.encrypt = encrypt;
+        this.configOnly = configOnly;
     }
 
     /**
@@ -126,20 +102,6 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
      */
     public UUID operationalNodeId() {
         return opNodeId;
-    }
-
-    /**
-     * @return Exception occurred during snapshot operation processing.
-     */
-    public Throwable error() {
-        return err;
-    }
-
-    /**
-     * @param err Exception occurred during snapshot operation processing.
-     */
-    public void error(Throwable err) {
-        this.err = err;
     }
 
     /** @return {@code True} if incremental snapshot requested. */
@@ -172,76 +134,9 @@ public class SnapshotOperationRequest extends AbstractSnapshotOperationRequest {
         return encrypt;
     }
 
-    /**
-     * @return Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed.
-     */
-    protected boolean startStageEnded() {
-        return startStageEnded;
-    }
-
-    /**
-     * @param startStageEnded Flag indicating that the {@link DistributedProcessType#START_SNAPSHOT} phase has completed.
-     */
-    protected void startStageEnded(boolean startStageEnded) {
-        this.startStageEnded = startStageEnded;
-    }
-
-    /**
-     * @return Warnings of snapshot operation.
-     */
-    public List<String> warnings() {
-        return warnings;
-    }
-
-    /**
-     * @param warnings Warnings of snapshot operation.
-     */
-    public void warnings(List<String> warnings) {
-        assert this.warnings == null;
-
-        this.warnings = warnings;
-    }
-
-    /**
-     * {@code True} If the streamer warning flag is set. {@code False} otherwise.
-     */
-    public boolean streamerWarning() {
-        return streamerWrn;
-    }
-
-    /**
-     * Sets the streamer warning flag.
-     */
-    public boolean streamerWarning(boolean val) {
-        return streamerWrn = val;
-    }
-
-    /**
-     * @return Snapshot metadata.
-     */
-    public SnapshotMetadata meta() {
-        return meta;
-    }
-
-    /**
-     * Stores snapshot metadata.
-     */
-    public void meta(SnapshotMetadata meta) {
-        this.meta = meta;
-    }
-
-    /**
-     * Stores snapshot file tree.
-     */
-    public void snapshotFileTree(SnapshotFileTree sft) {
-        this.sft = sft;
-    }
-
-    /**
-     * @return Snapshot file tree.
-     */
-    public SnapshotFileTree snapshotFileTree() {
-        return sft;
+    /** @return If {@code true} then only cache config and metadata included in snapshot. */
+    public boolean configOnly() {
+        return configOnly;
     }
 
     /** {@inheritDoc} */

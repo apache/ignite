@@ -140,7 +140,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         @Nullable Object[] invokeArgs,
         @Nullable CacheEntryPredicate[] filter,
         int taskNameHash,
-        byte flags,
+        short flags,
         boolean addDepInfo,
         int maxEntryCnt
     ) {
@@ -175,13 +175,13 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
         @Nullable GridCacheVersion conflictVer) {
         EntryProcessor<Object, Object, Object> entryProc = null;
 
-        if (op == TRANSFORM) {
+        if (operation() == TRANSFORM) {
             assert val instanceof EntryProcessor : val;
 
             entryProc = (EntryProcessor<Object, Object, Object>)val;
         }
 
-        assert val != null || op == DELETE;
+        assert val != null || operation() == DELETE;
 
         keys.add(key);
 
@@ -256,19 +256,19 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
 
     /** {@inheritDoc} */
     @Override public List<?> values() {
-        return op == TRANSFORM ? entryProcessors : vals;
+        return operation() == TRANSFORM ? entryProcessors : vals;
     }
 
     /** {@inheritDoc} */
     @Override public CacheObject value(int idx) {
-        assert op == UPDATE : op;
+        assert operation() == UPDATE : operation();
 
         return vals.get(idx);
     }
 
     /** {@inheritDoc} */
     @Override public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
-        assert op == TRANSFORM : op;
+        assert operation() == TRANSFORM : operation();
 
         return entryProcessors.get(idx);
     }
@@ -360,7 +360,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
                 filter = null;
         }
 
-        if (op == TRANSFORM) {
+        if (operation() == TRANSFORM) {
             // force addition of deployment info for entry processors if P2P is enabled globally.
             if (!addDepInfo && ctx.deploymentEnabled())
                 addDepInfo = true;
@@ -393,7 +393,7 @@ public class GridNearAtomicFullUpdateRequest extends GridNearAtomicAbstractUpdat
             }
         }
 
-        if (op == TRANSFORM) {
+        if (operation() == TRANSFORM) {
             if (entryProcessors == null)
                 entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);
 

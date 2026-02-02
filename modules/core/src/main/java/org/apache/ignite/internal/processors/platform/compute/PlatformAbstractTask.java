@@ -49,6 +49,9 @@ public abstract class PlatformAbstractTask implements ComputeTask<Object, Void> 
     /** Done flag. */
     protected boolean done;
 
+    /** Platform task name. */
+    protected String taskName;
+
     /**
      * Constructor.
      *
@@ -58,6 +61,11 @@ public abstract class PlatformAbstractTask implements ComputeTask<Object, Void> 
     protected PlatformAbstractTask(PlatformContext ctx, long taskPtr) {
         this.ctx = ctx;
         this.taskPtr = taskPtr;
+    }
+
+    /** @return Task name. */
+    public String taskName() {
+        return taskName;
     }
 
     /** {@inheritDoc} */

@@ -38,6 +38,9 @@ public class H2DmlInfo implements TrackableQuery {
     /** Schema name. */
     private final String schema;
 
+    /** Query initiator id. */
+    private final String initiatorId;
+
     /** Dml command. */
     private final String sql;
 
@@ -48,11 +51,12 @@ public class H2DmlInfo implements TrackableQuery {
      * @param schema Schema name.
      * @param sql Dml command.
      */
-    public H2DmlInfo(long beginTs, long qryId, UUID initNodeId, String schema, String sql) {
+    public H2DmlInfo(long beginTs, long qryId, UUID initNodeId, String schema, String initiatorId, String sql) {
         this.beginTs = beginTs;
         this.qryId = qryId;
         this.initNodeId = initNodeId;
         this.schema = schema;
+        this.initiatorId = initiatorId;
         this.sql = sql;
     }
 
@@ -76,6 +80,7 @@ public class H2DmlInfo implements TrackableQuery {
         msgSb.append(", duration=").append(time()).append("ms")
             .append(", type=DML")
             .append(", schema=").append(schema)
+            .append(", initiatorId=").append(initiatorId)
             .append(", sql='").append(sql).append("']");
 
         return msgSb.toString();

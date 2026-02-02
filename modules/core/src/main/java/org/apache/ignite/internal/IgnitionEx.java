@@ -1959,6 +1959,19 @@ public class IgnitionEx {
                     throw new IgniteCheckedException("DataStorageConfiguration contains duplicates " +
                         "[storagePath=" + dsCfg.getStoragePath() + ", extraStoragePaths=" + extraStorages + ']');
                 }
+
+                List<String> extraSnapshotStorages = F.asList(dsCfg.getExtraSnapshotPaths());
+
+                if (!extraSnapshotStorages.isEmpty() && extraStorages.size() != extraSnapshotStorages.size()) {
+                    throw new IgniteCheckedException("DataStorageConfiguration error. " +
+                        "Size of extraSnapshotPaths must be equal to extraStoragePath " +
+                        "[extraStoragePaths=" + extraStorages + ", extraSnapshotPaths=" + extraSnapshotStorages + ']');
+                }
+
+                if (extraSnapshotStorages.size() != new HashSet<>(extraSnapshotStorages).size()) {
+                    throw new IgniteCheckedException("DataStorageConfiguration contains duplicates " +
+                        "[extraSnapshotPaths=" + extraSnapshotStorages + ']');
+                }
             }
 
             if (cfg.getMemoryConfiguration() != null || cfg.getPersistentStoreConfiguration() != null)
