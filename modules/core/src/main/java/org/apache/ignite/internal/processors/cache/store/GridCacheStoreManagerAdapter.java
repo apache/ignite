@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Consumer;
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
@@ -39,8 +38,6 @@ import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -120,16 +117,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     /** Always keep binary. */
     protected boolean alwaysKeepBinary;
 
-    /** Failure handler reaction. */
-    private Consumer<Throwable> failureHandlerAction;
-
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void initialize(@Nullable CacheStore cfgStore, Map sesHolders) throws IgniteCheckedException {
         GridKernalContext ctx = igniteContext();
         CacheConfiguration cfg = cacheConfiguration();
-
-        failureHandlerAction = e -> ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
         writeThrough = cfg.isWriteThrough();
 
@@ -923,9 +915,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
         }
         catch (RuntimeException e) {
-            U.error(log, "Exception raised during notify SessionListeners: ", e);
-
-            failureHandlerAction.accept(e);
+            U.error(log, "Exception raised during the notification of cache store session listeners: ", e);
 
             throw e;
         }
@@ -951,8 +941,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
         catch (RuntimeException e) {
             U.error(log, "Exception raised during sessionEnd: ", e);
-
-            failureHandlerAction.accept(e);
 
             if (!threwEx)
                 throw U.cast(e);

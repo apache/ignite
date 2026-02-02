@@ -61,11 +61,11 @@ import static org.junit.Assert.assertThat;
 
 /** */
 public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClusterPerMethodAbstractTest {
-    /**  */
-    private AtomicReference<Throwable> err;
+    /** */
+    private AtomicReference<Throwable> err = new AtomicReference<>();
 
     /** Node kill trigger. */
-    private static CountDownLatch nodeKill;
+    private static CountDownLatch nodeKillLatch;
 
     /** Tx message flag. */
     private static volatile boolean finalTxMsgPassed;
@@ -85,7 +85,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
     public static Boolean failOnSessionStart;
 
     /** */
-    @Parameterized.Parameters(name = "cmdHnd={0}, withPersistence={1}")
+    @Parameterized.Parameters(name = "cmdHnd={0}, withPersistence={1}, failOnSessionStart={2}")
     public static Collection<Object[]> parameters() {
         return List.of(
             new Object[] {CLI_CMD_HND, false, false},
@@ -106,9 +106,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         if (withPersistence)
             cleanPersistenceDir();
 
-        err = new AtomicReference<>();
-
-        nodeKill = new CountDownLatch(1);
+        nodeKillLatch = new CountDownLatch(1);
         sessionTriggered = new AtomicBoolean();
         finalTxMsgPassed = false;
     }
@@ -133,9 +131,9 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
 
     /** Test scenario:
      * <ul>
-     *   <li>Start 3 node [node0, node1, node2].</li>
+     *   <li>Start 3 nodes [node0, node1, node2].</li>
      *   <li>Initialize put operation into transactional cache where [node1] holds primary partition for such insertion.</li>
-     *   <li>Kill [node1] right after tx PREPARE stage is completed (it triggers tx recovery procedure.</li>
+     *   <li>Kill [node1] right after tx PREPARE stage is completed (it triggers tx recovery procedure).</li>
      * </ul>
      *
      * @see IgniteTxManager#salvageTx(IgniteInternalTx)
@@ -162,7 +160,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
             boolean ret = msg instanceof GridDhtTxFinishRequest;
 
             if (ret) {
-                nodeKill.countDown();
+                nodeKillLatch.countDown();
                 finalTxMsgPassed = true;
             }
 
@@ -170,7 +168,6 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         });
 
         MapCacheStoreStrategy strategy = new MapCacheStoreStrategy();
-        strategy.resetStore();
         Factory<? extends CacheStore<Object, Object>> storeFactory = strategy.getStoreFactory();
         CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<>("cache");
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -185,7 +182,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         awaitPartitionMapExchange();
 
         IgniteInternalFuture<Object> stopFut = GridTestUtils.runAsync(() -> {
-            nodeKill.await();
+            nodeKillLatch.await();
             stopGrid(gridToStop);
         });
 
@@ -221,7 +218,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         testOut.reset();
 
         assertNotNull(err.get());
-        assertThat(err.get().getMessage(), is(containsString(storageExceptionMessage)));
+        assertThat(err.get().getMessage(), is(containsString("Committing a transaction has produced runtime exception")));
 
         if (withPersistence) {
             stopAllGrids();
