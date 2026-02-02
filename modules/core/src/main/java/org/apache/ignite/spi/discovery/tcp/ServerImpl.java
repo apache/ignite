@@ -3252,6 +3252,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                     }
 
+                    // TODO Investigate possible optimizations: https://issues.apache.org/jira/browse/IGNITE-27722
                     clientMsgWorker.addMessage(msg);
                 }
             }
