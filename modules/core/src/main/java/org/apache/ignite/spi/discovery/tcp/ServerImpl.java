@@ -3244,12 +3244,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
                     if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                         // Copy in order to avoid clearing in `RingMessageWorker.clearNodeAddedMessage`.
-                        TcpDiscoveryNodeAddedMessage msg0 = new TcpDiscoveryNodeAddedMessage((TcpDiscoveryNodeAddedMessage)msg);
+                        TcpDiscoveryNodeAddedMessage nodeAddedMsg =
+                            new TcpDiscoveryNodeAddedMessage((TcpDiscoveryNodeAddedMessage)msg);
 
-                        if (clientMsgWorker.clientNodeId.equals(msg0.node().id()))
-                            prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null);
+                        if (clientMsgWorker.clientNodeId.equals(nodeAddedMsg.node().id()))
+                            prepareNodeAddedMessage(nodeAddedMsg, clientMsgWorker.clientNodeId, null);
 
-                        msg = msg0;
+                        msg = nodeAddedMsg;
                     }
 
                     clientMsgWorker.addMessage(msg);
