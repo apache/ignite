@@ -85,6 +85,7 @@ import org.apache.ignite.internal.client.thin.ProtocolVersion;
 import org.apache.ignite.internal.managers.systemview.walker.BaselineNodeAttributeViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.CachePagesListViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.ClientConnectionAttributeViewWalker;
+import org.apache.ignite.internal.managers.systemview.walker.MetastorageViewWalker;
 import org.apache.ignite.internal.managers.systemview.walker.NodeAttributeViewWalker;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -2179,6 +2180,19 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
             assertNotNull(F.find(metaStoreView, null,
                 (IgnitePredicate<? super MetastorageView>)view ->
                     unmarshalledName.equals(view.name()) && unmarshalledVal.equals(view.value())));
+
+            // Test filtering.
+            assertTrue(metaStoreView instanceof FiltrableSystemView);
+
+            Iterator<MetastorageView> iter = ((FiltrableSystemView<MetastorageView>)metaStoreView)
+                .iterator(F.asMap(MetastorageViewWalker.NAME_FILTER, name));
+
+            assertTrue(iter.hasNext());
+
+            MetastorageView row = iter.next();
+
+            assertTrue(name.equals(row.name()) && val.equals(row.value()));
+            assertFalse(iter.hasNext());
         }
     }
 
@@ -2204,18 +2218,33 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             dms.write(name, val);
 
+            SystemView<MetastorageView> dmsView = ignite.context().systemView().view(DISTRIBUTED_METASTORE_VIEW);
+
             assertNotNull(F.find(
-                ignite.context().systemView().view(DISTRIBUTED_METASTORE_VIEW),
+                dmsView,
                 null,
                 (IgnitePredicate<? super MetastorageView>)view -> name.equals(view.name()) && val.equals(view.value()))
             );
 
             assertNotNull(F.find(
-                ignite.context().systemView().view(DISTRIBUTED_METASTORE_VIEW),
+                dmsView,
                 null,
                 (IgnitePredicate<? super MetastorageView>)
                     view -> view.name().endsWith(histogramName) && "[1, 2, 3]".equals(view.value()))
             );
+
+            // Test filtering.
+            assertTrue(dmsView instanceof FiltrableSystemView);
+
+            Iterator<MetastorageView> iter = ((FiltrableSystemView<MetastorageView>)dmsView)
+                .iterator(F.asMap(MetastorageViewWalker.NAME_FILTER, name));
+
+            assertTrue(iter.hasNext());
+
+            MetastorageView row = iter.next();
+
+            assertTrue(name.equals(row.name()) && val.equals(row.value()));
+            assertFalse(iter.hasNext());
         }
     }
 
