@@ -3243,10 +3243,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
                     if (msg instanceof TcpDiscoveryNodeAddedMessage) {
-                        UUID id = ((TcpDiscoveryNodeAddedMessage)msg).node().id();
+                        // Copy in order to avoid clearing in `RingMessageWorker.clearNodeAddedMessage`.
+                        TcpDiscoveryNodeAddedMessage msg0 = new TcpDiscoveryNodeAddedMessage((TcpDiscoveryNodeAddedMessage)msg);
 
-                        if (clientMsgWorker.clientNodeId.equals(id))
-                            prepareNodeAddedMessage(msg, clientMsgWorker.clientNodeId, null);
+                        if (clientMsgWorker.clientNodeId.equals(msg0.node().id()))
+                            prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null);
+
+                        msg = msg0;
                     }
 
                     clientMsgWorker.addMessage(msg);
@@ -7736,7 +7739,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryNodeAddedMessage addedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
                 if (clientNodeId.equals(addedMsg.node().id()))
-                    return addedMsg.topology() != null;
+                    if (addedMsg.topology() != null)
+                        return true;
+                    else
+                        return false;
             }
 
             return true;
