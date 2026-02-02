@@ -26,28 +26,41 @@ import org.apache.calcite.schema.ScalarFunction;
  * Implementation of {@link ScalarFunction} for Ignite user defined functions.
  */
 public class IgniteScalarFunction extends IgniteReflectiveFunctionBase implements ScalarFunction {
+    /** */
+    private boolean deterministic;
+
     /**
      * Private constructor.
      */
-    private IgniteScalarFunction(Method method, CallImplementor implementor) {
+    private IgniteScalarFunction(Method method, CallImplementor implementor, boolean deterministic) {
         super(method, implementor);
+
+        this.deterministic = deterministic;
     }
 
     /**
      * Creates {@link ScalarFunction} from given method.
      *
      * @param method Method that is used to implement the function.
+     * @param deterministic Is function deterministic.
      * @return Created {@link ScalarFunction}.
      */
-    public static ScalarFunction create(Method method) {
+    public static ScalarFunction create(Method method, boolean deterministic) {
         CallImplementor implementor = RexImpTable.createImplementor(
             new ReflectiveCallNotNullImplementor(method), NullPolicy.NONE, false);
 
-        return new IgniteScalarFunction(method, implementor);
+        return new IgniteScalarFunction(method, implementor, deterministic);
     }
 
     /** {@inheritDoc} */
     @Override public RelDataType getReturnType(RelDataTypeFactory typeFactory) {
         return typeFactory.createJavaType(method.getReturnType());
+    }
+
+    /**
+     * @return Deterministic flag.
+     */
+    public boolean isDeterministic() {
+        return deterministic;
     }
 }
