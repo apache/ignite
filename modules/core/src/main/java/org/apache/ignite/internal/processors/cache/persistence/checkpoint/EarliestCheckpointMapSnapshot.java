@@ -93,18 +93,18 @@ public class EarliestCheckpointMapSnapshot extends IgniteDataTransferObject {
     }
 
     /** {@link CheckpointEntry.GroupState} snapshot. */
-    static class GroupStateSnapshot extends IgniteDataTransferObject {
+    public static class GroupStateSnapshot extends IgniteDataTransferObject {
         /** Serial version UUID. */
         private static final long serialVersionUID = 0L;
 
         /** Partition ids. */
-        private int[] parts;
+        int[] parts;
 
         /** Partition counters which corresponds to partition ids. */
-        private long[] cnts;
+        long[] cnts;
 
         /** Partitions count. */
-        private int size;
+        int size;
 
         /**
          * @param parts Partitions' ids.

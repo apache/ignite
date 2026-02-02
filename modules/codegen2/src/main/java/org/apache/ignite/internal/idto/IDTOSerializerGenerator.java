@@ -71,7 +71,7 @@ public class IDTOSerializerGenerator {
     /** Serializer interface. */
     public static final String DTO_SERDES_INTERFACE = "org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer";
 
-    /** Class javadoc */
+    /** Class javadoc. */
     static final String CLS_JAVADOC = "/** " + NL +
         " * This class is generated automatically." + NL +
         " *" + NL +

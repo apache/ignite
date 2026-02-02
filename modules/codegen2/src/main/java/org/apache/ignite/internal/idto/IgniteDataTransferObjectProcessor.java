@@ -78,7 +78,10 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         "org.apache.ignite.internal.commandline.cache.check_indexes_inline_size.CheckIndexInlineSizesResult",
         "org.apache.ignite.internal.management.cache.ContentionJobResult",
         "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem",
-        "org.apache.ignite.internal.management.tx.TxInfo"
+        "org.apache.ignite.internal.management.tx.TxInfo",
+        "org.apache.ignite.internal.management.encryption.ReencryptionSuspendTask.ReencryptionSuspendResumeJobResult",
+        "org.apache.ignite.internal.management.encryption.ReencryptionStatusTask.ReencryptionStatusResult",
+        "org.apache.ignite.internal.management.encryption.EncryptionKeyIdsTask.EncryptionKeyIdsResult"
     );
 
     /**
@@ -124,7 +127,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         if (clazz.getModifiers().contains(Modifier.ABSTRACT))
             return;
 
-        if (!clazz.getModifiers().contains(Modifier.PUBLIC))
+        if (clazz.getModifiers().contains(Modifier.PRIVATE) && clazz.getModifiers().contains(Modifier.PROTECTED))
             return;
 
         if (clazz.getNestingKind() != NestingKind.TOP_LEVEL && clazz.getNestingKind() != NestingKind.MEMBER)

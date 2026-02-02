@@ -17,9 +17,13 @@
 
 package org.apache.ignite.internal.management.encryption;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.List;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.jetbrains.annotations.Nullable;
 
@@ -64,6 +68,16 @@ public class EncryptionKeyIdsTask extends CacheGroupEncryptionTask<List<Integer>
         /** */
         public EncryptionKeyIdsResult() {
             // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+            U.writeCollection(out, value());
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
+            value(U.readList(in));
         }
     }
 }
