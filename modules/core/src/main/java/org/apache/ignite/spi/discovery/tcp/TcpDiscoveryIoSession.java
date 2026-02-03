@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Handles I/O operations between discovery nodes in the cluster. This class encapsulates the socket connection used
  * by the {@link TcpDiscoverySpi} to exchange discovery protocol messages between nodes.
- * Ьessage serialization is delegated to a {@link TcpDiscoveryIoSessionSerializer}.
+ * Message serialization is delegated to a {@link TcpDiscoveryIoSessionSerializer}.
  */
 public class TcpDiscoveryIoSession {
     /** Default size of buffer used for buffering socket in/out. */
