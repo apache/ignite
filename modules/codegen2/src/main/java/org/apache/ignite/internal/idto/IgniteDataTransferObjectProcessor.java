@@ -81,7 +81,11 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         "org.apache.ignite.internal.management.tx.TxInfo",
         "org.apache.ignite.internal.management.encryption.ReencryptionSuspendTask.ReencryptionSuspendResumeJobResult",
         "org.apache.ignite.internal.management.encryption.ReencryptionStatusTask.ReencryptionStatusResult",
-        "org.apache.ignite.internal.management.encryption.EncryptionKeyIdsTask.EncryptionKeyIdsResult"
+        "org.apache.ignite.internal.management.encryption.EncryptionKeyIdsTask.EncryptionKeyIdsResult",
+        "org.apache.ignite.internal.management.cache.IndexForceRebuildTaskRes",
+        "org.apache.ignite.internal.management.cache.IndexRebuildStatusInfoContainer",
+        "org.apache.ignite.internal.visor.VisorTaskResult",
+        "org.apache.ignite.internal.visor.VisorTaskArgument"
     );
 
     /**

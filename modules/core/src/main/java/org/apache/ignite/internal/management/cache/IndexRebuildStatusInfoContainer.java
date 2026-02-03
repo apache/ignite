@@ -17,11 +17,15 @@
 
 package org.apache.ignite.internal.management.cache;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Comparator;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Container for index rebuild status info.
@@ -62,6 +66,22 @@ public class IndexRebuildStatusInfoContainer extends IgniteDataTransferObject {
         cacheName = cfg.getName();
         indexBuildPartitionsLeftCount = cctx.cache().metrics0().getIndexBuildPartitionsLeftCount();
         totalPartitionsCount = cctx.topology().localPartitionsNumber();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeString(out, groupName);
+        U.writeString(out, cacheName);
+        out.writeInt(indexBuildPartitionsLeftCount);
+        out.writeInt(totalPartitionsCount);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
+        groupName = U.readString(in);
+        cacheName = U.readString(in);
+        indexBuildPartitionsLeftCount = in.readInt();
+        totalPartitionsCount = in.readInt();
     }
 
     /** {@inheritDoc} */
