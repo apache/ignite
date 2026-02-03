@@ -130,7 +130,7 @@ public class TcpDiscoveryIoSessionSerializer {
     }
 
     /**
-     * Reads the next discovery message from the socket input stream.
+     * Reads the next discovery message from the specified input stream.
      *
      * @param <T> Type of the expected message.
      * @return Deserialized message instance.
