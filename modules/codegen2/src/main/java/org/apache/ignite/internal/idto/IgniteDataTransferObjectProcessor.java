@@ -33,7 +33,6 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
-import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
@@ -72,7 +71,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
     private final Map<TypeElement, String> genSerDes = new HashMap<>();
 
     /** Currently unsupported classes. */
-    private final Set<String> unsupported = Set.of(
+    private static final Set<String> UNSUPPORTED = Set.of(
         "org.apache.ignite.internal.management.baseline.BaselineNode",
         "org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot",
         "org.apache.ignite.internal.commandline.cache.check_indexes_inline_size.CheckIndexInlineSizesResult",
@@ -122,7 +121,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         // Generate code for inner classes.
         clazz.getEnclosedElements().forEach(this::generateSingle);
 
-        if (unsupported.contains(clazz.getQualifiedName().toString()))
+        if (UNSUPPORTED.contains(clazz.getQualifiedName().toString()))
             return;
 
         if (!processingEnv.getTypeUtils().isAssignable(clazz.asType(), dtoCls))
@@ -371,28 +370,5 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         writer.write(TAB);
         writer.write("}");
         writer.write(NL);
-    }
-
-    /**
-     * @param type Type to analyze.
-     * @param argAnnotation Annotation to find.
-     * @return {@code True} if type has fields annotated with the {@code argAnnotation}, {@code false} otherwise.
-     */
-    private boolean hasArgumentFields(TypeElement type, TypeMirror argAnnotation) {
-        while (type != null) {
-            for (Element el: type.getEnclosedElements()) {
-                if (el.getKind() != ElementKind.FIELD)
-                    continue;
-
-                for (AnnotationMirror am : el.getAnnotationMirrors()) {
-                    if (am.getAnnotationType().equals(argAnnotation))
-                        return true;
-                }
-            }
-
-            type = (TypeElement)processingEnv.getTypeUtils().asElement(type.getSuperclass());
-        }
-
-        return false;
     }
 }
