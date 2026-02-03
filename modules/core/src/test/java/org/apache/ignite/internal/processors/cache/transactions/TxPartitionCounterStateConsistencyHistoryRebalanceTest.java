@@ -28,7 +28,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_PREFER_WAL_REBALAN
 @WithSystemProperty(key = IGNITE_PREFER_WAL_REBALANCE, value = "true")
 public class TxPartitionCounterStateConsistencyHistoryRebalanceTest extends TxPartitionCounterStateConsistencyTest {
     /** {@inheritDoc} */
-    @Ignore
+    @Disabled
     @Override public void testClearVersion() throws Exception {
         // Not applicable for historical preloading.
     }

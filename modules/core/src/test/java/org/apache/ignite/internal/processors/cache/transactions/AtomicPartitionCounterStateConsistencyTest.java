@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Disabled;
 
 import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test partitions consistency for atomic caches trying to reuse tx scenarios as much as possible.
@@ -48,19 +49,19 @@ public class AtomicPartitionCounterStateConsistencyTest extends TxPartitionCount
     }
 
     /** {@inheritDoc} */
-    @Ignore
+    @Disabled
     @Override public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_SameAffinityPME() throws Exception {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Ignore
+    @Disabled
     @Override public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_TxDuringPME() throws Exception {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Ignore
+    @Disabled
     @Override public void testPartitionConsistencyDuringRebalanceAndConcurrentUpdates_LateAffinitySwitch() throws Exception {
         // No-op.
     }
@@ -116,9 +117,9 @@ public class AtomicPartitionCounterStateConsistencyTest extends TxPartitionCount
                     }
                 }
                 catch (Exception e) {
-                    assertTrue(X.getFullStackTrace(e), X.hasCause(e, ClusterTopologyException.class) ||
+                    assertTrue(X.hasCause(e, ClusterTopologyException.class) ||
                         X.hasCause(e, ClusterTopologyCheckedException.class) ||
-                        X.hasCause(e, CacheInvalidStateException.class));
+                        X.hasCause(e, CacheInvalidStateException.class), X.getFullStackTrace(e));
                 }
             }
 

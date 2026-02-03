@@ -36,8 +36,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  *
@@ -84,35 +86,35 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testPutAllFailover() throws Exception {
-        testPutAllFailover(Test.PUT_ALL);
+        testPutAllFailover(InnerTest.PUT_ALL);
     }
 
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testPutAllFailoverPessimisticTx() throws Exception {
         if (atomicityMode() == CacheAtomicityMode.ATOMIC)
             return;
 
-        testPutAllFailover(Test.PUT_ALL_PESSIMISTIC_TX);
+        testPutAllFailover(InnerTest.PUT_ALL_PESSIMISTIC_TX);
     }
 
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testPutAllFailoverAsync() throws Exception {
-        testPutAllFailover(Test.PUT_ALL_ASYNC);
+        testPutAllFailover(InnerTest.PUT_ALL_ASYNC);
     }
 
     /**
      * @param test Test type
      * @throws Exception If failed.
      */
-    private void testPutAllFailover(final Test test) throws Exception {
+    private void testPutAllFailover(final InnerTest test) throws Exception {
         final AtomicBoolean finished = new AtomicBoolean();
 
         final long endTime = System.currentTimeMillis() + TEST_TIME;
@@ -179,8 +181,8 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
                                 for (int k = 0; k < 100; k++)
                                     map.put(new TestKey(rnd.nextInt(200)), new TestValue(iter));
 
-                                doInTransaction(ignite(0), new Callable<Object>() {
-                                    @Override public Object call() throws Exception {
+                                doInTransaction(ignite(0), new Callable<>() {
+                                    @Override public Object call() {
                                         for (TestKey key : map.keySet())
                                             cache.get(key);
 
@@ -325,7 +327,7 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
     /**
      *
      */
-    private enum Test {
+    private enum InnerTest {
         /** */
         PUT_ALL,
 

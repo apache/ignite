@@ -34,10 +34,14 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreadedAsync;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -54,7 +58,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testAtomicLongRetries() throws Exception {
         final AtomicBoolean finished = new AtomicBoolean();
 
@@ -92,23 +96,23 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testExplicitTransactionRetriesSingleValue() throws Exception {
-        checkRetry(Test.TX_PUT, false, false);
+        checkRetry(InnerTest.TX_PUT, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testExplicitTransactionRetriesSingleValueStoreEnabled() throws Exception {
-        checkRetry(Test.TX_PUT, false, true);
+        checkRetry(InnerTest.TX_PUT, false, true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testExplicitTransactionRetries() throws Exception {
         explicitTransactionRetries(false, false);
     }
@@ -116,7 +120,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testExplicitTransactionRetriesStoreEnabled() throws Exception {
         explicitTransactionRetries(false, true);
     }
@@ -124,7 +128,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testExplicitTransactionRetriesEvictionEnabled() throws Exception {
         explicitTransactionRetries(true, false);
     }
@@ -195,7 +199,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
 
                 Set<String> set = (Set<String>)cache.get(key);
 
-                assertNotNull("Missing set for key: " + key, set);
+                assertNotNull(set, "Missing set for key: " + key);
                 assertEquals(FACTOR, set.size());
 
                 for (int i = 0; i < FACTOR; i++) {
@@ -209,7 +213,7 @@ public class IgniteCachePutRetryTransactionalSelfTest extends IgniteCachePutRetr
     /**
      * @throws Exception If failed.
      */
-    @org.junit.Test
+    @Test
     public void testOriginatingNodeFailureForcesOnePhaseCommitDataCleanup() throws Exception {
         ignite(0).createCache(cacheConfiguration(false, false));
 

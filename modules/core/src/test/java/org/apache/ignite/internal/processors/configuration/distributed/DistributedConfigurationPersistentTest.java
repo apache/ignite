@@ -23,7 +23,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.internal.processors.configuration.distributed.DistributedLongProperty.detachedLongProperty;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** */
 public class DistributedConfigurationPersistentTest extends DistributedConfigurationAbstractTest {
@@ -106,7 +108,7 @@ public class DistributedConfigurationPersistentTest extends DistributedConfigura
     public void testPropagateValueOnInactiveGridShouldNotThrowException() throws Exception {
         assumeTrue(isPersistent());
 
-        IgniteEx ignite0 = (IgniteEx)startGrids(2);
+        IgniteEx ignite0 = startGrids(2);
 
         DistributedProperty<Long> long0 = distr(ignite0).registerProperty(detachedLongProperty(TEST_PROP, ""));
 

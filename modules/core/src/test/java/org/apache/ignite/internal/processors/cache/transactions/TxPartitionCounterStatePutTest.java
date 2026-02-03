@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -38,6 +37,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test scenario when entries are updates using non tx counter assignment.
@@ -279,7 +279,7 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
     /**
      * @param cacheName Cache name.
      */
-    private void assertCountersSame(String cacheName) throws AssertionFailedError {
+    private void assertCountersSame(String cacheName) {
         PartitionUpdateCounter c0 = null;
 
         for (Ignite ignite : G.allGrids()) {
@@ -288,7 +288,7 @@ public class TxPartitionCounterStatePutTest extends GridCommonAbstractTest {
             if (c0 == null)
                 c0 = c;
             else {
-                assertEquals(ignite.name(), c0, c);
+                assertEquals(c0, c, ignite.name());
 
                 c0 = c;
             }

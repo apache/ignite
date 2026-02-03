@@ -190,7 +190,7 @@ public class DistributedMetaStoragePersistentTest extends DistributedMetaStorage
     /**
      * @throws Exception If failed.
      */
-    @Test @Ignore
+    @Test @Disabled
     @WithSystemProperty(key = IGNITE_GLOBAL_METASTORAGE_HISTORY_MAX_BYTES, value = "0")
     public void testJoinNodeWithoutEnoughHistory() throws Exception {
         IgniteEx ignite = startGrid(0);

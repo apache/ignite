@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PREFER_WAL_REBALANCE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  *
@@ -40,19 +41,19 @@ public class TxPartitionCounterStateOnePrimaryTwoBackupsHistoryRebalanceTest
         super.afterTest();
 
         // Expecting only one historical rebalance for test scenario.
-        assertEquals("WAL rebalance must happen exactly 1 time", 1, histRebCnt);
+        assertEquals(1, histRebCnt, "WAL rebalance must happen exactly 1 time");
     }
 
     /** {@inheritDoc} */
     @Test
-    @Ignore
+    @Disabled
     @Override public void testMissingUpdateBetweenMultipleCheckpoints() throws Exception {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Test
-    @Ignore
+    @Disabled
     @Override public void testCommitReorderWithRollbackNoRebalanceAfterRestart() throws Exception {
         // No-op.
     }
