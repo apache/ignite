@@ -110,7 +110,7 @@ import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.F
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.INDEX;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.SCAN;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  * Various tests for cache queries.
