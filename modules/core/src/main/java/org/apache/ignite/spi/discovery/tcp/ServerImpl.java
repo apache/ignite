@@ -3242,32 +3242,30 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (spi.ensured(msg))
                     msgHist.add(msg);
 
-                byte[] msgBytes = null;
+                if (clientMsgWorkers.isEmpty())
+                    return;
+
+                byte[] msgBytes;
 
                 TcpDiscoveryIoSerializer ser = ses != null ? ses : new TcpDiscoveryIoSerializer(spi);
 
+                try {
+                    msgBytes = ser.serializeMessage(msg);
+                }
+                catch (IgniteCheckedException | IOException e) {
+                    U.error(log, "Failed to serialize message: " + msg, e);
+
+                    return;
+                }
+
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
-                    if (msgBytes == null) {
-                        try {
-                            msgBytes = ser.serializeMessage(msg);
-                        }
-                        catch (IgniteCheckedException | IOException e) {
-                            U.error(log, "Failed to serialize message to a client: " + msg + ", recepient " +
-                                "client id: " + clientMsgWorker.clientNodeId, e);
-
-                            break;
-                        }
-                    }
-
                     TcpDiscoveryAbstractMessage msg0 = msg;
                     byte[] msgBytes0 = msgBytes;
 
                     if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                         TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
 
-                        TcpDiscoveryNode node = nodeAddedMsg.node();
-
-                        if (clientMsgWorker.clientNodeId.equals(node.id())) {
+                        if (clientMsgWorker.clientNodeId.equals(nodeAddedMsg.node().id())) {
                             msg0 = new TcpDiscoveryNodeAddedMessage(nodeAddedMsg);
 
                             prepareNodeAddedMessage(msg0, clientMsgWorker.clientNodeId, null);
