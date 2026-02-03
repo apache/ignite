@@ -305,6 +305,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         msgWorker = new MessageWorker(log);
 
+        serde = new TcpDiscoveryIoSessionSerializer(spi);
+
         new IgniteSpiThread(msgWorker.igniteInstanceName(), msgWorker.name(), log) {
             @Override protected void body() {
                 msgWorker.run();

@@ -439,6 +439,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         msgWorkerThread = new MessageWorkerDiscoveryThread(msgWorker, log);
         msgWorkerThread.start();
 
+        serde = new TcpDiscoveryIoSessionSerializer(spi);
+
         if (tcpSrvr == null)
             tcpSrvr = new TcpServer(log);
 

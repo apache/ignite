@@ -91,7 +91,7 @@ abstract class TcpDiscoveryImpl {
     protected final TcpDiscoverySpi spi;
 
     /** Session serializer. */
-    protected final TcpDiscoveryIoSessionSerializer serde;
+    protected TcpDiscoveryIoSessionSerializer serde;
 
     /** */
     protected final IgniteLogger log;
@@ -160,8 +160,6 @@ abstract class TcpDiscoveryImpl {
      */
     TcpDiscoveryImpl(TcpDiscoverySpi spi) {
         this.spi = spi;
-
-        serde = new TcpDiscoveryIoSessionSerializer(spi);
 
         log = spi.log;
 
