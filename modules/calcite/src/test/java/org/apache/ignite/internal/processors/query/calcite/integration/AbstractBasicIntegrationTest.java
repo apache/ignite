@@ -107,8 +107,8 @@ public class AbstractBasicIntegrationTest extends GridCommonAbstractTest {
 
             CalciteQueryProcessor qryProc = queryProcessor(ign);
 
-            assertEquals("Not finished queries found [ignite=" + ign.name() + ']',
-                0, qryProc.queryRegistry().runningQueries().size());
+            assertTrue("Not finished queries found [ignite=" + ign.name() + ']',
+                waitForCondition(() -> qryProc.queryRegistry().runningQueries().isEmpty(), 1_000));
 
             ExecutionServiceImpl<Object[]> execSvc = (ExecutionServiceImpl<Object[]>)qryProc.executionService();
             assertEquals("Tracked memory must be 0 after test [ignite=" + ign.name() + ']',

@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.tx;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.internal.management.api.Argument;
@@ -27,7 +24,6 @@ import org.apache.ignite.internal.management.api.ArgumentGroup;
 import org.apache.ignite.internal.management.api.CliConfirmArgument;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 @CliConfirmArgument
@@ -38,35 +34,35 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
 
     /** */
     @Argument(example = "XID", optional = true)
-    private String xid;
+    String xid;
 
     /** */
     @Argument(example = "SECONDS", optional = true)
-    private Long minDuration;
+    Long minDuration;
 
     /** */
     @Argument(example = "SIZE", optional = true)
-    private Integer minSize;
+    Integer minSize;
 
     /** */
     @Argument(example = "PATTERN_REGEX", optional = true)
-    private String label;
+    String label;
 
     /** */
     @Argument
-    private boolean servers;
+    boolean servers;
 
     /** */
     @Argument
-    private boolean clients;
+    boolean clients;
 
     /** */
     @Argument(example = "consistentId1[,consistentId2,....,consistentIdN]")
-    private String[] nodes;
+    String[] nodes;
 
     /** */
     @Argument(optional = true, example = "NUMBER")
-    private Integer limit;
+    Integer limit;
 
     /** */
     @Argument(optional = true, description = "Output order")
@@ -82,39 +78,11 @@ public class TxCommandArg extends TxCommand.AbstractTxCommandArg {
             "Sort by start time"
         }
     )
-    private TxSortOrder order;
+    TxSortOrder order;
 
     /** */
     @Argument(optional = true)
-    private boolean kill;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, xid);
-        out.writeObject(minDuration);
-        out.writeObject(minSize);
-        U.writeString(out, label);
-        out.writeBoolean(servers);
-        out.writeBoolean(clients);
-        U.writeArray(out, nodes);
-        out.writeObject(limit);
-        U.writeEnum(out, order);
-        out.writeBoolean(kill);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        xid = U.readString(in);
-        minDuration = (Long)in.readObject();
-        minSize = (Integer)in.readObject();
-        label = U.readString(in);
-        servers = in.readBoolean();
-        clients = in.readBoolean();
-        nodes = U.readArray(in, String.class);
-        limit = (Integer)in.readObject();
-        order = U.readEnum(in, TxSortOrder.class);
-        kill = in.readBoolean();
-    }
+    boolean kill;
 
     /** */
     public String xid() {
