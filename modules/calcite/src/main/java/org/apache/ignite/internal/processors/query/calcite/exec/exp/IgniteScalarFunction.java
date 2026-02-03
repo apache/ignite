@@ -27,7 +27,7 @@ import org.apache.calcite.schema.ScalarFunction;
  */
 public class IgniteScalarFunction extends IgniteReflectiveFunctionBase implements ScalarFunction {
     /** */
-    private boolean deterministic;
+    private final boolean deterministic;
 
     /**
      * Private constructor.
