@@ -623,7 +623,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
                             if (!U.bytesEqual(U.IGNITE_HEADER_V2, 0, data, 0, U.IGNITE_HEADER_V2.length)) {
                                 if (U.bytesEqual(U.IGNITE_HEADER_V1, 0, data, 0, U.IGNITE_HEADER_V1.length)) {
-                                    log.warning("Received message with old header.");
+                                    log.warning("Received message with the old header.");
                                     continue;
                                 }
 

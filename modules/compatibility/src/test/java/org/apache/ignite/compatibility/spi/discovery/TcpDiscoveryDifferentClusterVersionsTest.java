@@ -53,10 +53,7 @@ public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilit
         return cfg;
     }
 
-    /**
-     * Compatibility test that ensures previous-version client fails to connect to current server
-     * and server reports different IGNITE_HEADER.
-     */
+    /** Tests that connection from client of old version is properly refused. */
     @Test
     public void testOldClientRejected() throws Exception {
         setLoggerDebugLevel();
