@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.tracing;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterNode;
@@ -79,16 +76,6 @@ public class TracingConfigurationCommand extends CommandRegistryImpl<TracingConf
     public abstract static class TracingConfigurationCommandArg extends IgniteDataTransferObject {
         /** */
         private static final long serialVersionUID = 0;
-
-        /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-            // No-op.
-        }
     }
 
     /** */

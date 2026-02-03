@@ -28,6 +28,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.lang.ClusterNodeFunc;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -46,6 +47,9 @@ import org.jetbrains.annotations.Nullable;
  * Convenient way to represent topology for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}
  */
 public class TcpDiscoveryNodesRing {
+    /** */
+    private static final boolean mdcAwareRing = IgniteSystemProperties.getBoolean("MDC_AWARE_RING", true);
+
     /** Visible nodes filter. */
     public static final IgnitePredicate<TcpDiscoveryNode> VISIBLE_NODES = new P1<TcpDiscoveryNode>() {
         @Override public boolean apply(TcpDiscoveryNode node) {
@@ -506,7 +510,16 @@ public class TcpDiscoveryNodesRing {
             if (filtered.size() < 2)
                 return null;
 
-            Iterator<TcpDiscoveryNode> iter = filtered.iterator();
+            Collection<TcpDiscoveryNode> sorted;
+
+            if (mdcAwareRing) {
+                sorted = new TreeSet<>(new MdcAwareNodesComparator());
+                sorted.addAll(filtered);
+            }
+            else
+                sorted = filtered;
+
+            Iterator<TcpDiscoveryNode> iter = sorted.iterator();
 
             while (iter.hasNext()) {
                 TcpDiscoveryNode node = iter.next();
@@ -515,7 +528,7 @@ public class TcpDiscoveryNodesRing {
                     break;
             }
 
-            return iter.hasNext() ? iter.next() : F.first(filtered);
+            return iter.hasNext() ? iter.next() : F.first(sorted);
         }
         finally {
             rwLock.readLock().unlock();
@@ -541,10 +554,19 @@ public class TcpDiscoveryNodesRing {
             if (filtered.size() < 2)
                 return null;
 
+            Collection<TcpDiscoveryNode> sorted;
+
+            if (mdcAwareRing) {
+                sorted = new TreeSet<>(new MdcAwareNodesComparator());
+                sorted.addAll(filtered);
+            }
+            else
+                sorted = filtered;
+
             TcpDiscoveryNode previous = null;
 
             // Get last node that is previous in a ring
-            for (TcpDiscoveryNode node : filtered) {
+            for (TcpDiscoveryNode node : sorted) {
                 if (locNode.equals(node) && previous != null)
                     break;
 
@@ -569,11 +591,20 @@ public class TcpDiscoveryNodesRing {
         try {
             TcpDiscoveryNode prev = null;
 
-            for (TcpDiscoveryNode node : nodes) {
+            Collection<TcpDiscoveryNode> sorted;
+
+            if (mdcAwareRing) {
+                sorted = new TreeSet<>(new MdcAwareNodesComparator());
+                sorted.addAll(nodes);
+            }
+            else
+                sorted = nodes;
+
+            for (TcpDiscoveryNode node : sorted) {
                 if (node.equals(ringNode)) {
                     if (prev == null)
                         // ringNode is the first node, return last node in the ring.
-                        return nodes.last();
+                        return F.last(sorted);
 
                     return prev;
                 }
