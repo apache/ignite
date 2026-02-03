@@ -456,7 +456,7 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testScopedContextAwareThreadPool() throws Exception {
+    public void testContextAwareThreadPool() throws Exception {
         ContextAwareThreadPoolExecutor pool = deferShutdown(new ContextAwareThreadPoolExecutor(
             "test",
             null,
@@ -467,12 +467,12 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
             GridIoPolicy.UNDEFINED,
             null));
 
-        doScopedContextAwareExecutorServiceTest(pool);
+        doContextAwareExecutorServiceTest(pool);
     }
 
     /** */
     @Test
-    public void testScopedContextAwareStripedThreadPoolExecutor() throws Exception {
+    public void testContextAwareStripedThreadPoolExecutor() throws Exception {
         ContextAwareStripedThreadPoolExecutor pool = deferShutdown(new ContextAwareStripedThreadPoolExecutor(
             2,
             getTestIgniteInstanceName(0),
@@ -491,7 +491,7 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
 
     /** */
     @Test
-    public void testScopedContextAwareStripedExecutor() throws Exception {
+    public void testContextAwareStripedExecutor() throws Exception {
         ContextAwareStripedExecutor pool = deferShutdown(new ContextAwareStripedExecutor(
             2,
             getTestIgniteInstanceName(0),
@@ -514,7 +514,7 @@ public class ContextAttributesTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void doScopedContextAwareExecutorServiceTest(ExecutorService pool) throws Exception {
+    private void doContextAwareExecutorServiceTest(ExecutorService pool) throws Exception {
         CountDownLatch poolUnblockedLatch = blockPool(pool);
 
         BiConsumerX<String, Integer> asyncChecks = (s, i) -> {

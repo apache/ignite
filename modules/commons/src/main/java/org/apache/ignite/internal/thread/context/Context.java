@@ -22,6 +22,8 @@ import java.util.List;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.thread.context.Scope.NOOP_SCOPE;
+
 /**
  * Represents a storage of {@link ContextAttribute}s and their corresponding values bound to the thread.
  * The state of Context is determined by a sequence of {@link Update}s applied to it. Each Update stores the
@@ -60,9 +62,7 @@ public class Context {
      * @return Context Attribute Value.
      */
     @Nullable public static <T> T get(ContextAttribute<T> attr) {
-        AttributeValueHolder<T> valHolder = INSTANCE.get().attributeValue(attr);
-
-        return valHolder == null ? attr.initialValue() : valHolder.value();
+        return INSTANCE.get().getInternal(attr);
     }
 
     /**
@@ -74,10 +74,9 @@ public class Context {
      * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order they were applied.
      */
     public static <T> Scope set(ContextAttribute<T> attr, T val) {
-        if (get(attr) == val)
-            return Scope.NOOP_SCOPE;
+        Context ctx = INSTANCE.get();
 
-        return INSTANCE.get().applyUpdates(new AttributeValueHolder<>(attr, val));
+        return ctx.getInternal(attr) == val ? NOOP_SCOPE : ctx.applyAttributeUpdates(new AttributeValueHolder<>(attr, val));
     }
 
     /**
@@ -141,21 +140,24 @@ public class Context {
         return INSTANCE.get().restoreSnapshotInternal(snp);
     }
 
-    /** Retrieves value for the specified attribute from the current Context. */
-    @Nullable private <T> AttributeValueHolder<T> attributeValue(ContextAttribute<T> attr) {
+    /**
+     * Retrieves value for the specified attribute from the current Context. If no value is explicitly associated with
+     * specified attribute, {@link ContextAttribute#initialValue()} is returned.
+     */
+    @Nullable private <T> T getInternal(ContextAttribute<T> attr) {
         if (lastUpd == null || (lastUpd.storedAttrBits & attr.bitmask()) == 0)
-            return null;
+            return attr.initialValue(); // Context does not store value for the specified attribute.
 
-        AttributeValueHolder<T> res = findAttributeValue(attr);
+        AttributeValueHolder<T> valHolder = findAttributeValue(attr);
 
-        assert res != null;
-        assert res.attribute().equals(attr);
+        assert valHolder != null;
+        assert valHolder.attribute().equals(attr);
 
-        return res;
+        return valHolder.value();
     }
 
     /** Updates the current context with the specified attributes and their corresponding values. */
-    private Scope applyUpdates(AttributeValueHolder<?>... atrVals) {
+    private Scope applyAttributeUpdates(AttributeValueHolder<?>... atrVals) {
         lastUpd = new Update(atrVals, lastUpd);
 
         return lastUpd;
@@ -192,7 +194,7 @@ public class Context {
         ContextSnapshot prevSnp = createSnapshotInternal();
 
         if (newSnp == prevSnp)
-            return Scope.NOOP_SCOPE;
+            return NOOP_SCOPE;
 
         changeState(prevSnp, newSnp);
 
@@ -286,11 +288,19 @@ public class Context {
         private static final int INIT_UPDATES_CAPACITY = 3;
 
         /** */
+        private final Context ctx;
+
+        /** */
         private List<AttributeValueHolder<?>> updates;
+
+        /** */
+        private ContextUpdater(Context ctx) {
+            this.ctx = ctx;
+        }
 
         /** */  
         <T> ContextUpdater set(ContextAttribute<T> attr, T val) {
-            if (get(attr) == val)
+            if (ctx.getInternal(attr) == val)
                 return this;
 
             if (updates == null)
@@ -304,18 +314,18 @@ public class Context {
         /** */
         Scope apply() {
             if (F.isEmpty(updates))
-                return Scope.NOOP_SCOPE;
+                return NOOP_SCOPE;
 
             AttributeValueHolder<?>[] sealedUpdates = new AttributeValueHolder[updates.size()];
 
             updates.toArray(sealedUpdates);
 
-            return INSTANCE.get().applyUpdates(sealedUpdates);
+            return ctx.applyAttributeUpdates(sealedUpdates);
         }
 
         /** */
         static ContextUpdater create() {
-            return new ContextUpdater();
+            return new ContextUpdater(INSTANCE.get());
         }
     }
 }
