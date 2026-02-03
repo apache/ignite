@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class CacheIndexesRebuildStatusCommandArg extends IgniteDataTransferObject {
@@ -35,17 +31,7 @@ public class CacheIndexesRebuildStatusCommandArg extends IgniteDataTransferObjec
         description = "Specify node for job execution. If not specified explicitly, info will be gathered from all nodes",
         example = "nodeId",
         optional = true)
-    private UUID nodeId;
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeUuid(out, nodeId);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeId = U.readUuid(in);
-    }
+    UUID nodeId;
 
     /** */
     public UUID nodeId() {

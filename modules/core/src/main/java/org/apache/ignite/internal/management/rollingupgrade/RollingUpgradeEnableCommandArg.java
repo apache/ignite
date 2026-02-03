@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.management.rollingupgrade;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** Rolling upgrade enable command argument. */
 public class RollingUpgradeEnableCommandArg extends IgniteDataTransferObject {
@@ -34,12 +30,12 @@ public class RollingUpgradeEnableCommandArg extends IgniteDataTransferObject {
     @Positional
     @Argument(description = "Target Ignite version. The target version can be one minor higher if its maintenance version is zero, "
         + "or one maintenance version higher (e.g. 2.18.0 -> 2.18.1 or 2.18.1 -> 2.19.0)")
-    private String targetVersion;
+    String targetVersion;
 
     /** Force flag. */
     @Argument(description = "Enable rolling upgrade without target version checks."
         + " Use only when required, if the upgrade cannot proceed otherwise", optional = true)
-    private boolean force;
+    boolean force;
 
     /** */
     public String targetVersion() {
@@ -59,17 +55,5 @@ public class RollingUpgradeEnableCommandArg extends IgniteDataTransferObject {
     /** */
     public void force(boolean force) {
         this.force = force;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, targetVersion);
-        out.writeBoolean(force);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        targetVersion = U.readString(in);
-        force = in.readBoolean();
     }
 }

@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.IgniteException;
@@ -27,7 +24,6 @@ import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.api.Argument;
 import org.apache.ignite.internal.management.api.EnumDescription;
 import org.apache.ignite.internal.management.api.Positional;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.lang.String.format;
 
@@ -39,20 +35,20 @@ public class CacheIdleVerifyCommandArg extends IgniteDataTransferObject {
     /** */
     @Positional
     @Argument(optional = true, example = "cacheName1,...,cacheNameN")
-    private String[] caches;
+    String[] caches;
 
     /** */
     @Argument(optional = true)
-    private boolean skipZeros;
+    boolean skipZeros;
 
     /** */
     @Argument(description = "check the CRC-sum of pages stored on disk before verifying data consistency " +
         "in partitions between primary and backup nodes", optional = true)
-    private boolean checkCrc;
+    boolean checkCrc;
 
     /** */
     @Argument(optional = true, example = "cacheName1,...,cacheNameN")
-    private String[] excludeCaches;
+    String[] excludeCaches;
 
     /** */
     @Argument(optional = true, description = "Type of cache(s)")
@@ -74,12 +70,15 @@ public class CacheIdleVerifyCommandArg extends IgniteDataTransferObject {
             "All"
         }
     )
-    private CacheFilterEnum cacheFilter = CacheFilterEnum.DEFAULT;
+    CacheFilterEnum cacheFilter = CacheFilterEnum.DEFAULT;
 
     /**
      * @param string To validate that given name is valed regex.
      */
     private void validateRegexes(String[] string) {
+        if (string == null)
+            return;
+
         for (String s : string) {
             try {
                 Pattern.compile(s);
@@ -88,24 +87,6 @@ public class CacheIdleVerifyCommandArg extends IgniteDataTransferObject {
                 throw new IgniteException(format("Invalid cache name regexp '%s': %s", s, e.getMessage()));
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeArray(out, caches);
-        out.writeBoolean(skipZeros);
-        out.writeBoolean(checkCrc);
-        U.writeArray(out, excludeCaches);
-        U.writeEnum(out, cacheFilter);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        caches = U.readArray(in, String.class);
-        skipZeros = in.readBoolean();
-        checkCrc = in.readBoolean();
-        excludeCaches = U.readArray(in, String.class);
-        cacheFilter = U.readEnum(in, CacheFilterEnum.class);
     }
 
     /** */
