@@ -19,10 +19,13 @@ package org.apache.ignite.util;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
+import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.integration.CacheWriterException;
 import org.apache.ignite.Ignite;
@@ -30,7 +33,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListener;
@@ -44,8 +49,10 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.junit.Test;
@@ -142,22 +149,21 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
     public void testTxCoordinatorLeftClusterWithEnabledReadWriteThrough() throws Exception {
         // sequential start is important here
         startGrid(0);
-        startGrid(1);
-        startGrid(2);
+        IgniteEx n1 = startGrid(1);
+        IgniteEx n2 = startGrid(2);
 
         injectTestSystemOut();
 
         int gridToStop = 1;
 
-        IgniteEx instanceToStop = grid(gridToStop);
-        instanceToStop.cluster().state(ClusterState.ACTIVE);
+        n1.cluster().state(ClusterState.ACTIVE);
 
         TestRecordingCommunicationSpi commSpi =
-                (TestRecordingCommunicationSpi)instanceToStop.configuration().getCommunicationSpi();
-        commSpi.record(GridDhtTxFinishRequest.class);
+                (TestRecordingCommunicationSpi)n2.configuration().getCommunicationSpi();
+        commSpi.record(GridNearTxFinishRequest.class);
 
         commSpi.blockMessages((node, msg) -> {
-            boolean ret = msg instanceof GridDhtTxFinishRequest;
+            boolean ret = msg instanceof GridNearTxFinishRequest;
 
             if (ret) {
                 nodeKillLatch.countDown();
@@ -168,16 +174,17 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         });
 
         MapCacheStoreStrategy strategy = new MapCacheStoreStrategy();
-        Factory<? extends CacheStore<Object, Object>> storeFactory = strategy.getStoreFactory();
+        //Factory<? extends CacheStore<Object, Object>> storeFactory = strategy.getStoreFactory();
         CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<>("cache");
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setCacheMode(CacheMode.REPLICATED);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
-        ccfg.setCacheStoreFactory(storeFactory);
+        ccfg.setCacheStoreFactory(MapCacheStore::new);
         ccfg.setCacheStoreSessionListenerFactories(new TestCacheStoreFactory());
 
-        IgniteCache<Integer, Object> cache = instanceToStop.createCache(ccfg);
+        IgniteCache<Integer, Object> cache = n1.createCache(ccfg);
 
         awaitPartitionMapExchange();
 
@@ -190,7 +197,8 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         Integer primaryKey = primaryKey(cache);
 
         //noinspection EmptyCatchBlock
-        try (Transaction tx = instanceToStop.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
+        cache = n2.cache("cache");
+        try (Transaction tx = n2.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
             cache.put(primaryKey, new Object());
             tx.commit();
         }
@@ -245,6 +253,46 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         /** {@inheritDoc} */
         @Override public CacheStoreSessionListener create() {
             return new TestCacheJdbcStoreSessionListener();
+        }
+    }
+
+    public static class MapCacheStore extends CacheStoreAdapter<Object, Object> {
+        /** Store map. */
+        private static final Map<Object, Object> map = new ConcurrentHashMap<>();
+
+        /** */
+        private static CountDownLatch salvagedLatch;
+
+        /** */
+        private static CountDownLatch txCoordStoreLatch;
+
+        /** {@inheritDoc} */
+        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
+            for (Map.Entry<Object, Object> e : map.entrySet())
+                clo.apply(e.getKey(), e.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object load(Object key) {
+            Object val = map.get(key);
+
+            if (salvagedLatch != null)
+                salvagedLatch.countDown();
+
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<?, ?> e) {
+            map.put(e.getKey(), e.getValue());
+
+            if (txCoordStoreLatch != null)
+                txCoordStoreLatch.countDown();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) {
+            map.remove(key);
         }
     }
 
