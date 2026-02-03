@@ -30,7 +30,7 @@ public class ViewCacheTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache infos. */
-    protected List<CacheInfo> cacheInfos;
+    List<CacheInfo> cacheInfos;
 
     /**
      * @param cacheInfos Cache infos.
