@@ -70,8 +70,12 @@ import static java.lang.Boolean.TRUE;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.SNP_RUNNING_DIR_KEY;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** */
 public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
@@ -753,9 +757,9 @@ public class IgniteCacheDumpSelfTest extends AbstractCacheDumpTest {
                 super.checkDefaultCacheEntry(e);
 
                 if (explicitTtl != null) {
-                    assertTrue("Expire time must be set", e.expireTime() != 0);
-                    assertTrue("Expire time must be in past", System.currentTimeMillis() >= e.expireTime());
-                    assertTrue("Expire time must be set during test run", System.currentTimeMillis() - getTestTimeout() < e.expireTime());
+                    assertTrue(e.expireTime() != 0, "Expire time must be set");
+                    assertTrue(System.currentTimeMillis() >= e.expireTime(), "Expire time must be in past");
+                    assertTrue(System.currentTimeMillis() - getTestTimeout() < e.expireTime(), "Expire time must be set during test run");
                 }
             }
         };

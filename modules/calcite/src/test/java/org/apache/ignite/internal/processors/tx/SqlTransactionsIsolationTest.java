@@ -67,7 +67,7 @@ import static org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl.PROP
 import static org.apache.ignite.internal.processors.cache.query.AbstractQueryTransactionIsolationTest.ModifyApi.CACHE;
 import static org.apache.ignite.internal.processors.cache.query.AbstractQueryTransactionIsolationTest.ModifyApi.QUERY;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /** */
 public class SqlTransactionsIsolationTest extends AbstractQueryTransactionIsolationTest {
