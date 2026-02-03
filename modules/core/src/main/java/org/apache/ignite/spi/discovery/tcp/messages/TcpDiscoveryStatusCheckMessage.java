@@ -154,7 +154,7 @@ public class TcpDiscoveryStatusCheckMessage extends TcpDiscoveryAbstractMessage 
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 16;
+        return 18;
     }
 
     /** {@inheritDoc} */
