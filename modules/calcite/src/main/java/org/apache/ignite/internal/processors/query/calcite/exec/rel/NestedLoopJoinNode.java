@@ -327,14 +327,12 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
                 assert lastPushedInd >= 0;
 
                 inLoop = true;
-                Row emptyLeft = leftRowFactory.create();
-                try {
-                    for (lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd);;
-                        lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd + 1)
-                    ) {
-                        if (lastPushedInd < 0)
-                            break;
+                lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd);
 
+                try {
+                    Row emptyLeft = lastPushedInd < 0 ? null : leftRowFactory.create();
+
+                    while (lastPushedInd >= 0) {
                         if (rescheduleJoin())
                             return;
 
@@ -347,6 +345,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
 
                         if (lastPushedInd == Integer.MAX_VALUE || requested <= 0)
                             break;
+
+                        lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd + 1);
                     }
                 }
                 finally {
@@ -463,13 +463,14 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
                 assert lastPushedInd >= 0;
 
                 inLoop = true;
-                Row emptyLeft = leftRowFactory.create();
+                lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd);
+
                 try {
-                    for (lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd);;
-                        lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd + 1)
-                    ) {
-                        if (lastPushedInd < 0)
-                            break;
+                    Row emptyLeft = lastPushedInd < 0 ? null : leftRowFactory.create();
+
+                    while (lastPushedInd > 0) {
+                        if (rescheduleJoin())
+                            return;
 
                         Row row = rowHnd.concat(emptyLeft, rightMaterialized.get(lastPushedInd));
 
@@ -480,6 +481,8 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
 
                         if (lastPushedInd == Integer.MAX_VALUE || requested <= 0)
                             break;
+
+                        lastPushedInd = rightNotMatchedIndexes.nextSetBit(lastPushedInd + 1);
                     }
                 }
                 finally {

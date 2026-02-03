@@ -408,8 +408,6 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
         }
 
         if (rightIdx == rightInBuf.size()) {
-            int preservedRightIdx = rightIdx;
-
             leftIdx = 0;
             rightIdx = 0;
 
@@ -433,14 +431,7 @@ public class CorrelatedNestedLoopJoinNode<Row> extends AbstractNode<Row> {
 
                 try {
                     while (requested > 0 && notMatchedIdx < leftInBuf.size()) {
-                        if (processed++ > IN_BUFFER_SIZE) {
-                            rightIdx = preservedRightIdx;
-
-                            context().execute(this::join0, this::onError);
-
-                            return;
-                        }
-
+                        processed++;
                         requested--;
 
                         downstream().push(handler.concat(leftInBuf.get(notMatchedIdx), rightEmptyRow));
