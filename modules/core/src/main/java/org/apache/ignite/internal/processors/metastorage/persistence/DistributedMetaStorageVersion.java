@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.processors.metastorage.persistence;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.LongFunction;
@@ -28,7 +25,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /** Version class for distributed metastorage. */
-final class DistributedMetaStorageVersion extends IgniteDataTransferObject {
+public final class DistributedMetaStorageVersion extends IgniteDataTransferObject {
     /** Serial version UID. */
     private static final long serialVersionUID = 0L;
 
@@ -47,14 +44,14 @@ final class DistributedMetaStorageVersion extends IgniteDataTransferObject {
      * @see #INITIAL_VERSION
      */
     @GridToStringInclude
-    private long id;
+    long id;
 
     /**
      * Hash of the whole updates list. Hashing algorinthm is almost the same as in {@link List#hashCode()}, but with
      * {@code long} value instead of {@code int}.
      */
     @GridToStringInclude
-    private long hash;
+    long hash;
 
     /** Default constructor for deserialization. */
     public DistributedMetaStorageVersion() {
@@ -157,18 +154,6 @@ final class DistributedMetaStorageVersion extends IgniteDataTransferObject {
      */
     public long hash() {
         return hash;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeLong(id);
-        out.writeLong(hash);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException {
-        id = in.readLong();
-        hash = in.readLong();
     }
 
     /** {@inheritDoc} */

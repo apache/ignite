@@ -139,10 +139,10 @@ public class BaselineNode extends IgniteDataTransferObject {
         private static final long serialVersionUID = 0L;
 
         /** */
-        private String hostname;
+        String hostname;
 
         /** Textual representation of IP address. */
-        private String addr;
+        String addr;
 
         /**
          * @param inetAddr Inet address.
@@ -156,19 +156,6 @@ public class BaselineNode extends IgniteDataTransferObject {
          * Default constructor.
          */
         public ResolvedAddresses() {
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-            U.writeString(out, hostname);
-            U.writeString(out, addr);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void readExternalData(ObjectInput in)
-            throws IOException, ClassNotFoundException {
-            hostname = U.readString(in);
-            addr = U.readString(in);
         }
 
         /**

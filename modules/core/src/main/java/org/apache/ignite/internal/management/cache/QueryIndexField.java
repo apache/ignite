@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +24,6 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Data transfer object for {@link QueryEntity}.
@@ -37,10 +33,10 @@ public class QueryIndexField extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Index field name. */
-    private String name;
+    String name;
 
     /** Index field sort order. */
-    private boolean sort;
+    boolean sort;
 
     /**
      * Create data transfer object for given cache type metadata.
@@ -85,18 +81,6 @@ public class QueryIndexField extends IgniteDataTransferObject {
      */
     public boolean getSortOrder() {
         return sort;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, name);
-        out.writeBoolean(sort);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        name = U.readString(in);
-        sort = in.readBoolean();
     }
 
     /** {@inheritDoc} */

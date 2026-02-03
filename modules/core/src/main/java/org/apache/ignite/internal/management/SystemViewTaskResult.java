@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.management;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.management.SystemViewTask.SimpleType;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** Reperesents result of {@link SystemViewTask}. */
 public class SystemViewTaskResult extends IgniteDataTransferObject {
@@ -33,10 +30,10 @@ public class SystemViewTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Attribute values for each row of the system view per node ID. */
-    private Map<UUID, List<List<?>>> rows;
+    TreeMap<UUID, List<List<?>>> rows;
 
     /** Names of the system view attributes. */
-    private List<String> attrs;
+    List<String> attrs;
 
     /** Types of the system view attributes. */
     List<SimpleType> types;
@@ -51,7 +48,7 @@ public class SystemViewTaskResult extends IgniteDataTransferObject {
      * @param types Types of the system view attributes.
      * @param rows Attribute values for each row of the system view per node ID.
      */
-    public SystemViewTaskResult(List<String> attrs, List<SimpleType> types, Map<UUID, List<List<?>>> rows) {
+    public SystemViewTaskResult(List<String> attrs, List<SimpleType> types, TreeMap<UUID, List<List<?>>> rows) {
         this.attrs = attrs;
         this.types = types;
         this.rows = rows;
@@ -70,23 +67,5 @@ public class SystemViewTaskResult extends IgniteDataTransferObject {
     /** @return Types of the system view attributes. */
     public List<SimpleType> types() {
         return types;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, attrs);
-
-        U.writeCollection(out, types);
-
-        U.writeMap(out, rows);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        attrs = U.readList(in);
-
-        types = U.readList(in);
-
-        rows = U.readTreeMap(in);
     }
 }

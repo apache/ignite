@@ -27,11 +27,14 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.function.Function;
 import javax.annotation.processing.FilerException;
@@ -44,6 +47,7 @@ import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.ArrayType;
+import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -56,6 +60,7 @@ import static org.apache.ignite.internal.MessageSerializerGenerator.NL;
 import static org.apache.ignite.internal.MessageSerializerGenerator.TAB;
 import static org.apache.ignite.internal.MessageSerializerGenerator.enumType;
 import static org.apache.ignite.internal.MessageSerializerGenerator.identicalFileIsAlreadyGenerated;
+import static org.apache.ignite.internal.idto.IgniteDataTransferObjectProcessor.DTO_CLASS;
 
 /**
  * Generates serializer class for given {@code IgniteDataTransferObject} extension.
@@ -66,12 +71,20 @@ public class IDTOSerializerGenerator {
     /** Serializer interface. */
     public static final String DTO_SERDES_INTERFACE = "org.apache.ignite.internal.dto.IgniteDataTransferObjectSerializer";
 
-    /** Class javadoc */
+    /** Class javadoc. */
     static final String CLS_JAVADOC = "/** " + NL +
         " * This class is generated automatically." + NL +
         " *" + NL +
         " * @see org.apache.ignite.internal.dto.IgniteDataTransferObject" + NL +
         " */";
+
+    /** */
+    private static final IgniteBiTuple<String, String> OBJECT_SERDES =
+        F.t("out.writeObject(obj.${f});", "obj.${f} = (${c})in.readObject();");
+
+    /** */
+    private static final IgniteBiTuple<String, String> STR_STR_MAP =
+        F.t("U.writeStringMap(out, obj.${f});", "obj.${f} = U.readStringMap(in);");
 
     /** Type name to write/read code for the type. */
     private static final Map<String, IgniteBiTuple<String, String>> TYPE_SERDES = new HashMap<>();
@@ -85,22 +98,34 @@ public class IDTOSerializerGenerator {
         TYPE_SERDES.put(float.class.getName(), F.t("out.writeFloat(obj.${f});", "obj.${f} = in.readFloat();"));
         TYPE_SERDES.put(double.class.getName(), F.t("out.writeDouble(obj.${f});", "obj.${f} = in.readDouble();"));
 
-        IgniteBiTuple<String, String> objSerdes = F.t("out.writeObject(obj.${f});", "obj.${f} = (${c})in.readObject();");
-
-        TYPE_SERDES.put(Boolean.class.getName(), objSerdes);
-        TYPE_SERDES.put(Byte.class.getName(), objSerdes);
-        TYPE_SERDES.put(Short.class.getName(), objSerdes);
-        TYPE_SERDES.put(Integer.class.getName(), objSerdes);
-        TYPE_SERDES.put(Long.class.getName(), objSerdes);
-        TYPE_SERDES.put(Float.class.getName(), objSerdes);
-        TYPE_SERDES.put(Double.class.getName(), objSerdes);
+        TYPE_SERDES.put(Boolean.class.getName(), OBJECT_SERDES);
+        TYPE_SERDES.put(Byte.class.getName(), OBJECT_SERDES);
+        TYPE_SERDES.put(Short.class.getName(), OBJECT_SERDES);
+        TYPE_SERDES.put(Integer.class.getName(), OBJECT_SERDES);
+        TYPE_SERDES.put(Long.class.getName(), OBJECT_SERDES);
+        TYPE_SERDES.put(Float.class.getName(), OBJECT_SERDES);
+        TYPE_SERDES.put(Double.class.getName(), OBJECT_SERDES);
+        TYPE_SERDES.put(Throwable.class.getName(), OBJECT_SERDES);
+        TYPE_SERDES.put(Exception.class.getName(), OBJECT_SERDES);
+        TYPE_SERDES.put(Object.class.getName(), OBJECT_SERDES);
 
         TYPE_SERDES.put(String.class.getName(), F.t("U.writeString(out, obj.${f});", "obj.${f} = U.readString(in);"));
         TYPE_SERDES.put(UUID.class.getName(), F.t("U.writeUuid(out, obj.${f});", "obj.${f} = U.readUuid(in);"));
         TYPE_SERDES.put("org.apache.ignite.lang.IgniteUuid", F.t("U.writeIgniteUuid(out, obj.${f});", "obj.${f} = U.readIgniteUuid(in);"));
-        TYPE_SERDES.put("org.apache.ignite.internal.processors.cache.version.GridCacheVersion", objSerdes);
+        TYPE_SERDES.put("org.apache.ignite.internal.processors.cache.version.GridCacheVersion", OBJECT_SERDES);
+        TYPE_SERDES.put("org.apache.ignite.lang.IgniteProductVersion", OBJECT_SERDES);
+        TYPE_SERDES.put("org.apache.ignite.internal.binary.BinaryMetadata", OBJECT_SERDES);
+        TYPE_SERDES.put("org.apache.ignite.internal.management.cache.PartitionKey", OBJECT_SERDES);
+        TYPE_SERDES.put("org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", OBJECT_SERDES);
+        TYPE_SERDES.put("org.apache.ignite.cache.CacheMode",
+            F.t("out.writeByte(CacheMode.toCode(obj.${f}));", "obj.${f} = CacheMode.fromCode(in.readByte());"));
 
+        TYPE_SERDES.put(TreeMap.class.getName(), F.t("U.writeMap(out, obj.${f});", "obj.${f} = U.readTreeMap(in);"));
+        TYPE_SERDES.put(LinkedHashMap.class.getName(), F.t("U.writeMap(out, obj.${f});", "obj.${f} = U.readLinkedMap(in);"));
         TYPE_SERDES.put(Map.class.getName(), F.t("U.writeMap(out, obj.${f});", "obj.${f} = U.readMap(in);"));
+        TYPE_SERDES.put(Collection.class.getName(), F.t("U.writeCollection(out, obj.${f});", "obj.${f} = U.readCollection(in);"));
+        TYPE_SERDES.put(List.class.getName(), F.t("U.writeCollection(out, obj.${f});", "obj.${f} = U.readList(in);"));
+        TYPE_SERDES.put(Set.class.getName(), F.t("U.writeCollection(out, obj.${f});", "obj.${f} = U.readSet(in);"));
     }
 
     /** Write/Read code for enum. */
@@ -295,21 +320,50 @@ public class IDTOSerializerGenerator {
         List<VariableElement> flds,
         Function<IgniteBiTuple<String, String>, String> lineProvider
     ) {
+        TypeMirror dtoCls = env.getElementUtils().getTypeElement(DTO_CLASS).asType();
+
         List<String> code = new ArrayList<>();
 
         for (VariableElement fld : flds) {
             TypeMirror type = fld.asType();
             TypeMirror comp = null;
 
-            IgniteBiTuple<String, String> serDes;
+            IgniteBiTuple<String, String> serDes = null;
 
-            if (type.getKind() == TypeKind.ARRAY) {
+            if (env.getTypeUtils().isAssignable(type, dtoCls))
+                serDes = OBJECT_SERDES;
+            else if (type.getKind() == TypeKind.TYPEVAR)
+                serDes = F.t("out.writeObject(obj.${f});", "obj.${f} = in.readObject();");
+            else if (type.getKind() == TypeKind.ARRAY) {
                 comp = ((ArrayType)type).getComponentType();
 
-                serDes = enumType(env, comp) ? OBJ_ARRAY_SERDES : ARRAY_TYPE_SERDES.get(className(comp));
+                serDes = ARRAY_TYPE_SERDES.get(className(comp));
+
+                if (serDes == null && enumType(env, comp))
+                     serDes = OBJ_ARRAY_SERDES;
             }
-            else
-                serDes = enumType(env, type) ? ENUM_SERDES : TYPE_SERDES.get(className(type));
+            else {
+                if (className(type).equals(Map.class.getName())) {
+                    TypeMirror strCls = env.getElementUtils().getTypeElement(String.class.getName()).asType();
+
+                    DeclaredType dt = (DeclaredType)type;
+
+                    List<? extends TypeMirror> ta = dt.getTypeArguments();
+
+                    if (ta.size() == 2
+                        && env.getTypeUtils().isAssignable(ta.get(0), strCls)
+                        && env.getTypeUtils().isAssignable(ta.get(1), strCls)) {
+                        serDes = STR_STR_MAP;
+                    }
+                }
+
+                if (serDes == null) {
+                    serDes = TYPE_SERDES.get(className(type));
+
+                    if (serDes == null && enumType(env, type))
+                        serDes = ENUM_SERDES;
+                }
+            }
 
             if (serDes != null) {
                 String pattern = lineProvider.apply(serDes);
@@ -351,6 +405,12 @@ public class IDTOSerializerGenerator {
     /** @return FQN of {@code comp}. */
     private static String className(TypeMirror comp) {
         String n = comp.toString();
+
+        int spaceIdx = n.indexOf(' ');
+
+        if (spaceIdx != -1)
+            n = n.substring(spaceIdx + 1);
+
         int genIdx = n.indexOf('<');
 
         return genIdx == -1 ? n : n.substring(0, genIdx);
@@ -372,7 +432,7 @@ public class IDTOSerializerGenerator {
 
         String fqn = className(type);
 
-        if (!fqn.startsWith("java.lang"))
+        if (!fqn.startsWith("java.lang") && type.getKind() != TypeKind.TYPEVAR)
             imports.add(fqn);
 
         return simpleName(fqn);
