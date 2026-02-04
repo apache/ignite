@@ -17,14 +17,11 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.List;
+import java.util.function.Consumer;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -33,14 +30,16 @@ public class ContentionJobResult extends IgniteDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Info. */
-    private ContentionInfo info;
+    /** */
+    ClusterNode node;
 
-    /**
-     * @param info Info.
-     */
-    public ContentionJobResult(ContentionInfo info) {
-        this.info = info;
+    /** */
+    List<String> entries;
+
+    /** */
+    public ContentionJobResult(ClusterNode node, List<String> entries) {
+        this.node = node;
+        this.entries = entries;
     }
 
     /**
@@ -49,27 +48,12 @@ public class ContentionJobResult extends IgniteDataTransferObject {
     public ContentionJobResult() {
     }
 
-    /**
-     * @return Contention info.
-     */
-    public ContentionInfo info() {
-        return info;
-    }
+    /** */
+    public void print(Consumer<String> printer) {
+        printer.accept("[node=" + node + ']');
 
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeObject(info.getNode());
-        U.writeCollection(out, info.getEntries());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        Object node = in.readObject();
-        List<String> entries = U.readList(in);
-
-        info = new ContentionInfo();
-        info.setNode((ClusterNode)node);
-        info.setEntries(entries);
+        for (String entry : entries)
+            printer.accept("    " + entry);
     }
 
     /** {@inheritDoc} */
@@ -77,3 +61,4 @@ public class ContentionJobResult extends IgniteDataTransferObject {
         return S.toString(ContentionJobResult.class, this);
     }
 }
+

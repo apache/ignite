@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -59,13 +58,6 @@ public class ContentionTaskResult extends IgniteDataTransferObject {
      */
     public Collection<ContentionJobResult> jobResults() {
         return clusterInfos;
-    }
-
-    /**
-     * @return Collection of {@link ContentionInfo} collected during task execution.
-     */
-    public Collection<ContentionInfo> getInfos() {
-        return clusterInfos.stream().map(ContentionJobResult::info).collect(Collectors.toList());
     }
 
     /**
