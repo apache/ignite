@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.UserObject;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -312,6 +313,11 @@ public abstract class AbstractMessageSerializationTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean writeUserObject(UserObject obj) {
+            return writeField(Object.class);
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean isHeaderWritten() {
             return true;
         }
@@ -541,6 +547,13 @@ public abstract class AbstractMessageSerializationTest {
         /** {@inheritDoc} */
         @Override public GridLongList readGridLongList() {
             readField(GridLongList.class);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public UserObject readUserObject() {
+            readField(Object.class);
 
             return null;
         }
