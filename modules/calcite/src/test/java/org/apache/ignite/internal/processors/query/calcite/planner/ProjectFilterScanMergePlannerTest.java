@@ -20,10 +20,7 @@ package org.apache.ignite.internal.processors.query.calcite.planner;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.ignite.internal.processors.query.calcite.prepare.bounds.SearchBounds;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
@@ -31,10 +28,10 @@ import org.apache.ignite.internal.processors.query.calcite.rel.IgniteIndexScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeFactory;
-import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
 
 /**
  * Tests ProjectScanMergeRule and FilterScanMergeRule.
@@ -48,17 +45,9 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
     @Override public void setup() {
         super.setup();
 
-        publicSchema = new IgniteSchema("PUBLIC");
-
-        IgniteTypeFactory f = new IgniteTypeFactory(IgniteTypeSystem.INSTANCE);
-
-        RelDataType type = new RelDataTypeFactory.Builder(f)
-            .add("A", f.createSqlType(SqlTypeName.INTEGER))
-            .add("B", f.createSqlType(SqlTypeName.INTEGER))
-            .add("C", f.createSqlType(SqlTypeName.INTEGER))
-            .build();
-
-        createTable(publicSchema, "TBL", type, IgniteDistributions.single(), null);
+        publicSchema = createSchema(
+            createTable("TBL", IgniteDistributions.single(), "A", INTEGER, "B", INTEGER, "C", INTEGER)
+        );
     }
 
     /** */
@@ -256,6 +245,48 @@ public class ProjectFilterScanMergePlannerTest extends AbstractPlannerTest {
             .and(scan -> scan.condition() != null)
             .and(scan -> "=($t0, 1)".equals(scan.condition().toString()))
             .and(scan -> ImmutableBitSet.of(0).equals(scan.requiredColumns())));
+    }
+
+    /**
+     * Check that not correlated part of correllated filter is merged into scan and trim unused fields is applied.
+     */
+    @Test
+    public void testCorrelatedFilterWithTrimMerge() throws Exception {
+        IgniteSchema schema = createSchema(
+            // Create table with random distributeion, to avoid correlated filter to scan merging.
+            createTable("TBL", IgniteDistributions.random(), "A", INTEGER, "B", INTEGER, "C", INTEGER)
+        );
+
+        String sql = "SELECT (SELECT a FROM tbl t2 WHERE t1.a = t2.a AND b > 1) FROM tbl AS t1";
+
+        assertPlan(sql, schema, hasChildThat(isInstanceOf(IgniteAggregate.class)
+            .and(hasChildThat(isTableScan("TBL")
+                .and(scan -> scan.condition() != null)
+                .and(scan -> ">($t1, 1)".equals(scan.condition().toString()))
+                .and(scan -> ImmutableBitSet.of(0, 1).equals(scan.requiredColumns())))))
+        );
+    }
+
+    /**
+     * Check that filter with always-false condition is not merged to scan and replaced with empty values.
+     */
+    @Test
+    public void testAlwaysFalseFilterNotMerged() throws Exception {
+        // Trimmed fields, not reduced condition.
+        assertPlan("SELECT a FROM tbl WHERE false", publicSchema,
+            nodeOrAnyChild(isTableScan("TBL")).negate());
+
+        // Trimmed fields, reduced condition.
+        assertPlan("SELECT a FROM tbl WHERE a = 1 AND a = 0", publicSchema,
+            nodeOrAnyChild(isTableScan("TBL")).negate());
+
+        // Not trimmed fields, not reduced condition.
+        assertPlan("SELECT * FROM tbl WHERE false", publicSchema,
+            nodeOrAnyChild(isTableScan("TBL")).negate());
+
+        // Not trimmed fields, reduced condition.
+        assertPlan("SELECT * FROM tbl WHERE a = 1 AND a = 0", publicSchema,
+            nodeOrAnyChild(isTableScan("TBL")).negate());
     }
 
     /** */
