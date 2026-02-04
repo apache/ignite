@@ -54,22 +54,22 @@ public class CacheMetricsSnapshot extends IgniteDataTransferObject implements Ca
     }
 
     /**
-     * Constructs merged cache metrics.
-     *
-     * @param loc Metrics for cache on local node.
-     * @param metrics Metrics for merge.
-     */
-    public CacheMetricsSnapshot(CacheMetrics loc, Collection<CacheMetrics> metrics) {
-        this(new CacheMetricsMessage(loc, metrics));
-    }
-
-    /**
      * Create snapshot for given metrics message.
      *
      * @param cacheMetricsMsg Cache metrics message.
      */
     public CacheMetricsSnapshot(CacheMetricsMessage cacheMetricsMsg) {
         m = cacheMetricsMsg;
+    }
+
+    /**
+     * Constructs merged cache metrics.
+     *
+     * @param loc Metrics for cache on local node.
+     * @param metrics Metrics for merge.
+     */
+    public CacheMetricsSnapshot(CacheMetrics loc, Collection<CacheMetrics> metrics) {
+        m = new CacheMetricsMessage(loc, metrics);
     }
 
     /** {@inheritDoc} */
