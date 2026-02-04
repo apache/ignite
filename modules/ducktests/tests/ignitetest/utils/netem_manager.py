@@ -23,75 +23,75 @@ from ignitetest.services.utils.decorators import memoize
 # Uses the 'mangle' table to set a firewall mark (fwmark) on packets.
 # Traffic to {destination_ip} is marked with {traffic_mark}, which will be used by tc filters.
 # Note: {traffic_mark} = {dc_idx} * 10 (e.g., DC 1 → mark=10)
-CMD_MARK_TRAFFIC="sudo iptables -t mangle -{action_flag} OUTPUT -d {destination_ip} -j MARK --set-mark {traffic_mark}"
+CMD_MARK_TRAFFIC = "sudo iptables -t mangle -{action_flag} OUTPUT -d {destination_ip} -j MARK --set-mark {traffic_mark}"
 
 # Initialize root HTB qdisc with default class for unclassified traffic.
 # Sets up:
 #   - root qdisc with handle 1:
 #   - default class 1:1 for all traffic not matched by filters (SSH, DNS, local, etc.)
 # Important: classid 1:1 is reserved for default traffic. DC-specific classes start from 1:10, 1:20, etc.
-CMD_INIT_TRAFFIC_CONTROL_ROOT=("sudo tc qdisc add dev {net} root handle 1: htb default 1 && "
-                               "sudo tc class add dev {net} parent 1: classid 1:1 htb rate {interface_rate_mbps}Mbps")
+CMD_INIT_TRAFFIC_CONTROL_ROOT = ("sudo tc qdisc add dev {net} root handle 1: htb default 1 && "
+                                 "sudo tc class add dev {net} parent 1: classid 1:1 htb rate {interface_rate_mbps}Mbps")
 
 # Create an HTB class for a specific data center.
 # Class ID is 1:{dc_mark}, where {dc_mark} = {dc_idx} * 10 (e.g., DC 1 → 1:10).
 # Each class gets its own bandwidth allocation.
-CMD_SET_DC_HTB_CLASS="sudo tc class add dev {net} parent 1: classid 1:{dc_mark} htb rate {interface_rate_mbps}Mbps"
+CMD_SET_DC_HTB_CLASS = "sudo tc class add dev {net} parent 1: classid 1:{dc_mark} htb rate {interface_rate_mbps}Mbps"
 
 # Attach a netem qdisc to a specific HTB class to emulate network conditions.
 # Adds delay, packet loss, jitter, etc. only to traffic in class 1:{dc_mark}.
 # The netem qdisc is identified by handle {netem_id}: (usually equal to dc_mark).
-CMD_SET_NETEM_FOR_DC_HTB_CLASS="sudo tc qdisc add dev {net} parent 1:{dc_mark} handle {netem_id}: netem {netem_cfg}"
+CMD_SET_NETEM_FOR_DC_HTB_CLASS = "sudo tc qdisc add dev {net} parent 1:{dc_mark} handle {netem_id}: netem {netem_cfg}"
 
 # Set up a filter to route marked traffic into the corresponding HTB class.
 # Matches packets with fwmark={traffic_mark} (set by iptables) and routes them to classid 1:{dc_mark}.
 # This links iptables marking with tc traffic classification.
-CMD_SET_FILTER_FOR_DC_HTB_CLASS=\
+CMD_SET_FILTER_FOR_DC_HTB_CLASS = \
     "sudo tc filter add dev {net} protocol ip parent 1:0 prio 1 handle {traffic_mark} fw classid 1:{dc_mark}"
 
 # Delete an HTB class for a specific data center.
 # Removes class 1:{dc_mark} from the HTB root (1:).
 # NOTE: Any attached qdiscs and filters MUST be removed first.
-CMD_DEL_DC_HTB_CLASS="sudo tc class del dev {net} classid 1:{dc_mark}"
+CMD_DEL_DC_HTB_CLASS = "sudo tc class del dev {net} classid 1:{dc_mark}"
 
 # Delete the netem qdisc attached to a specific HTB class.
 # Removes traffic emulation (delay, loss, jitter, etc.) from class 1:{dc_mark}.
 # Safe to call even if the qdisc is already absent.
-CMD_DEL_NETEM_FOR_DC_HTB_CLASS="sudo tc qdisc del dev {net} parent 1:{dc_mark}"
+CMD_DEL_NETEM_FOR_DC_HTB_CLASS = "sudo tc qdisc del dev {net} parent 1:{dc_mark}"
 
 # Delete the fwmark-based tc filter for a specific data center.
 # Removes the filter that redirects packets with fwmark={traffic_mark}
 # from the HTB root (1:) into class 1:{dc_mark}.
 # Only the filter matching (protocol, parent, prio, handle, type=fw) is removed.
-CMD_DEL_FILTER_FOR_DC_HTB_CLASS=\
+CMD_DEL_FILTER_FOR_DC_HTB_CLASS = \
     "sudo tc filter del dev {net} protocol ip parent 1:0 prio 1 handle {traffic_mark} fw"
 
 # Diagnostic commands — show current state of traffic control and marking rules.
 # Useful for debugging and verification.
 
 # Show all qdiscs (HTB root, netem, ingress, etc.)
-CMD_TC_QDISC_SHOW="sudo tc qdisc show dev {net}"
+CMD_TC_QDISC_SHOW = "sudo tc qdisc show dev {net}"
 # Show all HTB classes (1:1, 1:10, 1:20, etc.)
 CMD_TC_CLASS_SHOW = "sudo tc class show dev {net}"
 # Show tc filters — how traffic is classified and routed
-CMD_TC_FILTER_SHOW="sudo tc filter show dev {net}"
+CMD_TC_FILTER_SHOW = "sudo tc filter show dev {net}"
 # Show iptables rules in mangle/OUTPUT — what traffic is being marked
-CMD_IPTABLES_SHOW="sudo iptables -t mangle -nvL OUTPUT"
+CMD_IPTABLES_SHOW = "sudo iptables -t mangle -nvL OUTPUT"
 
 # Get the default network interface (e.g., eth0, ens3)
-CMD_GET_NETWORK_INTERFACE="ip route | grep default | awk -- '{printf $5}'"
+CMD_GET_NETWORK_INTERFACE = "ip route | grep default | awk -- '{printf $5}'"
 # Read interface speed in Mbps from sysfs (e.g., 1000 for 1Gbps)
-CMD_GET_INTERFACE_RATE="cat /sys/class/net/{net}/speed"
+CMD_GET_INTERFACE_RATE = "cat /sys/class/net/{net}/speed"
 
 # Reset network settings to clean state.
 # Removes root qdisc (automatically deletes all child classes and filters).
 # Clears iptables marks in the mangle table.
 
 # Remove root HTB qdisc and all associated classes and qdiscs
-CMD_RESET_QDISC="sudo tc qdisc del dev {net} root"
+CMD_RESET_QDISC = "sudo tc qdisc del dev {net} root"
 
 # Clear all MARK rules in mangle/OUTPUT chain
-CMD_RESET_IPTABLES="sudo iptables -t mangle -F OUTPUT"
+CMD_RESET_IPTABLES = "sudo iptables -t mangle -F OUTPUT"
 
 
 def log_network_components(debug_only=False):
