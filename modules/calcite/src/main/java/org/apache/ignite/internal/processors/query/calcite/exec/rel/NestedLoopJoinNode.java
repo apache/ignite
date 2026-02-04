@@ -468,7 +468,7 @@ public abstract class NestedLoopJoinNode<Row> extends AbstractRightMaterializedJ
                 try {
                     Row emptyLeft = lastPushedInd < 0 ? null : leftRowFactory.create();
 
-                    while (lastPushedInd > 0) {
+                    while (lastPushedInd >= 0) {
                         if (rescheduleJoin())
                             return;
 
