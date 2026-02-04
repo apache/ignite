@@ -1,8 +1,12 @@
-# Message Processor Module
+# Code generation module
 
-This Maven module provides an annotation processor that automatically generates efficient serializer classes for all types implementing the `Message` interface. It is designed to run during the Java compilation phase and integrates seamlessly into build process.
+This Maven module provides annotation processors that automatically generate code, such as serializers, walkers, etc. It is designed to run during the Java compilation phase and integrates seamlessly into the build process.
 
-## Purpose
+## Message Processor
+
+This annotation processor automatically generates efficient serializer classes for all types implementing the `Message` interface. 
+
+### Purpose
 
 The `MessageProcessor` performs the following tasks:
 
@@ -13,7 +17,7 @@ The `MessageProcessor` performs the following tasks:
     - A setter named after the field, accepting a single argument (e.g., `fieldName(Type val)`)
 -  **Access Modifiers**: Getters and setters for all fields annotated with `@Order` must be declared as `public`
 
-## Usage
+### Usage
 
 1. **Prepare your Message class**
 
@@ -38,10 +42,3 @@ At compile time, a class `MyMessageSerializer` implemented `MessageSerializer` w
 3. **Validation**
 
 If the `@Order` values are not sequential starting from 0, or if getter/setter method names do not match the field name, compilation will fail with a meaningful error message pointing to the problematic element.
-
-## **Maven codegen modules**
-
-To avoid a circular dependency between `ignite-core` (which contains message classes) and `ignite-codegen` (which needs to know about them), the annotation processor is **temporarily placed in a separate module**. This separation allows the processor to remain independent of core classes during compilation.
-
-In the future, this structure may be consolidated when build system constraints are resolved.
-

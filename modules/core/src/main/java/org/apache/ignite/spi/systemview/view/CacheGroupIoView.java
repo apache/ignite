@@ -17,8 +17,9 @@
 
 package org.apache.ignite.spi.systemview.view;
 
-import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.systemview.Order;
+import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 import org.apache.ignite.metric.MetricRegistry;
 import org.apache.ignite.spi.metric.LongMetric;
 
@@ -28,6 +29,7 @@ import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.PHYSICAL
 /**
  * Cache group IO statistics representation for a {@link SystemView}.
  */
+@SystemViewDescriptor
 public class CacheGroupIoView {
     /** Cache group. */
     private final CacheGroupContext grpCtx;

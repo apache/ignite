@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,6 +34,7 @@ import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListen
 /**
  * Client connection system view row.
  */
+@SystemViewDescriptor
 public class ClientConnectionView {
     /** Nio session. */
     private final GridNioSession ses;
@@ -104,4 +106,3 @@ public class ClientConnectionView {
         return ver == null ? null : ver.asString();
     }
 }
-
