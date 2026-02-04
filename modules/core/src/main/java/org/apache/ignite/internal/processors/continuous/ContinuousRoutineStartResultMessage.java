@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.continuous;
 
 import java.util.UUID;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -33,15 +34,11 @@ public class ContinuousRoutineStartResultMessage implements Message {
     private UUID routineId;
 
     /** */
-    @Order(value = 1, method = "errorClass")
-    private @Nullable String errCls;
+    @Order(value = 1, method = "errorMessage")
+    private @Nullable ErrorMessage errMsg;
 
     /** */
-    @Order(value = 2, method = "errorMessage")
-    private @Nullable String errMsg;
-
-    /** */
-    @Order(value = 3, method = "countersMap")
+    @Order(value = 2, method = "countersMap")
     private CachePartitionPartialCountersMap cntrsMap;
 
     /**
@@ -59,15 +56,13 @@ public class ContinuousRoutineStartResultMessage implements Message {
     ContinuousRoutineStartResultMessage(
         UUID routineId,
         @Nullable CachePartitionPartialCountersMap cntrsMap,
-        @Nullable Exception err
+        @Nullable Throwable err
     ) {
         this.routineId = routineId;
         this.cntrsMap = cntrsMap;
 
-        if (err != null) {
-            errCls = err.getClass().getName();
-            errMsg = err.getMessage();
-        }
+        if (err != null)
+            errMsg = new ErrorMessage(err);
     }
 
     /**
@@ -99,31 +94,24 @@ public class ContinuousRoutineStartResultMessage implements Message {
     }
 
     /**
-     * @return Error class.
-     */
-    public @Nullable String errorClass() {
-        return errCls;
-    }
-
-    /**
-     * @param errCls Error class.
-     */
-    public void errorClass(@Nullable String errCls) {
-        this.errCls = errCls;
-    }
-
-    /**
      * @return Error message.
      */
-    public @Nullable String errorMessage() {
+    public @Nullable ErrorMessage errorMessage() {
         return errMsg;
     }
 
     /**
      * @param errMsg Error message.
      */
-    public void errorMessage(@Nullable String errMsg) {
+    public void errorMessage(@Nullable ErrorMessage errMsg) {
         this.errMsg = errMsg;
+    }
+
+    /**
+     * @return Error.
+     */
+    public @Nullable Throwable error() {
+        return ErrorMessage.error(errMsg);
     }
 
     /** {@inheritDoc} */
