@@ -67,7 +67,7 @@ public class SystemViewRowAttributeWalkerProcessor extends AbstractProcessor {
             catch (Exception e) {
                 processingEnv.getMessager().printMessage(
                     Diagnostic.Kind.ERROR,
-                    "Failed to generate a message serializer:" + e.getMessage(),
+                    "Failed to generate a walker:" + e.getMessage(),
                     clazz);
             }
         }
