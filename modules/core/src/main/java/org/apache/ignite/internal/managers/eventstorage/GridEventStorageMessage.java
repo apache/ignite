@@ -17,22 +17,17 @@
 
 package org.apache.ignite.internal.managers.eventstorage;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -40,44 +35,49 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridEventStorageMessage implements Message {
     /** */
-    @GridDirectTransient
     private Object resTopic;
 
     /** */
+    @Order(value = 0, method = "responseTopicBytes")
     private byte[] resTopicBytes;
 
     /** */
+    @Order(1)
     private byte[] filter;
 
     /** */
-    @GridDirectTransient
     private Collection<Event> evts;
 
     /** */
+    @Order(value = 2, method = "eventsBytes")
     private byte[] evtsBytes;
 
     /** */
-    @GridDirectTransient
     private Throwable ex;
 
     /** */
+    @Order(value = 3, method = "exceptionBytes")
     private byte[] exBytes;
 
     /** */
+    @Order(value = 4, method = "classLoaderId")
     private IgniteUuid clsLdrId;
 
     /** */
+    @Order(value = 5, method = "deploymentMode")
     private DeploymentMode depMode;
 
     /** */
+    @Order(value = 6, method = "filterClassName")
     private String filterClsName;
 
     /** */
+    @Order(value = 7, method = "userVersion")
     private String userVer;
 
     /** Node class loader participants. */
     @GridToStringInclude
-    @GridDirectMap(keyType = UUID.class, valueType = IgniteUuid.class)
+    @Order(value = 8, method = "loaderParticipants")
     private Map<UUID, IgniteUuid> ldrParties;
 
     /** */
@@ -147,22 +147,29 @@ public class GridEventStorageMessage implements Message {
     /**
      * @return Serialized response topic.
      */
-    byte[] responseTopicBytes() {
+    public byte[] responseTopicBytes() {
         return resTopicBytes;
     }
 
     /**
      * @param resTopicBytes Serialized response topic.
      */
-    void responseTopicBytes(byte[] resTopicBytes) {
+    public void responseTopicBytes(byte[] resTopicBytes) {
         this.resTopicBytes = resTopicBytes;
     }
 
     /**
      * @return Filter.
      */
-    byte[] filter() {
+    public byte[] filter() {
         return filter;
+    }
+
+    /**
+     * @param filter Filter.
+     */
+    public void filter(byte[] filter) {
+        this.filter = filter;
     }
 
     /**
@@ -182,56 +189,84 @@ public class GridEventStorageMessage implements Message {
     /**
      * @return Serialized events.
      */
-    byte[] eventsBytes() {
+    public byte[] eventsBytes() {
         return evtsBytes;
     }
 
     /**
      * @param evtsBytes Serialized events.
      */
-    void eventsBytes(byte[] evtsBytes) {
+    public void eventsBytes(byte[] evtsBytes) {
         this.evtsBytes = evtsBytes;
     }
 
     /**
      * @return the Class loader ID.
      */
-    IgniteUuid classLoaderId() {
+    public IgniteUuid classLoaderId() {
         return clsLdrId;
+    }
+
+    /**
+     * @param clsLdrId the Class loader ID.
+     */
+    public void classLoaderId(IgniteUuid clsLdrId) {
+        this.clsLdrId = clsLdrId;
     }
 
     /**
      * @return Deployment mode.
      */
-    DeploymentMode deploymentMode() {
+    public DeploymentMode deploymentMode() {
         return depMode;
+    }
+
+    /**
+     * @param depMode Deployment mode.
+     */
+    public void deploymentMode(DeploymentMode depMode) {
+        this.depMode = depMode;
     }
 
     /**
      * @return Filter class name.
      */
-    String filterClassName() {
+    public String filterClassName() {
         return filterClsName;
+    }
+
+    /**
+     * @param filterClsName Filter class name.
+     */
+    public void filterClassName(String filterClsName) {
+        this.filterClsName = filterClsName;
     }
 
     /**
      * @return User version.
      */
-    String userVersion() {
+    public String userVersion() {
         return userVer;
+    }
+
+    /**
+     * @param userVer User version.
+     */
+    public void userVersion(String userVer) {
+        this.userVer = userVer;
     }
 
     /**
      * @return Node class loader participant map.
      */
-    @Nullable Map<UUID, IgniteUuid> loaderParticipants() {
+    public @Nullable Map<UUID, IgniteUuid> loaderParticipants() {
         return ldrParties != null ? Collections.unmodifiableMap(ldrParties) : null;
     }
 
     /**
      * @param ldrParties Node class loader participant map.
      */
-    void loaderParticipants(Map<UUID, IgniteUuid> ldrParties) {
+    public void loaderParticipants(@Nullable Map<UUID, IgniteUuid> ldrParties) {
         this.ldrParties = ldrParties;
     }
 
@@ -252,172 +287,15 @@ public class GridEventStorageMessage implements Message {
     /**
      * @return Serialized exception.
      */
-    byte[] exceptionBytes() {
+    public byte[] exceptionBytes() {
         return exBytes;
     }
 
     /**
      * @param exBytes Serialized exception.
      */
-    void exceptionBytes(byte[] exBytes) {
+    public void exceptionBytes(byte[] exBytes) {
         this.exBytes = exBytes;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeIgniteUuid(clsLdrId))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeByte(depMode != null ? (byte)depMode.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeByteArray(evtsBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 3:
-                if (!writer.writeByteArray(exBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeByteArray(filter))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
-                if (!writer.writeString(filterClsName))
-                    return false;
-
-                writer.incrementState();
-
-            case 6:
-                if (!writer.writeMap(ldrParties, MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
-                if (!writer.writeByteArray(resTopicBytes))
-                    return false;
-
-                writer.incrementState();
-
-            case 8:
-                if (!writer.writeString(userVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        switch (reader.state()) {
-            case 0:
-                clsLdrId = reader.readIgniteUuid();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                byte depModeOrd;
-
-                depModeOrd = reader.readByte();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                depMode = DeploymentMode.fromOrdinal(depModeOrd);
-
-                reader.incrementState();
-
-            case 2:
-                evtsBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 3:
-                exBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                filter = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
-                filterClsName = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 6:
-                ldrParties = reader.readMap(MessageCollectionItemType.UUID, MessageCollectionItemType.IGNITE_UUID, false);
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
-                resTopicBytes = reader.readByteArray();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                userVer = reader.readString();
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */
