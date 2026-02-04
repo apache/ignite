@@ -38,7 +38,7 @@ import javax.tools.Diagnostic;
  * for view classes marked by {@code SystemViewDescriptor} interface.
  * <p>
  * The generated walker follows the naming convention:
- * {@code org.apache.ignite.internal.managers.systemview.walker.codegen.[ViewClassName]Walker}.
+ * {@code org.apache.ignite.internal.systemview.[ViewClassName]Walker}.
  */
 @SupportedAnnotationTypes({
     "org.apache.ignite.internal.systemview.SystemViewDescriptor",
