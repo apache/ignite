@@ -140,7 +140,6 @@ public class SystemViewRowAttributeWalkerGenerator {
 
         forEachMethod(clazz, (m, i) -> {
             String name = m.getSimpleName().toString();
-
             TypeMirror retClazz = m.getReturnType();
 
             String line = TAB + TAB;
