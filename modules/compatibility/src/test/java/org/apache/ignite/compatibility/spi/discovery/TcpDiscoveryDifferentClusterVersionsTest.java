@@ -20,6 +20,8 @@ package org.apache.ignite.compatibility.spi.discovery;
 import org.apache.ignite.compatibility.IgniteReleasedVersion;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
@@ -55,7 +57,7 @@ public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilit
 
     /** Tests that connection from client of old version is properly refused. */
     @Test
-    public void testOldClientRejected() throws Exception {
+    public void testOldNodeRejected() throws Exception {
         setLoggerDebugLevel();
 
         listeningLog = new ListeningTestLogger(log);
@@ -68,11 +70,23 @@ public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilit
 
         GridTestUtils.assertThrows(
             log,
-            () -> startGrid("old-client", OLD_VERSION.toString(), cfg -> cfg.setClientMode(true)),
+            () -> startGrid("old-node", OLD_VERSION.toString(), new ConfigurationClosure()),
             AssertionError.class,
             null
         );
 
         assertTrue("Expected log about different protocol.", logListener.check(getTestTimeout()));
+    }
+
+    /** Setup node closure. */
+    private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+        /** {@inheritDoc} */
+        @Override public void apply(IgniteConfiguration cfg) {
+            cfg.setLocalHost("127.0.0.1");
+            TcpDiscoverySpi disco = new TcpDiscoverySpi();
+            disco.setIpFinder(LOCAL_IP_FINDER);
+
+            cfg.setDiscoverySpi(disco);
+        }
     }
 }
