@@ -64,7 +64,7 @@ public class TxEntryValueHolder implements Message {
      * @param hasWriteVal Write value presence flag.
      * @param hasReadVal Read value presence flag.
      */
-    public void updateValue(GridCacheOperation op, CacheObject val, boolean hasWriteVal, boolean hasReadVal) {
+    public void value(GridCacheOperation op, CacheObject val, boolean hasWriteVal, boolean hasReadVal) {
         if (hasReadVal && this.hasWriteVal)
             return;
 
