@@ -20,12 +20,13 @@ package org.apache.ignite.internal.processors.cluster;
 import java.util.Collection;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.internal.Order;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /** Cache metrics message. */
-public class CacheMetricsMessage implements Message {
+public class CacheMetricsMessage extends IgniteDataTransferObject implements Message, CacheMetrics {
     /** */
     public static final short TYPE_CODE = 136;
 
