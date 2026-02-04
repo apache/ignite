@@ -40,7 +40,6 @@ import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
-import org.apache.ignite.internal.managers.systemview.walker.StripedExecutorTaskViewWalker;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.security.IgniteSecurity;
@@ -49,6 +48,7 @@ import org.apache.ignite.internal.processors.security.thread.SecurityAwareStripe
 import org.apache.ignite.internal.processors.security.thread.SecurityAwareStripedThreadPoolExecutor;
 import org.apache.ignite.internal.processors.security.thread.SecurityAwareThreadPoolExecutor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.systemview.StripedExecutorTaskViewWalker;
 import org.apache.ignite.internal.util.StripedExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;

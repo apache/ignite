@@ -66,13 +66,13 @@
         <failIfNoTests>false</failIfNoTests>
 
         <!-- Dependency versions -->
-        <commons.codec.version>1.16.0</commons.codec.version>
+        <commons.codec.version>1.20.0</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.lang.version>2.6</commons.lang.version>
-        <commons.io.version>2.17.0</commons.io.version>
+        <commons.io.version>2.21.0</commons.io.version>
         <commons.dbcp.version>1.4</commons.dbcp.version>
         <cron4j.version>2.2.5</cron4j.version>
-        <curator.version>5.2.0</curator.version>
+        <curator.version>5.3.0</curator.version>
         <guava.version>32.1.2-jre</guava.version>
         <grpc-context.version>1.62.2</grpc-context.version>
         <h2.version>1.4.197</h2.version>
@@ -95,16 +95,16 @@
         <lucene.bundle.version>7.4.0_1</lucene.bundle.version>
         <lucene.version>8.11.2</lucene.version>
         <lz4.version>1.10.1</lz4.version>
-        <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
-        <maven.checkstyle.plugin.version>3.1.1</maven.checkstyle.plugin.version>
+        <maven.bundle.plugin.version>3.5.1</maven.bundle.plugin.version>
+        <maven.checkstyle.plugin.version>3.1.2</maven.checkstyle.plugin.version>
         <maven.flatten.plugin.version>1.7.1</maven.flatten.plugin.version>
         <maven.flatten.file.name>pom-installed.xml</maven.flatten.file.name>
-        <maven.model.version>3.8.4</maven.model.version>
+        <maven.model.version>3.8.9</maven.model.version>
         <checkstyle.puppycrawl.version>8.45</checkstyle.puppycrawl.version>
-        <mockito.version>3.12.4</mockito.version>
+        <mockito.version>5.21.0</mockito.version>
         <mysql.connector.version>8.0.30</mysql.connector.version>
         <postgres.connector.version>42.7.3</postgres.connector.version>
-        <slf4j.version>1.7.33</slf4j.version>
+        <slf4j.version>1.7.36</slf4j.version>
         <snappy.version>1.1.10.7</snappy.version>
         <spring.version>5.3.39</spring.version>
         <surefire.version>3.1.2</surefire.version>
@@ -115,6 +115,7 @@
         <opencensus.version>0.31.1</opencensus.version>
         <commons.lang3.version>3.18.0</commons.lang3.version>
         <ignite-kafka-ext.version>1.0.0</ignite-kafka-ext.version>
+        <xstream.version>1.4.17</xstream.version>
 
         <!-- Maven plugins versions -->
         <maven.javadoc.plugin.version>3.2.0</maven.javadoc.plugin.version>

@@ -16,13 +16,9 @@
  */
 package org.apache.ignite.internal.commandline.cache.reset_lost_partitions;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Result of CacheResetLostPartitionsTask
@@ -34,7 +30,7 @@ public class CacheResetLostPartitionsTaskResult extends IgniteDataTransferObject
     /**
      * Map group name to result execute message.
      */
-    private Map<String, String> msgMap;
+    Map<String, String> msgMap;
 
     /**
      * @param groupName - Cache group name.
@@ -66,15 +62,5 @@ public class CacheResetLostPartitionsTaskResult extends IgniteDataTransferObject
     /** */
     public void setMessageMap(Map<String, String> messageMap) {
         this.msgMap = messageMap;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeMap(out, msgMap);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        msgMap = U.readMap(in);
     }
 }

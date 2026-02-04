@@ -17,16 +17,12 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Comparator;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Container for index info.
@@ -39,20 +35,20 @@ public class IndexListInfoContainer extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Group name. */
-    private String grpName;
+    String grpName;
 
     /** Cache name. */
-    private String cacheName;
+    String cacheName;
 
     /** Index name. */
-    private String idxName;
+    String idxName;
 
     /** Columns names. */
     @GridToStringInclude
-    private Collection<String> colsNames;
+    Collection<String> colsNames;
 
     /** Table name. */
-    private String tblName;
+    String tblName;
 
     /**
      * Empty constructor required for Serializable.
@@ -75,24 +71,6 @@ public class IndexListInfoContainer extends IgniteDataTransferObject {
         this.idxName = idxName;
         this.colsNames = colsNames;
         this.tblName = tblName;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, cacheName);
-        U.writeString(out, grpName);
-        U.writeString(out, idxName);
-        U.writeCollection(out, colsNames);
-        U.writeString(out, tblName);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheName = U.readString(in);
-        grpName = U.readString(in);
-        idxName = U.readString(in);
-        colsNames = U.readCollection(in);
-        tblName = U.readString(in);
     }
 
     /**
