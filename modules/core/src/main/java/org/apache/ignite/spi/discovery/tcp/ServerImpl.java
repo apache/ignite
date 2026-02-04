@@ -3241,6 +3241,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (spi.ensured(msg))
                     msgHist.add(msg);
 
+                ClientMessageHolder hld = new ClientMessageCachingHolder(msg);
+
                 for (ClientMessageWorker clientMsgWorker : clientMsgWorkers.values()) {
                     if (msg instanceof TcpDiscoveryNodeAddedMessage) {
                         TcpDiscoveryNodeAddedMessage nodeAddedMsg = (TcpDiscoveryNodeAddedMessage)msg;
@@ -3249,11 +3251,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                             msg = new TcpDiscoveryNodeAddedMessage(nodeAddedMsg);
 
                             prepareNodeAddedMessage(msg, clientMsgWorker.clientNodeId, null);
+
+                            hld = new ClientMessageHolder(msg);
                         }
                     }
 
-                    // TODO Investigate possible optimizations: https://issues.apache.org/jira/browse/IGNITE-27722
-                    clientMsgWorker.addMessage(msg);
+                    clientMsgWorker.addMessage(hld);
                 }
             }
         }
@@ -7582,7 +7585,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** */
-    private class ClientMessageWorker extends MessageWorker<TcpDiscoveryAbstractMessage> {
+    private class ClientMessageWorker extends MessageWorker<ClientMessageHolder> {
         /** Node ID. */
         private final UUID clientNodeId;
 
@@ -7649,25 +7652,33 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param msg Message.
          */
         void addMessage(TcpDiscoveryAbstractMessage msg) {
-            if (msg.highPriority())
-                queue.addFirst(msg);
-            else
-                queue.add(msg);
+            addMessage(new ClientMessageHolder(msg));
+        }
 
-            DebugLogger log = messageLogger(msg);
+        /**
+         * @param msgH Message holder.
+         */
+        void addMessage(ClientMessageHolder msgH) {
+            if (msgH.msg.highPriority())
+                queue.addFirst(msgH);
+            else
+                queue.add(msgH);
+
+            DebugLogger log = messageLogger(msgH.msg);
 
             if (log.isDebugEnabled())
-                log.debug("Message has been added to client queue: " + msg);
+                log.debug("Message has been added to client queue: " + msgH.msg);
         }
 
         /** {@inheritDoc} */
-        @Override protected void processMessage(TcpDiscoveryAbstractMessage msg) {
+        @Override protected void processMessage(ClientMessageHolder msgH) {
             boolean success = false;
+
+            TcpDiscoveryAbstractMessage msg = msgH.msg;
+
 
             try {
                 assert msg.verified() : msg;
-
-                byte[] msgBytes = ses.serializeMessage(msg);
 
                 DebugLogger msgLog = messageLogger(msg);
 
@@ -7690,7 +7701,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 + getLocalNodeId() + ", rmtNodeId=" + clientNodeId + ", msg=" + msg + ']');
                         }
 
-                        spi.writeToSocket(sock, msg, msgBytes, spi.failureDetectionTimeoutEnabled() ?
+                        msgH.applySession(ses);
+
+                        spi.writeToSocket(sock, msgH.msg, msgH.messageBytes(), spi.failureDetectionTimeoutEnabled() ?
                             spi.clientFailureDetectionTimeout() : spi.getSocketTimeout());
                     }
                 }
@@ -7702,7 +7715,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     assert topologyInitialized(msg) : msg;
 
-                    spi.writeToSocket(sock, msg, msgBytes, spi.getEffectiveSocketTimeout(false));
+                    msgH.applySession(ses);
+
+                    spi.writeToSocket(sock, msgH.msg, msgH.messageBytes(), spi.getEffectiveSocketTimeout(false));
                 }
 
                 boolean clientFailed = msg instanceof TcpDiscoveryNodeFailedMessage &&
@@ -7840,6 +7855,63 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Simple holder of {@link TcpDiscoveryAbstractMessage} for {@link ClientMessageWorker}.
+     */
+    private static class ClientMessageHolder {
+        /** */
+        final TcpDiscoveryAbstractMessage msg;
+
+        /** */
+        volatile byte[] msgBytes;
+
+        /** @param msg Original message. */
+        public ClientMessageHolder(TcpDiscoveryAbstractMessage msg) {
+            this.msg = msg;
+        }
+
+        /** Returns serialized message. */
+        byte[] messageBytes() {
+            assert msgBytes != null;
+
+            return msgBytes;
+        }
+
+        /** Serializes message by means of specified session. */
+        void applySession(TcpDiscoveryIoSession ses) throws IgniteCheckedException, IOException {
+            msgBytes = ses.serializeMessage(msg);
+        }
+    }
+
+    /**
+     * Holder of {@link TcpDiscoveryAbstractMessage} for {@link ClientMessageWorker} with caching of serialized message
+     * bytes.
+     */
+    private static class ClientMessageCachingHolder extends ClientMessageHolder {
+        /** */
+        private final AtomicReference<TcpDiscoveryIoSession> sesH = new AtomicReference<>();
+
+        /** @param msg Original message. */
+        public ClientMessageCachingHolder(TcpDiscoveryAbstractMessage msg) {
+            super(msg);
+        }
+
+        /** {@inheritDoc} */
+        @Override byte[] messageBytes() {
+            while (msgBytes == null) {
+                // No-op.
+            }
+
+            return msgBytes;
+        }
+
+        /** {@inheritDoc} */
+        @Override void applySession(TcpDiscoveryIoSession ses) throws IgniteCheckedException, IOException {
+            if (sesH.compareAndSet(null, ses))
+                msgBytes = ses.serializeMessage(msg);
         }
     }
 
