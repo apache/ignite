@@ -940,6 +940,7 @@ public class SystemViewSelfTest extends GridCommonAbstractTest {
 
             assertNotNull(row);
             assertTrue(row.logicalReads() > 0);
+            assertTrue(row.insertedBytes() > 0);
         }
     }
 
