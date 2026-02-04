@@ -71,7 +71,8 @@ public class Context {
      * @param attr Context Attribute.
      * @return Scope instance that, when closed, undoes the applied update. It is crucial to undo all applied Context
      * updates to free up thread-bound resources and avoid memory leaks, so it is highly encouraged to use a
-     * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order they were applied.
+     * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order and in the
+     * same thread they were applied.
      */
     public static <T> Scope set(ContextAttribute<T> attr, T val) {
         Context ctx = INSTANCE.get();
@@ -88,7 +89,8 @@ public class Context {
      * @param val2 Values associated with second Context Attribute.
      * @return Scope instance that, when closed, undoes the applied update. It is crucial to undo all applied Context
      * updates to free up thread-bound resources and avoid memory leaks, so it is highly encouraged to use a
-     * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order they were applied.
+     * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order and in the
+     * same thread they were applied.
      */
     public static <T1, T2> Scope set(
         ContextAttribute<T1> attr1, T1 val1,
@@ -108,7 +110,8 @@ public class Context {
      * @param val3 Values associated with third Context Attribute.
      * @return Scope instance that, when closed, undoes the applied update. It is crucial to undo all applied Context
      * updates to free up thread-bound resources and avoid memory leaks, so it is highly encouraged to use a
-     * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order they were applied.
+     * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order and in the
+     * same thread they were applied.
      */
     public static <T1, T2, T3> Scope set(
         ContextAttribute<T1> attr1, T1 val1,
@@ -134,7 +137,8 @@ public class Context {
      * @param snp Context Snapshot.
      * @return Scope instance that, when closed, undoes the applied operation. It is crucial to undo all applied Context
      * updates to free up thread-bound resources and avoid memory leaks, so it is highly encouraged to use a
-     * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order they were applied.
+     * try-with-resource block to close the returned Scope. Note, updates must be undone in the same order and in the
+     * same thread they were applied.
      */
     public static Scope restoreSnapshot(ContextSnapshot snp) {
         return INSTANCE.get().restoreSnapshotInternal(snp);
@@ -198,7 +202,7 @@ public class Context {
 
         changeState(prevSnp, newSnp);
 
-        return () -> INSTANCE.get().changeState(newSnp, prevSnp);
+        return () -> changeState(newSnp, prevSnp);
     }
 
     /** */
@@ -209,7 +213,7 @@ public class Context {
     }
 
     /** Represents Update applied to the Context. */
-    private static class Update implements Scope, ContextSnapshot {
+    private class Update implements Scope, ContextSnapshot {
         /** Updated attributes and their corresponding values. */
         private final AttributeValueHolder<?>[] attrVals;
 
@@ -267,7 +271,7 @@ public class Context {
         }
 
         /** */
-        private static int mergeUpdatedAttributeBits(AttributeValueHolder<?>[] attrVals) {
+        private int mergeUpdatedAttributeBits(AttributeValueHolder<?>[] attrVals) {
             int res = 0;
 
             for (AttributeValueHolder<?> attrVal : attrVals)
@@ -278,7 +282,7 @@ public class Context {
 
         /** */
         @Override public void close() {
-            INSTANCE.get().undo(this);
+            undo(this);
         }
     }
 
