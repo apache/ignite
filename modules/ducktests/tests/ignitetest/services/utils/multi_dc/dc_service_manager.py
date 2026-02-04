@@ -86,6 +86,7 @@ class CrossDCConfigStore:
 
         return str(config) if config is not None else None
 
+
 class _DCServiceManager:
     """
     Internal manager that MUST be used only through the builder.
@@ -100,7 +101,7 @@ class _DCServiceManager:
 
         self.context = context
 
-        self._svc_by_svc_name: Dict[str, IgniteAwareService]= {}
+        self._svc_by_svc_name: Dict[str, IgniteAwareService] = {}
         self._dc_by_svc_name: Dict[str, int] = {}
 
     def __enter__(self):
@@ -171,7 +172,7 @@ class _DCServiceManager:
             raise AssertionError("DCServiceManager must be used inside a 'with' block (manager inactive).")
 
     def _update_cluster_network_on_service_start(self, svc: IgniteAwareService, dc_idx: int):
-        self.logger.info(f"Cluster network update on service start.")
+        self.logger.info("Cluster network update on service start.")
 
         for node in svc.nodes:
             self.logger.info(f"{svc.who_am_i(node)} - {socket.gethostbyname(node.account.hostname)}")
@@ -182,10 +183,10 @@ class _DCServiceManager:
 
         self._set_network_emulator_on_service_start(svc, dc_idx)
 
-        self.logger.info(f"Cluster network update is complete.")
+        self.logger.info("Cluster network update is complete.")
 
     def _update_cluster_network_on_service_stop(self, svc: IgniteAwareService, dc_idx: int):
-        self.logger.info(f"Cluster network update on service stop.")
+        self.logger.info("Cluster network update on service stop.")
 
         self._restore_service_network(svc)
 
@@ -193,7 +194,7 @@ class _DCServiceManager:
 
         self._remove_network_emulator_on_remote_servers_if_needed(dc_idx)
 
-        self.logger.info(f"Cluster network update is complete.")
+        self.logger.info("Cluster network update is complete.")
 
     def _mark_cross_dc_traffic_on_service_start(self, local_service: IgniteAwareService, local_dc_idx: int):
         """
@@ -257,7 +258,7 @@ class _DCServiceManager:
                         dc_idx=local_dc_idx
                     )
 
-        self.logger.debug(f"Cleanup completed: incoming traffic marking removed.")
+        self.logger.debug("Cleanup completed: incoming traffic marking removed.")
 
     def _set_network_emulator_on_service_start(self, local_service: IgniteAwareService, local_dc_idx: int):
         """
@@ -327,7 +328,6 @@ class _DCServiceManager:
             for node in service.nodes:
                 if self.netem_manager.htb_class_exists(node, removed_svc_dc_idx):
                     self.netem_manager.remove_network_emulator(node, removed_svc_dc_idx)
-
 
     def _restore_service_network(self, svc: IgniteAwareService):
         """
