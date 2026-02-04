@@ -320,11 +320,18 @@ public class IDTOSerializerGenerator {
                  * We want to respect @NotNull annotation and keep default value.
                  */
                 pattern = pattern.replaceAll("obj.\\$\\{f}", "\\${c} \\${f}0");
-                pattern += "\nif (${f}0 != null)\n\tobj.${f} = ${f}0;";
+                pattern += "\nif (${f}0 != null)\n" + TAB + "obj.${f} = ${f}0;";
             }
 
             return pattern;
-        }).forEach(line -> code.add(TAB + line));
+        }).forEach(line -> {
+            if (line.indexOf('\n') != -1) {
+                for (String line0 : line.split("\n"))
+                    code.add(TAB + line0);
+            }
+            else
+                code.add(TAB + line);
+        });
         code.add("}");
 
         return code;
