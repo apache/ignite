@@ -56,6 +56,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
@@ -2551,9 +2552,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         if (msg == null)
                             continue;
 
-                        Throwable err = msg.error();
+                        ErrorMessage errMsg = msg.errorMessage();
 
-                        if (err != null) {
+                        if (errMsg != null) {
+                            Throwable err = errMsg.error() == null
+                                ? new IgniteCheckedException("Failed to start continuous routine on node: " + entry.getKey())
+                                : errMsg.error();
+
                             if (errs == null)
                                 errs = new HashMap<>();
 

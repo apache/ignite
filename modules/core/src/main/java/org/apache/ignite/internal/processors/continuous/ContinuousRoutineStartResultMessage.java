@@ -107,13 +107,6 @@ public class ContinuousRoutineStartResultMessage implements Message {
         this.errMsg = errMsg;
     }
 
-    /**
-     * @return Error.
-     */
-    public @Nullable Throwable error() {
-        return ErrorMessage.error(errMsg);
-    }
-
     /** {@inheritDoc} */
     @Override public short directType() {
         return 134;
