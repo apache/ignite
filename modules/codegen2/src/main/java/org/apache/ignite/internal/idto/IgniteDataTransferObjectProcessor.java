@@ -33,7 +33,6 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
-import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
@@ -62,22 +61,30 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
     /** Package for serializers. */
     private static final String FACTORY_PKG_NAME = "org.apache.ignite.internal.codegen.idto";
 
-    /** Base class that every dto must extend. */
-    private static final String DTO_CLASS = "org.apache.ignite.internal.dto.IgniteDataTransferObject";
-
-    /**
-     * Annotation used in management commands.
-     * For now, we restrict set of generated serdes to all management commands argument classes.
-     * Because, they strictly follows Ignite codestyle convention.
-     * Providing support of all other inheritor of {@code IgniteDataTransferObject} is matter of following improvements.
-     */
-    private static final String ARG_ANNOTATION = "org.apache.ignite.internal.management.api.Argument";
+    /** Base class that every dto must extends. */
+    static final String DTO_CLASS = "org.apache.ignite.internal.dto.IgniteDataTransferObject";
 
     /** Factory class name. */
     public static final String FACTORY_CLASS = "IDTOSerializerFactory";
 
     /** Generated classes. */
     private final Map<TypeElement, String> genSerDes = new HashMap<>();
+
+    /** Currently unsupported classes. */
+    private static final Set<String> UNSUPPORTED = Set.of(
+        "org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot",
+        "org.apache.ignite.internal.commandline.cache.check_indexes_inline_size.CheckIndexInlineSizesResult",
+        "org.apache.ignite.internal.management.cache.ContentionJobResult",
+        "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem",
+        "org.apache.ignite.internal.management.tx.TxInfo",
+        "org.apache.ignite.internal.management.encryption.ReencryptionSuspendTask.ReencryptionSuspendResumeJobResult",
+        "org.apache.ignite.internal.management.encryption.ReencryptionStatusTask.ReencryptionStatusResult",
+        "org.apache.ignite.internal.management.encryption.EncryptionKeyIdsTask.EncryptionKeyIdsResult",
+        "org.apache.ignite.internal.management.cache.IndexForceRebuildTaskRes",
+        "org.apache.ignite.internal.management.cache.IndexRebuildStatusInfoContainer",
+        "org.apache.ignite.internal.visor.VisorTaskResult",
+        "org.apache.ignite.internal.visor.VisorTaskArgument"
+    );
 
     /**
      * Processes all classes extending the {@code IgniteDataTransferObject} and generates corresponding serializer code.
@@ -107,12 +114,14 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
             return;
 
         TypeMirror dtoCls = processingEnv.getElementUtils().getTypeElement(DTO_CLASS).asType();
-        TypeMirror argAnnotation = processingEnv.getElementUtils().getTypeElement(ARG_ANNOTATION).asType();
 
         TypeElement clazz = (TypeElement)el;
 
         // Generate code for inner classes.
         clazz.getEnclosedElements().forEach(this::generateSingle);
+
+        if (UNSUPPORTED.contains(clazz.getQualifiedName().toString()))
+            return;
 
         if (!processingEnv.getTypeUtils().isAssignable(clazz.asType(), dtoCls))
             return;
@@ -120,13 +129,10 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         if (clazz.getModifiers().contains(Modifier.ABSTRACT))
             return;
 
-        if (!clazz.getModifiers().contains(Modifier.PUBLIC))
+        if (clazz.getModifiers().contains(Modifier.PRIVATE) && clazz.getModifiers().contains(Modifier.PROTECTED))
             return;
 
         if (clazz.getNestingKind() != NestingKind.TOP_LEVEL && clazz.getNestingKind() != NestingKind.MEMBER)
-            return;
-
-        if (!hasArgumentFields(clazz, argAnnotation))
             return;
 
         try {
@@ -363,28 +369,5 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         writer.write(TAB);
         writer.write("}");
         writer.write(NL);
-    }
-
-    /**
-     * @param type Type to analyze.
-     * @param argAnnotation Annotation to find.
-     * @return {@code True} if type has fields annotated with the {@code argAnnotation}, {@code false} otherwise.
-     */
-    private boolean hasArgumentFields(TypeElement type, TypeMirror argAnnotation) {
-        while (type != null) {
-            for (Element el: type.getEnclosedElements()) {
-                if (el.getKind() != ElementKind.FIELD)
-                    continue;
-
-                for (AnnotationMirror am : el.getAnnotationMirrors()) {
-                    if (am.getAnnotationType().equals(argAnnotation))
-                        return true;
-                }
-            }
-
-            type = (TypeElement)processingEnv.getTypeUtils().asElement(type.getSuperclass());
-        }
-
-        return false;
     }
 }

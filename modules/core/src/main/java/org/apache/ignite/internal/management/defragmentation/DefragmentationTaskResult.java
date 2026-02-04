@@ -17,11 +17,7 @@
 
 package org.apache.ignite.internal.management.defragmentation;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /** */
 public class DefragmentationTaskResult extends IgniteDataTransferObject {
@@ -29,10 +25,10 @@ public class DefragmentationTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private boolean success;
+    boolean success;
 
     /** */
-    private String msg;
+    String msg;
 
     /** Empty constructor for serialization. */
     public DefragmentationTaskResult() {
@@ -54,19 +50,5 @@ public class DefragmentationTaskResult extends IgniteDataTransferObject {
     /** */
     public String getMessage() {
         return msg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(success);
-
-        U.writeString(out, msg);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException {
-        success = in.readBoolean();
-
-        msg = U.readString(in);
     }
 }

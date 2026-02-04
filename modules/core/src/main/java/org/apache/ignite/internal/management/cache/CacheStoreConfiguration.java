@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.jdbc.CacheAbstractJdbcStore;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -27,7 +24,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
@@ -40,40 +36,40 @@ public class CacheStoreConfiguration extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Whether cache has JDBC store. */
-    private boolean jdbcStore;
+    boolean jdbcStore;
 
     /** Cache store class name. */
-    private String store;
+    String store;
 
     /** Cache store factory class name. */
-    private String storeFactory;
+    String storeFactory;
 
     /** Whether cache should operate in read-through mode. */
-    private boolean readThrough;
+    boolean readThrough;
 
     /** Whether cache should operate in write-through mode. */
-    private boolean writeThrough;
+    boolean writeThrough;
 
     /** Flag indicating whether write-behind behaviour should be used for the cache store. */
-    private boolean writeBehindEnabled;
+    boolean writeBehindEnabled;
 
     /** Maximum batch size for write-behind cache store operations. */
-    private int batchSz;
+    int batchSz;
 
     /** Frequency with which write-behind cache is flushed to the cache store in milliseconds. */
-    private long flushFreq;
+    long flushFreq;
 
     /** Maximum object count in write-behind cache. */
-    private int flushSz;
+    int flushSz;
 
     /** Number of threads that will perform cache flushing. */
-    private int flushThreadCnt;
+    int flushThreadCnt;
 
     /** Keep binary in store flag. */
-    private boolean storeKeepBinary;
+    boolean storeKeepBinary;
 
     /** Write coalescing flag for write-behind cache store */
-    private boolean writeBehindCoalescing;
+    boolean writeBehindCoalescing;
 
     /**
      * Default constructor.
@@ -201,38 +197,6 @@ public class CacheStoreConfiguration extends IgniteDataTransferObject {
      */
     public boolean getWriteBehindCoalescing() {
         return writeBehindCoalescing;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        out.writeBoolean(jdbcStore);
-        U.writeString(out, store);
-        U.writeString(out, storeFactory);
-        out.writeBoolean(readThrough);
-        out.writeBoolean(writeThrough);
-        out.writeBoolean(writeBehindEnabled);
-        out.writeInt(batchSz);
-        out.writeLong(flushFreq);
-        out.writeInt(flushSz);
-        out.writeInt(flushThreadCnt);
-        out.writeBoolean(storeKeepBinary);
-        out.writeBoolean(writeBehindCoalescing);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        jdbcStore = in.readBoolean();
-        store = U.readString(in);
-        storeFactory = U.readString(in);
-        readThrough = in.readBoolean();
-        writeThrough = in.readBoolean();
-        writeBehindEnabled = in.readBoolean();
-        batchSz = in.readInt();
-        flushFreq = in.readLong();
-        flushSz = in.readInt();
-        flushThreadCnt = in.readInt();
-        storeKeepBinary = in.readBoolean();
-        writeBehindCoalescing = in.readBoolean();
     }
 
     /** {@inheritDoc} */
