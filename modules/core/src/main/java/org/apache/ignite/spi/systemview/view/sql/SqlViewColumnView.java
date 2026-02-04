@@ -27,7 +27,8 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 /**
  * Sql view column representation for a {@link SystemView}.
  */
-public class SqlViewColumnView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class SqlViewColumnView {
     /** System view. */
     private final SystemView<?> view;
 

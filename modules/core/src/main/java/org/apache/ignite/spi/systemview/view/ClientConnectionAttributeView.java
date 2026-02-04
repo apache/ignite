@@ -24,7 +24,8 @@ import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 /**
  * Client connection attribute system view row.
  */
-public class ClientConnectionAttributeView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class ClientConnectionAttributeView {
     /** Connection id. */
     private final long connId;
 

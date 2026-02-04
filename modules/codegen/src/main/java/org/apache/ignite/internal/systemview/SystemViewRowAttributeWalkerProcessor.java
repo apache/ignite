@@ -17,8 +17,11 @@
 
 package org.apache.ignite.internal.systemview;
 
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
@@ -27,7 +30,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeKind;
 import javax.tools.Diagnostic;
 
 /**
@@ -37,17 +40,17 @@ import javax.tools.Diagnostic;
  * The generated walker follows the naming convention:
  * {@code org.apache.ignite.internal.managers.systemview.walker.codegen.[ViewClassName]Walker}.
  */
-@SupportedAnnotationTypes("org.apache.ignite.internal.systemview.Order")
+@SupportedAnnotationTypes({
+    "org.apache.ignite.internal.systemview.SystemViewDescriptor",
+    "org.apache.ignite.internal.systemview.Order",
+    "org.apache.ignite.internal.systemview.Filtrable"
+})
 @SupportedSourceVersion(SourceVersion.RELEASE_11)
 public class SystemViewRowAttributeWalkerProcessor extends AbstractProcessor {
-    /** Base interface that every system view must implement. */
-    static final String VIEW_INTERFACE = "org.apache.ignite.internal.systemview.SystemViewDescriptor";
-
     /**
      * Processes all classes implementing the {@code SystemViewDescriptor} interface and generates corresponding walker code.
      */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        TypeMirror viewType = processingEnv.getElementUtils().getTypeElement(VIEW_INTERFACE).asType();
         SystemViewRowAttributeWalkerGenerator viewGen = new SystemViewRowAttributeWalkerGenerator(processingEnv);
 
         for (Element el : roundEnv.getRootElements()) {
@@ -56,7 +59,7 @@ public class SystemViewRowAttributeWalkerProcessor extends AbstractProcessor {
 
             TypeElement clazz = (TypeElement)el;
 
-            if (!processingEnv.getTypeUtils().isAssignable(clazz.asType(), viewType))
+            if (superclasses(processingEnv, clazz).noneMatch(e -> e.getAnnotation(SystemViewDescriptor.class) != null))
                 continue;
 
             if (clazz.getModifiers().contains(Modifier.ABSTRACT))
@@ -74,5 +77,16 @@ public class SystemViewRowAttributeWalkerProcessor extends AbstractProcessor {
         }
 
         return true;
+    }
+
+    /**
+     * @return Stream of all superclasses including the starting element. Goes up the inheritance chain
+     * until {@link Object} (excluded).
+     */
+    static Stream<TypeElement> superclasses(ProcessingEnvironment env, TypeElement e) {
+        return Stream.iterate(e,
+            Objects::nonNull,
+            c -> (TypeElement)env.getTypeUtils().asElement(c.getSuperclass())
+        ).takeWhile(c -> c.getSuperclass().getKind() != TypeKind.NONE);
     }
 }

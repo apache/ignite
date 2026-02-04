@@ -27,7 +27,8 @@ import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 /**
  * Node metrics representation for a {@link SystemView}.
  */
-public class NodeMetricsView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class NodeMetricsView {
     /** Cluster node. */
     private final ClusterNode node;
 

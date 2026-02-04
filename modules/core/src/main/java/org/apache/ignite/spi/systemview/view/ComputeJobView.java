@@ -32,7 +32,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Compute job representation for a {@link SystemView}.
  */
-public class ComputeJobView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class ComputeJobView {
     /** Compute job state. */
     public enum ComputeJobState {
         /**

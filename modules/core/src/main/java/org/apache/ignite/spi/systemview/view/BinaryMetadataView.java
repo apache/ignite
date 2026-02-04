@@ -25,7 +25,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * {@link BinaryMetadata} representation for the {@link SystemView}.
  */
-public class BinaryMetadataView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class BinaryMetadataView {
     /** Meta. */
     private final BinaryMetadata meta;
 

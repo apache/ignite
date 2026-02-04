@@ -34,7 +34,8 @@ import static org.apache.ignite.internal.processors.odbc.ClientListenerNioListen
 /**
  * Client connection system view row.
  */
-public class ClientConnectionView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class ClientConnectionView {
     /** Nio session. */
     private final GridNioSession ses;
 

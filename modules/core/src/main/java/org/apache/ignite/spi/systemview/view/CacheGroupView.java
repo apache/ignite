@@ -35,7 +35,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 /**
  * Cache group representation for the {@link SystemView}.
  */
-public class CacheGroupView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class CacheGroupView {
     /** Cache group. */
     private final CacheGroupDescriptor grp;
 

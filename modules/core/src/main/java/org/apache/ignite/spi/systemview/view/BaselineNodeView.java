@@ -25,7 +25,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 /**
  * Baseline topology node representation for a {@link SystemView}.
  */
-public class BaselineNodeView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class BaselineNodeView {
     /** Consistent id. */
     private final Object consistentId;
 

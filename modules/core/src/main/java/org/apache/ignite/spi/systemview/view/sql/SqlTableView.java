@@ -26,7 +26,8 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 /**
  * Sql table representation for a {@link SystemView}.
  */
-public class SqlTableView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class SqlTableView {
     /** Table. */
     private final TableDescriptor tbl;
 

@@ -27,7 +27,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Compute task representation for a {@link SystemView}.
  */
-public class ComputeTaskView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class ComputeTaskView {
     /** Worker for task. */
     private final GridTaskWorker worker;
 

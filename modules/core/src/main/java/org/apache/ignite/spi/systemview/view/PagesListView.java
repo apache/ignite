@@ -25,7 +25,8 @@ import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 /**
  * Pages-list representation for a {@link SystemView}.
  */
-public class PagesListView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class PagesListView {
     /** Pages list. */
     PagesList pagesList;
 

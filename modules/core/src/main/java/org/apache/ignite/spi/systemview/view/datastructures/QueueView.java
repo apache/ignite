@@ -26,7 +26,8 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 /**
  * Queue representation for a {@link SystemView}.
  */
-public class QueueView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class QueueView {
     /** Queue. */
     private final GridCacheQueueProxy<?> queue;
 

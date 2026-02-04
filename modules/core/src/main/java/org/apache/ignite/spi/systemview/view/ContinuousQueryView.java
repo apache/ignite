@@ -36,7 +36,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 /**
  * Continuous query representation for a {@link SystemView}.
  */
-public class ContinuousQueryView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class ContinuousQueryView {
     /** Routine info. */
     private final RoutineInfo qry;
 

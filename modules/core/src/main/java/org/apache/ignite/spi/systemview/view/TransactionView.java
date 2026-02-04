@@ -36,7 +36,8 @@ import org.apache.ignite.transactions.TransactionState;
 /**
  * Transaction representation for a {@link SystemView}.
  */
-public class TransactionView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class TransactionView {
     /** Transaction. */
     private final IgniteInternalTx tx;
 

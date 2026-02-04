@@ -24,7 +24,8 @@ import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 /**
  * Sql schema system view representation.
  */
-public class SqlSchemaView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class SqlSchemaView {
     /** Schema. */
     private final SchemaDescriptor schema;
 

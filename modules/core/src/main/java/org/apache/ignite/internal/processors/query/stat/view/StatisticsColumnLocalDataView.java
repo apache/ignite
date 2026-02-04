@@ -27,7 +27,8 @@ import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 /**
  * Statistics local data view.
  */
-public class StatisticsColumnLocalDataView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class StatisticsColumnLocalDataView {
     /** Statistics key */
     private final StatisticsKey key;
 

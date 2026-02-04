@@ -26,7 +26,8 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 /**
  * Set representation for a {@link SystemView}.
  */
-public class SetView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class SetView {
     /** Set. */
     private final GridCacheSetProxy<?> set;
 

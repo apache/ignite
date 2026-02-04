@@ -24,7 +24,8 @@ import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 /**
  * Pages timestamp histogramm representation for a {@link SystemView}.
  */
-public class PagesTimestampHistogramView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class PagesTimestampHistogramView {
     /** Data region name. */
     private final String dataRegionName;
 

@@ -29,7 +29,8 @@ import static org.apache.ignite.internal.metric.IoStatisticsHolderCache.PHYSICAL
 /**
  * Cache group IO statistics representation for a {@link SystemView}.
  */
-public class CacheGroupIoView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class CacheGroupIoView {
     /** Cache group. */
     private final CacheGroupContext grpCtx;
 

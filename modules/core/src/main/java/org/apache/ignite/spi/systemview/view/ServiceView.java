@@ -32,7 +32,8 @@ import org.apache.ignite.services.ServiceDescriptor;
  *
  * @see ServiceDescriptor
  */
-public class ServiceView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class ServiceView {
     /** Service descriptor. */
     private final ServiceInfo serviceInfo;
 

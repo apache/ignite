@@ -48,7 +48,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 /**
  * Cache representation for a {@link SystemView}.
  */
-public class CacheView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class CacheView {
     /** Cache descriptor. */
     private final DynamicCacheDescriptor cache;
 

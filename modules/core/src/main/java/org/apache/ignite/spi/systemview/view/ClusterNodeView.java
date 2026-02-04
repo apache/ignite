@@ -27,7 +27,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 /**
  * Cluster node representation for a {@link SystemView}.
  */
-public class ClusterNodeView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class ClusterNodeView {
     /** Cluster node. */
     private final ClusterNode n;
 

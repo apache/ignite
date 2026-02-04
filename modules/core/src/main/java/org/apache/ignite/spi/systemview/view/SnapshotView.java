@@ -28,7 +28,8 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * Snapshot representation for a {@link SystemView}.
  */
-public class SnapshotView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class SnapshotView {
     /** Snapshot system view name. */
     public static final String SNAPSHOT_SYS_VIEW = "snapshot";
 

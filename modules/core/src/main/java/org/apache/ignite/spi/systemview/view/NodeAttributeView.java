@@ -27,7 +27,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 /**
  * Node attribute representation for a {@link SystemView}.
  */
-public class NodeAttributeView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class NodeAttributeView {
     /** Node id. */
     private final UUID nodeId;
 

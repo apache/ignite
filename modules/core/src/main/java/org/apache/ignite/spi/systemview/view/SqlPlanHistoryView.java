@@ -24,7 +24,8 @@ import org.apache.ignite.internal.systemview.Order;
 import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 
 /** */
-public class SqlPlanHistoryView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class SqlPlanHistoryView {
     /** SQL plan. */
     private final Map.Entry<SqlPlan, Long> plan;
 

@@ -25,7 +25,8 @@ import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 /**
  * SQL query history representation for a {@link SystemView}.
  */
-public class SqlQueryHistoryView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class SqlQueryHistoryView {
     /** Query history item. */
     private final QueryHistory qry;
 

@@ -33,7 +33,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 /**
  * Scan query iterator representation for a {@link SystemView}.
  */
-public class ScanQueryView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class ScanQueryView {
     /** Origin node id. */
     private final UUID nodeId;
 

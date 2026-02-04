@@ -17,12 +17,19 @@
 
 package org.apache.ignite.internal.systemview;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
 /**
- * Marker of system view descriptor. Processed by {@link SystemViewRowAttributeWalkerProcessor} to generate
+ * Annotation to mark all system views. Processed by {@link SystemViewRowAttributeWalkerProcessor} to generate
  * {@code SystemViewRowAttributeWalker} implementations.
  *
  * @see Order
  * @see Filtrable
  */
-public interface SystemViewDescriptor {
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface SystemViewDescriptor {
 }

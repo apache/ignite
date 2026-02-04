@@ -20,11 +20,9 @@ package org.apache.ignite.internal.systemview;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -41,15 +39,13 @@ import javax.lang.model.type.TypeMirror;
 import javax.tools.JavaFileObject;
 import org.apache.ignite.internal.util.typedef.F;
 
+import static org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor.superclasses;
+
 /**
  * Generator for {@code SystemViewRowAttributeWalker} implementations.
  * Used by {@link SystemViewRowAttributeWalkerProcessor} to generate walker classes during compilation.
  */
 public class SystemViewRowAttributeWalkerGenerator {
-    /** Methods that should be excluded from specific {@code SystemViewRowAttributeWalker}. */
-    private static final Set<String> SYS_METHODS = new HashSet<>(Arrays.asList("equals", "hashCode", "toString",
-        "getClass"));
-
     /** Package for {@code SystemViewRowAttributeWalker} implementations. */
     public static final String WALKER_PACKAGE = "org.apache.ignite.internal.systemview";
 
@@ -255,8 +251,8 @@ public class SystemViewRowAttributeWalkerGenerator {
         List<ExecutableElement> notOrdered = new ArrayList<>();
         List<ExecutableElement> ordered = new ArrayList<>();
 
-        while (clazz != null) {
-            for (Element el : clazz.getEnclosedElements()) {
+        superclasses(env, clazz).forEach(e -> {
+            for (Element el : e.getEnclosedElements()) {
                 if (el.getKind() != ElementKind.METHOD)
                     continue;
 
@@ -267,19 +263,12 @@ public class SystemViewRowAttributeWalkerGenerator {
                     || m.getReturnType().getKind() == TypeKind.VOID)
                     continue;
 
-                if (SYS_METHODS.contains(m.getSimpleName().toString()))
-                    continue;
-
                 if (el.getAnnotation(Order.class) != null)
                     ordered.add(m);
                 else
                     notOrdered.add(m);
             }
-
-            Element superType = env.getTypeUtils().asElement(clazz.getSuperclass());
-
-            clazz = (TypeElement)superType;
-        }
+        });
 
         ordered.sort(Comparator.comparingInt(m -> m.getAnnotation(Order.class).value()));
         notOrdered.sort(Comparator.comparing(m -> m.getSimpleName().toString()));

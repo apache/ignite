@@ -28,7 +28,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * SQL query representation for a {@link SystemView}.
  */
-public class SqlQueryView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class SqlQueryView {
     /** Query. */
     private final GridRunningQueryInfo qry;
 

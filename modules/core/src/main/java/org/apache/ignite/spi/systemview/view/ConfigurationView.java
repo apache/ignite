@@ -23,7 +23,8 @@ import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 /**
  * Configuration value representation for a {@link SystemView}.
  */
-public class ConfigurationView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class ConfigurationView {
     /** Name of the configuration property. */
     private final String name;
 

@@ -27,7 +27,8 @@ import static org.apache.ignite.internal.util.IgniteUtils.toStringSafe;
 /**
  * {@link StripedExecutor} task representation for a {@link SystemView}.
  */
-public class StripedExecutorTaskView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class StripedExecutorTaskView {
     /** Stripe. */
     private final Stripe stripe;
 

@@ -27,7 +27,8 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 /**
  * Sql index representation for a {@link SystemView}.
  */
-public class SqlIndexView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class SqlIndexView {
     /** Table. */
     private final TableDescriptor tbl;
 

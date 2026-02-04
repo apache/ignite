@@ -26,7 +26,8 @@ import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 /**
  * Partition state representation for a {@link SystemView}.
  */
-public class PartitionStateView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class PartitionStateView {
     /** Cache group id. */
     private final int cacheGrpId;
 

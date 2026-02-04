@@ -27,7 +27,8 @@ import org.apache.ignite.spi.systemview.view.SystemView;
 /**
  * Statistics column configuration representation for a {@link SystemView}.
  */
-public class StatisticsColumnConfigurationView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class StatisticsColumnConfigurationView {
     /** Table object type. */
     public static final String TABLE_TYPE = "TABLE";
 

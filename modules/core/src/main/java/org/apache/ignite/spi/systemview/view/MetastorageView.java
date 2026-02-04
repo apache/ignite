@@ -24,7 +24,8 @@ import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 /**
  * Metastorage key representation for a {@link SystemView}.
  */
-public class MetastorageView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class MetastorageView {
     /** */
     private final String name;
 

@@ -24,7 +24,8 @@ import org.apache.ignite.spi.metric.Metric;
 /**
  * Metrics representation for a {@link SystemView}.
  */
-public class MetricsView implements SystemViewDescriptor {
+@SystemViewDescriptor
+public class MetricsView {
     /** Metric. */
     private final Metric metric;
 
