@@ -26,31 +26,40 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.Order;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.topology.GridDhtPartitionState.MOVING;
 
 /**
  * Partition map from single node.
  */
-public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Externalizable {
+public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Externalizable, Message {
+    /** Type code. */
+    public static final short TYPE_CODE = 518;
+
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Node ID. */
+    @Order(0)
     protected UUID nodeId;
 
     /** Update sequence number. */
+    @Order(value = 1, method = "updateSequence")
     protected long updateSeq;
 
     /** Topology version. */
+    @Order(value = 2, method = "topologyVersion")
     protected AffinityTopologyVersion top;
 
     /** */
+    @Order(3)
     protected GridPartitionStateMap map;
 
     /** */
@@ -198,6 +207,17 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     }
 
     /**
+     * @param map Map.
+     */
+    public void map(GridPartitionStateMap map) {
+        this.map = new GridPartitionStateMap();
+
+        if (map != null)
+            for (Map.Entry<Integer, GridDhtPartitionState> entry : map.entrySet())
+                put(entry.getKey(), entry.getValue());
+    }
+
+    /**
      * @return Node ID.
      */
     public UUID nodeId() {
@@ -205,10 +225,24 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     }
 
     /**
+     * @param nodeId Node ID.
+     */
+    public void nodeId(UUID nodeId) {
+        this.nodeId = nodeId;
+    }
+
+    /**
      * @return Update sequence.
      */
     public long updateSequence() {
         return updateSeq;
+    }
+
+    /**
+     * @param updateSeq Update sequence.
+     */
+    public void updateSequence(long updateSeq) {
+        this.updateSeq = updateSeq;
     }
 
     /**
@@ -237,6 +271,13 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
      */
     public AffinityTopologyVersion topologyVersion() {
         return top;
+    }
+
+    /**
+     * @param top Topology version.
+     */
+    public void topologyVersion(AffinityTopologyVersion top) {
+        this.top = top;
     }
 
     /** {@inheritDoc} */
@@ -336,5 +377,10 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtPartitionMap.class, this, "top", top, "updateSeq", updateSeq, "size", size());
+    }
+
+    /** {@inheritDoc} */
+    @Override public short directType() {
+        return TYPE_CODE;
     }
 }
