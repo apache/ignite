@@ -19,8 +19,8 @@ package org.apache.ignite.spi.discovery;
 
 import java.util.HashMap;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
@@ -42,7 +42,7 @@ public class ClusterMetricsSnapshotSerializeCompatibilityTest extends GridCommon
     /** */
     @Test
     public void testSerializationAndDeserialization() throws IgniteCheckedException {
-        HashMap<Integer, CacheMetricsSnapshot> metrics = new HashMap<>();
+        HashMap<Integer, CacheMetrics> metrics = new HashMap<>();
 
         metrics.put(1, createMetricsWithBorderMarker());
 
@@ -50,7 +50,7 @@ public class ClusterMetricsSnapshotSerializeCompatibilityTest extends GridCommon
 
         byte[] zipMarshal = U.zip(U.marshal(marshaller, metrics));
 
-        HashMap<Integer, CacheMetricsSnapshot> unmarshalMetrics = U.unmarshalZip(marshaller, zipMarshal, null);
+        HashMap<Integer, CacheMetrics> unmarshalMetrics = U.unmarshalZip(marshaller, zipMarshal, null);
 
         assertTrue(isMetricsEquals(metrics.get(1), unmarshalMetrics.get(1)));
 
@@ -60,20 +60,20 @@ public class ClusterMetricsSnapshotSerializeCompatibilityTest extends GridCommon
     /**
      * @return Test metrics.
      */
-    private CacheMetricsSnapshot createMetricsWithBorderMarker() {
+    private CacheMetrics createMetricsWithBorderMarker() {
         CacheMetricsMessage metrics = new CacheMetricsMessage();
 
         GridTestUtils.setFieldValue(metrics, "rebalancingKeysRate", 1234);
         GridTestUtils.setFieldValue(metrics, "cacheGets", 3232);
 
-        return new CacheMetricsSnapshot(metrics);
+        return metrics;
     }
 
     /**
      * @param obj Object.
      * @param obj1 Object 1.
      */
-    private boolean isMetricsEquals(CacheMetricsSnapshot obj, CacheMetricsSnapshot obj1) {
+    private boolean isMetricsEquals(CacheMetrics obj, CacheMetrics obj1) {
         return obj.getRebalancingKeysRate() == obj1.getRebalancingKeysRate() && obj.getCacheGets() == obj1.getCacheGets();
     }
 

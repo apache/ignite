@@ -105,6 +105,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionChanges;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.dr.IgniteDrDataStreamerCacheUpdater;
@@ -2963,12 +2964,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
         }
 
-        return new CacheMetricsSnapshot(ctx.cache().localMetrics(), metrics);
+        return new CacheMetricsMessage(ctx.cache().localMetrics(), metrics);
     }
 
     /** {@inheritDoc} */
     @Override public CacheMetrics localMetrics() {
-        return new CacheMetricsSnapshot(metrics);
+        return new CacheMetricsMessage(metrics);
     }
 
     /**

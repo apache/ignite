@@ -90,7 +90,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
 
         GridCacheContext cacheCtx = ((GatewayProtectedCacheProxy)cacheNode0).context();
 
-        CacheMetrics cacheMetric = new CacheMetricsSnapshot(new CacheMetricsImpl(cacheCtx));
+        CacheMetrics cacheMetric = new CacheMetricsMessage(new CacheMetricsImpl(cacheCtx));
 
         long size = cacheMetric.getCacheSize();
 
@@ -140,7 +140,7 @@ public class CacheMetricsCacheSizeTest extends GridCommonAbstractTest {
         Map<Integer, CacheMetricsMessage> cacheMetrics2 = msg2.serversFullMetricsMessages().values().iterator().next()
             .cachesMetricsMessages();
 
-        CacheMetrics cacheMetric2 = new CacheMetricsSnapshot(cacheMetrics2.values().iterator().next());
+        CacheMetrics cacheMetric2 = new CacheMetricsMessage(cacheMetrics2.values().iterator().next());
 
         assertEquals("TcpDiscoveryMetricsUpdateMessage serialization error, cacheSize is different", size,
             cacheMetric2.getCacheSize());
