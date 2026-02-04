@@ -73,7 +73,6 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
     /** Currently unsupported classes. */
     private static final Set<String> UNSUPPORTED = Set.of(
         "org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot",
-        "org.apache.ignite.internal.commandline.cache.check_indexes_inline_size.CheckIndexInlineSizesResult",
         "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem"
     );
 
