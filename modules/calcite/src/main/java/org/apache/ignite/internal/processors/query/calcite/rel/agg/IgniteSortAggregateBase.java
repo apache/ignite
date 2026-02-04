@@ -87,4 +87,11 @@ interface IgniteSortAggregateBase extends TraitsAwareIgniteRel {
             inputTraits
         ));
     }
+
+    /** */
+    public default RelCollation copyCollation(RelTraitSet traitSet) {
+        RelCollation traitsCollation = TraitUtils.collation(traitSet);
+
+        return collation().satisfies(traitsCollation) ? collation() : traitsCollation;
+    }
 }

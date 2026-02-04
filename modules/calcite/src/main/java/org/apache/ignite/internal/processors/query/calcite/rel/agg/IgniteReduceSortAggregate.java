@@ -81,7 +81,7 @@ public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase impleme
             groupSets,
             aggCalls,
             rowType,
-            collation
+            copyCollation(traitSet)
         );
     }
 

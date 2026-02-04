@@ -73,7 +73,7 @@ public class IgniteColocatedSortAggregate extends IgniteColocatedAggregateBase i
     @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
         return new IgniteColocatedSortAggregate(
-            getCluster(), traitSet, input, groupSet, groupSets, aggCalls, collation);
+            getCluster(), traitSet, input, groupSet, groupSets, aggCalls, copyCollation(traitSet));
     }
 
     /** {@inheritDoc} */

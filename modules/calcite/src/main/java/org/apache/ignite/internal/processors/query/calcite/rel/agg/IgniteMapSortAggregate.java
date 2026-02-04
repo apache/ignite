@@ -82,9 +82,10 @@ public class IgniteMapSortAggregate extends IgniteMapAggregateBase implements Ig
         RelNode input,
         ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets,
-        List<AggregateCall> aggCalls) {
+        List<AggregateCall> aggCalls
+    ) {
         return new IgniteMapSortAggregate(
-            getCluster(), traitSet, input, groupSet, groupSets, aggCalls, collation);
+            getCluster(), traitSet, input, groupSet, groupSets, aggCalls, copyCollation(traitSet));
     }
 
     /** {@inheritDoc} */
