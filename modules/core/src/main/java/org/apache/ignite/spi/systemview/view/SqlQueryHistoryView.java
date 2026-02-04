@@ -18,9 +18,9 @@
 package org.apache.ignite.spi.systemview.view;
 
 import java.util.Date;
-import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.processors.query.running.QueryHistory;
+import org.apache.ignite.internal.systemview.Order;
+import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 
 /**
  * SQL query history representation for a {@link SystemView}.

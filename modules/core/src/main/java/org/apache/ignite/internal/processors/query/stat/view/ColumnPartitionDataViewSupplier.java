@@ -22,11 +22,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.internal.managers.systemview.walker.codegen.StatisticsColumnPartitionDataViewWalker;
 import org.apache.ignite.internal.processors.query.stat.ColumnStatistics;
 import org.apache.ignite.internal.processors.query.stat.IgniteStatisticsStore;
 import org.apache.ignite.internal.processors.query.stat.ObjectPartitionStatisticsImpl;
 import org.apache.ignite.internal.processors.query.stat.StatisticsKey;
+import org.apache.ignite.internal.systemview.StatisticsColumnPartitionDataViewWalker;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**

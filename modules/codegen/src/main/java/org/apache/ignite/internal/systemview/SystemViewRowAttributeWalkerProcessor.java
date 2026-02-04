@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.systemview.walker;
+package org.apache.ignite.internal.systemview;
 
 import java.util.Set;
 import javax.annotation.processing.AbstractProcessor;
@@ -37,11 +37,11 @@ import javax.tools.Diagnostic;
  * The generated walker follows the naming convention:
  * {@code org.apache.ignite.internal.managers.systemview.walker.codegen.[ViewClassName]Walker}.
  */
-@SupportedAnnotationTypes("org.apache.ignite.internal.managers.systemview.walker.Order")
+@SupportedAnnotationTypes("org.apache.ignite.internal.systemview.Order")
 @SupportedSourceVersion(SourceVersion.RELEASE_11)
 public class SystemViewRowAttributeWalkerProcessor extends AbstractProcessor {
-    /** Base interface that every message must implement. */
-    static final String VIEW_INTERFACE = "org.apache.ignite.internal.managers.systemview.SystemViewDescriptor";
+    /** Base interface that every system view must implement. */
+    static final String VIEW_INTERFACE = "org.apache.ignite.internal.systemview.SystemViewDescriptor";
 
     /**
      * Processes all classes implementing the {@code SystemViewDescriptor} interface and generates corresponding walker code.

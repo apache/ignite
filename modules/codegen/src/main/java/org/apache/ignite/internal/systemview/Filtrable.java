@@ -15,19 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.systemview;
+package org.apache.ignite.internal.systemview;
 
-import org.apache.ignite.internal.managers.systemview.walker.Filtrable;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
-import org.apache.ignite.internal.managers.systemview.walker.SystemViewRowAttributeWalkerProcessor;
-import org.apache.ignite.spi.systemview.view.SystemViewRowAttributeWalker;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Marker of system view descriptor. Processed by {@link SystemViewRowAttributeWalkerProcessor} to generate
- * {@link SystemViewRowAttributeWalker} implementations.
- *
- * @see Order
- * @see Filtrable
+ * Annotation to mark view row attribute for a {@code SystemViewRowAttributeWalker} as filterable.
  */
-public interface SystemViewDescriptor {
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface Filtrable {
+    // No-op.
 }

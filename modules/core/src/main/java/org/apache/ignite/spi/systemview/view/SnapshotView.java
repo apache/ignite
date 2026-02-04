@@ -18,11 +18,11 @@
 package org.apache.ignite.spi.systemview.view;
 
 import java.util.Collection;
-import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
 import org.apache.ignite.internal.pagemem.wal.record.delta.ClusterSnapshotRecord;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IncrementalSnapshotMetadata;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotMetadata;
+import org.apache.ignite.internal.systemview.Order;
+import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**

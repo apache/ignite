@@ -21,8 +21,8 @@ import java.util.Date;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.managers.systemview.SystemViewDescriptor;
-import org.apache.ignite.internal.managers.systemview.walker.Order;
+import org.apache.ignite.internal.systemview.Order;
+import org.apache.ignite.internal.systemview.SystemViewDescriptor;
 
 /**
  * Node metrics representation for a {@link SystemView}.

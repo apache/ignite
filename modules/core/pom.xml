@@ -77,7 +77,7 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>ignite-codegen</artifactId>
-            <scope>provided</scope>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -387,7 +387,7 @@
                     <annotationProcessors>
                         <annotationProcessor>org.apache.ignite.internal.MessageProcessor</annotationProcessor>
                         <annotationProcessor>org.apache.ignite.internal.idto.IgniteDataTransferObjectProcessor</annotationProcessor>
-                        <annotationProcessor>org.apache.ignite.internal.managers.systemview.walker.SystemViewRowAttributeWalkerProcessor</annotationProcessor>
+                        <annotationProcessor>org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor</annotationProcessor>
                     </annotationProcessors>
                     <compilerArgs combine.children="append">
                         <arg>-Xmaxerrs</arg>

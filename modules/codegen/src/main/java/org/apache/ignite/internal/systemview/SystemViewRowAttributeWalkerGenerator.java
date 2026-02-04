@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.systemview.walker;
+package org.apache.ignite.internal.systemview;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -51,7 +51,7 @@ public class SystemViewRowAttributeWalkerGenerator {
         "getClass"));
 
     /** Package for {@code SystemViewRowAttributeWalker} implementations. */
-    public static final String WALKER_PACKAGE = "org.apache.ignite.internal.managers.systemview.walker.codegen";
+    public static final String WALKER_PACKAGE = "org.apache.ignite.internal.systemview";
 
     /** */
     public static final String TAB = "    ";
@@ -104,7 +104,7 @@ public class SystemViewRowAttributeWalkerGenerator {
         code.add("/**");
         code.add(" * This class is generated automatically.");
         code.add(" * ");
-        code.add(" * @see org.apache.ignite.internal.managers.systemview.walker.SystemViewRowAttributeWalkerProcessor");
+        code.add(" * @see org.apache.ignite.internal.systemview.SystemViewRowAttributeWalkerProcessor");
         code.add(" */");
         code.add("public class " + simpleName + "Walker implements SystemViewRowAttributeWalker<" + simpleName + "> {");
 

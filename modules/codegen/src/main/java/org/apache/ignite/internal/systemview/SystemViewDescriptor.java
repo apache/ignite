@@ -15,20 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.systemview.walker;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+package org.apache.ignite.internal.systemview;
 
 /**
- * Annotation to set walk order for a {@code SystemViewRowAttributeWalker}.
- * Walker traverse attributes from low to high value.
+ * Marker of system view descriptor. Processed by {@link SystemViewRowAttributeWalkerProcessor} to generate
+ * {@code SystemViewRowAttributeWalker} implementations.
+ *
+ * @see Order
+ * @see Filtrable
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface Order {
-    /** */
-    public int value() default 0;
+public interface SystemViewDescriptor {
 }

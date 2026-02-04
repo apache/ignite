@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.metric;
 import java.util.function.Predicate;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.managers.systemview.walker.codegen.MetricsViewWalker;
+import org.apache.ignite.internal.systemview.MetricsViewWalker;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
