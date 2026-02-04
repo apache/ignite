@@ -101,7 +101,7 @@ public class SerializationPlannerTest extends AbstractPlannerTest {
         IgniteSchema funcSchema = new IgniteSchema("FUNC");
 
         funcSchema.addFunction("ECHO", IgniteScalarFunction.create(
-            Types.lookupMethod(SerializationPlannerTest.class, "echo", int.class)));
+            Types.lookupMethod(SerializationPlannerTest.class, "echo", int.class), false));
 
         assertPlan("SELECT func.echo(id) FROM orders", List.of(publicSchema, funcSchema),
             isTableScan("ORDERS"));
