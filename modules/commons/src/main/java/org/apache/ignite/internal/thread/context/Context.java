@@ -157,8 +157,8 @@ public class Context {
     }
 
     /** Updates the current context with the specified attributes and their corresponding values. */
-    private Scope applyAttributeUpdates(AttributeValueHolder<?>... atrVals) {
-        lastUpd = new Update(atrVals, lastUpd);
+    private Scope applyAttributeUpdates(AttributeValueHolder<?>... attrVals) {
+        lastUpd = new Update(attrVals, lastUpd);
 
         return lastUpd;
     }
