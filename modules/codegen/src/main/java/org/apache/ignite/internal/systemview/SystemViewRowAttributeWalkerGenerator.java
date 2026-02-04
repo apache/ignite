@@ -71,9 +71,7 @@ public class SystemViewRowAttributeWalkerGenerator {
      * @throws IOException If file creation fails.
      */
     public void generate(TypeElement cls) throws IOException {
-        String clsSimple = cls.getSimpleName().toString();
-        String walkerClsName = clsSimple + "Walker";
-        String walkerQualified = WALKER_PACKAGE + "." + walkerClsName;
+        String walkerQualified = WALKER_PACKAGE + "." + cls.getSimpleName() + "Walker";
 
         JavaFileObject file = env.getFiler().createSourceFile(walkerQualified);
 
@@ -111,14 +109,16 @@ public class SystemViewRowAttributeWalkerGenerator {
         List<String> filtrableAttrs = new ArrayList<>();
 
         forEachMethod(clazz, (m, i) -> {
+            String mtdName = m.getSimpleName().toString();
+
             if (m.getAnnotation(Filtrable.class) != null) {
-                code.add(TAB + "/** Filter key for attribute \"" + m.getSimpleName() + "\" */");
-                code.add(TAB + "public static final String " + m.getSimpleName().toString()
+                code.add(TAB + "/** Filter key for attribute \"" + mtdName + "\" */");
+                code.add(TAB + "public static final String " + mtdName
                     .replaceAll("(\\p{Upper})", "_$1")
-                    .toUpperCase() + "_FILTER = \"" + m.getSimpleName() + "\";");
+                    .toUpperCase() + "_FILTER = \"" + mtdName + "\";");
                 code.add("");
 
-                filtrableAttrs.add(m.getSimpleName().toString());
+                filtrableAttrs.add(mtdName);
             }
         });
 

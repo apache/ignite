@@ -48,6 +48,7 @@ public class SystemViewRowAttributeWalkerProcessor extends AbstractProcessor {
      */
     @Override public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         TypeMirror viewType = processingEnv.getElementUtils().getTypeElement(VIEW_INTERFACE).asType();
+        SystemViewRowAttributeWalkerGenerator viewGen = new SystemViewRowAttributeWalkerGenerator(processingEnv);
 
         for (Element el : roundEnv.getRootElements()) {
             if (el.getKind() != ElementKind.CLASS)
@@ -62,7 +63,7 @@ public class SystemViewRowAttributeWalkerProcessor extends AbstractProcessor {
                 continue;
 
             try {
-                new SystemViewRowAttributeWalkerGenerator(processingEnv).generate(clazz);
+                viewGen.generate(clazz);
             }
             catch (Exception e) {
                 processingEnv.getMessager().printMessage(
