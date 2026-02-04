@@ -90,7 +90,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
     @Parameterized.Parameters(name = "cmdHnd={0}, withPersistence={1}")
     public static Collection<Object[]> parameters() {
         return List.of(
-            new Object[] {CLI_CMD_HND, false},
+            new Object[] {CLI_CMD_HND, true},
             new Object[] {CLI_CMD_HND, true}
         );
     }
@@ -128,7 +128,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         // sequential start is important here
         IgniteEx nodeCoord = startGrid(0);
         IgniteEx nodePrimary = startGrid(1);
-        IgniteEx nodeBackup = startGrid(2);
+        startGrid(2);
 
         nodeCoord.cluster().state(ClusterState.ACTIVE);
 
@@ -154,26 +154,24 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
 
         injectTestSystemOut();
 
-        CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg.setCacheMode(CacheMode.REPLICATED);
-        ccfg.setReadThrough(true);
-        ccfg.setWriteThrough(true);
-        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setCacheStoreFactory(MapCacheStore::new);
+        CacheConfiguration<Integer, Object> ccfgWithWriteThrough = createCache(DEFAULT_CACHE_NAME, true);
+        IgniteCache<Integer, Object> cache = nodeCoord.createCache(ccfgWithWriteThrough);
 
-        IgniteCache<Integer, Object> cache = nodeCoord.createCache(ccfg);
+        CacheConfiguration<Integer, Object> ccfgWithoutWriteThrough = createCache("noWriteThrough", false);
+        IgniteCache<Integer, Object> cacheWithoutWriteThrough = nodeCoord.createCache(ccfgWithoutWriteThrough);
 
         awaitPartitionMapExchange();
 
         Integer primaryKey = primaryKey(nodePrimary.cache(DEFAULT_CACHE_NAME));
+        Integer primaryKeyWithoutWriteThrough = primaryKey(nodePrimary.cache("noWriteThrough"));
 
         try (Transaction tx = nodeCoord.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
             cache.put(primaryKey, new Object());
+            cacheWithoutWriteThrough.put(primaryKeyWithoutWriteThrough, new Object());
             tx.commit();
         }
-        catch (Throwable ignore) {
-            // No op
+        catch (Throwable th) {
+            fail("Unexpected exception: " + th);
         }
 
         stopFut.get(getTestTimeout());
@@ -214,8 +212,24 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
                 ".*?hwm=1\\], partitionState=OWNING, size=1");
 
             boolean matches = primaryPattern.matcher(out).find();
+            System.err.println("!!!! " + out);
             assertTrue(matches);
         }
+    }
+
+    private CacheConfiguration<Integer, Object> createCache(String cacheName, boolean writeThrough) {
+        CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<>(cacheName);
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setCacheMode(CacheMode.REPLICATED);
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+        if (writeThrough) {
+            ccfg.setReadThrough(true);
+            ccfg.setWriteThrough(true);
+            ccfg.setCacheStoreFactory(MapCacheStore::new);
+        }
+
+        return ccfg;
     }
 
     /** {@link CacheStore} backed by {@link #map} */
