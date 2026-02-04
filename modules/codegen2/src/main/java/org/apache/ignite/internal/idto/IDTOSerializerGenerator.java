@@ -354,7 +354,7 @@ public class IDTOSerializerGenerator {
             if (env.getTypeUtils().isAssignable(type, dtoCls))
                 serDes = OBJECT_SERDES;
             else if (type.getKind() == TypeKind.TYPEVAR)
-                serDes = F.t("out.writeObject(obj.${f});", "obj.${f} = in.readObject();");
+                serDes = F.t("out.writeObject(obj.${f});", "in.readObject()");
             else if (type.getKind() == TypeKind.ARRAY) {
                 comp = ((ArrayType)type).getComponentType();
 
