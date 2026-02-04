@@ -118,6 +118,7 @@ public class IDTOSerializerGenerator {
         TYPE_SERDES.put("org.apache.ignite.internal.binary.BinaryMetadata", OBJECT_SERDES);
         TYPE_SERDES.put("org.apache.ignite.internal.management.cache.PartitionKey", OBJECT_SERDES);
         TYPE_SERDES.put("org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion", OBJECT_SERDES);
+        TYPE_SERDES.put("org.apache.ignite.cluster.ClusterNode", OBJECT_SERDES);
         TYPE_SERDES.put("org.apache.ignite.cache.CacheMode",
             F.t("out.writeByte(CacheMode.toCode(obj.${f}));", "CacheMode.fromCode(in.readByte())"));
 

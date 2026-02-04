@@ -17,13 +17,10 @@
 
 package org.apache.ignite.internal.management.encryption;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.List;
+import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,28 +53,25 @@ public class EncryptionKeyIdsTask extends CacheGroupEncryptionTask<List<Integer>
 
         /** {@inheritDoc} */
         @Override protected SingleFieldDto<List<Integer>> run0(CacheGroupContext grp) {
-            return new EncryptionKeyIdsResult().value(ignite.context().encryption().groupKeyIds(grp.groupId()));
+            EncryptionKeyIdsResult res = new EncryptionKeyIdsResult();
+
+            res.val = ignite.context().encryption().groupKeyIds(grp.groupId());
+
+            return res;
         }
     }
 
     /** */
-    protected static class EncryptionKeyIdsResult extends SingleFieldDto<List<Integer>> {
+    public static class EncryptionKeyIdsResult extends IgniteDataTransferObject implements SingleFieldDto<List<Integer>> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
         /** */
-        public EncryptionKeyIdsResult() {
-            // No-op.
-        }
+        List<Integer> val;
 
         /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-            U.writeCollection(out, value());
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-            value(U.readList(in));
+        @Override public List<Integer> value() {
+            return val;
         }
     }
 }
