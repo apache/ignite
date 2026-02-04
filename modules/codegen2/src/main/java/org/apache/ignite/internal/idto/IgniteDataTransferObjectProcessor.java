@@ -75,8 +75,7 @@ public class IgniteDataTransferObjectProcessor extends AbstractProcessor {
         "org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot",
         "org.apache.ignite.internal.commandline.cache.check_indexes_inline_size.CheckIndexInlineSizesResult",
         "org.apache.ignite.internal.management.cache.ContentionJobResult",
-        "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem",
-        "org.apache.ignite.internal.management.tx.TxInfo"
+        "org.apache.ignite.internal.processors.metastorage.persistence.DistributedMetaStorageHistoryItem"
     );
 
     /**
