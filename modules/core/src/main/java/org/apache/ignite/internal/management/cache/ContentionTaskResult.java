@@ -17,9 +17,6 @@
 
 package org.apache.ignite.internal.management.cache;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +24,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -37,10 +33,10 @@ public class ContentionTaskResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cluster infos. */
-    private List<ContentionJobResult> clusterInfos;
+    List<ContentionJobResult> clusterInfos;
 
     /** Exceptions. */
-    private Map<UUID, Exception> exceptions;
+    Map<UUID, Exception> exceptions;
 
     /**
      * @param clusterInfos Cluster infos.
@@ -77,18 +73,6 @@ public class ContentionTaskResult extends IgniteDataTransferObject {
      */
     public Map<UUID, Exception> exceptions() {
         return exceptions;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeCollection(out, clusterInfos);
-        U.writeMap(out, exceptions);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in) throws IOException, ClassNotFoundException {
-        clusterInfos = U.readList(in);
-        exceptions = U.readMap(in);
     }
 
     /** {@inheritDoc} */

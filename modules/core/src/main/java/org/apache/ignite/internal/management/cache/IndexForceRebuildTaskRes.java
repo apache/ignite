@@ -32,13 +32,13 @@ public class IndexForceRebuildTaskRes extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Caches for which indexes rebuild was triggered. */
-    private Set<IndexRebuildStatusInfoContainer> cachesWithStartedRebuild;
+    Set<IndexRebuildStatusInfoContainer> cachesWithStartedRebuild;
 
     /** Caches with indexes rebuild in progress. */
-    private Set<IndexRebuildStatusInfoContainer> cachesWithRebuildInProgress;
+    Set<IndexRebuildStatusInfoContainer> cachesWithRebuildInProgress;
 
     /** Names of caches that were not found. */
-    private Set<String> notFoundCacheNames;
+    Set<String> notFoundCacheNames;
 
     /**
      * Empty constructor required for Serializable.

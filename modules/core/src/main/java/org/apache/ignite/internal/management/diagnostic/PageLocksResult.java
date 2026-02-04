@@ -17,11 +17,7 @@
 
 package org.apache.ignite.internal.management.diagnostic;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import org.apache.ignite.internal.dto.IgniteDataTransferObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -31,7 +27,7 @@ public class PageLocksResult extends IgniteDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private String payload;
+    String payload;
 
     /**
      *
@@ -45,17 +41,6 @@ public class PageLocksResult extends IgniteDataTransferObject {
      */
     public PageLocksResult(String payload) {
         this.payload = payload;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-        U.writeString(out, payload);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void readExternalData(ObjectInput in)
-        throws IOException, ClassNotFoundException {
-        payload = U.readString(in);
     }
 
     /**

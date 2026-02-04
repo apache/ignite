@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
@@ -58,7 +57,7 @@ public class SystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg, Sys
     @Override protected @Nullable SystemViewTaskResult reduce0(List<ComputeJobResult> results) throws IgniteException {
         SystemViewTaskResult res = null;
 
-        Map<UUID, List<List<?>>> merged = new TreeMap<>();
+        TreeMap<UUID, List<List<?>>> merged = new TreeMap<>();
 
         for (ComputeJobResult r : results) {
             if (r.getException() != null)
@@ -175,7 +174,7 @@ public class SystemViewTask extends VisorMultiNodeTask<SystemViewCommandArg, Sys
                 rows.add(attrVals);
             }
 
-            return new SystemViewTaskResult(attrNames, attrTypes, singletonMap(ignite.localNode().id(), rows));
+            return new SystemViewTaskResult(attrNames, attrTypes, new TreeMap<>(singletonMap(ignite.localNode().id(), rows)));
         }
 
         /**
