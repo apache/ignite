@@ -28,268 +28,10 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class CacheMetricsSnapshot extends IgniteDataTransferObject implements CacheMetrics {
     /** */
-    private static final long serialVersionUID = 0;
+    private static final long serialVersionUID = 0L;
 
-    /** Number of reads. */
-    long cacheGets;
-
-    /** Number of puts. */
-    long cachePuts;
-
-    /** Number of invokes caused updates. */
-    long entryProcessorPuts;
-
-    /** Number of invokes caused no updates. */
-    long entryProcessorReadOnlyInvocations;
-
-    /** The mean time to execute cache invokes */
-    float entryProcessorAverageInvocationTime;
-
-    /** The total number of cache invocations. */
-    long entryProcessorInvocations;
-
-    /** The total number of cache invocations, caused removal. */
-    long entryProcessorRemovals;
-
-    /** The total number of invocations on keys, which don't exist in cache. */
-    long entryProcessorMisses;
-
-    /** The total number of invocations on keys, which exist in cache. */
-    long entryProcessorHits;
-
-    /** The percentage of invocations on keys, which don't exist in cache. */
-    float entryProcessorMissPercentage;
-
-    /** The percentage of invocations on keys, which exist in cache. */
-    float entryProcessorHitPercentage;
-
-    /** So far, the maximum time to execute cache invokes. */
-    float entryProcessorMaxInvocationTime;
-
-    /** So far, the minimum time to execute cache invokes. */
-    float entryProcessorMinInvocationTime;
-
-    /** Number of hits. */
-    long cacheHits;
-
-    /** Number of misses. */
-    long cacheMisses;
-
-    /** Number of transaction commits. */
-    long cacheTxCommits;
-
-    /** Number of transaction rollbacks. */
-    long cacheTxRollbacks;
-
-    /** Number of evictions. */
-    long cacheEvictions;
-
-    /** Number of removed entries. */
-    long cacheRemovals;
-
-    /** Put time taken nanos. */
-    float averagePutTime;
-
-    /** Get time taken nanos. */
-    float averageGetTime;
-
-    /** Remove time taken nanos. */
-    float averageRemoveTime;
-
-    /** Commit transaction time taken nanos. */
-    float averageTxCommitTime;
-
-    /** Commit transaction time taken nanos. */
-    float averageTxRollbackTime;
-
-    /** Cache name */
-    String cacheName;
-
-    /** Number of reads from off-heap. */
-    long offHeapGets;
-
-    /** Number of writes to off-heap. */
-    long offHeapPuts;
-
-    /** Number of removed entries from off-heap. */
-    long offHeapRemoves;
-
-    /** Number of evictions from off-heap. */
-    long offHeapEvicts;
-
-    /** Off-heap hits number. */
-    long offHeapHits;
-
-    /** Off-heap misses number. */
-    long offHeapMisses;
-
-    /** Number of entries stored in off-heap memory. */
-    long offHeapEntriesCnt;
-
-    /** Number of entries stored in heap. */
-    long heapEntriesCnt;
-
-    /** Number of primary entries stored in off-heap memory. */
-    long offHeapPrimaryEntriesCnt;
-
-    /** Number of backup entries stored in off-heap memory. */
-    long offHeapBackupEntriesCnt;
-
-    /** Memory size allocated in off-heap. */
-    long offHeapAllocatedSize;
-
-    /** Number of non-{@code null} values in the cache. */
-    int size;
-
-    /** Cache size. */
-    long cacheSize;
-
-    /** Number of keys in the cache, possibly with {@code null} values. */
-    int keySize;
-
-    /** Cache is empty. */
-    boolean empty;
-
-    /** Gets current size of evict queue used to batch up evictions. */
-    int dhtEvictQueueCurrSize;
-
-    /** Transaction per-thread map size. */
-    int txThreadMapSize;
-
-    /** Transaction per-Xid map size. */
-    int txXidMapSize;
-
-    /** Committed transaction queue size. */
-    int txCommitQueueSize;
-
-    /** Prepared transaction queue size. */
-    int txPrepareQueueSize;
-
-    /** Start version counts map size. */
-    int txStartVerCountsSize;
-
-    /** Number of cached committed transaction IDs. */
-    int txCommittedVersionsSize;
-
-    /** Number of cached rolled back transaction IDs. */
-    int txRolledbackVersionsSize;
-
-    /** DHT thread map size. */
-    int txDhtThreadMapSize;
-
-    /** Transaction DHT per-Xid map size. */
-    int txDhtXidMapSize;
-
-    /** Committed DHT transaction queue size. */
-    int txDhtCommitQueueSize;
-
-    /** Prepared DHT transaction queue size. */
-    int txDhtPrepareQueueSize;
-
-    /** DHT start version counts map size. */
-    int txDhtStartVerCountsSize;
-
-    /** Number of cached committed DHT transaction IDs. */
-    int txDhtCommittedVersionsSize;
-
-    /** Number of cached rolled back DHT transaction IDs. */
-    int txDhtRolledbackVersionsSize;
-
-    /** Write-behind is enabled. */
-    boolean writeBehindEnabled;
-
-    /** Buffer size that triggers flush procedure. */
-    int writeBehindFlushSize;
-
-    /** Count of worker threads. */
-    int writeBehindFlushThreadCnt;
-
-    /** Flush frequency in milliseconds. */
-    long writeBehindFlushFreq;
-
-    /** Maximum size of batch. */
-    int writeBehindStoreBatchSize;
-
-    /** Count of cache overflow events since start. */
-    int writeBehindTotalCriticalOverflowCnt;
-
-    /** Count of cache overflow events since start. */
-    int writeBehindCriticalOverflowCnt;
-
-    /** Count of entries in store-retry state. */
-    int writeBehindErrorRetryCnt;
-
-    /** Total count of entries in cache store internal buffer. */
-    int writeBehindBufSize;
-
-    /** Total partitions count. */
-    int totalPartitionsCnt;
-
-    /** Rebalancing partitions count. */
-    int rebalancingPartitionsCnt;
-
-    /** Number of already rebalanced keys. */
-    long rebalancedKeys;
-
-    /** Number estimated to rebalance keys. */
-    long estimatedRebalancingKeys;
-
-    /** Keys to rebalance left. */
-    long keysToRebalanceLeft;
-
-    /** Rebalancing keys rate. */
-    long rebalancingKeysRate;
-
-    /** Get rebalancing bytes rate. */
-    long rebalancingBytesRate;
-
-    /** Start rebalance time. */
-    long rebalanceStartTime;
-
-    /** Estimate rebalance finish time. */
-    long rebalanceFinishTime;
-
-    /** The number of clearing partitions need to await before rebalance. */
-    long rebalanceClearingPartitionsLeft;
-
-    /** */
-    String keyType;
-
-    /** */
-    String valType;
-
-    /** */
-    boolean storeByVal;
-
-    /** */
-    boolean statisticsEnabled;
-
-    /** */
-    boolean managementEnabled;
-
-    /** */
-    boolean readThrough;
-
-    /** */
-    boolean writeThrough;
-
-    /** */
-    boolean validForReading;
-
-    /** */
-    boolean validForWriting;
-
-    /** Tx key collisions with appropriate queue size string representation. */
-    String txKeyCollisions;
-
-    /** Index rebuilding in progress. */
-    boolean idxRebuildInProgress;
-
-    /** Number of keys processed idxRebuildInProgressduring index rebuilding. */
-    long idxRebuildKeysProcessed;
-
-    /** The number of local node partitions that remain to be processed to complete indexing. */
-    int idxBuildPartitionsLeftCount;
+    /** Metrics values holder. */
+    CacheMetricsMessage m;
 
     /**
      * Default constructor.
@@ -308,585 +50,487 @@ public class CacheMetricsSnapshot extends IgniteDataTransferObject implements Ca
     }
 
     /**
+     * Create snapshot for given metrics message.
+     *
+     * @param cacheMetricsMsg Cache metrics message.
+     */
+    public CacheMetricsSnapshot(CacheMetricsMessage cacheMetricsMsg) {
+        m = cacheMetricsMsg;
+    }
+
+    /**
      * Constructs merged cache metrics.
      *
      * @param loc Metrics for cache on local node.
      * @param metrics Metrics for merge.
      */
     public CacheMetricsSnapshot(CacheMetrics loc, Collection<CacheMetrics> metrics) {
-        this(new CacheMetricsMessage(loc, metrics));
-    }
-
-    /**
-     * Create snapshot for given metrics message.
-     *
-     * @param m Cache metrics message.
-     */
-    public CacheMetricsSnapshot(CacheMetricsMessage m) {
-        cacheGets = m.cacheGets();
-        cachePuts = m.cachePuts();
-        entryProcessorPuts = m.entryProcessorPuts();
-        entryProcessorReadOnlyInvocations = m.entryProcessorReadOnlyInvocations();
-        entryProcessorAverageInvocationTime = m.entryProcessorAverageInvocationTime();
-        entryProcessorInvocations = m.entryProcessorInvocations();
-        entryProcessorRemovals = m.entryProcessorRemovals();
-        entryProcessorMisses = m.entryProcessorMisses();
-        entryProcessorHits = m.entryProcessorHits();
-        entryProcessorMissPercentage = m.entryProcessorMissPercentage();
-        entryProcessorHitPercentage = m.entryProcessorHitPercentage();
-        entryProcessorMaxInvocationTime = m.entryProcessorMaxInvocationTime();
-        entryProcessorMinInvocationTime = m.entryProcessorMinInvocationTime();
-        cacheHits = m.cacheHits();
-        cacheMisses = m.cacheMisses();
-        cacheTxCommits = m.cacheTxCommits();
-        cacheTxRollbacks = m.cacheTxRollbacks();
-        cacheEvictions = m.cacheEvictions();
-        cacheRemovals = m.cacheRemovals();
-        averagePutTime = m.averagePutTime();
-        averageGetTime = m.averageGetTime();
-        averageRemoveTime = m.averageRemoveTime();
-        averageTxCommitTime = m.averageTxCommitTime();
-        averageTxRollbackTime = m.averageTxRollbackTime();
-        cacheName = m.cacheName();
-        offHeapGets = m.offHeapGets();
-        offHeapPuts = m.offHeapPuts();
-        offHeapRemoves = m.offHeapRemovals();
-        offHeapEvicts = m.offHeapEvictions();
-        offHeapHits = m.offHeapHits();
-        offHeapMisses = m.offHeapMisses();
-        offHeapEntriesCnt = m.offHeapEntriesCount();
-        heapEntriesCnt = m.heapEntriesCount();
-        offHeapPrimaryEntriesCnt = m.offHeapPrimaryEntriesCount();
-        offHeapBackupEntriesCnt = m.offHeapBackupEntriesCount();
-        offHeapAllocatedSize = m.offHeapAllocatedSize();
-        size = m.size();
-        cacheSize = m.cacheSize();
-        keySize = m.keySize();
-        empty = m.empty();
-        dhtEvictQueueCurrSize = m.dhtEvictQueueCurrentSize();
-        txThreadMapSize = m.txThreadMapSize();
-        txXidMapSize = m.txXidMapSize();
-        txCommitQueueSize = m.txCommitQueueSize();
-        txPrepareQueueSize = m.txPrepareQueueSize();
-        txStartVerCountsSize = m.txStartVersionCountsSize();
-        txCommittedVersionsSize = m.txCommittedVersionsSize();
-        txRolledbackVersionsSize = m.txRolledbackVersionsSize();
-        txDhtThreadMapSize = m.txDhtThreadMapSize();
-        txDhtXidMapSize = m.txDhtXidMapSize();
-        txDhtCommitQueueSize = m.txDhtCommitQueueSize();
-        txDhtPrepareQueueSize = m.txDhtPrepareQueueSize();
-        txDhtStartVerCountsSize = m.txDhtStartVersionCountsSize();
-        txDhtCommittedVersionsSize = m.txDhtCommittedVersionsSize();
-        txDhtRolledbackVersionsSize = m.txDhtRolledbackVersionsSize();
-        writeBehindEnabled = m.writeBehindEnabled();
-        writeBehindFlushSize = m.writeBehindFlushSize();
-        writeBehindFlushThreadCnt = m.writeBehindFlushThreadCount();
-        writeBehindFlushFreq = m.writeBehindFlushFrequency();
-        writeBehindStoreBatchSize = m.writeBehindStoreBatchSize();
-        writeBehindTotalCriticalOverflowCnt = m.writeBehindTotalCriticalOverflowCount();
-        writeBehindCriticalOverflowCnt = m.writeBehindCriticalOverflowCount();
-        writeBehindErrorRetryCnt = m.writeBehindErrorRetryCount();
-        writeBehindBufSize = m.writeBehindBufferSize();
-        totalPartitionsCnt = m.totalPartitionsCount();
-        rebalancingPartitionsCnt = m.rebalancingPartitionsCount();
-        rebalancedKeys = m.rebalancedKeys();
-        estimatedRebalancingKeys = m.estimatedRebalancingKeys();
-        keysToRebalanceLeft = m.keysToRebalanceLeft();
-        rebalancingKeysRate = m.rebalancingKeysRate();
-        rebalancingBytesRate = m.rebalancingBytesRate();
-        rebalanceStartTime = m.rebalancingStartTime();
-        rebalanceFinishTime = m.rebalanceFinishTime();
-        rebalanceClearingPartitionsLeft = m.rebalanceClearingPartitionsLeft();
-        keyType = m.keyType();
-        valType = m.valueType();
-        storeByVal = m.storeByValue();
-        statisticsEnabled = m.statisticsEnabled();
-        managementEnabled = m.managementEnabled();
-        readThrough = m.readThrough();
-        writeThrough = m.writeThrough();
-        validForReading = m.validForReading();
-        validForWriting = m.validForWriting();
-        txKeyCollisions = m.txKeyCollisions();
-        idxRebuildInProgress = m.indexRebuildInProgress();
-        idxRebuildKeysProcessed = m.indexRebuildKeysProcessed();
-        idxBuildPartitionsLeftCount = m.indexBuildPartitionsLeftCount();
+        m = new CacheMetricsMessage(loc, metrics);
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheHits() {
-        return cacheHits;
+        return m.cacheHits();
     }
 
     /** {@inheritDoc} */
     @Override public float getCacheHitPercentage() {
-        if (cacheHits == 0 || cacheGets == 0)
-            return 0;
-
-        return (float)cacheHits / cacheGets * 100.0f;
+        return m.cacheHitPercentage();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheMisses() {
-        return cacheMisses;
+        return m.cacheMisses();
     }
 
     /** {@inheritDoc} */
     @Override public float getCacheMissPercentage() {
-        if (cacheMisses == 0 || cacheGets == 0)
-            return 0;
-
-        return (float)cacheMisses / cacheGets * 100.0f;
+        return m.cacheMissPercentage();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheGets() {
-        return cacheGets;
+        return m.cacheGets();
     }
 
     /** {@inheritDoc} */
     @Override public long getCachePuts() {
-        return cachePuts;
+        return m.cachePuts();
     }
 
     /** {@inheritDoc} */
     @Override public long getEntryProcessorPuts() {
-        return entryProcessorPuts;
+        return m.entryProcessorPuts();
     }
 
     /** {@inheritDoc} */
     @Override public long getEntryProcessorReadOnlyInvocations() {
-        return entryProcessorReadOnlyInvocations;
+        return m.entryProcessorReadOnlyInvocations();
     }
 
     /** {@inheritDoc} */
     @Override public long getEntryProcessorInvocations() {
-        return entryProcessorInvocations;
+        return m.entryProcessorInvocations();
     }
 
     /** {@inheritDoc} */
     @Override public long getEntryProcessorHits() {
-        return entryProcessorHits;
+        return m.entryProcessorHits();
     }
 
     /** {@inheritDoc} */
     @Override public float getEntryProcessorHitPercentage() {
-        return entryProcessorHitPercentage;
+        return m.entryProcessorHitPercentage();
     }
 
     /** {@inheritDoc} */
     @Override public float getEntryProcessorMissPercentage() {
-        return entryProcessorMissPercentage;
+        return m.entryProcessorMissPercentage();
     }
 
     /** {@inheritDoc} */
     @Override public long getEntryProcessorMisses() {
-        return entryProcessorMisses;
+        return m.entryProcessorMisses();
     }
 
     /** {@inheritDoc} */
     @Override public long getEntryProcessorRemovals() {
-        return entryProcessorRemovals;
+        return m.entryProcessorRemovals();
     }
 
     /** {@inheritDoc} */
     @Override public float getEntryProcessorAverageInvocationTime() {
-        return entryProcessorAverageInvocationTime;
+        return m.entryProcessorAverageInvocationTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getEntryProcessorMinInvocationTime() {
-        return entryProcessorMinInvocationTime;
+        return m.entryProcessorMinInvocationTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getEntryProcessorMaxInvocationTime() {
-        return entryProcessorMaxInvocationTime;
+        return m.entryProcessorMaxInvocationTime();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheRemovals() {
-        return cacheRemovals;
+        return m.cacheRemovals();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheEvictions() {
-        return cacheEvictions;
+        return m.cacheEvictions();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageGetTime() {
-        return averageGetTime;
+        return m.averageGetTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getAveragePutTime() {
-        return averagePutTime;
+        return m.averagePutTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageRemoveTime() {
-        return averageRemoveTime;
+        return m.averageRemoveTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageTxCommitTime() {
-        return averageTxCommitTime;
+        return m.averageTxCommitTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageTxRollbackTime() {
-        return averageTxRollbackTime;
+        return m.averageTxRollbackTime();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheTxCommits() {
-        return cacheTxCommits;
+        return m.cacheTxCommits();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheTxRollbacks() {
-        return cacheTxRollbacks;
+        return m.cacheTxRollbacks();
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return cacheName;
+        return m.cacheName();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapGets() {
-        return offHeapGets;
+        return m.offHeapGets();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapPuts() {
-        return offHeapPuts;
+        return m.offHeapPuts();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapRemovals() {
-        return offHeapRemoves;
+        return m.offHeapRemovals();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapEvictions() {
-        return offHeapEvicts;
+        return m.offHeapEvictions();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapHits() {
-        return offHeapHits;
+        return m.offHeapHits();
     }
 
     /** {@inheritDoc} */
     @Override public float getOffHeapHitPercentage() {
-        if (offHeapHits == 0 || offHeapGets == 0)
-            return 0;
-
-        return (float)offHeapHits / offHeapGets * 100.0f;
+        return m.offHeapHitPercentage();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapMisses() {
-        return offHeapMisses;
+        return m.offHeapMisses();
     }
 
     /** {@inheritDoc} */
     @Override public float getOffHeapMissPercentage() {
-        if (offHeapMisses == 0 || offHeapGets == 0)
-            return 0;
-
-        return (float)offHeapMisses / offHeapGets * 100.0f;
+        return m.offHeapMissPercentage();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapEntriesCount() {
-        return offHeapEntriesCnt;
+        return m.offHeapEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getHeapEntriesCount() {
-        return heapEntriesCnt;
+        return m.heapEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapPrimaryEntriesCount() {
-        return offHeapPrimaryEntriesCnt;
+        return m.offHeapPrimaryEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapBackupEntriesCount() {
-        return offHeapBackupEntriesCnt;
+        return m.offHeapBackupEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapAllocatedSize() {
-        return offHeapAllocatedSize;
+        return m.offHeapAllocatedSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getSize() {
-        return size;
+        return m.size();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheSize() {
-        return cacheSize;
+        return m.cacheSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getKeySize() {
-        return keySize;
+        return m.keySize();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
-        return empty;
+        return m.empty();
     }
 
     /** {@inheritDoc} */
     @Override public int getDhtEvictQueueCurrentSize() {
-        return dhtEvictQueueCurrSize;
+        return m.dhtEvictQueueCurrentSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxThreadMapSize() {
-        return txThreadMapSize;
+        return m.txThreadMapSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxXidMapSize() {
-        return txXidMapSize;
+        return m.txXidMapSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxCommitQueueSize() {
-        return txCommitQueueSize;
+        return m.txCommitQueueSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxPrepareQueueSize() {
-        return txPrepareQueueSize;
+        return m.txPrepareQueueSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxStartVersionCountsSize() {
-        return txStartVerCountsSize;
+        return m.txStartVersionCountsSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxCommittedVersionsSize() {
-        return txCommittedVersionsSize;
+        return m.txCommittedVersionsSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxRolledbackVersionsSize() {
-        return txRolledbackVersionsSize;
+        return m.txRolledbackVersionsSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtThreadMapSize() {
-        return txDhtThreadMapSize;
+        return m.txDhtThreadMapSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtXidMapSize() {
-        return txDhtXidMapSize;
+        return m.txDhtXidMapSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtCommitQueueSize() {
-        return txDhtCommitQueueSize;
+        return m.txDhtCommitQueueSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtPrepareQueueSize() {
-        return txDhtPrepareQueueSize;
+        return m.txDhtPrepareQueueSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtStartVersionCountsSize() {
-        return txDhtStartVerCountsSize;
+        return m.txDhtStartVersionCountsSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtCommittedVersionsSize() {
-        return txDhtCommittedVersionsSize;
+        return m.txDhtCommittedVersionsSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtRolledbackVersionsSize() {
-        return txDhtRolledbackVersionsSize;
+        return m.txDhtRolledbackVersionsSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTotalPartitionsCount() {
-        return totalPartitionsCnt;
+        return m.totalPartitionsCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getRebalancedKeys() {
-        return rebalancedKeys;
+        return m.rebalancedKeys();
     }
 
     /** {@inheritDoc} */
     @Override public long getEstimatedRebalancingKeys() {
-        return estimatedRebalancingKeys;
+        return m.estimatedRebalancingKeys();
     }
 
     /** {@inheritDoc} */
     @Override public int getRebalancingPartitionsCount() {
-        return rebalancingPartitionsCnt;
+        return m.rebalancingPartitionsCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getKeysToRebalanceLeft() {
-        return keysToRebalanceLeft;
+        return m.keysToRebalanceLeft();
     }
 
     /** {@inheritDoc} */
     @Override public long getRebalancingKeysRate() {
-        return rebalancingKeysRate;
+        return m.rebalancingKeysRate();
     }
 
     /** {@inheritDoc} */
     @Override public long getRebalancingBytesRate() {
-        return rebalancingBytesRate;
+        return m.rebalancingBytesRate();
     }
 
     /** {@inheritDoc} */
     @Override public long estimateRebalancingFinishTime() {
-        return rebalanceFinishTime;
+        return m.rebalanceFinishTime();
     }
 
     /** {@inheritDoc} */
     @Override public long rebalancingStartTime() {
-        return rebalanceStartTime;
+        return m.rebalancingStartTime();
     }
 
     /** {@inheritDoc} */
     @Override public long getEstimatedRebalancingFinishTime() {
-        return rebalanceFinishTime;
+        return m.rebalanceFinishTime();
     }
 
     /** {@inheritDoc} */
     @Override public long getRebalancingStartTime() {
-        return rebalanceStartTime;
+        return m.rebalancingStartTime();
     }
 
     /** {@inheritDoc} */
     @Override public long getRebalanceClearingPartitionsLeft() {
-        return rebalanceClearingPartitionsLeft;
+        return m.rebalanceClearingPartitionsLeft();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isWriteBehindEnabled() {
-        return writeBehindEnabled;
+        return m.writeBehindEnabled();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindFlushSize() {
-        return writeBehindFlushSize;
+        return m.writeBehindFlushSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindFlushThreadCount() {
-        return writeBehindFlushThreadCnt;
+        return m.writeBehindFlushThreadCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getWriteBehindFlushFrequency() {
-        return writeBehindFlushFreq;
+        return m.writeBehindFlushFrequency();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindStoreBatchSize() {
-        return writeBehindStoreBatchSize;
+        return m.writeBehindStoreBatchSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindTotalCriticalOverflowCount() {
-        return writeBehindTotalCriticalOverflowCnt;
+        return m.writeBehindTotalCriticalOverflowCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindCriticalOverflowCount() {
-        return writeBehindCriticalOverflowCnt;
+        return m.writeBehindCriticalOverflowCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindErrorRetryCount() {
-        return writeBehindErrorRetryCnt;
+        return m.writeBehindErrorRetryCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindBufferSize() {
-        return writeBehindBufSize;
+        return m.writeBehindBufferSize();
     }
 
     /** {@inheritDoc} */
     @Override public String getKeyType() {
-        return keyType;
+        return m.keyType();
     }
 
     /** {@inheritDoc} */
     @Override public String getValueType() {
-        return valType;
+        return m.valueType();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isStoreByValue() {
-        return storeByVal;
+        return m.storeByValue();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isStatisticsEnabled() {
-        return statisticsEnabled;
+        return m.statisticsEnabled();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isManagementEnabled() {
-        return managementEnabled;
+        return m.managementEnabled();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isReadThrough() {
-        return readThrough;
+        return m.readThrough();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isWriteThrough() {
-        return writeThrough;
+        return m.writeThrough();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isValidForReading() {
-        return validForReading;
+        return m.validForReading();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isValidForWriting() {
-        return validForWriting;
+        return m.validForWriting();
     }
 
     /** {@inheritDoc} */
     @Override public String getTxKeyCollisions() {
-        return txKeyCollisions;
+        return m.txKeyCollisions();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isIndexRebuildInProgress() {
-        return idxRebuildInProgress;
+        return m.indexRebuildInProgress();
     }
 
     /** {@inheritDoc} */
     @Override public long getIndexRebuildKeysProcessed() {
-        return idxRebuildKeysProcessed;
+        return m.indexRebuildKeysProcessed();
     }
 
     /** {@inheritDoc} */
     @Override public int getIndexBuildPartitionsLeftCount() {
-        return idxBuildPartitionsLeftCount;
+        return m.indexBuildPartitionsLeftCount();
     }
 
     /** {@inheritDoc} */

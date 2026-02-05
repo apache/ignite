@@ -37,6 +37,7 @@ import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.processors.cluster.CacheMetricsMessage;
 import org.apache.ignite.internal.processors.cluster.NodeMetricsMessage;
 import org.apache.ignite.internal.processors.tracing.NoopTracing;
@@ -433,7 +434,8 @@ abstract class TcpDiscoveryImpl {
             if (!F.isEmpty(cacheMetricsMsgs)) {
                 cacheMetrics = U.newHashMap(cacheMetricsMsgs.size());
 
-                cacheMetrics.putAll(cacheMetricsMsgs);
+                cacheMetricsMsgs.forEach((cacheId, cacheMetricsMsg) ->
+                    cacheMetrics.put(cacheId, new CacheMetricsSnapshot(cacheMetricsMsg)));
             }
             else
                 cacheMetrics = Collections.emptyMap();

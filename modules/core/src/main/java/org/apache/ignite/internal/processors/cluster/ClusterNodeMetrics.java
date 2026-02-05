@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
+import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 
 /**
  *
@@ -48,7 +49,8 @@ class ClusterNodeMetrics {
         nodeMetrics = new ClusterMetricsSnapshot(msg.nodeMetricsMessage());
 
         cacheMetrics = new HashMap<>(msg.cachesMetricsMessages().size(), 1.0f);
-        cacheMetrics.putAll(msg.cachesMetricsMessages());
+
+        msg.cachesMetricsMessages().forEach((key, value) -> cacheMetrics.put(key, new CacheMetricsSnapshot(value)));
     }
 
     /**
