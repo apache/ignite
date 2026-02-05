@@ -607,7 +607,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 return;
             }
 
-            System.err.println("salvageTx from : " + cctx.discovery().localNode());
             tx.salvageTx();
 
             if (log.isInfoEnabled())
@@ -3139,7 +3138,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 for (final IgniteInternalTx tx : activeTransactions()) {
                     if ((tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId))
-                        || (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId))) {
+                        || (tx.storeWriteThrough() && tx.masterNodeIds().contains(cctx.localNodeId()))) {
                         // Invalidate transactions.
                         salvageTx(tx, RECOVERY_FINISH);
                     }

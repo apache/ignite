@@ -23,29 +23,19 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import javax.cache.Cache;
-import javax.cache.configuration.Factory;
-import javax.cache.integration.CacheWriterException;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
-import org.apache.ignite.cache.store.CacheStoreSession;
-import org.apache.ignite.cache.store.CacheStoreSessionListener;
-import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListener;
 import org.apache.ignite.cluster.ClusterState;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.failure.AbstractFailureHandler;
-import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -54,12 +44,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
-import org.apache.ignite.internal.processors.cache.MapCacheStoreStrategy;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -73,9 +58,6 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK
 import static org.apache.ignite.testframework.GridTestUtils.assertContains;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 
 /** */
 public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClusterPerMethodAbstractTest {
@@ -120,6 +102,117 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         return super.getConfiguration(igniteInstanceName)
             .setCommunicationSpi(new TestRecordingCommunicationSpi());
+    }
+
+    @Test
+    public void testTxCoordinatorLeftClusterWithEnabledReadWriteThrough0() throws Exception {
+        // sequential start is important here
+        IgniteEx nodeCoord = startGrid(0);
+        // near node
+        IgniteEx nodePrimary = startGrid(1);
+        // backup node
+        startGrid(2);
+
+        nodeCoord.cluster().state(ClusterState.ACTIVE);
+
+        GridMessageListener lsnr = new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+                if (msg instanceof GridNearTxPrepareResponse) {
+                    nodeKillLatch.countDown();
+                    try {
+                        MapCacheStore.salvagedLatch.await(2_000, TimeUnit.MILLISECONDS);
+                    }
+                    catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    long cnt = MapCacheStore.salvagedLatch.getCount();
+                    // check latch not raised
+                    assertEquals(1L, cnt);
+                }
+            }
+        };
+
+        nodeCoord.context().io().removeMessageListener(GridTopic.TOPIC_CACHE); // Remove old cache listener.
+        nodeCoord.context().io().addMessageListener(GridTopic.TOPIC_CACHE, lsnr); // Register as first listener.
+        nodeCoord.context().cache().context().io().start0(); // Register cache listener again.
+
+        nodeCoord.context().event().addDiscoveryEventListener(new BeforeRecoveryListener(), EVT_NODE_FAILED, EVT_NODE_LEFT);
+
+        IgniteInternalFuture<Object> stopFut = GridTestUtils.runAsync(() -> {
+            nodeKillLatch.await();
+            nodePrimary.close();
+        });
+
+        injectTestSystemOut();
+
+        CacheConfiguration<Integer, Object> ccfgWithWriteThrough = createCache(DEFAULT_CACHE_NAME, true);
+        IgniteCache<Integer, Object> cache = nodeCoord.createCache(ccfgWithWriteThrough);
+
+        CacheConfiguration<Integer, Object> ccfgWithoutWriteThrough = createCache("noWriteThrough", false);
+        IgniteCache<Integer, Object> cacheWithoutWriteThrough = nodeCoord.createCache(ccfgWithoutWriteThrough);
+
+        awaitPartitionMapExchange();
+
+        Integer primaryKey = primaryKey(nodePrimary.cache(DEFAULT_CACHE_NAME));
+        //Integer primaryKeyWithoutWriteThrough = primaryKey(nodePrimary.cache("noWriteThrough"));
+
+        try (Transaction tx = nodeCoord.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
+            cache.put(primaryKey, new Object());
+            //cacheWithoutWriteThrough.put(primaryKeyWithoutWriteThrough, new Object());
+            tx.commit();
+        }
+        catch (Throwable th) {
+            fail("Unexpected exception: " + th);
+        }
+
+        stopFut.get(getTestTimeout());
+
+        doSleep(1_000L);
+
+        awaitPartitionMapExchange();
+
+        assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(2)), "--cache", "idle_verify"));
+
+        String out = testOut.toString();
+
+        assertContains(log, out, "The check procedure has failed");
+        // Update counters are equal but size is different
+        if (withPersistence) {
+            assertContains(log, out, "updateCntr=[lwm=1, missed=[], hwm=1], partitionState=OWNING, size=0");
+            assertContains(log, out, "updateCntr=[lwm=1, missed=[], hwm=1], partitionState=OWNING, size=1");
+        }
+        else {
+            assertContains(log, out, "updateCntr=1, partitionState=OWNING, size=0");
+            assertContains(log, out, "updateCntr=1, partitionState=OWNING, size=1");
+        }
+        testOut.reset();
+
+        if (withPersistence) {
+            stopAllGrids();
+            startGridsMultiThreaded(3);
+
+            awaitPartitionMapExchange(true, true, null);
+
+            assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(2)), "--cache", "idle_verify"));
+            out = testOut.toString();
+            // partVerHash are different, thus only regex check here
+            Pattern part0Pattern = Pattern.compile("Partition instances: " +
+                "\\[PartitionHashRecord" +
+                ".*?consistentId=gridCommandHandlerTest0, updateCntr=\\[lwm=1, missed=\\[\\], hwm=1\\], partitionState=OWNING, size=1");
+            Pattern part1Pattern = Pattern.compile("Partition instances: " +
+                "\\[PartitionHashRecord" +
+                ".*?consistentId=gridCommandHandlerTest1, updateCntr=\\[lwm=1, missed=\\[\\], hwm=1\\], partitionState=OWNING, size=1");
+            Pattern part2Pattern = Pattern.compile("Partition instances: " +
+                "\\[PartitionHashRecord" +
+                ".*?consistentId=gridCommandHandlerTest2, updateCntr=\\[lwm=1, missed=\\[\\], hwm=1\\], partitionState=OWNING, size=0");
+
+            boolean matches =
+                part0Pattern.matcher(out).find() &&
+                    part1Pattern.matcher(out).find() &&
+                    part2Pattern.matcher(out).find();
+
+            assertTrue(matches);
+        }
     }
 
     /** */
@@ -167,7 +260,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
 
         try (Transaction tx = nodeCoord.transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
             cache.put(primaryKey, new Object());
-            cacheWithoutWriteThrough.put(primaryKeyWithoutWriteThrough, new Object());
+            //cacheWithoutWriteThrough.put(primaryKeyWithoutWriteThrough, new Object());
             tx.commit();
         }
         catch (Throwable th) {
@@ -219,7 +312,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
                 part0Pattern.matcher(out).find() &&
                 part1Pattern.matcher(out).find() &&
                 part2Pattern.matcher(out).find();
-            
+
             assertTrue(matches);
         }
     }
@@ -249,10 +342,6 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
 
         /** */
         private static CountDownLatch txCoordStoreLatch;
-
-        public MapCacheStore() {
-            System.err.println();
-        }
 
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
