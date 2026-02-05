@@ -205,14 +205,21 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
             assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(2)), "--cache", "idle_verify"));
             out = testOut.toString();
             // partVerHash are different, thus only regex check here
-            Pattern primaryPattern = Pattern.compile("Partition instances: " +
+            Pattern part0Pattern = Pattern.compile("Partition instances: " +
                 "\\[PartitionHashRecord" +
-                ".*?hwm=1\\], partitionState=OWNING, size=1" +
-                ".*?hwm=1\\], partitionState=OWNING, size=1" +
-                ".*?hwm=1\\], partitionState=OWNING, size=1");
+                ".*?consistentId=gridCommandHandlerTest0, updateCntr=\\[lwm=1, missed=\\[\\], hwm=1\\], partitionState=OWNING, size=1");
+            Pattern part1Pattern = Pattern.compile("Partition instances: " +
+                "\\[PartitionHashRecord" +
+                ".*?consistentId=gridCommandHandlerTest1, updateCntr=\\[lwm=1, missed=\\[\\], hwm=1\\], partitionState=OWNING, size=1");
+            Pattern part2Pattern = Pattern.compile("Partition instances: " +
+                "\\[PartitionHashRecord" +
+                ".*?consistentId=gridCommandHandlerTest2, updateCntr=\\[lwm=1, missed=\\[\\], hwm=1\\], partitionState=OWNING, size=0");
 
-            boolean matches = primaryPattern.matcher(out).find();
-            System.err.println("!!!! " + out);
+            boolean matches =
+                part0Pattern.matcher(out).find() &&
+                part1Pattern.matcher(out).find() &&
+                part2Pattern.matcher(out).find();
+            
             assertTrue(matches);
         }
     }
@@ -235,13 +242,17 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
     /** {@link CacheStore} backed by {@link #map} */
     public static class MapCacheStore extends CacheStoreAdapter<Object, Object> {
         /** Store map. */
-        private static final Map<Object, Object> map = new ConcurrentHashMap<>();
+        private final Map<Object, Object> map = new ConcurrentHashMap<>();
 
         /** */
         private static CountDownLatch salvagedLatch;
 
         /** */
         private static CountDownLatch txCoordStoreLatch;
+
+        public MapCacheStore() {
+            System.err.println();
+        }
 
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
