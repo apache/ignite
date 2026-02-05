@@ -21,10 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
@@ -45,17 +42,14 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SNAPSHOT_SEQUENTIAL_WRITE;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.persistence.filename.SnapshotFileTree.partDeltaIndexFile;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteSnapshotManager.DeltaSortedIterator.DELTA_SORT_BATCH_SIZE;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Cluster snapshot delta tests.
@@ -123,7 +117,7 @@ public class IgniteClusterSnapshotDeltaTest extends AbstractSnapshotSelfTest {
 
             @Override public void sendDelta0(File delta, File snpPart, GroupPartitionId pair) {
                 if (cacheDir.equals(snpPart.getParent()) && pair.getPartitionId() != INDEX_PARTITION)
-                    assertTrue("Delta length : " + delta.length() + " > 0", delta.length() > 0);
+                    assertTrue(delta.length() > 0, "Delta length : " + delta.length() + " > 0");
 
                 if (!sequentialWrite)
                     U.delete(partDeltaIndexFile(delta));

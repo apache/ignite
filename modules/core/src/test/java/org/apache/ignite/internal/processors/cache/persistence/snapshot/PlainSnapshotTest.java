@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -31,23 +33,31 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.Snapshot
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Snapshot test for plain, not-encrypted-only snapshots.
  */
+@ParameterizedClass(name = "encryption={0}, onlyPrimay={1}")
+@MethodSource("allTypesArgs")
 public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
     /** Parameters. */
-    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}")
-    public static List<Object[]> disableEncryption() {
-        return Arrays.asList(
-            new Object[]{false, false},
-            new Object[]{false, true}
+    private static Stream<Arguments> allTypesArgs() {
+        Collection<Object[]> res = GridTestUtils.cartesianProduct(
+                List.of(true, false),
+                List.of(true, false)
         );
+
+        return res.stream().map(Arguments::of);
     }
 
     /** {@link AbstractSnapshotSelfTest.Account} with custom toString method. */
@@ -114,18 +124,18 @@ public class PlainSnapshotTest extends AbstractSnapshotSelfTest {
         final Map<String, Integer> origPartCRCs = calculateCRC32Partitions(ft.cacheStorages(dfltCacheCfg));
         final Map<String, Integer> snpPartCRCs = calculateCRC32Partitions(sft.cacheStorages(dfltCacheCfg));
 
-        assertEquals("Partitions must have the same CRC after file copying and merging partition delta files",
-            origPartCRCs, snpPartCRCs);
-        assertEquals("Binary object mappings must be the same for local node and created snapshot",
-            calculateCRC32Partitions(ft.binaryMeta()), calculateCRC32Partitions(sft.binaryMeta()));
-        assertEquals("Marshaller meta mast be the same for local node and created snapshot",
-            calculateCRC32Partitions(ft.marshaller()), calculateCRC32Partitions(sft.marshaller()));
+        assertEquals(origPartCRCs, snpPartCRCs,
+            "Partitions must have the same CRC after file copying and merging partition delta files");
+        assertEquals(calculateCRC32Partitions(ft.binaryMeta()), calculateCRC32Partitions(sft.binaryMeta()),
+            "Binary object mappings must be the same for local node and created snapshot");
+        assertEquals(calculateCRC32Partitions(ft.marshaller()), calculateCRC32Partitions(sft.marshaller()),
+            "Marshaller meta mast be the same for local node and created snapshot");
 
         for (File tmpRoot : ft.snapshotsTempRoots()) {
             assertEquals(
-                "Snapshot working directory must be cleaned after usage: " + tmpRoot.getAbsolutePath(),
                 0,
-                tmpRoot.listFiles().length
+                tmpRoot.listFiles().length,
+                "Snapshot working directory must be cleaned after usage: " + tmpRoot.getAbsolutePath()
             );
         }
     }

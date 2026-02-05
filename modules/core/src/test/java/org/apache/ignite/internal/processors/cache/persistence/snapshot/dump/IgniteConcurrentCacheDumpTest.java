@@ -26,26 +26,33 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** */
+@ParameterizedClass(name = "nodes={0},backups={1},persistence={2},mode={3},useDataStreamer={4},onlyPrimary={5},encrypted={6}")
+@MethodSource("allTypesArgs")
 public class IgniteConcurrentCacheDumpTest extends AbstractCacheDumpTest {
     /** */
-    @Parameterized.Parameters(name = "nodes={0},backups={1},persistence={2},mode={3},useDataStreamer={4},onlyPrimary={5},encrypted={6}")
-    public static List<Object[]> params() {
-        List<Object[]> params = new ArrayList<>();
+    private static List<Arguments> allTypesArgs() {
+        List<Arguments> params = new ArrayList<>();
 
         for (boolean encrypted : new boolean[]{true, false})
             for (int nodes : new int[]{2, 3})
                 for (int backups : new int[]{1, 2})
                     for (boolean persistence : new boolean[]{true, false})
                         for (CacheAtomicityMode mode : CacheAtomicityMode.values())
-                            params.add(new Object[]{nodes, backups, persistence, mode, false, false, encrypted});
+                            params.add(Arguments.of(nodes, backups, persistence, mode, false, false, encrypted));
 
         return params;
     }

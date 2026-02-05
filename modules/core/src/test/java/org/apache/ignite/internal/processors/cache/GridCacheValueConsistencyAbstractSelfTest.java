@@ -27,13 +27,16 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils.SF;
-import org.junit.Assume;
 import org.junit.jupiter.api.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
  *
@@ -226,7 +229,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
      */
     @Test
     public void testPutConsistencyMultithreaded() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-627", nearEnabled());
+        assumeFalse(nearEnabled(), "https://issues.apache.org/jira/browse/IGNITE-627");
 
         for (int i = 0; i < 20; i++) {
             log.info("Iteration: " + i);
@@ -279,7 +282,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
      */
     @Test
     public void testPutRemoveConsistencyMultithreaded() throws Exception {
-        Assume.assumeFalse("https://issues.apache.org/jira/browse/IGNITE-627", nearEnabled());
+        assumeFalse(nearEnabled(), "https://issues.apache.org/jira/browse/IGNITE-627");
 
         for (int i = 0; i < SF.applyLB(10, 2); i++) {
             log.info("Iteration: " + i);
@@ -385,7 +388,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                 present++;
         }
 
-        assertFalse("Inconsistent value found.", invalidVal);
+        assertFalse(invalidVal, "Inconsistent value found.");
 
         info("Finished check [present=" + present + ", absent=" + absent + ']');
 

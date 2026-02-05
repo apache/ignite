@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -38,28 +38,31 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.junit.jupiter.api.Test;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.apache.ignite.cluster.ClusterState.ACTIVE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.CACHE_GROUP_KEY_CHANGE_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.MASTER_KEY_CHANGE_PREPARE;
 import static org.apache.ignite.internal.util.distributed.DistributedProcess.DistributedProcessType.RESTORE_CACHE_GROUP_SNAPSHOT_PREPARE;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrowsAnyCause;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Snapshot test for encrypted-only snapshots.
  */
-
+@ParameterizedClass(name = "encryption={0}, onlyPrimay={1}")
+@MethodSource("allTypesArgs")
 public class EncryptedSnapshotTest extends AbstractSnapshotSelfTest {
     /** Second cache name. */
     private static final String CACHE2 = "cache2";
 
     /** Parameters. */
-    @Parameterized.Parameters(name = "encryption={0}, onlyPrimay={1}")
-    public static List<Object[]> disableEncryption() {
-        return Arrays.asList(
-            new Object[]{true, false},
-            new Object[]{true, true}
+    private static Stream<Arguments> allTypesArgs() {
+        return Stream.of(
+            Arguments.of(true, false),
+            Arguments.of(true, true)
         );
     }
 
