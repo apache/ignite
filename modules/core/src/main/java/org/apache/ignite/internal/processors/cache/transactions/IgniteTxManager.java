@@ -3138,7 +3138,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 for (final IgniteInternalTx tx : activeTransactions()) {
                     if ((tx.near() && !tx.local() && tx.originatingNodeId().equals(evtNodeId))
-                        || (tx.storeWriteThrough() && tx.masterNodeIds().contains(cctx.localNodeId()))) {
+                        || (tx.storeWriteThrough() && tx.masterNodeIds().contains(evtNodeId)/*tx.otherNodeId().equals(evtNodeId)*/)) {
                         // Invalidate transactions.
                         salvageTx(tx, RECOVERY_FINISH);
                     }

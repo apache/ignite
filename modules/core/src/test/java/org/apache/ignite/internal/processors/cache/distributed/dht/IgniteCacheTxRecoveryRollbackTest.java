@@ -379,7 +379,7 @@ public class IgniteCacheTxRecoveryRollbackTest extends GridCommonAbstractTest {
         final IgniteCache<Integer, Integer> clientCache = client.cache(DEFAULT_CACHE_NAME);
 
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
+            @Override public Void call() {
                 log.info("Start put");
 
                 clientCache.put(key, 2);

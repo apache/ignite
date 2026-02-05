@@ -214,6 +214,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
     }
 
     /** */
+    @Test
     public void testTxCoordinatorLeftClusterWithEnabledReadWriteThrough() throws Exception {
         // sequential start is important here
         IgniteEx nodeCoord = startGrid(0);
