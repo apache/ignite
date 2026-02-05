@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.cache.persistence.snapshot;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.util.typedef.F;
 
+import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotHandlerType.CREATE;
 
 /**
@@ -49,7 +51,7 @@ public class DataStreamerUpdatesHandler implements SnapshotHandler<Boolean> {
     /** {@inheritDoc} */
     @Override public void complete(String name, Map<UUID, SnapshotHandlerResult<Boolean>> results)
         throws SnapshotWarningException {
-        Collection<UUID> nodes = F.viewReadOnly(results.entrySet(), Map.Entry::getKey, e -> Boolean.TRUE.equals(e.getValue().data()));
+        Collection<UUID> nodes = F.viewReadOnly(results.entrySet(), Entry::getKey, e -> TRUE.equals(e.getValue().data()));
 
         if (!F.isEmpty(nodes)) {
             throw new SnapshotWarningException(WRN_MSG + " Updates from DataStreamer detected on the nodes: " +
