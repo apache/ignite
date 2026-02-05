@@ -705,9 +705,15 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                             nearCached.updateOrEvict(xidVer, null, 0, 0, nodeId, topVer);
                                     }
                                     else if (op == RELOAD) {
-                                        CacheObject reloaded = cached.innerReload();
+                                        //CacheObject reloaded = cached.innerReload();
+                                        if (!pr) {
+                                            cached.markObsoleteIfEmpty(dhtVer);
+                                            pr = true;
+                                        } else {
+                                            CacheObject reloaded = cached.innerReload();
+                                        }
 
-                                        if (nearCached != null) {
+/*                                        if (nearCached != null) {
                                             nearCached.innerReload();
 
                                             nearCached.updateOrEvict(cached.version(),
@@ -716,7 +722,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
                                                 cached.ttl(),
                                                 nodeId,
                                                 topVer);
-                                        }
+                                        }*/
                                     }
                                     else if (op == READ) {
                                         assert near();
@@ -821,6 +827,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter imp
             }
         }
     }
+
+    static boolean pr;
 
     /** {@inheritDoc} */
     @Override public final void commitRemoteTx() throws IgniteCheckedException {
