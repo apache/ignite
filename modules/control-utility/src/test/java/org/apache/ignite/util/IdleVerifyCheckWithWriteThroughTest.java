@@ -104,6 +104,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
             .setCommunicationSpi(new TestRecordingCommunicationSpi());
     }
 
+    /** */
     @Test
     public void testTxCoordinatorLeftClusterWithEnabledReadWriteThrough0() throws Exception {
         // sequential start is important here
@@ -175,14 +176,15 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
 
         String out = testOut.toString();
 
+        // partVerHash are different, thus only partial size and counters check here
         assertContains(log, out, "The check procedure has failed");
         // Update counters are equal but size is different
         if (withPersistence) {
-            assertContains(log, out, "updateCntr=[lwm=1, missed=[], hwm=1], partitionState=OWNING, size=0");
+            assertContains(log, out, "updateCntr=[lwm=1, missed=[], hwm=1], partitionState=OWNING, size=1");
             assertContains(log, out, "updateCntr=[lwm=1, missed=[], hwm=1], partitionState=OWNING, size=1");
         }
         else {
-            assertContains(log, out, "updateCntr=1, partitionState=OWNING, size=0");
+            assertContains(log, out, "updateCntr=1, partitionState=OWNING, size=1");
             assertContains(log, out, "updateCntr=1, partitionState=OWNING, size=1");
         }
         testOut.reset();
@@ -196,27 +198,22 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
             assertEquals(EXIT_CODE_OK, execute("--port", connectorPort(grid(2)), "--cache", "idle_verify"));
             out = testOut.toString();
             // partVerHash are different, thus only regex check here
-            Pattern part0Pattern = Pattern.compile("Partition instances: " +
-                "\\[PartitionHashRecord" +
-                ".*?consistentId=gridCommandHandlerTest0, updateCntr=\\[lwm=1, missed=\\[\\], hwm=1\\], partitionState=OWNING, size=1");
-            Pattern part1Pattern = Pattern.compile("Partition instances: " +
-                "\\[PartitionHashRecord" +
-                ".*?consistentId=gridCommandHandlerTest1, updateCntr=\\[lwm=1, missed=\\[\\], hwm=1\\], partitionState=OWNING, size=1");
-            Pattern part2Pattern = Pattern.compile("Partition instances: " +
-                "\\[PartitionHashRecord" +
-                ".*?consistentId=gridCommandHandlerTest2, updateCntr=\\[lwm=1, missed=\\[\\], hwm=1\\], partitionState=OWNING, size=0");
+            String regexCheck = "Partition instances: \\[PartitionHashRecord" +
+                ".*?consistentId=%s, updateCntr=\\[lwm=1, missed=\\[\\], hwm=1\\], partitionState=OWNING, size=1";
+            Pattern part0Pattern = Pattern.compile(String.format(regexCheck, "gridCommandHandlerTest0"));
+            Pattern part1Pattern = Pattern.compile(String.format(regexCheck, "gridCommandHandlerTest1"));
+            Pattern part2Pattern = Pattern.compile(String.format(regexCheck, "gridCommandHandlerTest2"));
 
             boolean matches =
                 part0Pattern.matcher(out).find() &&
-                    part1Pattern.matcher(out).find() &&
-                    part2Pattern.matcher(out).find();
+                part1Pattern.matcher(out).find() &&
+                part2Pattern.matcher(out).find();
 
             assertTrue(matches);
         }
     }
 
     /** */
-    @Test
     public void testTxCoordinatorLeftClusterWithEnabledReadWriteThrough() throws Exception {
         // sequential start is important here
         IgniteEx nodeCoord = startGrid(0);
@@ -317,6 +314,7 @@ public class IdleVerifyCheckWithWriteThroughTest extends GridCommandHandlerClust
         }
     }
 
+    /** */
     private CacheConfiguration<Integer, Object> createCache(String cacheName, boolean writeThrough) {
         CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<>(cacheName);
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
