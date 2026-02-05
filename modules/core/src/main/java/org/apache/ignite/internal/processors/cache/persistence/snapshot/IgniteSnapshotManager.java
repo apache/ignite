@@ -1212,7 +1212,7 @@ public class IgniteSnapshotManager extends GridCacheSharedManagerAdapter
         Map<String, Map<UUID, SnapshotHandlerResult<?>>> clusterHndResults = new HashMap<>();
 
         res.forEach((nodeId, r) -> {
-            if (r.handlerResults() == null)
+            if (r == null || r.handlerResults() == null)
                 return;
 
             r.handlerResults().forEach((hndName, hndRes) ->
