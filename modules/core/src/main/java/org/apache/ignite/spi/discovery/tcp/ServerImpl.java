@@ -6614,7 +6614,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (Arrays.equals(buf, U.IGNITE_HEADER_V1)) {
                             if (log.isDebugEnabled())
                                 log.debug("Remote node uses legacy discovery protocol (V1) (before the rolling upgrade compatibility). " +
-                                    "Local node expects V2. Verify that Ignite versions are compatible. " +
+                                    "Local node expects V2. Ignite versions have to be compatible. " +
                                     "[rmtAddr=" + rmtAddr + ", locAddr=" + sock.getLocalSocketAddress() + "]");
 
                             return;

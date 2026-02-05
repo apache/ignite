@@ -55,7 +55,7 @@ public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilit
         return cfg;
     }
 
-    /** Tests that connection from client of old version is properly refused. */
+    /** Tests that connection from node of old version is properly refused. */
     @Test
     public void testOldNodeRejected() throws Exception {
         setLoggerDebugLevel();
