@@ -893,6 +893,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         openedSock = true;
 
                         TcpDiscoveryIoSession ses = createSession(sock);
+                        ses.switchToFastReader();
 
                         spi.writeMessage(ses, new TcpDiscoveryPingRequest(locNodeId, clientNodeId),
                             timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
@@ -3378,6 +3379,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 sock = spi.openSocket(addr, timeoutHelper);
 
                                 ses = createSession(sock);
+                                ses.switchToFastReader();
 
                                 openSock = true;
 
@@ -6891,6 +6893,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 long sockTimeout = spi.getEffectiveSocketTimeout(srvSock);
+
+                ses.switchToFastReader();
 
                 while (!isInterrupted()) {
                     try {

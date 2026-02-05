@@ -1194,6 +1194,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 try {
                     TcpDiscoveryIoSession ses = createSession(sock);
+                    ses.switchToFastReader();
 
                     assert sock.getKeepAlive() && sock.getTcpNoDelay() : "Socket wasn't configured properly:" +
                         " KeepAlive " + sock.getKeepAlive() +
@@ -1603,6 +1604,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     Socket sock = sockStream.socket();
                     TcpDiscoveryIoSession ses = createSession(sock);
+                    ses.switchToFastReader();
 
                     if (isInterrupted())
                         throw new InterruptedException();
