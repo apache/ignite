@@ -74,6 +74,11 @@ public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase impleme
 
     /** {@inheritDoc} */
     @Override public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+        RelCollation collation = TraitUtils.collation(sole(inputs).getTraitSet());
+
+        assert collation.satisfies(TraitUtils.collation(traitSet))
+            : "Unexpected collations: input=" + collation + ", traitSet=" + TraitUtils.collation(traitSet);
+
         return new IgniteReduceSortAggregate(
             getCluster(),
             traitSet,
@@ -82,7 +87,7 @@ public class IgniteReduceSortAggregate extends IgniteReduceAggregateBase impleme
             groupSets,
             aggCalls,
             rowType,
-            TraitUtils.collation(sole(inputs).getTraitSet())
+            collation
         );
     }
 

@@ -18,20 +18,24 @@
 package org.apache.ignite.internal.processors.query.calcite.planner;
 
 import java.util.Arrays;
+import java.util.function.Predicate;
 import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelFieldCollation;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.ignite.internal.processors.query.calcite.metadata.ColocationGroup;
 import org.apache.ignite.internal.processors.query.calcite.prepare.MappingQueryContext;
-import org.apache.ignite.internal.processors.query.calcite.rel.IgniteAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteCorrelatedNestedLoopJoin;
+import org.apache.ignite.internal.processors.query.calcite.rel.IgniteExchange;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteLimit;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteRel;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteSort;
 import org.apache.ignite.internal.processors.query.calcite.rel.IgniteTableScan;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteColocatedSortAggregate;
+import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteMapSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.rel.agg.IgniteReduceSortAggregate;
 import org.apache.ignite.internal.processors.query.calcite.schema.IgniteSchema;
 import org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistribution;
@@ -42,6 +46,10 @@ import org.apache.ignite.internal.processors.query.calcite.type.IgniteTypeSystem
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.junit.Test;
+
+import static org.apache.calcite.sql.type.SqlTypeName.INTEGER;
+import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.random;
+import static org.apache.ignite.internal.processors.query.calcite.trait.IgniteDistributions.single;
 
 /**
  *
@@ -208,7 +216,7 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
     @Test
     public void testEmptyCollationPassThroughLimit() throws Exception {
         IgniteSchema publicSchema = createSchema(
-            createTable("TEST", IgniteDistributions.single(), "A", Integer.class));
+            createTable("TEST", single(), "A", Integer.class));
 
         assertPlan("SELECT (SELECT test.a FROM test t ORDER BY 1 LIMIT 1) FROM test", publicSchema,
             hasChildThat(isInstanceOf(IgniteCorrelatedNestedLoopJoin.class)
@@ -220,65 +228,112 @@ public class SortAggregatePlannerTest extends AbstractAggregatePlannerTest {
     /** */
     @Test
     public void testCollationPassThrough() throws Exception {
-        IgniteSchema publicSchema = createSchema(
-            createTable("TEST", IgniteDistributions.single(), "A", Integer.class, "B", Integer.class));
+        for (boolean colocated : F.asList(true, false)) {
+            log.info("Test colocated=" + colocated);
 
-        // Sort order equals to grouping set.
-        assertPlan("SELECT a, b, COUNT(*) FROM test GROUP BY a, b ORDER BY a, b", publicSchema,
-            isInstanceOf(IgniteAggregate.class)
-                .and(input(isInstanceOf(IgniteSort.class)
-                    .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(0, 1))))
-                    .and(input(isTableScan("TEST"))))),
-            HASH_AGG_RULES
-        );
+            String[] disabledRules = colocated ? HASH_AGG_RULES :
+                F.concat(HASH_AGG_RULES, "ColocatedSortAggregateConverterRule");
 
-        // Sort order equals to grouping set (permuted collation).
-        assertPlan("SELECT a, b, COUNT(*) FROM test GROUP BY a, b ORDER BY b, a", publicSchema,
-            isInstanceOf(IgniteAggregate.class)
-                .and(input(isInstanceOf(IgniteSort.class)
-                    .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(1, 0))))
-                    .and(input(isTableScan("TEST"))))),
-            HASH_AGG_RULES
-        );
+            IgniteSchema publicSchema = createSchema(
+                createTable("TEST", colocated ? single() : random(), "A", INTEGER, "B", INTEGER));
 
-        // Sort order is a subset of grouping set.
-        assertPlan("SELECT a, b, COUNT(*) cnt FROM test GROUP BY a, b ORDER BY a", publicSchema,
-            isInstanceOf(IgniteAggregate.class)
-                .and(input(isInstanceOf(IgniteSort.class)
-                    .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(0, 1))))
-                    .and(input(isTableScan("TEST"))))),
-            HASH_AGG_RULES
-        );
-
-        // Sort order is a subset of grouping set (permuted collation).
-        assertPlan("SELECT a, b, COUNT(*) cnt FROM test GROUP BY a, b ORDER BY b", publicSchema,
-            isInstanceOf(IgniteAggregate.class)
-                .and(input(isInstanceOf(IgniteSort.class)
-                    .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(1, 0))))
-                    .and(input(isTableScan("TEST"))))),
-            HASH_AGG_RULES
-        );
-
-        // Sort order is a superset of grouping set (additional sorting required).
-        assertPlan("SELECT a, b, COUNT(*) cnt FROM test GROUP BY a, b ORDER BY a, b, cnt", publicSchema,
-            isInstanceOf(IgniteSort.class)
-                .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(0, 1, 2))))
-                .and(input(isInstanceOf(IgniteAggregate.class)
-                    .and(input(isInstanceOf(IgniteSort.class)
+            // Sort order equals to grouping set.
+            assertPlan("SELECT a, b, COUNT(*) FROM test GROUP BY a, b ORDER BY a, b", publicSchema,
+                isAggregateWithCollation(colocated, TraitUtils.createCollation(F.asList(0, 1)),
+                    input(isInstanceOf(IgniteSort.class)
                         .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(0, 1))))
-                        .and(input(isTableScan("TEST"))))))),
-            HASH_AGG_RULES
-        );
+                        .and(input(isTableScan("TEST"))))),
+                disabledRules
+            );
 
-        // Sort order is not equals to grouping set (additional sorting required).
-        assertPlan("SELECT a, b, COUNT(*) cnt FROM test GROUP BY a, b ORDER BY cnt, b", publicSchema,
-            isInstanceOf(IgniteSort.class)
-                .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(2, 1))))
-                .and(input(isInstanceOf(IgniteAggregate.class)
-                    .and(input(isInstanceOf(IgniteSort.class)
+            // Sort order equals to grouping set, but order is not default.
+            RelCollation expectedCollation = RelCollations.of(
+                TraitUtils.createFieldCollation(0, false),
+                TraitUtils.createFieldCollation(1, true)
+            );
+
+            assertPlan("SELECT a, b, COUNT(*) FROM test GROUP BY a, b ORDER BY a desc, b", publicSchema,
+                isAggregateWithCollation(colocated, expectedCollation,
+                    input(isInstanceOf(IgniteSort.class)
+                        .and(s -> s.collation().equals(expectedCollation))
+                        .and(input(isTableScan("TEST"))))),
+                disabledRules
+            );
+
+            // Sort order equals to grouping set (permuted collation).
+            assertPlan("SELECT a, b, COUNT(*) FROM test GROUP BY a, b ORDER BY b, a", publicSchema,
+                isAggregateWithCollation(colocated, TraitUtils.createCollation(F.asList(1, 0)),
+                    input(isInstanceOf(IgniteSort.class)
+                        .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(1, 0))))
+                        .and(input(isTableScan("TEST"))))),
+                disabledRules
+            );
+
+            // Sort order is a subset of grouping set.
+            assertPlan("SELECT a, b, COUNT(*) cnt FROM test GROUP BY a, b ORDER BY a", publicSchema,
+                isAggregateWithCollation(colocated, TraitUtils.createCollation(F.asList(0, 1)),
+                    input(isInstanceOf(IgniteSort.class)
                         .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(0, 1))))
-                        .and(input(isTableScan("TEST"))))))),
-            HASH_AGG_RULES
-        );
+                        .and(input(isTableScan("TEST"))))),
+                disabledRules
+            );
+
+            // Sort order is a subset of grouping set (permuted collation).
+            assertPlan("SELECT a, b, COUNT(*) cnt FROM test GROUP BY a, b ORDER BY b", publicSchema,
+                isAggregateWithCollation(colocated, TraitUtils.createCollation(F.asList(1, 0)),
+                    input(isInstanceOf(IgniteSort.class)
+                        .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(1, 0))))
+                        .and(input(isTableScan("TEST"))))),
+                disabledRules
+            );
+
+            // Sort order is a superset of grouping set (additional sorting required).
+            assertPlan("SELECT a, b, COUNT(*) cnt FROM test GROUP BY a, b ORDER BY a, b, cnt", publicSchema,
+                isInstanceOf(IgniteSort.class)
+                    .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(0, 1, 2))))
+                    .and(input(isAggregateWithCollation(colocated, TraitUtils.createCollation(F.asList(0, 1)),
+                        input(isInstanceOf(IgniteSort.class)
+                            .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(0, 1))))
+                            .and(input(isTableScan("TEST"))))))),
+                disabledRules
+            );
+
+            // Sort order is not equals to grouping set (additional sorting required).
+            assertPlan("SELECT a, b, COUNT(*) cnt FROM test GROUP BY a, b ORDER BY cnt, b", publicSchema,
+                isInstanceOf(IgniteSort.class)
+                    .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(2, 1))))
+                    .and(input(isAggregateWithCollation(colocated, TraitUtils.createCollation(F.asList(0, 1)),
+                        input(isInstanceOf(IgniteSort.class)
+                            .and(s -> s.collation().equals(TraitUtils.createCollation(F.asList(0, 1))))
+                            .and(input(isTableScan("TEST"))))))),
+                disabledRules
+            );
+        }
     }
+
+    /**
+     * Predicate builder to check aggregate with collation.
+     */
+    protected Predicate<? extends IgniteRel> isAggregateWithCollation(
+        boolean colocated,
+        RelCollation collation,
+        Predicate<RelNode> predicate
+    ) {
+        if (colocated) {
+            return isInstanceOf(IgniteColocatedSortAggregate.class)
+                .and(a -> a.collation().satisfies(collation))
+                .and(predicate);
+        }
+        else {
+            return isInstanceOf(IgniteReduceSortAggregate.class)
+                .and(a -> a.collation().satisfies(collation))
+                .and(input(isInstanceOf(IgniteExchange.class)
+                    .and(input(isInstanceOf(IgniteMapSortAggregate.class)
+                        .and(a -> a.collation().satisfies(collation))
+                        .and(predicate)
+                    ))
+                ));
+        }
+    }
+
 }

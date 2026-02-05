@@ -73,8 +73,13 @@ public class IgniteColocatedSortAggregate extends IgniteColocatedAggregateBase i
     /** {@inheritDoc} */
     @Override public Aggregate copy(RelTraitSet traitSet, RelNode input, ImmutableBitSet groupSet,
         List<ImmutableBitSet> groupSets, List<AggregateCall> aggCalls) {
+        RelCollation collation = TraitUtils.collation(input.getTraitSet());
+
+        assert collation.satisfies(TraitUtils.collation(traitSet))
+            : "Unexpected collations: input=" + collation + ", traitSet=" + TraitUtils.collation(traitSet);
+
         return new IgniteColocatedSortAggregate(
-            getCluster(), traitSet, input, groupSet, groupSets, aggCalls, TraitUtils.collation(input.getTraitSet()));
+            getCluster(), traitSet, input, groupSet, groupSets, aggCalls, collation);
     }
 
     /** {@inheritDoc} */
