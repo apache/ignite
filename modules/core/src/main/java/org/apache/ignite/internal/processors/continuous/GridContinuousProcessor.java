@@ -56,6 +56,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.ErrorMessage;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
@@ -1545,7 +1546,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                 IgnitePredicate<ClusterNode> nodeFilter = null;
 
-                byte[] cntrs = null;
+                CachePartitionPartialCountersMap cntrsMap = null;
 
                 if (reqData.nodeFilterBytes() != null) {
                     try {
@@ -1621,12 +1622,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             if (proc != null) {
                                 GridCacheAdapter cache = ctx.cache().internalCache(hnd.cacheName());
 
-                                if (cache != null && cache.context().userCache()) {
-                                    CachePartitionPartialCountersMap cntrsMap =
-                                        cache.context().topology().localUpdateCounters(false);
-
-                                    cntrs = U.marshal(marsh, cntrsMap);
-                                }
+                                if (cache != null && cache.context().userCache())
+                                    cntrsMap = cache.context().topology().localUpdateCounters(false);
                             }
                         }
                     }
@@ -1639,7 +1636,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     }
                 }
 
-                sendMessageStartResult(snd, msg.routineId(), cntrs, err);
+                sendMessageStartResult(snd, msg.routineId(), cntrsMap, err);
             }
         });
     }
@@ -1647,32 +1644,17 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /**
      * @param node Target node.
      * @param routineId Routine ID.
-     * @param cntrsMapBytes Marshalled {@link CachePartitionPartialCountersMap}.
+     * @param cntrsMap Counters map.
      * @param err Start error if any.
      */
     private void sendMessageStartResult(final ClusterNode node,
         final UUID routineId,
-        byte[] cntrsMapBytes,
+        CachePartitionPartialCountersMap cntrsMap,
         @Nullable final Exception err
     ) {
-        byte[] errBytes = null;
-
-        if (err != null) {
-            try {
-                errBytes = U.marshal(marsh, err);
-            }
-            catch (Exception e) {
-                U.error(log, "Failed to marshal routine start error: " + e, e);
-            }
-        }
-
-        ContinuousRoutineStartResultMessage msg = new ContinuousRoutineStartResultMessage(routineId,
-            cntrsMapBytes,
-            errBytes,
-            err != null);
-
         try {
-            ctx.io().sendToGridTopic(node, TOPIC_CONTINUOUS, msg, SYSTEM_POOL);
+            ctx.io().sendToGridTopic(node, TOPIC_CONTINUOUS, new ContinuousRoutineStartResultMessage(routineId, cntrsMap, err),
+                SYSTEM_POOL);
         }
         catch (ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
@@ -2561,7 +2543,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             resCollect = new DiscoveryMessageResultsCollector<ContinuousRoutineStartResultMessage, RoutineRegisterResults>(ctx) {
                 @Override protected RoutineRegisterResults createResult(Map<UUID, NodeMessage<ContinuousRoutineStartResultMessage>> rcvd) {
-                    Map<UUID, Exception> errs = null;
+                    Map<UUID, Throwable> errs = null;
                     Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode = null;
 
                     for (Map.Entry<UUID, NodeMessage<ContinuousRoutineStartResultMessage>> entry : rcvd.entrySet()) {
@@ -2570,24 +2552,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         if (msg == null)
                             continue;
 
-                        if (msg.error()) {
-                            byte[] errBytes = msg.errorBytes();
+                        ErrorMessage errMsg = msg.errorMessage();
 
-                            Exception err = null;
-
-                            if (errBytes != null) {
-                                try {
-                                    err = U.unmarshal(marsh, errBytes, U.resolveClassLoader(ctx.config()));
-                                }
-                                catch (Exception e) {
-                                    U.warn(log, "Failed to unmarhal continuous routine start error: " + e);
-                                }
-                            }
-
-                            if (err == null) {
-                                err = new IgniteCheckedException("Failed to start continuous " +
-                                    "routine on node: " + entry.getKey());
-                            }
+                        if (errMsg != null) {
+                            Throwable err = errMsg.error() == null
+                                ? new IgniteCheckedException("Failed to start continuous routine on node: " + entry.getKey())
+                                : errMsg.error();
 
                             if (errs == null)
                                 errs = new HashMap<>();
@@ -2595,23 +2565,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             errs.put(entry.getKey(), err);
                         }
                         else {
-                            byte[] cntrsMapBytes = msg.countersMapBytes();
+                            CachePartitionPartialCountersMap cntrsMap = msg.countersMap();
 
-                            if (cntrsMapBytes != null) {
-                                try {
-                                    CachePartitionPartialCountersMap cntrsMap = U.unmarshal(
-                                        marsh,
-                                        cntrsMapBytes,
-                                        U.resolveClassLoader(ctx.config()));
+                            if (cntrsMap != null) {
+                                if (cntrsPerNode == null)
+                                    cntrsPerNode = new HashMap<>();
 
-                                    if (cntrsPerNode == null)
-                                        cntrsPerNode = new HashMap<>();
-
-                                    cntrsPerNode.put(entry.getKey(), CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
-                                }
-                                catch (Exception e) {
-                                    U.warn(log, "Failed to unmarhal continuous query update counters: " + e);
-                                }
+                                cntrsPerNode.put(entry.getKey(), CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
                             }
                         }
                     }
@@ -2637,7 +2597,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          */
         private void onAllRemoteRegistered(
             AffinityTopologyVersion topVer,
-            @Nullable Map<UUID, ? extends Exception> errs,
+            @Nullable Map<UUID, ? extends Throwable> errs,
             Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode,
             Map<Integer, T2<Long, Long>> cntrs) {
             try {
@@ -2661,7 +2621,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     onRemoteRegistered();
                 }
                 else {
-                    Exception firstEx = F.first(errs.values());
+                    Throwable firstEx = F.first(errs.values());
 
                     onDone(firstEx);
 
@@ -2729,7 +2689,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         private final AffinityTopologyVersion topVer;
 
         /** */
-        private final Map<UUID, ? extends Exception> errs;
+        private final Map<UUID, ? extends Throwable> errs;
 
         /** */
         private final Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode;
@@ -2740,7 +2700,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @param cntrsPerNode Update counters.
          */
         RoutineRegisterResults(AffinityTopologyVersion topVer,
-            Map<UUID, ? extends Exception> errs,
+            Map<UUID, ? extends Throwable> errs,
             Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode) {
             this.topVer = topVer;
             this.errs = errs;
