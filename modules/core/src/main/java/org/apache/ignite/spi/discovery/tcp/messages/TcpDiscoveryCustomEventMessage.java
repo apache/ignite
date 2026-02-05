@@ -136,8 +136,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractTraceabl
         if (msg instanceof Message)
             serMsg = (Message)msg;
         else {
-            assert msgBytes == null || msg.isMutable() : "Message bytes are not null for immutable message: msg =" +
-                msg + "]";
+            assert msgBytes == null || msg.isMutable() : "Message bytes are not null for immutable message: msg =" + msg;
 
             msgBytes = U.marshal(marsh, msg);
         }
