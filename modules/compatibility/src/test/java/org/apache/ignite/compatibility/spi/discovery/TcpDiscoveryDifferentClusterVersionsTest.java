@@ -17,6 +17,8 @@
 
 package org.apache.ignite.compatibility.spi.discovery;
 
+import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.compatibility.IgniteReleasedVersion;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -26,8 +28,11 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.ListeningTestLogger;
 import org.apache.ignite.testframework.LogListener;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /** */
+@RunWith(Parameterized.class)
 public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilityAbstractTest {
     /** */
     private static final String LEGACY_PROTOCOL_MSG = "Remote node uses legacy discovery protocol";
@@ -37,6 +42,16 @@ public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilit
 
     /** */
     private ListeningTestLogger listeningLog;
+
+    /** */
+    @Parameterized.Parameter
+    public boolean client;
+
+    /** */
+    @Parameterized.Parameters(name = "client={0}")
+    public static Collection<?> client() {
+        return List.of(true, false);
+    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -79,9 +94,11 @@ public class TcpDiscoveryDifferentClusterVersionsTest extends IgniteCompatibilit
     }
 
     /** Setup node closure. */
-    private static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+    private class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
         /** {@inheritDoc} */
         @Override public void apply(IgniteConfiguration cfg) {
+            cfg.setClientMode(client);
+
             cfg.setLocalHost("127.0.0.1");
             TcpDiscoverySpi disco = new TcpDiscoverySpi();
             disco.setIpFinder(LOCAL_IP_FINDER);
